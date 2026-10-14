@@ -11,7 +11,8 @@ const trait = (category: string, category_name: string, group: string, name: str
   detail: "",
   rating: 1,
   free_rating: 0,
-  approved_rating: null,
+  min_rating: 0,
+  pending_from: null,
   note: "",
 });
 

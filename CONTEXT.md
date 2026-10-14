@@ -46,11 +46,11 @@ _Avoid_: Helper, volunteer
 ### Characters
 
 **Character**:
-A persona a player plays, belonging to exactly one splat. It belongs to its player and lives in their vault; the player adds it to troupes, each of which decides for itself whether it is a draft or approved there. A character is never deleted.
+A persona a player plays, belonging to exactly one splat. It belongs to its player and lives in their vault. It plays in one home troupe, which accepts it and holds its sheet, and can visit other troupes. A character is never deleted.
 _Avoid_: Sheet (that is the character's record, not the character), PC
 
 **PC**:
-A player character: built by its player through character creation, approved by each troupe it joins.
+A player character: built by its player through character creation, and accepted by the troupe it asks to make its home.
 _Avoid_: Primary, player character (in names)
 
 **NPC**:
@@ -65,13 +65,13 @@ _Avoid_: Rank, office, court position
 A player's own characters, whether or not they are in any troupe.
 _Avoid_: Library, roster
 
-**Troupe Standing**:
-Whether a character is a draft or approved in one troupe it belongs to. Each troupe decides its own; a character can be approved in one troupe and a draft in another.
-_Avoid_: Character status, membership status
+**Accepted Character**:
+A character a troupe has accepted as its home troupe. Until then the character has no home troupe: its player edits it freely and it takes part in no downtimes.
+_Avoid_: Approved character, draft (there are no per-troupe drafts)
 
-**Draft**:
-A character's standing in a troupe that has not yet approved it, or has sent it back with a reason. Its staff can see the sheet; it takes no part in that troupe's downtimes.
-_Avoid_: Pending, unapproved character
+**Visiting Troupe**:
+A troupe a character is in that is not its home troupe. Its staff can see the sheet, but they approve nothing on it and award it no experience.
+_Avoid_: Secondary troupe, guest troupe
 
 **Retired Character**:
 A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history.
@@ -133,9 +133,9 @@ _Avoid_: Effective rules, local rules
 
 ### Character records
 
-**Approved Sheet**:
-The character's sheet as one troupe last approved it; each troupe keeps its own. Edits awaiting approval are not part of it.
-_Avoid_: Current sheet, live sheet
+**Accepted Sheet**:
+The character's sheet as its home troupe accepted it. The player cannot lower a rating below it; only storytellers take accepted dots away.
+_Avoid_: Approved sheet, current sheet
 
 **Reconciliation**:
 Finding and settling, one by one, the differences between a character's purchases and starting dots and the troupe rules of the home troupe it is joining. A character whose differences are not all settled is not let into the troupe.
@@ -162,19 +162,23 @@ The picture shown for a character or troupe.
 _Avoid_: Avatar, image, photo
 
 **Printable Sheet**:
-The layout of a character's approved sheet for printing and bringing to a game.
+The layout of a character's sheet as it stands, for printing and bringing to a game. Discipline dots awaiting approval are marked.
 _Avoid_: PDF, printout, character card
 
 **Sheet Version**:
-One sheet as one troupe approved it, frozen; that troupe's approved sheet is its latest one.
+One sheet frozen when a troupe accepted the character as its home: the accepted sheet.
 _Avoid_: Snapshot, revision
 
 **Approval**:
-A troupe's storyteller's or assistant storyteller's acceptance of a change a player has asked for, in that troupe only. Approving a draft's sheet makes it approved there.
+The home troupe's storytellers' or assistant storytellers' decision on a home troupe change or a discipline purchase. Nothing else on a sheet is approved: edits take effect at once.
 _Avoid_: Sign-off, review
 
+**Discipline Purchase**:
+A discipline dot bought once the character has a home troupe. The experience is spent at once and the dot shows as awaiting approval until the home troupe decides; declining, withdrawing or leaving the troupe takes the dot back and refunds the experience.
+_Avoid_: Discipline request, teaching
+
 **Home Troupe**:
-The one troupe whose downtime cycles a character takes part in, chosen from the troupes the character belongs to.
+The one troupe that holds a character's sheet: it accepts the character, awards its experience, approves its discipline purchases, and runs the downtime cycles it takes part in.
 _Avoid_: Main troupe, primary troupe
 
 **Home Troupe Change**:

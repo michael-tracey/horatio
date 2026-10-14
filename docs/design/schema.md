@@ -497,3 +497,18 @@ Recorded here for review; each is easy to change.
 - Fixed in passing: a change made while a list was still loading for the first
   time could leave the list stale; mutations now cancel in-flight loads before
   refreshing.
+
+**One home troupe holds the sheet (ADR 0007, replacing ADR 0006)**
+
+- `troupe_memberships.standing` and `standing_note` are dropped. `approved_version_id`
+  now marks the sheet as the home troupe accepted it; visited troupes have none.
+- `approvals.kind` adds `discipline`; `sheet_change` stays for history (waiting ones
+  were withdrawn by the migration). The one-pending-per-kind index leaves disciplines
+  out, so several can wait at once.
+- `discipline_purchases` (`approval_id`, `trait_definition_id`, `detail`,
+  `from_rating`, `to_rating`, `cost`): the dots bought and the XP spent. Declining,
+  withdrawing or leaving the home troupe writes a refunding purchase entry and puts
+  the rating back.
+- Which categories wait on the home troupe is `NEEDS_HOME_APPROVAL` in `sheets.py`
+  (just disciplines for now).
+

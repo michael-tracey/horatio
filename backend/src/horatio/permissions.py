@@ -49,7 +49,6 @@ class TroupeAction(StrEnum):
     ANSWER_ASSIGNED_RESPONSES = "answer_assigned_responses"
     MANAGE_RANDOM_TABLES = "manage_random_tables"
     VIEW_LOG = "view_log"
-    SET_STANDING = "set_standing"
     MANAGE_NPCS = "manage_npcs"
     MANAGE_TITLES = "manage_titles"
 
@@ -76,7 +75,6 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.ANSWER_ASSIGNED_RESPONSES: frozenset(_ALL_STAFF),
     TroupeAction.MANAGE_RANDOM_TABLES: frozenset(_RUNNING),
     TroupeAction.VIEW_LOG: frozenset(_RUNNING),
-    TroupeAction.SET_STANDING: frozenset(_RUNNING),
     TroupeAction.MANAGE_NPCS: frozenset(_RUNNING),
     TroupeAction.MANAGE_TITLES: frozenset(_RUNNING),
 }

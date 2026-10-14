@@ -199,17 +199,6 @@
         "title": "ApprovalOut",
         "type": "object"
       },
-      "ApprovalRequest": {
-        "properties": {
-          "note": {
-            "default": "",
-            "title": "Note",
-            "type": "string"
-          }
-        },
-        "title": "ApprovalRequest",
-        "type": "object"
-      },
       "Assignment": {
         "properties": {
           "any_narrator": {
@@ -697,6 +686,39 @@
         "title": "DifferenceOut",
         "type": "object"
       },
+      "DisciplineOut": {
+        "properties": {
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "from_rating": {
+            "title": "From Rating",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "to_rating": {
+            "title": "To Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "from_rating",
+          "to_rating",
+          "cost"
+        ],
+        "title": "DisciplineOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -861,10 +883,6 @@
             "title": "Home",
             "type": "boolean"
           },
-          "standing": {
-            "title": "Standing",
-            "type": "string"
-          },
           "troupe_id": {
             "format": "uuid",
             "title": "Troupe Id",
@@ -878,8 +896,7 @@
         "required": [
           "troupe_id",
           "troupe_name",
-          "home",
-          "standing"
+          "home"
         ],
         "title": "MembershipOut",
         "type": "object"
@@ -1168,61 +1185,43 @@
         "title": "ParticipantOut",
         "type": "object"
       },
-      "PendingChange": {
+      "PendingDisciplineOut": {
         "properties": {
-          "added": {
-            "title": "Added",
-            "type": "boolean"
-          },
-          "approved_rating": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Approved Rating"
-          },
-          "category": {
-            "title": "Category",
+          "approval_id": {
+            "format": "uuid",
+            "title": "Approval Id",
             "type": "string"
+          },
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
           },
           "detail": {
             "title": "Detail",
             "type": "string"
           },
+          "from_rating": {
+            "title": "From Rating",
+            "type": "integer"
+          },
           "name": {
             "title": "Name",
             "type": "string"
           },
-          "rating": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rating"
-          },
-          "removed": {
-            "title": "Removed",
-            "type": "boolean"
+          "to_rating": {
+            "title": "To Rating",
+            "type": "integer"
           }
         },
         "required": [
-          "category",
+          "approval_id",
           "name",
           "detail",
-          "approved_rating",
-          "rating",
-          "added",
-          "removed"
+          "from_rating",
+          "to_rating",
+          "cost"
         ],
-        "title": "PendingChange",
+        "title": "PendingDisciplineOut",
         "type": "object"
       },
       "Pick": {
@@ -1343,11 +1342,7 @@
       },
       "PrintedSheet": {
         "properties": {
-          "approved": {
-            "title": "Approved",
-            "type": "boolean"
-          },
-          "approved_at": {
+          "accepted_at": {
             "anyOf": [
               {
                 "format": "date-time",
@@ -1357,9 +1352,9 @@
                 "type": "null"
               }
             ],
-            "title": "Approved At"
+            "title": "Accepted At"
           },
-          "approved_by": {
+          "accepted_by": {
             "anyOf": [
               {
                 "type": "string"
@@ -1368,11 +1363,15 @@
                 "type": "null"
               }
             ],
-            "title": "Approved By"
+            "title": "Accepted By"
           },
           "character_name": {
             "title": "Character Name",
             "type": "string"
+          },
+          "home": {
+            "title": "Home",
+            "type": "boolean"
           },
           "kind": {
             "title": "Kind",
@@ -1410,17 +1409,6 @@
               }
             ],
             "title": "Troupe Name"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version"
           }
         },
         "required": [
@@ -1430,10 +1418,9 @@
           "troupe_name",
           "titles",
           "kind",
-          "approved",
-          "version",
-          "approved_at",
-          "approved_by",
+          "home",
+          "accepted_at",
+          "accepted_by",
           "traits"
         ],
         "title": "PrintedSheet",
@@ -1472,6 +1459,17 @@
             "title": "Name",
             "type": "string"
           },
+          "pending_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending From"
+          },
           "rating": {
             "anyOf": [
               {
@@ -1491,7 +1489,8 @@
           "name",
           "detail",
           "rating",
-          "attribute"
+          "attribute",
+          "pending_from"
         ],
         "title": "PrintedTrait",
         "type": "object"
@@ -1750,13 +1749,6 @@
       },
       "QueuedApproval": {
         "properties": {
-          "changes": {
-            "items": {
-              "$ref": "#/components/schemas/PendingChange"
-            },
-            "title": "Changes",
-            "type": "array"
-          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -1765,6 +1757,16 @@
           "character_name": {
             "title": "Character Name",
             "type": "string"
+          },
+          "discipline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisciplineOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "format": "uuid",
@@ -1809,7 +1811,7 @@
           "player_note",
           "staff_note",
           "character_name",
-          "changes",
+          "discipline",
           "reconciliation"
         ],
         "title": "QueuedApproval",
@@ -2077,6 +2079,10 @@
             "title": "Character Name",
             "type": "string"
           },
+          "disciplines_waiting": {
+            "title": "Disciplines Waiting",
+            "type": "integer"
+          },
           "home": {
             "title": "Home",
             "type": "boolean"
@@ -2090,16 +2096,8 @@
             "title": "Kind",
             "type": "string"
           },
-          "note": {
-            "title": "Note",
-            "type": "string"
-          },
           "player_name": {
             "title": "Player Name",
-            "type": "string"
-          },
-          "standing": {
-            "title": "Standing",
             "type": "string"
           },
           "titles": {
@@ -2120,10 +2118,9 @@
           "player_name",
           "kind",
           "titles",
-          "standing",
-          "note",
           "home",
           "waiting",
+          "disciplines_waiting",
           "joined_at"
         ],
         "title": "RosterEntry",
@@ -2206,6 +2203,18 @@
             "title": "Character Id",
             "type": "string"
           },
+          "home_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home Troupe Id"
+          },
           "kind": {
             "title": "Kind",
             "type": "string"
@@ -2221,18 +2230,11 @@
             "title": "Pending Approvals",
             "type": "array"
           },
-          "pending_changes": {
+          "pending_disciplines": {
             "items": {
-              "$ref": "#/components/schemas/PendingChange"
+              "$ref": "#/components/schemas/PendingDisciplineOut"
             },
-            "title": "Pending Changes",
-            "type": "array"
-          },
-          "standings": {
-            "items": {
-              "$ref": "#/components/schemas/StandingOut"
-            },
-            "title": "Standings",
+            "title": "Pending Disciplines",
             "type": "array"
           },
           "status": {
@@ -2246,17 +2248,12 @@
             "title": "Traits",
             "type": "array"
           },
-          "viewing_troupe_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Viewing Troupe Id"
+          "troupes": {
+            "items": {
+              "$ref": "#/components/schemas/SheetTroupeOut"
+            },
+            "title": "Troupes",
+            "type": "array"
           },
           "xp": {
             "$ref": "#/components/schemas/XpSummary"
@@ -2267,29 +2264,18 @@
           "name",
           "status",
           "kind",
-          "standings",
-          "viewing_troupe_id",
+          "home_troupe_id",
+          "troupes",
           "traits",
           "xp",
-          "pending_changes",
-          "pending_approvals"
+          "pending_approvals",
+          "pending_disciplines"
         ],
         "title": "SheetOut",
         "type": "object"
       },
       "SheetTraitOut": {
         "properties": {
-          "approved_rating": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Approved Rating"
-          },
           "category": {
             "title": "Category",
             "type": "string"
@@ -2315,6 +2301,10 @@
             "title": "Id",
             "type": "string"
           },
+          "min_rating": {
+            "title": "Min Rating",
+            "type": "integer"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -2322,6 +2312,17 @@
           "note": {
             "title": "Note",
             "type": "string"
+          },
+          "pending_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending From"
           },
           "rating": {
             "anyOf": [
@@ -2344,10 +2345,49 @@
           "detail",
           "rating",
           "free_rating",
-          "approved_rating",
+          "min_rating",
+          "pending_from",
           "note"
         ],
         "title": "SheetTraitOut",
+        "type": "object"
+      },
+      "SheetTroupeOut": {
+        "description": "A troupe the character is in: its home troupe, or one it visits.",
+        "properties": {
+          "home": {
+            "title": "Home",
+            "type": "boolean"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "home",
+          "waiting",
+          "titles"
+        ],
+        "title": "SheetTroupeOut",
         "type": "object"
       },
       "SignIn": {
@@ -2435,74 +2475,6 @@
           "role"
         ],
         "title": "StaffMember",
-        "type": "object"
-      },
-      "StandingChange": {
-        "properties": {
-          "reason": {
-            "maxLength": 1000,
-            "minLength": 1,
-            "title": "Reason",
-            "type": "string"
-          }
-        },
-        "required": [
-          "reason"
-        ],
-        "title": "StandingChange",
-        "type": "object"
-      },
-      "StandingOut": {
-        "description": "CONTEXT.md: Troupe Standing. One per troupe the character is in.",
-        "properties": {
-          "home": {
-            "title": "Home",
-            "type": "boolean"
-          },
-          "needs_approval": {
-            "title": "Needs Approval",
-            "type": "boolean"
-          },
-          "note": {
-            "title": "Note",
-            "type": "string"
-          },
-          "standing": {
-            "title": "Standing",
-            "type": "string"
-          },
-          "titles": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Titles",
-            "type": "array"
-          },
-          "troupe_id": {
-            "format": "uuid",
-            "title": "Troupe Id",
-            "type": "string"
-          },
-          "troupe_name": {
-            "title": "Troupe Name",
-            "type": "string"
-          },
-          "waiting": {
-            "title": "Waiting",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "troupe_id",
-          "troupe_name",
-          "standing",
-          "note",
-          "home",
-          "needs_approval",
-          "waiting",
-          "titles"
-        ],
-        "title": "StandingOut",
         "type": "object"
       },
       "TableIn": {
@@ -3470,7 +3442,7 @@
         ]
       },
       "post": {
-        "description": "Players build characters on their own, outside any troupe, as drafts.",
+        "description": "Players build characters on their own, outside any troupe.",
         "operationId": "create_character_api_characters_post",
         "requestBody": {
           "content": {
@@ -3636,98 +3608,6 @@
         "summary": "Change Character",
         "tags": [
           "characters"
-        ]
-      }
-    },
-    "/api/characters/{character_id}/approval": {
-      "delete": {
-        "operationId": "withdraw_approval_api_characters__character_id__approval_delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "character_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Character Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Withdraw Approval",
-        "tags": [
-          "sheets"
-        ]
-      },
-      "post": {
-        "description": "Put the sheet to every troupe the character is in that has not approved it as it stands.",
-        "operationId": "request_approval_api_characters__character_id__approval_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "character_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Character Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApprovalRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ApprovalOut"
-                  },
-                  "title": "Response Request Approval Api Characters  Character Id  Approval Post",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Request Approval",
-        "tags": [
-          "sheets"
         ]
       }
     },
@@ -3983,6 +3863,53 @@
         "summary": "Remove Pick",
         "tags": [
           "creation"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/disciplines/{approval_id}": {
+      "delete": {
+        "description": "Take back discipline dots still waiting on the home troupe, and get the XP back.",
+        "operationId": "withdraw_discipline_api_characters__character_id__disciplines__approval_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "approval_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Approval Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Discipline",
+        "tags": [
+          "sheets"
         ]
       }
     },
@@ -4493,7 +4420,7 @@
     },
     "/api/characters/{character_id}/print": {
       "get": {
-        "description": "The sheet to print. By default the approved sheet of `troupe_id` (or the home\ntroupe); `current=true`, or no approved sheet, prints the sheet as it stands.",
+        "description": "The sheet as it stands, headed for `troupe_id` (by default the home troupe, else\nthe first troupe joined), whose titles it shows.",
         "operationId": "printed_sheet_api_characters__character_id__print_get",
         "parameters": [
           {
@@ -4521,16 +4448,6 @@
                 }
               ],
               "title": "Troupe Id"
-            }
-          },
-          {
-            "in": "query",
-            "name": "current",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Current",
-              "type": "boolean"
             }
           }
         ],
@@ -4662,7 +4579,6 @@
     },
     "/api/characters/{character_id}/sheet": {
       "get": {
-        "description": "The sheet, compared against `troupe_id`'s approved sheet (by default the\nhome troupe's).",
         "operationId": "read_sheet_api_characters__character_id__sheet_get",
         "parameters": [
           {
@@ -4673,23 +4589,6 @@
               "format": "uuid",
               "title": "Character Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "troupe_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "format": "uuid",
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Troupe Id"
             }
           }
         ],
@@ -6281,7 +6180,7 @@
     },
     "/api/troupes/{troupe_id}/characters": {
       "get": {
-        "description": "Every character in the troupe now, drafts first.",
+        "description": "Every character in the troupe now: those whose home it is first, then visitors.",
         "operationId": "roster_api_troupes__troupe_id__characters_get",
         "parameters": [
           {
@@ -6322,70 +6221,6 @@
           }
         },
         "summary": "Roster",
-        "tags": [
-          "roster"
-        ]
-      }
-    },
-    "/api/troupes/{troupe_id}/characters/{character_id}/return-to-draft": {
-      "post": {
-        "description": "Send an approved character back to draft in this troupe, with a reason.",
-        "operationId": "return_to_draft_api_troupes__troupe_id__characters__character_id__return_to_draft_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "troupe_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Troupe Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "character_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Character Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StandingChange"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RosterEntry"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Return To Draft",
         "tags": [
           "roster"
         ]

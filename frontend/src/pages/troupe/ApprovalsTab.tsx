@@ -37,38 +37,7 @@ export function ApprovalsTab({ troupeId }: { troupeId: string }) {
         <Empty>Nothing {state}.</Empty>
       )}
       <ErrorText error={queue.error} />
-      {state === "pending" && <UnaskedDrafts troupeId={troupeId} />}
     </>
-  );
-}
-
-/** Drafts here whose players have not asked for approval yet: nothing to decide, but
- * staff should know they are there. */
-function UnaskedDrafts({ troupeId }: { troupeId: string }) {
-  const roster = useQuery({
-    queryKey: ["roster", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", { params: { path: { troupe_id: troupeId } } })),
-  });
-  const drafts = (roster.data ?? []).filter((r) => r.kind === "pc" && r.standing === "draft" && !r.waiting);
-  if (!drafts.length) return null;
-  return (
-    <Card title="Drafts not yet put up for approval" className="mt-6">
-      <p className="mb-2 text-sm text-mist">
-        These characters are in the troupe as drafts. Their players have not asked for approval yet, so there is nothing to decide until they
-        do.
-      </p>
-      <ul className="text-sm">
-        {drafts.map((d) => (
-          <li key={d.character_id} className="flex flex-wrap items-center gap-2 py-1">
-            <Link className="hover:text-gold" to={`/characters/${d.character_id}?troupe=${troupeId}`}>
-              {d.character_name}
-            </Link>
-            <span className="text-mist">({d.player_name})</span>
-            {d.note && <span className="text-xs text-blood-bright">Sent back to draft: {d.note}</span>}
-          </li>
-        ))}
-      </ul>
-    </Card>
   );
 }
 
@@ -91,26 +60,24 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   );
   const pending = approval.status === "pending";
   const joining = approval.kind === "home_troupe_change";
+  const d = approval.discipline;
 
   return (
     <Card
       title={
-        <Link to={`/characters/${approval.character_id}?troupe=${approval.troupe_id}`} className="hover:underline">
+        <Link to={`/characters/${approval.character_id}`} className="hover:underline">
           {approval.character_name}
         </Link>
       }
-      actions={<Badge tone={joining ? "gold" : "mist"}>{joining ? "joining as home troupe" : "sheet changes"}</Badge>}
+      actions={<Badge tone={joining ? "gold" : "mist"}>{joining ? "asking to make this home" : approval.kind === "discipline" ? "discipline" : "sheet changes"}</Badge>}
     >
       {approval.player_note && <p className="mb-3 text-sm italic">"{approval.player_note}"</p>}
-      {approval.changes.length > 0 && (
-        <ul className="mb-3 text-sm">
-          {approval.changes.map((c) => (
-            <li key={`${c.category}/${c.name}/${c.detail}`}>
-              {c.name}
-              {c.detail && `: ${c.detail}`} — {c.approved_rating ?? "new"} → {c.rating ?? "removed"}
-            </li>
-          ))}
-        </ul>
+      {d && (
+        <p className="mb-3 text-sm">
+          {d.name}
+          {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating}, for {d.cost} XP.{" "}
+          <span className="text-mist">The XP is spent; declining refunds it and takes the dots back.</span>
+        </p>
       )}
       {joining && (
         <div className="mb-3 flex flex-col gap-2">

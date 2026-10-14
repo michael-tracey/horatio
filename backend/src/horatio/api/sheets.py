@@ -1,4 +1,4 @@
-"""A character's sheet, purchases, XP history and approval requests."""
+"""A character's sheet, purchases, XP history, and discipline dots waiting on the home troupe."""
 
 import uuid
 from datetime import date
@@ -30,7 +30,10 @@ class SheetTraitOut(BaseModel):
     detail: str
     rating: int | None
     free_rating: int
-    approved_rating: int | None
+    # The lowest the player can take it: the rating the home troupe accepted.
+    min_rating: int
+    # Dots bought but waiting on the home troupe: the rating they were bought from.
+    pending_from: int | None
     note: str
 
 
@@ -38,16 +41,6 @@ class XpSummary(BaseModel):
     balance: int
     earned: int
     spent: int
-
-
-class PendingChange(BaseModel):
-    category: str
-    name: str
-    detail: str
-    approved_rating: int | None
-    rating: int | None
-    added: bool
-    removed: bool
 
 
 class ApprovalOut(BaseModel):
@@ -60,20 +53,25 @@ class ApprovalOut(BaseModel):
     staff_note: str
 
 
-class StandingOut(BaseModel):
-    """CONTEXT.md: Troupe Standing. One per troupe the character is in."""
+class SheetTroupeOut(BaseModel):
+    """A troupe the character is in: its home troupe, or one it visits."""
 
     troupe_id: uuid.UUID
     troupe_name: str
-    standing: str  # draft | approved
-    # Why the troupe sent it back to draft, if it did.
-    note: str
     home: bool
-    # The sheet differs from what this troupe approved, or it never has.
-    needs_approval: bool
+    # A request to make this the home troupe is waiting.
     waiting: bool
     # Titles the character holds in this troupe.
     titles: list[str]
+
+
+class PendingDisciplineOut(BaseModel):
+    approval_id: uuid.UUID
+    name: str
+    detail: str
+    from_rating: int
+    to_rating: int
+    cost: int
 
 
 class SheetOut(BaseModel):
@@ -81,13 +79,12 @@ class SheetOut(BaseModel):
     name: str
     status: str
     kind: str  # pc | npc
-    standings: list[StandingOut]
-    # Whose approved sheet `approved_rating` and `pending_changes` compare against.
-    viewing_troupe_id: uuid.UUID | None
+    home_troupe_id: uuid.UUID | None
+    troupes: list[SheetTroupeOut]
     traits: list[SheetTraitOut]
     xp: XpSummary
-    pending_changes: list[PendingChange]
     pending_approvals: list[ApprovalOut]
+    pending_disciplines: list[PendingDisciplineOut]
 
 
 class TraitChange(BaseModel):
@@ -128,10 +125,6 @@ class XpAward(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
-class ApprovalRequest(BaseModel):
-    note: str = ""
-
-
 def approval_out(approval: Approval) -> ApprovalOut:
     return ApprovalOut(
         id=approval.id,
@@ -144,30 +137,13 @@ def approval_out(approval: Approval) -> ApprovalOut:
     )
 
 
-def viewing_troupe(
-    db: DbSession, character: Character, asked: uuid.UUID | None
-) -> uuid.UUID | None:
-    """The troupe whose approved sheet to compare against: the one asked for, else
-    the home troupe, else the first that approved it, else the first joined."""
-    joined = sheets.memberships(db, character)
-    ids = [m.troupe_id for m in joined]
-    for choice in (
-        asked,
-        character.home_troupe_id,
-        next((m.troupe_id for m in joined if m.standing == "approved"), None),
-        ids[0] if ids else None,
-    ):
-        if choice in ids:
-            return choice
-    return None
-
-
-def sheet_out(db: DbSession, character: Character, troupe_id: uuid.UUID | None = None) -> SheetOut:
-    viewing = viewing_troupe(db, character, troupe_id)
-    approved = sheets.approved_ratings(db, character, viewing)
+def sheet_out(db: DbSession, character: Character) -> SheetOut:
+    floor = sheets.accepted_ratings(db, character)
     rows = sheets.sheet_rows(db, character)
     entries = list(db.scalars(select(XpEntry.amount).where(XpEntry.character_id == character.id)))
     pending = sheets.pending_approvals(db, character)
+    held = sheets.pending_disciplines(db, character)
+    held_from = {(d.trait_definition_id, d.detail): d.from_rating for _, d in held}
     joined = sheets.memberships(db, character)
     names = {
         troupe_id: name
@@ -175,25 +151,36 @@ def sheet_out(db: DbSession, character: Character, troupe_id: uuid.UUID | None =
             select(Troupe.id, Troupe.name).where(Troupe.id.in_([m.troupe_id for m in joined]))
         )
     }
+    definitions = {
+        d.id: d.name
+        for d in db.scalars(
+            select(TraitDefinition).where(
+                TraitDefinition.id.in_([d.trait_definition_id for _, d in held])
+            )
+        )
+    }
     return SheetOut(
         character_id=character.id,
         name=character.name,
         status=character.status,
         kind=character.kind,
-        standings=[
-            StandingOut(
-                troupe_id=m.troupe_id,
-                troupe_name=names[m.troupe_id],
-                standing=m.standing,
-                note=m.standing_note,
-                home=m.troupe_id == character.home_troupe_id,
-                needs_approval=sheets.needs_approval(db, character, m),
-                waiting=any(a.troupe_id == m.troupe_id for a in pending),
-                titles=titles.held(db, m.troupe_id, character.id),
-            )
-            for m in joined
-        ],
-        viewing_troupe_id=viewing,
+        home_troupe_id=character.home_troupe_id,
+        troupes=sorted(
+            (
+                SheetTroupeOut(
+                    troupe_id=m.troupe_id,
+                    troupe_name=names[m.troupe_id],
+                    home=m.troupe_id == character.home_troupe_id,
+                    waiting=any(
+                        a.troupe_id == m.troupe_id and a.kind == "home_troupe_change"
+                        for a in pending
+                    ),
+                    titles=titles.held(db, m.troupe_id, character.id),
+                )
+                for m in joined
+            ),
+            key=lambda t: (not t.home, t.troupe_name.lower()),
+        ),
         traits=[
             SheetTraitOut(
                 id=r.trait.id,
@@ -204,7 +191,8 @@ def sheet_out(db: DbSession, character: Character, troupe_id: uuid.UUID | None =
                 detail=r.trait.detail,
                 rating=r.trait.rating,
                 free_rating=r.trait.free_rating,
-                approved_rating=approved.get(r.key),
+                min_rating=max(r.trait.free_rating, floor.get(r.key, 0)),
+                pending_from=held_from.get((r.definition.id, r.trait.detail)),
                 note=r.trait.note,
             )
             for r in rows
@@ -214,10 +202,18 @@ def sheet_out(db: DbSession, character: Character, troupe_id: uuid.UUID | None =
             earned=sum(a for a in entries if a > 0),
             spent=-sum(a for a in entries if a < 0),
         ),
-        pending_changes=[
-            PendingChange(**c) for c in sheets.pending_changes(db, character, viewing)
-        ],
         pending_approvals=[approval_out(a) for a in pending],
+        pending_disciplines=[
+            PendingDisciplineOut(
+                approval_id=a.id,
+                name=definitions[d.trait_definition_id],
+                detail=d.detail,
+                from_rating=d.from_rating,
+                to_rating=d.to_rating,
+                cost=d.cost,
+            )
+            for a, d in held
+        ],
     )
 
 
@@ -229,12 +225,8 @@ def players_character(db: DbSession, user: User, character_id: uuid.UUID) -> Cha
 
 
 @router.get("/sheet")
-def read_sheet(
-    character_id: uuid.UUID, db: DbSession, user: CurrentUser, troupe_id: uuid.UUID | None = None
-) -> SheetOut:
-    """The sheet, compared against `troupe_id`'s approved sheet (by default the
-    home troupe's)."""
-    return sheet_out(db, visible_character(db, user, character_id), troupe_id)
+def read_sheet(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> SheetOut:
+    return sheet_out(db, visible_character(db, user, character_id))
 
 
 @router.post("/quote")
@@ -314,23 +306,16 @@ def award_xp(
     )
 
 
-@router.post("/approval", status_code=status.HTTP_201_CREATED)
-def request_approval(
-    character_id: uuid.UUID, body: ApprovalRequest, db: DbSession, user: CurrentUser
-) -> list[ApprovalOut]:
-    """Put the sheet to every troupe the character is in that has not approved it as it stands."""
+@router.delete("/disciplines/{approval_id}", status_code=status.HTTP_204_NO_CONTENT)
+def withdraw_discipline(
+    character_id: uuid.UUID, approval_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> None:
+    """Take back discipline dots still waiting on the home troupe, and get the XP back."""
     character = players_character(db, user, character_id)
-    approvals = sheets.request_approval(db, user, character, body.note)
-    db.commit()
-    return [approval_out(a) for a in approvals]
-
-
-@router.delete("/approval", status_code=status.HTTP_204_NO_CONTENT)
-def withdraw_approval(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
-    character = players_character(db, user, character_id)
-    waiting = sheets.pending_approvals(db, character, "sheet_change")
-    if not waiting:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Nothing is waiting for approval.")
-    for approval in waiting:
-        sheets.withdraw(db, user, approval)
+    waiting = next(
+        (a for a, _ in sheets.pending_disciplines(db, character) if a.id == approval_id), None
+    )
+    if waiting is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such discipline is waiting.")
+    sheets.withdraw(db, user, waiting)
     db.commit()

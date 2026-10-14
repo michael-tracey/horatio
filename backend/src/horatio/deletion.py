@@ -22,6 +22,7 @@ from horatio.models import (
     CharacterTrait,
     CycleParticipant,
     Delivery,
+    DisciplinePurchase,
     HomeTroupeChange,
     ReconciliationItem,
     Response,
@@ -76,6 +77,7 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         delete(ReconciliationItem).where(ReconciliationItem.home_troupe_change_id.in_(changes))
     )
     db.execute(delete(HomeTroupeChange).where(HomeTroupeChange.approval_id.in_(approvals)))
+    db.execute(delete(DisciplinePurchase).where(DisciplinePurchase.approval_id.in_(approvals)))
     db.execute(delete(Approval).where(Approval.character_id == cid))
     db.execute(
         update(TroupeMembership)

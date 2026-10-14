@@ -71,7 +71,7 @@ def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterOut]:
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_character(body: NewCharacter, db: DbSession, user: CurrentUser) -> CharacterOut:
-    """Players build characters on their own, outside any troupe, as drafts."""
+    """Players build characters on their own, outside any troupe."""
     if db.scalar(select(RuleSet.id).where(RuleSet.splat == body.splat)) is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No rules for {body.splat!r}.")
     character = Character(player_id=user.id, splat=body.splat, name=body.name)

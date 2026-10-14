@@ -14,7 +14,7 @@ after the grace period only a storyteller's say-so lets one in.
 
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -32,13 +32,12 @@ from horatio.models import (
     RuleSet,
     Submission,
     Troupe,
-    TroupeMembership,
     User,
 )
 from horatio.rules.allowance import allowance
 from horatio.rules.model import SheetTrait
 from horatio.rules.store import read_troupe_rules
-from horatio.sheets import approved_snapshot, conflict, membership, unprocessable
+from horatio.sheets import conflict, pending_disciplines, sheet_rows, unprocessable
 
 ANSWER_TYPES = ("long_text", "short_text", "choice", "number", "yes_no")
 
@@ -204,25 +203,28 @@ def create_cycle(
     return cycle
 
 
-def approved_sheet(db: Session, character: Character, troupe: Troupe) -> list[SheetTrait]:
-    """The sheet as `troupe` approved it: what allowances are worked out from."""
-    return [
-        SheetTrait(
-            category=t["category"],
-            name=t["name"],
-            rating=t["rating"],
-            free_rating=t["free_rating"],
-            detail=t["detail"],
-        )
-        for t in approved_snapshot(db, character, troupe.id)
-    ]
+def allowance_sheet(db: Session, character: Character) -> list[SheetTrait]:
+    """The sheet allowances are worked out from: as it stands, leaving out discipline
+    dots still waiting on the home troupe."""
+    pending = {
+        (d.trait_definition_id, d.detail): d.from_rating
+        for _, d in pending_disciplines(db, character)
+    }
+    sheet: list[SheetTrait] = []
+    for row in sheet_rows(db, character):
+        trait = row.as_rules_trait()
+        held = pending.get((row.definition.id, row.trait.detail))
+        if held is not None:
+            trait = replace(trait, rating=held)
+        sheet.append(trait)
+    return sheet
 
 
 def fill_allowance(
     db: Session, participant: CycleParticipant, character: Character, troupe: Troupe
 ) -> None:
     rules = read_troupe_rules(db, character.splat, troupe.id)
-    totals, lines = allowance(rules, approved_sheet(db, character, troupe))
+    totals, lines = allowance(rules, allowance_sheet(db, character))
     participant.allowance = totals
     participant.allowance_breakdown = [
         {"action_kind": line.action_kind, "source": line.source, "amount": line.amount}
@@ -244,17 +246,12 @@ def open_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -
     cycle.status = "open"
     cycle.opened_at = now()
     db.flush()
-    # Characters whose home troupe this is, and which this troupe has approved.
+    # Characters whose home troupe this is: it accepted them when it became their home.
     characters = db.scalars(
-        select(Character)
-        .join(TroupeMembership, TroupeMembership.character_id == Character.id)
-        .where(
+        select(Character).where(
             Character.home_troupe_id == troupe.id,
             Character.status == "active",
             Character.kind == "pc",
-            TroupeMembership.troupe_id == troupe.id,
-            TroupeMembership.left_at.is_(None),
-            TroupeMembership.standing == "approved",
         )
     )
     count = 0
@@ -294,17 +291,12 @@ def add_participant(
         raise conflict("Participants can only be added to a draft or open cycle.")
     if cycle.status == "draft":
         raise conflict("Participants are chosen when the cycle opens.")
-    standing = membership(db, character, troupe.id)
     if (
         character.home_troupe_id != troupe.id
         or character.kind != "pc"
         or character.status != "active"
-        or standing is None
-        or standing.standing != "approved"
     ):
-        raise conflict(
-            "Only characters this troupe has approved, and whose home troupe it is, can take part."
-        )
+        raise conflict("Only active characters whose home troupe this is can take part.")
     participant = db.scalar(
         select(CycleParticipant).where(
             CycleParticipant.cycle_id == cycle.id, CycleParticipant.character_id == character.id

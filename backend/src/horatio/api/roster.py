@@ -4,11 +4,11 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter
+from pydantic import BaseModel
 from sqlalchemy import Select, select
 
-from horatio import sheets, titles
+from horatio import titles
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Approval, AuditEvent, Character, TroupeMembership, User
@@ -23,15 +23,13 @@ class RosterEntry(BaseModel):
     player_name: str
     kind: str  # pc | npc
     titles: list[str]
-    standing: str  # draft | approved
-    note: str
+    # The troupe holds the character's sheet; otherwise the character visits.
     home: bool
+    # Waiting for this troupe to accept it as home.
     waiting: bool
+    # Discipline dots waiting on this troupe.
+    disciplines_waiting: int
     joined_at: datetime
-
-
-class StandingChange(BaseModel):
-    reason: str = Field(min_length=1, max_length=1000)
 
 
 class LogEntry(BaseModel):
@@ -47,7 +45,7 @@ class LogEntry(BaseModel):
 
 @router.get("/characters")
 def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[RosterEntry]:
-    """Every character in the troupe now, drafts first."""
+    """Every character in the troupe now: those whose home it is first, then visitors."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     rows = db.execute(
         select(TroupeMembership, Character, User.display_name)
@@ -55,9 +53,9 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         .join(User, Character.player_id == User.id)
         .where(TroupeMembership.troupe_id == troupe_id, TroupeMembership.left_at.is_(None))
     )
-    waiting = set(
-        db.scalars(
-            select(Approval.character_id).where(
+    pending = list(
+        db.execute(
+            select(Approval.character_id, Approval.kind).where(
                 Approval.troupe_id == troupe_id, Approval.status == "pending"
             )
         )
@@ -69,44 +67,32 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_name=player if c.kind == "pc" else "NPC",
             kind=c.kind,
             titles=titles.held(db, troupe_id, c.id),
-            standing=m.standing,
-            note=m.standing_note,
             home=c.home_troupe_id == troupe_id,
-            waiting=c.id in waiting,
+            waiting=(c.id, "home_troupe_change") in pending,
+            disciplines_waiting=sum(1 for p in pending if p == (c.id, "discipline")),
             joined_at=m.joined_at,
         )
         for m, c, player in rows
     ]
-    return sorted(entries, key=lambda e: (e.standing != "draft", e.character_name.lower()))
-
-
-@router.post("/characters/{character_id}/return-to-draft")
-def return_to_draft(
-    troupe_id: uuid.UUID,
-    character_id: uuid.UUID,
-    body: StandingChange,
-    db: DbSession,
-    user: CurrentUser,
-) -> RosterEntry:
-    """Send an approved character back to draft in this troupe, with a reason."""
-    staff_troupe(db, user, troupe_id, TroupeAction.SET_STANDING)
-    character = db.get(Character, character_id)
-    if character is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character.")
-    sheets.return_to_draft(db, user, character, troupe_id, body.reason)
-    db.commit()
-    return next(e for e in roster(troupe_id, db, user) if e.character_id == character_id)
+    return sorted(entries, key=lambda e: (not e.home, e.character_name.lower()))
 
 
 # What each logged action reads as. `{character}` and `{actor}` are filled in.
 MESSAGES: dict[str, str] = {
-    "troupe.join": "{character} joined the troupe as a draft.",
+    "troupe.join": "{character} joined the troupe.",
     "troupe.leave": "{character} left the troupe.",
     "character.deleted": "{character} was deleted by its player.",
     "approval.request": "{actor} asked for {character} to be approved.",
+    "approval.request.discipline": "{actor} bought {name} {rating} for {character}; pending.",
+    "approval.approved.discipline": "{actor} approved {character}'s {name} {rating}.",
+    "approval.declined.discipline": "{actor} declined {character}'s {name} {rating}; refunded.",
+    "approval.withdrawn.discipline": "{actor} withdrew {character}'s {name} {rating}; refunded.",
+    "approval.request.home_troupe_change": "{actor} asked to make this {character}'s home.",
+    "approval.approved.home_troupe_change": "{actor} accepted {character}; this is its home.",
     "approval.approved": "{actor} approved {character}.",
     "approval.declined": "{actor} declined {character}'s request.",
     "approval.withdrawn": "{actor} withdrew {character}'s request.",
+    # From before characters had one home troupe; kept so old log entries read.
     "standing.draft": "{actor} sent {character} back to draft: {reason}",
     "home_troupe.moved_away": "{character} moved its home troupe elsewhere.",
     "xp.award": "{actor} awarded {character} {amount} XP: {reason}",
@@ -164,7 +150,10 @@ def message(action: str, actor: str | None, character: str | None, data: dict[st
         if action == "sheet.purchase":
             template = purchase_message(data)
         else:
-            template = MESSAGES.get(action, action.replace("_", " ").replace(".", ": "))
+            template = MESSAGES.get(
+                f"{action}.{data.get('kind')}",
+                MESSAGES.get(action, action.replace("_", " ").replace(".", ": ")),
+            )
         return template.format(**values)
     except (KeyError, IndexError, TypeError):
         return action.replace("_", " ").replace(".", ": ")

@@ -48,7 +48,9 @@ from horatio.sheets import (
     conflict,
     ensure_unlocked,
     freeze_sheet,
+    pending_disciplines,
     sheet_rows,
+    undo_discipline,
     unprocessable,
     xp_balance,
 )
@@ -182,6 +184,8 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
             Approval.status == "pending",
         )
     ):
+        if approval.kind == "discipline":
+            undo_discipline(db, player, character, approval, "withdrawn")
         approval.status = "withdrawn"
         approval.decided_at = datetime.now(UTC)
     db.flush()
@@ -426,6 +430,11 @@ def request_change(
     ensure_unlocked(db, character)
     if character.creation_completed_at is None:
         raise conflict("Finish character creation before choosing a home troupe.")
+    if pending_disciplines(db, character):
+        raise conflict(
+            "Discipline dots are waiting for the home troupe's approval. "
+            "Wait for its decision, or withdraw them, before moving."
+        )
     join(db, player, character, troupe)
 
     differences = find_differences(db, character, troupe)
@@ -579,7 +588,7 @@ def approve_change(
 
     old_troupe = change.from_troupe_id
     character.home_troupe_id = change.to_troupe_id
-    # Approving the move also approves the sheet in the new home troupe.
+    # The sheet as the new home troupe accepted it: the floor for lowering ratings.
     freeze_sheet(db, staff, character, change.to_troupe_id)
     if reopen:
         # The new troupe gives more starting dots: let the player place them.

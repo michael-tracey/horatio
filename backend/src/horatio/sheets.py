@@ -1,16 +1,16 @@
-"""Character sheets: traits, purchases, XP and approval.
+"""Character sheets: traits, purchases and XP.
 
-The sheet as it stands lives in `character_traits`; each approval freezes a
-copy as a `sheet_version`. Whatever differs from the latest frozen copy is
-waiting for approval. Every rated change is a purchase in the XP history,
-priced by the character's troupe rules (its home troupe's, or the plain rule
-set before it has one).
+The sheet as it stands lives in `character_traits`, and its player edits it
+freely. Every rated change is a purchase in the XP history, priced by the
+character's troupe rules (its home troupe's, or the plain rule set before it
+has one). When a troupe accepts the character as its home, the sheet is frozen
+as a `sheet_version`: the player may lower ratings back down to that, undoing
+purchases since, but taking away accepted dots is a storyteller's business.
 
-A player may raise any rating, and may lower one only as far as its approved
-rating: that undoes an unapproved purchase and refunds it. Taking away
-approved dots is a storyteller's business, not the player's. While a change is
-waiting for approval the sheet is locked, so what staff approve is what they
-looked at.
+Once the character has a home troupe, every discipline dot it buys waits on
+that troupe's staff: the XP is spent at once and refunded if they decline.
+Only a home troupe request locks the sheet, so the differences it settles stay
+the differences there are.
 """
 
 import uuid
@@ -28,6 +28,7 @@ from horatio.models import (
     Approval,
     Character,
     CharacterTrait,
+    DisciplinePurchase,
     RuleSet,
     SheetVersion,
     TraitCategory,
@@ -41,6 +42,9 @@ from horatio.rules.pricing import PricingError, Quote, purchase_cost
 from horatio.rules.store import read_troupe_rules
 
 TraitKey = tuple[str, str, str]  # category, name, detail
+
+# Categories whose every dot, once the character has a home troupe, waits on its staff.
+NEEDS_HOME_APPROVAL = frozenset({"disciplines"})
 
 FINISH_CREATION_FIRST = (
     "Build the character in the creation wizard first; "
@@ -145,14 +149,53 @@ def approved_ratings(
     }
 
 
-def highest_approved_ratings(db: Session, character: Character) -> dict[TraitKey, int]:
-    """For each trait, the highest rating any of the character's troupes has approved.
-    A player cannot lower a trait below it."""
-    highest: dict[TraitKey, int] = {}
-    for m in memberships(db, character):
-        for key, rating in approved_ratings(db, character, m.troupe_id).items():
-            highest[key] = max(highest.get(key, 0), rating or 0)
-    return highest
+def accepted_ratings(db: Session, character: Character) -> dict[TraitKey, int]:
+    """The lowest each trait can go: its rating when the home troupe accepted the
+    character, or a discipline dot the home troupe has approved since."""
+    floor: dict[TraitKey, int] = {}
+    if character.home_troupe_id is None:
+        return floor
+    for key, rating in approved_ratings(db, character, character.home_troupe_id).items():
+        floor[key] = rating or 0
+    found = membership(db, character, character.home_troupe_id)
+    accepted_at = (
+        db.get_one(SheetVersion, found.approved_version_id).approved_at
+        if found is not None and found.approved_version_id is not None
+        else None
+    )
+    query = (
+        select(
+            TraitCategory.key,
+            TraitDefinition.name,
+            DisciplinePurchase.detail,
+            DisciplinePurchase.to_rating,
+        )
+        .join(Approval, DisciplinePurchase.approval_id == Approval.id)
+        .join(TraitDefinition, DisciplinePurchase.trait_definition_id == TraitDefinition.id)
+        .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+        .where(
+            Approval.character_id == character.id,
+            Approval.troupe_id == character.home_troupe_id,
+            Approval.status == "approved",
+        )
+    )
+    if accepted_at is not None:
+        query = query.where(Approval.decided_at >= accepted_at)
+    for category, name, detail, rating in db.execute(query):
+        floor[(category, name, detail)] = max(floor.get((category, name, detail), 0), rating)
+    return floor
+
+
+def pending_disciplines(
+    db: Session, character: Character
+) -> list[tuple[Approval, DisciplinePurchase]]:
+    rows = db.execute(
+        select(Approval, DisciplinePurchase)
+        .join(DisciplinePurchase, DisciplinePurchase.approval_id == Approval.id)
+        .where(Approval.character_id == character.id, Approval.status == "pending")
+        .order_by(Approval.id)
+    )
+    return [(a, d) for a, d in rows]
 
 
 def xp_balance(db: Session, character: Character) -> int:
@@ -178,8 +221,8 @@ def pending_approvals(db: Session, character: Character, kind: str | None = None
 def ensure_unlocked(db: Session, character: Character) -> None:
     if character.status == "retired":
         raise conflict("This character is retired.")
-    if pending_approvals(db, character):
-        raise conflict("Changes are waiting for approval. Withdraw them to edit the sheet.")
+    if pending_approvals(db, character, "home_troupe_change"):
+        raise conflict("A home troupe request is waiting. Withdraw it to edit the sheet.")
 
 
 def find_definition(
@@ -334,12 +377,17 @@ def set_trait(
     quote, current_rating = quote_change(db, character, category_key, name, detail, rating)
     assert quote is not None and rating is not None and current_rating is not None
 
-    approved = highest_approved_ratings(db, character).get(
-        (category.key, definition.name, detail), 0
-    )
-    if rating < approved:
+    accepted = accepted_ratings(db, character).get((category.key, definition.name, detail), 0)
+    if rating < accepted:
         raise conflict(
-            f"{name} is approved at {approved}. Only storytellers can take approved dots away."
+            f"{name} was accepted at {accepted}. Only storytellers can take accepted dots away."
+        )
+    if any(
+        d.trait_definition_id == definition.id and d.detail == detail
+        for _, d in pending_disciplines(db, character)
+    ):
+        raise conflict(
+            f"{name} is waiting for the home troupe's approval. Withdraw that to change it."
         )
     if quote.cost > 0 and xp_balance(db, character) < quote.cost:
         raise conflict(
@@ -361,6 +409,12 @@ def set_trait(
     if note is not None:
         trait.note = note
 
+    held = (
+        rating > current_rating
+        and category.key in NEEDS_HOME_APPROVAL
+        and character.home_troupe_id is not None
+        and character.kind == "pc"
+    )
     if rating != current_rating:
         db.add(
             XpEntry(
@@ -394,42 +448,45 @@ def set_trait(
         to_rating=rating,
         cost=quote.cost,
     )
-    return Change(quote=quote, trait=trait)
-
-
-def pending_changes(
-    db: Session, character: Character, troupe_id: uuid.UUID | None
-) -> list[dict[str, Any]]:
-    """How the sheet differs from the version `troupe_id` approved (everything, if none)."""
-    approved = {
-        (t["category"], t["name"], t["detail"]): t
-        for t in approved_snapshot(db, character, troupe_id)
-    }
-    current = {r.key: r.snapshot() for r in sheet_rows(db, character)}
-    changes: list[dict[str, Any]] = []
-    for key in sorted(approved.keys() | current.keys()):
-        before, after = approved.get(key), current.get(key)
-        if before == after:
-            continue
-        changes.append(
-            {
-                "category": key[0],
-                "name": key[1],
-                "detail": key[2],
-                "approved_rating": before["rating"] if before else None,
-                "rating": after["rating"] if after else None,
-                "added": before is None,
-                "removed": after is None,
-            }
+    if held:
+        assert character.home_troupe_id is not None
+        approval = Approval(
+            character_id=character.id,
+            troupe_id=character.home_troupe_id,
+            kind="discipline",
+            requested_by=player.id,
         )
-    return changes
+        db.add(approval)
+        db.flush()
+        db.add(
+            DisciplinePurchase(
+                approval_id=approval.id,
+                trait_definition_id=definition.id,
+                detail=detail,
+                from_rating=current_rating,
+                to_rating=rating,
+                cost=quote.cost,
+            )
+        )
+        db.flush()
+        audit.record(
+            db,
+            player,
+            "approval.request",
+            troupe_id=approval.troupe_id,
+            character_id=character.id,
+            approval_id=approval.id,
+            kind=approval.kind,
+            name=name,
+            rating=rating,
+        )
+    return Change(quote=quote, trait=trait)
 
 
 def freeze_sheet(
     db: Session, approver: User, character: Character, troupe_id: uuid.UUID
 ) -> SheetVersion:
-    """Freeze the sheet as it stands as `troupe_id`'s approved version, and make the
-    character approved there."""
+    """Freeze the sheet as it stands, as `troupe_id` accepted it as home."""
     found = membership(db, character, troupe_id)
     if found is None:
         raise conflict("The character is not in that troupe.")
@@ -451,67 +508,7 @@ def freeze_sheet(
     db.add(version)
     db.flush()
     found.approved_version_id = version.id
-    found.standing = "approved"
-    found.standing_note = ""
     return version
-
-
-def needs_approval(db: Session, character: Character, m: TroupeMembership) -> bool:
-    if character.kind == "npc":
-        return False  # NPCs belong to their troupe; there is nothing to approve.
-    return m.standing == "draft" or bool(pending_changes(db, character, m.troupe_id))
-
-
-def request_approval(db: Session, player: User, character: Character, note: str) -> list[Approval]:
-    """Put the sheet to every troupe the character is in that has not approved it as
-    it stands: drafts, and troupes whose approved sheet is out of date."""
-    if character.kind == "npc":
-        raise conflict("NPCs need no approval; they belong to their troupe.")
-    if character.creation_completed_at is None:
-        raise conflict("Finish character creation before asking for approval.")
-    ensure_unlocked(db, character)
-    troupes = [m for m in memberships(db, character) if needs_approval(db, character, m)]
-    if not troupes:
-        raise conflict("Every troupe the character is in has approved the sheet as it stands.")
-    approvals: list[Approval] = []
-    for m in troupes:
-        approval = Approval(
-            character_id=character.id,
-            troupe_id=m.troupe_id,
-            kind="sheet_change",
-            requested_by=player.id,
-            player_note=note,
-        )
-        db.add(approval)
-        db.flush()
-        audit.record(
-            db,
-            player,
-            "approval.request",
-            troupe_id=approval.troupe_id,
-            character_id=character.id,
-            approval_id=approval.id,
-            kind=approval.kind,
-        )
-        approvals.append(approval)
-    return approvals
-
-
-def return_to_draft(
-    db: Session, staff: User, character: Character, troupe_id: uuid.UUID, reason: str
-) -> TroupeMembership:
-    found = membership(db, character, troupe_id)
-    if found is None:
-        raise conflict("The character is not in that troupe.")
-    if found.standing == "draft":
-        raise conflict("The character is already a draft in this troupe.")
-    found.standing = "draft"
-    found.standing_note = reason
-    db.flush()
-    audit.record(
-        db, staff, "standing.draft", troupe_id=troupe_id, character_id=character.id, reason=reason
-    )
-    return found
 
 
 def decide(
@@ -525,8 +522,8 @@ def decide(
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
     character = lock_character(db, approval.character_id)
-    if approve and approval.kind == "sheet_change":
-        freeze_sheet(db, staff, character, approval.troupe_id)
+    if not approve and approval.kind == "discipline":
+        undo_discipline(db, staff, character, approval, "declined")
     elif approve and approval.kind == "home_troupe_change":
         from horatio.reconciliation import approve_change  # imports this module
 
@@ -544,13 +541,68 @@ def decide(
         character_id=character.id,
         approval_id=approval.id,
         kind=approval.kind,
+        **discipline_details(db, approval),
     )
     return approval
+
+
+def discipline_details(db: Session, approval: Approval) -> dict[str, Any]:
+    """What the log says about a discipline request: which discipline, to what rating."""
+    if approval.kind != "discipline":
+        return {}
+    found = db.execute(
+        select(TraitDefinition.name, DisciplinePurchase.to_rating)
+        .join(DisciplinePurchase, DisciplinePurchase.trait_definition_id == TraitDefinition.id)
+        .where(DisciplinePurchase.approval_id == approval.id)
+    ).one()
+    return {"name": found[0], "rating": found[1]}
+
+
+def undo_discipline(
+    db: Session, user: User, character: Character, approval: Approval, why: str
+) -> None:
+    """Take back discipline dots that were not approved, and refund their XP."""
+    bought = db.scalar(
+        select(DisciplinePurchase).where(DisciplinePurchase.approval_id == approval.id)
+    )
+    assert bought is not None
+    definition = db.get_one(TraitDefinition, bought.trait_definition_id)
+    trait = db.scalar(
+        select(CharacterTrait).where(
+            CharacterTrait.character_id == character.id,
+            CharacterTrait.trait_definition_id == definition.id,
+            CharacterTrait.detail == bought.detail,
+        )
+    )
+    if trait is not None:
+        if bought.from_rating == 0 and trait.free_rating == 0:
+            db.delete(trait)
+        else:
+            trait.rating = bought.from_rating
+    db.add(
+        XpEntry(
+            character_id=character.id,
+            kind="purchase",
+            amount=bought.cost,
+            reason=f"{definition.name} {bought.to_rating} → {bought.from_rating} ({why})",
+            entered_by=user.id,
+            trait_definition_id=definition.id,
+            detail=bought.detail or None,
+            from_rating=bought.to_rating,
+            to_rating=bought.from_rating,
+            cost_basis={"refund": why},
+        )
+    )
+    db.flush()
 
 
 def withdraw(db: Session, player: User, approval: Approval) -> Approval:
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
+    if approval.kind == "discipline":
+        undo_discipline(
+            db, player, lock_character(db, approval.character_id), approval, "withdrawn"
+        )
     approval.status = "withdrawn"
     approval.decided_at = datetime.now(UTC)
     db.flush()
@@ -561,6 +613,8 @@ def withdraw(db: Session, player: User, approval: Approval) -> Approval:
         troupe_id=approval.troupe_id,
         character_id=approval.character_id,
         approval_id=approval.id,
+        kind=approval.kind,
+        **discipline_details(db, approval),
     )
     return approval
 

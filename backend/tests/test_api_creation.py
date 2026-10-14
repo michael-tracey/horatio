@@ -354,9 +354,10 @@ def test_more_starting_dots_reopen_creation_to_place_them(troupe: Troupe) -> Non
         troupe.player.client.post(f"/characters/{character_id}/creation/complete").status_code
         == 200
     )
-    # The new free dot is a change to the approved sheet, like any other.
-    changes = sheet(troupe.player, character_id)["pending_changes"]
-    assert [(c["name"], c["rating"]) for c in changes] == [("Stealth", 1)]
+    # The new free dot is on the sheet straight away; nothing needs approving.
+    after = sheet(troupe.player, character_id)
+    assert ("Stealth", 1) in [(t["name"], t["rating"]) for t in after["traits"]]
+    assert after["pending_approvals"] == []
 
 
 def test_staff_see_and_can_change_starting_dot_settlements(troupe: Troupe) -> None:

@@ -41,8 +41,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
               <li key={m.troupe_id} className="flex items-center justify-between gap-2 py-2">
                 <span className="flex flex-wrap items-center gap-2">
                   {m.troupe_name}
-                  <Badge tone={m.standing === "approved" ? "gold" : "blood"}>{m.standing}</Badge>
-                  {m.home && <Badge>home</Badge>}
+                  {m.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
                 </span>
                 <Button
                   variant="ghost"
@@ -57,7 +56,10 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             ))}
           </ul>
         ) : (
-          <Empty>Not in any troupe. Joining one makes it a draft there and lets that troupe's storytellers see the sheet.</Empty>
+          <Empty>
+            Not in any troupe. A character plays in its one home troupe, and can visit others; joining a troupe as a visitor lets
+            its storytellers see the sheet.
+          </Empty>
         )}
         <form
           className="mt-3 flex gap-2"
@@ -67,7 +69,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
           }}
         >
           <Select value={joining} onChange={(e) => setJoining(e.target.value)} aria-label="Troupe to join">
-            <option value="">Join a troupe…</option>
+            <option value="">Visit a troupe…</option>
             {troupes.data
               ?.filter((t) => !memberIds.has(t.id))
               .map((t) => (
@@ -77,7 +79,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
               ))}
           </Select>
           <Button type="submit" variant="secondary" disabled={!joining}>
-            Join
+            Visit
           </Button>
         </form>
         <ErrorText error={join.error ?? leave.error} />

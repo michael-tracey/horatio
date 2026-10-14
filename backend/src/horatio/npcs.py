@@ -43,7 +43,7 @@ def create_npc(
     )
     db.add(npc)
     db.flush()
-    db.add(TroupeMembership(troupe_id=troupe.id, character_id=npc.id, standing="approved"))
+    db.add(TroupeMembership(troupe_id=troupe.id, character_id=npc.id))
     grant_starting_traits(db, rules_for(db, npc), npc)
     db.flush()
     audit.record(db, staff, "npc.created", troupe_id=troupe.id, character_id=npc.id)

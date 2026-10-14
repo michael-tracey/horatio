@@ -8,9 +8,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from horatio import sheets
-from horatio.api.sheets import ApprovalOut, PendingChange, approval_out
+from horatio.api.sheets import ApprovalOut, approval_out
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Approval, Character, TraitDefinition, Troupe
+from horatio.models import Approval, Character, DisciplinePurchase, TraitDefinition, Troupe
 from horatio.permissions import TroupeAction, require_troupe_action
 from horatio.reconciliation import allowed_settlements, items_for
 
@@ -34,10 +34,18 @@ class ReconciliationOut(BaseModel):
     extra: bool
 
 
+class DisciplineOut(BaseModel):
+    name: str
+    detail: str
+    from_rating: int
+    to_rating: int
+    cost: int
+
+
 class QueuedApproval(ApprovalOut):
     character_name: str
-    # For a sheet change: how the sheet differs from its approved version.
-    changes: list[PendingChange]
+    # For a discipline: the dots bought and what they cost.
+    discipline: DisciplineOut | None
     # For a home troupe change: each difference and how it is to be settled.
     reconciliation: list[ReconciliationOut]
 
@@ -91,6 +99,24 @@ def reconciliation_out(db: DbSession, approval: Approval) -> list[Reconciliation
     ]
 
 
+def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
+    if approval.kind != "discipline":
+        return None
+    found = db.execute(
+        select(DisciplinePurchase, TraitDefinition.name)
+        .join(TraitDefinition, DisciplinePurchase.trait_definition_id == TraitDefinition.id)
+        .where(DisciplinePurchase.approval_id == approval.id)
+    ).one()
+    bought, name = found
+    return DisciplineOut(
+        name=name,
+        detail=bought.detail,
+        from_rating=bought.from_rating,
+        to_rating=bought.to_rating,
+        cost=bought.cost,
+    )
+
+
 @router.get("/troupes/{troupe_id}/approvals")
 def troupe_approvals(
     troupe_id: uuid.UUID,
@@ -112,9 +138,7 @@ def troupe_approvals(
         QueuedApproval(
             **approval_out(a).model_dump(),
             character_name=c.name,
-            changes=[PendingChange(**ch) for ch in sheets.pending_changes(db, c, a.troupe_id)]
-            if a.status == "pending" and a.kind == "sheet_change"
-            else [],
+            discipline=discipline_out(db, a),
             reconciliation=reconciliation_out(db, a),
         )
         for a, c in rows

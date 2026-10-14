@@ -81,7 +81,6 @@ def test_joining_shares_the_sheet_with_the_troupes_staff(troupe: Troupe) -> None
             "troupe_id": troupe.id,
             "troupe_name": "Lords of the Night",
             "home": False,
-            "standing": "draft",
         }
     ]
 
@@ -127,11 +126,10 @@ def test_a_first_home_troupe_with_nothing_to_reconcile(troupe: Troupe) -> None:
     assert character["status"] == "active"
     assert character["home_troupe_id"] == troupe.id
     after = sheet(troupe.player, character_id)
-    # The first home troupe's approval is also the sheet's first approval.
-    assert [(st["troupe_id"], st["standing"], st["home"]) for st in after["standings"]] == [
-        (troupe.id, "approved", True)
-    ]
-    assert after["pending_changes"] == []
+    # Accepting the character as home freezes the sheet as accepted.
+    assert [(t["troupe_id"], t["home"]) for t in after["troupes"]] == [(troupe.id, True)]
+    brawl = next(t for t in after["traits"] if t["name"] == "Brawl")
+    assert brawl["min_rating"] == 2
     assert after["xp"]["balance"] == 27
 
 
@@ -299,8 +297,9 @@ def test_declined_requests_leave_the_character_where_it_was(troupe: Troupe) -> N
 
     character = troupe.player.client.get(f"/characters/{character_id}").json()
     assert character["status"] == "active"
-    standings = troupe.player.client.get(f"/characters/{character_id}/sheet").json()["standings"]
-    assert [st["standing"] for st in standings] == ["draft"]
+    troupes = troupe.player.client.get(f"/characters/{character_id}/sheet").json()["troupes"]
+    # Still in the troupe, as a visitor.
+    assert [(t["home"], t["waiting"]) for t in troupes] == [(False, False)]
     assert character["home_troupe_id"] is None
 
 
@@ -375,12 +374,10 @@ def test_leaving_the_home_troupe_leaves_no_home_troupe(troupe: Troupe) -> None:
     assert troupe.player.client.get(f"/characters/{character_id}").json()["home_troupe_id"] is None
 
 
-def test_after_joining_sheet_changes_go_through_the_normal_queue(troupe: Troupe) -> None:
+def test_after_joining_sheet_changes_need_no_approval(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     make_home(troupe, troupe.lead, character_id, troupe.id)
+
     buy(troupe.player, character_id, "skills", "Dodge", 1)
 
-    request = troupe.player.client.post(f"/characters/{character_id}/approval", json={})
-
-    assert request.status_code == 201
-    assert queue(troupe.assistant, troupe.id)[0]["changes"][0]["name"] == "Dodge"
+    assert queue(troupe.assistant, troupe.id) == []

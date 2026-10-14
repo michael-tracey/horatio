@@ -73,7 +73,7 @@ def test_buying_a_skill(troupe: Troupe) -> None:
     result = response.json()["sheet"]
     assert result["xp"]["balance"] == 27
     assert [
-        (t["name"], t["rating"], t["approved_rating"])
+        (t["name"], t["rating"], t["pending_from"])
         for t in without_starting_traits(result["traits"])
     ] == [("Brawl", 2, None)]
     history = troupe.player.client.get(f"/characters/{character_id}/xp").json()
@@ -232,62 +232,24 @@ def test_home_troupe_running_staff_award_xp(troupe: Troupe, session: Session) ->
     assert sheet(troupe.player, character_id)["xp"]["balance"] == 35
 
 
-# --- approval ----------------------------------------------------------------------
+# --- the approvals queue -----------------------------------------------------------
 
 
-def test_a_character_in_no_troupe_has_nobody_to_ask(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-    buy(troupe.player, character_id, "skills", "Brawl", 1)
-
-    assert (
-        troupe.player.client.post(f"/characters/{character_id}/approval", json={}).status_code
-        == 409
-    )
-
-
-def test_approving_a_sheet_change(troupe: Troupe, session: Session) -> None:
+def test_the_queue_is_for_storytellers_and_assistants(troupe: Troupe, session: Session) -> None:
     character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
-    buy(troupe.player, character_id, "skills", "Brawl", 2)
+    buy(troupe.player, character_id, "disciplines", "Celerity", 1)
 
-    request = troupe.player.client.post(
-        f"/characters/{character_id}/approval", json={"note": "Trained with the Sheriff"}
-    )
-    assert request.status_code == 201, request.text
-
-    # Locked while waiting.
-    assert buy(troupe.player, character_id, "skills", "Dodge", 1).status_code == 409
-    # The queue, which narrators cannot see.
     assert troupe.narrator.client.get(f"/troupes/{troupe.id}/approvals").status_code == 403
     queue = troupe.assistant.client.get(f"/troupes/{troupe.id}/approvals").json()
-    assert [(q["character_name"], q["player_note"]) for q in queue] == [
-        ("Agnes", "Trained with the Sheriff")
-    ]
-    assert [(c["name"], c["approved_rating"], c["rating"]) for c in queue[0]["changes"]] == [
-        ("Brawl", None, 2)
-    ]
-
-    decided = troupe.assistant.client.post(
-        f"/approvals/{queue[0]['id']}/approve", json={"note": "Welcome"}
-    )
-
-    assert decided.json()["status"] == "approved"
-    after = sheet(troupe.player, character_id)
-    assert after["pending_changes"] == []
-    assert after["pending_approvals"] == []
-    assert without_starting_traits(after["traits"])[0]["approved_rating"] == 2
-    # Approved dots cannot be taken back by the player.
-    assert buy(troupe.player, character_id, "skills", "Brawl", 1).status_code == 409
-    assert buy(troupe.player, character_id, "skills", "Brawl", 3).status_code == 200
+    assert [(q["character_name"], q["kind"]) for q in queue] == [("Agnes", "discipline")]
 
 
-def test_declining_unlocks_the_sheet(troupe: Troupe, session: Session) -> None:
+def test_a_decision_is_final_and_keeps_its_note(troupe: Troupe, session: Session) -> None:
     character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
-    buy(troupe.player, character_id, "skills", "Brawl", 2)
-    approval_id = troupe.player.client.post(f"/characters/{character_id}/approval", json={}).json()[
-        0
-    ]["id"]
+    buy(troupe.player, character_id, "disciplines", "Celerity", 1)
+    approval_id = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()[0]["id"]
 
     decided = troupe.storyteller.client.post(
         f"/approvals/{approval_id}/decline", json={"note": "Not in one month"}
@@ -295,32 +257,8 @@ def test_declining_unlocks_the_sheet(troupe: Troupe, session: Session) -> None:
 
     assert decided.json()["status"] == "declined"
     assert decided.json()["staff_note"] == "Not in one month"
-    assert buy(troupe.player, character_id, "skills", "Brawl", 1).status_code == 200
-    assert (
-        troupe.storyteller.client.post(f"/approvals/{approval_id}/approve", json={}).status_code
-        == 409
-    )
-
-
-def test_withdrawing_a_request(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe, troupe.player)
-    make_home_troupe_member(session, troupe, character_id)
-    buy(troupe.player, character_id, "skills", "Brawl", 2)
-    troupe.player.client.post(f"/characters/{character_id}/approval", json={})
-
-    assert troupe.player.client.delete(f"/characters/{character_id}/approval").status_code == 204
-    assert troupe.assistant.client.get(f"/troupes/{troupe.id}/approvals").json() == []
-    assert buy(troupe.player, character_id, "skills", "Brawl", 1).status_code == 200
-
-
-def test_nothing_to_approve(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe, troupe.player)
-    make_home_troupe_member(session, troupe, character_id)
-
-    assert (
-        troupe.player.client.post(f"/characters/{character_id}/approval", json={}).status_code
-        == 409
-    )
+    again = troupe.storyteller.client.post(f"/approvals/{approval_id}/approve", json={})
+    assert again.status_code == 409
 
 
 # --- the catalogue -------------------------------------------------------------------

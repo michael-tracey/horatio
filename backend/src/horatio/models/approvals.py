@@ -8,23 +8,27 @@ from horatio.models.base import Record
 
 
 class Approval(Record):
-    """A change a player has asked for, waiting on (or decided by) a troupe's
-    storytellers or assistant storytellers. One queue for every kind."""
+    """Something waiting on (or decided by) a troupe's storytellers or assistant
+    storytellers: a home troupe change, or a discipline dot bought in the home
+    troupe. One queue for every kind. `sheet_change` is kept only for history."""
 
     __tablename__ = "approvals"
     __table_args__ = (
-        CheckConstraint("kind in ('sheet_change', 'home_troupe_change')", name="kind"),
+        CheckConstraint(
+            "kind in ('sheet_change', 'home_troupe_change', 'discipline')", name="kind"
+        ),
         CheckConstraint(
             "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
         ),
-        # A character has at most one request of each kind waiting in each troupe.
+        # A character has at most one home troupe request waiting in each troupe;
+        # discipline dots each wait on their own.
         Index(
             "uq_approvals_one_pending",
             "character_id",
             "troupe_id",
             "kind",
             unique=True,
-            postgresql_where=text("status = 'pending'"),
+            postgresql_where=text("status = 'pending' and kind <> 'discipline'"),
         ),
     )
 
@@ -38,6 +42,20 @@ class Approval(Record):
     decided_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     staff_note: Mapped[str] = mapped_column(default="", server_default="")
+
+
+class DisciplinePurchase(Record):
+    """The dots of a discipline bought in the home troupe, held until its staff decide.
+    The XP is spent when bought and refunded if they decline."""
+
+    __tablename__ = "discipline_purchases"
+
+    approval_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("approvals.id"), unique=True)
+    trait_definition_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_definitions.id"))
+    detail: Mapped[str] = mapped_column(default="", server_default="")
+    from_rating: Mapped[int]
+    to_rating: Mapped[int]
+    cost: Mapped[int]
 
 
 class HomeTroupeChange(Record):

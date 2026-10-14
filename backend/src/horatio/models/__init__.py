@@ -1,6 +1,11 @@
 """All models, imported so that `Base.metadata` knows every table."""
 
-from horatio.models.approvals import Approval, HomeTroupeChange, ReconciliationItem
+from horatio.models.approvals import (
+    Approval,
+    DisciplinePurchase,
+    HomeTroupeChange,
+    ReconciliationItem,
+)
 from horatio.models.audit import AuditEvent
 from horatio.models.base import Base
 from horatio.models.characters import Character, CharacterTrait, SheetVersion, XpEntry
@@ -41,6 +46,7 @@ __all__ = [
     "Answer",
     "CycleParticipant",
     "Delivery",
+    "DisciplinePurchase",
     "DowntimeCycle",
     "RandomTable",
     "Response",

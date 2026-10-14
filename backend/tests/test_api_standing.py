@@ -1,5 +1,6 @@
-"""Each troupe decides whether a character is a draft or approved there; characters
-in no troupe can be deleted; and troupes keep a log for their storytellers."""
+"""A character's home troupe holds its sheet; other troupes it only visits. Edits are
+never reviewed, except discipline dots bought once the character has a home troupe.
+Characters in no troupe can be deleted, and troupes keep a log for their storytellers."""
 
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -25,9 +26,14 @@ def join(person: Person, character_id: str, troupe_id: str) -> Any:
     return response.json()
 
 
-def standings(person: Person, character_id: str) -> dict[str, str]:
-    sheet = person.client.get(f"/characters/{character_id}/sheet").json()
-    return {s["troupe_name"]: s["standing"] for s in sheet["standings"]}
+def make_home(troupe: Troupe, character_id: str) -> None:
+    """Ask for `troupe` as home, and have its lead accept."""
+    request = troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    assert request.status_code == 201, request.text
+    approved = troupe.lead.client.post(f"/approvals/{request.json()['id']}/approve", json={})
+    assert approved.status_code == 200, approved.text
 
 
 def second_troupe(troupe: Troupe) -> str:
@@ -38,126 +44,215 @@ def second_troupe(troupe: Troupe) -> str:
     return response.json()["id"]
 
 
-def ask(person: Person, character_id: str) -> list[dict[str, Any]]:
-    response = person.client.post(f"/characters/{character_id}/approval", json={})
-    assert response.status_code == 201, response.text
-    return response.json()
+def sheet(person: Person, character_id: str) -> Any:
+    return person.client.get(f"/characters/{character_id}/sheet").json()
 
 
-def buy(person: Person, character_id: str, name: str, rating: int) -> Any:
+def buy(person: Person, character_id: str, name: str, rating: int, category: str = "skills") -> Any:
     return person.client.put(
         f"/characters/{character_id}/traits",
-        json={"category": "skills", "name": name, "rating": rating},
+        json={"category": category, "name": name, "rating": rating},
     )
+
+
+def balance(person: Person, character_id: str) -> int:
+    return sheet(person, character_id)["xp"]["balance"]
+
+
+def queue(person: Person, troupe_id: str, state: str = "pending") -> Any:
+    return person.client.get(f"/troupes/{troupe_id}/approvals", params={"state": state}).json()
 
 
 def log(person: Person, troupe_id: str) -> list[str]:
     return [e["message"] for e in person.client.get(f"/troupes/{troupe_id}/log").json()]
 
 
-# --- standing ----------------------------------------------------------------------------------
+# --- home troupe and visits ---------------------------------------------------------------------
 
 
-def test_joining_makes_a_character_a_draft_in_that_troupe(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-
-    assert join(troupe.player, character_id, troupe.id)["standing"] == "draft"
-    assert standings(troupe.player, character_id) == {"Lords of the Night": "draft"}
-
-
-def test_each_troupe_approves_for_itself(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-    other = second_troupe(troupe)
-    join(troupe.player, character_id, troupe.id)
-    join(troupe.player, character_id, other)
-
-    requests = ask(troupe.player, character_id)
-    assert sorted(r["troupe_id"] for r in requests) == sorted([troupe.id, other])
-
-    first = next(r for r in requests if r["troupe_id"] == troupe.id)
-    troupe.assistant.client.post(f"/approvals/{first['id']}/approve", json={})
-
-    assert standings(troupe.player, character_id) == {
-        "Lords of the Night": "approved",
-        "Second City": "draft",
-    }
-    # Still locked: Second City has not decided.
-    assert buy(troupe.player, character_id, "Brawl", 1).status_code == 409
-
-
-def test_a_change_goes_to_every_troupe_and_each_keeps_its_own_approved_sheet(
+def test_joining_a_troupe_is_a_visit_until_it_accepts_the_character_as_home(
     troupe: Troupe,
 ) -> None:
     character_id = new_character(troupe, troupe.player)
-    other = second_troupe(troupe)
     join(troupe.player, character_id, troupe.id)
-    join(troupe.player, character_id, other)
-    for request in ask(troupe.player, character_id):
-        approver = troupe.assistant if request["troupe_id"] == troupe.id else troupe.storyteller
-        approver.client.post(f"/approvals/{request['id']}/approve", json={})
 
-    buy(troupe.player, character_id, "Brawl", 2)
-    requests = ask(troupe.player, character_id)
-    first = next(r for r in requests if r["troupe_id"] == troupe.id)
-    troupe.assistant.client.post(f"/approvals/{first['id']}/approve", json={})
+    visiting = sheet(troupe.player, character_id)
+    assert visiting["home_troupe_id"] is None
+    assert [(t["troupe_name"], t["home"]) for t in visiting["troupes"]] == [
+        ("Lords of the Night", False)
+    ]
 
-    def brawl_as_seen_by(troupe_id: str) -> Any:
-        sheet = troupe.player.client.get(
-            f"/characters/{character_id}/sheet", params={"troupe_id": troupe_id}
-        ).json()
-        return next(t["approved_rating"] for t in sheet["traits"] if t["name"] == "Brawl")
+    make_home(troupe, character_id)
 
-    assert brawl_as_seen_by(troupe.id) == 2
-    assert brawl_as_seen_by(other) is None
-    # Second City still sees the change as waiting.
-    queue = troupe.storyteller.client.get(f"/troupes/{other}/approvals").json()
-    assert [(c["name"], c["rating"]) for c in queue[0]["changes"]] == [("Brawl", 2)]
+    home = sheet(troupe.player, character_id)
+    assert home["home_troupe_id"] == troupe.id
+    assert [(t["troupe_name"], t["home"]) for t in home["troupes"]] == [
+        ("Lords of the Night", True)
+    ]
+    assert "lead accepted Agnes; this is its home." in log(troupe.lead, troupe.id)
 
 
-def test_dots_approved_anywhere_cannot_be_taken_back(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-    other = second_troupe(troupe)
-    join(troupe.player, character_id, troupe.id)
-    join(troupe.player, character_id, other)
-    buy(troupe.player, character_id, "Brawl", 2)
-    for request in ask(troupe.player, character_id):
-        if request["troupe_id"] == troupe.id:
-            troupe.assistant.client.post(f"/approvals/{request['id']}/approve", json={})
-        else:
-            troupe.storyteller.client.post(f"/approvals/{request['id']}/decline", json={})
-
-    assert buy(troupe.player, character_id, "Brawl", 1).status_code == 409
-
-
-def test_staff_send_a_character_back_to_draft_with_a_reason(troupe: Troupe) -> None:
+def test_there_is_no_asking_for_a_sheet_to_be_approved(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     join(troupe.player, character_id, troupe.id)
-    request = ask(troupe.player, character_id)[0]
-    troupe.assistant.client.post(f"/approvals/{request['id']}/approve", json={})
-    path = f"/troupes/{troupe.id}/characters/{character_id}/return-to-draft"
 
-    assert troupe.narrator.client.post(path, json={"reason": "x"}).status_code == 403
-    response = troupe.assistant.client.post(path, json={"reason": "New clan rules"})
+    asked = troupe.player.client.post(f"/characters/{character_id}/approval", json={})
 
-    assert response.json()["standing"] == "draft"
-    sheet = troupe.player.client.get(f"/characters/{character_id}/sheet").json()
-    assert sheet["standings"][0]["note"] == "New clan rules"
-    assert "assistant sent Agnes back to draft: New clan rules" in log(troupe.lead, troupe.id)
+    assert asked.status_code in (404, 405)
 
 
-def test_only_characters_approved_in_their_home_troupe_take_part_in_downtimes(
-    troupe: Troupe,
-) -> None:
-    approved = new_character(troupe, troupe.player, "Approved")
-    sent_back = new_character(troupe, troupe.player, "Sent Back")
-    for character_id in (approved, sent_back):
-        request = troupe.player.client.post(
-            f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
-        ).json()
-        troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
-    troupe.lead.client.post(
-        f"/troupes/{troupe.id}/characters/{sent_back}/return-to-draft", json={"reason": "Redo"}
+def test_edits_go_through_at_once_in_or_out_of_a_troupe(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    assert buy(troupe.player, character_id, "Brawl", 1).status_code == 200
+    make_home(troupe, character_id)
+
+    assert buy(troupe.player, character_id, "Dodge", 1).status_code == 200
+    assert buy(troupe.player, character_id, "Dodge", 2).status_code == 200
+
+    assert queue(troupe.lead, troupe.id) == []
+    assert sheet(troupe.player, character_id)["pending_approvals"] == []
+
+
+def test_dots_the_home_troupe_accepted_cannot_be_taken_back(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    buy(troupe.player, character_id, "Brawl", 2)
+    make_home(troupe, character_id)
+    buy(troupe.player, character_id, "Dodge", 1)
+
+    refused = buy(troupe.player, character_id, "Brawl", 1)
+    assert refused.status_code == 409
+    assert "accepted at 2" in refused.json()["detail"]
+    # Bought since: the player can still undo it.
+    assert buy(troupe.player, character_id, "Dodge", 0).status_code == 200
+    brawl = next(t for t in sheet(troupe.player, character_id)["traits"] if t["name"] == "Brawl")
+    assert brawl["min_rating"] == 2
+
+
+def test_only_the_home_troupe_awards_xp(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    visited = troupe.custodian.client.post(
+        "/troupes", json={"name": "Visited", "lead_email": troupe.stranger.email}
+    ).json()["id"]
+    join(troupe.player, character_id, visited)
+    make_home(troupe, character_id)
+    award = {"amount": 2, "reason": "Game"}
+    path = f"/characters/{character_id}/xp"
+
+    # The visited troupe's lead sees the sheet, but awards nothing.
+    assert troupe.stranger.client.get(f"/characters/{character_id}/sheet").status_code == 200
+    assert troupe.stranger.client.post(path, json=award).status_code == 403
+    assert troupe.assistant.client.post(path, json=award).status_code == 201
+
+
+# --- disciplines --------------------------------------------------------------------------------
+
+
+def test_discipline_dots_wait_on_the_home_troupe_with_the_xp_held(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    make_home(troupe, character_id)
+    before = balance(troupe.player, character_id)
+
+    bought = buy(troupe.player, character_id, "Celerity", 1, "disciplines")
+
+    assert bought.status_code == 200, bought.text
+    cost = bought.json()["cost"]
+    assert balance(troupe.player, character_id) == before - cost
+    held = sheet(troupe.player, character_id)
+    celerity = next(t for t in held["traits"] if t["name"] == "Celerity")
+    assert (celerity["rating"], celerity["pending_from"]) == (1, 0)
+    assert [(d["name"], d["to_rating"], d["cost"]) for d in held["pending_disciplines"]] == [
+        ("Celerity", 1, cost)
+    ]
+    waiting = queue(troupe.assistant, troupe.id)
+    assert [
+        (a["kind"], a["discipline"]["name"], a["discipline"]["to_rating"]) for a in waiting
+    ] == [("discipline", "Celerity", 1)]
+
+    troupe.assistant.client.post(f"/approvals/{waiting[0]['id']}/approve", json={})
+
+    approved = sheet(troupe.player, character_id)
+    celerity = next(t for t in approved["traits"] if t["name"] == "Celerity")
+    assert (celerity["pending_from"], celerity["min_rating"]) == (None, 1)
+    assert approved["pending_disciplines"] == []
+    assert balance(troupe.player, character_id) == before - cost
+    assert "assistant approved Agnes's Celerity 1." in log(troupe.lead, troupe.id)
+
+
+def test_declining_a_discipline_takes_the_dots_back_and_refunds(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    make_home(troupe, character_id)
+    before = balance(troupe.player, character_id)
+    buy(troupe.player, character_id, "Celerity", 1, "disciplines")
+    request = queue(troupe.lead, troupe.id)[0]
+
+    troupe.lead.client.post(f"/approvals/{request['id']}/decline", json={"note": "No teacher"})
+
+    after = sheet(troupe.player, character_id)
+    assert "Celerity" not in [t["name"] for t in after["traits"]]
+    assert after["xp"]["balance"] == before
+    assert "lead declined Agnes's Celerity 1; refunded." in log(troupe.lead, troupe.id)
+
+
+def test_the_player_can_withdraw_a_waiting_discipline(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    make_home(troupe, character_id)
+    before = balance(troupe.player, character_id)
+    buy(troupe.player, character_id, "Celerity", 1, "disciplines")
+    waiting = sheet(troupe.player, character_id)["pending_disciplines"][0]["approval_id"]
+
+    path = f"/characters/{character_id}/disciplines/{waiting}"
+    assert troupe.lead.client.delete(path).status_code == 403
+    assert troupe.player.client.delete(path).status_code == 204
+
+    assert balance(troupe.player, character_id) == before
+    assert queue(troupe.lead, troupe.id) == []
+
+
+def test_a_waiting_discipline_cannot_change_and_blocks_a_move(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    other = second_troupe(troupe)
+    make_home(troupe, character_id)
+    buy(troupe.player, character_id, "Celerity", 1, "disciplines")
+
+    assert buy(troupe.player, character_id, "Celerity", 2, "disciplines").status_code == 409
+    assert buy(troupe.player, character_id, "Celerity", 0, "disciplines").status_code == 409
+    moving = troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": other}
     )
+    assert moving.status_code == 409
+    # Other disciplines can still be bought, each waiting on its own.
+    assert buy(troupe.player, character_id, "Fortitude", 1, "disciplines").status_code == 200
+    assert len(queue(troupe.lead, troupe.id)) == 2
+
+
+def test_disciplines_before_a_home_troupe_need_no_approval(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+
+    buy(troupe.player, character_id, "Celerity", 1, "disciplines")
+
+    assert sheet(troupe.player, character_id)["pending_disciplines"] == []
+
+
+def test_leaving_the_home_troupe_refunds_waiting_disciplines(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    make_home(troupe, character_id)
+    before = balance(troupe.player, character_id)
+    buy(troupe.player, character_id, "Celerity", 1, "disciplines")
+
+    troupe.player.client.delete(f"/characters/{character_id}/troupes/{troupe.id}")
+
+    assert balance(troupe.player, character_id) == before
+    assert sheet(troupe.player, character_id)["pending_disciplines"] == []
+
+
+# --- downtimes and the roster -----------------------------------------------------------------
+
+
+def test_characters_whose_home_this_is_take_part_in_downtimes(troupe: Troupe) -> None:
+    home = new_character(troupe, troupe.player, "At Home")
+    visitor = new_character(troupe, troupe.player, "Visitor")
+    make_home(troupe, home)
+    join(troupe.player, visitor, troupe.id)
     now = datetime.now(UTC)
     cycle = troupe.lead.client.post(
         f"/troupes/{troupe.id}/cycles",
@@ -171,25 +266,21 @@ def test_only_characters_approved_in_their_home_troupe_take_part_in_downtimes(
     troupe.lead.client.post(f"/cycles/{cycle['id']}/open")
 
     participants = troupe.lead.client.get(f"/cycles/{cycle['id']}/participants").json()
-    assert [p["character_name"] for p in participants] == ["Approved"]
+    assert [p["character_name"] for p in participants] == ["At Home"]
 
 
-def test_the_roster_lists_drafts_first(troupe: Troupe) -> None:
-    approved = new_character(troupe, troupe.player, "Agnes")
-    new_character(troupe, troupe.player, "Bertrand")
-    for character_id in (approved,):
-        join(troupe.player, character_id, troupe.id)
-        request = ask(troupe.player, character_id)[0]
-        troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
-    draft = troupe.player.client.get("/characters").json()
-    bertrand = next(c["id"] for c in draft if c["name"] == "Bertrand")
-    join(troupe.player, bertrand, troupe.id)
+def test_the_roster_lists_home_characters_first(troupe: Troupe) -> None:
+    home = new_character(troupe, troupe.player, "Bertrand")
+    visitor = new_character(troupe, troupe.player, "Agnes")
+    make_home(troupe, home)
+    join(troupe.player, visitor, troupe.id)
+    buy(troupe.player, home, "Celerity", 1, "disciplines")
 
     roster = troupe.assistant.client.get(f"/troupes/{troupe.id}/characters").json()
 
-    assert [(r["character_name"], r["standing"], r["player_name"]) for r in roster] == [
-        ("Bertrand", "draft", "player"),
-        ("Agnes", "approved", "player"),
+    assert [(r["character_name"], r["home"], r["disciplines_waiting"]) for r in roster] == [
+        ("Bertrand", True, 1),
+        ("Agnes", False, 0),
     ]
     assert troupe.narrator.client.get(f"/troupes/{troupe.id}/characters").status_code == 403
 
@@ -209,8 +300,9 @@ def test_a_character_in_a_troupe_cannot_be_deleted(troupe: Troupe) -> None:
 
 def test_deleting_a_character_after_it_leaves_every_troupe(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
-    join(troupe.player, character_id, troupe.id)
-    request = ask(troupe.player, character_id)[0]
+    make_home(troupe, character_id)
+    buy(troupe.player, character_id, "Celerity", 1, "disciplines")
+    request = queue(troupe.lead, troupe.id)[0]
     troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
     troupe.player.client.delete(f"/characters/{character_id}/troupes/{troupe.id}")
 
@@ -243,14 +335,15 @@ def test_the_log_is_for_storytellers_and_assistants(troupe: Troupe) -> None:
 
 def test_the_log_reads_newest_first(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
-    join(troupe.player, character_id, troupe.id)
-    ask(troupe.player, character_id)
+    troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
+    )
 
     messages = log(troupe.lead, troupe.id)
 
     assert messages[:2] == [
-        "player asked for Agnes to be approved.",
-        "Agnes joined the troupe as a draft.",
+        "player asked to make this Agnes's home.",
+        "Agnes joined the troupe.",
     ]
     # Staff changes from setting the troupe up are there too.
     assert "lead made narrator narrator." in messages
@@ -259,36 +352,32 @@ def test_the_log_reads_newest_first(troupe: Troupe) -> None:
 # --- printing ----------------------------------------------------------------------------------
 
 
-def test_printing_shows_the_troupes_approved_sheet(troupe: Troupe) -> None:
+def test_printing_shows_the_sheet_as_it_stands_with_waiting_disciplines_marked(
+    troupe: Troupe,
+) -> None:
     character_id = new_character(troupe, troupe.player)
-    join(troupe.player, character_id, troupe.id)
     buy(troupe.player, character_id, "Brawl", 2)
-    request = ask(troupe.player, character_id)[0]
-    troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
-    buy(troupe.player, character_id, "Dodge", 1)  # not approved yet
+    make_home(troupe, character_id)
+    buy(troupe.player, character_id, "Dodge", 1)
+    buy(troupe.player, character_id, "Celerity", 1, "disciplines")
 
     printed = troupe.player.client.get(f"/characters/{character_id}/print").json()
-    current = troupe.player.client.get(
-        f"/characters/{character_id}/print", params={"current": True}
-    ).json()
 
-    assert (printed["approved"], printed["version"], printed["troupe_name"]) == (
+    assert (printed["home"], printed["troupe_name"], printed["accepted_by"]) == (
         True,
-        1,
         "Lords of the Night",
+        "lead",
     )
-    assert printed["approved_by"] == "lead"
-    names = [t["name"] for t in printed["traits"]]
-    assert "Brawl" in names and "Dodge" not in names
-    assert next(t for t in printed["traits"] if t["name"] == "Brawl")["attribute"] == "Physical"
-    assert current["approved"] is False
-    assert "Dodge" in [t["name"] for t in current["traits"]]
+    traits = {t["name"]: t for t in printed["traits"]}
+    assert {"Brawl", "Dodge", "Celerity"} <= traits.keys()
+    assert traits["Brawl"]["attribute"] == "Physical"
+    assert (traits["Celerity"]["pending_from"], traits["Dodge"]["pending_from"]) == (0, None)
 
 
-def test_a_vault_character_prints_as_not_approved(troupe: Troupe) -> None:
+def test_a_vault_character_prints_with_no_troupe(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
 
     printed = troupe.player.client.get(f"/characters/{character_id}/print").json()
 
-    assert (printed["approved"], printed["troupe_name"]) == (False, None)
+    assert (printed["home"], printed["troupe_name"]) == (False, None)
     assert troupe.narrator.client.get(f"/characters/{character_id}/print").status_code == 404

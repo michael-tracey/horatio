@@ -56,8 +56,8 @@ def test_running_staff_make_npcs_for_their_troupe(troupe: Troupe) -> None:
         True,
     )
     roster = troupe.assistant.client.get(f"/troupes/{troupe.id}/characters").json()
-    assert [(r["character_name"], r["kind"], r["standing"], r["player_name"]) for r in roster] == [
-        ("Prince Vasquez", "npc", "approved", "NPC")
+    assert [(r["character_name"], r["kind"], r["home"], r["player_name"]) for r in roster] == [
+        ("Prince Vasquez", "npc", True, "NPC")
     ]
     # Not in the maker's own vault.
     assert troupe.storyteller.client.get("/characters").json() == []
@@ -105,7 +105,10 @@ def test_npcs_spend_no_xp_need_no_approval_and_stay_home(troupe: Troupe) -> None
         f"/characters/{npc}/traits", json={"category": "skills", "name": "Brawl", "rating": 1}
     )
     assert bought.status_code == 409
-    assert client.post(f"/characters/{npc}/approval", json={}).status_code == 409
+    assert client.post(f"/characters/{npc}/home-troupe", json={"troupe_id": other}).status_code in (
+        404,
+        409,
+    )
     assert client.post(f"/characters/{npc}/troupes", json={"troupe_id": other}).status_code == 409
     assert client.delete(f"/characters/{npc}/troupes/{troupe.id}").status_code == 409
 
@@ -186,7 +189,7 @@ def test_titles_are_given_in_one_troupe_and_mean_nothing_elsewhere(troupe: Troup
 
     assert given.json() == {"titles": ["Harpy", "Primogen"]}
     sheet = troupe.player.client.get(f"/characters/{character_id}/sheet").json()
-    assert sheet["standings"][0]["titles"] == ["Harpy", "Primogen"]
+    assert sheet["troupes"][0]["titles"] == ["Harpy", "Primogen"]
     roster = troupe.lead.client.get(f"/troupes/{troupe.id}/characters").json()
     assert roster[0]["titles"] == ["Harpy", "Primogen"]
     printed = troupe.player.client.get(f"/characters/{character_id}/print").json()

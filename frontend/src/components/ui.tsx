@@ -149,12 +149,13 @@ export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolea
 }
 
 /** Dots for a rating, filled to `value`, e.g. ●●●○○. */
-export function Dots({ value, approved }: { value: number; approved?: number | null }) {
+/** A rating as dots. Dots from `pendingFrom` up are still waiting for approval, in gold. */
+export function Dots({ value, pendingFrom }: { value: number; pendingFrom?: number | null }) {
   const shown = Math.max(value, 5);
   return (
     <span aria-label={`${value} dots`} className="font-mono tracking-tight">
       {Array.from({ length: shown }, (_, i) => (
-        <span key={i} className={i < value ? (approved != null && i >= approved ? "text-gold" : "text-blood-bright") : "text-ash"}>
+        <span key={i} className={i < value ? (pendingFrom != null && i >= pendingFrom ? "text-gold" : "text-blood-bright") : "text-ash"}>
           ●
         </span>
       ))}

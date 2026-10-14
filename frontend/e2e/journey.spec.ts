@@ -114,18 +114,31 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
   await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
 
-  // The lead approves it.
+  // The lead accepts it.
   await lead.page.getByRole("link", { name: "Approvals" }).click();
-  await expect(lead.page.getByText("joining as home troupe")).toBeVisible();
+  await expect(lead.page.getByText("asking to make this home")).toBeVisible();
   await lead.page.screenshot(shots("approvals"));
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
+
+  // Once accepted, a discipline dot waits on the home troupe, with the XP held.
+  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  await p.getByRole("button", { name: "Raise Celerity" }).click();
+  await expect(p.getByText("awaiting approval").first()).toBeVisible();
+  await lead.page.reload();
+  await expect(lead.page.getByText(/Celerity 2 → 3, for 9 XP/)).toBeVisible();
+  await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
+  await p.reload();
+  await expect(p.getByText("awaiting approval")).toHaveCount(0);
+
   // The troupe's characters and log show what happened.
   await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
-  await expect(lead.page.getByText("approved", { exact: true })).toBeVisible();
+  await expect(lead.page.getByText("home", { exact: true })).toBeVisible();
   await lead.page.getByRole("link", { name: "Log", exact: true }).click();
-  await expect(lead.page.getByText("lead approved Agnes.")).toBeVisible();
-  await expect(lead.page.getByText("Agnes joined the troupe as a draft.")).toBeVisible();
+  await expect(lead.page.getByText("lead accepted Agnes; this is its home.")).toBeVisible();
+  await expect(lead.page.getByText("Agnes joined the troupe.")).toBeVisible();
+  await expect(lead.page.getByText(/lead approved Agnes's Celerity/)).toBeVisible();
   await lead.page.screenshot(shots("log"));
 
   // The lead runs a cycle.
@@ -167,10 +180,10 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));
 
-  // The printable sheet: the troupe's approved version, in the paper sheet's order.
+  // The printable sheet, in the paper sheet's order.
   await p.getByRole("link", { name: "Sheet", exact: true }).click();
   await p.getByRole("link", { name: "Print the sheet" }).click();
-  await expect(p.getByText(/Approved by Court of Ash/)).toBeVisible();
+  await expect(p.getByText(/Home troupe: Court of Ash/)).toBeVisible();
   await expect(p.getByText("Brawl")).toBeVisible();
   await p.screenshot(shots("print"));
   if (test.info().project.name === "desktop") {

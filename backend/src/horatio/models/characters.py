@@ -28,7 +28,7 @@ class Character(Imported, Record):
     # The splat's rule set is the one with this splat (rule_sets.splat).
     splat: Mapped[str]
     name: Mapped[str]
-    # Whether it is a draft or approved is each troupe's call (TroupeMembership.standing).
+    # active | retired. Accepted once a troupe accepts it as home (home_troupe_id).
     status: Mapped[str] = mapped_column(default="active", server_default="active")
     home_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
     # Null while the player is still placing creation picks (CONTEXT.md: Character Creation).

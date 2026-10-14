@@ -22,7 +22,7 @@ export function PrintPage() {
         api.GET("/api/characters/{character_id}/print", {
           params: {
             path: { character_id: characterId },
-            query: { troupe_id: params.get("troupe") ?? undefined, current: params.get("current") === "1" },
+            query: { troupe_id: params.get("troupe") ?? undefined },
           },
         }),
       ),
@@ -91,7 +91,10 @@ function TraitList({ traits, empty = 3 }: { traits: Trait[]; empty?: number }) {
     <ul className="text-[11px] leading-5">
       {traits.map((t) => (
         <li key={`${t.category}/${t.name}/${t.detail}`} className="flex items-baseline justify-between gap-2 border-b border-dotted border-neutral-400">
-          <span>{label(t)}</span>
+          <span>
+            {label(t)}
+            {t.pending_from !== null && <em className="ml-1 text-neutral-500">(awaiting approval from {t.pending_from})</em>}
+          </span>
           {t.rating !== null && <Dots value={t.rating} />}
         </li>
       ))}
@@ -163,11 +166,11 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
             <p className="text-[10px]">
               {sheet.kind === "npc"
                 ? `NPC of ${sheet.troupe_name}`
-                : sheet.approved
-                ? `Approved by ${sheet.troupe_name}, version ${sheet.version}`
-                : sheet.troupe_name
-                  ? `Not approved by ${sheet.troupe_name}`
-                  : "Not approved by any troupe"}
+                : sheet.home
+                  ? `Home troupe: ${sheet.troupe_name}`
+                  : sheet.troupe_name
+                    ? `Visiting ${sheet.troupe_name}`
+                    : "No home troupe yet"}
             </p>
           </div>
         </header>
@@ -272,7 +275,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
 
         <footer className="mt-auto border-t border-black pt-1 text-center text-[9px] text-neutral-600">
           Printed from Horatio {new Date().toLocaleDateString()}
-          {sheet.approved && sheet.approved_at && ` · approved ${new Date(sheet.approved_at).toLocaleDateString()} by ${sheet.approved_by}`}
+          {sheet.home && sheet.accepted_at && ` · accepted ${new Date(sheet.accepted_at).toLocaleDateString()} by ${sheet.accepted_by}`}
         </footer>
       </article>
     </div>

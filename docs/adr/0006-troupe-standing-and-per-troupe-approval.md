@@ -1,5 +1,7 @@
 # Each troupe approves its own copy of a character
 
+**Superseded by [ADR 0007](0007-home-troupe-holds-the-sheet.md).**
+
 Characters live in their player's vault, outside any troupe. Whether a character is a draft or approved is decided by each troupe it joins, not by the character: joining makes it a draft there, that troupe's storytellers or assistant storytellers approve it, and they can send it back to draft with a reason. Each troupe keeps its own approved sheet (its own sheet versions), so a change must be approved by every troupe the character is in, and a character can be approved in one troupe and a draft in another. We chose this over a single approved sheet signed off by the home troupe because troupes play by different house rules and want to vet characters for themselves.
 
 ## Consequences
