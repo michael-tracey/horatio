@@ -150,18 +150,18 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
 
   // Accepted, Agnes keeps only 5 of her unspent creation XP. Her storytellers award her some.
-  const agnes = p.url().split("/characters/")[1].split("/")[0];
-  const award = await lead.page.request.post(`/api/characters/${agnes}/xp`, {
-    headers: { "X-Horatio": "1" },
-    data: { amount: 10, reason: "First game" },
-  });
-  expect(award.ok()).toBeTruthy();
+  await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
+  await lead.page.getByRole("button", { name: "Award XP" }).click();
+  await lead.page.getByLabel("XP for Agnes").fill("10");
+  await lead.page.getByLabel("Reason for Agnes's XP").fill("First game");
+  await lead.page.getByRole("button", { name: "Award", exact: true }).click();
+  await expect(lead.page.getByRole("button", { name: "Award XP" })).toBeVisible();
 
   // Once accepted, a discipline dot waits on the home troupe, with the XP held.
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
   await p.getByRole("button", { name: "Raise Celerity" }).click();
   await expect(p.getByText("awaiting approval").first()).toBeVisible();
-  await lead.page.reload();
+  await lead.page.getByRole("link", { name: /Approvals/ }).click();
   await expect(lead.page.getByText(/Celerity 2 → 3, for 9 XP/)).toBeVisible();
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();

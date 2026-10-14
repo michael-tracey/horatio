@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry } from "../../api/types";
-import { Badge, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 
 /** The troupe's characters, those whose home it is first, for its storytellers and assistants. */
@@ -43,7 +43,68 @@ function RosterRow({ troupeId, entry }: { troupeId: string; entry: RosterEntry }
         )}
       </span>
       <TitleEditor troupeId={troupeId} entry={entry} />
+      {entry.home && entry.kind === "pc" && <AwardXp entry={entry} />}
     </li>
+  );
+}
+
+/** Experience for a character whose home troupe this is: amount and reason, as the XP history shows them. */
+function AwardXp({ entry }: { entry: RosterEntry }) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(3);
+  const [reason, setReason] = useState("");
+  const award = useAction(async () => {
+    await unwrap(
+      api.POST("/api/characters/{character_id}/xp", {
+        params: { path: { character_id: entry.character_id } },
+        body: { amount, reason },
+      }),
+    );
+    setOpen(false);
+    setReason("");
+  });
+  if (!open) {
+    return (
+      <div>
+        <Button variant="ghost" onClick={() => setOpen(true)}>
+          Award XP
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <form
+      className="flex flex-wrap items-end gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        award.mutate(undefined);
+      }}
+    >
+      <Input
+        aria-label={`XP for ${entry.character_name}`}
+        type="number"
+        min={1}
+        required
+        value={amount}
+        onChange={(e) => setAmount(Number(e.target.value))}
+        className="w-20"
+      />
+      <Input
+        aria-label={`Reason for ${entry.character_name}'s XP`}
+        placeholder="Reason, such as a game"
+        required
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        className="min-w-40 flex-1"
+      />
+      <Button type="submit" disabled={award.isPending}>
+        Award
+      </Button>
+      <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+        Cancel
+      </Button>
+      <ErrorText error={award.error} />
+    </form>
   );
 }
 
