@@ -15,6 +15,10 @@ _Avoid_: User (for the person in the game), member
 The top-level group: it runs games, has its own staff and house rules, and characters join it. No group sits above a troupe.
 _Avoid_: Game, chapter, chronicle, organisation
 
+**Archived Troupe**:
+A troupe its lead storyteller has deleted: closed to all use, but kept with its full history. Troupes are never truly deleted.
+_Avoid_: Deleted troupe, closed troupe
+
 **Custodian**:
 The site administrator, above all troupes, who appoints lead storytellers and manages the system itself.
 _Avoid_: Admin, superuser, site owner
@@ -45,6 +49,10 @@ _Avoid_: Helper, volunteer
 A persona a player plays, belonging to exactly one splat. It belongs to its player, who builds it outside any troupe and then adds it to troupes; a character is never deleted.
 _Avoid_: Sheet (that is the character's record, not the character), PC
 
+**Retired Character**:
+A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history.
+_Avoid_: Deleted, dead, inactive
+
 **Splat**:
 The kind of supernatural a character is, such as Vampire, Werewolf or Changeling.
 _Avoid_: Venue, creature type, game line
@@ -58,6 +66,10 @@ _Avoid_: Stat, ability
 **Rule Set**:
 The generic rules for a splat that the system ships with, including what each trait costs.
 _Avoid_: Core rules, ruleset (one word)
+
+**Trait Description**:
+The flavour text shown for a trait when a player is choosing it.
+_Avoid_: Blurb, help text
 
 **House Rule**:
 A troupe's change to one value in a rule set, such as the cost of a merit or skill, or an allowance rule.
@@ -74,12 +86,28 @@ The character's sheet as last approved by a storyteller or assistant storyteller
 _Avoid_: Current sheet, live sheet
 
 **Reconciliation**:
-Finding and settling the differences between a character's purchases and the troupe rules of the home troupe it is joining.
+Finding and settling, one by one, the differences between a character's purchases and the troupe rules of the home troupe it is joining.
 _Avoid_: Conversion, re-costing, audit
 
 **Purchase**:
 A trait bought for a character, recorded with the cost paid at the time; only reconciliation can change it, never a later rule change.
 _Avoid_: Spend, buy
+
+**XP Entry**:
+One line in a character's XP history: an award of XP, or a purchase.
+_Avoid_: Experience notation, XP log row
+
+**Long Text**:
+A piece of free-form writing attached to a character, such as its background or history.
+_Avoid_: Notes, bio, extended text
+
+**Portrait**:
+The picture shown for a character or troupe.
+_Avoid_: Avatar, image, photo
+
+**Printable Sheet**:
+The layout of a character's approved sheet for printing and bringing to a game.
+_Avoid_: PDF, printout, character card
 
 **Approval**:
 A storyteller's or assistant storyteller's acceptance of a change a player has asked for.
@@ -90,7 +118,7 @@ The one troupe whose downtime cycles a character takes part in, chosen from the 
 _Avoid_: Main troupe, primary troupe
 
 **Home Troupe Change**:
-A player's request to move a character's home troupe, decided by the storytellers or assistant storytellers of the new troupe and taking effect from that troupe's next cycle.
+A player's request to give a character a home troupe or move it to a new one. The player proposes how each reconciliation difference is settled, and the new troupe's storytellers or assistant storytellers confirm or change each one when they decide; it takes effect from that troupe's next cycle.
 _Avoid_: Transfer
 
 ### Downtimes
@@ -150,6 +178,10 @@ _Avoid_: Colour, task owner, Any Staff
 **Any Narrator**:
 An assignment that any of the troupe's narrators may accept, after which it becomes theirs.
 _Avoid_: Shared pool, general tasks
+
+**Decline**:
+A narrator turning down an action assigned to them or accepted from any narrator, which sends it back to the storytellers and assistant storytellers to reassign.
+_Avoid_: Reject, unassign, give back
 
 **Delivery**:
 Sending a submission's responses to its player.
