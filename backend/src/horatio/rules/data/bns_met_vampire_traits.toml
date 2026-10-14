@@ -4748,6 +4748,7 @@ name = "Necromancy: Baleful Doll"
 [[traits]]
 category = "rituals"
 name = "Necromancy: Bastone Diabolico"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
@@ -4760,6 +4761,7 @@ name = "Necromancy: Bind Death's Sickle"
 [[traits]]
 category = "rituals"
 name = "Necromancy: Black Blood"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4780,6 +4782,7 @@ name = "Necromancy: Charon's Obol"
 [[traits]]
 category = "rituals"
 name = "Necromancy: Chill of Oblivion"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -4860,6 +4863,7 @@ name = "Necromancy: Honored Epitaph"
 [[traits]]
 category = "rituals"
 name = "Necromancy: Lethe's Waters"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -4868,18 +4872,22 @@ name = "Necromancy: Letter from Beyond"
 [[traits]]
 category = "rituals"
 name = "Necromancy: Moldering Presence"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Rise, Cerberus"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Ritual of Xipe Totec"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Scales of Maat"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4900,6 +4908,7 @@ name = "Necromancy: Smoking Mirror"
 [[traits]]
 category = "rituals"
 name = "Necromancy: Spirit Beacon"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4908,6 +4917,7 @@ name = "Necromancy: Stained Night"
 [[traits]]
 category = "rituals"
 name = "Necromancy: Strength of Rotten Flesh"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
@@ -4916,6 +4926,7 @@ name = "Necromancy: Stygian Fortress"
 [[traits]]
 category = "rituals"
 name = "Necromancy: The Servant Undying"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -4940,10 +4951,12 @@ name = "Necromancy: We Are Legion"
 [[traits]]
 category = "rituals"
 name = "Necromancy: Weight of the Tomb"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Banish Big Brother"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4960,10 +4973,12 @@ name = "Thaumaturgy: Blade of the Eternal Thirst"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Blood Contract"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Blood Mastery"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
@@ -4980,6 +4995,7 @@ name = "Thaumaturgy: Broken Eye of Anubis (Setite)"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Burning Blade"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4992,6 +5008,7 @@ name = "Thaumaturgy: Certamen (Tremere)"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Cobra's Favor"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -5008,6 +5025,7 @@ name = "Thaumaturgy: Conjoined Psyche"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Craft Bloodstone"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -5016,14 +5034,17 @@ name = "Thaumaturgy: Dead Zone"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Defense of the Sacred Haven"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Deflection of Wooden Doom"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Detect the Hidden Observer"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -5036,10 +5057,12 @@ name = "Thaumaturgy: Encrypt Missive"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Engaging the Vessel of Transference"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Eyes of the Night Hawk"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -5084,6 +5107,7 @@ name = "Thaumaturgy: Imbued Offering"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Incorporeal Passage"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -5120,10 +5144,12 @@ name = "Thaumaturgy: Milk of Set (Setite)"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Mirror Walk"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Mirror of Second Sight"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -5132,10 +5158,12 @@ name = "Thaumaturgy: Mnemosyne Crystal (Tremere)"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Paper Flesh"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Pavis of the Foul Presence"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -5172,6 +5200,7 @@ name = "Thaumaturgy: Reawaken the Dead Water (Koldun)"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Recure of the Homeland"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -5196,10 +5225,12 @@ name = "Thaumaturgy: Scent of Deception (Assamite)"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Scry"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Severed Hand"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -5208,6 +5239,7 @@ name = "Thaumaturgy: Severing Sands (Setite)"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Shaft of Belated Quiescence"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -5216,10 +5248,12 @@ name = "Thaumaturgy: Shakari's Shroud (Assamite)"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Soul of the Homunculi"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Stone of the True Form"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -5240,6 +5274,7 @@ name = "Thaumaturgy: Unerring Combustion"
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Warding Circle"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"

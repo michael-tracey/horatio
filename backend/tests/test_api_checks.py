@@ -1,5 +1,6 @@
 """Checks on real sheets: clan merits, combinations, prerequisites."""
 
+import uuid
 from collections.abc import Callable
 from typing import Any
 
@@ -7,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from horatio.models import XpEntry
 from tests.api_helpers import Person, Troupe, new_character
 
 
@@ -115,3 +117,67 @@ def test_npcs_are_built_freely_but_problems_show(troupe: Troupe) -> None:
 
     problems = troupe.storyteller.client.get(f"/characters/{npc}/sheet").json()["problems"]
     assert ("Calm Heart", "refuse") in [(p["name"], p["strength"]) for p in problems]
+
+
+def test_blood_magic_needs_training_or_the_clan(troupe: Troupe) -> None:
+    brujah = as_clan(troupe, "Brujah")
+    tremere = as_clan(troupe, "Tremere")
+
+    assert (
+        take(troupe.player, brujah, "disciplines", "Thaumaturgy: Path of Blood").status_code == 409
+    )
+    assert (
+        take(troupe.player, tremere, "disciplines", "Thaumaturgy: Path of Blood").status_code == 200
+    )
+    assert (
+        take(troupe.player, tremere, "disciplines", "Thaumaturgy: Lure of Flames").status_code
+        == 409
+    )
+    take(
+        troupe.player, tremere, "merits", "Thaumaturgic Expertise", 1, "Thaumaturgy: Lure of Flames"
+    )
+    assert (
+        take(troupe.player, tremere, "disciplines", "Thaumaturgy: Lure of Flames").status_code
+        == 200
+    )
+
+
+def test_techniques_need_their_prerequisites(troupe: Troupe) -> None:
+    character_id = as_clan(troupe, "Brujah")
+
+    refused = take(troupe.player, character_id, "techniques", "Fearful Blow")
+    assert refused.status_code == 409
+    assert refused.json()["detail"] == "Fearful Blow needs Potence 2 and Presence 2. (p. 227)"
+
+
+def test_rituals_are_bought_at_their_level_with_a_path_that_high(troupe: Troupe) -> None:
+    character_id = as_clan(troupe, "Tremere")
+    troupe.session.add(
+        XpEntry(
+            character_id=uuid.UUID(character_id),
+            kind="award",
+            amount=100,
+            reason="Test",
+            entered_by=uuid.UUID(troupe.custodian.id),
+        )
+    )
+    troupe.session.flush()
+    take(troupe.player, character_id, "disciplines", "Thaumaturgy: Path of Blood", 1)
+    level = 2  # Ritual levels come from the book; pick one level 2 ritual.
+    catalogue = troupe.player.client.get("/rules/vampire").json()["traits"]
+    ritual = next(
+        t["name"]
+        for t in catalogue
+        if t["category"] == "rituals"
+        and t["name"].startswith("Thaumaturgy: ")
+        and t["fixed_rating"] == level
+    )
+
+    assert take(troupe.player, character_id, "rituals", ritual, 1).status_code == 422
+    refused = take(troupe.player, character_id, "rituals", ritual, level)
+    assert refused.status_code == 409
+    assert "needs a path of Thaumaturgy at 2" in refused.json()["detail"]
+    take(troupe.player, character_id, "disciplines", "Thaumaturgy: Path of Blood", 2)
+    bought = take(troupe.player, character_id, "rituals", ritual, level)
+    assert bought.status_code == 200, bought.text
+    assert bought.json()["cost"] == 4

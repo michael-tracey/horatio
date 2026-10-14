@@ -72,6 +72,46 @@ BOOK_RATINGS = {
     ("merits", "Unnatural Adaptation"): 4,
 }
 
+# Ritual levels from the core book (Necromancy pp. 172-186, Thaumaturgy pp.
+# 186-211): a ritual is bought at its level, for twice that in XP.
+RITUAL_LEVELS = {
+    "Necromancy: Bastone Diabolico": 4,
+    "Necromancy: Black Blood": 2,
+    "Necromancy: Chill of Oblivion": 5,
+    "Necromancy: Lethe's Waters": 3,
+    "Necromancy: Moldering Presence": 3,
+    "Necromancy: Rise, Cerberus": 2,
+    "Necromancy: Ritual of Xipe Totec": 4,
+    "Necromancy: Scales of Maat": 2,
+    "Necromancy: Spirit Beacon": 2,
+    "Necromancy: Strength of Rotten Flesh": 4,
+    "Necromancy: The Servant Undying": 3,
+    "Necromancy: Weight of the Tomb": 5,
+    "Thaumaturgy: Banish Big Brother": 2,
+    "Thaumaturgy: Blood Contract": 5,
+    "Thaumaturgy: Blood Mastery": 1,
+    "Thaumaturgy: Burning Blade": 2,
+    "Thaumaturgy: Cobra's Favor": 5,
+    "Thaumaturgy: Craft Bloodstone": 2,
+    "Thaumaturgy: Defense of the Sacred Haven": 1,
+    "Thaumaturgy: Deflection of Wooden Doom": 1,
+    "Thaumaturgy: Detect the Hidden Observer": 3,
+    "Thaumaturgy: Engaging the Vessel of Transference": 1,
+    "Thaumaturgy: Eyes of the Night Hawk": 2,
+    "Thaumaturgy: Incorporeal Passage": 3,
+    "Thaumaturgy: Mirror Walk": 3,
+    "Thaumaturgy: Mirror of Second Sight": 3,
+    "Thaumaturgy: Paper Flesh": 5,
+    "Thaumaturgy: Pavis of the Foul Presence": 3,
+    "Thaumaturgy: Recure of the Homeland": 2,
+    "Thaumaturgy: Scry": 3,
+    "Thaumaturgy: Severed Hand": 3,
+    "Thaumaturgy: Shaft of Belated Quiescence": 3,
+    "Thaumaturgy: Soul of the Homunculi": 3,
+    "Thaumaturgy: Stone of the True Form": 5,
+    "Thaumaturgy: Warding Circle": 1,
+}
+
 # Spelling fixes to Yorick's requirement column.
 REQUIREMENTS = {"Follower of Set": "Followers of Set"}
 
@@ -164,6 +204,8 @@ def main(csv_path: str) -> None:
         properties: list[str] = []
         if "properties" in row:
             properties = [f"{k} = {json.dumps(v)}" for k, v in row["properties"].items()]
+        elif category == "rituals" and name in RITUAL_LEVELS:
+            properties.append(f"rating = {RITUAL_LEVELS[name]}")
         elif category in FIXED_RATING and row.get("value", "").strip().lstrip("-").isdigit():
             rating = BOOK_RATINGS.get((category, name), abs(int(row["value"])))
             properties.append(f"rating = {rating}")

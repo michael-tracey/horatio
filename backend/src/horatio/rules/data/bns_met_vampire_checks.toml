@@ -404,3 +404,562 @@ category = "extra_in_clan_disciplines"
 forbids = { not = { clan = ["Caitiff"] }, count = { category = "extra_in_clan_disciplines", gte = 2 } }
 message = "A merit adds one in-clan discipline."
 page = "248"
+
+# --- blood magic (pp. 112, 187, 239–240, 252–253) -----------------------------------
+
+[[checks]]
+category = "disciplines"
+name_prefix = "Thaumaturgy: "
+requires = { any_of = [
+  { in_clan = true },
+  { has_any = [
+    { category = "merits", name = "Thaumaturgic Training" },
+    { category = "merits", name = "Setite Sorcery" },
+  ] },
+] }
+message = "A path of Thaumaturgy needs Thaumaturgic Training, a merit that grants the path, or a clan that has it in-clan."
+page = "112"
+
+[[checks]]
+category = "disciplines"
+name_prefix = "Necromancy: "
+requires = { any_of = [
+  { in_clan = true },
+  { has = { category = "merits", name = "Necromantic Training" } },
+  { has = { category = "merits", name = "Bloodline: Premascine" }, self = { names = ["Necromancy: Mortis Path"] } },
+] }
+message = "A path of Necromancy needs Necromantic Training, a merit that grants the path, or a clan that has it in-clan."
+page = "112"
+
+# --- technique prerequisites (pp. 224–234) ---------------------------------------
+# Techniques from the core book; supplements add more.
+
+[[checks]]
+category = "techniques"
+name = "An Da Shealladh"
+requires = { has_all = [
+  { category = "disciplines", name = "Dementation", rating = 3 },
+  { category = "disciplines", name = "Auspex", rating = 2 },
+] }
+message = "An Da Shealladh needs Dementation 3 and Auspex 2."
+page = "225"
+
+[[checks]]
+category = "techniques"
+name = "Animal Succulence"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 2 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Animal Succulence needs Animalism 2 and Fortitude 1."
+page = "225"
+
+[[checks]]
+category = "techniques"
+name = "Animal Swarm"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 4 },
+  { category = "disciplines", name = "Celerity", rating = 2 },
+] }
+message = "Animal Swarm needs Protean 4 and Celerity 2."
+page = "225"
+
+[[checks]]
+category = "techniques"
+name = "Armor of Darkness"
+requires = { has_all = [
+  { category = "disciplines", name = "Obtenebration", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Armor of Darkness needs Obtenebration 3 and Fortitude 2."
+page = "225"
+
+[[checks]]
+category = "techniques"
+name = "Banshee's Wail"
+requires = { has_all = [
+  { category = "disciplines", name = "Melpominee", rating = 3 },
+  { category = "disciplines", name = "Dementation", rating = 4 },
+] }
+message = "Banshee's Wail needs Melpominee 3 and Dementation 4."
+page = "226"
+
+[[checks]]
+category = "techniques"
+name = "Blind the Sun"
+requires = { has_all = [
+  { category = "disciplines", name = "Temporis", rating = 2 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Blind the Sun needs Temporis 2 and Fortitude 2."
+page = "226"
+
+[[checks]]
+category = "techniques"
+name = "Bull's Eye"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 3 },
+  { category = "disciplines", name = "Celerity", rating = 1 },
+] }
+message = "Bull's Eye needs Auspex 3 and Celerity 1."
+page = "226"
+
+[[checks]]
+category = "techniques"
+name = "Control the Savage Beast"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 3 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Control the Savage Beast needs Animalism 3 and Dominate 2."
+page = "226"
+
+[[checks]]
+category = "techniques"
+name = "Death's Grip"
+requires = { has_all = [
+  { category = "disciplines", name = "Thanatosis", rating = 2 },
+  { category = "disciplines", name = "Potence", rating = 2 },
+] }
+message = "Death's Grip needs Thanatosis 2 and Potence 2."
+page = "227"
+
+[[checks]]
+category = "techniques"
+name = "Denial of Aphrodite's Favor"
+requires = { has_all = [
+  { category = "disciplines", name = "Presence", rating = 2 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Denial of Aphrodite's Favor needs Presence 2 and Dominate 2."
+page = "227"
+
+[[checks]]
+category = "techniques"
+name = "Devious Feint"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 3 },
+  { category = "disciplines", name = "Presence", rating = 1 },
+] }
+message = "Devious Feint needs Auspex 3 and Presence 1."
+page = "227"
+
+[[checks]]
+category = "techniques"
+name = "Echo Psychosis"
+requires = { has_all = [
+  { category = "disciplines", name = "Dementation", rating = 3 },
+  { category = "disciplines", name = "Presence", rating = 1 },
+] }
+message = "Echo Psychosis needs Dementation 3 and Presence 1."
+page = "227"
+
+[[checks]]
+category = "techniques"
+name = "Feast of Shadow"
+requires = { has_all = [
+  { category = "disciplines", name = "Obtenebration", rating = 2 },
+  { category = "disciplines", name = "Potence", rating = 3 },
+] }
+message = "Feast of Shadow needs Obtenebration 2 and Potence 3."
+page = "227"
+
+[[checks]]
+category = "techniques"
+name = "Flame's Bane"
+requires = { has_all = [
+  { category = "disciplines", name = "Daimoinon", rating = 2 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Flame's Bane needs Daimoinon 2 and Fortitude 2."
+page = "228"
+
+[[checks]]
+category = "techniques"
+name = "Instinctive Command"
+requires = { has_all = [
+  { category = "disciplines", name = "Celerity", rating = 3 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Instinctive Command needs Celerity 3 and Dominate 2."
+page = "229"
+
+[[checks]]
+category = "techniques"
+name = "Mercurial Vitality"
+requires = { has_all = [
+  { category = "disciplines", name = "Vicissitude", rating = 2 },
+  { category = "disciplines", name = "Potence", rating = 1 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Mercurial Vitality needs Vicissitude 2 and Potence 1 and Fortitude 1."
+page = "229"
+
+[[checks]]
+category = "techniques"
+name = "Misleading Wounds"
+requires = { has_all = [
+  { category = "disciplines", name = "Obfuscate", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Misleading Wounds needs Obfuscate 3 and Fortitude 1."
+page = "230"
+
+[[checks]]
+category = "techniques"
+name = "Misplaced Affection"
+requires = { has_all = [
+  { category = "disciplines", name = "Presence", rating = 3 },
+  { category = "disciplines", name = "Obfuscate", rating = 2 },
+] }
+message = "Misplaced Affection needs Presence 3 and Obfuscate 2."
+page = "229"
+
+[[checks]]
+category = "techniques"
+name = "Nightingale's Song"
+requires = { has_all = [
+  { category = "disciplines", name = "Mytherceria", rating = 2 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Nightingale's Song needs Mytherceria 2 and Dominate 2."
+page = "230"
+
+[[checks]]
+category = "techniques"
+name = "Reflection of Endurance"
+requires = { has_all = [
+  { category = "disciplines", name = "Obeah", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Reflection of Endurance needs Obeah 3 and Fortitude 2."
+page = "230"
+
+[[checks]]
+category = "techniques"
+name = "Reflection of Mercy"
+requires = { has_all = [
+  { category = "disciplines", name = "Valeren", rating = 3 },
+  { category = "disciplines", name = "Auspex", rating = 2 },
+] }
+message = "Reflection of Mercy needs Valeren 3 and Auspex 2."
+page = "231"
+
+[[checks]]
+category = "techniques"
+name = "Relentless Pursuit"
+requires = { has_all = [
+  { category = "disciplines", name = "Potence", rating = 2 },
+  { category = "disciplines", name = "Celerity", rating = 2 },
+] }
+message = "Relentless Pursuit needs Potence 2 and Celerity 2."
+page = "231"
+
+[[checks]]
+category = "techniques"
+name = "Second Wind"
+requires = { has_all = [
+  { category = "disciplines", name = "Fortitude", rating = 3 },
+  { category = "disciplines", name = "Potence", rating = 1 },
+] }
+message = "Second Wind needs Fortitude 3 and Potence 1."
+page = "231"
+
+[[checks]]
+category = "techniques"
+name = "Sympathetic Agony"
+requires = { has_all = [
+  { category = "disciplines", name = "Chimerstry", rating = 2 },
+  { category = "disciplines", name = "Fortitude", rating = 3 },
+] }
+message = "Sympathetic Agony needs Chimerstry 2 and Fortitude 3."
+page = "231"
+
+[[checks]]
+category = "techniques"
+name = "Telepathic Directive"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 4 },
+  { category = "disciplines", name = "Dominate", rating = 1 },
+] }
+message = "Telepathic Directive needs Auspex 4 and Dominate 1."
+page = "231"
+
+[[checks]]
+category = "techniques"
+name = "Telepathic Directive"
+requires = { has_all = [
+  { category = "disciplines", name = "Quietus", rating = 2 },
+  { category = "disciplines", name = "Celerity", rating = 2 },
+] }
+message = "Telepathic Directive needs Quietus 2 and Celerity 2."
+page = "231"
+
+[[checks]]
+category = "techniques"
+name = "Visions of the True Form"
+requires = { has_all = [
+  { category = "disciplines", name = "Vicissitude", rating = 2 },
+  { category = "disciplines", name = "Auspex", rating = 3 },
+] }
+message = "Visions of the True Form needs Vicissitude 2 and Auspex 3."
+page = "232"
+
+[[checks]]
+category = "techniques"
+name = "Will to Survive"
+requires = { has_all = [
+  { category = "disciplines", name = "Celerity", rating = 1 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+  { category = "disciplines", name = "Presence", rating = 1 },
+] }
+message = "Will to Survive needs Celerity 1 and Fortitude 1 and Presence 1."
+page = "232"
+
+[[checks]]
+category = "techniques"
+name = "Will to Survive"
+requires = { has_all = [
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+  { category = "disciplines", name = "Presence", rating = 1 },
+] }
+message = "Will to Survive needs Fortitude 1 and Presence 1."
+page = "232"
+
+[[checks]]
+category = "techniques"
+name = "Wolf's Blood"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 2 },
+  { category = "disciplines", name = "Protean", rating = 1 },
+] }
+message = "Wolf's Blood needs Animalism 2 and Protean 1."
+page = "232"
+
+[[checks]]
+category = "techniques"
+name = "Fearful Blow"
+requires = { has_all = [
+  { category = "disciplines", name = "Potence", rating = 2 },
+  { category = "disciplines", name = "Presence", rating = 2 },
+] }
+message = "Fearful Blow needs Potence 2 and Presence 2."
+page = "227"
+
+[[checks]]
+category = "techniques"
+name = "Guardian Lion"
+requires = { has_all = [
+  { category = "disciplines", name = "Visceratika", rating = 2 },
+  { category = "disciplines", name = "Animalism", rating = 2 },
+] }
+message = "Guardian Lion needs Visceratika 2 and Animalism 2."
+page = "228"
+
+[[checks]]
+category = "techniques"
+name = "Fenrir's Boon"
+requires = { has_all = [
+  { category = "disciplines", name = "Potence", rating = 3 },
+  { category = "disciplines", name = "Animalism", rating = 1 },
+] }
+message = "Fenrir's Boon needs Potence 3 and Animalism 1."
+page = "228"
+
+[[checks]]
+category = "techniques"
+name = "Fist of Stone"
+requires = { has_all = [
+  { category = "disciplines", name = "Visceratika", rating = 3 },
+  { category = "disciplines", name = "Potence", rating = 3 },
+] }
+message = "Fist of Stone needs Visceratika 3 and Potence 3."
+page = "228"
+
+[[checks]]
+category = "techniques"
+name = "Monologue"
+requires = { has_all = [
+  { category = "disciplines", name = "Obfuscate", rating = 2 },
+  { category = "disciplines", name = "Presence", rating = 1 },
+] }
+message = "Monologue needs Obfuscate 2 and Presence 1."
+page = "229"
+
+[[checks]]
+category = "techniques"
+name = "Ligeia's Lament"
+requires = { has_all = [
+  { category = "disciplines", name = "Melpominee", rating = 2 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Ligeia's Lament needs Melpominee 2 and Dominate 2."
+page = "229"
+
+# --- rituals (pp. 172, 187) ---------------------------------------------------------
+# A ritual is bought at its level, and needs a path of its magic at that level.
+
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { self = { rating = 1 }, not = { has_any = [
+  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 1 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 1 },
+] } }
+message = "A level 1 Thaumaturgy ritual needs a path of Thaumaturgy at 1 or more."
+page = "187"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { self = { rating = 2 }, not = { has_any = [
+  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 2 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 2 },
+] } }
+message = "A level 2 Thaumaturgy ritual needs a path of Thaumaturgy at 2 or more."
+page = "187"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { self = { rating = 3 }, not = { has_any = [
+  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 3 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 3 },
+] } }
+message = "A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more."
+page = "187"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { self = { rating = 4 }, not = { has_any = [
+  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 4 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 4 },
+] } }
+message = "A level 4 Thaumaturgy ritual needs a path of Thaumaturgy at 4 or more."
+page = "187"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { self = { rating = 5 }, not = { has_any = [
+  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 5 },
+  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 5 },
+] } }
+message = "A level 5 Thaumaturgy ritual needs a path of Thaumaturgy at 5 or more."
+page = "187"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { self = { rating = 1 }, not = { has_any = [
+  { category = "disciplines", name = "Necromancy: Ash Path", rating = 1 },
+  { category = "disciplines", name = "Necromancy: Bone Path", rating = 1 },
+  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 1 },
+  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 1 },
+  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 1 },
+  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 1 },
+] } }
+message = "A level 1 Necromancy ritual needs a path of Necromancy at 1 or more."
+page = "172"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { self = { rating = 2 }, not = { has_any = [
+  { category = "disciplines", name = "Necromancy: Ash Path", rating = 2 },
+  { category = "disciplines", name = "Necromancy: Bone Path", rating = 2 },
+  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 2 },
+  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 2 },
+  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 2 },
+  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 2 },
+] } }
+message = "A level 2 Necromancy ritual needs a path of Necromancy at 2 or more."
+page = "172"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { self = { rating = 3 }, not = { has_any = [
+  { category = "disciplines", name = "Necromancy: Ash Path", rating = 3 },
+  { category = "disciplines", name = "Necromancy: Bone Path", rating = 3 },
+  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 3 },
+  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 3 },
+  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 3 },
+  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 3 },
+] } }
+message = "A level 3 Necromancy ritual needs a path of Necromancy at 3 or more."
+page = "172"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { self = { rating = 4 }, not = { has_any = [
+  { category = "disciplines", name = "Necromancy: Ash Path", rating = 4 },
+  { category = "disciplines", name = "Necromancy: Bone Path", rating = 4 },
+  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 4 },
+  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 4 },
+  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 4 },
+  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 4 },
+] } }
+message = "A level 4 Necromancy ritual needs a path of Necromancy at 4 or more."
+page = "172"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { self = { rating = 5 }, not = { has_any = [
+  { category = "disciplines", name = "Necromancy: Ash Path", rating = 5 },
+  { category = "disciplines", name = "Necromancy: Bone Path", rating = 5 },
+  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 5 },
+  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 5 },
+  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 5 },
+  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 5 },
+] } }
+message = "A level 5 Necromancy ritual needs a path of Necromancy at 5 or more."
+page = "172"
