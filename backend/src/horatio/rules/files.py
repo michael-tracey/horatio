@@ -144,6 +144,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             house_rules_per_trait=c.get("house_rules_per_trait", False),
             requires=c.get("requires"),
             change_cost=c.get("change_cost"),
+            points_limit=c.get("points_limit"),
         )
         for c in raw["categories"]
     }

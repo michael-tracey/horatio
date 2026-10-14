@@ -292,6 +292,17 @@
             "title": "Name",
             "type": "string"
           },
+          "points_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points Limit"
+          },
           "rated": {
             "title": "Rated",
             "type": "boolean"
@@ -807,6 +818,35 @@
           "troupe_id"
         ],
         "title": "HomeTroupeRequest",
+        "type": "object"
+      },
+      "LimitOut": {
+        "description": "Points held in a category with a limit: merits held, or flaws paying XP.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "used": {
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "used",
+          "limit"
+        ],
+        "title": "LimitOut",
         "type": "object"
       },
       "LogEntry": {
@@ -2364,6 +2404,13 @@
             "title": "Kind",
             "type": "string"
           },
+          "limits": {
+            "items": {
+              "$ref": "#/components/schemas/LimitOut"
+            },
+            "title": "Limits",
+            "type": "array"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -2414,7 +2461,8 @@
           "traits",
           "xp",
           "pending_approvals",
-          "pending_disciplines"
+          "pending_disciplines",
+          "limits"
         ],
         "title": "SheetOut",
         "type": "object"

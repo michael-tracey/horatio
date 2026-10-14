@@ -140,6 +140,18 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
               <dd className="text-lg">{s.xp.spent}</dd>
             </div>
           </dl>
+          {s.limits.length > 0 && (
+            <ul className="mt-3 border-t border-ash pt-2 text-xs text-mist">
+              {s.limits.map((l) => (
+                <li key={l.category} className="flex justify-between">
+                  <span>{l.name}</span>
+                  <span className={l.used >= l.limit ? "text-gold" : undefined}>
+                    {l.category === "flaws" ? `${Math.min(l.used, l.limit)} of ${l.limit} XP paid` : `${l.used} of ${l.limit} points`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
         {/* A PC is built in the creation wizard; buying with experience comes after. NPCs use the quick builder. */}
         {!locked && catalogue.data && character.kind === "pc" && character.creation_complete && (

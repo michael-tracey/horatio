@@ -15,7 +15,7 @@ the differences there are.
 
 import uuid
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -38,7 +38,7 @@ from horatio.models import (
     XpEntry,
 )
 from horatio.rules.model import SheetTrait, TroupeRules
-from horatio.rules.pricing import PricingError, Quote, purchase_cost
+from horatio.rules.pricing import PricingError, Quote, points, purchase_cost
 from horatio.rules.store import read_troupe_rules
 
 TraitKey = tuple[str, str, str]  # category, name, detail
@@ -344,6 +344,55 @@ def quote_change(
     return quote, current_rating
 
 
+def held_points(
+    db: Session, character: Character, category_key: str, leave_out: TraitKey | None = None
+) -> int:
+    """The points the character holds in a category, as its troupe prices them."""
+    rules = rules_for(db, character)
+    rows = sheet_rows(db, character)
+    sheet = [r.as_rules_trait() for r in rows]
+    return sum(
+        points(rules, sheet, r.as_rules_trait())
+        for r in rows
+        if r.category.key == category_key and r.key != leave_out
+    )
+
+
+def within_points_limit(
+    db: Session,
+    character: Character,
+    category: TraitCategory,
+    definition: TraitDefinition,
+    detail: str,
+    rating: int,
+    quote: Quote,
+) -> Quote:
+    """Hold a purchase to its category's points limit. A category that costs XP
+    (merits) refuses going over it; one that pays XP (flaws) pays nothing past it."""
+    assert category.points_limit is not None
+    key = (category.key, definition.name, detail)
+    others = held_points(db, character, category.key, leave_out=key)
+    rows = sheet_rows(db, character)
+    current = next((r for r in rows if r.key == key), None)
+    after = SheetTrait(
+        category=category.key,
+        name=definition.name,
+        rating=rating,
+        free_rating=current.trait.free_rating if current else 0,
+        detail=detail,
+    )
+    worth = points(rules_for(db, character), [r.as_rules_trait() for r in rows], after)
+    if quote.cost > 0 and others + worth > category.points_limit:
+        raise conflict(
+            f"That would bring {category.name.lower()} to {others + worth} points; "
+            f"a character can hold at most {category.points_limit}."
+        )
+    if quote.cost < 0:
+        payable = max(0, category.points_limit - others)
+        return replace(quote, cost=-min(-quote.cost, payable))
+    return quote
+
+
 def set_trait(
     db: Session,
     player: User,
@@ -376,6 +425,8 @@ def set_trait(
         raise conflict(FINISH_CREATION_FIRST)
     quote, current_rating = quote_change(db, character, category_key, name, detail, rating)
     assert quote is not None and rating is not None and current_rating is not None
+    if category.points_limit is not None and rating > current_rating:
+        quote = within_points_limit(db, character, category, definition, detail, rating, quote)
 
     accepted = accepted_ratings(db, character).get((category.key, definition.name, detail), 0)
     if rating < accepted:

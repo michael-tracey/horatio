@@ -40,6 +40,8 @@ class TraitCategory(Record):
     requires: Mapped[dict[str, str] | None] = mapped_column(JSONB)
     # XP to swap this category's choice for another after creation, e.g. a focus.
     change_cost: Mapped[int | None]
+    # Most points held in this category (merits), or paid out by it (flaws).
+    points_limit: Mapped[int | None]
 
 
 class TraitDefinition(Record):

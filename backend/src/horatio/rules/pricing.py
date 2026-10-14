@@ -99,6 +99,14 @@ def price(rule: CostRuleData, rating: int) -> int:
     raise ValueError(f"unknown scheme {rule.scheme!r}")
 
 
+def points(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> int:
+    """What the trait is worth at its rating, starting dots included: a merit's
+    points as the troupe prices it. Always positive, even for a flaw."""
+    if not trait.rating:
+        return 0
+    return abs(price(choose_rule(rules, sheet, trait), trait.rating))
+
+
 def trait_cost(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Quote:
     """What the character has paid for this trait at its current rating."""
     category = rules.rule_set.categories.get(trait.category)

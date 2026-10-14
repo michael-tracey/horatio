@@ -68,6 +68,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.house_rules_per_trait = category.house_rules_per_trait
         row.requires = dict(category.requires) if category.requires else None
         row.change_cost = category.change_cost
+        row.points_limit = category.points_limit
     session.flush()
 
     definitions = {
@@ -430,6 +431,7 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 house_rules_per_trait=c.house_rules_per_trait,
                 requires=c.requires,
                 change_cost=c.change_cost,
+                points_limit=c.points_limit,
             )
             for c in categories
         },

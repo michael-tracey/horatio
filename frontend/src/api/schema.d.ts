@@ -1417,6 +1417,8 @@ export interface components {
             max_rating: number | null;
             /** Name */
             name: string;
+            /** Points Limit */
+            points_limit?: number | null;
             /** Rated */
             rated: boolean;
             /** Requires */
@@ -1622,6 +1624,20 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /**
+         * LimitOut
+         * @description Points held in a category with a limit: merits held, or flaws paying XP.
+         */
+        LimitOut: {
+            /** Category */
+            category: string;
+            /** Limit */
+            limit: number;
+            /** Name */
+            name: string;
+            /** Used */
+            used: number;
         };
         /** LogEntry */
         LogEntry: {
@@ -2250,6 +2266,8 @@ export interface components {
             home_troupe_id: string | null;
             /** Kind */
             kind: string;
+            /** Limits */
+            limits: components["schemas"]["LimitOut"][];
             /** Name */
             name: string;
             /** Pending Approvals */

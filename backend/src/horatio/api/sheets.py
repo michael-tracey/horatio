@@ -10,7 +10,16 @@ from sqlalchemy import select
 
 from horatio import sheets, titles
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Approval, Character, TraitDefinition, Troupe, User, XpEntry
+from horatio.models import (
+    Approval,
+    Character,
+    RuleSet,
+    TraitCategory,
+    TraitDefinition,
+    Troupe,
+    User,
+    XpEntry,
+)
 from horatio.permissions import (
     TroupeAction,
     can_edit_character,
@@ -53,6 +62,15 @@ class ApprovalOut(BaseModel):
     staff_note: str
 
 
+class LimitOut(BaseModel):
+    """Points held in a category with a limit: merits held, or flaws paying XP."""
+
+    category: str
+    name: str
+    used: int
+    limit: int
+
+
 class SheetTroupeOut(BaseModel):
     """A troupe the character is in: its home troupe, or one it visits."""
 
@@ -85,6 +103,7 @@ class SheetOut(BaseModel):
     xp: XpSummary
     pending_approvals: list[ApprovalOut]
     pending_disciplines: list[PendingDisciplineOut]
+    limits: list[LimitOut]
 
 
 class TraitChange(BaseModel):
@@ -209,6 +228,21 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             spent=-sum(a for a in entries if a < 0),
         ),
         pending_approvals=[approval_out(a) for a in pending],
+        limits=[
+            LimitOut(
+                category=c.key,
+                name=c.name,
+                used=sheets.held_points(db, character, c.key),
+                limit=c.points_limit,
+            )
+            for c in db.scalars(
+                select(TraitCategory)
+                .join(RuleSet, TraitCategory.rule_set_id == RuleSet.id)
+                .where(RuleSet.splat == character.splat, TraitCategory.points_limit.is_not(None))
+                .order_by(TraitCategory.position)
+            )
+            if c.points_limit is not None
+        ],
         pending_disciplines=[
             PendingDisciplineOut(
                 approval_id=a.id,
@@ -242,6 +276,17 @@ def quote(character_id: uuid.UUID, body: TraitChange, db: DbSession, user: Curre
     result, current = sheets.quote_change(
         db, character, body.category, body.name, body.detail, body.rating
     )
+    definition, category = sheets.find_definition(db, character, body.category, body.name)
+    if (
+        result is not None
+        and category.points_limit is not None
+        and body.rating is not None
+        and current is not None
+        and body.rating > current
+    ):
+        result = sheets.within_points_limit(
+            db, character, category, definition, body.detail, body.rating, result
+        )
     return QuoteOut(
         cost=result.cost if result else 0,
         from_rating=current,

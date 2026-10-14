@@ -31,6 +31,9 @@ class CategoryData:
     # XP to swap the choice in this category for another after creation, such
     # as a focus (10 XP); None when it cannot be swapped that way.
     change_cost: int | None = None
+    # The most points a character can hold in this category (merits), or for a
+    # category that pays XP back (flaws), the most it pays out.
+    points_limit: int | None = None
 
 
 @dataclass(frozen=True)

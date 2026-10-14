@@ -205,12 +205,17 @@ key = "merits"
 name = "Merits"
 group = "Merits and Flaws"
 house_rules_per_trait = true
+# A character never holds more than 7 points of merits, counted at what they
+# cost in the character's troupe (pp. 106, 235).
+points_limit = 7
 
 [[categories]]
 key = "flaws"
 name = "Flaws"
 group = "Merits and Flaws"
 house_rules_per_trait = true
+# Flaws pay out at most 7 XP in all; more can be taken, for nothing (p. 106).
+points_limit = 7
 
 # ---------------------------------------------------------------------------
 # Cost rules. When several match, a rule naming the trait beats a whole

@@ -23,6 +23,8 @@ class CategoryOut(BaseModel):
     requires: dict[str, str] | None = None
     # XP to swap the choice for another after creation (a focus); None if it cannot be.
     change_cost: int | None = None
+    # Most points a character can hold here (merits) or be paid by it (flaws).
+    points_limit: int | None = None
 
 
 class TraitOut(BaseModel):
@@ -75,6 +77,7 @@ def catalogue(
                 max_rating=c.max_rating,
                 requires=dict(c.requires) if c.requires else None,
                 change_cost=c.change_cost,
+                points_limit=c.points_limit,
             )
             for c in rules.rule_set.categories.values()
         ],
