@@ -2747,7 +2747,7 @@ name = "Visceratika: Rockheart"
 category = "merits"
 name = "Absent Sway"
 description = "Allows character to create art or performance that invokes a specific emotion. Viewers who wish to ignore or run counter to the emotion may spend 1 Willpower to ignore for an hour."
-properties = { rating = 2, type = "Clan", requirement = "Toreador" }
+properties = { rating = 3, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "merits"
@@ -2776,7 +2776,7 @@ properties = { rating = 1 }
 category = "merits"
 name = "Addictive Blood"
 description = "One taste of character's blood is addictive. Creature must spend 1 Willpower to resist drinking a second time for 10 minutes. Must resist in this way 4 times to break the addiction."
-properties = { rating = 2, type = "Clan", requirement = "Followers of Set" }
+properties = { rating = 3, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "merits"
@@ -3177,13 +3177,13 @@ properties = { rating = 2, type = "Clan", requirement = "Lhiannan" }
 category = "merits"
 name = "Countermagic"
 description = "Gain +3 to test pools resisting Thaumaturgy. Use standard action and 1 blood to dispel magic on a person (Mental+Occult vs. target's Mental+Willpower). If successful all Thaum powers on the target end and items go defunct for an hour. Same action and Blood for an area (Mental+Occult vs. 12) to dispel all ritual within 5 steps."
-properties = { rating = 3, type = "Clan", requirement = "Tremere" }
+properties = { rating = 4, type = "Clan", requirement = "Tremere" }
 
 [[traits]]
 category = "merits"
 name = "Dancer's Grace"
 description = "Once per turn, gain free retest on Physical + Dodge pools. Can be used before or after the normal Willpower retest. Exception to rules limiting retests. Can be used in Celerity rounds, but only once per turn."
-properties = { rating = 3, type = "Clan", requirement = "Toreador" }
+properties = { rating = 4, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "merits"
@@ -3497,7 +3497,7 @@ properties = { rating = 1 }
 category = "merits"
 name = "Labyrinthine Mind"
 description = "Gain +3 to test pools resisting Dementation, Dominate, and Thaumaturgy: Path of Corruption. Anyone attempting to pull information from your mind gains 1 of your derangements for an hour."
-properties = { rating = 2, type = "Clan", requirement = "Malkavian" }
+properties = { rating = 3, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "merits"
@@ -3804,7 +3804,7 @@ properties = { rating = 3, type = "Morality", requirement = "Giovanni" }
 [[traits]]
 category = "merits"
 name = "Path of Ecstasy"
-properties = { rating = 3, type = "Morality", requirement = "Follower of Set" }
+properties = { rating = 3, type = "Morality", requirement = "Followers of Set" }
 
 [[traits]]
 category = "merits"
@@ -3986,7 +3986,7 @@ properties = { rating = 4 }
 category = "merits"
 name = "Regal Bearing"
 description = "Once per game session, use any 1 Presence power without using an action and before character's Initiative. Normal costs and tests still apply."
-properties = { rating = 2, type = "Clan", requirement = "Ventrue" }
+properties = { rating = 4, type = "Clan", requirement = "Ventrue" }
 
 [[traits]]
 category = "merits"
@@ -4139,7 +4139,7 @@ properties = { rating = 1 }
 category = "merits"
 name = "Setite Sorcery"
 description = "Gain access to Thaumaturgy: Path of Corruption and one item from List 4 without a teacher, must still pay out of Clan costs."
-properties = { rating = 3, type = "Clan", requirement = "Followers of Set" }
+properties = { rating = 4, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "merits"
@@ -4216,7 +4216,7 @@ properties = { rating = 3 }
 category = "merits"
 name = "Sophistry"
 description = "Once per game session, spend 1 Blood to auto-win or completely avoid a Physical, Social or Mental test that could result in injury."
-properties = { rating = 3, type = "Clan", requirement = "Malkavian" }
+properties = { rating = 4, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "merits"
@@ -4299,7 +4299,7 @@ properties = { rating = 2, type = "Clan", requirement = "Tzimisce" }
 category = "merits"
 name = "Talisman"
 description = "Rigid item between 5 inches and 6 feet long. Gain +2 to Thaumaturgy pools when touching it. Telyavic Tremere can build an Athame which has Concealable and Fast, Silver or Cold Iron weapon properties."
-properties = { rating = 2, type = "Clan", requirement = "Tremere" }
+properties = { rating = 3, type = "Clan", requirement = "Tremere" }
 
 [[traits]]
 category = "merits"
@@ -4437,7 +4437,7 @@ category = "merits"
 name = "Unnatural Adaptation"
 description = "Choose two special abilities from List 8."
 page_reference = "242"
-properties = { rating = 2, type = "Clan", requirement = "requires_specialization" }
+properties = { rating = 4, type = "Clan", requirement = "requires_specialization" }
 
 [[traits]]
 category = "merits"
@@ -6578,3 +6578,26 @@ name = "Stamina"
 [[traits]]
 category = "willpower_sources"
 name = "Willpower"
+
+[[traits]]
+category = "merits"
+name = "Blood of the Tzimisce"
+page_reference = "244"
+properties = { rating = 1, type = "Clan", requirement = "Tzimisce" }
+
+[[traits]]
+category = "merits"
+name = "Path of Harmony"
+page_reference = "256"
+properties = { rating = 3, type = "Morality" }
+
+[[traits]]
+category = "paths"
+name = "Harmony"
+page_reference = "256"
+
+[[traits]]
+category = "merits"
+name = "Thaumaturgic Expertise"
+page_reference = "243"
+properties = { rating = 1, type = "Clan", requirement = "Tremere" }

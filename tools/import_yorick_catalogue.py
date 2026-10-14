@@ -56,6 +56,42 @@ EXTRA = [
     ("willpower_sources", "Willpower"),
 ]
 
+# Where Yorick's values were one troupe's home rules rather than the book's, the
+# catalogue follows the book (MET: Vampire The Masquerade core). A troupe that
+# plays the home rules prices them with house rules instead.
+BOOK_RATINGS = {
+    ("merits", "Absent Sway"): 3,
+    ("merits", "Addictive Blood"): 3,
+    ("merits", "Countermagic"): 4,
+    ("merits", "Dancer's Grace"): 4,
+    ("merits", "Labyrinthine Mind"): 3,
+    ("merits", "Regal Bearing"): 4,
+    ("merits", "Setite Sorcery"): 4,
+    ("merits", "Sophistry"): 4,
+    ("merits", "Talisman"): 3,
+    ("merits", "Unnatural Adaptation"): 4,
+}
+
+# Spelling fixes to Yorick's requirement column.
+REQUIREMENTS = {"Follower of Set": "Followers of Set"}
+
+# Book traits Yorick never had, with their properties.
+EXTRA_TRAITS = {
+    ("merits", "Blood of the Tzimisce"): {
+        "page_reference": "244",
+        "properties": {"rating": 1, "type": "Clan", "requirement": "Tzimisce"},
+    },
+    ("merits", "Path of Harmony"): {
+        "page_reference": "256",
+        "properties": {"rating": 3, "type": "Morality"},
+    },
+    ("paths", "Harmony"): {"page_reference": "256", "properties": {}},
+    ("merits", "Thaumaturgic Expertise"): {
+        "page_reference": "243",
+        "properties": {"rating": 1, "type": "Clan", "requirement": "Tremere"},
+    },
+}
+
 # Which attribute each skill generally goes with, for grouping skills on screen.
 # Yorick never recorded this; it is the usual split, kept here to be corrected.
 SKILL_ATTRIBUTES = {
@@ -98,6 +134,10 @@ def main(csv_path: str) -> None:
         if (category, name) not in seen:
             seen.add((category, name))
             entries.append((category, name, {}))
+    for (category, name), extra in EXTRA_TRAITS.items():
+        if (category, name) not in seen:
+            seen.add((category, name))
+            entries.append((category, name, {"page_number": extra["page_reference"], **extra}))
 
     titles = sorted({r["name"].strip() for r in rows if r["category"] == "titles" and r["name"].strip()})
     lines = [
@@ -118,13 +158,17 @@ def main(csv_path: str) -> None:
         if row.get("page_number", "").strip():
             lines.append(f"page_reference = {toml_string(row['page_number'].strip())}")
         properties: list[str] = []
-        if category in FIXED_RATING and row.get("value", "").strip().lstrip("-").isdigit():
-            properties.append(f"rating = {abs(int(row['value']))}")
+        if "properties" in row:
+            properties = [f"{k} = {json.dumps(v)}" for k, v in row["properties"].items()]
+        elif category in FIXED_RATING and row.get("value", "").strip().lstrip("-").isdigit():
+            rating = BOOK_RATINGS.get((category, name), abs(int(row["value"])))
+            properties.append(f"rating = {rating}")
         if category == "skills" and name in ATTRIBUTE_OF:
             properties.append(f"attribute = {toml_string(ATTRIBUTE_OF[name])}")
         for key in ("type", "requirement"):
             if row.get(key, "").strip():
-                properties.append(f"{key} = {toml_string(row[key].strip())}")
+                value = row[key].strip()
+                properties.append(f"{key} = {toml_string(REQUIREMENTS.get(value, value))}")
         if properties:
             lines.append("properties = { " + ", ".join(properties) + " }")
         lines.append("")
