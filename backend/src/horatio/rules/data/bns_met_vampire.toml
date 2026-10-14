@@ -1,0 +1,604 @@
+# By Night Studios Mind's Eye Theatre: Vampire — the generic rule set.
+#
+# Costs reproduce Yorick's BNSMETV1_VampireCosts engine, checked case by case
+# against its output (backend/tests/fixtures/yorick_vampire_costs.json.gz).
+# One deliberate difference: where Yorick charged a sentinel 9999 or 99999 XP
+# per dot to make a trait unaffordable, these rules say `not_allowed`.
+#
+# Facts a Vampire cost rule's condition can test:
+#   generation  the character's Generation background rating, or 1 without one
+#   in_clan     whether this trait is one of the character's in-clan disciplines
+#
+# Schemes:
+#   per_dot      each dot costs `rate`
+#   progressive  dot n costs n × `rate`
+#   table        dot n costs `table[n-1]`
+#   fixed        the trait costs `rate` in total
+#   free         costs nothing
+#   not_allowed  cannot be bought
+
+key = "bns-met-vampire"
+splat = "vampire"
+name = "BNS MET Vampire"
+version = 1
+
+# ---------------------------------------------------------------------------
+# Categories, in sheet order. max_rating is the highest rating a trait can
+# reach; unrated categories hold a choice (such as a clan) rather than dots.
+
+[[categories]]
+key = "clan"
+name = "Clan"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "attributes"
+name = "Attributes"
+group = "Attributes"
+
+[[categories]]
+key = "focus_physicals"
+name = "Physical Focus"
+group = "Attributes"
+
+[[categories]]
+key = "focus_mentals"
+name = "Mental Focus"
+group = "Attributes"
+
+[[categories]]
+key = "focus_socials"
+name = "Social Focus"
+group = "Attributes"
+
+[[categories]]
+key = "health_levels"
+name = "Health Levels"
+group = "Expended"
+
+[[categories]]
+key = "willpower_sources"
+name = "Willpower"
+group = "Expended"
+
+[[categories]]
+key = "skills"
+name = "Skills"
+group = "Skills"
+max_rating = 10
+
+[[categories]]
+key = "lore_specializations"
+name = "Lore Specializations"
+group = "Skills"
+
+[[categories]]
+key = "academics_specializations"
+name = "Academics Specializations"
+group = "Skills"
+
+[[categories]]
+key = "drive_specializations"
+name = "Drive Specializations"
+group = "Skills"
+
+[[categories]]
+key = "linguistics_specializations"
+name = "Languages"
+group = "Skills"
+
+[[categories]]
+key = "disciplines"
+name = "Disciplines"
+group = "Disciplines"
+
+[[categories]]
+key = "techniques"
+name = "Techniques"
+group = "Disciplines"
+
+[[categories]]
+key = "elder_disciplines"
+name = "Elder Disciplines"
+group = "Disciplines"
+
+[[categories]]
+key = "luminary_disciplines"
+name = "Luminary Disciplines"
+group = "Disciplines"
+
+[[categories]]
+key = "rituals"
+name = "Rituals"
+group = "Disciplines"
+
+[[categories]]
+key = "extra_in_clan_disciplines"
+name = "Extra In-Clan Disciplines"
+group = "Disciplines"
+
+[[categories]]
+key = "paths"
+name = "Path of Enlightenment/Humanity"
+group = "Morality"
+
+[[categories]]
+key = "backgrounds"
+name = "Backgrounds"
+group = "Backgrounds"
+
+[[categories]]
+key = "haven_specializations"
+name = "Haven Specializations"
+group = "Backgrounds"
+
+[[categories]]
+key = "contacts_specializations"
+name = "Contacts Specializations"
+group = "Backgrounds"
+
+[[categories]]
+key = "allies_specializations"
+name = "Allies Specializations"
+group = "Backgrounds"
+
+[[categories]]
+key = "sabbat_rituals"
+name = "Sabbat Ritae"
+group = "Backgrounds"
+
+[[categories]]
+key = "vampiric_texts"
+name = "Vampiric Texts"
+group = "Backgrounds"
+
+[[categories]]
+key = "influence_elite_specializations"
+name = "Influence: Elite"
+group = "Backgrounds"
+
+[[categories]]
+key = "influence_underworld_specializations"
+name = "Influence: Underworld"
+group = "Backgrounds"
+
+[[categories]]
+key = "status_traits"
+name = "Sect Status"
+group = "Backgrounds"
+
+[[categories]]
+key = "merits"
+name = "Merits"
+group = "Merits and Flaws"
+house_rules_per_trait = true
+
+[[categories]]
+key = "flaws"
+name = "Flaws"
+group = "Merits and Flaws"
+house_rules_per_trait = true
+
+# ---------------------------------------------------------------------------
+# Cost rules. When several match, a rule naming the trait beats a whole
+# category, and a rule with more conditions beats one with fewer.
+
+[[cost_rules]]
+category = "attributes"
+scheme = "per_dot"
+rate = 3
+
+[[cost_rules]]
+category = "skills"
+scheme = "progressive"
+rate = 2
+
+[[cost_rules]]
+category = "skills"
+condition = { generation = 1 }
+scheme = "progressive"
+rate = 1
+
+[[cost_rules]]
+category = "backgrounds"
+scheme = "progressive"
+rate = 2
+
+[[cost_rules]]
+category = "backgrounds"
+condition = { generation = 1 }
+scheme = "progressive"
+rate = 1
+
+# Generation has its own table: 2 per dot like a background, but the first
+# dot costs 1.
+[[cost_rules]]
+category = "backgrounds"
+trait = "Generation"
+scheme = "table"
+table = [1, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
+
+[[cost_rules]]
+category = "disciplines"
+condition = { in_clan = true }
+scheme = "progressive"
+rate = 3
+
+[[cost_rules]]
+category = "disciplines"
+condition = { in_clan = false, generation = { lt = 5 } }
+scheme = "progressive"
+rate = 4
+
+[[cost_rules]]
+category = "disciplines"
+condition = { in_clan = false, generation = { gte = 5 } }
+scheme = "progressive"
+rate = 5
+
+[[cost_rules]]
+category = "techniques"
+scheme = "not_allowed"
+
+[[cost_rules]]
+category = "techniques"
+condition = { generation = { lt = 3 } }
+scheme = "per_dot"
+rate = 12
+
+[[cost_rules]]
+category = "techniques"
+condition = { generation = 3 }
+scheme = "per_dot"
+rate = 20
+
+[[cost_rules]]
+category = "elder_disciplines"
+scheme = "not_allowed"
+
+[[cost_rules]]
+category = "elder_disciplines"
+condition = { in_clan = true, generation = { gte = 3 } }
+scheme = "per_dot"
+rate = 18
+
+[[cost_rules]]
+category = "elder_disciplines"
+condition = { in_clan = false, generation = { gte = 3, lt = 5 } }
+scheme = "per_dot"
+rate = 24
+
+[[cost_rules]]
+category = "elder_disciplines"
+condition = { in_clan = false, generation = { gte = 5 } }
+scheme = "per_dot"
+rate = 30
+
+[[cost_rules]]
+category = "luminary_disciplines"
+scheme = "not_allowed"
+
+[[cost_rules]]
+category = "luminary_disciplines"
+condition = { in_clan = true, generation = { gte = 5 } }
+scheme = "per_dot"
+rate = 24
+
+[[cost_rules]]
+category = "rituals"
+scheme = "per_dot"
+rate = 2
+
+[[cost_rules]]
+category = "paths"
+scheme = "per_dot"
+rate = 10
+
+# A merit's rating is its point value, so each point costs 1 XP.
+[[cost_rules]]
+category = "merits"
+scheme = "per_dot"
+rate = 1
+
+# A flaw's rating is its point value, and each point gives 1 XP back.
+[[cost_rules]]
+category = "flaws"
+scheme = "per_dot"
+rate = -1
+
+# Categories that cost nothing: focuses, expended pools, specialisations and
+# the records that only note an affinity.
+[[cost_rules]]
+category = "focus_physicals"
+scheme = "free"
+
+[[cost_rules]]
+category = "focus_mentals"
+scheme = "free"
+
+[[cost_rules]]
+category = "focus_socials"
+scheme = "free"
+
+[[cost_rules]]
+category = "health_levels"
+scheme = "free"
+
+[[cost_rules]]
+category = "willpower_sources"
+scheme = "free"
+
+[[cost_rules]]
+category = "lore_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "academics_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "drive_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "linguistics_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "extra_in_clan_disciplines"
+scheme = "free"
+
+[[cost_rules]]
+category = "haven_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "contacts_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "allies_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "sabbat_rituals"
+scheme = "free"
+
+[[cost_rules]]
+category = "vampiric_texts"
+scheme = "free"
+
+[[cost_rules]]
+category = "influence_elite_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "influence_underworld_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "status_traits"
+scheme = "free"
+
+# ---------------------------------------------------------------------------
+# Trait definitions the rules refer to. The full catalogue (every merit, flaw
+# and discipline, with descriptions) is imported separately.
+
+[[traits]]
+category = "backgrounds"
+name = "Generation"
+
+# Clans and their in-clan disciplines, from Yorick's data/bnsmetv1_clan_rule.csv.
+# An entry such as "Thaumaturgy: Path of Blood" makes only that path in-clan.
+
+[[traits]]
+category = "clan"
+name = "Assamite"
+properties = { in_clan = ["Celerity", "Obfuscate", "Quietus"] }
+
+[[traits]]
+category = "clan"
+name = "Assamite: Sorcerer"
+properties = { in_clan = ["Obfuscate", "Quietus", "Thaumaturgy: Lure of Flames"] }
+
+[[traits]]
+category = "clan"
+name = "Assamite: Vizier"
+properties = { in_clan = ["Auspex", "Celerity", "Quietus"] }
+
+[[traits]]
+category = "clan"
+name = "Baali"
+properties = { in_clan = ["Daimoinon", "Obfuscate", "Presence"] }
+
+[[traits]]
+category = "clan"
+name = "Baali: Angelis Ater"
+properties = { in_clan = ["Daimoinon", "Dominate"] }
+
+[[traits]]
+category = "clan"
+name = "Brujah"
+properties = { in_clan = ["Celerity", "Potence", "Presence"] }
+
+[[traits]]
+category = "clan"
+name = "Brujah: True Brujah"
+properties = { in_clan = ["Potence", "Presence", "Temporis"] }
+
+[[traits]]
+category = "clan"
+name = "Caitiff"
+properties = { in_clan = [] }
+
+[[traits]]
+category = "clan"
+name = "Cappadocians"
+properties = { in_clan = ["Auspex", "Fortitude", "Necromancy: Mortis Path"] }
+
+[[traits]]
+category = "clan"
+name = "Cappadocians: Lamia"
+properties = { in_clan = ["Fortitude", "Potence", "Necromancy: Mortis Path"] }
+
+[[traits]]
+category = "clan"
+name = "Cappadocians: Samedi"
+properties = { in_clan = ["Fortitude", "Obfuscate", "Thanatosis"] }
+
+[[traits]]
+category = "clan"
+name = "Daughters of Cacophony"
+properties = { in_clan = ["Fortitude", "Melpominee", "Presence"] }
+
+[[traits]]
+category = "clan"
+name = "Followers of Set"
+properties = { in_clan = ["Obfuscate", "Presence", "Serpentis"] }
+
+[[traits]]
+category = "clan"
+name = "Followers of Set: Tlacique"
+properties = { in_clan = ["Presence", "Obfuscate", "Protean"] }
+
+[[traits]]
+category = "clan"
+name = "Followers of Set: Vipers"
+properties = { in_clan = ["Potence", "Presence", "Serpentis"] }
+
+[[traits]]
+category = "clan"
+name = "Gangrel"
+properties = { in_clan = ["Animalism", "Fortitude", "Protean"] }
+
+[[traits]]
+category = "clan"
+name = "Gangrel: Ahrimanes"
+properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Path of Elemental Mastery"] }
+
+[[traits]]
+category = "clan"
+name = "Gangrel: Coyote"
+properties = { in_clan = ["Celerity", "Obfuscate", "Protean"] }
+
+[[traits]]
+category = "clan"
+name = "Gangrel: Noiad"
+properties = { in_clan = ["Animalism", "Auspex", "Protean"] }
+
+[[traits]]
+category = "clan"
+name = "Gargoyles"
+properties = { in_clan = ["Fortitude", "Potence", "Visceratika"] }
+
+[[traits]]
+category = "clan"
+name = "Giovanni"
+properties = { in_clan = ["Dominate", "Potence", "Necromancy: Sepulchre Path"] }
+
+[[traits]]
+category = "clan"
+name = "Giovanni: Premascine"
+properties = { in_clan = ["Dominate", "Potence", "Necromancy: Sepulchre Path"] }
+
+[[traits]]
+category = "clan"
+name = "Lasombra"
+properties = { in_clan = ["Dominate", "Potence", "Obtenebration"] }
+
+[[traits]]
+category = "clan"
+name = "Lasombra: Kiasyd"
+properties = { in_clan = ["Dominate", "Mytherceria", "Obtenebration"] }
+
+[[traits]]
+category = "clan"
+name = "Malkavian"
+properties = { in_clan = ["Auspex", "Dementation", "Obfuscate"] }
+
+[[traits]]
+category = "clan"
+name = "Malkavian: Ananke"
+properties = { in_clan = ["Auspex", "Dementation", "Presence"] }
+
+[[traits]]
+category = "clan"
+name = "Malkavian: Knights of the Moon"
+properties = { in_clan = ["Auspex", "Dominate", "Obfuscate"] }
+
+[[traits]]
+category = "clan"
+name = "Nosferatu"
+properties = { in_clan = ["Animalism", "Obfuscate", "Potence"] }
+
+[[traits]]
+category = "clan"
+name = "Ravnos"
+properties = { in_clan = ["Animalism", "Fortitude", "Chimerstry"] }
+
+[[traits]]
+category = "clan"
+name = "Ravnos: Brahman"
+properties = { in_clan = ["Animalism", "Auspex", "Chimerstry"] }
+
+[[traits]]
+category = "clan"
+name = "Salubri"
+properties = { in_clan = ["Auspex", "Fortitude", "Valeran"] }
+
+[[traits]]
+category = "clan"
+name = "Salubri: Healer"
+properties = { in_clan = ["Auspex", "Fortitude", "Obeah"] }
+
+[[traits]]
+category = "clan"
+name = "Toreador"
+properties = { in_clan = ["Auspex", "Celerity", "Presence"] }
+
+[[traits]]
+category = "clan"
+name = "Toreador: Ishtarri"
+properties = { in_clan = ["Celerity", "Fortitude", "Presence"] }
+
+[[traits]]
+category = "clan"
+name = "Toreador: Volgirre"
+properties = { in_clan = ["Auspex", "Celerity", "Presence"] }
+
+[[traits]]
+category = "clan"
+name = "Tremere"
+properties = { in_clan = ["Auspex", "Dominate", "Thaumaturgy: Path of Blood"] }
+
+[[traits]]
+category = "clan"
+name = "Tremere: Telyav"
+properties = { in_clan = ["Auspex", "Presence", "Thaumaturgy: Path of Blood"] }
+
+[[traits]]
+category = "clan"
+name = "Tzimisce"
+properties = { in_clan = ["Animalism", "Auspex", "Vicissitude"] }
+
+[[traits]]
+category = "clan"
+name = "Tzimisce: Carpathian"
+properties = { in_clan = ["Animalism", "Auspex", "Dominate"] }
+
+[[traits]]
+category = "clan"
+name = "Tzimisce: Koldun"
+properties = { in_clan = ["Animalism", "Auspex", "Thaumaturgy: Path of Elemental Mastery"] }
+
+[[traits]]
+category = "clan"
+name = "Ventrue"
+properties = { in_clan = ["Dominate", "Fortitude", "Presence"] }
+
+[[traits]]
+category = "clan"
+name = "Ventrue: Crusader"
+properties = { in_clan = ["Auspex", "Dominate", "Fortitude"] }
+

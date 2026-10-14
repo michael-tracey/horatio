@@ -124,40 +124,56 @@ key).
 **`rule_sets`**: the generic rules for one splat.
 `splat`, `name` (for example "BNS MET Vampire"), `version`.
 
+**`trait_categories`**: `rule_set_id`, `key` (for example `skills`,
+`merits`, `disciplines`), `name`, `group_name`, `position`, `rated`,
+`max_rating`, `house_rules_per_trait`.
+
 **`trait_definitions`**: everything a sheet can contain.
-`rule_set_id`, `category` (for example `skills`, `merits`, `disciplines`),
+`category_id`,
 `name`, `max_rating` (null for unrated), `description` (the **trait
 description**), `page_reference`.
 
 **`cost_rules`**: how much XP a trait costs.
 `rule_set_id`, `troupe_id` (null = generic rule; set = **house rule**),
-`category`, `trait_definition_id` (nullable: null means the whole category),
-`condition` (JSONB, nullable), `scheme` (`per_dot` | `progressive` | `fixed` |
-`not_allowed`), `rate`, `text` (nullable: a house rule's own wording, shown
-with the trait description).
-A house rule for a merit or flaw must name it (`trait_definition_id` not null).
-Troupes re-price merits and flaws one at a time, never as a whole category.
+`category_id`, `trait_definition_id` (nullable: null means the whole category),
+`condition` (JSONB, nullable), `scheme`, `rate`, `cost_table` (JSONB, for the
+`table` scheme), `text` (nullable: a house rule's own wording, shown with the
+trait description).
+A house rule for a merit or flaw must name it. Categories carry a
+`house_rules_per_trait` flag saying so, and the application refuses a
+category-wide house rule for them.
 
 | Scheme | Meaning | Yorick example |
 |---|---|---|
-| `per_dot` | each dot costs `rate` | attributes: 3 per dot |
+| `per_dot` | each dot costs `rate` (may be negative) | attributes: 3 per dot; flaws: −1 |
 | `progressive` | dot *n* costs *n* × `rate` | in-clan disciplines: 3, 6, 9… |
+| `table` | dot *n* costs `cost_table[n−1]` | Generation: 1, 4, 6, 8… |
 | `fixed` | the trait costs `rate` in total | a merit with a set price |
-| `not_allowed` | the trait cannot be bought | a troupe banning a merit |
+| `free` | costs nothing | focuses, specialisations |
+| `not_allowed` | the trait cannot be bought | techniques below generation 3 |
+
+The cost of a trait is the price of its rating less the price of its free
+rating. A purchase costs the difference between the trait's cost after and
+before.
 
 `condition` uses a small, fixed vocabulary that code knows how to evaluate,
-for example `{"in_clan": true}` or `{"generation": {"lt": 5}}`. The
-**values** are data a troupe can change. The **meaning** of a condition such
-as "in-clan" stays in code.
+for example `{"in_clan": true}` or `{"generation": {"gte": 3, "lt": 5}}`. The
+**values** are data a troupe can change. The **meaning** of a fact such as
+"in-clan" stays in code (`horatio/rules/splats.py`).
 
-To price a purchase, take every rule matching the trait from the rule set and
-from the character's home troupe, keep those whose condition holds, and use the
-most specific one. More specific means a named trait beats a whole category,
-and a rule with a condition beats one without. A house rule beats a generic
-rule at equal specificity. So a troupe can re-price all skills, one merit, or
-out-of-clan disciplines for low generations, each with one row. Because merit and
-flaw house rules always name their trait, a troupe's price for one always wins
-over the generic one.
+To choose a cost rule: **any matching house rule beats any matching generic
+rule**. Within whichever of the two has a match, a rule naming the trait beats
+a whole category, and a rule testing more facts beats one testing fewer. Two
+rules still tied is a mistake in the rules and is refused, never guessed. So a
+troupe that re-prices all skills gets all skills at its price, even where the
+generic rules had a more specific skills rule. A trait no rule covers is
+refused too, never treated as free.
+
+The generic rule sets live in `backend/src/horatio/rules/data/` as TOML and
+are loaded with `uv run python -m horatio.rules`. Loading replaces a rule set's
+generic cost rules and leaves house rules alone. The Vampire file is checked
+against 13,952 prices produced by Yorick's own cost code
+(`tools/yorick_oracle/`).
 
 **`allowance_rules`**: how traits change a character's action allowance.
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),

@@ -3,10 +3,20 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from horatio.models import Character, Troupe, TroupeMembership, TroupeStaff, User
+from horatio.models import (
+    Character,
+    CharacterTrait,
+    TraitDefinition,
+    Troupe,
+    TroupeMembership,
+    TroupeStaff,
+    User,
+    XpEntry,
+)
 
 
 def make_user(session: Session, email: str = "player@example.com") -> User:
@@ -116,3 +126,38 @@ def test_ids_are_generated_by_the_database_in_creation_order(session: Session) -
 
     assert first.id.version == 7
     assert first.id < second.id
+
+
+def first_trait_definition(session: Session) -> TraitDefinition:
+    from horatio.rules.files import DATA_DIR, load_rule_set
+    from horatio.rules.store import sync_rule_set
+
+    sync_rule_set(session, load_rule_set(DATA_DIR / "bns_met_vampire.toml"))
+    return session.scalars(select(TraitDefinition).limit(1)).one()
+
+
+def test_free_dots_cannot_exceed_the_rating(session: Session) -> None:
+    character = make_character(session, make_user(session))
+    definition = first_trait_definition(session)
+    session.add(
+        CharacterTrait(
+            character_id=character.id,
+            trait_definition_id=definition.id,
+            rating=1,
+            free_rating=2,
+        )
+    )
+
+    with pytest.raises(IntegrityError):
+        session.flush()
+
+
+def test_a_purchase_must_record_what_was_bought_and_its_price(session: Session) -> None:
+    player = make_user(session)
+    character = make_character(session, player)
+    session.add(
+        XpEntry(character_id=character.id, kind="purchase", amount=-6, entered_by=player.id)
+    )
+
+    with pytest.raises(IntegrityError):
+        session.flush()

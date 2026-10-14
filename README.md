@@ -25,6 +25,7 @@ docker compose up -d          # Postgres 18 on localhost:54329
 cd backend
 uv sync
 uv run alembic upgrade head   # create the tables
+uv run python -m horatio.rules  # load the generic rule sets
 uv run uvicorn horatio.app:app --reload
 
 uv run pytest                 # starts its own throwaway Postgres
