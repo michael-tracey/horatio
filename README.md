@@ -17,7 +17,23 @@ It is a fresh codebase, not a port: see `docs/adr/0001-rewrite-rather-than-port.
 
 ## Development
 
-Needs [uv](https://docs.astral.sh/uv/) and Docker.
+Needs [uv](https://docs.astral.sh/uv/), Docker and Node 22.
+
+### Quick start
+
+```bash
+./start-local.sh                          # database, API on :8010, app on http://localhost:5173
+./start-local.sh --reset                  # the same, with an empty database
+./start-local.sh --custodian you@example.com   # also make an existing account the custodian
+./stop-local.sh                           # stop it all (--keep-db leaves Postgres running)
+```
+
+Sign up in the app, then make yourself custodian to create troupes. Use real-looking
+emails (`@example.com` works): reserved domains such as `.test` and `.local` are
+refused. Logs are in `.local/logs/`. Different ports:
+`HORATIO_API_PORT=8020 HORATIO_APP_PORT=5180 ./start-local.sh`.
+
+### By hand
 
 ```bash
 docker compose up -d          # Postgres 18 on localhost:54329
