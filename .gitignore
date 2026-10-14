@@ -5,3 +5,5 @@ __pycache__/
 .ruff_cache/
 .env
 .local/
+# Reference images from published rulebooks: not ours to redistribute.
+example-sheet.png
