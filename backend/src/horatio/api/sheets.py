@@ -233,7 +233,10 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 detail=r.trait.detail,
                 rating=r.trait.rating,
                 free_rating=r.trait.free_rating,
-                min_rating=max(r.trait.free_rating, floor.get(r.key, 0)),
+                # A flaw can be bought off whatever was accepted (at a price).
+                min_rating=r.trait.free_rating
+                if r.category.buy_off_factor
+                else max(r.trait.free_rating, floor.get(r.key, 0)),
                 pending_from=held_from.get((r.definition.id, r.trait.detail)),
                 granted_rating=r.trait.granted_rating,
                 granted_by=granting.get(r.key, []) if r.trait.granted_rating else [],

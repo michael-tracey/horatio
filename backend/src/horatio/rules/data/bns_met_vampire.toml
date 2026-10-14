@@ -242,6 +242,8 @@ group = "Merits and Flaws"
 house_rules_per_trait = true
 # Flaws pay out at most 7 XP in all; more can be taken, for nothing (p. 106).
 points_limit = 7
+# Once accepted, a flaw is bought off for twice what it gave (p. 236).
+buy_off_factor = 2
 
 # ---------------------------------------------------------------------------
 # Cost rules. When several match, a rule naming the trait beats a whole

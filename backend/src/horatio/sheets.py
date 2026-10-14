@@ -657,7 +657,13 @@ def set_trait(
         quote = within_points_limit(db, character, category, definition, detail, rating, quote)
 
     accepted = accepted_ratings(db, character).get((category.key, definition.name, detail), 0)
-    if rating < accepted:
+    if rating < accepted and category.buy_off_factor and rating == 0:
+        # Buying off an accepted flaw costs a multiple of what it gave (p. 236).
+        held = SheetTrait(category.key, definition.name, current_rating, 0, detail)
+        sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+        worth = points(rules_for(db, character), sheet, held)
+        quote = Quote(cost=category.buy_off_factor * worth, rule=quote.rule)
+    elif rating < accepted:
         raise conflict(
             f"{name} was accepted at {accepted}. Only storytellers can take accepted dots away."
         )

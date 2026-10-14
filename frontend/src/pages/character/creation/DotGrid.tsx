@@ -4,7 +4,9 @@ import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
 import { canTap, left, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
 
-const SEARCH_FROM = 12; // Long lists get a search box.
+const SEARCH_FROM = 12;
+/** Skills bought once per field, such as Performance: Singing (MET: VTM p. 92). */
+const NEEDS_FIELD = new Set(["Crafts", "Performance", "Science"]); // Long lists get a search box.
 
 function useFiltered(traits: TraitOut[], picks: Picks) {
   const [query, setQuery] = useState("");
@@ -29,6 +31,8 @@ export function DotGrid({
   tag,
   showTitle = true,
   sections,
+  details = {},
+  onDetail,
 }: {
   title: string;
   showTitle?: boolean;
@@ -40,6 +44,9 @@ export function DotGrid({
   picks: Picks;
   onChange: (picks: Picks) => void;
   tag?: (trait: TraitOut) => string | null;
+  /** The field each picked Crafts, Performance or Science is for. */
+  details?: Record<string, string>;
+  onDetail?: (name: string, detail: string) => void;
 }) {
   const ratings = Object.keys(allowed)
     .map(Number)
@@ -59,9 +66,18 @@ export function DotGrid({
     const label = tag?.(trait);
     return (
       <li key={trait.name} className="flex items-center justify-between gap-3 py-1.5">
-        <span className="min-w-0 text-sm">
+        <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
           <span className={rating ? "text-parchment" : "text-mist"}>{trait.name}</span>
-          {label && <span className="ml-2 text-xs text-gold">{label}</span>}
+          {label && <span className="text-xs text-gold">{label}</span>}
+          {rating > 0 && NEEDS_FIELD.has(trait.name) && onDetail && (
+            <Input
+              aria-label={`${trait.name} field`}
+              placeholder="Field, such as Singing"
+              value={details[trait.name] ?? ""}
+              onChange={(e) => onDetail(trait.name, e.target.value)}
+              className="h-8 w-40 py-0"
+            />
+          )}
         </span>
         <span className="flex shrink-0 gap-0.5">
           {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {

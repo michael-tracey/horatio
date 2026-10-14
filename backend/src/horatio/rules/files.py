@@ -251,6 +251,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             usual_max=c.get("usual_max"),
             max_held=c.get("max_held"),
             derived=c.get("derived", False),
+            buy_off_factor=c.get("buy_off_factor"),
         )
         for c in raw["categories"]
     }

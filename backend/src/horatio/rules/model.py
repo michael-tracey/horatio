@@ -46,6 +46,8 @@ class CategoryData:
     max_held: int | None = None
     # Worked out from the rest of the sheet (health, Willpower); not bought.
     derived: bool = False
+    # Removing an accepted trait costs this many times its points (flaws: 2).
+    buy_off_factor: int | None = None
 
 
 @dataclass(frozen=True)

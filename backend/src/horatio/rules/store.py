@@ -104,6 +104,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.usual_max = category.usual_max
         row.max_held = category.max_held
         row.derived = category.derived
+        row.buy_off_factor = category.buy_off_factor
     session.flush()
 
     definitions = {
@@ -488,6 +489,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 usual_max=c.usual_max,
                 max_held=c.max_held,
                 derived=c.derived,
+                buy_off_factor=c.buy_off_factor,
             )
             for c in categories
         },

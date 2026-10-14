@@ -212,6 +212,8 @@ function StepView({
               allowed={allowedFor(creation, category)}
               picks={mine}
               onChange={set}
+              details={details[category] ?? {}}
+              onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
               sections={
                 traits.some((t) => t.attribute)
                   ? { order: ["Physical", "Social", "Mental"], of: (t: TraitOut) => t.attribute }

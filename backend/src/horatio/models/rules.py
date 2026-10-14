@@ -58,6 +58,8 @@ class TraitCategory(Record):
     max_held: Mapped[int | None]
     # Worked out from the rest of the sheet; never bought.
     derived: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Removing an accepted trait costs this many times its points (flaws).
+    buy_off_factor: Mapped[int | None]
 
 
 class TraitDefinition(Record):

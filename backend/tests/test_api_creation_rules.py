@@ -167,3 +167,52 @@ def test_unspent_creation_xp_past_five_is_lost_on_first_acceptance(troupe: Troup
     assert (after["balance"], after["unbanked"]) == (5, 0)
     history = troupe.player.client.get(f"/characters/{character_id}/xp").json()
     assert (history[-1]["kind"], history[-1]["amount"]) == ("fee", -22)
+
+
+def test_crafts_performance_and_science_need_a_field(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+    for category, name, rating in FULL_BUILD:
+        if name == "Melee":
+            name = "Performance"
+        pick(troupe.player, character_id, category, name, rating)
+
+    refused = troupe.player.client.post(f"/characters/{character_id}/creation/complete")
+    assert refused.status_code == 409
+    assert "need a field" in refused.json()["detail"]
+
+    troupe.player.client.put(
+        f"/characters/{character_id}/creation/categories/skills",
+        json={
+            "picks": [
+                {
+                    "name": name,
+                    "rating": rating,
+                    "detail": "Singing" if name == "Performance" else "",
+                }
+                for category, name, rating in FULL_BUILD
+                if category == "skills"
+                for name in ["Performance" if name == "Melee" else name]
+            ]
+        },
+    )
+    assert (
+        troupe.player.client.post(f"/characters/{character_id}/creation/complete").status_code
+        == 200
+    )
+
+    unnamed = take(troupe.player, character_id, "skills", "Science", 1)
+    assert unnamed.status_code == 409
+    assert take(troupe.player, character_id, "skills", "Science", 1, "Biology").status_code == 200
+
+
+def test_an_accepted_flaw_is_bought_off_for_twice_its_value(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    take(troupe.player, character_id, "flaws", "Dark Secret", 1)
+    make_home(troupe, character_id)
+    before = troupe.player.client.get(f"/characters/{character_id}/sheet").json()["xp"]["balance"]
+
+    bought_off = take(troupe.player, character_id, "flaws", "Dark Secret", 0)
+
+    assert bought_off.status_code == 200, bought_off.text
+    assert bought_off.json()["cost"] == 2
+    assert bought_off.json()["sheet"]["xp"]["balance"] == before - 2
