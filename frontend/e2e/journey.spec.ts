@@ -110,6 +110,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByLabel("Change Strength to").selectOption("Dexterity");
   await p.getByRole("button", { name: "10 XP" }).click();
   await expect(p.getByText("19", { exact: true })).toBeVisible();
+  // Merits that give other traits apply them: Rugged adds a health level to each track.
+  await p.getByLabel("Category").selectOption({ label: "Merits" });
+  await p.getByLabel("Trait").selectOption("Rugged");
+  await p.getByRole("button", { name: "Buy" }).click();
+  await expect(p.getByText("+1 from Rugged").first()).toBeVisible();
+  await expect(p.getByText("16", { exact: true })).toBeVisible();
   await p.screenshot(shots("sheet"));
   // The character's own log says when, who and what.
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();

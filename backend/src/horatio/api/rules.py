@@ -8,6 +8,7 @@ from sqlalchemy.exc import NoResultFound
 
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe
+from horatio.rules.grants import choices
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(prefix="/rules", tags=["rules"])
@@ -40,6 +41,9 @@ class TraitOut(BaseModel):
     in_clan: list[str] | None
     # For a skill: the attribute it generally goes with (Physical, Social or Mental).
     attribute: str | None
+    # For a trait that grants something the player picks (Personal Cult: which
+    # background): the picks, to put in its detail.
+    choices: list[str] | None = None
 
 
 class CatalogueOut(BaseModel):
@@ -65,6 +69,12 @@ def catalogue(
     except NoResultFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No rules for {splat!r}.") from None
     house_text = {(r.category, r.trait): r.text for r in rules.house_rules if r.trait and r.text}
+    chooses: dict[tuple[str, str], list[str]] = {}
+    for grant in rules.rule_set.grants:
+        options = choices(grant, rules.rule_set)
+        if options:
+            source = (grant.source["category"], grant.source["name"])
+            chooses[source] = sorted(set(chooses.get(source, [])) | set(options))
     return CatalogueOut(
         splat=rules.splat,
         name=rules.rule_set.name,
@@ -91,6 +101,7 @@ def catalogue(
                 house_rule=house_text.get((t.category, t.name)),
                 in_clan=t.properties.get("in_clan"),
                 attribute=t.properties.get("attribute"),
+                choices=chooses.get((t.category, t.name)),
             )
             for t in sorted(rules.rule_set.traits.values(), key=lambda t: (t.category, t.name))
             if category is None or t.category == category

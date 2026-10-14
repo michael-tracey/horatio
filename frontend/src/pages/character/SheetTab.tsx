@@ -241,6 +241,11 @@ function TraitRow({
             <Badge tone="gold">awaiting approval</Badge>
           </span>
         )}
+        {trait.granted_rating !== 0 && trait.granted_by.length > 0 && (
+          <span className="ml-2 text-xs text-mist">
+            {trait.granted_rating > 0 ? `+${trait.granted_rating}` : trait.granted_rating} from {trait.granted_by.join(", ")}
+          </span>
+        )}
       </span>
       {trait.rating !== null && (
         <span className="flex shrink-0 items-center gap-2">
@@ -343,9 +348,20 @@ function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; c
         </Field>
         {trait?.description && <p className="text-xs leading-relaxed text-mist">{trait.description}</p>}
         {trait?.house_rule && <Notice>House rule: {trait.house_rule}</Notice>}
-        <Field label="Detail" hint="Optional: a specialisation, subject, or name.">
-          <Input value={detail} onChange={(e) => setDetail(e.target.value)} />
-        </Field>
+        {trait?.choices ? (
+          <Field label="Which?" hint={`${name} gives one of these.`}>
+            <Select required value={detail} onChange={(e) => setDetail(e.target.value)}>
+              <option value="">Choose…</option>
+              {trait.choices.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </Select>
+          </Field>
+        ) : (
+          <Field label="Detail" hint="Optional: a specialisation, subject, or name.">
+            <Input value={detail} onChange={(e) => setDetail(e.target.value)} />
+          </Field>
+        )}
         {cat?.rated && fixed === null && (
           <Field label="Rating">
             <Input

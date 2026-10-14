@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal, get_args
 
 if TYPE_CHECKING:
     from horatio.rules.checks import CheckData
+    from horatio.rules.grants import GrantData
 
 Scheme = Literal["per_dot", "progressive", "table", "fixed", "free", "not_allowed"]
 SCHEMES: tuple[str, ...] = get_args(Scheme)
@@ -37,6 +38,12 @@ class CategoryData:
     # The most points a character can hold in this category (merits), or for a
     # category that pays XP back (flaws), the most it pays out.
     points_limit: int | None = None
+    # The highest rating usually allowed when buying (skills 5); grants can raise
+    # it. `max_rating` stays the hard ceiling.
+    usual_max: int | None = None
+    # How many traits a character holds in this category, besides any granted
+    # (one focus per attribute).
+    max_held: int | None = None
 
 
 @dataclass(frozen=True)
@@ -150,6 +157,8 @@ class RuleSetData:
     titles: Sequence[str] = ()
     # What a sheet may hold (horatio.rules.checks).
     checks: Sequence["CheckData"] = ()
+    # Traits that give other traits (horatio.rules.grants).
+    grants: Sequence["GrantData"] = ()
 
     def trait_properties(self, category: str, name: str) -> Mapping[str, Any]:
         trait = self.traits.get((category, name))

@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import npcs
+from horatio import npcs, sheets
 from horatio.api.characters import CharacterOut, character_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.sheets import players_character
@@ -73,7 +73,8 @@ def create_npc(
 def set_rating(character_id: uuid.UUID, body: Rating, db: DbSession, user: CurrentUser) -> Tally:
     """Set one of an NPC's traits straight to a rating, and get the new tally."""
     npc = players_character(db, user, character_id)
-    npcs.set_rating(db, user, npc, body.category, body.name, body.detail, body.rating)
+    with sheets.checked(db, npc, user):
+        npcs.set_rating(db, user, npc, body.category, body.name, body.detail, body.rating)
     db.commit()
     return tally(character_id, db, user)
 

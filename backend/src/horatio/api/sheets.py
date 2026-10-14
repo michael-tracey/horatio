@@ -43,6 +43,9 @@ class SheetTraitOut(BaseModel):
     min_rating: int
     # Dots bought but waiting on the home troupe: the rating they were bought from.
     pending_from: int | None
+    # Dots other traits give (negative if a flaw takes some away), and which traits.
+    granted_rating: int
+    granted_by: list[str]
     note: str
 
 
@@ -174,6 +177,7 @@ def approval_out(approval: Approval) -> ApprovalOut:
 
 def sheet_out(db: DbSession, character: Character) -> SheetOut:
     floor = sheets.accepted_ratings(db, character)
+    granting = sheets.sheet_effects(db, character).sources
     rows = sheets.sheet_rows(db, character)
     entries = list(db.scalars(select(XpEntry.amount).where(XpEntry.character_id == character.id)))
     pending = sheets.pending_approvals(db, character)
@@ -228,6 +232,8 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 free_rating=r.trait.free_rating,
                 min_rating=max(r.trait.free_rating, floor.get(r.key, 0)),
                 pending_from=held_from.get((r.definition.id, r.trait.detail)),
+                granted_rating=r.trait.granted_rating,
+                granted_by=granting.get(r.key, []) if r.trait.granted_rating else [],
                 note=r.trait.note,
             )
             for r in rows
@@ -319,7 +325,7 @@ def change_trait(
     character_id: uuid.UUID, body: TraitChange, db: DbSession, user: CurrentUser
 ) -> ChangeOut:
     character = players_character(db, user, character_id)
-    with sheets.checked(db, character):
+    with sheets.checked(db, character, user):
         change = sheets.set_trait(
             db, user, character, body.category, body.name, body.detail, body.rating, body.note
         )
@@ -333,7 +339,7 @@ def change_choice(
 ) -> ChangeOut:
     """Swap a focus (or another swappable choice) for another, for its change cost."""
     character = players_character(db, user, character_id)
-    with sheets.checked(db, character):
+    with sheets.checked(db, character, user):
         cost = sheets.change_choice(
             db, user, character, body.category, body.from_name, body.to_name
         )

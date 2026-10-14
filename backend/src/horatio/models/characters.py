@@ -57,6 +57,10 @@ class CharacterTrait(Record):
     rating: Mapped[int | None]
     # Dots the character has without paying XP: from creation, or granted by another trait.
     free_rating: Mapped[int] = mapped_column(default=0, server_default="0")
+    # The part of the rating (and of free_rating) that grants from other traits
+    # give, such as Rugged's extra health level; negative for a flaw that takes
+    # dots away. Undone exactly when the granting trait goes.
+    granted_rating: Mapped[int] = mapped_column(default=0, server_default="0")
     # The creation pick placed on this trait: the pick's rating, or for a points
     # budget (merits, flaws) the points it used. Null for no pick.
     creation_pick: Mapped[int | None]

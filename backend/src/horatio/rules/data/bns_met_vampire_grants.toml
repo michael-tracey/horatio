@@ -1,0 +1,145 @@
+# Traits that give a Vampire other traits (horatio.rules.grants). Page numbers
+# are MET: Vampire The Masquerade (core). Where the player chooses what is
+# granted, the source trait's detail names it ("Resources", "Performance: Singing").
+
+# --- health and Willpower -------------------------------------------------------
+
+[[grants]]
+source = { category = "merits", name = "Rugged" }
+kind = "add"
+target = { category = "health_levels", name = "Healthy" }
+amount = 1
+page = "252"
+
+[[grants]]
+source = { category = "merits", name = "Rugged" }
+kind = "add"
+target = { category = "health_levels", name = "Injured" }
+amount = 1
+page = "252"
+
+[[grants]]
+source = { category = "merits", name = "Rugged" }
+kind = "add"
+target = { category = "health_levels", name = "Incapacitated" }
+amount = 1
+page = "252"
+
+[[grants]]
+source = { category = "flaws", name = "Low Pain Threshold" }
+kind = "add"
+target = { category = "health_levels", name = "Injured" }
+amount = -1
+page = "264"
+
+[[grants]]
+source = { category = "flaws", name = "Low Pain Threshold" }
+kind = "add"
+target = { category = "health_levels", name = "Incapacitated" }
+amount = -1
+page = "264"
+
+[[grants]]
+source = { category = "flaws", name = "Permanent Wound" }
+kind = "add"
+target = { category = "health_levels", name = "Healthy" }
+amount = -2
+page = "265"
+
+[[grants]]
+source = { category = "merits", name = "Unyielding" }
+kind = "add"
+target = { category = "willpower_sources", name = "Willpower" }
+amount = 1
+page = "253"
+
+[[grants]]
+source = { category = "flaws", name = "Short Attention Span" }
+kind = "add"
+target = { category = "willpower_sources", name = "Willpower" }
+amount = -1
+page = "265"
+
+# --- extra focuses ----------------------------------------------------------------
+
+[[grants]]
+source = { category = "merits", name = "Angelic Visage" }
+kind = "add"
+target = { category = "focus_socials", name = "Charisma" }
+amount = 1
+page = "241"
+
+[[grants]]
+source = { category = "merits", name = "Expanded Consciousness" }
+kind = "add"
+target = { category = "focus_mentals", choose = "any" }
+amount = 1
+page = "241"
+
+[[grants]]
+source = { category = "merits", name = "Versatile" }
+kind = "add"
+target = { categories = ["focus_physicals", "focus_socials", "focus_mentals"], choose = "any" }
+amount = 1
+page = "253"
+
+# --- free dots ----------------------------------------------------------------------
+
+[[grants]]
+source = { category = "merits", name = "Personal Cult" }
+kind = "free_up_to"
+target = { category = "backgrounds", choose = ["Haven", "Herd", "Resources"] }
+amount = 5
+page = "239"
+
+[[grants]]
+source = { category = "merits", name = "Artist's Blessing" }
+kind = "free_up_to"
+target = { category = "skills", choose = ["Crafts", "Performance"] }
+amount = 3
+page = "243"
+
+[[grants]]
+source = { category = "merits", name = "Blood of the Tzimisce" }
+kind = "free_up_to"
+target = { category = "skills", name = "Lore" }
+amount = 2
+page = "244"
+
+# --- higher caps -------------------------------------------------------------------
+
+[[grants]]
+source = { category = "merits", name = "Artist's Blessing" }
+kind = "raise_max"
+target = { category = "skills", names = ["Crafts", "Performance"] }
+amount = 2
+page = "243"
+
+[[grants]]
+source = { category = "merits", name = "Blood of the Tzimisce" }
+kind = "raise_max"
+target = { category = "skills", names = ["Lore"] }
+amount = 2
+page = "244"
+
+[[grants]]
+source = { category = "merits", name = "Skill Aptitude" }
+kind = "raise_max"
+target = { category = "skills", choose = "any" }
+amount = 1
+page = "253"
+
+[[grants]]
+source = { category = "merits", name = "Supernatural Aria" }
+kind = "raise_max"
+target = { category = "skills", names = ["Performance"], detail = "Singing" }
+amount = 3
+page = "247"
+
+# A Luminary Elder can buy the sixth level of any skill (p. 101).
+[[grants]]
+source = { category = "backgrounds", name = "Generation", rating = 5 }
+kind = "raise_max"
+target = { category = "skills" }
+amount = 1
+page = "101"

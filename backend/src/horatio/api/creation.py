@@ -104,7 +104,7 @@ def place_pick(
     character_id: uuid.UUID, body: Pick, db: DbSession, user: CurrentUser
 ) -> CreationOut:
     character = players_character(db, user, character_id)
-    with sheets.checked(db, character):
+    with sheets.checked(db, character, user):
         creation.place_pick(db, user, character, body.category, body.name, body.detail, body.rating)
     db.commit()
     return creation_out(db, character)
@@ -116,7 +116,7 @@ def set_category_picks(
 ) -> CreationOut:
     """Replace every creation pick in one category at once: one step of the wizard."""
     character = players_character(db, user, character_id)
-    with sheets.checked(db, character):
+    with sheets.checked(db, character, user):
         creation.set_category_picks(
             db,
             user,

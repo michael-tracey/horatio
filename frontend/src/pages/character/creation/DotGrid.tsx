@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { TraitOut } from "../../../api/types";
-import { Badge, Input } from "../../../components/ui";
+import { Badge, Input, Select } from "../../../components/ui";
 import { canTap, left, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
 
 const SEARCH_FROM = 12; // Long lists get a search box.
@@ -129,6 +129,8 @@ export function PointsList({
   picks,
   onChange,
   unavailable = {},
+  details = {},
+  onDetail,
 }: {
   title: string;
   traits: TraitOut[];
@@ -137,6 +139,9 @@ export function PointsList({
   onChange: (picks: Picks) => void;
   /** Traits the rules do not allow this character, and why. */
   unavailable?: Record<string, string>;
+  /** The choice made for picks that grant something chosen (Personal Cult: which background). */
+  details?: Record<string, string>;
+  onDetail?: (name: string, detail: string) => void;
 }) {
   const { query, setQuery, shown } = useFiltered(traits, picks);
   const used = spent(picks);
@@ -173,6 +178,19 @@ export function PointsList({
                 <span className="min-w-0">
                   <span className="text-parchment">{t.name}</span> <span className="text-gold">({points})</span>
                   {barred && <span className="mt-0.5 block text-xs text-blood-bright">{barred}</span>}
+                  {chosen && t.choices && onDetail && (
+                    <Select
+                      aria-label={`${t.name}: which?`}
+                      className="mt-1 h-8 py-0"
+                      value={details[t.name] ?? ""}
+                      onChange={(e) => onDetail(t.name, e.target.value)}
+                    >
+                      <option value="">Which?</option>
+                      {t.choices.map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </Select>
+                  )}
                   {t.description && <span className="mt-0.5 block text-xs text-mist">{t.description}</span>}
                 </span>
               </label>

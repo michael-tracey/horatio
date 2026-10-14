@@ -31,6 +31,9 @@ trait_files = ["bns_met_vampire_traits.toml"]
 # What a sheet may hold, beyond what it costs (horatio.rules.checks).
 check_files = ["bns_met_vampire_checks.toml"]
 
+# Traits that give other traits (horatio.rules.grants).
+grant_files = ["bns_met_vampire_grants.toml"]
+
 # ---------------------------------------------------------------------------
 # Categories, in sheet order. max_rating is the highest rating a trait can
 # reach; unrated categories hold one choice (such as a clan) rather than dots.
@@ -70,6 +73,8 @@ group = "Attributes"
 key = "focus_physicals"
 name = "Physical Focus"
 group = "Attributes"
+# One focus per attribute (p. 90); merits can grant more.
+max_held = 1
 # After creation, swapping the focus for another costs this much (p. 90).
 change_cost = 10
 
@@ -77,6 +82,8 @@ change_cost = 10
 key = "focus_mentals"
 name = "Mental Focus"
 group = "Attributes"
+# One focus per attribute (p. 90); merits can grant more.
+max_held = 1
 # After creation, swapping the focus for another costs this much (p. 90).
 change_cost = 10
 
@@ -84,6 +91,8 @@ change_cost = 10
 key = "focus_socials"
 name = "Social Focus"
 group = "Attributes"
+# One focus per attribute (p. 90); merits can grant more.
+max_held = 1
 # After creation, swapping the focus for another costs this much (p. 90).
 change_cost = 10
 
@@ -102,6 +111,8 @@ key = "skills"
 name = "Skills"
 group = "Skills"
 max_rating = 10
+# Skills are bought up to 5; merits and generation can raise that (pp. 91, 101).
+usual_max = 5
 
 [[categories]]
 key = "lore_specializations"
@@ -162,6 +173,8 @@ group = "Morality"
 key = "backgrounds"
 name = "Backgrounds"
 group = "Backgrounds"
+# Backgrounds are bought up to 5 (p. 98).
+usual_max = 5
 
 [[categories]]
 key = "haven_specializations"

@@ -7,6 +7,7 @@ from typing import Any
 
 from horatio.rules.checks import CheckData, check_from_dict, validate_condition
 from horatio.rules.conditions import validate
+from horatio.rules.grants import GrantData, grant_from_dict, validate_grant
 from horatio.rules.model import (
     DEFAULT_MAX_RATING,
     SCHEMES,
@@ -205,6 +206,28 @@ def load_checks(
     return checks
 
 
+def load_grants(
+    where: str,
+    raw_grants: list[dict[str, Any]],
+    traits: Mapping[tuple[str, str], TraitData],
+    categories: Mapping[str, CategoryData],
+) -> list[GrantData]:
+    grants: list[GrantData] = []
+    seen: dict[str, int] = {}
+    for raw in raw_grants:
+        if "key" not in raw:
+            base = f"{raw['source']['category']}/{raw['source']['name']}"
+            seen[base] = seen.get(base, 0) + 1
+            raw = {**raw, "key": f"{base}/{seen[base]}"}
+        grant = grant_from_dict(raw)
+        try:
+            validate_grant(grant, set(traits), set(categories))
+        except ValueError as error:
+            raise ValueError(f"{where}: {error}") from error
+        grants.append(grant)
+    return grants
+
+
 def load_rule_set(path: Path) -> RuleSetData:
     with path.open("rb") as f:
         raw = tomllib.load(f)
@@ -223,6 +246,8 @@ def load_rule_set(path: Path) -> RuleSetData:
             requires=c.get("requires"),
             change_cost=c.get("change_cost"),
             points_limit=c.get("points_limit"),
+            usual_max=c.get("usual_max"),
+            max_held=c.get("max_held"),
         )
         for c in raw["categories"]
     }
@@ -249,6 +274,11 @@ def load_rule_set(path: Path) -> RuleSetData:
         with (path.parent / check_file).open("rb") as f:
             raw_checks += tomllib.load(f).get("checks", [])
     checks = load_checks(path.name, raw_checks, traits, categories)
+    raw_grants = list(raw.get("grants", []))
+    for grant_file in raw.get("grant_files", []):
+        with (path.parent / grant_file).open("rb") as f:
+            raw_grants += tomllib.load(f).get("grants", [])
+    grants = load_grants(path.name, raw_grants, traits, categories)
     action_kinds = {
         k["key"]: ActionKindData(key=k["key"], name=k["name"], fields=tuple(k.get("fields", [])))
         for k in raw.get("action_kinds", [])
@@ -281,6 +311,7 @@ def load_rule_set(path: Path) -> RuleSetData:
         ],
         titles=tuple(sorted(set(titles))),
         checks=checks,
+        grants=grants,
     )
     for allowance_rule in allowance_rules:
         check_allowance_rule(allowance_rule, rule_set)
@@ -309,7 +340,10 @@ def load_rule_set(path: Path) -> RuleSetData:
 
 
 def all_rule_set_files() -> Iterable[Path]:
-    """Rule set files; `*_traits.toml` and `*_checks.toml` files are parts they include."""
+    """Rule set files; `*_traits.toml`, `*_checks.toml` and `*_grants.toml` are parts
+    they include."""
     return sorted(
-        p for p in DATA_DIR.glob("*.toml") if not p.name.endswith(("_traits.toml", "_checks.toml"))
+        p
+        for p in DATA_DIR.glob("*.toml")
+        if not p.name.endswith(("_traits.toml", "_checks.toml", "_grants.toml"))
     )

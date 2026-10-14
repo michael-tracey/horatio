@@ -1,8 +1,10 @@
 """Rule sets in the database: loading the generic rules in, and reading troupe rules out."""
 
 import uuid
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import replace
+from functools import wraps
+from typing import Concatenate
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -19,6 +21,7 @@ from horatio.models import (
 )
 from horatio.rules.checks import check_from_dict, check_to_dict
 from horatio.rules.files import check_allowance_rule, check_cost_rule, check_creation_rules
+from horatio.rules.grants import grant_from_dict, grant_to_dict
 from horatio.rules.model import (
     ActionKindData,
     AllowanceRuleData,
@@ -31,7 +34,31 @@ from horatio.rules.model import (
     TroupeRules,
 )
 
+RULES_CACHE = "horatio.troupe_rules"
 
+
+def forget_rules(session: Session) -> None:
+    """Drop the rules cached on this session, after changing them."""
+    session.info.pop(RULES_CACHE, None)
+
+
+def changes_rules[**P, R](
+    fn: Callable[Concatenate[Session, P], R],
+) -> Callable[Concatenate[Session, P], R]:
+    """Mark a function that writes rules: the session's cached rules are dropped
+    once it is done, so the next read sees the change."""
+
+    @wraps(fn)
+    def wrapper(session: Session, *args: P.args, **kwargs: P.kwargs) -> R:
+        try:
+            return fn(session, *args, **kwargs)
+        finally:
+            forget_rules(session)
+
+    return wrapper
+
+
+@changes_rules
 def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
     """Make the database's generic rules match `data`.
 
@@ -48,6 +75,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
     rule_set.starting_xp = data.starting_xp
     rule_set.titles = list(data.titles)
     rule_set.checks = [check_to_dict(c) for c in data.checks]
+    rule_set.grants = [grant_to_dict(g) for g in data.grants]
     session.flush()
 
     categories = {
@@ -71,6 +99,8 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.requires = dict(category.requires) if category.requires else None
         row.change_cost = category.change_cost
         row.points_limit = category.points_limit
+        row.usual_max = category.usual_max
+        row.max_held = category.max_held
     session.flush()
 
     definitions = {
@@ -179,6 +209,7 @@ def creation_row(
     )
 
 
+@changes_rules
 def set_house_creation_rules(
     session: Session,
     troupe_id: uuid.UUID,
@@ -230,6 +261,7 @@ def allowance_row(
     )
 
 
+@changes_rules
 def add_house_allowance_rule(
     session: Session, troupe_id: uuid.UUID, splat: str, rule: AllowanceRuleData
 ) -> AllowanceRule:
@@ -254,6 +286,7 @@ def add_house_allowance_rule(
     return row
 
 
+@changes_rules
 def add_house_action_kind(
     session: Session, troupe_id: uuid.UUID, splat: str, kind: ActionKindData
 ) -> ActionKind:
@@ -270,6 +303,7 @@ def add_house_action_kind(
     return row
 
 
+@changes_rules
 def add_house_rule(
     session: Session, troupe_id: uuid.UUID, splat: str, rule: CostRuleData
 ) -> CostRule:
@@ -309,7 +343,17 @@ def add_house_rule(
 
 def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None) -> TroupeRules:
     """The rules a character of `splat` plays by in `troupe_id`, or the plain rule
-    set when `troupe_id` is None (a character with no home troupe)."""
+    set when `troupe_id` is None (a character with no home troupe). Read once per
+    session: rules change only through this module, which forgets them."""
+    cache: dict[tuple[str, uuid.UUID | None], TroupeRules] = session.info.setdefault(
+        RULES_CACHE, {}
+    )
+    if (splat, troupe_id) not in cache:
+        cache[(splat, troupe_id)] = load_troupe_rules(session, splat, troupe_id)
+    return cache[(splat, troupe_id)]
+
+
+def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None) -> TroupeRules:
     rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
     categories = list(
         session.scalars(
@@ -424,6 +468,7 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         starting_xp=rule_set.starting_xp,
         titles=tuple(rule_set.titles),
         checks=tuple(check_from_dict(c) for c in rule_set.checks),
+        grants=tuple(grant_from_dict(g) for g in rule_set.grants),
         categories={
             c.key: CategoryData(
                 key=c.key,
@@ -435,6 +480,8 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 requires=c.requires,
                 change_cost=c.change_cost,
                 points_limit=c.points_limit,
+                usual_max=c.usual_max,
+                max_held=c.max_held,
             )
             for c in categories
         },

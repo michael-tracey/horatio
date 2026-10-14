@@ -39,8 +39,9 @@ from horatio.models import (
     XpEntry,
 )
 from horatio.rules.checks import Violation, violations
+from horatio.rules.grants import Effects, choices, effects, raised_by
 from horatio.rules.model import SheetTrait, TroupeRules
-from horatio.rules.pricing import PricingError, Quote, points, purchase_cost
+from horatio.rules.pricing import PricingError, Quote, points, purchase_cost, trait_cost
 from horatio.rules.store import read_troupe_rules
 
 TraitKey = tuple[str, str, str]  # category, name, detail
@@ -278,25 +279,132 @@ def unavailable(db: Session, character: Character, category_key: str) -> dict[st
     return reasons
 
 
+def sheet_effects(db: Session, character: Character) -> Effects:
+    """What the sheet's grants do."""
+    rule_set = rules_for(db, character).rule_set
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    return effects(rule_set.grants, sheet, rule_set)
+
+
+def apply_grants(db: Session, user: User, character: Character) -> None:
+    """Bring every granted trait into line with the grants the sheet now holds:
+    add what new grants give, take back what lost grants gave (nothing refunded,
+    MET: VTM p. 236), and refund dots a `free_up_to` grant now makes free."""
+    rules = rules_for(db, character)
+    found = sheet_effects(db, character)
+    wanted: dict[TraitKey, tuple[int, int]] = {
+        key: (amount, 0) for key, amount in found.added.items()
+    }
+    for key, amount in found.free_up_to.items():
+        wanted[key] = (wanted.get(key, (0, 0))[0], amount)
+    rows = {r.key: r for r in sheet_rows(db, character)}
+    for key in set(wanted) | {k for k, r in rows.items() if r.trait.granted_rating}:
+        added, free_up_to = wanted.get(key, (0, 0))
+        row = rows.get(key)
+        if row is None:
+            if added <= 0 and free_up_to <= 0:
+                continue
+            definition, _ = find_definition(db, character, key[0], key[1])
+            trait = CharacterTrait(
+                character_id=character.id,
+                trait_definition_id=definition.id,
+                detail=key[2],
+                rating=0,
+                free_rating=0,
+                granted_rating=0,
+            )
+            db.add(trait)
+        else:
+            trait = row.trait
+        old = trait.granted_rating
+        base_rating = (trait.rating or 0) - old
+        base_free = trait.free_rating - old
+        granted = added + max(0, free_up_to - base_free)
+        # Dots the player bought inside the newly free range are refunded.
+        bought = max(0, min(base_rating, free_up_to) - base_free)
+        if bought:
+            refund = trait_cost(
+                rules,
+                [],
+                SheetTrait(key[0], key[1], base_free + bought, base_free, key[2]),
+            ).cost
+            definition, _ = find_definition(db, character, key[0], key[1])
+            if refund:
+                db.add(
+                    XpEntry(
+                        character_id=character.id,
+                        kind="purchase",
+                        amount=refund,
+                        reason=f"{key[1]}: dots now free ({', '.join(found.sources.get(key, []))})",
+                        entered_by=user.id,
+                        trait_definition_id=definition.id,
+                        detail=key[2] or None,
+                        from_rating=base_free + bought,
+                        to_rating=base_free,
+                        cost_basis={"grant": found.sources.get(key, [])},
+                    )
+                )
+            base_rating -= bought
+        if granted == old and not bought:
+            continue
+        trait.rating = max(0, base_rating + granted)
+        trait.free_rating = max(0, base_free + granted)
+        trait.granted_rating = granted
+        if trait.rating == 0 and trait.free_rating == 0 and trait.creation_pick is None:
+            db.delete(trait)
+    db.flush()
+
+
+def held_beyond_limit(db: Session, character: Character) -> dict[str, int]:
+    """Categories where the character holds more (ungranted) traits than allowed."""
+    over: dict[str, int] = {}
+    for row in sheet_rows(db, character):
+        limit = row.category.max_held
+        if limit is None or not row.trait.rating or row.trait.granted_rating >= row.trait.rating:
+            continue
+        over[row.category.key] = over.get(row.category.key, 0) + 1
+    return {
+        key: count
+        for key, count in over.items()
+        if count > (rules_for(db, character).rule_set.categories[key].max_held or 0)
+    }
+
+
 @contextmanager
-def checked(db: Session, character: Character) -> Iterator[None]:
-    """Make a change to a player character's sheet, then refuse it if it breaks a
-    check the sheet did not already break. The caller's transaction is rolled back
-    with the refusal. NPCs are their staff's to build as they like."""
+def checked(db: Session, character: Character, user: User | None = None) -> Iterator[None]:
+    """Make a change to a sheet, then bring its grants into line and refuse the
+    change if it breaks a check the sheet did not already break. The caller's
+    transaction is rolled back with the refusal. NPCs get their grants but are
+    their staff's to build as they like."""
     before = {v.key for v in sheet_violations(db, character)}
+    over_before = held_beyond_limit(db, character)
     yield
+    db.flush()
+    if user is not None:
+        apply_grants(db, user, character)
     if character.kind != "pc":
         return
-    db.flush()
     db.expire_all()
-    new = [
-        v
+    problems = [
+        v.message
         for v in sheet_violations(db, character)
         if v.check.strength == "refuse" and v.key not in before
     ]
-    if new:
+    rule_set = rules_for(db, character).rule_set
+    for key, count in held_beyond_limit(db, character).items():
+        if count > over_before.get(key, 0):
+            category = rule_set.categories[key]
+            problems.append(
+                f"A character holds {category.max_held} {category.name.lower()}; "
+                "only merits can grant more."
+            )
+    for trait, grant in sheet_effects(db, character).unchosen:
+        options = choices(grant, rule_set)
+        listed = ", ".join(options) if len(options) <= 8 else "the trait it applies to"
+        problems.append(f"Say which for {trait.name}: put {listed} in its detail.")
+    if problems:
         db.rollback()
-        raise conflict(" ".join(dict.fromkeys(v.message for v in new)))
+        raise conflict(" ".join(dict.fromkeys(problems)))
 
 
 def replace_choice(
@@ -384,6 +492,12 @@ def quote_change(
     current_free = current.trait.free_rating if current else 0
     if rating < current_free:
         raise unprocessable("A rating cannot go below its free dots.")
+    if category.usual_max is not None and rating > current_rating:
+        highest = category.usual_max + raised_by(
+            sheet_effects(db, character), category.key, definition.name, detail
+        )
+        if rating > highest:
+            raise unprocessable(f"{name} cannot go above {highest}.")
 
     sheet = [r.as_rules_trait() for r in rows]
     before = SheetTrait(

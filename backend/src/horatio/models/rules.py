@@ -21,6 +21,8 @@ class RuleSet(Record):
     titles: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     # What a sheet may hold (horatio.rules.checks), as written in the rule set file.
     checks: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Traits that give other traits (horatio.rules.grants), as written in the files.
+    grants: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class TraitCategory(Record):
@@ -44,6 +46,10 @@ class TraitCategory(Record):
     change_cost: Mapped[int | None]
     # Most points held in this category (merits), or paid out by it (flaws).
     points_limit: Mapped[int | None]
+    # Highest rating usually allowed when buying; grants can raise it.
+    usual_max: Mapped[int | None]
+    # Traits held in this category besides granted ones (one focus per attribute).
+    max_held: Mapped[int | None]
 
 
 class TraitDefinition(Record):

@@ -2328,6 +2328,10 @@ export interface components {
             detail: string;
             /** Free Rating */
             free_rating: number;
+            /** Granted By */
+            granted_by: string[];
+            /** Granted Rating */
+            granted_rating: number;
             /** Group */
             group: string;
             /**
@@ -2477,6 +2481,8 @@ export interface components {
             attribute: string | null;
             /** Category */
             category: string;
+            /** Choices */
+            choices?: string[] | null;
             /** Description */
             description: string | null;
             /** Fixed Rating */

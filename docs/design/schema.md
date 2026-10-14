@@ -547,3 +547,21 @@ Recorded here for review; each is easy to change.
 - Still to come: a troupe switching checks off or changing their strength, and a
   `review` strength that sends a purchase to the home troupe's approvals.
 
+**Grants: traits that give other traits (issue #2)**
+
+- `rule_sets.grants` (JSON), loaded from `*_grants.toml` files named in
+  `grant_files`. A grant has a source trait, a kind (`add`, `free_up_to`,
+  `raise_max`), a target and an amount; see `horatio/rules/grants.py`. Where the
+  player chooses the target, the source trait's detail says which, and the
+  catalogue lists the choices.
+- `character_traits.granted_rating` is the part of a trait's rating (and free
+  rating) that grants give, negative where a flaw takes dots away. After every
+  sheet change, `sheets.apply_grants` brings it into line with the grants the
+  sheet holds, so losing a source takes its dots back exactly; dots the player
+  had bought inside a newly free range are refunded as a purchase entry.
+- Categories carry `usual_max` (skills and backgrounds bought up to 5; grants
+  raise it, `max_rating` stays the hard ceiling) and `max_held` (one focus per
+  attribute, besides granted ones).
+- Troupe rules are cached on the session; the functions in `rules/store.py` that
+  write rules drop the cache.
+

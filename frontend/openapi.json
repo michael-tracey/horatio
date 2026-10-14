@@ -2522,6 +2522,17 @@
             "title": "Free Rating",
             "type": "integer"
           },
+          "granted_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Granted By",
+            "type": "array"
+          },
+          "granted_rating": {
+            "title": "Granted Rating",
+            "type": "integer"
+          },
           "group": {
             "title": "Group",
             "type": "string"
@@ -2577,6 +2588,8 @@
           "free_rating",
           "min_rating",
           "pending_from",
+          "granted_rating",
+          "granted_by",
           "note"
         ],
         "title": "SheetTraitOut",
@@ -2912,6 +2925,20 @@
           "category": {
             "title": "Category",
             "type": "string"
+          },
+          "choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choices"
           },
           "description": {
             "anyOf": [

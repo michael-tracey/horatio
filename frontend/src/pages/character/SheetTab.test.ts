@@ -13,6 +13,8 @@ const trait = (category: string, category_name: string, group: string, name: str
   free_rating: 0,
   min_rating: 0,
   pending_from: null,
+  granted_rating: 0,
+  granted_by: [],
   note: "",
 });
 

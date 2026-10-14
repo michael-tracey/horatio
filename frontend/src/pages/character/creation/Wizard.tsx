@@ -42,6 +42,15 @@ function savedPicks(creation: CreationOut): Record<string, Picks> {
   return picks;
 }
 
+/** The detail saved with each pick, by category then name: a merit's choice. */
+function savedDetails(creation: CreationOut): Record<string, Record<string, string>> {
+  const details: Record<string, Record<string, string>> = {};
+  for (const pool of creation.pools) {
+    for (const t of pool.traits) (details[pool.category] ??= {})[t.name] = t.detail;
+  }
+  return details;
+}
+
 function allowedFor(creation: CreationOut, category: string): Allowed {
   return Object.fromEntries(creation.pools.filter((p) => p.category === category).map((p) => [p.rating, p.allowed]));
 }
@@ -124,16 +133,23 @@ function StepView({
   const saved = useMemo(() => savedPicks(creation), [creation]);
   const [picks, setPicks] = useState<Record<string, Picks>>(saved);
   useEffect(() => setPicks(saved), [saved]);
+  const savedDetail = useMemo(() => savedDetails(creation), [creation]);
+  const [details, setDetails] = useState(savedDetail);
+  useEffect(() => setDetails(savedDetail), [savedDetail]);
 
   const save = useAction(async () => {
     for (const category of step.categories) {
       const mine = picks[category] ?? {};
       const before = saved[category] ?? {};
-      if (JSON.stringify(Object.entries(mine).sort()) === JSON.stringify(Object.entries(before).sort())) continue;
+      const detail = details[category] ?? {};
+      const same =
+        JSON.stringify(Object.entries(mine).sort()) === JSON.stringify(Object.entries(before).sort()) &&
+        Object.keys(mine).every((name) => (detail[name] ?? "") === (savedDetail[category]?.[name] ?? ""));
+      if (same) continue;
       await unwrap(
         api.PUT("/api/characters/{character_id}/creation/categories/{category}", {
           params: { path: { character_id: character.id, category } },
-          body: { picks: Object.entries(mine).map(([name, rating]) => ({ name, rating, detail: "" })) },
+          body: { picks: Object.entries(mine).map(([name, rating]) => ({ name, rating, detail: detail[name] ?? "" })) },
         }),
       );
     }
@@ -172,6 +188,8 @@ function StepView({
                 budget={pools[0].allowed}
                 picks={mine}
                 onChange={set}
+                details={details[category] ?? {}}
+                onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
               />
             );
           }
