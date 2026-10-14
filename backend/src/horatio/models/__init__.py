@@ -8,8 +8,11 @@ from horatio.models.downtimes import (
     AllowanceAdjustment,
     Answer,
     CycleParticipant,
+    Delivery,
     DowntimeCycle,
     Question,
+    RandomTable,
+    Response,
     Submission,
 )
 from horatio.models.people import AuthIdentity, Session, User
@@ -29,7 +32,10 @@ __all__ = [
     "AllowanceRule",
     "Answer",
     "CycleParticipant",
+    "Delivery",
     "DowntimeCycle",
+    "RandomTable",
+    "Response",
     "Question",
     "Submission",
     "Approval",

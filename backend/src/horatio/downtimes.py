@@ -21,7 +21,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, responses
 from horatio.models import (
     AllowanceAdjustment,
     Answer,
@@ -158,7 +158,7 @@ def write_questions(
     return result
 
 
-# --- cycles ------------------------------------------------------------------------------
+# --- cycles -----------------------------------------------------------------------------
 
 
 def create_cycle(
@@ -276,7 +276,7 @@ def close_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     audit.record(db, staff, "downtime.cycle_closed", troupe_id=cycle.troupe_id, cycle_id=cycle.id)
 
 
-# --- participants ------------------------------------------------------------------------
+# --- participants -----------------------------------------------------------------------
 
 
 def add_participant(
@@ -385,7 +385,7 @@ def effective_allowance(db: Session, participant: CycleParticipant) -> dict[str,
     return {k: max(0, v) for k, v in totals.items()}
 
 
-# --- submissions -------------------------------------------------------------------------
+# --- submissions ------------------------------------------------------------------------
 
 
 def current_participation(
@@ -511,9 +511,25 @@ def save_answers(
         db.add(submission)
         db.flush()
     existing = {(a.question_id, a.slot): a for a in answers_for(db, submission)}
+    by_key = {(s.question_id, s.slot): s for s in kept}
+    if submission.status == "submitted":
+        # A storyteller has already answered these; the player cannot change them now.
+        locked = responses.written_answer_ids(db, submission)
+        for key, answer in existing.items():
+            spec = by_key.get(key)
+            if answer.id in locked and (
+                spec is None
+                or spec.body.strip() != answer.body
+                or (spec.structured or {}) != answer.structured
+            ):
+                raise conflict("A storyteller has already answered that; it can no longer change.")
+        responses.drop_unwritten_responses(
+            db, {a.id for key, a in existing.items() if key not in seen}
+        )
     for key, answer in existing.items():
         if key not in seen:
             db.delete(answer)
+    db.flush()
     for spec in kept:
         answer = existing.get((spec.question_id, spec.slot))
         if answer is None:
@@ -524,6 +540,7 @@ def save_answers(
         answer.body = spec.body.strip()
         answer.structured = spec.structured or {}
     db.flush()
+    responses.sync_responses(db, submission)
     return submission
 
 
@@ -552,6 +569,7 @@ def submit(
     submission.submitted_at = now()
     submission.late = now() > cycle.closes_at
     db.flush()
+    responses.sync_responses(db, submission)
     audit.record(
         db,
         player,

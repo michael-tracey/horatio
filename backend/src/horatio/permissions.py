@@ -47,6 +47,7 @@ class TroupeAction(StrEnum):
     ADJUST_ALLOWANCES = "adjust_allowances"
     DELIVER_RESPONSES = "deliver_responses"
     ANSWER_ASSIGNED_RESPONSES = "answer_assigned_responses"
+    MANAGE_RANDOM_TABLES = "manage_random_tables"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -69,6 +70,7 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.ADJUST_ALLOWANCES: frozenset(_RUNNING),
     TroupeAction.DELIVER_RESPONSES: frozenset(_RUNNING),
     TroupeAction.ANSWER_ASSIGNED_RESPONSES: frozenset(_ALL_STAFF),
+    TroupeAction.MANAGE_RANDOM_TABLES: frozenset(_RUNNING),
 }
 
 

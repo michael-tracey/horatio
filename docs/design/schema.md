@@ -383,3 +383,22 @@ Recorded here for review; each is easy to change.
   period ends. After the close date a submission is marked late; after the
   grace period it needs a storyteller to accept it late.
 - A question with answers cannot be removed from the form.
+
+**Downtimes, part 2: responses and delivery (step 3b)**
+
+- Every answer in a submitted downtime gets a response. Storytellers and
+  assistant storytellers see all of them; narrators see only theirs and the
+  any-narrator pool, as question, answer and character name.
+- Responses can be assigned to the lead or any staff member, or to any
+  narrator. Assigning to anyone outside the staff is refused.
+- Once a response is written, the player can no longer change that answer;
+  other answers can still change, and new ones get responses.
+- Delivery needs the cycle closed, sends each submission with written
+  responses once, and puts the results in the app for the player
+  (`GET /characters/{id}/downtime/results`). Nothing can be rewritten after
+  delivery. Discord and email delivery are not built: they need a bot token
+  and a mail service.
+- Fill tables belong to a troupe. Running staff edit them; any staff member
+  can roll. `[Name]` placeholders are filled from the table of that name.
+- Not built yet: influence rumours (need the old tool's Age and Blocks rules
+  confirmed), scheduled messages and NPC senders.

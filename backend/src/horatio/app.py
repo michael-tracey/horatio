@@ -9,6 +9,7 @@ from horatio.api import (
     characters,
     downtimes,
     membership,
+    responses,
     rules,
     sheets,
     troupes,
@@ -45,6 +46,7 @@ app.include_router(membership.router)
 app.include_router(approvals.router)
 app.include_router(rules.router)
 app.include_router(downtimes.router)
+app.include_router(responses.router)
 
 
 @app.get("/health")

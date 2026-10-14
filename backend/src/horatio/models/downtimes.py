@@ -118,3 +118,68 @@ class Answer(Record):
     body: Mapped[str]
     # The action kind's extra fields, such as an influence level.
     structured: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+
+
+class Response(Record):
+    """A staff member's answer to one answer in a submission (CONTEXT.md: Response)."""
+
+    __tablename__ = "responses"
+    __table_args__ = (
+        CheckConstraint("status in ('unassigned', 'assigned', 'written')", name="status"),
+        CheckConstraint(
+            "not (assigned_to_any_narrator and assigned_to_user_id is not null)",
+            name="one_assignee",
+        ),
+    )
+
+    answer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("answers.id"), unique=True)
+    body: Mapped[str] = mapped_column(default="", server_default="")
+    status: Mapped[str] = mapped_column(default="unassigned", server_default="unassigned")
+    assigned_to_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    assigned_to_any_narrator: Mapped[bool] = mapped_column(default=False, server_default="false")
+    assigned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    written_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    written_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Delivery(Record):
+    """Sending a submission's responses to its player (CONTEXT.md: Delivery)."""
+
+    __tablename__ = "deliveries"
+    __table_args__ = (
+        CheckConstraint("channel in ('horatio', 'discord', 'email')", name="channel"),
+        CheckConstraint("status in ('pending', 'sent', 'failed')", name="status"),
+        # Never send the same submission twice on one channel.
+        Index(
+            "uq_deliveries_sent_once",
+            "submission_id",
+            "channel",
+            unique=True,
+            postgresql_where=text("status = 'sent' and not test_mode"),
+        ),
+    )
+
+    submission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("submissions.id"), index=True)
+    channel: Mapped[str]
+    status: Mapped[str] = mapped_column(default="pending", server_default="pending")
+    test_mode: Mapped[bool] = mapped_column(default=False, server_default="false")
+    message: Mapped[str]
+    sent_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(default=0, server_default="0")
+    last_error: Mapped[str | None]
+    external_ids: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+
+
+class RandomTable(Record):
+    """A fill table, such as feeding or patrol results. Entries may name other
+    tables in square brackets, "[Location]", to be filled in from them."""
+
+    __tablename__ = "random_tables"
+    __table_args__ = (UniqueConstraint("troupe_id", "name"),)
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    name: Mapped[str]
+    entries: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
