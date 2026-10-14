@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
+import { applyFilter, filterChoices } from "../traitFilter";
 import { canTap, left, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
 
 const SEARCH_FROM = 12; // Long lists get a search box.
@@ -143,7 +144,12 @@ export function PointsList({
   details?: Record<string, string>;
   onDetail?: (name: string, detail: string) => void;
 }) {
-  const { query, setQuery, shown } = useFiltered(traits, picks);
+  const filterable = traits.some((t) => t.kind || t.requirement);
+  const [filter, setFilter] = useState("can");
+  // Picks stay listed whatever the filter, so they can be unticked.
+  const filtered = filterable ? applyFilter(traits, filter, unavailable) : traits;
+  const listed = filtered.concat(traits.filter((t) => t.name in picks && !filtered.includes(t)));
+  const { query, setQuery, shown } = useFiltered(listed, picks);
   const used = spent(picks);
   const visible = query.trim() ? shown : shown.filter((t) => t.name in picks).concat(shown.filter((t) => !(t.name in picks)).slice(0, 40));
 
@@ -158,7 +164,24 @@ export function PointsList({
       <div className="h-1.5 overflow-hidden rounded bg-ash">
         <div className="h-full bg-gold" style={{ width: `${(100 * used) / budget}%` }} />
       </div>
-      <Input aria-label={`Search ${title}`} placeholder={`Search ${traits.length} ${title.toLowerCase()}…`} value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="flex flex-wrap gap-2">
+        {filterable && (
+          <Select aria-label={`Show ${title}`} value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
+            {filterChoices(traits, true).map((choice) => (
+              <option key={choice.value} value={choice.value}>
+                {choice.label}
+              </option>
+            ))}
+          </Select>
+        )}
+        <Input
+          aria-label={`Search ${title}`}
+          placeholder={`Search ${listed.length} ${title.toLowerCase()}…`}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="min-w-40 flex-1"
+        />
+      </div>
       <ul className="flex flex-col gap-1">
         {visible.map((t) => {
           const points = t.fixed_rating ?? 1;
@@ -177,6 +200,7 @@ export function PointsList({
                 />
                 <span className="min-w-0">
                   <span className="text-parchment">{t.name}</span> <span className="text-gold">({points})</span>
+                  {t.requirement && <span className="ml-2 text-xs text-mist">{t.requirement}</span>}
                   {barred && <span className="mt-0.5 block text-xs text-blood-bright">{barred}</span>}
                   {chosen && t.choices && onDetail && (
                     <Select
@@ -199,7 +223,7 @@ export function PointsList({
         })}
       </ul>
       {!query.trim() && shown.length > visible.length && (
-        <p className="text-xs text-mist">Search to see all {traits.length}.</p>
+        <p className="text-xs text-mist">Search to see all {listed.length}.</p>
       )}
     </section>
   );

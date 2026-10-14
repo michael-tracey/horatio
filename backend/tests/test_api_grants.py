@@ -176,3 +176,38 @@ def test_npcs_get_their_grants_too(troupe: Troupe) -> None:
     )
 
     assert ratings(troupe.storyteller, npc, "health_levels")["Healthy"] == 4
+
+
+def test_stamina_focus_and_fortitude_add_health(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Ventrue")
+    take(troupe.player, character_id, "focus_physicals", "Stamina")
+
+    take(troupe.player, character_id, "disciplines", "Fortitude", 1)
+
+    assert ratings(troupe.player, character_id, "health_levels") == {
+        "Healthy": 4,
+        "Injured": 4,
+        "Incapacitated": 4,
+    }
+    healthy = next(
+        t for t in sheet(troupe.player, character_id)["traits"] if t["name"] == "Healthy"
+    )
+    assert healthy["granted_by"] == ["Fortitude"]
+
+
+def test_fortitude_without_the_stamina_focus_adds_nothing(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Ventrue")
+    take(troupe.player, character_id, "focus_physicals", "Strength")
+
+    take(troupe.player, character_id, "disciplines", "Fortitude", 1)
+
+    assert ratings(troupe.player, character_id, "health_levels")["Healthy"] == 3
+
+
+def test_health_and_willpower_are_not_set_by_hand(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+
+    for category, name in (("health_levels", "Healthy"), ("willpower_sources", "Willpower")):
+        refused = take(troupe.player, character_id, category, name, 7)
+        assert refused.status_code == 422
+        assert "come from the rest of the sheet" in refused.json()["detail"]

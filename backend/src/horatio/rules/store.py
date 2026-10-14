@@ -103,6 +103,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.points_limit = category.points_limit
         row.usual_max = category.usual_max
         row.max_held = category.max_held
+        row.derived = category.derived
     session.flush()
 
     definitions = {
@@ -486,6 +487,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 points_limit=c.points_limit,
                 usual_max=c.usual_max,
                 max_held=c.max_held,
+                derived=c.derived,
             )
             for c in categories
         },

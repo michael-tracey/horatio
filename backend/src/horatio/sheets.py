@@ -534,6 +534,11 @@ def quote_change(
         if rating is not None:
             raise unprocessable(f"{category.name} has no rating.")
         return None, None
+    if category.derived:
+        raise unprocessable(
+            f"{category.name} come from the rest of the sheet; "
+            "merits, flaws and powers change them."
+        )
 
     if rating is None:
         raise unprocessable(f"{category.name} needs a rating.")

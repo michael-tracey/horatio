@@ -104,11 +104,17 @@ change_cost = 10
 key = "health_levels"
 name = "Health Levels"
 group = "Expended"
+# Worked out from the rest of the sheet (starting values, merits, flaws,
+# Fortitude); never bought or set by hand.
+derived = true
 
 [[categories]]
 key = "willpower_sources"
 name = "Willpower"
 group = "Expended"
+# Worked out from the rest of the sheet (starting values, merits, flaws,
+# Fortitude); never bought or set by hand.
+derived = true
 
 [[categories]]
 key = "skills"

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
+import type { CharacterOut } from "../../api/types";
 import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { CreationWizard } from "./creation/Wizard";
@@ -29,7 +30,7 @@ export function CharacterPage() {
     // Only the troupe's running staff can see an NPC at all, and they can all edit it.
     return (
       <>
-        <PageTitle subtitle="NPC" actions={<Badge tone="gold">NPC</Badge>}>
+        <PageTitle subtitle={<Identity character={c} lead="NPC" />} actions={<Badge tone="gold">NPC</Badge>}>
           {c.name}
         </PageTitle>
         <Tabs
@@ -54,7 +55,7 @@ export function CharacterPage() {
 
   return (
     <>
-      <PageTitle subtitle={<span className="capitalize">{c.splat}</span>} actions={c.status === "retired" ? <Badge>retired</Badge> : undefined}>
+      <PageTitle subtitle={<Identity character={c} lead={c.splat} />} actions={c.status === "retired" ? <Badge>retired</Badge> : undefined}>
         {c.name}
       </PageTitle>
       <Tabs
@@ -86,5 +87,25 @@ export function CharacterPage() {
         )}
       </Routes>
     </>
+  );
+}
+
+/** Who the character is, beside the name: splat, then the choices that define
+ * them (clan, sect, archetype...) in sheet order. */
+function Identity({ character, lead }: { character: CharacterOut; lead: string }) {
+  const sheet = useQuery({
+    queryKey: ["sheet", character.id],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", { params: { path: { character_id: character.id } } })),
+  });
+  const choices = (sheet.data?.traits ?? []).filter((t) => t.rating === null);
+  return (
+    <span className="flex flex-wrap items-center gap-x-2">
+      <span className="capitalize">{lead}</span>
+      {choices.map((t) => (
+        <span key={t.id} title={t.category_name}>
+          · <span className="text-parchment/90">{t.name}</span>
+        </span>
+      ))}
+    </span>
   );
 }

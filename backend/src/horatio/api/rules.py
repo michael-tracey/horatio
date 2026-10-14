@@ -26,6 +26,8 @@ class CategoryOut(BaseModel):
     change_cost: int | None = None
     # Most points a character can hold here (merits) or be paid by it (flaws).
     points_limit: int | None = None
+    # Worked out from the rest of the sheet (health, Willpower); never bought.
+    derived: bool = False
 
 
 class TraitOut(BaseModel):
@@ -44,6 +46,10 @@ class TraitOut(BaseModel):
     # For a trait that grants something the player picks (Personal Cult: which
     # background): the picks, to put in its detail.
     choices: list[str] | None = None
+    # For a merit or flaw: its kind (General, Clan, Morality, ...) and who it is
+    # for (a clan, bloodline or generation), for filtering lists.
+    kind: str | None = None
+    requirement: str | None = None
 
 
 class CatalogueOut(BaseModel):
@@ -88,6 +94,7 @@ def catalogue(
                 requires=dict(c.requires) if c.requires else None,
                 change_cost=c.change_cost,
                 points_limit=c.points_limit,
+                derived=c.derived,
             )
             for c in rules.rule_set.categories.values()
         ],
@@ -102,6 +109,10 @@ def catalogue(
                 in_clan=t.properties.get("in_clan"),
                 attribute=t.properties.get("attribute"),
                 choices=chooses.get((t.category, t.name)),
+                kind=t.properties.get("type"),
+                requirement=t.properties.get("requirement")
+                if t.properties.get("requirement") != "requires_specialization"
+                else None,
             )
             for t in sorted(rules.rule_set.traits.values(), key=lambda t: (t.category, t.name))
             if category is None or t.category == category

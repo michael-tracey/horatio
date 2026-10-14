@@ -1429,6 +1429,11 @@ export interface components {
         CategoryOut: {
             /** Change Cost */
             change_cost?: number | null;
+            /**
+             * Derived
+             * @default false
+             */
+            derived: boolean;
             /** Group */
             group: string;
             /** Key */
@@ -2491,10 +2496,14 @@ export interface components {
             house_rule: string | null;
             /** In Clan */
             in_clan: string[] | null;
+            /** Kind */
+            kind?: string | null;
             /** Name */
             name: string;
             /** Page Reference */
             page_reference: string | null;
+            /** Requirement */
+            requirement?: string | null;
         };
         /** TroupeChanges */
         TroupeChanges: {

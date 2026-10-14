@@ -9,6 +9,10 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
     raise_max    the trait can go `amount` higher than its category usually allows
                  (Blood of the Tzimisce: Lore +2)
 
+A grant can also hold only `when` a condition holds, in the vocabulary of
+horatio.rules.checks: Fortitude gives a Stamina-focused character a health level
+per track, so its grants say `when = { has = { ..., name = "Stamina" } }`.
+
 The target is fixed (`name`, and perhaps `detail`), every trait of some names
 (`names`) or of the whole category, or the player's choice: with `choose`, the
 source trait's detail says which, as "Resources" or "Performance: Singing".
@@ -19,6 +23,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+from horatio.rules.checks import matches
 from horatio.rules.model import RuleSetData, SheetTrait
 
 Kind = Literal["add", "free_up_to", "raise_max"]
@@ -33,6 +38,8 @@ class GrantData:
     target: Mapping[str, Any]
     amount: int
     page: str | None = None
+    # A condition (horatio.rules.checks) the sheet must meet as well.
+    when: Mapping[str, Any] | None = None
 
     @property
     def categories(self) -> list[str]:
@@ -92,6 +99,8 @@ def effects(
         for trait in sheet:
             if not holds_source(trait, grant.source):
                 continue
+            if grant.when is not None and not matches(grant.when, sheet, trait):
+                continue
             label = trait.full_name
             if "choose" in grant.target:
                 target = chosen_target(grant, trait.detail, rule_set)
@@ -140,6 +149,7 @@ def grant_from_dict(raw: Mapping[str, Any]) -> GrantData:
         target=raw["target"],
         amount=raw["amount"],
         page=raw.get("page"),
+        when=raw.get("when"),
     )
 
 

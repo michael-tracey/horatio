@@ -60,6 +60,32 @@ target = { category = "willpower_sources", name = "Willpower" }
 amount = -1
 page = "265"
 
+# A Stamina-focused character gains a health level in each track with the first
+# dot of Fortitude (p. 137).
+[[grants]]
+source = { category = "disciplines", name = "Fortitude" }
+when = { has = { category = "focus_physicals", name = "Stamina" } }
+kind = "add"
+target = { category = "health_levels", name = "Healthy" }
+amount = 1
+page = "137"
+
+[[grants]]
+source = { category = "disciplines", name = "Fortitude" }
+when = { has = { category = "focus_physicals", name = "Stamina" } }
+kind = "add"
+target = { category = "health_levels", name = "Injured" }
+amount = 1
+page = "137"
+
+[[grants]]
+source = { category = "disciplines", name = "Fortitude" }
+when = { has = { category = "focus_physicals", name = "Stamina" } }
+kind = "add"
+target = { category = "health_levels", name = "Incapacitated" }
+amount = 1
+page = "137"
+
 # --- extra focuses ----------------------------------------------------------------
 
 [[grants]]

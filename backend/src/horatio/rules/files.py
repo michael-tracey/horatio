@@ -222,6 +222,8 @@ def load_grants(
         grant = grant_from_dict(raw)
         try:
             validate_grant(grant, set(traits), set(categories))
+            if grant.when:
+                validate_condition(grant.when, set(traits))
         except ValueError as error:
             raise ValueError(f"{where}: {error}") from error
         grants.append(grant)
@@ -248,6 +250,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             points_limit=c.get("points_limit"),
             usual_max=c.get("usual_max"),
             max_held=c.get("max_held"),
+            derived=c.get("derived", False),
         )
         for c in raw["categories"]
     }

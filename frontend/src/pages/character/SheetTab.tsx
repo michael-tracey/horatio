@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, SheetTraitOut } from "../../api/types";
-import { Badge, Button, Card, Dots, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
-import { useAction, useUnavailable } from "../../hooks";
+import { Badge, Button, Card, Dots, Empty, ErrorText, Loading, Notice, Select } from "../../components/ui";
+import { useAction } from "../../hooks";
+import { AddTraitPanel } from "./AddTraitPanel";
 
 type TraitChange = { category: string; name: string; detail: string; rating: number | null };
 
@@ -42,6 +43,19 @@ export function groupTraits(traits: SheetTraitOut[], catalogue: CatalogueOut | u
   return groups;
 }
 
+/** The sheet's parts in rule set order, with the categories each part can add
+ * to: rated, bought (not derived, like health), and not a swapped choice (a focus). */
+export function addableByGroup(catalogue: CatalogueOut | undefined) {
+  const groups = new Map<string, string[]>();
+  for (const c of catalogue?.categories ?? []) {
+    if (!c.rated) continue;
+    const list = groups.get(c.group) ?? [];
+    groups.set(c.group, list);
+    if (!c.derived && c.change_cost == null && c.key !== "extra_in_clan_disciplines") list.push(c.key);
+  }
+  return groups;
+}
+
 function useCreation(character: CharacterOut) {
   return useQuery({
     queryKey: ["creation", character.id],
@@ -56,6 +70,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   const catalogue = useCatalogue(character);
   const creation = useCreation(character);
   const [message, setMessage] = useState<string | null>(null);
+  const [adding, setAdding] = useState<string | null>(null);
 
   const swap = useAction(async (body: { category: string; from_name: string; to_name: string }) => {
     const result = await unwrap(
@@ -78,7 +93,26 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   // Only a home troupe request locks the sheet: its differences must stay as they are.
   const movingHome = s.pending_approvals.some((a) => a.kind === "home_troupe_change");
   const locked = !mine || movingHome || s.status === "retired";
-  const groups = groupTraits(s.traits, catalogue.data);
+  // Identity (clan, sect...) is shown with the name, in the page title.
+  const groups = groupTraits(
+    s.traits.filter((t) => t.rating !== null),
+    catalogue.data,
+  );
+  const addable = addableByGroup(catalogue.data);
+  const canAdd = !locked && character.kind === "pc" && character.creation_complete && !!catalogue.data;
+  // Every part that holds traits, then parts the player can add to.
+  // Only categories with something left to add (all three attributes are always held).
+  const heldNames = new Set(s.traits.map((t) => `${t.category}/${t.name}`));
+  for (const [group, keys] of addable) {
+    addable.set(
+      group,
+      keys.filter((key) => catalogue.data?.traits.some((t) => t.category === key && !heldNames.has(`${key}/${t.name}`))),
+    );
+  }
+  const parts = [...addable.keys()].filter((g) => groups.has(g) || (canAdd && (addable.get(g)?.length ?? 0) > 0));
+  const pointsOf = (t: SheetTraitOut) =>
+    catalogue.data?.traits.find((c) => c.category === t.category && c.name === t.name)?.fixed_rating ?? null;
+  const derived = new Set(catalogue.data?.categories.filter((c) => c.derived).map((c) => c.key));
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
@@ -86,7 +120,6 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
         {mine && character.kind === "pc" && !character.creation_complete && creation.data && (
           <CreationPanel character={character} creation={creation.data} locked={locked} />
         )}
-        {(character.creation_complete || !mine) && <TroupesCard character={character} sheet={s} mine={mine} />}
         {s.problems.length > 0 && (
           <Card title="Against the rules">
             <ul className="flex flex-col gap-1 text-sm">
@@ -98,11 +131,32 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
             </ul>
           </Card>
         )}
-        {groups.size === 0 && <Empty>The sheet is empty. Add traits from the panel{mine ? "" : " once the player does"}.</Empty>}
-        {[...groups].map(([group, categories]) => (
-          <Card key={group} title={group}>
+        {parts.length === 0 && <Empty>The sheet is empty{mine ? "" : " until the player builds it"}.</Empty>}
+        {parts.map((group) => (
+          <Card
+            key={group}
+            title={group}
+            actions={
+              canAdd && (addable.get(group)?.length ?? 0) > 0 ? (
+                <Button variant="ghost" aria-expanded={adding === group} onClick={() => setAdding(adding === group ? null : group)}>
+                  {adding === group ? "Close" : "Add"}
+                </Button>
+              ) : undefined
+            }
+          >
+            {adding === group && catalogue.data && (
+              <AddTraitPanel
+                character={character}
+                catalogue={catalogue.data}
+                categories={addable.get(group) ?? []}
+                held={s.traits}
+                onDone={setMessage}
+                onClose={() => setAdding(null)}
+              />
+            )}
+            {!groups.has(group) && <p className="text-sm text-mist">None yet.</p>}
             <div className="grid gap-4 sm:grid-cols-2">
-              {[...categories].map(([category, traits]) => (
+              {[...(groups.get(group) ?? new Map<string, SheetTraitOut[]>())].map(([category, traits]) => (
                 <div key={category}>
                   <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">{category}</h3>
                   <ul className="flex flex-col gap-1">
@@ -110,7 +164,8 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
                       <TraitRow
                         key={t.id}
                         trait={t}
-                        locked={locked}
+                        locked={locked || derived.has(t.category)}
+                        points={pointsOf(t)}
                         onChange={(rating) => change.mutate({ category: t.category, name: t.name, detail: t.detail, rating })}
                         swap={
                           character.creation_complete && catalogue.data
@@ -164,10 +219,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
             </ul>
           )}
         </Card>
-        {/* A PC is built in the creation wizard; buying with experience comes after. NPCs use the quick builder. */}
-        {!locked && catalogue.data && character.kind === "pc" && character.creation_complete && (
-          <AddTrait character={character} catalogue={catalogue.data} onDone={setMessage} />
-        )}
+        {(character.creation_complete || !mine) && <TroupesCard character={character} sheet={s} mine={mine} />}
         {mine && movingHome && <Notice>The sheet is locked while the home troupe request waits. Withdraw it on the Troupes tab to edit.</Notice>}
       </aside>
     </div>
@@ -190,9 +242,12 @@ function TraitRow({
   onChange,
   swap,
   onSwap,
+  points = null,
 }: {
   trait: SheetTraitOut;
   locked: boolean;
+  /** A merit or flaw's fixed point value: shown instead of dots. */
+  points?: number | null;
   onChange: (rating: number | null) => void;
   swap: { cost: number; others: string[] } | null;
   onSwap: (to: string) => void;
@@ -200,6 +255,28 @@ function TraitRow({
   const [swapping, setSwapping] = useState(false);
   const [to, setTo] = useState("");
   const pending = trait.pending_from !== null;
+  if (points !== null) {
+    return (
+      <li className="flex items-center justify-between gap-2 text-sm">
+        <span className="min-w-0">
+          {trait.name}
+          {trait.detail && <span className="text-mist">: {trait.detail}</span>}
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          <Badge tone="gold">{points}</Badge>
+          {!locked && trait.rating !== null && trait.rating > trait.min_rating && (
+            <button
+              aria-label={`Remove ${trait.name}`}
+              className="h-7 w-7 rounded border border-ash text-mist hover:border-mist hover:text-parchment"
+              onClick={() => onChange(0)}
+            >
+              ×
+            </button>
+          )}
+        </span>
+      </li>
+    );
+  }
   if (swap && !locked) {
     return (
       <li className="flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -274,122 +351,6 @@ function TraitRow({
         </span>
       )}
     </li>
-  );
-}
-
-function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; catalogue: CatalogueOut; onDone: (m: string) => void }) {
-  const [category, setCategory] = useState(catalogue.categories[0]?.key ?? "");
-  const [name, setName] = useState("");
-  const [detail, setDetail] = useState("");
-  const [rating, setRating] = useState(1);
-  const [quote, setQuote] = useState<number | null>(null);
-  const cat = catalogue.categories.find((c) => c.key === category);
-  const traits = useMemo(() => catalogue.traits.filter((t) => t.category === category), [catalogue, category]);
-  const trait = traits.find((t) => t.name === name);
-  const fixed = trait?.fixed_rating ?? null;
-  const unavailable = useUnavailable(character.id, category).data ?? {};
-  const body: TraitChange = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null };
-
-  const price = useAction(async () => {
-    const q = await unwrap(api.POST("/api/characters/{character_id}/quote", { params: { path: { character_id: character.id } }, body }));
-    setQuote(q.cost);
-  });
-  const buy = useAction(async () => {
-    const result = await unwrap(api.PUT("/api/characters/{character_id}/traits", { params: { path: { character_id: character.id } }, body }));
-    onDone(result.cost ? `Added ${name} for ${result.cost} XP.` : `Added ${name}.`);
-    setName("");
-    setDetail("");
-    setQuote(null);
-  });
-
-  return (
-    <Card title="Add a trait">
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          buy.mutate(undefined);
-        }}
-      >
-        <Field label="Category">
-          <Select
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              setName("");
-              setQuote(null);
-            }}
-          >
-            {catalogue.categories.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Trait">
-          <Select
-            required
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setQuote(null);
-            }}
-          >
-            <option value="">Choose…</option>
-            {traits.map((t) => (
-              <option key={t.name} value={t.name} disabled={t.name in unavailable} title={unavailable[t.name]}>
-                {t.name}
-                {t.fixed_rating ? ` (${t.fixed_rating})` : ""}
-                {t.name in unavailable ? " — not allowed" : ""}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        {trait?.description && <p className="text-xs leading-relaxed text-mist">{trait.description}</p>}
-        {trait?.house_rule && <Notice>House rule: {trait.house_rule}</Notice>}
-        {trait?.choices ? (
-          <Field label="Which?" hint={`${name} gives one of these.`}>
-            <Select required value={detail} onChange={(e) => setDetail(e.target.value)}>
-              <option value="">Choose…</option>
-              {trait.choices.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </Select>
-          </Field>
-        ) : (
-          <Field label="Detail" hint="Optional: a specialisation, subject, or name.">
-            <Input value={detail} onChange={(e) => setDetail(e.target.value)} />
-          </Field>
-        )}
-        {cat?.rated && fixed === null && (
-          <Field label="Rating">
-            <Input
-              type="number"
-              min={1}
-              max={cat.max_rating ?? undefined}
-              value={rating}
-              onChange={(e) => {
-                setRating(Number(e.target.value));
-                setQuote(null);
-              }}
-            />
-          </Field>
-        )}
-        {quote !== null && <p className="text-sm">Costs {quote} XP.</p>}
-        <ErrorText error={price.error ?? buy.error} />
-        <div className="flex gap-2">
-          {cat?.rated && (
-            <Button type="button" variant="secondary" disabled={!name || price.isPending} onClick={() => price.mutate(undefined)}>
-              Price it
-            </Button>
-          )}
-          <Button type="submit" disabled={!name || buy.isPending}>
-            {cat?.rated ? "Buy" : "Choose"}
-          </Button>
-        </div>
-      </form>
-    </Card>
   );
 }
 

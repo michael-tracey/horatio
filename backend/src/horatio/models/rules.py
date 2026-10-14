@@ -56,6 +56,8 @@ class TraitCategory(Record):
     usual_max: Mapped[int | None]
     # Traits held in this category besides granted ones (one focus per attribute).
     max_held: Mapped[int | None]
+    # Worked out from the rest of the sheet; never bought.
+    derived: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class TraitDefinition(Record):

@@ -44,6 +44,8 @@ class CategoryData:
     # How many traits a character holds in this category, besides any granted
     # (one focus per attribute).
     max_held: int | None = None
+    # Worked out from the rest of the sheet (health, Willpower); not bought.
+    derived: bool = False
 
 
 @dataclass(frozen=True)

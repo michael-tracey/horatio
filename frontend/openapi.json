@@ -269,6 +269,11 @@
             ],
             "title": "Change Cost"
           },
+          "derived": {
+            "default": false,
+            "title": "Derived",
+            "type": "boolean"
+          },
           "group": {
             "title": "Group",
             "type": "string"
@@ -2987,6 +2992,17 @@
             ],
             "title": "In Clan"
           },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -3001,6 +3017,17 @@
               }
             ],
             "title": "Page Reference"
+          },
+          "requirement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requirement"
           }
         },
         "required": [

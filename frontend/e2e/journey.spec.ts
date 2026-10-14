@@ -93,16 +93,20 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await tap("Celerity 2", "Potence 1", "Presence 1");
   await next("Merits & flaws");
   // Clan merits are only for their clan: a Brujah sees Absent Sway barred, with the reason.
+  await p.getByLabel("Show Merits").selectOption({ label: "For Toreador" });
   await p.getByLabel("Search Merits").fill("Absent Sway");
   await expect(p.getByText(/Absent Sway is only for Toreador/)).toBeVisible();
+  await p.getByLabel("Show Merits").selectOption({ label: "What this character can take" });
   await p.getByLabel("Search Merits").fill("Acute");
   await p.getByLabel(/Acute Sense/).check();
   await next("Review");
   await p.screenshot(shots("review"));
   await p.getByRole("button", { name: "Finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
-  await p.getByLabel("Category").selectOption({ label: "Backgrounds" });
-  await p.getByLabel("Trait").selectOption("Influences: The Elite");
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await part("Backgrounds").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Backgrounds").fill("Elite");
+  await p.getByRole("button", { name: "Influences: The Elite" }).click();
   await p.getByRole("button", { name: "Buy" }).click();
   await expect(p.getByText("29", { exact: true })).toBeVisible(); // 30 − 1 for Influence
   // A focus can be changed after creation, for 10 XP.
@@ -111,8 +115,13 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "10 XP" }).click();
   await expect(p.getByText("19", { exact: true })).toBeVisible();
   // Merits that give other traits apply them: Rugged adds a health level to each track.
-  await p.getByLabel("Category").selectOption({ label: "Merits" });
-  await p.getByLabel("Trait").selectOption("Rugged");
+  await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
+  // Every Ventrue merit, though Agnes is Brujah and cannot take them.
+  await p.getByLabel("Show").selectOption({ label: "For Ventrue" });
+  await expect(p.getByRole("button", { name: /Aura of Command/ })).toBeDisabled();
+  await p.getByLabel("Show").selectOption({ label: "What this character can take" });
+  await p.getByLabel("Search Merits").fill("Rugged");
+  await p.getByRole("button", { name: /^Rugged/ }).click();
   await p.getByRole("button", { name: "Buy" }).click();
   await expect(p.getByText("+1 from Rugged").first()).toBeVisible();
   await expect(p.getByText("16", { exact: true })).toBeVisible();
