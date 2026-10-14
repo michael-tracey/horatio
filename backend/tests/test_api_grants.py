@@ -84,8 +84,7 @@ def test_unyielding_raises_willpower(troupe: Troupe) -> None:
 
 
 def test_a_chosen_grant_needs_its_choice(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-    take(troupe.player, character_id, "clan", "Followers of Set", None)
+    character_id = new_character(troupe, troupe.player, clan="Followers of Set")
 
     refused = take(troupe.player, character_id, "merits", "Personal Cult", 1)
 
@@ -99,8 +98,7 @@ def test_a_chosen_grant_needs_its_choice(troupe: Troupe) -> None:
 
 
 def test_free_dots_refund_what_was_bought_and_go_with_the_merit(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-    take(troupe.player, character_id, "clan", "Followers of Set", None)
+    character_id = new_character(troupe, troupe.player, clan="Followers of Set")
     take(troupe.player, character_id, "backgrounds", "Resources", 2)  # a Neonate pays 1 + 2
     before = sheet(troupe.player, character_id)["xp"]["balance"]
 
@@ -124,11 +122,10 @@ def test_free_dots_refund_what_was_bought_and_go_with_the_merit(troupe: Troupe) 
 
 
 def test_skills_stop_at_five_unless_a_grant_raises_them(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
+    character_id = new_character(troupe, troupe.player, clan="Toreador")
     troupe.custodian.client.post(
         f"/characters/{character_id}/xp", json={"amount": 100, "reason": "Test"}
     )
-    take(troupe.player, character_id, "clan", "Toreador", None)
 
     refused = take(troupe.player, character_id, "skills", "Brawl", 6)
     assert refused.status_code == 422
@@ -146,14 +143,13 @@ def test_skills_stop_at_five_unless_a_grant_raises_them(troupe: Troupe) -> None:
 
 
 def test_one_focus_per_attribute_unless_granted(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
+    character_id = new_character(troupe, troupe.player, clan="Lasombra")
     take(troupe.player, character_id, "focus_socials", "Manipulation")
 
     refused = take(troupe.player, character_id, "focus_socials", "Appearance")
     assert refused.status_code == 409
     assert "only merits can grant more" in refused.json()["detail"]
 
-    take(troupe.player, character_id, "clan", "Lasombra", None)
     assert take(troupe.player, character_id, "merits", "Angelic Visage", 1).status_code == 200
     assert ratings(troupe.player, character_id, "focus_socials") == {
         "Charisma": 1,
@@ -162,8 +158,7 @@ def test_one_focus_per_attribute_unless_granted(troupe: Troupe) -> None:
 
 
 def test_a_chosen_focus(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-    take(troupe.player, character_id, "clan", "Malkavian", None)
+    character_id = new_character(troupe, troupe.player, clan="Malkavian")
 
     take(troupe.player, character_id, "merits", "Expanded Consciousness", 1, "Wits")
 

@@ -3433,6 +3433,11 @@
           "spent": {
             "title": "Spent",
             "type": "integer"
+          },
+          "unbanked": {
+            "default": 0,
+            "title": "Unbanked",
+            "type": "integer"
           }
         },
         "required": [

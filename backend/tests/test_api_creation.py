@@ -32,11 +32,15 @@ FULL_BUILD = [
     ("skills", "Melee", 1),
     ("backgrounds", "Fame", 3),
     ("backgrounds", "Herd", 2),
-    ("backgrounds", "Allies", 1),
+    ("backgrounds", "Generation", 1),
     ("disciplines", "Celerity", 2),
     ("disciplines", "Potence", 1),
     ("disciplines", "Presence", 1),
 ]
+
+
+# Balances here are about settlements and purchases, not banking creation XP.
+pytestmark = pytest.mark.usefixtures("without_bank")
 
 
 @pytest.fixture

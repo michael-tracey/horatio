@@ -159,6 +159,11 @@ class RuleSetData:
     checks: Sequence["CheckData"] = ()
     # Traits that give other traits (horatio.rules.grants).
     grants: Sequence["GrantData"] = ()
+    # Traits chosen at creation only: {category, name?, name_prefix?} each.
+    creation_only: Sequence[Mapping[str, str]] = ()
+    # Unspent creation XP kept when a first home troupe accepts the character;
+    # None keeps it all.
+    banked_xp: int | None = None
 
     def trait_properties(self, category: str, name: str) -> Mapping[str, Any]:
         trait = self.traits.get((category, name))

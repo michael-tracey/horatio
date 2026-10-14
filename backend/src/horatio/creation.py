@@ -30,6 +30,7 @@ from horatio.sheets import (
     find_definition,
     rules_for,
     sheet_rows,
+    sheet_violations,
     unprocessable,
 )
 
@@ -333,6 +334,14 @@ def complete(db: Session, player: User, character: Character) -> None:
     ]
     if stray:
         raise conflict("These picks are not allowed for this character: " + ", ".join(stray))
+    if character.kind == "pc":
+        broken = [
+            v.message
+            for v in sheet_violations(db, character)
+            if v.check.strength in ("refuse", "complete")
+        ]
+        if broken:
+            raise conflict("Before finishing: " + " ".join(dict.fromkeys(broken)))
     character.creation_completed_at = datetime.now(UTC)
     db.flush()
     audit.record(db, player, "creation.complete", character_id=character.id)

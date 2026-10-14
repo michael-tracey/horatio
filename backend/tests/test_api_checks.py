@@ -30,9 +30,7 @@ def take(
 
 
 def as_clan(troupe: Troupe, clan: str) -> str:
-    character_id = new_character(troupe, troupe.player)
-    assert take(troupe.player, character_id, "clan", clan, None).status_code == 200
-    return character_id
+    return new_character(troupe, troupe.player, clan=clan)
 
 
 def test_clan_merits_are_for_their_clan_and_its_bloodlines(troupe: Troupe) -> None:
@@ -47,11 +45,13 @@ def test_clan_merits_are_for_their_clan_and_its_bloodlines(troupe: Troupe) -> No
     assert take(troupe.player, ishtarri, "merits", "Absent Sway", 3).status_code == 200
 
 
-def test_changing_clan_cannot_strand_a_clan_merit(troupe: Troupe) -> None:
+def test_the_clan_cannot_change_once_creation_is_finished(troupe: Troupe) -> None:
     character_id = as_clan(troupe, "Toreador")
-    take(troupe.player, character_id, "merits", "Absent Sway", 3)
 
-    assert take(troupe.player, character_id, "clan", "Brujah", None).status_code == 409
+    refused = take(troupe.player, character_id, "clan", "Brujah", None)
+
+    assert refused.status_code == 409
+    assert "can only be chosen during character creation" in refused.json()["detail"]
     sheet = troupe.player.client.get(f"/characters/{character_id}/sheet").json()
     assert next(t["name"] for t in sheet["traits"] if t["category"] == "clan") == "Toreador"
 
@@ -114,4 +114,4 @@ def test_npcs_are_built_freely_but_problems_show(troupe: Troupe) -> None:
     assert rate("merits", "Calm Heart", 1) == 200
 
     problems = troupe.storyteller.client.get(f"/characters/{npc}/sheet").json()["problems"]
-    assert [(p["name"], p["strength"]) for p in problems] == [("Calm Heart", "refuse")]
+    assert ("Calm Heart", "refuse") in [(p["name"], p["strength"]) for p in problems]

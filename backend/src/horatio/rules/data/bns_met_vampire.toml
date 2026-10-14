@@ -25,6 +25,10 @@ version = 1
 # Experience a new character starts with (Yorick: initial_xp).
 starting_xp = 30
 
+# Unspent creation XP a character keeps when its first home troupe accepts it;
+# the rest is lost (p. 107).
+banked_xp = 5
+
 # Further [[traits]] tables, loaded as part of this rule set.
 trait_files = ["bns_met_vampire_traits.toml"]
 

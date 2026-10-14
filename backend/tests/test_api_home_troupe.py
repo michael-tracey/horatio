@@ -14,6 +14,9 @@ from horatio.rules.model import CostRuleData
 from horatio.rules.store import add_house_rule
 from tests.api_helpers import Person, Troupe, new_character, sign_up, without_starting_traits
 
+# Balances here are about settlements and purchases, not banking creation XP.
+pytestmark = pytest.mark.usefixtures("without_bank")
+
 
 @pytest.fixture
 def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
@@ -105,8 +108,7 @@ def test_only_the_player_adds_their_character_to_a_troupe(troupe: Troupe) -> Non
 
 
 def test_a_first_home_troupe_with_nothing_to_reconcile(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-    buy(troupe.player, character_id, "clan", "Brujah", None)
+    character_id = new_character(troupe, troupe.player, clan="Brujah")
     buy(troupe.player, character_id, "skills", "Brawl", 2)
 
     preview = troupe.player.client.post(

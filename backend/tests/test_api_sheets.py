@@ -55,7 +55,13 @@ def make_home_troupe_member(session: Session, troupe: Troupe, character_id: str)
 def test_new_characters_start_with_30_xp(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
 
-    assert sheet(troupe.player, character_id)["xp"] == {"balance": 30, "earned": 30, "spent": 0}
+    assert sheet(troupe.player, character_id)["xp"] == {
+        "balance": 30,
+        "earned": 30,
+        "spent": 0,
+        # All but 5 would be lost if a home troupe accepted it now.
+        "unbanked": 25,
+    }
     history = troupe.player.client.get(f"/characters/{character_id}/xp").json()
     assert [(e["kind"], e["amount"], e["reason"]) for e in history] == [
         ("award", 30, "Starting experience")
@@ -124,7 +130,7 @@ def test_merits_cost_their_point_value_and_flaws_give_xp(troupe: Troupe) -> None
 
 
 def test_choosing_a_clan_replaces_the_last_choice_and_costs_nothing(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
+    character_id = new_character(troupe, troupe.player, finished=False)
 
     buy(troupe.player, character_id, "clan", "Brujah", None)
     response = buy(troupe.player, character_id, "clan", "Tremere", None)
@@ -136,8 +142,7 @@ def test_choosing_a_clan_replaces_the_last_choice_and_costs_nothing(troupe: Trou
 
 
 def test_the_clan_sets_in_clan_discipline_prices(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player)
-    buy(troupe.player, character_id, "clan", "Brujah", None)
+    character_id = new_character(troupe, troupe.player, clan="Brujah")
 
     in_clan = buy(troupe.player, character_id, "disciplines", "Celerity", 2)
     out_of_clan = troupe.player.client.post(

@@ -87,7 +87,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByRole("button", { name: "Stealth 3", exact: true })).toBeDisabled();
   await p.screenshot(shots("creation"));
   await next("Backgrounds");
-  await tap("Fame 3", "Herd 2", "Allies 1");
+  await tap("Fame 3", "Herd 2", "Generation 1");
   await next("Disciplines");
   await expect(p.getByText("in-clan").first()).toBeVisible();
   await tap("Celerity 2", "Potence 1", "Presence 1");
@@ -125,6 +125,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
   await expect(p.getByText("Nothing differs")).toBeVisible();
+  await expect(p.getByText(/If accepted now, 11 XP will be lost/)).toBeVisible();
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
   await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
 
@@ -138,6 +139,14 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.screenshot(shots("approvals"));
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
+
+  // Accepted, Agnes keeps only 5 of her unspent creation XP. Her storytellers award her some.
+  const agnes = p.url().split("/characters/")[1].split("/")[0];
+  const award = await lead.page.request.post(`/api/characters/${agnes}/xp`, {
+    headers: { "X-Horatio": "1" },
+    data: { amount: 10, reason: "First game" },
+  });
+  expect(award.ok()).toBeTruthy();
 
   // Once accepted, a discipline dot waits on the home troupe, with the XP held.
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();

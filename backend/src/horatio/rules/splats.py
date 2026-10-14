@@ -14,6 +14,8 @@ FactsFn = Callable[[TroupeRules, Sequence[SheetTrait], SheetTrait], Facts]
 class Splat:
     fact_names: frozenset[str]
     facts: FactsFn
+    # The character's in-clan (native) powers, for checks.
+    in_clan: Callable[[TroupeRules, Sequence[SheetTrait]], list[str]] = lambda _r, _s: []
 
 
 # --- Vampire ---------------------------------------------------------------
@@ -57,5 +59,9 @@ def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetT
 
 
 SPLATS: dict[str, Splat] = {
-    "vampire": Splat(fact_names=frozenset({"generation", "in_clan"}), facts=vampire_facts),
+    "vampire": Splat(
+        fact_names=frozenset({"generation", "in_clan"}),
+        facts=vampire_facts,
+        in_clan=vampire_in_clan_disciplines,
+    ),
 }

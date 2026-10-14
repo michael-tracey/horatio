@@ -19,11 +19,20 @@ Condition vocabulary (every key in one table must hold):
                                     (whose names start with `name_prefix`)
     parent = { category, rating }   the trait named before the subject's ":" (an
                                     elder power's discipline) is held at `rating`
+    self = { names?, rating?, has_detail? }
+                                    the subject itself: one of these names, its
+                                    rating, whether it has a detail
+    copies = { gte = 2 }            how many times the sheet holds the subject's
+                                    trait (with different details)
+    in_clan = true                  the subject is one of the character's in-clan
+                                    disciplines
+    accepted = true                 a home troupe has accepted the character
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
 A check's strength says what happens when a change breaks it: "refuse" stops
-the change; "note" only shows on the sheet.
+the change; "complete" lets it be while the character is being built, but
+creation cannot be finished until it holds; "note" only shows on the sheet.
 """
 
 from collections.abc import Mapping, Sequence
@@ -33,13 +42,27 @@ from typing import Any, Literal
 from horatio.rules.conditions import OPERATORS
 from horatio.rules.model import SheetTrait
 
-Strength = Literal["refuse", "note"]
+Strength = Literal["refuse", "complete", "note"]
 Condition = Mapping[str, Any]
 
 CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count", "parent",
-     "any_of", "not"}
+     "self", "copies", "in_clan", "accepted", "any_of", "not"}
 )  # fmt: skip
+
+
+@dataclass(frozen=True)
+class Context:
+    """What checks may know beyond the sheet itself."""
+
+    # A home troupe has accepted the character.
+    accepted: bool = False
+    # The character's in-clan disciplines, by name ("Celerity") or full name
+    # ("Thaumaturgy: Path of Blood").
+    in_clan: frozenset[str] = frozenset()
+
+
+NO_CONTEXT = Context()
 
 
 @dataclass(frozen=True)
@@ -111,7 +134,12 @@ def compare(value: Any, test: Any) -> bool:
     return bool(value == test)
 
 
-def matches(condition: Condition, sheet: Sequence[SheetTrait], subject: SheetTrait) -> bool:
+def matches(
+    condition: Condition,
+    sheet: Sequence[SheetTrait],
+    subject: SheetTrait,
+    context: Context = NO_CONTEXT,
+) -> bool:
     for key, test in condition.items():
         if key == "clan":
             ok = clan_of(sheet) in test
@@ -145,10 +173,27 @@ def matches(condition: Condition, sheet: Sequence[SheetTrait], subject: SheetTra
             ok = holds_trait(
                 sheet, {"category": test["category"], "name": parent, "rating": test["rating"]}
             )
+        elif key == "self":
+            ok = (
+                ("names" not in test or subject.name in test["names"])
+                and ("rating" not in test or compare(subject.rating or 0, test["rating"]))
+                and ("has_detail" not in test or bool(subject.detail) == test["has_detail"])
+            )
+        elif key == "copies":
+            held = sum(
+                1
+                for t in sheet
+                if t.category == subject.category and t.name == subject.name and t.rating != 0
+            )
+            ok = compare(held, test)
+        elif key == "in_clan":
+            ok = (subject.name in context.in_clan or subject.full_name in context.in_clan) == test
+        elif key == "accepted":
+            ok = context.accepted == test
         elif key == "any_of":
-            ok = any(matches(c, sheet, subject) for c in test)
+            ok = any(matches(c, sheet, subject, context) for c in test)
         elif key == "not":
-            ok = not matches(test, sheet, subject)
+            ok = not matches(test, sheet, subject, context)
         else:
             raise ValueError(f"unknown condition {key!r}")
         if not ok:
@@ -156,16 +201,18 @@ def matches(condition: Condition, sheet: Sequence[SheetTrait], subject: SheetTra
     return True
 
 
-def violations(checks: Sequence[CheckData], sheet: Sequence[SheetTrait]) -> list[Violation]:
+def violations(
+    checks: Sequence[CheckData], sheet: Sequence[SheetTrait], context: Context = NO_CONTEXT
+) -> list[Violation]:
     """Every check the sheet breaks, once per trait it is about."""
     found: list[Violation] = []
     for check in checks:
         for trait in sheet:
             if not check.about(trait):
                 continue
-            broken = (check.requires is not None and not matches(check.requires, sheet, trait)) or (
-                check.forbids is not None and matches(check.forbids, sheet, trait)
-            )
+            broken = (
+                check.requires is not None and not matches(check.requires, sheet, trait, context)
+            ) or (check.forbids is not None and matches(check.forbids, sheet, trait, context))
             if broken:
                 found.append(Violation(check, trait))
     return found

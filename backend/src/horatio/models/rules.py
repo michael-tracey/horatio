@@ -18,11 +18,17 @@ class RuleSet(Record):
     name: Mapped[str]
     version: Mapped[int]
     starting_xp: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Unspent creation XP kept on a first home troupe's acceptance; None keeps all.
+    banked_xp: Mapped[int | None]
     titles: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     # What a sheet may hold (horatio.rules.checks), as written in the rule set file.
     checks: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
     # Traits that give other traits (horatio.rules.grants), as written in the files.
     grants: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Traits chosen at creation only, as {category, name?, name_prefix?}.
+    creation_only: Mapped[list[dict[str, str]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
 
 
 class TraitCategory(Record):

@@ -74,13 +74,25 @@ class Troupe:
 
 
 def new_character(
-    troupe: Troupe, player: Person, name: str = "Agnes", *, finished: bool = True
+    troupe: Troupe,
+    player: Person,
+    name: str = "Agnes",
+    *,
+    finished: bool = True,
+    clan: str | None = None,
 ) -> str:
-    """A new Vampire. `finished` skips placing creation picks, for tests about
-    something else; tests about creation place them through the API."""
+    """A new Vampire, of `clan` if given (chosen during creation, as it must be).
+    `finished` skips placing creation picks, for tests about something else; tests
+    about creation place them through the API."""
     response = player.client.post("/characters", json={"splat": "vampire", "name": name})
     assert response.status_code == 201, response.text
     character_id: str = response.json()["id"]
+    if clan is not None:
+        chosen = player.client.put(
+            f"/characters/{character_id}/traits",
+            json={"category": "clan", "name": clan, "rating": None},
+        )
+        assert chosen.status_code == 200, chosen.text
     if finished:
         character = troupe.session.get_one(Character, uuid.UUID(character_id))
         character.creation_completed_at = datetime.now(UTC)

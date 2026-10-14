@@ -73,9 +73,11 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
     else:
         rule_set.splat, rule_set.name, rule_set.version = data.splat, data.name, data.version
     rule_set.starting_xp = data.starting_xp
+    rule_set.banked_xp = data.banked_xp
     rule_set.titles = list(data.titles)
     rule_set.checks = [check_to_dict(c) for c in data.checks]
     rule_set.grants = [grant_to_dict(g) for g in data.grants]
+    rule_set.creation_only = [dict(c) for c in data.creation_only]
     session.flush()
 
     categories = {
@@ -469,6 +471,8 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         titles=tuple(rule_set.titles),
         checks=tuple(check_from_dict(c) for c in rule_set.checks),
         grants=tuple(grant_from_dict(g) for g in rule_set.grants),
+        creation_only=tuple(rule_set.creation_only),
+        banked_xp=rule_set.banked_xp,
         categories={
             c.key: CategoryData(
                 key=c.key,

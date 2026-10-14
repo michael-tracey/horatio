@@ -97,7 +97,12 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
         </Card>
       ) : (
         character.creation_complete ? (
-          <HomeTroupe character={character} troupes={troupes.data ?? []} currentHome={character.home_troupe_id} />
+          <HomeTroupe
+            character={character}
+            troupes={troupes.data ?? []}
+            currentHome={character.home_troupe_id}
+            unbanked={sheet.data?.xp.unbanked ?? 0}
+          />
         ) : (
           <Card title="Home troupe">
             <Notice>Finish character creation on the Sheet tab before choosing a home troupe.</Notice>
@@ -109,7 +114,18 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
   );
 }
 
-function HomeTroupe({ character, troupes, currentHome }: { character: CharacterOut; troupes: { id: string; name: string }[]; currentHome: string | null }) {
+function HomeTroupe({
+  character,
+  troupes,
+  currentHome,
+  unbanked,
+}: {
+  character: CharacterOut;
+  troupes: { id: string; name: string }[];
+  currentHome: string | null;
+  /** Creation XP lost if a first home troupe accepts the character now. */
+  unbanked: number;
+}) {
   const path = { params: { path: { character_id: character.id } } };
   const [troupeId, setTroupeId] = useState("");
   const [differences, setDifferences] = useState<DifferenceOut[] | null>(null);
@@ -186,6 +202,12 @@ function HomeTroupe({ character, troupes, currentHome }: { character: CharacterO
                 </Field>
               ))}
             </>
+          )}
+          {unbanked > 0 && (
+            <Notice>
+              Only 5 unspent creation XP carry over once a home troupe accepts {character.name}. If accepted now, {unbanked} XP will
+              be lost; spend it first if you want it.
+            </Notice>
           )}
           <Field label="A note for the storytellers">
             <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />

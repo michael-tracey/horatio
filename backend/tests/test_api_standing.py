@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session
 
 from tests.api_helpers import Person, Troupe, new_character
 
+# Balances here are about settlements and purchases, not banking creation XP.
+pytestmark = pytest.mark.usefixtures("without_bank")
+
 
 @pytest.fixture
 def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:

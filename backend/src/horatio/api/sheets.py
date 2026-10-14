@@ -26,6 +26,7 @@ from horatio.permissions import (
     require_troupe_action,
     visible_character,
 )
+from horatio.reconciliation import unbanked_xp
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["sheets"])
 
@@ -53,6 +54,8 @@ class XpSummary(BaseModel):
     balance: int
     earned: int
     spent: int
+    # Creation XP that would be lost if a first home troupe accepted it now.
+    unbanked: int = 0
 
 
 class ApprovalOut(BaseModel):
@@ -242,6 +245,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             balance=sum(entries),
             earned=sum(a for a in entries if a > 0),
             spent=-sum(a for a in entries if a < 0),
+            unbanked=unbanked_xp(db, character) if character.kind == "pc" else 0,
         ),
         pending_approvals=[approval_out(a) for a in pending],
         problems=[

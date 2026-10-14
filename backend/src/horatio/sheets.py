@@ -14,7 +14,7 @@ the differences there are.
 """
 
 import uuid
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -38,10 +38,11 @@ from horatio.models import (
     User,
     XpEntry,
 )
-from horatio.rules.checks import Violation, violations
+from horatio.rules.checks import Context, Violation, violations
 from horatio.rules.grants import Effects, choices, effects, raised_by
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import PricingError, Quote, points, purchase_cost, trait_cost
+from horatio.rules.splats import SPLATS
 from horatio.rules.store import read_troupe_rules
 
 TraitKey = tuple[str, str, str]  # category, name, detail
@@ -246,10 +247,29 @@ def find_definition(
     return found[0], found[1]
 
 
+def check_context(db: Session, character: Character, sheet: Sequence[SheetTrait]) -> Context:
+    rules = rules_for(db, character)
+    return Context(
+        accepted=character.home_troupe_id is not None,
+        in_clan=frozenset(SPLATS[character.splat].in_clan(rules, sheet)),
+    )
+
+
 def sheet_violations(db: Session, character: Character) -> list[Violation]:
     """The checks the character's sheet breaks now."""
     sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
-    return violations(rules_for(db, character).rule_set.checks, sheet)
+    return violations(
+        rules_for(db, character).rule_set.checks, sheet, check_context(db, character, sheet)
+    )
+
+
+def blocking(violation: Violation, character: Character) -> bool:
+    """Whether a broken check stops a change: refuse checks always; complete
+    checks once the character's creation is finished."""
+    strength = violation.check.strength
+    return strength == "refuse" or (
+        strength == "complete" and character.creation_completed_at is not None
+    )
 
 
 def unavailable(db: Session, character: Character, category_key: str) -> dict[str, str]:
@@ -260,7 +280,8 @@ def unavailable(db: Session, character: Character, category_key: str) -> dict[st
     rows = sheet_rows(db, character)
     sheet = [r.as_rules_trait() for r in rows]
     held = {r.definition.name for r in rows if r.category.key == category_key}
-    before = {v.key for v in violations(rule_set.checks, sheet)}
+    context = check_context(db, character, sheet)
+    before = {v.key for v in violations(rule_set.checks, sheet, context)}
     rated = rule_set.categories[category_key].rated
     reasons: dict[str, str] = {}
     for (category, name), trait in rule_set.traits.items():
@@ -271,8 +292,8 @@ def unavailable(db: Session, character: Character, category_key: str) -> dict[st
         trial = [t for t in sheet if rated or t.category != category] + [candidate]
         new = [
             v
-            for v in violations(rule_set.checks, trial)
-            if v.check.strength == "refuse" and v.key not in before
+            for v in violations(rule_set.checks, trial, check_context(db, character, trial))
+            if blocking(v, character) and v.key not in before
         ]
         if new:
             reasons[name] = new[0].message
@@ -370,25 +391,47 @@ def held_beyond_limit(db: Session, character: Character) -> dict[str, int]:
     }
 
 
+def creation_only_traits(db: Session, character: Character) -> dict[TraitKey, int | None]:
+    """The character's traits that are chosen at creation only, with their ratings."""
+    selectors = rules_for(db, character).rule_set.creation_only
+    return {
+        r.key: r.trait.rating
+        for r in sheet_rows(db, character)
+        if any(
+            s["category"] == r.category.key
+            and (not s.get("name") or s["name"] == r.definition.name)
+            and r.definition.name.startswith(s.get("name_prefix", ""))
+            for s in selectors
+        )
+    }
+
+
 @contextmanager
 def checked(db: Session, character: Character, user: User | None = None) -> Iterator[None]:
     """Make a change to a sheet, then bring its grants into line and refuse the
-    change if it breaks a check the sheet did not already break. The caller's
-    transaction is rolled back with the refusal. NPCs get their grants but are
+    change if it breaks a check the sheet did not already break. The change is
+    rolled back (to a savepoint taken before it) with the refusal. NPCs get their grants but are
     their staff's to build as they like."""
     before = {v.key for v in sheet_violations(db, character)}
     over_before = held_beyond_limit(db, character)
-    yield
-    db.flush()
+    fixed_before = creation_only_traits(db, character)
+    savepoint = db.begin_nested()
+    try:
+        yield
+        db.flush()
+    except BaseException:
+        savepoint.rollback()
+        raise
     if user is not None:
         apply_grants(db, user, character)
     if character.kind != "pc":
+        savepoint.commit()
         return
     db.expire_all()
     problems = [
         v.message
         for v in sheet_violations(db, character)
-        if v.check.strength == "refuse" and v.key not in before
+        if blocking(v, character) and v.key not in before
     ]
     rule_set = rules_for(db, character).rule_set
     for key, count in held_beyond_limit(db, character).items():
@@ -398,13 +441,23 @@ def checked(db: Session, character: Character, user: User | None = None) -> Iter
                 f"A character holds {category.max_held} {category.name.lower()}; "
                 "only merits can grant more."
             )
+    if character.creation_completed_at is not None:
+        fixed_after = creation_only_traits(db, character)
+        changed = {
+            key
+            for key in fixed_before.keys() | fixed_after.keys()
+            if fixed_before.get(key, 0) != fixed_after.get(key, 0)
+        }
+        for key in sorted(changed):
+            problems.append(f"{key[1]} can only be chosen during character creation.")
     for trait, grant in sheet_effects(db, character).unchosen:
         options = choices(grant, rule_set)
         listed = ", ".join(options) if len(options) <= 8 else "the trait it applies to"
         problems.append(f"Say which for {trait.name}: put {listed} in its detail.")
     if problems:
-        db.rollback()
+        savepoint.rollback()
         raise conflict(" ".join(dict.fromkeys(problems)))
+    savepoint.commit()
 
 
 def replace_choice(

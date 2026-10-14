@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 from pwdlib.hashers.bcrypt import BcryptHasher
-from sqlalchemy import Connection, Engine, create_engine
+from sqlalchemy import Connection, Engine, create_engine, select
 from sqlalchemy.orm import Session
 from testcontainers.community.postgres import PostgresContainer
 
@@ -17,8 +17,9 @@ from horatio.app import app
 from horatio.auth import passwords
 from horatio.config import get_settings
 from horatio.db import get_session
+from horatio.models import RuleSet
 from horatio.rules.files import DATA_DIR, load_rule_set
-from horatio.rules.store import sync_rule_set
+from horatio.rules.store import forget_rules, sync_rule_set
 
 # The test client talks plain HTTP, which would never send a Secure cookie back.
 os.environ["HORATIO_COOKIE_SECURE"] = "false"
@@ -96,3 +97,13 @@ def client_for(session: Session) -> Iterator[Callable[[], TestClient]]:
     for client in clients:
         client.close()
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def without_bank(session: Session) -> None:
+    """Keep all unspent creation XP on a first acceptance, for tests about
+    something else whose balances would otherwise lose it (MET: VTM p. 107)."""
+    for rule_set in session.scalars(select(RuleSet)):
+        rule_set.banked_xp = None
+    session.flush()
+    forget_rules(session)

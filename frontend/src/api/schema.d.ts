@@ -2661,6 +2661,11 @@ export interface components {
             earned: number;
             /** Spent */
             spent: number;
+            /**
+             * Unbanked
+             * @default 0
+             */
+            unbanked: number;
         };
     };
     responses: never;

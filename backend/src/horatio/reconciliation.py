@@ -523,6 +523,33 @@ def allowed_settlements(
     return as_difference(item, rows).allowed_settlements()
 
 
+def unbanked_xp(db: Session, character: Character) -> int:
+    """Creation XP the character would lose on its first acceptance: everything
+    unspent past the rule set's bank."""
+    if character.home_troupe_id is not None:
+        return 0
+    limit = read_troupe_rules(db, character.splat, None).rule_set.banked_xp
+    if limit is None:
+        return 0
+    return max(0, xp_balance(db, character) - limit)
+
+
+def bank_creation_xp(db: Session, staff: User, character: Character) -> None:
+    """On a first acceptance, unspent creation XP past the bank is lost (MET: VTM p. 107)."""
+    lost = unbanked_xp(db, character)
+    if lost:
+        db.add(
+            XpEntry(
+                character_id=character.id,
+                kind="fee",
+                amount=-lost,
+                reason="Unspent creation XP past the bank is lost on acceptance",
+                entered_by=staff.id,
+            )
+        )
+        db.flush()
+
+
 def approve_change(
     db: Session,
     staff: User,
@@ -587,6 +614,8 @@ def approve_change(
     db.flush()
 
     old_troupe = change.from_troupe_id
+    if old_troupe is None:
+        bank_creation_xp(db, staff, character)
     character.home_troupe_id = change.to_troupe_id
     # The sheet as the new home troupe accepted it: the floor for lowering ratings.
     freeze_sheet(db, staff, character, change.to_troupe_id)

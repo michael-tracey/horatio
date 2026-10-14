@@ -270,9 +270,17 @@ def load_rule_set(path: Path) -> RuleSetData:
             properties=t.get("properties", {}),
         )
     raw_checks = list(raw.get("checks", []))
+    creation_only = list(raw.get("creation_only", []))
     for check_file in raw.get("check_files", []):
         with (path.parent / check_file).open("rb") as f:
-            raw_checks += tomllib.load(f).get("checks", [])
+            included_checks = tomllib.load(f)
+        raw_checks += included_checks.get("checks", [])
+        creation_only += included_checks.get("creation_only", [])
+    for selector in creation_only:
+        if selector["category"] not in categories:
+            raise ValueError(f"{path.name}: creation_only names unknown category")
+        if selector.get("name") and (selector["category"], selector["name"]) not in traits:
+            raise ValueError(f"{path.name}: creation_only names unknown trait {selector['name']!r}")
     checks = load_checks(path.name, raw_checks, traits, categories)
     raw_grants = list(raw.get("grants", []))
     for grant_file in raw.get("grant_files", []):
@@ -312,6 +320,8 @@ def load_rule_set(path: Path) -> RuleSetData:
         titles=tuple(sorted(set(titles))),
         checks=checks,
         grants=grants,
+        creation_only=tuple(creation_only),
+        banked_xp=raw.get("banked_xp"),
     )
     for allowance_rule in allowance_rules:
         check_allowance_rule(allowance_rule, rule_set)

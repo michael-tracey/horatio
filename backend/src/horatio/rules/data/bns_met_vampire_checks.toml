@@ -243,3 +243,165 @@ category = "elder_disciplines"
 forbids = { generation = 3, count = { category = "elder_disciplines", gte = 2 } }
 message = "A Pretender Elder can learn only one elder power."
 page = "101"
+
+# --- chosen at creation only ---------------------------------------------------
+# These reflect the Embrace and cannot be added, removed or changed once
+# creation is finished (pp. 100, 107, 235–236, 246, 263, 265).
+
+[[creation_only]]
+category = "clan"
+
+[[creation_only]]
+category = "backgrounds"
+name = "Generation"
+
+[[creation_only]]
+category = "merits"
+name_prefix = "Bloodline:"
+
+[[creation_only]]
+category = "merits"
+name = "Uncommon Clan"
+
+[[creation_only]]
+category = "merits"
+name = "Rare Clan"
+
+[[creation_only]]
+category = "merits"
+name = "Restricted Clan"
+
+[[creation_only]]
+category = "merits"
+name = "Vestiges of Greatness"
+
+[[creation_only]]
+category = "flaws"
+name = "Inept"
+
+[[creation_only]]
+category = "flaws"
+name = "Stolen Potential"
+
+[[creation_only]]
+category = "flaws"
+name = "Lesser Generation 1"
+
+[[creation_only]]
+category = "flaws"
+name = "Lesser Generation 2"
+
+[[creation_only]]
+category = "flaws"
+name = "Thin Blooded"
+
+# --- creation ---------------------------------------------------------------------
+
+# Without a dot of Generation the character is a mortal (p. 98). Checked when
+# creation is finished.
+[[checks]]
+category = "clan"
+requires = { has = { category = "backgrounds", name = "Generation" } }
+strength = "complete"
+message = "A vampire needs at least 1 dot of Generation; without one the character is mortal."
+page = "98"
+
+# Before a home troupe accepts the character (initial XP), out-of-clan disciplines
+# are the common ones only, up to 3 dots; afterwards they need a teacher, which
+# the home troupe's approval of each discipline dot covers (pp. 106, 112). Blood
+# magic follows its own merits.
+[[checks]]
+category = "disciplines"
+requires = { any_of = [
+  { in_clan = true },
+  { accepted = true },
+  { self = { names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"], rating = { lte = 3 } } },
+  { has_any = [
+    { category = "merits", name = "Thaumaturgic Training" },
+    { category = "merits", name = "Thaumaturgic Expertise" },
+    { category = "merits", name = "Setite Sorcery" },
+    { category = "merits", name = "Bloodline: Sorcerer" },
+    { category = "merits", name = "Bloodline: Koldun" },
+    { category = "merits", name = "Necromantic Training" },
+    { category = "merits", name = "Necromantic Expertise" },
+    { category = "merits", name = "Necromantic Insight" },
+  ] },
+] }
+message = "Before a home troupe accepts the character, out-of-clan disciplines are the common ones only, up to 3 dots."
+page = "106"
+
+[[checks]]
+category = "disciplines"
+forbids = { has = { category = "flaws", name = "Thin Blooded" }, self = { rating = { gte = 5 } } }
+message = "A Thin Blooded vampire can never raise a discipline above 4."
+page = "266"
+
+# Humanity starts at 5 and can be bought up to 6 (p. 108).
+[[checks]]
+category = "paths"
+name = "Humanity"
+forbids = { self = { rating = { gte = 7 } } }
+message = "Humanity cannot go above 6."
+page = "108"
+
+# --- taking a trait more than once (p. 236) ---------------------------------------
+
+[[checks]]
+category = "merits"
+forbids = { copies = { gte = 2 }, not = { self = { names = ["Skill Aptitude", "Necromantic Expertise", "Thaumaturgic Expertise", "Necromantic Insight"] } } }
+message = "A merit can be taken only once unless it says otherwise."
+page = "236"
+
+[[checks]]
+category = "flaws"
+forbids = { copies = { gte = 2 }, not = { self = { names = ["Cursed", "Eerie Presence", "Derangement"] } } }
+message = "A flaw can be taken only once unless it says otherwise."
+page = "236"
+
+[[checks]]
+category = "flaws"
+forbids = { copies = { gte = 4 }, self = { names = ["Cursed", "Eerie Presence"] } }
+message = "Cursed and Eerie Presence can each be taken up to three times."
+page = "261"
+
+# Crafts, Performance and Science are each bought for one field (p. 92). A note
+# for now: the creation wizard cannot name fields yet.
+[[checks]]
+category = "skills"
+requires = { any_of = [
+  { self = { has_detail = true } },
+  { not = { self = { names = ["Crafts", "Performance", "Science"] } } },
+] }
+strength = "note"
+message = "Crafts, Performance and Science need a field, such as Performance: Singing."
+page = "92"
+
+# --- Caitiff and extra in-clan disciplines (pp. 242, 246, 248) ----------------------
+
+[[checks]]
+category = "extra_in_clan_disciplines"
+requires = { any_of = [
+  { clan = ["Caitiff"], self = { names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"] } },
+  { has = { category = "merits", name = "Vestiges of Greatness" }, self = { names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence", "Dementation", "Protean", "Serpentis", "Quietus", "Obtenebration", "Vicissitude", "Chimerstry"] } },
+  { has = { category = "merits", name = "Additional Common Discipline" }, self = { names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"] } },
+  { has = { category = "merits", name = "Additional Uncommon Discipline" }, self = { names = ["Protean", "Dementation", "Serpentis", "Quietus"] } },
+  { has = { category = "merits", name = "Pliable Blood" }, self = { names = ["Auspex", "Celerity", "Dementation", "Dominate", "Fortitude", "Presence", "Protean", "Quietus", "Serpentis"] } },
+] }
+message = "Extra in-clan disciplines come from being Caitiff or from a merit, and only from its list."
+page = "246"
+
+[[checks]]
+category = "extra_in_clan_disciplines"
+forbids = { clan = ["Caitiff"], count = { category = "extra_in_clan_disciplines", gte = 4 }, not = { has_any = [
+  { category = "merits", name = "Additional Common Discipline" },
+  { category = "merits", name = "Additional Uncommon Discipline" },
+  { category = "merits", name = "Pliable Blood" },
+] } }
+message = "Caitiff choose three in-clan disciplines."
+page = "246"
+
+[[checks]]
+category = "extra_in_clan_disciplines"
+forbids = { not = { clan = ["Caitiff"] }, count = { category = "extra_in_clan_disciplines", gte = 2 } }
+message = "A merit adds one in-clan discipline."
+page = "248"
