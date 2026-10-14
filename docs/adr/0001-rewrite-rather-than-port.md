@@ -6,3 +6,7 @@ Yorick already had working React and Vue ports, both passing its full E2E suite 
 
 - **Ship the Vue port and modernise behind it.** Least work to a new UI, but leaves Parse, MongoDB and per-object ACLs in place.
 - **Keep Parse, replace the front end only.** Same problem; the data model and permission model were the parts most in need of change.
+
+## Not carried over
+
+Referendums, patronage (PayPal payments) and character relationships are deliberately left out of Horatio. Everything else in Yorick is in scope: characters and their sheets, XP history, approvals, troupes, long texts, trait descriptions, portraits and the printable sheet.
