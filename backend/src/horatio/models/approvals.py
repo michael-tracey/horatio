@@ -56,6 +56,8 @@ class DisciplinePurchase(Record):
     from_rating: Mapped[int]
     to_rating: Mapped[int]
     cost: Mapped[int]
+    # Who teaches it, as the player says: out-of-clan powers need a teacher (p. 112).
+    teacher: Mapped[str] = mapped_column(default="", server_default="")
 
 
 class HomeTroupeChange(Record):

@@ -105,6 +105,8 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.max_held = category.max_held
         row.derived = category.derived
         row.buy_off_factor = category.buy_off_factor
+        row.downtime_actions = category.downtime_actions
+        row.downtime_waived_by = [dict(w) for w in category.downtime_waived_by]
     session.flush()
 
     definitions = {
@@ -490,6 +492,8 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 max_held=c.max_held,
                 derived=c.derived,
                 buy_off_factor=c.buy_off_factor,
+                downtime_actions=c.downtime_actions,
+                downtime_waived_by=tuple(c.downtime_waived_by),
             )
             for c in categories
         },

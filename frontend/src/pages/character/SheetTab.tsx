@@ -7,7 +7,7 @@ import { Badge, Button, Card, Dots, Empty, ErrorText, Loading, Notice, Select } 
 import { useAction } from "../../hooks";
 import { AddTraitPanel } from "./AddTraitPanel";
 
-type TraitChange = { category: string; name: string; detail: string; rating: number | null };
+type TraitChange = { category: string; name: string; detail: string; rating: number | null; teacher?: string };
 
 function useSheet(characterId: string) {
   return useQuery({
@@ -81,7 +81,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   });
   const change = useAction(async (body: TraitChange) => {
     const result = await unwrap(
-      api.PUT("/api/characters/{character_id}/traits", { params: { path: { character_id: character.id } }, body }),
+      api.PUT("/api/characters/{character_id}/traits", { params: { path: { character_id: character.id } }, body: { teacher: "", ...body } }),
     );
     setMessage(result.cost > 0 ? `Spent ${result.cost} XP.` : result.cost < 0 ? `Gained ${-result.cost} XP.` : null);
     return result;

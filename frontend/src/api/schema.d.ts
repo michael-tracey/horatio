@@ -1619,6 +1619,8 @@ export interface components {
             from_rating: number;
             /** Name */
             name: string;
+            /** Teacher */
+            teacher: string;
             /** To Rating */
             to_rating: number;
         };
@@ -2479,6 +2481,11 @@ export interface components {
             note?: string | null;
             /** Rating */
             rating?: number | null;
+            /**
+             * Teacher
+             * @default
+             */
+            teacher: string;
         };
         /** TraitOut */
         TraitOut: {

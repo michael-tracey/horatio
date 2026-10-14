@@ -754,6 +754,10 @@
             "title": "Name",
             "type": "string"
           },
+          "teacher": {
+            "title": "Teacher",
+            "type": "string"
+          },
           "to_rating": {
             "title": "To Rating",
             "type": "integer"
@@ -764,7 +768,8 @@
           "detail",
           "from_rating",
           "to_rating",
-          "cost"
+          "cost",
+          "teacher"
         ],
         "title": "DisciplineOut",
         "type": "object"
@@ -2905,6 +2910,12 @@
               }
             ],
             "title": "Rating"
+          },
+          "teacher": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Teacher",
+            "type": "string"
           }
         },
         "required": [

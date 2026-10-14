@@ -243,7 +243,7 @@ function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut;
     unwrap(
       api.PUT("/api/characters/{character_id}/traits", {
         params: { path: { character_id: character.id } },
-        body: { ...body, detail: "", rating: null },
+        body: { ...body, detail: "", rating: null, teacher: "" },
       }),
     ),
   );

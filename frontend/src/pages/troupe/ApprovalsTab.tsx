@@ -76,6 +76,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         <p className="mb-3 text-sm">
           {d.name}
           {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating}, for {d.cost} XP.{" "}
+          {d.teacher && <>Taught by {d.teacher}. </>}
           <span className="text-mist">The XP is spent; declining refunds it and takes the dots back.</span>
         </p>
       )}

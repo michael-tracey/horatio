@@ -95,6 +95,27 @@ class AllowanceAdjustment(Record):
     adjusted_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
 
 
+class OwedAction(Record):
+    """A downtime action a character owes for something done between games, such
+    as learning a discipline dot (MET: VTM p. 111). It comes off the allowance of
+    the next cycle the character takes part in in that troupe."""
+
+    __tablename__ = "owed_actions"
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), index=True
+    )
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"))
+    action_kind: Mapped[str]
+    amount: Mapped[int]
+    reason: Mapped[str]
+    owed_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # The participation it came off; null while still owed.
+    participant_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("cycle_participants.id", ondelete="SET NULL")
+    )
+
+
 class Submission(Record):
     __tablename__ = "submissions"
     __table_args__ = (CheckConstraint("status in ('draft', 'submitted')", name="status"),)

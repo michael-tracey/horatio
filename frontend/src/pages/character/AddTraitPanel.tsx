@@ -37,6 +37,7 @@ export function AddTraitPanel({
   const [detail, setDetail] = useState("");
   const [rating, setRating] = useState(1);
   const [quote, setQuote] = useState<number | null>(null);
+  const [teacher, setTeacher] = useState("");
   const cat = catalogue.categories.find((c) => c.key === category);
   const unavailable = useUnavailable(character.id, category).data ?? {};
 
@@ -50,7 +51,9 @@ export function AddTraitPanel({
   const trait = all.find((t) => t.name === name);
   const fixed = trait?.fixed_rating ?? null;
   const needsField = category === "skills" && NEEDS_FIELD.has(name);
-  const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null };
+  // After acceptance, discipline dots wait on the home troupe, who will want to know the teacher.
+  const asksTeacher = category === "disciplines" && character.home_troupe_id !== null;
+  const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null, teacher: asksTeacher ? teacher : "" };
 
   const choose = (t: TraitOut) => {
     setName(t.name);
@@ -167,6 +170,11 @@ export function AddTraitPanel({
                   setQuote(null);
                 }}
               />
+            </Field>
+          )}
+          {asksTeacher && (
+            <Field label="Teacher" hint="Out-of-clan powers need a teacher who has them in-clan.">
+              <Input value={teacher} onChange={(e) => setTeacher(e.target.value)} />
             </Field>
           )}
           {quote !== null && <p className="text-sm">Costs {quote} XP.</p>}

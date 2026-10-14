@@ -48,6 +48,10 @@ class CategoryData:
     derived: bool = False
     # Removing an accepted trait costs this many times its points (flaws: 2).
     buy_off_factor: int | None = None
+    # Downtime actions each dot gained after acceptance costs (learning a
+    # discipline, buying a merit), unless the sheet holds a trait that waives it.
+    downtime_actions: int | None = None
+    downtime_waived_by: Sequence[Mapping[str, str]] = ()
 
 
 @dataclass(frozen=True)

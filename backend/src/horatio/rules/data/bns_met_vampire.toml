@@ -148,16 +148,28 @@ group = "Skills"
 key = "disciplines"
 name = "Disciplines"
 group = "Disciplines"
+# Learning a dot takes a downtime action between games (pp. 111, 113, 224);
+# Efficient Learner waives it (p. 249).
+downtime_actions = 1
+downtime_waived_by = [{ category = "merits", name = "Efficient Learner" }]
 
 [[categories]]
 key = "techniques"
 name = "Techniques"
 group = "Disciplines"
+# Learning a dot takes a downtime action between games (pp. 111, 113, 224);
+# Efficient Learner waives it (p. 249).
+downtime_actions = 1
+downtime_waived_by = [{ category = "merits", name = "Efficient Learner" }]
 
 [[categories]]
 key = "elder_disciplines"
 name = "Elder Disciplines"
 group = "Disciplines"
+# Learning a dot takes a downtime action between games (pp. 111, 113, 224);
+# Efficient Learner waives it (p. 249).
+downtime_actions = 1
+downtime_waived_by = [{ category = "merits", name = "Efficient Learner" }]
 
 [[categories]]
 key = "luminary_disciplines"
@@ -234,6 +246,8 @@ house_rules_per_trait = true
 # A character never holds more than 7 points of merits, counted at what they
 # cost in the character's troupe (pp. 106, 235).
 points_limit = 7
+# Buying a merit after acceptance takes a downtime action (p. 236).
+downtime_actions = 1
 
 [[categories]]
 key = "flaws"
@@ -723,6 +737,22 @@ category = "backgrounds"
 trait = "Resources"
 scheme = "fixed"
 amount = 1
+
+# Hunted: two actions a month go to avoiding the hunters (p. 263).
+[[allowance_rules]]
+action_kind = "general"
+category = "flaws"
+trait = "Hunted"
+scheme = "fixed"
+amount = -2
+
+# Disease Carrier: an extra action to feed without killing (p. 262).
+[[allowance_rules]]
+action_kind = "general"
+category = "flaws"
+trait = "Disease Carrier"
+scheme = "fixed"
+amount = -1
 
 # ---------------------------------------------------------------------------
 # Character creation, as Yorick seeded it: picks give that many free dots to

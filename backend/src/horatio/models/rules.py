@@ -60,6 +60,11 @@ class TraitCategory(Record):
     derived: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Removing an accepted trait costs this many times its points (flaws).
     buy_off_factor: Mapped[int | None]
+    # Downtime actions each dot gained after acceptance costs, and what waives it.
+    downtime_actions: Mapped[int | None]
+    downtime_waived_by: Mapped[list[dict[str, str]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
 
 
 class TraitDefinition(Record):

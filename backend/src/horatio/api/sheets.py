@@ -129,6 +129,8 @@ class TraitChange(BaseModel):
     # Null for traits without a rating; 0 removes a rated trait.
     rating: int | None = Field(default=None, ge=0)
     note: str | None = None
+    # For a discipline dot that waits on the home troupe: who teaches it.
+    teacher: str = Field(default="", max_length=200)
 
 
 class ChoiceChange(BaseModel):
@@ -334,7 +336,15 @@ def change_trait(
     character = players_character(db, user, character_id)
     with sheets.checked(db, character, user):
         change = sheets.set_trait(
-            db, user, character, body.category, body.name, body.detail, body.rating, body.note
+            db,
+            user,
+            character,
+            body.category,
+            body.name,
+            body.detail,
+            body.rating,
+            body.note,
+            body.teacher,
         )
     db.commit()
     return ChangeOut(cost=change.quote.cost if change.quote else 0, sheet=sheet_out(db, character))

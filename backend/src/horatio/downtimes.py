@@ -28,6 +28,7 @@ from horatio.models import (
     Character,
     CycleParticipant,
     DowntimeCycle,
+    OwedAction,
     Question,
     RuleSet,
     Submission,
@@ -259,6 +260,8 @@ def open_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -
         participant = CycleParticipant(cycle_id=cycle.id, character_id=character.id)
         fill_allowance(db, participant, character, troupe)
         db.add(participant)
+        db.flush()
+        settle_owed_actions(db, participant, cycle)
         count += 1
     db.flush()
     audit.record(
@@ -314,6 +317,7 @@ def add_participant(
     participant.removed_by = None
     participant.added_by = staff.id
     db.flush()
+    settle_owed_actions(db, participant, cycle)
     audit.record(
         db,
         staff,
@@ -342,6 +346,58 @@ def remove_participant(
         cycle_id=participant.cycle_id,
         character_id=participant.character_id,
     )
+
+
+def owe_actions(db: Session, user: User, character: Character, amount: int, reason: str) -> None:
+    """Record downtime actions the character owes its home troupe, and take them
+    from its current cycle if it has not submitted yet."""
+    if amount <= 0 or character.home_troupe_id is None or character.kind != "pc":
+        return
+    db.add(
+        OwedAction(
+            character_id=character.id,
+            troupe_id=character.home_troupe_id,
+            action_kind="general",
+            amount=amount,
+            reason=reason,
+            owed_by=user.id,
+        )
+    )
+    db.flush()
+    current = current_participation(db, character)
+    if current is not None:
+        settle_owed_actions(db, current[1], current[0])
+
+
+def settle_owed_actions(db: Session, participant: CycleParticipant, cycle: DowntimeCycle) -> None:
+    """Take what the character owes off this participation, unless its downtime
+    is already submitted (then it waits for the next cycle)."""
+    submitted = db.scalar(
+        select(Submission.id).where(
+            Submission.participant_id == participant.id, Submission.status == "submitted"
+        )
+    )
+    if submitted is not None:
+        return
+    owed = db.scalars(
+        select(OwedAction).where(
+            OwedAction.character_id == participant.character_id,
+            OwedAction.troupe_id == cycle.troupe_id,
+            OwedAction.participant_id.is_(None),
+        )
+    )
+    for debt in owed:
+        db.add(
+            AllowanceAdjustment(
+                participant_id=participant.id,
+                action_kind=debt.action_kind,
+                delta=-debt.amount,
+                reason=debt.reason,
+                adjusted_by=debt.owed_by,
+            )
+        )
+        debt.participant_id = participant.id
+    db.flush()
 
 
 def adjust_allowance(

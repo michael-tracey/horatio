@@ -40,6 +40,7 @@ class DisciplineOut(BaseModel):
     from_rating: int
     to_rating: int
     cost: int
+    teacher: str
 
 
 class QueuedApproval(ApprovalOut):
@@ -114,6 +115,7 @@ def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
         from_rating=bought.from_rating,
         to_rating=bought.to_rating,
         cost=bought.cost,
+        teacher=bought.teacher,
     )
 
 

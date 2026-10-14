@@ -572,6 +572,29 @@ def quote_change(
     return quote, current_rating
 
 
+def owed_for(
+    db: Session, character: Character, category: TraitCategory, gained: int, fixed: bool
+) -> int:
+    """Downtime actions gaining `gained` dots in `category` costs the character: per
+    dot, or once for a trait bought whole (a merit)."""
+    if not category.downtime_actions or gained <= 0 or character.home_troupe_id is None:
+        return 0
+    rows = sheet_rows(db, character)
+    for waiver in category.downtime_waived_by:
+        if any(
+            r.category.key == waiver["category"] and r.definition.name == waiver["name"]
+            for r in rows
+        ):
+            return 0
+    return category.downtime_actions * (1 if fixed else gained)
+
+
+def owe(db: Session, user: User, character: Character, amount: int, reason: str) -> None:
+    from horatio.downtimes import owe_actions  # imports this module
+
+    owe_actions(db, user, character, amount, reason)
+
+
 def held_points(
     db: Session, character: Character, category_key: str, leave_out: TraitKey | None = None
 ) -> int:
@@ -630,9 +653,11 @@ def set_trait(
     detail: str,
     rating: int | None,
     note: str | None = None,
+    teacher: str = "",
 ) -> Change:
     """Add a trait, change its rating, or (at rating 0) remove it, buying or
-    refunding the difference. Unrated traits replace the category's choice."""
+    refunding the difference. Unrated traits replace the category's choice.
+    `teacher` names who teaches a discipline dot that waits on the home troupe."""
     ensure_unlocked(db, character)
     definition, category = find_definition(db, character, category_key, name)
 
@@ -733,6 +758,11 @@ def set_trait(
         to_rating=rating,
         cost=quote.cost,
     )
+    if not held and rating > current_rating:
+        whole = definition.properties.get("rating") is not None
+        actions = owed_for(db, character, category, rating - current_rating, whole)
+        doing = f"Gaining {name}" if whole else f"Learning {name} {rating}"
+        owe(db, player, character, actions, doing)
     if held:
         assert character.home_troupe_id is not None
         approval = Approval(
@@ -751,6 +781,7 @@ def set_trait(
                 from_rating=current_rating,
                 to_rating=rating,
                 cost=quote.cost,
+                teacher=teacher,
             )
         )
         db.flush()
@@ -863,6 +894,14 @@ def decide(
     character = lock_character(db, approval.character_id)
     if not approve and approval.kind == "discipline":
         undo_discipline(db, staff, character, approval, "declined")
+    elif approve and approval.kind == "discipline":
+        bought = db.scalars(
+            select(DisciplinePurchase).where(DisciplinePurchase.approval_id == approval.id)
+        ).one()
+        definition = db.get_one(TraitDefinition, bought.trait_definition_id)
+        category = db.get_one(TraitCategory, definition.category_id)
+        actions = owed_for(db, character, category, bought.to_rating - bought.from_rating, False)
+        owe(db, staff, character, actions, f"Learning {definition.name} {bought.to_rating}")
     elif approve and approval.kind == "home_troupe_change":
         from horatio.reconciliation import approve_change  # imports this module
 
