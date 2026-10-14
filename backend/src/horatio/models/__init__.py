@@ -4,11 +4,34 @@ from horatio.models.approvals import Approval, HomeTroupeChange, ReconciliationI
 from horatio.models.audit import AuditEvent
 from horatio.models.base import Base
 from horatio.models.characters import Character, CharacterTrait, SheetVersion, XpEntry
+from horatio.models.downtimes import (
+    AllowanceAdjustment,
+    Answer,
+    CycleParticipant,
+    DowntimeCycle,
+    Question,
+    Submission,
+)
 from horatio.models.people import AuthIdentity, Session, User
-from horatio.models.rules import CostRule, RuleSet, TraitCategory, TraitDefinition
+from horatio.models.rules import (
+    ActionKind,
+    AllowanceRule,
+    CostRule,
+    RuleSet,
+    TraitCategory,
+    TraitDefinition,
+)
 from horatio.models.troupes import Troupe, TroupeMembership, TroupeStaff
 
 __all__ = [
+    "ActionKind",
+    "AllowanceAdjustment",
+    "AllowanceRule",
+    "Answer",
+    "CycleParticipant",
+    "DowntimeCycle",
+    "Question",
+    "Submission",
     "Approval",
     "AuditEvent",
     "AuthIdentity",

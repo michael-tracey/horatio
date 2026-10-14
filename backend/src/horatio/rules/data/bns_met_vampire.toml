@@ -633,3 +633,64 @@ category = "clan"
 name = "Ventrue: Crusader"
 properties = { in_clan = ["Auspex", "Dominate", "Fortitude"] }
 
+
+# ---------------------------------------------------------------------------
+# Downtimes.
+#
+# PLACEHOLDERS: neither Yorick nor the troupe's old downtime tool recorded the
+# official allowance rules, so these numbers are a starting point for each
+# troupe's storytellers to house-rule, not the rulebook.
+#
+# An action kind is a category of downtime action; each action question on a
+# downtime form spends actions of one kind. Allowance rules add up: the rule
+# with no trait is the base everyone gets, and each matching trait adds more.
+
+[[action_kinds]]
+key = "general"
+name = "Downtime action"
+
+[[action_kinds]]
+key = "influence_elite"
+name = "Elite influence action"
+fields = [
+  { key = "specialization", label = "Specialisation", type = "trait", category = "influence_elite_specializations" },
+  { key = "level", label = "Action level", type = "number", min = 1, max = 10 },
+]
+
+[[action_kinds]]
+key = "influence_underworld"
+name = "Underworld influence action"
+fields = [
+  { key = "specialization", label = "Specialisation", type = "trait", category = "influence_underworld_specializations" },
+  { key = "level", label = "Action level", type = "number", min = 1, max = 10 },
+]
+
+[[action_kinds]]
+key = "resources"
+name = "Resources action"
+
+[[allowance_rules]]
+action_kind = "general"
+scheme = "fixed"
+amount = 3
+
+[[allowance_rules]]
+action_kind = "influence_elite"
+category = "backgrounds"
+trait = "Influences: The Elite"
+scheme = "per_dot"
+amount = 1
+
+[[allowance_rules]]
+action_kind = "influence_underworld"
+category = "backgrounds"
+trait = "Influences: The Underworld"
+scheme = "per_dot"
+amount = 1
+
+[[allowance_rules]]
+action_kind = "resources"
+category = "backgrounds"
+trait = "Resources"
+scheme = "fixed"
+amount = 1

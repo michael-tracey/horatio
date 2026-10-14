@@ -80,3 +80,36 @@ class CostRule(Record):
     cost_table: Mapped[list[int] | None] = mapped_column(JSONB)
     # A house rule's own wording, shown with the trait description.
     text: Mapped[str | None]
+
+
+class ActionKind(Record):
+    """A category of downtime action. `troupe_id` set: one a troupe added itself."""
+
+    __tablename__ = "action_kinds"
+    __table_args__ = (
+        # Postgres 15+: a troupe's keys are unique, and so are the generic ones (null troupe).
+        UniqueConstraint("rule_set_id", "troupe_id", "key", postgresql_nulls_not_distinct=True),
+    )
+
+    rule_set_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rule_sets.id"), index=True)
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
+    key: Mapped[str]
+    name: Mapped[str]
+    fields: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+
+
+class AllowanceRule(Record):
+    """`troupe_id` null: part of the generic rule set; set: a house rule."""
+
+    __tablename__ = "allowance_rules"
+    __table_args__ = (CheckConstraint("scheme in ('fixed', 'per_dot')", name="scheme"),)
+
+    rule_set_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rule_sets.id"), index=True)
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
+    action_kind: Mapped[str]
+    trait_definition_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("trait_definitions.id")
+    )
+    min_rating: Mapped[int] = mapped_column(default=1, server_default="1")
+    scheme: Mapped[str]
+    amount: Mapped[int]

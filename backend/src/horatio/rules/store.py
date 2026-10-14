@@ -1,14 +1,24 @@
 """Rule sets in the database: loading the generic rules in, and reading troupe rules out."""
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import replace
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from horatio.models import CostRule, RuleSet, TraitCategory, TraitDefinition
-from horatio.rules.files import check_cost_rule
+from horatio.models import (
+    ActionKind,
+    AllowanceRule,
+    CostRule,
+    RuleSet,
+    TraitCategory,
+    TraitDefinition,
+)
+from horatio.rules.files import check_allowance_rule, check_cost_rule
 from horatio.rules.model import (
+    ActionKindData,
+    AllowanceRuleData,
     CategoryData,
     CostRuleData,
     RuleSetData,
@@ -92,7 +102,92 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
             )
         )
     session.flush()
+
+    session.execute(
+        delete(ActionKind).where(
+            ActionKind.rule_set_id == rule_set.id, ActionKind.troupe_id.is_(None)
+        )
+    )
+    for kind in data.action_kinds.values():
+        session.add(
+            ActionKind(
+                rule_set_id=rule_set.id,
+                troupe_id=None,
+                key=kind.key,
+                name=kind.name,
+                fields=[dict(f) for f in kind.fields],
+            )
+        )
+    session.execute(
+        delete(AllowanceRule).where(
+            AllowanceRule.rule_set_id == rule_set.id, AllowanceRule.troupe_id.is_(None)
+        )
+    )
+    for allowance_rule in data.allowance_rules:
+        session.add(allowance_row(rule_set, None, allowance_rule, definitions_by_key=definitions))
+    session.flush()
     return rule_set
+
+
+def allowance_row(
+    rule_set: RuleSet,
+    troupe_id: uuid.UUID | None,
+    rule: AllowanceRuleData,
+    *,
+    definitions_by_key: Mapping[tuple[str, str], TraitDefinition],
+) -> AllowanceRule:
+    definition_id = None
+    if rule.category is not None and rule.trait is not None:
+        definition_id = definitions_by_key[(rule.category, rule.trait)].id
+    return AllowanceRule(
+        rule_set_id=rule_set.id,
+        troupe_id=troupe_id,
+        action_kind=rule.action_kind,
+        trait_definition_id=definition_id,
+        min_rating=rule.min_rating,
+        scheme=rule.scheme,
+        amount=rule.amount,
+    )
+
+
+def add_house_allowance_rule(
+    session: Session, troupe_id: uuid.UUID, splat: str, rule: AllowanceRuleData
+) -> AllowanceRule:
+    """Add a troupe's allowance rule. One with the same action kind and trait as a
+    generic rule replaces it for that troupe."""
+    rules = read_troupe_rules(session, splat, troupe_id)
+    check_allowance_rule(
+        rule, rules.rule_set, extra_kinds=[k.key for k in rules.house_action_kinds]
+    )
+    rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
+    definitions = {
+        (key, d.name): d
+        for d, key in session.execute(
+            select(TraitDefinition, TraitCategory.key)
+            .join(TraitCategory)
+            .where(TraitCategory.rule_set_id == rule_set.id)
+        )
+    }
+    row = allowance_row(rule_set, troupe_id, rule, definitions_by_key=definitions)
+    session.add(row)
+    session.flush()
+    return row
+
+
+def add_house_action_kind(
+    session: Session, troupe_id: uuid.UUID, splat: str, kind: ActionKindData
+) -> ActionKind:
+    rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
+    row = ActionKind(
+        rule_set_id=rule_set.id,
+        troupe_id=troupe_id,
+        key=kind.key,
+        name=kind.name,
+        fields=[dict(f) for f in kind.fields],
+    )
+    session.add(row)
+    session.flush()
+    return row
 
 
 def add_house_rule(
@@ -169,6 +264,44 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
     if troupe_id is not None:
         house = [to_data(r) for r in session.scalars(query.where(CostRule.troupe_id == troupe_id))]
 
+    kind_rows = list(
+        session.scalars(
+            select(ActionKind)
+            .where(ActionKind.rule_set_id == rule_set.id)
+            .where(ActionKind.troupe_id.is_(None) | (ActionKind.troupe_id == troupe_id))
+            .order_by(ActionKind.id)
+        )
+    )
+
+    def kind_data(row: ActionKind) -> ActionKindData:
+        return ActionKindData(
+            key=row.key, name=row.name, fields=tuple(row.fields), house=row.troupe_id is not None
+        )
+
+    allowance_rows = list(
+        session.scalars(
+            select(AllowanceRule)
+            .where(AllowanceRule.rule_set_id == rule_set.id)
+            .where(AllowanceRule.troupe_id.is_(None) | (AllowanceRule.troupe_id == troupe_id))
+            .order_by(AllowanceRule.id)
+        )
+    )
+    definition_keys = {d.id: (category_keys[d.category_id], d.name) for d in definitions}
+
+    def allowance_data(row: AllowanceRule) -> AllowanceRuleData:
+        category, trait = (
+            definition_keys[row.trait_definition_id] if row.trait_definition_id else (None, None)
+        )
+        return AllowanceRuleData(
+            action_kind=row.action_kind,
+            scheme=row.scheme,  # type: ignore[arg-type]  # checked by the database
+            amount=row.amount,
+            category=category,
+            trait=trait,
+            min_rating=row.min_rating,
+            house=row.troupe_id is not None,
+        )
+
     data = RuleSetData(
         key=rule_set.key,
         splat=rule_set.splat,
@@ -197,5 +330,14 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
             )
             for d in definitions
         },
+        action_kinds={r.key: kind_data(r) for r in kind_rows if r.troupe_id is None},
+        allowance_rules=[allowance_data(r) for r in allowance_rows if r.troupe_id is None],
     )
-    return TroupeRules(rule_set=data, house_rules=house)
+    return TroupeRules(
+        rule_set=data,
+        house_rules=house,
+        house_action_kinds=[kind_data(r) for r in kind_rows if r.troupe_id is not None],
+        house_allowance_rules=[
+            allowance_data(r) for r in allowance_rows if r.troupe_id is not None
+        ],
+    )

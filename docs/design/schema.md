@@ -361,3 +361,25 @@ Recorded here for review; each is easy to change.
   notifications yet.
 - Creation-rule differences are not reconciled: creation rules do not exist
   yet.
+
+**Downtimes, part 1: cycles, forms and submissions (step 3a)**
+
+- **The Vampire allowance numbers are placeholders**: 3 general actions for
+  everyone, 1 influence action per dot of each Influence background, 1
+  resources action with Resources. Neither Yorick nor the old tool recorded
+  the official rules. Storytellers house-rule them.
+- Allowance rules add up (a base, plus each matching trait). A troupe's
+  allowance rule for the same action kind and trait replaces the generic one;
+  others add to it.
+- Several action questions can share an action kind; the kind's allowance
+  caps the total answers across them. `max_answers` caps a single question
+  (such as "feed once").
+- A player sees only questions for action kinds they have actions of, and
+  custom questions for their splat.
+- A cycle is a draft until opened. Opening fixes participants and allowances;
+  only one cycle per troupe is open at a time. Closing is a storyteller's
+  explicit step.
+- Players save drafts and submit, and can keep editing until the grace
+  period ends. After the close date a submission is marked late; after the
+  grace period it needs a storyteller to accept it late.
+- A question with answers cannot be removed from the form.

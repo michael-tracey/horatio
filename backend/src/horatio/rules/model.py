@@ -63,6 +63,40 @@ class TraitData:
 
 
 @dataclass(frozen=True)
+class ActionKindData:
+    """A category of downtime action (CONTEXT.md: Action Kind)."""
+
+    key: str
+    name: str
+    # Extra inputs an action of this kind asks for, such as an influence level.
+    fields: tuple[Mapping[str, Any], ...] = ()
+    # True for an action kind a troupe added itself.
+    house: bool = False
+
+
+AllowanceScheme = Literal["fixed", "per_dot"]
+
+
+@dataclass(frozen=True)
+class AllowanceRuleData:
+    """How a trait adds to (or takes from) a character's action allowance. With
+    no trait, the base allowance everyone gets (CONTEXT.md: Allowance Rule)."""
+
+    action_kind: str
+    scheme: AllowanceScheme
+    amount: int
+    category: str | None = None
+    trait: str | None = None
+    min_rating: int = 1
+    house: bool = False
+
+    @property
+    def key(self) -> tuple[str, str | None, str | None]:
+        """A house rule with the same key replaces the generic rule."""
+        return (self.action_kind, self.category, self.trait)
+
+
+@dataclass(frozen=True)
 class RuleSetData:
     key: str
     splat: str
@@ -72,6 +106,8 @@ class RuleSetData:
     categories: Mapping[str, CategoryData]
     cost_rules: Sequence[CostRuleData]
     traits: Mapping[tuple[str, str], TraitData]
+    action_kinds: Mapping[str, ActionKindData] = field(default_factory=dict)
+    allowance_rules: Sequence[AllowanceRuleData] = ()
 
     def trait_properties(self, category: str, name: str) -> Mapping[str, Any]:
         trait = self.traits.get((category, name))
@@ -82,10 +118,24 @@ class RuleSetData:
 class TroupeRules:
     rule_set: RuleSetData
     house_rules: Sequence[CostRuleData] = ()
+    house_action_kinds: Sequence[ActionKindData] = ()
+    house_allowance_rules: Sequence[AllowanceRuleData] = ()
 
     @property
     def splat(self) -> str:
         return self.rule_set.splat
+
+    def action_kinds(self) -> dict[str, ActionKindData]:
+        kinds = dict(self.rule_set.action_kinds)
+        kinds.update({k.key: k for k in self.house_action_kinds})
+        return kinds
+
+    def allowance_rules(self) -> list[AllowanceRuleData]:
+        """The generic allowance rules, each replaced by a house rule with the same
+        key where the troupe has one, plus the troupe's own additions."""
+        house = {r.key: r for r in self.house_allowance_rules}
+        rules = [house.pop(r.key, r) for r in self.rule_set.allowance_rules]
+        return rules + list(house.values())
 
 
 @dataclass(frozen=True)

@@ -9,6 +9,8 @@ from horatio.rules.conditions import validate
 from horatio.rules.model import (
     DEFAULT_MAX_RATING,
     SCHEMES,
+    ActionKindData,
+    AllowanceRuleData,
     CategoryData,
     CostRuleData,
     RuleSetData,
@@ -31,6 +33,32 @@ def cost_rule_from_dict(raw: dict[str, Any], *, house: bool = False) -> CostRule
         text=raw.get("text"),
         house=house,
     )
+
+
+def allowance_rule_from_dict(raw: dict[str, Any], *, house: bool = False) -> AllowanceRuleData:
+    return AllowanceRuleData(
+        action_kind=raw["action_kind"],
+        scheme=raw["scheme"],
+        amount=raw["amount"],
+        category=raw.get("category"),
+        trait=raw.get("trait"),
+        min_rating=raw.get("min_rating", 1),
+        house=house,
+    )
+
+
+def check_allowance_rule(
+    rule: AllowanceRuleData, rule_set: RuleSetData, extra_kinds: Iterable[str] = ()
+) -> None:
+    where = f"allowance rule for {rule.action_kind}"
+    if rule.action_kind not in rule_set.action_kinds and rule.action_kind not in extra_kinds:
+        raise ValueError(f"{where}: unknown action kind")
+    if rule.scheme not in ("fixed", "per_dot"):
+        raise ValueError(f"{where}: unknown scheme {rule.scheme!r}")
+    if (rule.category is None) != (rule.trait is None):
+        raise ValueError(f"{where}: name both a category and a trait, or neither")
+    if rule.category is not None and (rule.category, rule.trait) not in rule_set.traits:
+        raise ValueError(f"{where}: no {rule.category} trait {rule.trait!r}")
 
 
 def check_cost_rule(rule: CostRuleData, rule_set: RuleSetData) -> None:
@@ -85,6 +113,11 @@ def load_rule_set(path: Path) -> RuleSetData:
             page_reference=t.get("page_reference"),
             properties=t.get("properties", {}),
         )
+    action_kinds = {
+        k["key"]: ActionKindData(key=k["key"], name=k["name"], fields=tuple(k.get("fields", [])))
+        for k in raw.get("action_kinds", [])
+    }
+    allowance_rules = [allowance_rule_from_dict(r) for r in raw.get("allowance_rules", [])]
     rule_set = RuleSetData(
         key=raw["key"],
         splat=raw["splat"],
@@ -94,7 +127,11 @@ def load_rule_set(path: Path) -> RuleSetData:
         categories=categories,
         cost_rules=[cost_rule_from_dict(r) for r in raw["cost_rules"]],
         traits=traits,
+        action_kinds=action_kinds,
+        allowance_rules=allowance_rules,
     )
+    for allowance_rule in allowance_rules:
+        check_allowance_rule(allowance_rule, rule_set)
 
     for rule in rule_set.cost_rules:
         check_cost_rule(rule, rule_set)
