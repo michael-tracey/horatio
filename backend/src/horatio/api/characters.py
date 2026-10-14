@@ -4,11 +4,12 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from horatio import deletion
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
 from horatio.models import Character, RuleSet
 from horatio.permissions import can_edit_character, visible_character
-from horatio.sheets import rules_for, start_character
+from horatio.sheets import lock_character, rules_for, start_character
 
 router = APIRouter(prefix="/characters", tags=["characters"])
 
@@ -89,6 +90,17 @@ def change_character(
     character.name = body.name
     db.commit()
     return character_out(character)
+
+
+@router.delete("/{character_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
+    """Delete a character for good. It must be in no troupe: leaving each one first
+    is what tells those troupes' storytellers."""
+    character = visible_character(db, user, character_id)
+    if not can_edit_character(user, character):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player can delete it.")
+    deletion.delete_character(db, user, lock_character(db, character.id))
+    db.commit()
 
 
 @router.post("/{character_id}/retire")

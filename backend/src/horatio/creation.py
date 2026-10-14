@@ -15,12 +15,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.models import Character, CharacterTrait, User
-from horatio.rules.model import CreationRuleData, TroupeRules
+from horatio.rules.model import CreationRuleData, SheetTrait, TroupeRules
+from horatio.rules.splats import SPLATS
 from horatio.sheets import (
     SheetRow,
     conflict,
@@ -42,6 +44,8 @@ class Pool:
     kind: str  # picks | points
     allowed: int
     traits: list[SheetRow] = field(default_factory=list)
+    # A splat fact each trait must have to take a pick here, such as "in_clan".
+    restriction: str | None = None
 
     @property
     def used(self) -> int:
@@ -67,10 +71,12 @@ def pools_for(
     for rule in rules:
         key = pool_key(rule)
         if rule.points is not None:
-            pools[key] = Pool(rule.category, 0, "points", rule.points)
+            pools[key] = Pool(rule.category, 0, "points", rule.points, restriction=rule.restriction)
         else:
             assert rule.rating is not None and rule.picks is not None
-            pools[key] = Pool(rule.category, rule.rating, "picks", rule.picks)
+            pools[key] = Pool(
+                rule.category, rule.rating, "picks", rule.picks, restriction=rule.restriction
+            )
     for row in rows:
         if row.trait.creation_pick is None:
             continue
@@ -84,6 +90,30 @@ def pools_for(
 
 def pools(db: Session, character: Character) -> dict[tuple[str, int], Pool]:
     return pools_for(rules_for(db, character).creation_rules(), sheet_rows(db, character))
+
+
+RESTRICTION_TEXT = {"in_clan": "in-clan"}
+
+
+def allowed_by_restriction(
+    db: Session, character: Character, pool: Pool, name: str, detail: str
+) -> bool:
+    """Whether `name` may take a pick from `pool`, given the sheet as it stands
+    (for "in_clan", that means the character's clan)."""
+    if pool.restriction is None:
+        return True
+    rules = rules_for(db, character)
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    trait = SheetTrait(category=pool.category, name=name, detail=detail, rating=0)
+    return bool(SPLATS[character.splat].facts(rules, sheet, trait).get(pool.restriction))
+
+
+def restriction_error(pool: Pool, name: str) -> HTTPException:
+    kind = RESTRICTION_TEXT.get(pool.restriction or "", pool.restriction or "")
+    return unprocessable(
+        f"{name} is not {kind}. Only {kind} {pool.category.replace('_', ' ')} can take these picks;"
+        " choose the clan first if you have not."
+    )
 
 
 def grant_starting_traits(db: Session, rules: TroupeRules, character: Character) -> None:
@@ -133,6 +163,8 @@ def place_pick(
             raise unprocessable(f"There are no {trait_category.name} picks at {rating}.")
         if pool.remaining < 1:
             raise conflict(f"Every {trait_category.name} pick at {rating} is already placed.")
+    if not allowed_by_restriction(db, character, pool, definition.name, detail):
+        raise restriction_error(pool, definition.name)
 
     trait = db.scalar(
         select(CharacterTrait).where(
@@ -236,6 +268,10 @@ def set_category_picks(
             used = sum(1 for r in wanted.values() if r == rating)
             if used > pool.allowed:
                 raise conflict(f"Only {pool.allowed} at {rating}; that is {used}.")
+    for (name, detail), rating in wanted.items():
+        pool = all_pools.get((category, 0 if is_points else rating))
+        if pool is not None and not allowed_by_restriction(db, character, pool, name, detail):
+            raise restriction_error(pool, name)
 
     rows = {
         (r.definition.name, r.trait.detail): r
@@ -288,6 +324,15 @@ def complete(db: Session, player: User, character: Character) -> None:
                 f"{p.remaining} {p.category.replace('_', ' ')} at {p.rating}" for p in unplaced
             )
         )
+    # The clan may have changed since the picks were placed.
+    stray = [
+        row.definition.name
+        for pool in pools(db, character).values()
+        for row in pool.traits
+        if not allowed_by_restriction(db, character, pool, row.definition.name, row.trait.detail)
+    ]
+    if stray:
+        raise conflict("These picks are not allowed for this character: " + ", ".join(stray))
     character.creation_completed_at = datetime.now(UTC)
     db.flush()
     audit.record(db, player, "creation.complete", character_id=character.id)

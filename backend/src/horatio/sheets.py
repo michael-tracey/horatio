@@ -32,6 +32,7 @@ from horatio.models import (
     SheetVersion,
     TraitCategory,
     TraitDefinition,
+    TroupeMembership,
     User,
     XpEntry,
 )
@@ -103,17 +104,50 @@ def sheet_rows(db: Session, character: Character) -> list[SheetRow]:
     return [SheetRow(t, d, c) for t, d, c in rows]
 
 
-def approved_snapshot(db: Session, character: Character) -> list[dict[str, Any]]:
-    if character.approved_version_id is None:
+def memberships(db: Session, character: Character) -> list[TroupeMembership]:
+    """The troupes the character is in now."""
+    return list(
+        db.scalars(
+            select(TroupeMembership)
+            .where(
+                TroupeMembership.character_id == character.id, TroupeMembership.left_at.is_(None)
+            )
+            .order_by(TroupeMembership.joined_at)
+        )
+    )
+
+
+def membership(db: Session, character: Character, troupe_id: uuid.UUID) -> TroupeMembership | None:
+    return next((m for m in memberships(db, character) if m.troupe_id == troupe_id), None)
+
+
+def approved_snapshot(
+    db: Session, character: Character, troupe_id: uuid.UUID | None
+) -> list[dict[str, Any]]:
+    """The sheet as `troupe_id` last approved it; empty if it never has."""
+    found = membership(db, character, troupe_id) if troupe_id else None
+    if found is None or found.approved_version_id is None:
         return []
-    return db.get_one(SheetVersion, character.approved_version_id).snapshot
+    return db.get_one(SheetVersion, found.approved_version_id).snapshot
 
 
-def approved_ratings(db: Session, character: Character) -> dict[TraitKey, int | None]:
+def approved_ratings(
+    db: Session, character: Character, troupe_id: uuid.UUID | None
+) -> dict[TraitKey, int | None]:
     return {
         (t["category"], t["name"], t["detail"]): t["rating"]
-        for t in approved_snapshot(db, character)
+        for t in approved_snapshot(db, character, troupe_id)
     }
+
+
+def highest_approved_ratings(db: Session, character: Character) -> dict[TraitKey, int]:
+    """For each trait, the highest rating any of the character's troupes has approved.
+    A player cannot lower a trait below it."""
+    highest: dict[TraitKey, int] = {}
+    for m in memberships(db, character):
+        for key, rating in approved_ratings(db, character, m.troupe_id).items():
+            highest[key] = max(highest.get(key, 0), rating or 0)
+    return highest
 
 
 def xp_balance(db: Session, character: Character) -> int:
@@ -127,22 +161,19 @@ def xp_balance(db: Session, character: Character) -> int:
     )
 
 
-def pending_approval(db: Session, character: Character, kind: str) -> Approval | None:
-    return db.scalar(
-        select(Approval).where(
-            Approval.character_id == character.id,
-            Approval.kind == kind,
-            Approval.status == "pending",
-        )
+def pending_approvals(db: Session, character: Character, kind: str | None = None) -> list[Approval]:
+    query = select(Approval).where(
+        Approval.character_id == character.id, Approval.status == "pending"
     )
+    if kind is not None:
+        query = query.where(Approval.kind == kind)
+    return list(db.scalars(query.order_by(Approval.id)))
 
 
 def ensure_unlocked(db: Session, character: Character) -> None:
     if character.status == "retired":
         raise conflict("This character is retired.")
-    if pending_approval(db, character, "sheet_change") or pending_approval(
-        db, character, "home_troupe_change"
-    ):
+    if pending_approvals(db, character):
         raise conflict("Changes are waiting for approval. Withdraw them to edit the sheet.")
 
 
@@ -268,7 +299,9 @@ def set_trait(
     quote, current_rating = quote_change(db, character, category_key, name, detail, rating)
     assert quote is not None and rating is not None and current_rating is not None
 
-    approved = approved_ratings(db, character).get((category.key, definition.name, detail)) or 0
+    approved = highest_approved_ratings(db, character).get(
+        (category.key, definition.name, detail), 0
+    )
     if rating < approved:
         raise conflict(
             f"{name} is approved at {approved}. Only storytellers can take approved dots away."
@@ -329,10 +362,13 @@ def set_trait(
     return Change(quote=quote, trait=trait)
 
 
-def pending_changes(db: Session, character: Character) -> list[dict[str, Any]]:
-    """How the sheet differs from its approved version."""
+def pending_changes(
+    db: Session, character: Character, troupe_id: uuid.UUID | None
+) -> list[dict[str, Any]]:
+    """How the sheet differs from the version `troupe_id` approved (everything, if none)."""
     approved = {
-        (t["category"], t["name"], t["detail"]): t for t in approved_snapshot(db, character)
+        (t["category"], t["name"], t["detail"]): t
+        for t in approved_snapshot(db, character, troupe_id)
     }
     current = {r.key: r.snapshot() for r in sheet_rows(db, character)}
     changes: list[dict[str, Any]] = []
@@ -354,54 +390,89 @@ def pending_changes(db: Session, character: Character) -> list[dict[str, Any]]:
     return changes
 
 
-def freeze_sheet(db: Session, approver: User, character: Character) -> SheetVersion:
-    """Freeze the sheet as it stands as the character's new approved version."""
+def freeze_sheet(
+    db: Session, approver: User, character: Character, troupe_id: uuid.UUID
+) -> SheetVersion:
+    """Freeze the sheet as it stands as `troupe_id`'s approved version, and make the
+    character approved there."""
+    found = membership(db, character, troupe_id)
+    if found is None:
+        raise conflict("The character is not in that troupe.")
     number = (
         db.scalar(
-            select(func.max(SheetVersion.number)).where(SheetVersion.character_id == character.id)
+            select(func.max(SheetVersion.number)).where(
+                SheetVersion.character_id == character.id, SheetVersion.troupe_id == troupe_id
+            )
         )
         or 0
     ) + 1
     version = SheetVersion(
         character_id=character.id,
+        troupe_id=troupe_id,
         number=number,
         snapshot=[r.snapshot() for r in sheet_rows(db, character)],
         approved_by=approver.id,
     )
     db.add(version)
     db.flush()
-    character.approved_version_id = version.id
+    found.approved_version_id = version.id
+    found.standing = "approved"
+    found.standing_note = ""
     return version
 
 
-def request_approval(db: Session, player: User, character: Character, note: str) -> Approval:
-    if character.status != "active" or character.home_troupe_id is None:
-        raise conflict(
-            "A character is first approved when it joins its home troupe; "
-            "ask for a home troupe instead."
-        )
+def needs_approval(db: Session, character: Character, m: TroupeMembership) -> bool:
+    return m.standing == "draft" or bool(pending_changes(db, character, m.troupe_id))
+
+
+def request_approval(db: Session, player: User, character: Character, note: str) -> list[Approval]:
+    """Put the sheet to every troupe the character is in that has not approved it as
+    it stands: drafts, and troupes whose approved sheet is out of date."""
+    if character.creation_completed_at is None:
+        raise conflict("Finish character creation before asking for approval.")
     ensure_unlocked(db, character)
-    if not pending_changes(db, character):
-        raise conflict("Nothing has changed since the sheet was last approved.")
-    approval = Approval(
-        character_id=character.id,
-        troupe_id=character.home_troupe_id,
-        kind="sheet_change",
-        requested_by=player.id,
-        player_note=note,
-    )
-    db.add(approval)
+    troupes = [m for m in memberships(db, character) if needs_approval(db, character, m)]
+    if not troupes:
+        raise conflict("Every troupe the character is in has approved the sheet as it stands.")
+    approvals: list[Approval] = []
+    for m in troupes:
+        approval = Approval(
+            character_id=character.id,
+            troupe_id=m.troupe_id,
+            kind="sheet_change",
+            requested_by=player.id,
+            player_note=note,
+        )
+        db.add(approval)
+        db.flush()
+        audit.record(
+            db,
+            player,
+            "approval.request",
+            troupe_id=approval.troupe_id,
+            character_id=character.id,
+            approval_id=approval.id,
+            kind=approval.kind,
+        )
+        approvals.append(approval)
+    return approvals
+
+
+def return_to_draft(
+    db: Session, staff: User, character: Character, troupe_id: uuid.UUID, reason: str
+) -> TroupeMembership:
+    found = membership(db, character, troupe_id)
+    if found is None:
+        raise conflict("The character is not in that troupe.")
+    if found.standing == "draft":
+        raise conflict("The character is already a draft in this troupe.")
+    found.standing = "draft"
+    found.standing_note = reason
     db.flush()
     audit.record(
-        db,
-        player,
-        "approval.request",
-        troupe_id=approval.troupe_id,
-        character_id=character.id,
-        approval_id=approval.id,
-        kind=approval.kind,
+        db, staff, "standing.draft", troupe_id=troupe_id, character_id=character.id, reason=reason
     )
-    return approval
+    return found
 
 
 def decide(
@@ -416,7 +487,7 @@ def decide(
         raise conflict(f"This request is already {approval.status}.")
     character = lock_character(db, approval.character_id)
     if approve and approval.kind == "sheet_change":
-        freeze_sheet(db, staff, character)
+        freeze_sheet(db, staff, character, approval.troupe_id)
     elif approve and approval.kind == "home_troupe_change":
         from horatio.reconciliation import approve_change  # imports this module
 

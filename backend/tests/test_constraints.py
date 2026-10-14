@@ -75,11 +75,11 @@ def test_staff_roles_are_limited_to_the_known_ones(session: Session) -> None:
         session.flush()
 
 
-def test_new_characters_start_as_drafts(session: Session) -> None:
+def test_new_characters_start_active(session: Session) -> None:
     character = make_character(session, make_user(session))
     session.refresh(character)
 
-    assert character.status == "draft"
+    assert character.status == "active"
 
 
 def test_character_status_is_limited_to_the_known_ones(session: Session) -> None:

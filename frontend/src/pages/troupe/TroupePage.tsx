@@ -5,9 +5,11 @@ import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui"
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
 import { CyclesTab } from "./CyclesTab";
+import { LogTab } from "./LogTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
 import { abilities, roleLabel } from "./roles";
+import { RosterTab } from "./RosterTab";
 import { StaffTab } from "./StaffTab";
 import { TablesTab } from "./TablesTab";
 
@@ -34,16 +36,20 @@ export function TroupePage() {
         tabs={[
           { to: base, label: "About", end: true },
           ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
+          ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
           ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals" }] : []),
           ...(can.running ? [{ to: `${base}/downtimes`, label: "Downtimes" }] : []),
           ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
           ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
+          ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
         ]}
       />
       <Routes>
         <Route index element={<OverviewTab troupe={t} can={can} />} />
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
+        {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
+        {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}
         {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} />} />}

@@ -705,6 +705,79 @@
         "title": "HomeTroupeRequest",
         "type": "object"
       },
+      "LogEntry": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "action",
+          "message",
+          "actor_name",
+          "character_id",
+          "character_name",
+          "data"
+        ],
+        "title": "LogEntry",
+        "type": "object"
+      },
       "Me": {
         "properties": {
           "display_name": {
@@ -740,6 +813,10 @@
             "title": "Home",
             "type": "boolean"
           },
+          "standing": {
+            "title": "Standing",
+            "type": "string"
+          },
           "troupe_id": {
             "format": "uuid",
             "title": "Troupe Id",
@@ -753,7 +830,8 @@
         "required": [
           "troupe_id",
           "troupe_name",
-          "home"
+          "home",
+          "standing"
         ],
         "title": "MembershipOut",
         "type": "object"
@@ -1138,6 +1216,17 @@
             "title": "Remaining",
             "type": "integer"
           },
+          "restriction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restriction"
+          },
           "traits": {
             "items": {
               "$ref": "#/components/schemas/PickedTrait"
@@ -1158,6 +1247,7 @@
           "allowed",
           "used",
           "remaining",
+          "restriction",
           "traits"
         ],
         "title": "PoolOut",
@@ -1697,6 +1787,56 @@
         "title": "Roll",
         "type": "object"
       },
+      "RosterEntry": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "home": {
+            "title": "Home",
+            "type": "boolean"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "standing": {
+            "title": "Standing",
+            "type": "string"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player_name",
+          "standing",
+          "note",
+          "home",
+          "waiting",
+          "joined_at"
+        ],
+        "title": "RosterEntry",
+        "type": "object"
+      },
       "SettlementChoice": {
         "properties": {
           "category": {
@@ -1769,10 +1909,6 @@
       },
       "SheetOut": {
         "properties": {
-          "approved": {
-            "title": "Approved",
-            "type": "boolean"
-          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -1782,21 +1918,25 @@
             "title": "Name",
             "type": "string"
           },
-          "pending_approval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ApprovalOut"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "pending_approvals": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovalOut"
+            },
+            "title": "Pending Approvals",
+            "type": "array"
           },
           "pending_changes": {
             "items": {
               "$ref": "#/components/schemas/PendingChange"
             },
             "title": "Pending Changes",
+            "type": "array"
+          },
+          "standings": {
+            "items": {
+              "$ref": "#/components/schemas/StandingOut"
+            },
+            "title": "Standings",
             "type": "array"
           },
           "status": {
@@ -1810,6 +1950,18 @@
             "title": "Traits",
             "type": "array"
           },
+          "viewing_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewing Troupe Id"
+          },
           "xp": {
             "$ref": "#/components/schemas/XpSummary"
           }
@@ -1818,11 +1970,12 @@
           "character_id",
           "name",
           "status",
-          "approved",
+          "standings",
+          "viewing_troupe_id",
           "traits",
           "xp",
           "pending_changes",
-          "pending_approval"
+          "pending_approvals"
         ],
         "title": "SheetOut",
         "type": "object"
@@ -1985,6 +2138,66 @@
           "role"
         ],
         "title": "StaffMember",
+        "type": "object"
+      },
+      "StandingChange": {
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "StandingChange",
+        "type": "object"
+      },
+      "StandingOut": {
+        "description": "CONTEXT.md: Troupe Standing. One per troupe the character is in.",
+        "properties": {
+          "home": {
+            "title": "Home",
+            "type": "boolean"
+          },
+          "needs_approval": {
+            "title": "Needs Approval",
+            "type": "boolean"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "standing": {
+            "title": "Standing",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "standing",
+          "note",
+          "home",
+          "needs_approval",
+          "waiting"
+        ],
+        "title": "StandingOut",
         "type": "object"
       },
       "TableIn": {
@@ -2881,6 +3094,41 @@
       }
     },
     "/api/characters/{character_id}": {
+      "delete": {
+        "description": "Delete a character for good. It must be in no troupe: leaving each one first\nis what tells those troupes' storytellers.",
+        "operationId": "delete_character_api_characters__character_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Character",
+        "tags": [
+          "characters"
+        ]
+      },
       "get": {
         "operationId": "read_character_api_characters__character_id__get",
         "parameters": [
@@ -3010,6 +3258,7 @@
         ]
       },
       "post": {
+        "description": "Put the sheet to every troupe the character is in that has not approved it as it stands.",
         "operationId": "request_approval_api_characters__character_id__approval_post",
         "parameters": [
           {
@@ -3038,7 +3287,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApprovalOut"
+                  "items": {
+                    "$ref": "#/components/schemas/ApprovalOut"
+                  },
+                  "title": "Response Request Approval Api Characters  Character Id  Approval Post",
+                  "type": "array"
                 }
               }
             },
@@ -3748,6 +4001,7 @@
     },
     "/api/characters/{character_id}/sheet": {
       "get": {
+        "description": "The sheet, compared against `troupe_id`'s approved sheet (by default the\nhome troupe's).",
         "operationId": "read_sheet_api_characters__character_id__sheet_get",
         "parameters": [
           {
@@ -3758,6 +4012,23 @@
               "format": "uuid",
               "title": "Character Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
             }
           }
         ],
@@ -5347,6 +5618,118 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/characters": {
+      "get": {
+        "description": "Every character in the troupe now, drafts first.",
+        "operationId": "roster_api_troupes__troupe_id__characters_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RosterEntry"
+                  },
+                  "title": "Response Roster Api Troupes  Troupe Id  Characters Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Roster",
+        "tags": [
+          "roster"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/characters/{character_id}/return-to-draft": {
+      "post": {
+        "description": "Send an approved character back to draft in this troupe, with a reason.",
+        "operationId": "return_to_draft_api_troupes__troupe_id__characters__character_id__return_to_draft_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StandingChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterEntry"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Return To Draft",
+        "tags": [
+          "roster"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/cycles": {
       "get": {
         "operationId": "list_cycles_api_troupes__troupe_id__cycles_get",
@@ -5496,6 +5879,81 @@
         "summary": "Appoint Lead",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/log": {
+      "get": {
+        "description": "What has happened in the troupe, newest first.",
+        "operationId": "log_api_troupes__troupe_id__log_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LogEntry"
+                  },
+                  "title": "Response Log Api Troupes  Troupe Id  Log Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Log",
+        "tags": [
+          "roster"
         ]
       }
     },

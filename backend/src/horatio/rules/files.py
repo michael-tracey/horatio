@@ -69,6 +69,11 @@ def check_creation_rules(rules: Iterable[CreationRuleData], rule_set: RuleSetDat
     kinds: dict[str, str] = {}
     for rule in rules:
         where = f"creation rule for {rule.category}"
+        if (
+            rule.restriction is not None
+            and rule.restriction not in SPLATS[rule_set.splat].fact_names
+        ):
+            raise ValueError(f"{where}: unknown restriction {rule.restriction!r}")
         category = rule_set.categories.get(rule.category)
         if category is None or not category.rated:
             raise ValueError(f"{where}: needs a rated category")
@@ -177,6 +182,7 @@ def load_rule_set(path: Path) -> RuleSetData:
                 rating=r.get("rating"),
                 picks=r.get("picks"),
                 points=r.get("points"),
+                restriction=r.get("restriction"),
             )
             for r in raw.get("creation_rules", [])
         ],

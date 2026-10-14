@@ -26,7 +26,7 @@ export function CharacterPage() {
 
   return (
     <>
-      <PageTitle subtitle={<span className="capitalize">{c.splat}</span>} actions={<Badge tone={c.status === "active" ? "gold" : "mist"}>{c.status}</Badge>}>
+      <PageTitle subtitle={<span className="capitalize">{c.splat}</span>} actions={c.status === "retired" ? <Badge>retired</Badge> : undefined}>
         {c.name}
       </PageTitle>
       <Tabs

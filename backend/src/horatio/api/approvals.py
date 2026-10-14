@@ -112,7 +112,7 @@ def troupe_approvals(
         QueuedApproval(
             **approval_out(a).model_dump(),
             character_name=c.name,
-            changes=[PendingChange(**ch) for ch in sheets.pending_changes(db, c)]
+            changes=[PendingChange(**ch) for ch in sheets.pending_changes(db, c, a.troupe_id)]
             if a.status == "pending" and a.kind == "sheet_change"
             else [],
             reconciliation=reconciliation_out(db, a),

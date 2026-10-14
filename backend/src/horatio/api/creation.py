@@ -30,6 +30,8 @@ class PoolOut(BaseModel):
     allowed: int
     used: int
     remaining: int
+    # A fact each trait must have to take a pick here, such as "in_clan".
+    restriction: str | None
     traits: list[PickedTrait]
 
 
@@ -77,6 +79,7 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
                 allowed=p.allowed,
                 used=p.used,
                 remaining=p.remaining,
+                restriction=p.restriction,
                 traits=[
                     PickedTrait(
                         name=r.definition.name,

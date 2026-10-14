@@ -17,10 +17,11 @@ class Approval(Record):
         CheckConstraint(
             "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
         ),
-        # A character has at most one request of each kind waiting at a time.
+        # A character has at most one request of each kind waiting in each troupe.
         Index(
             "uq_approvals_one_pending",
             "character_id",
+            "troupe_id",
             "kind",
             unique=True,
             postgresql_where=text("status = 'pending'"),

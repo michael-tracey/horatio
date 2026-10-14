@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, SheetTraitOut } from "../../api/types";
 import { Badge, Button, Card, Dots, Empty, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
@@ -8,10 +8,15 @@ import { useAction } from "../../hooks";
 
 type TraitChange = { category: string; name: string; detail: string; rating: number | null };
 
-function useSheet(characterId: string) {
+function useSheet(characterId: string, troupeId?: string) {
   return useQuery({
-    queryKey: ["sheet", characterId],
-    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", { params: { path: { character_id: characterId } } })),
+    queryKey: ["sheet", characterId, troupeId ?? null],
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/characters/{character_id}/sheet", {
+          params: { path: { character_id: characterId }, query: { troupe_id: troupeId } },
+        }),
+      ),
   });
 }
 
@@ -52,7 +57,10 @@ function useCreation(character: CharacterOut) {
 }
 
 export function SheetTab({ character, mine }: { character: CharacterOut; mine: boolean }) {
-  const sheet = useSheet(character.id);
+  // Staff arrive from their troupe with ?troupe=…, to compare against what it approved.
+  const [params] = useSearchParams();
+  const [viewing, setViewing] = useState<string | undefined>(params.get("troupe") ?? undefined);
+  const sheet = useSheet(character.id, viewing);
   const catalogue = useCatalogue(character);
   const creation = useCreation(character);
   const [message, setMessage] = useState<string | null>(null);
@@ -68,7 +76,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   if (sheet.isPending) return <Loading />;
   if (sheet.error) return <ErrorText error={sheet.error} />;
   const s = sheet.data;
-  const locked = !mine || s.pending_approval !== null || s.status === "retired";
+  const locked = !mine || s.pending_approvals.length > 0 || s.status === "retired";
   const groups = groupTraits(s.traits, catalogue.data);
 
   return (
@@ -77,7 +85,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
         {mine && !character.creation_complete && creation.data && (
           <CreationPanel character={character} creation={creation.data} locked={locked} />
         )}
-        {mine && character.creation_complete && <ApprovalStatus character={character} sheet={s} />}
+        {(character.creation_complete || !mine) && <Standings character={character} sheet={s} mine={mine} onView={setViewing} />}
         {groups.size === 0 && <Empty>The sheet is empty. Add traits from the panel{mine ? "" : " once the player does"}.</Empty>}
         {[...groups].map(([group, categories]) => (
           <Card key={group} title={group}>
@@ -118,7 +126,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
         {!locked && catalogue.data && (
           <AddTrait character={character} catalogue={catalogue.data} creation={creation.data} onDone={setMessage} />
         )}
-        {mine && s.pending_approval && <Notice>The sheet is locked while changes wait for approval.</Notice>}
+        {mine && s.pending_approvals.length > 0 && <Notice>The sheet is locked while changes wait for approval.</Notice>}
       </aside>
     </div>
   );
@@ -306,55 +314,93 @@ function AddTrait({
   );
 }
 
-function ApprovalStatus({ character, sheet }: { character: CharacterOut; sheet: SheetOut }) {
+function Standings({
+  character,
+  sheet,
+  mine,
+  onView,
+}: {
+  character: CharacterOut;
+  sheet: SheetOut;
+  mine: boolean;
+  onView: (troupeId: string) => void;
+}) {
   const [note, setNote] = useState("");
   const path = { params: { path: { character_id: character.id } } };
   const request = useAction(() => unwrap(api.POST("/api/characters/{character_id}/approval", { ...path, body: { note } })));
   const withdraw = useAction(() => unwrap(api.DELETE("/api/characters/{character_id}/approval", path)));
 
-  if (sheet.pending_approval) {
-    const kind = sheet.pending_approval.kind === "home_troupe_change" ? "Joining a home troupe" : "Sheet changes";
-    return (
-      <Card title="Waiting for approval">
-        <p className="text-sm">{kind} are waiting for the storytellers.</p>
-        {sheet.pending_approval.kind === "sheet_change" && (
-          <Button variant="secondary" className="mt-3" onClick={() => withdraw.mutate(undefined)}>
-            Withdraw to keep editing
-          </Button>
-        )}
-        <ErrorText error={withdraw.error} />
-      </Card>
-    );
-  }
-  if (!sheet.approved) {
-    return (
+  if (!sheet.standings.length) {
+    return mine ? (
       <Notice>
-        This is a draft. It is approved when it joins a home troupe —{" "}
+        This character is in your vault, in no troupe. Add it to a troupe on the{" "}
         <Link className="text-gold underline" to={`/characters/${character.id}/troupes`}>
-          choose one
+          Troupes tab
         </Link>
-        .
+        ; each troupe then approves it for itself.
       </Notice>
-    );
+    ) : null;
   }
-  if (!sheet.pending_changes.length) return null;
+  const waitingOn = sheet.standings.filter((t) => t.waiting);
+  const toAsk = sheet.standings.filter((t) => t.needs_approval && !t.waiting);
+  const sheetRequests = sheet.pending_approvals.filter((a) => a.kind === "sheet_change");
+
   return (
-    <Card title="Changes since approval">
-      <ul className="mb-3 text-sm">
-        {sheet.pending_changes.map((c) => (
-          <li key={`${c.category}/${c.name}/${c.detail}`}>
-            {c.name}
-            {c.detail && `: ${c.detail}`} — {c.approved_rating ?? "new"} → {c.rating ?? "removed"}
+    <Card title="Troupes">
+      <ul className="flex flex-col gap-2 text-sm">
+        {sheet.standings.map((t) => (
+          <li key={t.troupe_id} className="flex flex-wrap items-center gap-2">
+            <button
+              className={`underline-offset-2 hover:underline ${t.troupe_id === sheet.viewing_troupe_id ? "text-gold" : ""}`}
+              title="Compare the sheet with what this troupe approved"
+              onClick={() => onView(t.troupe_id)}
+            >
+              {t.troupe_name}
+            </button>
+            <Badge tone={t.standing === "approved" ? "gold" : "blood"}>{t.standing}</Badge>
+            {t.home && <Badge>home</Badge>}
+            {t.waiting && <Badge>waiting</Badge>}
+            {!t.waiting && t.standing === "approved" && t.needs_approval && <span className="text-xs text-mist">has unapproved changes</span>}
+            {t.note && <span className="w-full text-xs text-blood-bright">Sent back to draft: {t.note}</span>}
           </li>
         ))}
       </ul>
-      <Field label="A note for the storytellers">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <Button className="mt-3" onClick={() => request.mutate(undefined)} disabled={request.isPending}>
-        Ask for approval
-      </Button>
-      <ErrorText error={request.error} />
+      {sheet.standings.length > 1 && (
+        <p className="mt-2 text-xs text-mist">Gold dots show changes since the highlighted troupe approved the sheet; pick another to compare.</p>
+      )}
+      {mine && sheet.pending_changes.length > 0 && (
+        <ul className="mt-3 border-t border-ash pt-2 text-sm">
+          {sheet.pending_changes.map((c) => (
+            <li key={`${c.category}/${c.name}/${c.detail}`}>
+              {c.name}
+              {c.detail && `: ${c.detail}`} — {c.approved_rating ?? "new"} → {c.rating ?? "removed"}
+            </li>
+          ))}
+        </ul>
+      )}
+      {mine && waitingOn.length > 0 && (
+        <div className="mt-3 border-t border-ash pt-3 text-sm">
+          <p>
+            Waiting on {waitingOn.map((t) => t.troupe_name).join(", ")}. The sheet is locked until they decide.
+          </p>
+          {sheetRequests.length > 0 && (
+            <Button variant="secondary" className="mt-2" onClick={() => withdraw.mutate(undefined)}>
+              Withdraw to keep editing
+            </Button>
+          )}
+        </div>
+      )}
+      {mine && waitingOn.length === 0 && toAsk.length > 0 && character.creation_complete && (
+        <div className="mt-3 border-t border-ash pt-3">
+          <Field label="A note for the storytellers">
+            <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          </Field>
+          <Button className="mt-3" onClick={() => request.mutate(undefined)} disabled={request.isPending}>
+            Ask {toAsk.map((t) => t.troupe_name).join(", ")} for approval
+          </Button>
+        </div>
+      )}
+      <ErrorText error={request.error ?? withdraw.error} />
     </Card>
   );
 }

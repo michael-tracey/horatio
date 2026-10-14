@@ -105,6 +105,8 @@ class CreationRuleData:
     rating: int | None = None
     picks: int | None = None
     points: int | None = None
+    # A splat fact a trait must have to take one of these picks, such as "in_clan".
+    restriction: str | None = None
     house: bool = False
 
 

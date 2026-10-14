@@ -65,7 +65,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   return (
     <Card
       title={
-        <Link to={`/characters/${approval.character_id}`} className="hover:underline">
+        <Link to={`/characters/${approval.character_id}?troupe=${approval.troupe_id}`} className="hover:underline">
           {approval.character_name}
         </Link>
       }

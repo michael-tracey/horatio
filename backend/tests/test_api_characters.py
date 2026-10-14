@@ -30,12 +30,12 @@ def join(session: Session, troupe: Troupe, character_id: str) -> None:
     session.flush()
 
 
-def test_new_characters_are_drafts_outside_any_troupe(troupe: Troupe) -> None:
+def test_new_characters_live_in_the_vault_outside_any_troupe(troupe: Troupe) -> None:
     character_id = create_character(troupe.player)
 
     character = troupe.player.client.get(f"/characters/{character_id}").json()
 
-    assert character["status"] == "draft"
+    assert character["status"] == "active"
     assert character["home_troupe_id"] is None
     assert [c["id"] for c in troupe.player.client.get("/characters").json()] == [character_id]
 

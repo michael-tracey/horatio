@@ -30,15 +30,15 @@ from horatio.models import (
     DowntimeCycle,
     Question,
     RuleSet,
-    SheetVersion,
     Submission,
     Troupe,
+    TroupeMembership,
     User,
 )
 from horatio.rules.allowance import allowance
 from horatio.rules.model import SheetTrait
 from horatio.rules.store import read_troupe_rules
-from horatio.sheets import conflict, unprocessable
+from horatio.sheets import approved_snapshot, conflict, membership, unprocessable
 
 ANSWER_TYPES = ("long_text", "short_text", "choice", "number", "yes_no")
 
@@ -204,10 +204,8 @@ def create_cycle(
     return cycle
 
 
-def approved_sheet(db: Session, character: Character) -> list[SheetTrait]:
-    if character.approved_version_id is None:
-        return []
-    snapshot = db.get_one(SheetVersion, character.approved_version_id).snapshot
+def approved_sheet(db: Session, character: Character, troupe: Troupe) -> list[SheetTrait]:
+    """The sheet as `troupe` approved it: what allowances are worked out from."""
     return [
         SheetTrait(
             category=t["category"],
@@ -216,7 +214,7 @@ def approved_sheet(db: Session, character: Character) -> list[SheetTrait]:
             free_rating=t["free_rating"],
             detail=t["detail"],
         )
-        for t in snapshot
+        for t in approved_snapshot(db, character, troupe.id)
     ]
 
 
@@ -224,7 +222,7 @@ def fill_allowance(
     db: Session, participant: CycleParticipant, character: Character, troupe: Troupe
 ) -> None:
     rules = read_troupe_rules(db, character.splat, troupe.id)
-    totals, lines = allowance(rules, approved_sheet(db, character))
+    totals, lines = allowance(rules, approved_sheet(db, character, troupe))
     participant.allowance = totals
     participant.allowance_breakdown = [
         {"action_kind": line.action_kind, "source": line.source, "amount": line.amount}
@@ -246,8 +244,17 @@ def open_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -
     cycle.status = "open"
     cycle.opened_at = now()
     db.flush()
+    # Characters whose home troupe this is, and which this troupe has approved.
     characters = db.scalars(
-        select(Character).where(Character.home_troupe_id == troupe.id, Character.status == "active")
+        select(Character)
+        .join(TroupeMembership, TroupeMembership.character_id == Character.id)
+        .where(
+            Character.home_troupe_id == troupe.id,
+            Character.status == "active",
+            TroupeMembership.troupe_id == troupe.id,
+            TroupeMembership.left_at.is_(None),
+            TroupeMembership.standing == "approved",
+        )
     )
     count = 0
     for character in characters:
@@ -286,8 +293,16 @@ def add_participant(
         raise conflict("Participants can only be added to a draft or open cycle.")
     if cycle.status == "draft":
         raise conflict("Participants are chosen when the cycle opens.")
-    if character.home_troupe_id != troupe.id or character.status != "active":
-        raise conflict("Only active characters whose home troupe this is can take part.")
+    standing = membership(db, character, troupe.id)
+    if (
+        character.home_troupe_id != troupe.id
+        or character.status != "active"
+        or standing is None
+        or standing.standing != "approved"
+    ):
+        raise conflict(
+            "Only characters this troupe has approved, and whose home troupe it is, can take part."
+        )
     participant = db.scalar(
         select(CycleParticipant).where(
             CycleParticipant.cycle_id == cycle.id, CycleParticipant.character_id == character.id

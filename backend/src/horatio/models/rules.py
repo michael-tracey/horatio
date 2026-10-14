@@ -134,6 +134,8 @@ class CreationRule(Record):
     rating: Mapped[int | None]
     picks: Mapped[int | None]
     points: Mapped[int | None]
+    # A splat fact the trait must have to take a pick, such as "in_clan".
+    restriction: Mapped[str | None]
 
 
 class StartingTrait(Record):

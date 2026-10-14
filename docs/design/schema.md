@@ -432,3 +432,30 @@ Recorded here for review; each is easy to change.
   - Differences in starting traits are not reconciled.
 - Flaws taken at creation are free records: they do not give XP. Bought
   later, a flaw gives XP back as before.
+
+**Troupe standing, deleting characters, and the troupe log**
+
+- Characters live in their player's vault. `characters.status` is only
+  `active` or `retired`; whether a character is a draft or approved is each
+  troupe's call, on `troupe_memberships.standing` (ADR 0006).
+- Each troupe keeps its own approved sheet: `sheet_versions.troupe_id`, and
+  `troupe_memberships.approved_version_id` points at the latest.
+- Asking for approval sends one request to every troupe that has not approved
+  the sheet as it stands. The sheet stays locked until each decides or the
+  player withdraws.
+- Running staff can send a character back to draft with a reason, which the
+  player sees.
+- Only characters approved in their home troupe take part in its downtimes,
+  using that troupe's approved sheet for allowances.
+- A character in no troupe can be deleted for good. Leaving each troupe is
+  logged there, and deletion adds a final entry in every troupe it was ever
+  in. **Deletion removes everything about the character, including its past
+  downtime submissions and their responses**; only the log entries survive,
+  with the character's name.
+- Every logged event that names a character stores its name with it.
+- The troupe log (`GET /troupes/{id}/log`) is for storytellers and assistant
+  storytellers. It is a read-only list, newest first, without read/unread
+  tracking yet.
+- Starting disciplines are in-clan only (`restriction = "in_clan"` on the
+  Vampire creation rules), checked when picks are placed and again when
+  creation is finished, since the clan can change in between.

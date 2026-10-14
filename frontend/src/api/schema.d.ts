@@ -138,7 +138,12 @@ export interface paths {
         get: operations["read_character_api_characters__character_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Character
+         * @description Delete a character for good. It must be in no troupe: leaving each one first
+         *     is what tells those troupes' storytellers.
+         */
+        delete: operations["delete_character_api_characters__character_id__delete"];
         options?: never;
         head?: never;
         /** Change Character */
@@ -154,7 +159,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Request Approval */
+        /**
+         * Request Approval
+         * @description Put the sheet to every troupe the character is in that has not approved it as it stands.
+         */
         post: operations["request_approval_api_characters__character_id__approval_post"];
         /** Withdraw Approval */
         delete: operations["withdraw_approval_api_characters__character_id__approval_delete"];
@@ -407,7 +415,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read Sheet */
+        /**
+         * Read Sheet
+         * @description The sheet, compared against `troupe_id`'s approved sheet (by default the
+         *     home troupe's).
+         */
         get: operations["read_sheet_api_characters__character_id__sheet_get"];
         put?: never;
         post?: never;
@@ -893,6 +905,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Roster
+         * @description Every character in the troupe now, drafts first.
+         */
+        get: operations["roster_api_troupes__troupe_id__characters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/characters/{character_id}/return-to-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Return To Draft
+         * @description Send an approved character back to draft in this troupe, with a reason.
+         */
+        post: operations["return_to_draft_api_troupes__troupe_id__characters__character_id__return_to_draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/cycles": {
         parameters: {
             query?: never;
@@ -924,6 +976,26 @@ export interface paths {
          * @description The custodian appoints a troupe's lead storyteller.
          */
         put: operations["appoint_lead_api_troupes__troupe_id__lead_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Log
+         * @description What has happened in the troupe, newest first.
+         */
+        get: operations["log_api_troupes__troupe_id__log_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1337,6 +1409,33 @@ export interface components {
              */
             troupe_id: string;
         };
+        /** LogEntry */
+        LogEntry: {
+            /** Action */
+            action: string;
+            /** Actor Name */
+            actor_name: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Character Id */
+            character_id: string | null;
+            /** Character Name */
+            character_name: string | null;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Message */
+            message: string;
+        };
         /** Me */
         Me: {
             /** Display Name */
@@ -1355,6 +1454,8 @@ export interface components {
         MembershipOut: {
             /** Home */
             home: boolean;
+            /** Standing */
+            standing: string;
             /**
              * Troupe Id
              * Format: uuid
@@ -1532,6 +1633,8 @@ export interface components {
             rating: number;
             /** Remaining */
             remaining: number;
+            /** Restriction */
+            restriction: string | null;
             /** Traits */
             traits: components["schemas"]["PickedTrait"][];
             /** Used */
@@ -1750,6 +1853,31 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** RosterEntry */
+        RosterEntry: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Home */
+            home: boolean;
+            /**
+             * Joined At
+             * Format: date-time
+             */
+            joined_at: string;
+            /** Note */
+            note: string;
+            /** Player Name */
+            player_name: string;
+            /** Standing */
+            standing: string;
+            /** Waiting */
+            waiting: boolean;
+        };
         /** SettlementChoice */
         SettlementChoice: {
             /** Category */
@@ -1787,8 +1915,6 @@ export interface components {
         };
         /** SheetOut */
         SheetOut: {
-            /** Approved */
-            approved: boolean;
             /**
              * Character Id
              * Format: uuid
@@ -1796,13 +1922,18 @@ export interface components {
             character_id: string;
             /** Name */
             name: string;
-            pending_approval: components["schemas"]["ApprovalOut"] | null;
+            /** Pending Approvals */
+            pending_approvals: components["schemas"]["ApprovalOut"][];
             /** Pending Changes */
             pending_changes: components["schemas"]["PendingChange"][];
+            /** Standings */
+            standings: components["schemas"]["StandingOut"][];
             /** Status */
             status: string;
             /** Traits */
             traits: components["schemas"]["SheetTraitOut"][];
+            /** Viewing Troupe Id */
+            viewing_troupe_id: string | null;
             xp: components["schemas"]["XpSummary"];
         };
         /** SheetTraitOut */
@@ -1872,6 +2003,34 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** StandingChange */
+        StandingChange: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * StandingOut
+         * @description CONTEXT.md: Troupe Standing. One per troupe the character is in.
+         */
+        StandingOut: {
+            /** Home */
+            home: boolean;
+            /** Needs Approval */
+            needs_approval: boolean;
+            /** Note */
+            note: string;
+            /** Standing */
+            standing: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+            /** Waiting */
+            waiting: boolean;
         };
         /** TableIn */
         TableIn: {
@@ -2356,6 +2515,35 @@ export interface operations {
             };
         };
     };
+    delete_character_api_characters__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     change_character_api_characters__character_id__patch: {
         parameters: {
             query?: never;
@@ -2412,7 +2600,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApprovalOut"];
+                    "application/json": components["schemas"]["ApprovalOut"][];
                 };
             };
             /** @description Validation Error */
@@ -2918,7 +3106,9 @@ export interface operations {
     };
     read_sheet_api_characters__character_id__sheet_get: {
         parameters: {
-            query?: never;
+            query?: {
+                troupe_id?: string | null;
+            };
             header?: never;
             path: {
                 character_id: string;
@@ -3991,6 +4181,73 @@ export interface operations {
             };
         };
     };
+    roster_api_troupes__troupe_id__characters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    return_to_draft_api_troupes__troupe_id__characters__character_id__return_to_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StandingChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_cycles_api_troupes__troupe_id__cycles_get: {
         parameters: {
             query?: never;
@@ -4079,6 +4336,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_api_troupes__troupe_id__log_get: {
+        parameters: {
+            query?: {
+                before?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogEntry"][];
                 };
             };
             /** @description Validation Error */

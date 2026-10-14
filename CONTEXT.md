@@ -46,8 +46,20 @@ _Avoid_: Helper, volunteer
 ### Characters
 
 **Character**:
-A persona a player plays, belonging to exactly one splat. It belongs to its player, who builds it outside any troupe and then adds it to troupes; a character is never deleted.
+A persona a player plays, belonging to exactly one splat. It belongs to its player and lives in their vault; the player adds it to troupes, each of which decides for itself whether it is a draft or approved there. A character is never deleted.
 _Avoid_: Sheet (that is the character's record, not the character), PC
+
+**Vault**:
+A player's own characters, whether or not they are in any troupe.
+_Avoid_: Library, roster
+
+**Troupe Standing**:
+Whether a character is a draft or approved in one troupe it belongs to. Each troupe decides its own; a character can be approved in one troupe and a draft in another.
+_Avoid_: Character status, membership status
+
+**Draft**:
+A character's standing in a troupe that has not yet approved it, or has sent it back with a reason. Its staff can see the sheet; it takes no part in that troupe's downtimes.
+_Avoid_: Pending, unapproved character
 
 **Retired Character**:
 A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history.
@@ -110,7 +122,7 @@ _Avoid_: Effective rules, local rules
 ### Character records
 
 **Approved Sheet**:
-The character's sheet as last approved by a storyteller or assistant storyteller; edits awaiting approval are not part of it.
+The character's sheet as one troupe last approved it; each troupe keeps its own. Edits awaiting approval are not part of it.
 _Avoid_: Current sheet, live sheet
 
 **Reconciliation**:
@@ -142,11 +154,11 @@ The layout of a character's approved sheet for printing and bringing to a game.
 _Avoid_: PDF, printout, character card
 
 **Sheet Version**:
-One approved sheet, frozen; the approved sheet is the latest one.
+One sheet as one troupe approved it, frozen; that troupe's approved sheet is its latest one.
 _Avoid_: Snapshot, revision
 
 **Approval**:
-A storyteller's or assistant storyteller's acceptance of a change a player has asked for.
+A troupe's storyteller's or assistant storyteller's acceptance of a change a player has asked for, in that troupe only. Approving a draft's sheet makes it approved there.
 _Avoid_: Sign-off, review
 
 **Home Troupe**:

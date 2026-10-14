@@ -13,18 +13,15 @@ class Character(Imported, Record):
     """A persona a player plays. Belongs to its player, never deleted, only retired."""
 
     __tablename__ = "characters"
-    __table_args__ = (CheckConstraint("status in ('draft', 'active', 'retired')", name="status"),)
+    __table_args__ = (CheckConstraint("status in ('active', 'retired')", name="status"),)
 
     player_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     # The splat's rule set is the one with this splat (rule_sets.splat).
     splat: Mapped[str]
     name: Mapped[str]
-    status: Mapped[str] = mapped_column(default="draft", server_default="draft")
+    # Whether it is a draft or approved is each troupe's call (TroupeMembership.standing).
+    status: Mapped[str] = mapped_column(default="active", server_default="active")
     home_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
-    # The approved sheet. Null until the first approval; a draft has none.
-    approved_version_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("sheet_versions.id", use_alter=True)
-    )
     # Null while the player is still placing creation picks (CONTEXT.md: Character Creation).
     creation_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -60,12 +57,13 @@ class CharacterTrait(Record):
 
 
 class SheetVersion(Record):
-    """One approved sheet, frozen. The approved sheet is the latest."""
+    """One sheet as one troupe approved it, frozen. That troupe's approved sheet is its latest."""
 
     __tablename__ = "sheet_versions"
-    __table_args__ = (UniqueConstraint("character_id", "number"),)
+    __table_args__ = (UniqueConstraint("character_id", "troupe_id", "number"),)
 
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     number: Mapped[int]
     snapshot: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
     approved_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))

@@ -16,6 +16,9 @@ class AuditEvent(Record):
 
     actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
     troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
-    character_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"), index=True)
+    # Set to null if the character is deleted; `data` keeps its name.
+    character_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("characters.id", ondelete="SET NULL"), index=True
+    )
     action: Mapped[str]
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")

@@ -152,6 +152,16 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
     membership.left_at = datetime.now(UTC)
     if character.home_troupe_id == troupe.id:
         character.home_troupe_id = None
+    # Requests waiting in a troupe the character has left are moot.
+    for approval in db.scalars(
+        select(Approval).where(
+            Approval.character_id == character.id,
+            Approval.troupe_id == troupe.id,
+            Approval.status == "pending",
+        )
+    ):
+        approval.status = "withdrawn"
+        approval.decided_at = datetime.now(UTC)
     db.flush()
     audit.record(db, player, "troupe.leave", troupe_id=troupe.id, character_id=character.id)
 
@@ -547,8 +557,8 @@ def approve_change(
 
     old_troupe = change.from_troupe_id
     character.home_troupe_id = change.to_troupe_id
-    character.status = "active"
-    freeze_sheet(db, staff, character)
+    # Approving the move also approves the sheet in the new home troupe.
+    freeze_sheet(db, staff, character, change.to_troupe_id)
     if reopen:
         # The new troupe gives more starting dots: let the player place them.
         character.creation_completed_at = None

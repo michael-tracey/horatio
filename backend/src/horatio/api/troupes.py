@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 
+from horatio import audit
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe, TroupeStaff, User
 from horatio.permissions import (
@@ -115,6 +116,7 @@ def change_troupe(
     if body.name is not None:
         require_troupe_action(db, user, troupe, TroupeAction.RENAME)
         troupe.name = body.name
+        audit.record(db, user, "troupe.renamed", troupe_id=troupe.id, name=body.name)
     if body.description is not None:
         require_troupe_action(db, user, troupe, TroupeAction.EDIT_DESCRIPTION)
         troupe.description = body.description
@@ -128,6 +130,7 @@ def archive_troupe(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> No
     troupe = get_troupe(db, troupe_id)
     require_troupe_action(db, user, troupe, TroupeAction.ARCHIVE)
     troupe.archived_at = datetime.now(UTC)
+    audit.record(db, user, "troupe.archived", troupe_id=troupe.id)
     db.commit()
 
 
@@ -148,6 +151,7 @@ def appoint_lead(
     if staff_row is not None:
         db.delete(staff_row)
     troupe.lead_user_id = lead.id
+    audit.record(db, user, "troupe.lead_appointed", troupe_id=troupe.id, member=lead.display_name)
     db.commit()
     return troupe_out(db, user, troupe)
 
@@ -195,6 +199,14 @@ def assign_staff(
         db.add(row)
     else:
         row.role = body.role
+    audit.record(
+        db,
+        user,
+        "staff.assigned",
+        troupe_id=troupe.id,
+        member=member.display_name,
+        role=body.role.value.replace("_", " "),
+    )
     db.commit()
     return StaffMember(user_id=member.id, display_name=member.display_name, role=body.role)
 
@@ -212,5 +224,7 @@ def remove_staff(
     )
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "That person is not on the staff.")
+    member = db.get_one(User, user_id)
     db.delete(row)
+    audit.record(db, user, "staff.removed", troupe_id=troupe.id, member=member.display_name)
     db.commit()

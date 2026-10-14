@@ -30,6 +30,7 @@ class MembershipOut(BaseModel):
     troupe_id: uuid.UUID
     troupe_name: str
     home: bool
+    standing: str  # draft | approved
 
 
 class TroupeChoice(BaseModel):
@@ -78,14 +79,19 @@ def running_troupe(db: DbSession, troupe_id: uuid.UUID) -> Troupe:
 def memberships(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[MembershipOut]:
     character = visible_character(db, user, character_id)
     rows = db.execute(
-        select(Troupe)
+        select(Troupe, TroupeMembership.standing)
         .join(TroupeMembership, TroupeMembership.troupe_id == Troupe.id)
         .where(TroupeMembership.character_id == character.id, TroupeMembership.left_at.is_(None))
         .order_by(Troupe.name)
-    ).scalars()
+    )
     return [
-        MembershipOut(troupe_id=t.id, troupe_name=t.name, home=t.id == character.home_troupe_id)
-        for t in rows
+        MembershipOut(
+            troupe_id=t.id,
+            troupe_name=t.name,
+            home=t.id == character.home_troupe_id,
+            standing=standing,
+        )
+        for t, standing in rows
     ]
 
 
@@ -96,9 +102,11 @@ def join_troupe(
     """Add the character to a troupe. Its staff can then see the sheet."""
     character = players_character(db, user, character_id)
     troupe = running_troupe(db, body.troupe_id)
-    reconciliation.join(db, user, character, troupe)
+    joined = reconciliation.join(db, user, character, troupe)
     db.commit()
-    return MembershipOut(troupe_id=troupe.id, troupe_name=troupe.name, home=False)
+    return MembershipOut(
+        troupe_id=troupe.id, troupe_name=troupe.name, home=False, standing=joined.standing
+    )
 
 
 @router.delete("/troupes/{troupe_id}", status_code=status.HTTP_204_NO_CONTENT)

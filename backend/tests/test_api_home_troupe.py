@@ -77,7 +77,12 @@ def test_joining_shares_the_sheet_with_the_troupes_staff(troupe: Troupe) -> None
     assert joined.status_code == 201
     assert troupe.assistant.client.get(f"/characters/{character_id}").status_code == 200
     assert troupe.player.client.get(f"/characters/{character_id}/troupes").json() == [
-        {"troupe_id": troupe.id, "troupe_name": "Lords of the Night", "home": False}
+        {
+            "troupe_id": troupe.id,
+            "troupe_name": "Lords of the Night",
+            "home": False,
+            "standing": "draft",
+        }
     ]
 
     assert (
@@ -123,7 +128,9 @@ def test_a_first_home_troupe_with_nothing_to_reconcile(troupe: Troupe) -> None:
     assert character["home_troupe_id"] == troupe.id
     after = sheet(troupe.player, character_id)
     # The first home troupe's approval is also the sheet's first approval.
-    assert after["approved"] is True
+    assert [(st["troupe_id"], st["standing"], st["home"]) for st in after["standings"]] == [
+        (troupe.id, "approved", True)
+    ]
     assert after["pending_changes"] == []
     assert after["xp"]["balance"] == 27
 
@@ -291,7 +298,9 @@ def test_declined_requests_leave_the_character_where_it_was(troupe: Troupe) -> N
     troupe.lead.client.post(f"/approvals/{approval_id}/decline", json={"note": "Full up"})
 
     character = troupe.player.client.get(f"/characters/{character_id}").json()
-    assert character["status"] == "draft"
+    assert character["status"] == "active"
+    standings = troupe.player.client.get(f"/characters/{character_id}/sheet").json()["standings"]
+    assert [st["standing"] for st in standings] == ["draft"]
     assert character["home_troupe_id"] is None
 
 

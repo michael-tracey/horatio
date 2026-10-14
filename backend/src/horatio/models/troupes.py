@@ -50,9 +50,19 @@ class TroupeMembership(Record):
             postgresql_where=text("left_at is null"),
         ),
         CheckConstraint("left_at is null or left_at >= joined_at", name="left_after_joined"),
+        CheckConstraint("standing in ('draft', 'approved')", name="standing"),
     )
 
     troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # CONTEXT.md: Troupe Standing. Each troupe decides whether the character is a
+    # draft or approved there.
+    standing: Mapped[str] = mapped_column(default="draft", server_default="draft")
+    # Why staff sent it back to draft, if they did.
+    standing_note: Mapped[str] = mapped_column(default="", server_default="")
+    # This troupe's approved sheet: its latest sheet version. Null until it first approves.
+    approved_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sheet_versions.id", use_alter=True)
+    )

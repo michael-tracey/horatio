@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from horatio.models import AuditEvent, User
+from horatio.models import AuditEvent, Character, User
 
 
 def record(
@@ -17,6 +17,11 @@ def record(
     character_id: uuid.UUID | None = None,
     **data: Any,
 ) -> None:
+    if character_id is not None and "character_name" not in data:
+        # Kept with the event, so the log still reads after a character is deleted.
+        character = db.get(Character, character_id)
+        if character is not None:
+            data["character_name"] = character.name
     db.add(
         AuditEvent(
             actor_id=actor.id if actor else None,

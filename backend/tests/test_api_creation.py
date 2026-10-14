@@ -44,8 +44,15 @@ def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
     return Troupe(client_for, session)
 
 
-def creating(troupe: Troupe) -> str:
-    return new_character(troupe, troupe.player, finished=False)
+def creating(troupe: Troupe, clan: str = "Brujah") -> str:
+    """A Brujah in character creation. Brujah's in-clan disciplines are Celerity,
+    Potence and Presence."""
+    character_id = new_character(troupe, troupe.player, finished=False)
+    troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "clan", "name": clan, "rating": None},
+    )
+    return character_id
 
 
 def pick(person: Person, character_id: str, category: str, name: str, rating: int = 1) -> Any:
@@ -91,6 +98,7 @@ def test_new_characters_start_with_their_starting_traits_free(troupe: Troupe) ->
     }
 
     assert traits == {
+        "Brujah": (None, 0),
         "Humanity": (5, 5),
         "Healthy": (3, 3),
         "Injured": (3, 3),
@@ -500,3 +508,52 @@ def test_a_step_leaves_bought_dots_alone(troupe: Troupe) -> None:
     assert moved.status_code == 409
     assert onto_bought.status_code == 409
     assert trait(troupe.player, character_id, "Brawl")["rating"] == 5
+
+
+# --- in-clan disciplines --------------------------------------------------------------------------
+
+
+def test_starting_disciplines_must_be_in_clan(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+
+    out_of_clan = pick(troupe.player, character_id, "disciplines", "Dominate", 2)
+    in_clan = pick(troupe.player, character_id, "disciplines", "Celerity", 2)
+
+    assert out_of_clan.status_code == 422
+    assert "not in-clan" in out_of_clan.json()["detail"]
+    assert in_clan.status_code == 200
+    assert pool(in_clan.json(), "disciplines", 2)["restriction"] == "in_clan"
+
+
+def test_without_a_clan_no_discipline_is_in_clan(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, finished=False)
+
+    response = pick(troupe.player, character_id, "disciplines", "Celerity", 2)
+
+    assert response.status_code == 422
+    assert "choose the clan first" in response.json()["detail"]
+
+
+def test_a_whole_step_is_checked_for_in_clan_disciplines(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+
+    response = set_step(
+        troupe.player, character_id, "disciplines", [("Celerity", 2), ("Dominate", 1)]
+    )
+
+    assert response.status_code == 422
+
+
+def test_changing_clan_after_picking_blocks_finishing(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+    for category, name, rating in FULL_BUILD:
+        pick(troupe.player, character_id, category, name, rating)
+    troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "clan", "name": "Tremere", "rating": None},
+    )
+
+    response = troupe.player.client.post(f"/characters/{character_id}/creation/complete")
+
+    assert response.status_code == 409
+    assert "Celerity" in response.json()["detail"]

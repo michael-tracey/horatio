@@ -98,7 +98,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.screenshot(shots("sheet"));
 
   // …and asks to make the troupe its home.
-  await p.locator("main").getByRole("link", { name: "Troupes" }).click();
+  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
   await expect(p.getByText("Nothing differs")).toBeVisible();
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
@@ -110,6 +110,13 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.screenshot(shots("approvals"));
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
+  // The troupe's characters and log show what happened.
+  await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
+  await expect(lead.page.getByText("approved", { exact: true })).toBeVisible();
+  await lead.page.getByRole("link", { name: "Log", exact: true }).click();
+  await expect(lead.page.getByText("lead approved Agnes.")).toBeVisible();
+  await expect(lead.page.getByText("Agnes joined the troupe as a draft.")).toBeVisible();
+  await lead.page.screenshot(shots("log"));
 
   // The lead runs a cycle.
   await lead.page.getByRole("link", { name: "Downtimes" }).click();
@@ -149,4 +156,19 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("link", { name: "Results" }).click();
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));
+});
+
+
+test("a character in no troupe can be deleted from the vault", async ({ browser }) => {
+  const { page } = await person(browser, "deleter");
+  await page.getByLabel("Name").fill("Short-lived");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  await page.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete Short-lived" }).click();
+
+  await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  await expect(page.getByText("No characters yet.")).toBeVisible();
 });

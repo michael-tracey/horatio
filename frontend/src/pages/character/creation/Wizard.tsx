@@ -17,7 +17,7 @@ const ORDER: Step[] = [
   { key: "focuses", title: "Focuses", categories: ["focus_physicals", "focus_mentals", "focus_socials"], intro: "Choose one focus for each attribute." },
   { key: "skills", title: "Skills", categories: ["skills"], intro: "Tap the dot for each skill's rating. The counters show what is left." },
   { key: "backgrounds", title: "Backgrounds", categories: ["backgrounds"] },
-  { key: "disciplines", title: "Disciplines", categories: ["disciplines"], intro: "Your clan's in-clan disciplines are listed first." },
+  { key: "disciplines", title: "Disciplines", categories: ["disciplines"], intro: "Starting disciplines are your clan's in-clan ones: one at 2, the others at 1." },
   { key: "merits", title: "Merits & flaws", categories: ["merits", "flaws"], intro: "Each comes from its own budget of points. Both are optional." },
 ];
 
@@ -165,7 +165,15 @@ function StepView({
             return <PointsList key={category} title={nameOf(category)} traits={traitsOf(category)} budget={pools[0].allowed} picks={mine} onChange={set} />;
           }
           let traits = traitsOf(category);
-          if (category === "disciplines") traits = [...traits.filter((t) => inClan.has(t.name)), ...traits.filter((t) => !inClan.has(t.name))];
+          // Picks restricted to in-clan disciplines offer only those.
+          if (pools.some((p) => p.restriction === "in_clan")) traits = traits.filter((t) => inClan.has(t.name));
+          if (traits.length === 0 && pools.some((p) => p.restriction === "in_clan")) {
+            return (
+              <Notice key={category}>
+                Starting {nameOf(category).toLowerCase()} must be in-clan. Choose a clan on the Concept step first.
+              </Notice>
+            );
+          }
           return (
             <DotGrid
               key={category}
@@ -175,7 +183,6 @@ function StepView({
               allowed={allowedFor(creation, category)}
               picks={mine}
               onChange={set}
-              tag={category === "disciplines" ? (t: TraitOut) => (inClan.has(t.name) ? "in-clan" : null) : undefined}
               sections={
                 traits.some((t) => t.attribute)
                   ? { order: ["Physical", "Social", "Mental"], of: (t: TraitOut) => t.attribute }

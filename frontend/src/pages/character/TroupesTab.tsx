@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
@@ -28,7 +29,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
 
   if (memberships.isPending || troupes.isPending || sheet.isPending) return <Loading />;
   const memberIds = new Set(memberships.data?.map((m) => m.troupe_id));
-  const pendingHome = sheet.data?.pending_approval?.kind === "home_troupe_change" ? sheet.data.pending_approval : null;
+  const pendingHome = sheet.data?.pending_approvals.find((a) => a.kind === "home_troupe_change") ?? null;
   const pendingTroupe = troupes.data?.find((t) => t.id === pendingHome?.troupe_id);
 
   return (
@@ -38,17 +39,25 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
           <ul className="divide-y divide-ash">
             {memberships.data.map((m) => (
               <li key={m.troupe_id} className="flex items-center justify-between gap-2 py-2">
-                <span>
-                  {m.troupe_name} {m.home && <Badge tone="gold">home</Badge>}
+                <span className="flex flex-wrap items-center gap-2">
+                  {m.troupe_name}
+                  <Badge tone={m.standing === "approved" ? "gold" : "blood"}>{m.standing}</Badge>
+                  {m.home && <Badge>home</Badge>}
                 </span>
-                <Button variant="ghost" onClick={() => leave.mutate(m.troupe_id)}>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (window.confirm(`Take ${character.name} out of ${m.troupe_name}? Its storytellers will see that it left.`))
+                      leave.mutate(m.troupe_id);
+                  }}
+                >
                   Leave
                 </Button>
               </li>
             ))}
           </ul>
         ) : (
-          <Empty>Not in any troupe. Joining one lets its storytellers see this sheet.</Empty>
+          <Empty>Not in any troupe. Joining one makes it a draft there and lets that troupe's storytellers see the sheet.</Empty>
         )}
         <form
           className="mt-3 flex gap-2"
@@ -93,6 +102,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
           </Card>
         )
       )}
+      {memberships.data?.length === 0 && <DeleteCharacter character={character} />}
     </div>
   );
 }
@@ -184,6 +194,32 @@ function HomeTroupe({ character, troupes, currentHome }: { character: CharacterO
           <ErrorText error={request.error} />
         </div>
       )}
+    </Card>
+  );
+}
+
+function DeleteCharacter({ character }: { character: CharacterOut }) {
+  const navigate = useNavigate();
+  const remove = useAction(async () => {
+    await unwrap(api.DELETE("/api/characters/{character_id}", { params: { path: { character_id: character.id } } }));
+    navigate("/characters");
+  });
+  return (
+    <Card title="Delete this character" className="md:col-span-2">
+      <p className="text-sm text-mist">
+        Deleting removes {character.name} and all of its history for good. It is only possible once the character has
+        left every troupe.
+      </p>
+      <ErrorText error={remove.error} />
+      <Button
+        variant="danger"
+        className="mt-3"
+        onClick={() => {
+          if (window.confirm(`Delete ${character.name} for good? This cannot be undone.`)) remove.mutate(undefined);
+        }}
+      >
+        Delete {character.name}
+      </Button>
     </Card>
   );
 }

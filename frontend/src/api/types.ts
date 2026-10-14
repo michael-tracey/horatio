@@ -30,3 +30,6 @@ export type ResultOut = Schemas["ResultOut"];
 export type Role = Schemas["Role"];
 export type CreationOut = Schemas["CreationOut"];
 export type PoolOut = Schemas["PoolOut"];
+export type StandingOut = Schemas["StandingOut"];
+export type RosterEntry = Schemas["RosterEntry"];
+export type LogEntry = Schemas["LogEntry"];

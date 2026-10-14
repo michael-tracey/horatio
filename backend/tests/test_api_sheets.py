@@ -2,6 +2,7 @@
 
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -46,10 +47,11 @@ def make_home_troupe_member(session: Session, troupe: Troupe, character_id: str)
     """Stand-in for an approved home troupe change, which arrives in a later step."""
     character = session.get_one(Character, uuid.UUID(character_id))
     character.home_troupe_id = uuid.UUID(troupe.id)
-    character.status = "active"
+    character.creation_completed_at = datetime.now(UTC)
     session.add(TroupeMembership(troupe_id=character.home_troupe_id, character_id=character.id))
+    session.flush()
     lead = session.get_one(User, uuid.UUID(troupe.lead.id))
-    freeze_sheet(session, lead, character)
+    freeze_sheet(session, lead, character, uuid.UUID(troupe.id))
     session.flush()
 
 
@@ -239,7 +241,7 @@ def test_home_troupe_running_staff_award_xp(troupe: Troupe, session: Session) ->
 # --- approval ----------------------------------------------------------------------
 
 
-def test_a_draft_is_approved_through_its_home_troupe_not_here(troupe: Troupe) -> None:
+def test_a_character_in_no_troupe_has_nobody_to_ask(troupe: Troupe) -> None:
     character_id = new_character(troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 1)
 
@@ -278,7 +280,7 @@ def test_approving_a_sheet_change(troupe: Troupe, session: Session) -> None:
     assert decided.json()["status"] == "approved"
     after = sheet(troupe.player, character_id)
     assert after["pending_changes"] == []
-    assert after["pending_approval"] is None
+    assert after["pending_approvals"] == []
     assert without_starting_traits(after["traits"])[0]["approved_rating"] == 2
     # Approved dots cannot be taken back by the player.
     assert buy(troupe.player, character_id, "skills", "Brawl", 1).status_code == 409
@@ -290,8 +292,8 @@ def test_declining_unlocks_the_sheet(troupe: Troupe, session: Session) -> None:
     make_home_troupe_member(session, troupe, character_id)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
     approval_id = troupe.player.client.post(f"/characters/{character_id}/approval", json={}).json()[
-        "id"
-    ]
+        0
+    ]["id"]
 
     decided = troupe.storyteller.client.post(
         f"/approvals/{approval_id}/decline", json={"note": "Not in one month"}

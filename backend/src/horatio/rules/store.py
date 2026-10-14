@@ -169,6 +169,7 @@ def creation_row(
         rating=rule.rating,
         picks=rule.picks,
         points=rule.points,
+        restriction=rule.restriction,
     )
 
 
@@ -390,6 +391,7 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
             rating=row.rating,
             picks=row.picks,
             points=row.points,
+            restriction=row.restriction,
             house=row.troupe_id is not None,
         )
 
