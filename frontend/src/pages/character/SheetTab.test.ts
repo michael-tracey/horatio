@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut, SheetTraitOut } from "../../api/types";
-import { groupTraits } from "./SheetTab";
+import { groupTraits, swapOptions } from "./SheetTab";
 
 const trait = (category: string, category_name: string, group: string, name: string): SheetTraitOut => ({
   id: name,
@@ -32,5 +32,30 @@ describe("groupTraits", () => {
 
     expect([...groups.keys()]).toEqual(["Identity", "Skills"]);
     expect(groups.get("Skills")?.get("Skills")?.map((t) => t.name)).toEqual(["Brawl"]);
+  });
+});
+
+describe("swapOptions", () => {
+  const catalogue = {
+    categories: [
+      { key: "focus_physicals", name: "Physical Focus", group: "Attributes", rated: true, max_rating: null, change_cost: 10 },
+      { key: "skills", name: "Skills", group: "Skills", rated: true, max_rating: 10, change_cost: null },
+    ],
+    traits: [
+      { category: "focus_physicals", name: "Strength" },
+      { category: "focus_physicals", name: "Dexterity" },
+      { category: "focus_physicals", name: "Stamina" },
+      { category: "skills", name: "Brawl" },
+    ],
+  } as unknown as CatalogueOut;
+
+  it("offers the other focuses, at the category's cost", () => {
+    const strength = trait("focus_physicals", "Physical Focus", "Attributes", "Strength");
+    expect(swapOptions(strength, [strength], catalogue)).toEqual({ cost: 10, others: ["Dexterity", "Stamina"] });
+  });
+
+  it("offers nothing for categories that cannot be swapped", () => {
+    const brawl = trait("skills", "Skills", "Skills", "Brawl");
+    expect(swapOptions(brawl, [brawl], catalogue)).toBeNull();
   });
 });

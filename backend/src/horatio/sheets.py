@@ -483,6 +483,60 @@ def set_trait(
     return Change(quote=quote, trait=trait)
 
 
+def change_choice(
+    db: Session,
+    player: User,
+    character: Character,
+    category_key: str,
+    from_name: str,
+    to_name: str,
+) -> int:
+    """Swap one trait for another in a category that allows it after creation, such
+    as a focus, for the category's change cost. The new trait takes the old one's
+    place, starting dots and all; nothing is refunded for the old one. Returns the
+    XP spent."""
+    ensure_unlocked(db, character)
+    if character.creation_completed_at is None:
+        raise conflict("During creation, change it in the creation wizard; it is free there.")
+    old_definition, category = find_definition(db, character, category_key, from_name)
+    new_definition, _ = find_definition(db, character, category_key, to_name)
+    if category.change_cost is None:
+        raise conflict(f"{category.name} cannot be swapped like this.")
+    rows = {r.definition.id: r for r in sheet_rows(db, character) if r.category.id == category.id}
+    old = rows.get(old_definition.id)
+    if old is None:
+        raise conflict(f"The character does not have {from_name}.")
+    if new_definition.id in rows:
+        raise conflict(f"The character already has {to_name}.")
+    cost = category.change_cost
+    if xp_balance(db, character) < cost:
+        raise conflict(f"That costs {cost} XP, and the character has {xp_balance(db, character)}.")
+
+    old.trait.trait_definition_id = new_definition.id
+    db.add(
+        XpEntry(
+            character_id=character.id,
+            kind="fee",
+            amount=-cost,
+            reason=f"Changed {category.name}: {from_name} → {to_name}",
+            entered_by=player.id,
+            trait_definition_id=new_definition.id,
+        )
+    )
+    db.flush()
+    audit.record(
+        db,
+        player,
+        "sheet.change",
+        character_id=character.id,
+        category=category.name.lower(),
+        from_name=from_name,
+        name=to_name,
+        cost=cost,
+    )
+    return cost
+
+
 def freeze_sheet(
     db: Session, approver: User, character: Character, troupe_id: uuid.UUID
 ) -> SheetVersion:

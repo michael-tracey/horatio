@@ -258,6 +258,17 @@
       },
       "CategoryOut": {
         "properties": {
+          "change_cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Cost"
+          },
           "group": {
             "title": "Group",
             "type": "string"
@@ -466,6 +477,29 @@
           "owner_troupe_id"
         ],
         "title": "CharacterOut",
+        "type": "object"
+      },
+      "ChoiceChange": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "from_name": {
+            "title": "From Name",
+            "type": "string"
+          },
+          "to_name": {
+            "title": "To Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "from_name",
+          "to_name"
+        ],
+        "title": "ChoiceChange",
         "type": "object"
       },
       "CreationOut": {
@@ -4779,6 +4813,60 @@
           }
         },
         "summary": "Change Trait",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/traits/change": {
+      "post": {
+        "description": "Swap a focus (or another swappable choice) for another, for its change cost.",
+        "operationId": "change_choice_api_characters__character_id__traits_change_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChoiceChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Choice",
         "tags": [
           "sheets"
         ]

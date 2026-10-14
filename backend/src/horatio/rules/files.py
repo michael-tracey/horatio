@@ -143,6 +143,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             max_rating=c.get("max_rating", DEFAULT_MAX_RATING) if c.get("rated", True) else None,
             house_rules_per_trait=c.get("house_rules_per_trait", False),
             requires=c.get("requires"),
+            change_cost=c.get("change_cost"),
         )
         for c in raw["categories"]
     }

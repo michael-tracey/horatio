@@ -524,6 +524,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/traits/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Choice
+         * @description Swap a focus (or another swappable choice) for another, for its change cost.
+         */
+        post: operations["change_choice_api_characters__character_id__traits_change_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/troupes": {
         parameters: {
             query?: never;
@@ -1387,6 +1407,8 @@ export interface components {
         };
         /** CategoryOut */
         CategoryOut: {
+            /** Change Cost */
+            change_cost?: number | null;
             /** Group */
             group: string;
             /** Key */
@@ -1467,6 +1489,15 @@ export interface components {
             splat: string;
             /** Status */
             status: string;
+        };
+        /** ChoiceChange */
+        ChoiceChange: {
+            /** Category */
+            category: string;
+            /** From Name */
+            from_name: string;
+            /** To Name */
+            to_name: string;
         };
         /** CreationOut */
         CreationOut: {
@@ -3569,6 +3600,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TraitChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_choice_api_characters__character_id__traits_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChoiceChange"];
             };
         };
         responses: {

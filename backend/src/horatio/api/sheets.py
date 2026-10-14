@@ -96,6 +96,12 @@ class TraitChange(BaseModel):
     note: str | None = None
 
 
+class ChoiceChange(BaseModel):
+    category: str
+    from_name: str
+    to_name: str
+
+
 class QuoteOut(BaseModel):
     cost: int
     from_rating: int | None
@@ -254,6 +260,17 @@ def change_trait(
     )
     db.commit()
     return ChangeOut(cost=change.quote.cost if change.quote else 0, sheet=sheet_out(db, character))
+
+
+@router.post("/traits/change")
+def change_choice(
+    character_id: uuid.UUID, body: ChoiceChange, db: DbSession, user: CurrentUser
+) -> ChangeOut:
+    """Swap a focus (or another swappable choice) for another, for its change cost."""
+    character = players_character(db, user, character_id)
+    cost = sheets.change_choice(db, user, character, body.category, body.from_name, body.to_name)
+    db.commit()
+    return ChangeOut(cost=cost, sheet=sheet_out(db, character))
 
 
 @router.get("/xp")

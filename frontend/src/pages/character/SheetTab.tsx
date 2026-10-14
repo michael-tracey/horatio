@@ -57,6 +57,13 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   const creation = useCreation(character);
   const [message, setMessage] = useState<string | null>(null);
 
+  const swap = useAction(async (body: { category: string; from_name: string; to_name: string }) => {
+    const result = await unwrap(
+      api.POST("/api/characters/{character_id}/traits/change", { params: { path: { character_id: character.id } }, body }),
+    );
+    setMessage(`Spent ${result.cost} XP.`);
+    return result;
+  });
   const change = useAction(async (body: TraitChange) => {
     const result = await unwrap(
       api.PUT("/api/characters/{character_id}/traits", { params: { path: { character_id: character.id } }, body }),
@@ -89,7 +96,18 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
                   <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">{category}</h3>
                   <ul className="flex flex-col gap-1">
                     {traits.map((t) => (
-                      <TraitRow key={t.id} trait={t} locked={locked} onChange={(rating) => change.mutate({ category: t.category, name: t.name, detail: t.detail, rating })} />
+                      <TraitRow
+                        key={t.id}
+                        trait={t}
+                        locked={locked}
+                        onChange={(rating) => change.mutate({ category: t.category, name: t.name, detail: t.detail, rating })}
+                        swap={
+                          character.creation_complete && catalogue.data
+                            ? swapOptions(t, s.traits, catalogue.data)
+                            : null
+                        }
+                        onSwap={(to) => swap.mutate({ category: t.category, from_name: t.name, to_name: to })}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -97,8 +115,8 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
             </div>
           </Card>
         ))}
-        <ErrorText error={change.error} />
-        {message && !change.error && <Notice>{message}</Notice>}
+        <ErrorText error={change.error ?? swap.error} />
+        {message && !change.error && !swap.error && <Notice>{message}</Notice>}
       </div>
       <aside className="flex flex-col gap-4">
         <Link
@@ -133,8 +151,63 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   );
 }
 
-function TraitRow({ trait, locked, onChange }: { trait: SheetTraitOut; locked: boolean; onChange: (rating: number | null) => void }) {
+/** For a trait in a category that can be swapped after creation (a focus): its cost
+ * and the other choices the character does not hold yet. */
+export function swapOptions(trait: SheetTraitOut, held: SheetTraitOut[], catalogue: CatalogueOut) {
+  const cost = catalogue.categories.find((c) => c.key === trait.category)?.change_cost;
+  if (cost == null) return null;
+  const mine = new Set(held.filter((h) => h.category === trait.category).map((h) => h.name));
+  const others = catalogue.traits.filter((t) => t.category === trait.category && !mine.has(t.name)).map((t) => t.name);
+  return others.length ? { cost, others } : null;
+}
+
+function TraitRow({
+  trait,
+  locked,
+  onChange,
+  swap,
+  onSwap,
+}: {
+  trait: SheetTraitOut;
+  locked: boolean;
+  onChange: (rating: number | null) => void;
+  swap: { cost: number; others: string[] } | null;
+  onSwap: (to: string) => void;
+}) {
+  const [swapping, setSwapping] = useState(false);
+  const [to, setTo] = useState("");
   const pending = trait.pending_from !== null;
+  if (swap && !locked) {
+    return (
+      <li className="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span>{trait.name}</span>
+        {swapping ? (
+          <span className="flex items-center gap-1">
+            <Select aria-label={`Change ${trait.name} to`} value={to} onChange={(e) => setTo(e.target.value)} className="h-8 py-0">
+              <option value="">Change to…</option>
+              {swap.others.map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </Select>
+            <Button
+              variant="secondary"
+              disabled={!to}
+              onClick={() => {
+                onSwap(to);
+                setSwapping(false);
+              }}
+            >
+              {swap.cost} XP
+            </Button>
+          </span>
+        ) : (
+          <Button variant="ghost" onClick={() => setSwapping(true)}>
+            Change
+          </Button>
+        )}
+      </li>
+    );
+  }
   return (
     <li className="flex items-center justify-between gap-2 text-sm">
       <span className="min-w-0">

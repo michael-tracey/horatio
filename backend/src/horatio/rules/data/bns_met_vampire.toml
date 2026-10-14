@@ -67,16 +67,22 @@ group = "Attributes"
 key = "focus_physicals"
 name = "Physical Focus"
 group = "Attributes"
+# After creation, swapping the focus for another costs this much (p. 90).
+change_cost = 10
 
 [[categories]]
 key = "focus_mentals"
 name = "Mental Focus"
 group = "Attributes"
+# After creation, swapping the focus for another costs this much (p. 90).
+change_cost = 10
 
 [[categories]]
 key = "focus_socials"
 name = "Social Focus"
 group = "Attributes"
+# After creation, swapping the focus for another costs this much (p. 90).
+change_cost = 10
 
 [[categories]]
 key = "health_levels"

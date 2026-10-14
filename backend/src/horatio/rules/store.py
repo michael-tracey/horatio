@@ -67,6 +67,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.max_rating = category.max_rating
         row.house_rules_per_trait = category.house_rules_per_trait
         row.requires = dict(category.requires) if category.requires else None
+        row.change_cost = category.change_cost
     session.flush()
 
     definitions = {
@@ -428,6 +429,7 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 max_rating=c.max_rating,
                 house_rules_per_trait=c.house_rules_per_trait,
                 requires=c.requires,
+                change_cost=c.change_cost,
             )
             for c in categories
         },

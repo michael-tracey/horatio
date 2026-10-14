@@ -21,6 +21,8 @@ class CategoryOut(BaseModel):
     max_rating: int | None
     # Only shown when the character has this choice, e.g. faction needs the Sabbat sect.
     requires: dict[str, str] | None = None
+    # XP to swap the choice for another after creation (a focus); None if it cannot be.
+    change_cost: int | None = None
 
 
 class TraitOut(BaseModel):
@@ -72,6 +74,7 @@ def catalogue(
                 rated=c.rated,
                 max_rating=c.max_rating,
                 requires=dict(c.requires) if c.requires else None,
+                change_cost=c.change_cost,
             )
             for c in rules.rule_set.categories.values()
         ],

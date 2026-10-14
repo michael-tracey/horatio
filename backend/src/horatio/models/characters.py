@@ -86,7 +86,8 @@ class XpEntry(Record):
 
     __tablename__ = "xp_entries"
     __table_args__ = (
-        CheckConstraint("kind in ('award', 'purchase', 'settlement')", name="kind"),
+        # A fee is XP spent on something other than dots, such as changing a focus.
+        CheckConstraint("kind in ('award', 'purchase', 'settlement', 'fee')", name="kind"),
         CheckConstraint(
             "kind <> 'purchase' or (trait_definition_id is not null"
             " and from_rating is not null and to_rating is not null"

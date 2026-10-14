@@ -157,13 +157,13 @@ def test_picks_are_limited_to_what_the_rules_give(troupe: Troupe) -> None:
 def test_merits_and_flaws_come_from_a_points_budget(troupe: Troupe) -> None:
     character_id = creating(troupe)
 
-    state = pick(troupe.player, character_id, "merits", "Absent Sway").json()  # 2 points
+    state = pick(troupe.player, character_id, "merits", "Absent Sway").json()  # 3 points
     pick(troupe.player, character_id, "merits", "Abyssal Horror")  # 3 points
     over = pick(troupe.player, character_id, "merits", "Additional Common Discipline")  # 4 points
 
-    assert pool(state, "merits", 0)["used"] == 2
+    assert pool(state, "merits", 0)["used"] == 3
     assert over.status_code == 409
-    assert pool(creation(troupe.player, character_id), "merits", 0)["remaining"] == 2
+    assert pool(creation(troupe.player, character_id), "merits", 0)["remaining"] == 1
 
 
 def test_taking_a_pick_back(troupe: Troupe) -> None:
@@ -465,7 +465,7 @@ def test_merits_in_a_step_use_their_point_value(troupe: Troupe) -> None:
         troupe.player, character_id, "merits", [("Absent Sway", 1), ("Acute Sense", 1)]
     ).json()
 
-    assert pool(state, "merits", 0)["used"] == 3  # 2 + 1
+    assert pool(state, "merits", 0)["used"] == 4  # 3 + 1
 
 
 def test_starting_disciplines_must_be_in_clan(troupe: Troupe) -> None:

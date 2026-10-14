@@ -38,6 +38,8 @@ class TraitCategory(Record):
     house_rules_per_trait: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Only allowed when the character has this choice, e.g. {"category": "sect", "name": "Sabbat"}.
     requires: Mapped[dict[str, str] | None] = mapped_column(JSONB)
+    # XP to swap this category's choice for another after creation, e.g. a focus.
+    change_cost: Mapped[int | None]
 
 
 class TraitDefinition(Record):

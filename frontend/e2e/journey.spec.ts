@@ -102,6 +102,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByLabel("Trait").selectOption("Influences: The Elite");
   await p.getByRole("button", { name: "Buy" }).click();
   await expect(p.getByText("29", { exact: true })).toBeVisible(); // 30 − 1 for Influence
+  // A focus can be changed after creation, for 10 XP.
+  await p.getByRole("listitem").filter({ hasText: "Strength" }).getByRole("button", { name: "Change" }).click();
+  await p.getByLabel("Change Strength to").selectOption("Dexterity");
+  await p.getByRole("button", { name: "10 XP" }).click();
+  await expect(p.getByText("19", { exact: true })).toBeVisible();
   await p.screenshot(shots("sheet"));
   // The character's own log says when, who and what.
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();

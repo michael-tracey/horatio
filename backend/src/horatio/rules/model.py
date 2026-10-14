@@ -28,6 +28,9 @@ class CategoryData:
     # Only shown and allowed when the character has this choice, for example
     # {"category": "sect", "name": "Sabbat"} for faction.
     requires: Mapping[str, str] | None = None
+    # XP to swap the choice in this category for another after creation, such
+    # as a focus (10 XP); None when it cannot be swapped that way.
+    change_cost: int | None = None
 
 
 @dataclass(frozen=True)
