@@ -978,3 +978,29 @@ name_prefix = "Necromancy: "
 forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " } } }
 message = "A necromancer knows no more rituals than their dots of Necromancy."
 page = "172"
+
+# One Lore specialisation per dot of Lore; Loremaster gives two (pp. 96, 251).
+[[checks]]
+category = "lore_specializations"
+forbids = { more_than_dots = { count = { category = "lore_specializations" }, dots = { category = "skills", name_prefix = "Lore" } }, not = { has = { category = "merits", name = "Loremaster" } } }
+message = "A character has one Lore specialisation per dot of Lore."
+page = "96"
+
+[[checks]]
+category = "lore_specializations"
+forbids = { more_than_dots = { count = { category = "lore_specializations" }, dots = { category = "skills", name_prefix = "Lore" }, per_dot = 2 } }
+message = "Loremaster gives two Lore specialisations per dot of Lore, no more."
+page = "251"
+
+# One Linguistics specialisation per dot of Linguistics; Natural Linguist gives two (pp. 95, 252).
+[[checks]]
+category = "linguistics_specializations"
+forbids = { more_than_dots = { count = { category = "linguistics_specializations" }, dots = { category = "skills", name_prefix = "Linguistics" } }, not = { has = { category = "merits", name = "Natural Linguist" } } }
+message = "A character has one Linguistics specialisation per dot of Linguistics."
+page = "95"
+
+[[checks]]
+category = "linguistics_specializations"
+forbids = { more_than_dots = { count = { category = "linguistics_specializations" }, dots = { category = "skills", name_prefix = "Linguistics" }, per_dot = 2 } }
+message = "Natural Linguist gives two Linguistics specialisations per dot of Linguistics, no more."
+page = "252"

@@ -27,7 +27,8 @@ Condition vocabulary (every key in one table must hold):
     in_clan = true                  the subject is one of the character's in-clan
                                     disciplines
     accepted = true                 a home troupe has accepted the character
-    more_than_dots = { count = { category, name_prefix }, dots = { category, name_prefix } }
+    more_than_dots = { count = { category, name_prefix }, dots = { category, name_prefix },
+                       per_dot? }
                                     the sheet holds more traits of the first kind
                                     than it has dots of the second (rituals against
                                     Thaumaturgy)
@@ -212,7 +213,7 @@ def matches(
                 if t.category == dotted["category"]
                 and t.name.startswith(dotted.get("name_prefix", ""))
             )
-            ok = held > dots
+            ok = held > dots * test.get("per_dot", 1)
         elif key == "any_of":
             ok = any(matches(c, sheet, subject, context) for c in test)
         elif key == "not":

@@ -230,3 +230,19 @@ def test_no_more_rituals_than_thaumaturgy_dots(troupe: Troupe) -> None:
     refused = take(troupe.player, character_id, "rituals", second, 1)
     assert refused.status_code == 409
     assert "no more rituals than their dots" in refused.json()["detail"]
+
+
+def test_one_lore_specialisation_per_dot_or_two_with_loremaster(troupe: Troupe) -> None:
+    character_id = as_clan(troupe, "Brujah")
+    take(troupe.player, character_id, "skills", "Lore", 1)
+    specs = [
+        t["name"]
+        for t in troupe.player.client.get("/rules/vampire").json()["traits"]
+        if t["category"] == "lore_specializations"
+    ][:3]
+
+    assert take(troupe.player, character_id, "lore_specializations", specs[0]).status_code == 200
+    assert take(troupe.player, character_id, "lore_specializations", specs[1]).status_code == 409
+    take(troupe.player, character_id, "merits", "Loremaster", 1)
+    assert take(troupe.player, character_id, "lore_specializations", specs[1]).status_code == 200
+    assert take(troupe.player, character_id, "lore_specializations", specs[2]).status_code == 409
