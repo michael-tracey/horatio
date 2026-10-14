@@ -7,6 +7,7 @@ from sqlalchemy import select
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, RuleSet
 from horatio.permissions import can_edit_character, visible_character
+from horatio.sheets import start_character
 
 router = APIRouter(prefix="/characters", tags=["characters"])
 
@@ -64,6 +65,8 @@ def create_character(body: NewCharacter, db: DbSession, user: CurrentUser) -> Ch
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No rules for {body.splat!r}.")
     character = Character(player_id=user.id, splat=body.splat, name=body.name)
     db.add(character)
+    db.flush()
+    start_character(db, user, character)
     db.commit()
     db.refresh(character)
     return character_out(character)

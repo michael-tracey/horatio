@@ -22,13 +22,49 @@ splat = "vampire"
 name = "BNS MET Vampire"
 version = 1
 
+# Experience a new character starts with (Yorick: initial_xp).
+starting_xp = 30
+
+# Further [[traits]] tables, loaded as part of this rule set.
+trait_files = ["bns_met_vampire_traits.toml"]
+
 # ---------------------------------------------------------------------------
 # Categories, in sheet order. max_rating is the highest rating a trait can
-# reach; unrated categories hold a choice (such as a clan) rather than dots.
+# reach; unrated categories hold one choice (such as a clan) rather than dots.
 
 [[categories]]
 key = "clan"
 name = "Clan"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "archetype"
+name = "Archetype"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "sect"
+name = "Sect"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "faction"
+name = "Faction"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "title"
+name = "Title"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "antecedence"
+name = "Antecedence"
 group = "Identity"
 rated = false
 
@@ -382,12 +418,7 @@ category = "status_traits"
 scheme = "free"
 
 # ---------------------------------------------------------------------------
-# Trait definitions the rules refer to. The full catalogue (every merit, flaw
-# and discipline, with descriptions) is imported separately.
-
-[[traits]]
-category = "backgrounds"
-name = "Generation"
+# The trait catalogue is in bns_met_vampire_traits.toml.
 
 # Clans and their in-clan disciplines, from Yorick's data/bnsmetv1_clan_rule.csv.
 # An entry such as "Thaumaturgy: Path of Blood" makes only that path in-clan.

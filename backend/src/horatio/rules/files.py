@@ -70,20 +70,27 @@ def load_rule_set(path: Path) -> RuleSetData:
         )
         for c in raw["categories"]
     }
-    traits = {
-        (t["category"], t["name"]): TraitData(
+    raw_traits = list(raw.get("traits", []))
+    for trait_file in raw.get("trait_files", []):
+        with (path.parent / trait_file).open("rb") as f:
+            raw_traits += tomllib.load(f).get("traits", [])
+    traits: dict[tuple[str, str], TraitData] = {}
+    for t in raw_traits:
+        if (t["category"], t["name"]) in traits:
+            raise ValueError(f"{path.name}: {t['category']} {t['name']!r} is defined twice")
+        traits[(t["category"], t["name"])] = TraitData(
             category=t["category"],
             name=t["name"],
             description=t.get("description"),
+            page_reference=t.get("page_reference"),
             properties=t.get("properties", {}),
         )
-        for t in raw.get("traits", [])
-    }
     rule_set = RuleSetData(
         key=raw["key"],
         splat=raw["splat"],
         name=raw["name"],
         version=raw["version"],
+        starting_xp=raw.get("starting_xp", 0),
         categories=categories,
         cost_rules=[cost_rule_from_dict(r) for r in raw["cost_rules"]],
         traits=traits,
@@ -100,4 +107,5 @@ def load_rule_set(path: Path) -> RuleSetData:
 
 
 def all_rule_set_files() -> Iterable[Path]:
-    return sorted(DATA_DIR.glob("*.toml"))
+    """Rule set files; `*_traits.toml` files are catalogues they include."""
+    return sorted(p for p in DATA_DIR.glob("*.toml") if not p.name.endswith("_traits.toml"))

@@ -57,6 +57,8 @@ class TraitData:
     category: str
     name: str
     description: str | None = None
+    page_reference: str | None = None
+    # For example a clan's in-clan disciplines, or a merit's fixed rating.
     properties: Mapping[str, Any] = field(default_factory=dict)
 
 
@@ -66,6 +68,7 @@ class RuleSetData:
     splat: str
     name: str
     version: int
+    starting_xp: int
     categories: Mapping[str, CategoryData]
     cost_rules: Sequence[CostRuleData]
     traits: Mapping[tuple[str, str], TraitData]

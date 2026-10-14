@@ -310,3 +310,33 @@ action to this record", and every route calls it.
 6. A character can only be a participant in its home troupe's cycles.
 7. Starting dots are reconciled as well as purchases.
 8. Flaws are re-priced one flaw at a time, like merits.
+
+## Decisions made while building
+
+Recorded here for review; each is easy to change.
+
+**Sheets (step 1 of the autonomous build)**
+
+- A player can raise any rating, but can lower one only as far as its approved
+  rating. Lowering undoes an unapproved purchase and refunds it at the same
+  price. Taking away approved dots is for staff (not built yet).
+- While a sheet change or home troupe change is waiting for approval, the
+  sheet is locked: what staff approve is what they looked at. The player can
+  withdraw the request to edit again.
+- A purchase is refused if the character cannot afford it. Flaws give XP back.
+- Only catalogue traits can be bought; `detail` holds the specific thing (a
+  lore subject, a contact). Merits and flaws are bought at their catalogue
+  point value, never another rating.
+- Unrated categories (clan, archetype, sect, faction, title, antecedence) hold
+  one choice each; choosing again replaces it, at no cost.
+- New characters get the rule set's `starting_xp` (30, Yorick's figure) as an
+  award, so creation is ordinary purchases until creation rules exist.
+- XP awards come from the running staff of the character's home troupe.
+- **A character with no Generation background counts as generation 1, the
+  cheapest generation for skills and backgrounds.** That is Yorick's behaviour,
+  kept for price parity; it probably wants a creation rule giving every new
+  vampire a Generation dot.
+- Seven clans in Yorick's descriptions have no in-clan disciplines in its clan
+  rules (Gangrel: Anda, Lasombra: Corsairs, Lhiannan, Nagaraja, Nosferatu:
+  Creeps, Nosferatu: Nictuku, Tzimisce: Bratovitch), so they are not in the
+  catalogue yet.

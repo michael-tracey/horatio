@@ -72,7 +72,8 @@ def yorick_says_not_allowed(case: dict[str, Any]) -> bool:
 
 
 def test_the_reference_data_covers_every_category() -> None:
-    assert {c["category"] for c in CASES} >= set(RULES.rule_set.categories) - {"clan"}
+    rated = {k for k, c in RULES.rule_set.categories.items() if c.rated}
+    assert {c["category"] for c in CASES} >= rated
     assert len(CASES) > 10_000
 
 

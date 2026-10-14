@@ -6,17 +6,26 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlalchemy import Connection, Engine, create_engine
 from sqlalchemy.orm import Session
 from testcontainers.community.postgres import PostgresContainer
 
 from horatio.app import app
+from horatio.auth import passwords
 from horatio.db import get_session
 from horatio.rules.files import DATA_DIR, load_rule_set
 from horatio.rules.store import sync_rule_set
 
 # The test client talks plain HTTP, which would never send a Secure cookie back.
 os.environ["HORATIO_COOKIE_SECURE"] = "false"
+
+# Real argon2 settings are slow on purpose; tests sign up hundreds of people.
+passwords._hasher = PasswordHash(  # pyright: ignore[reportPrivateUsage]
+    (Argon2Hasher(time_cost=1, memory_cost=1024, parallelism=1), BcryptHasher())
+)
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
@@ -35,10 +44,17 @@ def alembic_config(database_url: str) -> Config:
     return config
 
 
+def load_rules(engine: Engine) -> None:
+    """Load the generic rule sets, committed, once for the whole run."""
+    with Session(engine) as session, session.begin():
+        sync_rule_set(session, load_rule_set(DATA_DIR / "bns_met_vampire.toml"))
+
+
 @pytest.fixture(scope="session")
 def engine(database_url: str, alembic_config: Config) -> Iterator[Engine]:
     command.upgrade(alembic_config, "head")
     engine = create_engine(database_url)
+    load_rules(engine)
     yield engine
     engine.dispose()
 
@@ -66,7 +82,6 @@ def client_for(session: Session) -> Iterator[Callable[[], TestClient]]:
     Each client keeps its own cookies, so each one is signed in as one person.
     The `X-Horatio` header is what the app requires on every change.
     """
-    sync_rule_set(session, load_rule_set(DATA_DIR / "bns_met_vampire.toml"))
     app.dependency_overrides[get_session] = lambda: session
     clients: list[TestClient] = []
 

@@ -41,6 +41,7 @@ class TroupeAction(StrEnum):
     VIEW_STAFF = "view_staff"
     VIEW_MEMBER_CHARACTERS = "view_member_characters"
     APPROVE_CHANGES = "approve_changes"
+    AWARD_XP = "award_xp"
     MANAGE_CYCLES = "manage_cycles"
     ASSIGN_RESPONSES = "assign_responses"
     ADJUST_ALLOWANCES = "adjust_allowances"
@@ -62,6 +63,7 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.VIEW_STAFF: frozenset(_ALL_STAFF),
     TroupeAction.VIEW_MEMBER_CHARACTERS: frozenset(_RUNNING),
     TroupeAction.APPROVE_CHANGES: frozenset(_RUNNING),
+    TroupeAction.AWARD_XP: frozenset(_RUNNING),
     TroupeAction.MANAGE_CYCLES: frozenset(_RUNNING),
     TroupeAction.ASSIGN_RESPONSES: frozenset(_RUNNING),
     TroupeAction.ADJUST_ALLOWANCES: frozenset(_RUNNING),

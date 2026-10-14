@@ -35,6 +35,7 @@ def rule_set(*cost_rules: CostRuleData) -> RuleSetData:
         splat="vampire",
         name="Test",
         version=1,
+        starting_xp=0,
         categories=CATEGORIES,
         cost_rules=list(cost_rules),
         traits={("merits", "Iron Will"): TraitData(category="merits", name="Iron Will")},

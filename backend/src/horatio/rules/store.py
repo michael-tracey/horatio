@@ -30,6 +30,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         session.add(rule_set)
     else:
         rule_set.splat, rule_set.name, rule_set.version = data.splat, data.name, data.version
+    rule_set.starting_xp = data.starting_xp
     session.flush()
 
     categories = {
@@ -67,6 +68,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
             session.add(row)
             definitions[(category_key, name)] = row
         row.description = trait.description
+        row.page_reference = trait.page_reference
         row.properties = dict(trait.properties)
     session.flush()
 
@@ -172,6 +174,7 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         splat=rule_set.splat,
         name=rule_set.name,
         version=rule_set.version,
+        starting_xp=rule_set.starting_xp,
         categories={
             c.key: CategoryData(
                 key=c.key,
@@ -189,6 +192,7 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 category=category_keys[d.category_id],
                 name=d.name,
                 description=d.description,
+                page_reference=d.page_reference,
                 properties=d.properties,
             )
             for d in definitions

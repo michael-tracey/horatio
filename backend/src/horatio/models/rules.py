@@ -17,6 +17,7 @@ class RuleSet(Record):
     splat: Mapped[str] = mapped_column(unique=True)
     name: Mapped[str]
     version: Mapped[int]
+    starting_xp: Mapped[int] = mapped_column(default=0, server_default="0")
 
 
 class TraitCategory(Record):

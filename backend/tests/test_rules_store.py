@@ -33,17 +33,6 @@ def make_troupe(session: Session, name: str) -> Troupe:
     return troupe
 
 
-def add_merit(session: Session, name: str) -> None:
-    rule_set = sync_rule_set(session, VAMPIRE)
-    merits = session.scalars(
-        select(TraitCategory).where(
-            TraitCategory.rule_set_id == rule_set.id, TraitCategory.key == "merits"
-        )
-    ).one()
-    session.add(TraitDefinition(category_id=merits.id, name=name))
-    session.flush()
-
-
 def merit(name: str, rating: int) -> SheetTrait:
     return SheetTrait(category="merits", name=name, rating=rating)
 
@@ -75,7 +64,7 @@ def test_loading_twice_changes_nothing(session: Session) -> None:
 
 
 def test_house_rules_apply_only_to_their_troupe(session: Session) -> None:
-    add_merit(session, "Iron Will")
+    sync_rule_set(session, VAMPIRE)  # the catalogue includes Iron Will
     ours, theirs = make_troupe(session, "ours"), make_troupe(session, "theirs")
     add_house_rule(
         session,
@@ -96,7 +85,7 @@ def test_house_rules_apply_only_to_their_troupe(session: Session) -> None:
 
 
 def test_reloading_the_rule_set_keeps_house_rules(session: Session) -> None:
-    add_merit(session, "Iron Will")
+    sync_rule_set(session, VAMPIRE)  # the catalogue includes Iron Will
     troupe = make_troupe(session, "ours")
     add_house_rule(
         session, troupe.id, "vampire", CostRuleData("merits", "fixed", rate=5, trait="Iron Will")

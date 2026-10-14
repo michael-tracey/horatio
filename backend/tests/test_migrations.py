@@ -5,6 +5,7 @@ from alembic.runtime.migration import MigrationContext
 from sqlalchemy import Engine
 
 from horatio.models import Base
+from tests.conftest import load_rules
 
 
 def test_migrations_match_models(engine: Engine) -> None:
@@ -18,3 +19,4 @@ def test_migrations_match_models(engine: Engine) -> None:
 def test_migrations_downgrade_and_upgrade_cleanly(engine: Engine, alembic_config: Config) -> None:
     command.downgrade(alembic_config, "base")
     command.upgrade(alembic_config, "head")
+    load_rules(engine)  # the downgrade dropped them; later tests need them
