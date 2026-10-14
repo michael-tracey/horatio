@@ -12,7 +12,7 @@ from horatio.api.sheets import ApprovalOut, PendingChange, approval_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Approval, Character, TraitDefinition, Troupe
 from horatio.permissions import TroupeAction, require_troupe_action
-from horatio.reconciliation import items_for
+from horatio.reconciliation import allowed_settlements, items_for
 
 router = APIRouter(tags=["approvals"])
 
@@ -20,6 +20,8 @@ router = APIRouter(tags=["approvals"])
 class ReconciliationOut(BaseModel):
     id: uuid.UUID
     trait: str
+    category: str | None
+    pool_rating: int | None
     detail: str
     difference: str
     rating: int
@@ -27,6 +29,9 @@ class ReconciliationOut(BaseModel):
     new_cost: int | None
     proposed_settlement: str
     settlement: str | None
+    allowed_settlements: list[str]
+    # Extra creation picks the troupe gives, rather than a difference in one trait.
+    extra: bool
 
 
 class QueuedApproval(ApprovalOut):
@@ -39,7 +44,15 @@ class QueuedApproval(ApprovalOut):
 
 class SettlementOverride(BaseModel):
     item_id: uuid.UUID
-    settlement: Literal["keep_price", "pay_difference", "refund_difference", "remove_and_refund"]
+    settlement: Literal[
+        "keep_price",
+        "pay_difference",
+        "refund_difference",
+        "remove_and_refund",
+        "pay_for_dots",
+        "remove_dots",
+        "add_free_dots",
+    ]
 
 
 class Decision(BaseModel):
@@ -51,17 +64,28 @@ class Decision(BaseModel):
 def reconciliation_out(db: DbSession, approval: Approval) -> list[ReconciliationOut]:
     if approval.kind != "home_troupe_change":
         return []
+    character = db.get_one(Character, approval.character_id)
     return [
         ReconciliationOut(
             id=item.id,
-            trait=db.get_one(TraitDefinition, item.trait_definition_id).name,
-            detail=item.detail,
+            trait=(
+                db.get_one(TraitDefinition, item.trait_definition_id).name
+                if item.trait_definition_id
+                else item.detail
+            ),
+            category=item.pool_category,
+            pool_rating=item.pool_rating,
+            detail=item.detail if item.trait_definition_id else "",
             difference=item.difference,
             rating=item.rating,
             old_cost=item.old_cost,
             new_cost=item.new_cost,
             proposed_settlement=item.proposed_settlement,
             settlement=item.settlement,
+            extra=item.difference == "creation_differs" and item.trait_definition_id is None,
+            allowed_settlements=list(allowed_settlements(db, approval, item, character))
+            if approval.status == "pending"
+            else [],
         )
         for item in items_for(db, approval)
     ]

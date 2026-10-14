@@ -13,7 +13,7 @@ from horatio.models import AuditEvent, Character, TroupeMembership, User
 from horatio.rules.model import CostRuleData
 from horatio.rules.store import add_house_rule
 from horatio.sheets import freeze_sheet
-from tests.api_helpers import Person, Troupe
+from tests.api_helpers import Person, Troupe, without_starting_traits
 
 
 @pytest.fixture
@@ -76,9 +76,10 @@ def test_buying_a_skill(troupe: Troupe) -> None:
     assert response.json()["cost"] == 3  # 1 + 2
     result = response.json()["sheet"]
     assert result["xp"]["balance"] == 27
-    assert [(t["name"], t["rating"], t["approved_rating"]) for t in result["traits"]] == [
-        ("Brawl", 2, None)
-    ]
+    assert [
+        (t["name"], t["rating"], t["approved_rating"])
+        for t in without_starting_traits(result["traits"])
+    ] == [("Brawl", 2, None)]
     history = troupe.player.client.get(f"/characters/{character_id}/xp").json()
     assert history[-1] == {
         **history[-1],
@@ -100,7 +101,7 @@ def test_a_quote_prices_without_buying(troupe: Troupe) -> None:
 
     assert response.json()["cost"] == 6  # 1 + 2 + 3 at generation 1
     assert response.json()["basis"]["scheme"] == "progressive"
-    assert sheet(troupe.player, character_id)["traits"] == []
+    assert without_starting_traits(sheet(troupe.player, character_id)["traits"]) == []
 
 
 def test_you_cannot_spend_xp_you_do_not_have(troupe: Troupe) -> None:
@@ -133,7 +134,9 @@ def test_choosing_a_clan_replaces_the_last_choice_and_costs_nothing(troupe: Trou
     response = buy(troupe.player, character_id, "clan", "Tremere", None)
 
     assert response.json()["cost"] == 0
-    assert [t["name"] for t in response.json()["sheet"]["traits"]] == ["Tremere"]
+    assert [t["name"] for t in without_starting_traits(response.json()["sheet"]["traits"])] == [
+        "Tremere"
+    ]
 
 
 def test_the_clan_sets_in_clan_discipline_prices(troupe: Troupe) -> None:
@@ -167,7 +170,7 @@ def test_unapproved_purchases_can_be_undone_for_a_refund(troupe: Troupe) -> None
     assert response.json()["cost"] == -5  # gives back dots 2 and 3
     assert response.json()["sheet"]["xp"]["balance"] == 29
     response = buy(troupe.player, character_id, "skills", "Brawl", 0)
-    assert response.json()["sheet"]["traits"] == []
+    assert without_starting_traits(response.json()["sheet"]["traits"]) == []
     assert response.json()["sheet"]["xp"]["balance"] == 30
 
 
@@ -276,7 +279,7 @@ def test_approving_a_sheet_change(troupe: Troupe, session: Session) -> None:
     after = sheet(troupe.player, character_id)
     assert after["pending_changes"] == []
     assert after["pending_approval"] is None
-    assert after["traits"][0]["approved_rating"] == 2
+    assert without_starting_traits(after["traits"])[0]["approved_rating"] == 2
     # Approved dots cannot be taken back by the player.
     assert buy(troupe.player, character_id, "skills", "Brawl", 1).status_code == 409
     assert buy(troupe.player, character_id, "skills", "Brawl", 3).status_code == 200

@@ -25,6 +25,8 @@ class Character(Imported, Record):
     approved_version_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("sheet_versions.id", use_alter=True)
     )
+    # Null while the player is still placing creation picks (CONTEXT.md: Character Creation).
+    creation_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class CharacterTrait(Record):
@@ -38,6 +40,9 @@ class CharacterTrait(Record):
             "rating is null and free_rating = 0 or rating >= free_rating",
             name="free_rating_within_rating",
         ),
+        CheckConstraint(
+            "creation_pick is null or creation_pick <= free_rating", name="pick_is_free"
+        ),
     )
 
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
@@ -46,6 +51,9 @@ class CharacterTrait(Record):
     rating: Mapped[int | None]
     # Dots the character has without paying XP: from creation, or granted by another trait.
     free_rating: Mapped[int] = mapped_column(default=0, server_default="0")
+    # The creation pick placed on this trait: the pick's rating, or for a points
+    # budget (merits, flaws) the points it used. Null for no pick.
+    creation_pick: Mapped[int | None]
     # Which one, for traits a character can hold more than once: "Path of Blood".
     detail: Mapped[str] = mapped_column(default="", server_default="")
     note: Mapped[str] = mapped_column(default="", server_default="")

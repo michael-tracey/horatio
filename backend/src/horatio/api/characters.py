@@ -5,9 +5,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.creation import grant_starting_traits
 from horatio.models import Character, RuleSet
 from horatio.permissions import can_edit_character, visible_character
-from horatio.sheets import start_character
+from horatio.sheets import rules_for, start_character
 
 router = APIRouter(prefix="/characters", tags=["characters"])
 
@@ -19,6 +20,7 @@ class CharacterOut(BaseModel):
     name: str
     status: str
     home_troupe_id: uuid.UUID | None
+    creation_complete: bool
 
 
 class NewCharacter(BaseModel):
@@ -38,6 +40,7 @@ def character_out(character: Character) -> CharacterOut:
         name=character.name,
         status=character.status,
         home_troupe_id=character.home_troupe_id,
+        creation_complete=character.creation_completed_at is not None,
     )
 
 
@@ -67,6 +70,7 @@ def create_character(body: NewCharacter, db: DbSession, user: CurrentUser) -> Ch
     db.add(character)
     db.flush()
     start_character(db, user, character)
+    grant_starting_traits(db, rules_for(db, character), character)
     db.commit()
     db.refresh(character)
     return character_out(character)

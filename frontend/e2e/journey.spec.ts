@@ -54,22 +54,53 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Save" }).click();
   await expect(lead.page.getByText("narrator · Narrator")).toBeVisible();
 
-  // The player builds a character: a clan, a skill, and Influence for an extra action.
+  // The player builds a character: creation picks, a clan, then Influence bought with XP.
   const p = player.page;
   await p.getByLabel("Name").fill("Agnes");
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Agnes" })).toBeVisible();
-  const add = async (category: string, trait: string, rating?: number) => {
+  await expect(p.getByRole("heading", { name: "Character creation" })).toBeVisible();
+  const choose = async (category: string, trait: string, button: string) => {
     await p.getByLabel("Category").selectOption({ label: category });
     await p.getByLabel("Trait").selectOption(trait);
-    if (rating !== undefined) await p.getByLabel("Rating").fill(String(rating));
-    await p.getByRole("button", { name: rating === undefined ? "Choose" : "Buy" }).click();
-    await expect(p.getByText(trait, { exact: true }).first()).toBeVisible();
+    await p.getByRole("button", { name: button }).click();
+    await expect(p.locator("main").getByText(trait, { exact: true }).first()).toBeVisible();
   };
-  await add("Clan", "Brujah");
-  await add("Skills", "Brawl", 2);
-  await add("Backgrounds", "Influences: The Elite", 1);
-  await expect(p.getByText("26", { exact: true })).toBeVisible(); // 30 − 3 for Brawl − 1 for Influence
+  // Picks go highest first, which is the pick the form offers first.
+  for (const [category, trait] of [
+    ["Attributes", "Physical"],
+    ["Attributes", "Social"],
+    ["Attributes", "Mental"],
+    ["Physical Focus", "Strength"],
+    ["Mental Focus", "Wits"],
+    ["Social Focus", "Charisma"],
+    ["Skills", "Brawl"],
+    ["Skills", "Dodge"],
+    ["Skills", "Athletics"],
+    ["Skills", "Awareness"],
+    ["Skills", "Empathy"],
+    ["Skills", "Firearms"],
+    ["Skills", "Investigation"],
+    ["Skills", "Leadership"],
+    ["Skills", "Medicine"],
+    ["Skills", "Melee"],
+    ["Backgrounds", "Fame"],
+    ["Backgrounds", "Herd"],
+    ["Backgrounds", "Allies"],
+    ["Disciplines", "Celerity"],
+    ["Disciplines", "Potence"],
+    ["Disciplines", "Presence"],
+  ] as const) {
+    await choose(category, trait, "Place pick");
+  }
+  await p.screenshot(shots("creation"));
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Character creation" })).toBeHidden();
+  await choose("Clan", "Brujah", "Choose");
+  await p.getByLabel("Category").selectOption({ label: "Backgrounds" });
+  await p.getByLabel("Trait").selectOption("Influences: The Elite");
+  await p.getByRole("button", { name: "Buy" }).click();
+  await expect(p.getByText("29", { exact: true })).toBeVisible(); // 30 − 1 for Influence
   await p.screenshot(shots("sheet"));
 
   // …and asks to make the troupe its home.

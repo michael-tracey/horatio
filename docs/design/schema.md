@@ -402,3 +402,33 @@ Recorded here for review; each is easy to change.
   can roll. `[Name]` placeholders are filled from the table of that name.
 - Not built yet: influence rumours (need the old tool's Age and Blocks rules
   confirmed), scheduled messages and NPC senders.
+
+**Character creation (starting dots)**
+
+- Horatio starts fresh as a new product: no Yorick data is imported (see ADR
+  0001).
+- The Vampire creation rules are Yorick's: attributes 7/5/3; one focus of
+  each kind; skills one at 4, two at 3, three at 2, four at 1; backgrounds
+  3/2/1; disciplines one at 2, two at 1; merits and flaws 7 points each.
+  Starting traits: Humanity 5, three health levels at 3, Willpower 6.
+- `character_traits.creation_pick` records the pick on a trait, and those
+  dots are free. A pick goes only on a trait with no bought dots, and can be
+  taken back only while it has none.
+- Finishing creation needs every pick placed; merit and flaw points may be
+  left unspent. XP purchases are allowed during creation. A home troupe can
+  only be requested once creation is finished.
+- Troupes can house-rule creation rules per category: a troupe's rules for a
+  category replace all the generic rules for that category. There is no API
+  or screen for house rules yet (costs, allowances or creation); they are set
+  through `horatio.rules.store`.
+- Reconciling starting dots on a home troupe change:
+  - Fewer picks at a rating (or fewer points) than the character placed: each
+    trait in that pool can be **paid for** at the new troupe's prices,
+    **removed** (only if it has no bought dots), or kept; enough of them must
+    be paid for or removed to fit, or the request is refused.
+  - More picks than the character's current rules gave: **take them**, which
+    reopens character creation to place just those (the new dots then go
+    through ordinary sheet approval), or leave them.
+  - Differences in starting traits are not reconciled.
+- Flaws taken at creation are free records: they do not give XP. Bought
+  later, a flaw gives XP back as before.

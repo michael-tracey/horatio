@@ -163,6 +163,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/creation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Creation */
+        get: operations["read_creation_api_characters__character_id__creation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/creation/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete */
+        post: operations["complete_api_characters__character_id__creation_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/creation/picks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Place Pick */
+        put: operations["place_pick_api_characters__character_id__creation_picks_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/creation/picks/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove Pick */
+        post: operations["remove_pick_api_characters__character_id__creation_picks_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/downtime": {
         parameters: {
             query?: never;
@@ -1102,6 +1170,8 @@ export interface components {
         };
         /** CharacterOut */
         CharacterOut: {
+            /** Creation Complete */
+            creation_complete: boolean;
             /** Home Troupe Id */
             home_troupe_id: string | null;
             /**
@@ -1120,6 +1190,13 @@ export interface components {
             splat: string;
             /** Status */
             status: string;
+        };
+        /** CreationOut */
+        CreationOut: {
+            /** Complete */
+            complete: boolean;
+            /** Pools */
+            pools: components["schemas"]["PoolOut"][];
         };
         /** CycleOut */
         CycleOut: {
@@ -1175,19 +1252,25 @@ export interface components {
         /** DifferenceOut */
         DifferenceOut: {
             /** Allowed Settlements */
-            allowed_settlements: ("keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund")[];
+            allowed_settlements: ("keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund" | "pay_for_dots" | "remove_dots" | "add_free_dots")[];
             /** Category */
             category: string;
             /** Detail */
             detail: string;
             /** Difference */
             difference: string;
+            /** Excess */
+            excess: number;
+            /** Extra */
+            extra: boolean;
             /** Name */
             name: string;
             /** New Cost */
             new_cost: number | null;
             /** Old Cost */
             old_cost: number;
+            /** Pool Rating */
+            pool_rating: number | null;
             /** Rating */
             rating: number;
         };
@@ -1369,6 +1452,51 @@ export interface components {
             /** Removed */
             removed: boolean;
         };
+        /** Pick */
+        Pick: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /**
+             * Rating
+             * @default 1
+             */
+            rating: number;
+        };
+        /** PickedTrait */
+        PickedTrait: {
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Pick */
+            pick: number;
+        };
+        /** PoolOut */
+        PoolOut: {
+            /** Allowed */
+            allowed: number;
+            /** Category */
+            category: string;
+            /** Category Name */
+            category_name: string;
+            /** Kind */
+            kind: string;
+            /** Rating */
+            rating: number;
+            /** Remaining */
+            remaining: number;
+            /** Traits */
+            traits: components["schemas"]["PickedTrait"][];
+            /** Used */
+            used: number;
+        };
         /** Progress */
         Progress: {
             /** Assigned */
@@ -1528,10 +1656,16 @@ export interface components {
         };
         /** ReconciliationOut */
         ReconciliationOut: {
+            /** Allowed Settlements */
+            allowed_settlements: string[];
+            /** Category */
+            category: string | null;
             /** Detail */
             detail: string;
             /** Difference */
             difference: string;
+            /** Extra */
+            extra: boolean;
             /**
              * Id
              * Format: uuid
@@ -1541,6 +1675,8 @@ export interface components {
             new_cost: number | null;
             /** Old Cost */
             old_cost: number;
+            /** Pool Rating */
+            pool_rating: number | null;
             /** Proposed Settlement */
             proposed_settlement: string;
             /** Rating */
@@ -1583,13 +1719,18 @@ export interface components {
              * @default
              */
             detail: string;
+            /**
+             * Difference
+             * @default cost_differs
+             */
+            difference: string;
             /** Name */
             name: string;
             /**
              * Settlement
              * @enum {string}
              */
-            settlement: "keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund";
+            settlement: "keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund" | "pay_for_dots" | "remove_dots" | "add_free_dots";
         };
         /** SettlementOverride */
         SettlementOverride: {
@@ -1602,7 +1743,7 @@ export interface components {
              * Settlement
              * @enum {string}
              */
-            settlement: "keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund";
+            settlement: "keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund" | "pay_for_dots" | "remove_dots" | "add_free_dots";
         };
         /** SheetOut */
         SheetOut: {
@@ -1774,6 +1915,18 @@ export interface components {
              */
             lead_user_id: string;
             my_role: components["schemas"]["Role"] | null;
+            /** Name */
+            name: string;
+        };
+        /** Unpick */
+        Unpick: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
             /** Name */
             name: string;
         };
@@ -2246,6 +2399,138 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_creation_api_characters__character_id__creation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_api_characters__character_id__creation_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    place_pick_api_characters__character_id__creation_picks_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Pick"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_pick_api_characters__character_id__creation_picks_remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Unpick"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreationOut"];
+                };
             };
             /** @description Validation Error */
             422: {

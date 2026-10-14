@@ -5,15 +5,10 @@ import { api, unwrap } from "../../api/client";
 import type { QueuedApproval } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { describeDifference, settlementLabel } from "../../settlements";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
 
-const SETTLEMENTS: Record<string, string> = {
-  pay_difference: "Pay the difference",
-  refund_difference: "Refund the difference",
-  keep_price: "Keep the price paid",
-  remove_and_refund: "Remove and refund",
-};
 
 export function ApprovalsTab({ troupeId }: { troupeId: string }) {
   const [state, setState] = useState<State>("pending");
@@ -91,24 +86,21 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         <div className="mb-3 flex flex-col gap-2">
           {approval.reconciliation.length === 0 && <p className="text-sm text-mist">Nothing to reconcile.</p>}
           {approval.reconciliation.map((r) => (
-            <Field key={r.id} label={`${r.trait}${r.detail ? `: ${r.detail}` : ""} — paid ${r.old_cost}, ${r.difference === "not_allowed" ? "not allowed here" : `costs ${r.new_cost} here`}`}>
+            <Field
+              key={r.id}
+              label={`${r.trait}${r.detail ? `: ${r.detail}` : ""} — ${describeDifference(r, "here")}`}
+            >
               {pending ? (
                 <Select value={overrides[r.id] ?? r.proposed_settlement} onChange={(e) => setOverrides({ ...overrides, [r.id]: e.target.value })}>
-                  {Object.entries(SETTLEMENTS)
-                    .filter(([key]) =>
-                      r.difference === "not_allowed"
-                        ? key === "remove_and_refund" || key === "keep_price"
-                        : key !== (r.new_cost! > r.old_cost ? "refund_difference" : "pay_difference"),
-                    )
-                    .map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                        {key === r.proposed_settlement ? " (player's choice)" : ""}
-                      </option>
-                    ))}
+                  {r.allowed_settlements.map((key) => (
+                    <option key={key} value={key}>
+                      {settlementLabel(key, r)}
+                      {key === r.proposed_settlement ? " (player's choice)" : ""}
+                    </option>
+                  ))}
                 </Select>
               ) : (
-                <span className="text-sm">{SETTLEMENTS[r.settlement ?? r.proposed_settlement]}</span>
+                <span className="text-sm">{settlementLabel(r.settlement ?? r.proposed_settlement, r)}</span>
               )}
             </Field>
           ))}

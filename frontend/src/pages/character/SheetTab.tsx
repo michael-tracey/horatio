@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { CatalogueOut, CharacterOut, SheetOut, SheetTraitOut } from "../../api/types";
+import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, SheetTraitOut } from "../../api/types";
 import { Badge, Button, Card, Dots, Empty, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 
@@ -42,9 +42,19 @@ export function groupTraits(traits: SheetTraitOut[], catalogue: CatalogueOut | u
   return groups;
 }
 
+function useCreation(character: CharacterOut) {
+  return useQuery({
+    queryKey: ["creation", character.id],
+    queryFn: () =>
+      unwrap(api.GET("/api/characters/{character_id}/creation", { params: { path: { character_id: character.id } } })),
+    enabled: !character.creation_complete,
+  });
+}
+
 export function SheetTab({ character, mine }: { character: CharacterOut; mine: boolean }) {
   const sheet = useSheet(character.id);
   const catalogue = useCatalogue(character);
+  const creation = useCreation(character);
   const [message, setMessage] = useState<string | null>(null);
 
   const change = useAction(async (body: TraitChange) => {
@@ -64,7 +74,10 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
       <div className="flex flex-col gap-4">
-        {mine && <ApprovalStatus character={character} sheet={s} />}
+        {mine && !character.creation_complete && creation.data && (
+          <CreationPanel character={character} creation={creation.data} locked={locked} />
+        )}
+        {mine && character.creation_complete && <ApprovalStatus character={character} sheet={s} />}
         {groups.size === 0 && <Empty>The sheet is empty. Add traits from the panel{mine ? "" : " once the player does"}.</Empty>}
         {[...groups].map(([group, categories]) => (
           <Card key={group} title={group}>
@@ -102,7 +115,9 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
             </div>
           </dl>
         </Card>
-        {!locked && catalogue.data && <AddTrait character={character} catalogue={catalogue.data} onDone={setMessage} />}
+        {!locked && catalogue.data && (
+          <AddTrait character={character} catalogue={catalogue.data} creation={creation.data} onDone={setMessage} />
+        )}
         {mine && s.pending_approval && <Notice>The sheet is locked while changes wait for approval.</Notice>}
       </aside>
     </div>
@@ -147,12 +162,38 @@ function TraitRow({ trait, locked, onChange }: { trait: SheetTraitOut; locked: b
   );
 }
 
-function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; catalogue: CatalogueOut; onDone: (m: string) => void }) {
+function AddTrait({
+  character,
+  catalogue,
+  creation,
+  onDone,
+}: {
+  character: CharacterOut;
+  catalogue: CatalogueOut;
+  creation?: CreationOut;
+  onDone: (m: string) => void;
+}) {
   const [category, setCategory] = useState(catalogue.categories[0]?.key ?? "");
   const [name, setName] = useState("");
   const [detail, setDetail] = useState("");
   const [rating, setRating] = useState(1);
   const [quote, setQuote] = useState<number | null>(null);
+  // "xp" to buy with experience, or the rating of the creation pick to place.
+  const openPools = (creation?.pools ?? []).filter((p) => p.category === category && p.remaining > 0);
+  const [how, setHow] = useState<string>("auto");
+  const using = how === "auto" ? (openPools[0] ? String(openPools[0].rating) : "xp") : how;
+
+  const placePick = useAction(async () => {
+    await unwrap(
+      api.PUT("/api/characters/{character_id}/creation/picks", {
+        params: { path: { character_id: character.id } },
+        body: { category, name, detail, rating: Math.max(1, Number(using)) },
+      }),
+    );
+    onDone(`Placed a creation pick on ${name}.`);
+    setName("");
+    setDetail("");
+  });
 
   const cat = catalogue.categories.find((c) => c.key === category);
   const traits = useMemo(() => catalogue.traits.filter((t) => t.category === category), [catalogue, category]);
@@ -178,7 +219,8 @@ function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; c
         className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
-          buy.mutate(undefined);
+          if (using === "xp") buy.mutate(undefined);
+          else placePick.mutate(undefined);
         }}
       >
         <Field label="Category">
@@ -188,6 +230,7 @@ function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; c
               setCategory(e.target.value);
               setName("");
               setQuote(null);
+              setHow("auto");
             }}
           >
             {catalogue.categories.map((c) => (
@@ -220,7 +263,19 @@ function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; c
         <Field label="Detail" hint="Optional: a specialisation, subject, or name.">
           <Input value={detail} onChange={(e) => setDetail(e.target.value)} />
         </Field>
-        {cat?.rated && fixed === null && (
+        {openPools.length > 0 && (
+          <Field label="How" hint="Creation picks give free dots; they are only available until you finish creation.">
+            <Select value={using} onChange={(e) => setHow(e.target.value)}>
+              {openPools.map((p) => (
+                <option key={p.rating} value={String(p.rating)}>
+                  {p.kind === "points" ? `From creation points (${p.remaining} left)` : `Creation pick at ${p.rating} (${p.remaining} left)`}
+                </option>
+              ))}
+              <option value="xp">Buy with experience</option>
+            </Select>
+          </Field>
+        )}
+        {cat?.rated && fixed === null && using === "xp" && (
           <Field label="Rating">
             <Input
               type="number"
@@ -234,16 +289,16 @@ function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; c
             />
           </Field>
         )}
-        {quote !== null && <p className="text-sm">Costs {quote} XP.</p>}
-        <ErrorText error={price.error ?? buy.error} />
+        {quote !== null && using === "xp" && <p className="text-sm">Costs {quote} XP.</p>}
+        <ErrorText error={price.error ?? buy.error ?? placePick.error} />
         <div className="flex gap-2">
-          {cat?.rated && (
+          {cat?.rated && using === "xp" && (
             <Button type="button" variant="secondary" disabled={!name || price.isPending} onClick={() => price.mutate(undefined)}>
               Price it
             </Button>
           )}
-          <Button type="submit" disabled={!name || buy.isPending}>
-            {cat?.rated ? "Buy" : "Choose"}
+          <Button type="submit" disabled={!name || buy.isPending || placePick.isPending}>
+            {using !== "xp" ? "Place pick" : cat?.rated ? "Buy" : "Choose"}
           </Button>
         </div>
       </form>
@@ -300,6 +355,61 @@ function ApprovalStatus({ character, sheet }: { character: CharacterOut; sheet: 
         Ask for approval
       </Button>
       <ErrorText error={request.error} />
+    </Card>
+  );
+}
+
+function CreationPanel({ character, creation, locked }: { character: CharacterOut; creation: CreationOut; locked: boolean }) {
+  const path = { params: { path: { character_id: character.id } } };
+  const remove = useAction((body: { category: string; name: string; detail: string }) =>
+    unwrap(api.POST("/api/characters/{character_id}/creation/picks/remove", { ...path, body })),
+  );
+  const finish = useAction(() => unwrap(api.POST("/api/characters/{character_id}/creation/complete", path)));
+  const byCategory = new Map<string, CreationOut["pools"]>();
+  for (const p of creation.pools) byCategory.set(p.category_name, [...(byCategory.get(p.category_name) ?? []), p]);
+  const left = creation.pools.filter((p) => p.kind === "picks").reduce((n, p) => n + p.remaining, 0);
+
+  return (
+    <Card title="Character creation">
+      <p className="mb-3 text-sm text-mist">
+        Place your starting dots with the panel on the right: each pick gives one trait that many free dots, and merits
+        and flaws come from a budget of points. Experience can buy more at any time.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {[...byCategory].map(([category, pools]) => (
+          <div key={category}>
+            <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">{category}</h3>
+            <ul className="flex flex-col gap-1 text-sm">
+              {pools.map((p) => (
+                <li key={p.rating}>
+                  <span className={p.remaining > 0 ? "text-gold" : "text-mist"}>
+                    {p.kind === "points" ? `${p.used} of ${p.allowed} points` : `At ${p.rating}: ${p.used} of ${p.allowed}`}
+                  </span>
+                  {p.traits.map((t) => (
+                    <span key={`${t.name}/${t.detail}`} className="ml-2 inline-flex items-center gap-1">
+                      {t.name}
+                      {t.detail && `: ${t.detail}`}
+                      {!locked && (
+                        <button
+                          aria-label={`Take back the pick on ${t.name}`}
+                          className="text-mist hover:text-blood-bright"
+                          onClick={() => remove.mutate({ category: p.category, name: t.name, detail: t.detail })}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <ErrorText error={remove.error ?? finish.error} />
+      <Button className="mt-4" disabled={locked || finish.isPending} onClick={() => finish.mutate(undefined)}>
+        {left > 0 ? `Finish creation (${left} picks left)` : "Finish creation"}
+      </Button>
     </Card>
   );
 }

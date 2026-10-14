@@ -15,7 +15,15 @@ from horatio.permissions import visible_character
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["membership"])
 
-Settlement = Literal["keep_price", "pay_difference", "refund_difference", "remove_and_refund"]
+Settlement = Literal[
+    "keep_price",
+    "pay_difference",
+    "refund_difference",
+    "remove_and_refund",
+    "pay_for_dots",
+    "remove_dots",
+    "add_free_dots",
+]
 
 
 class MembershipOut(BaseModel):
@@ -37,12 +45,19 @@ class DifferenceOut(BaseModel):
     old_cost: int
     new_cost: int | None
     allowed_settlements: list[Settlement]
+    # Starting-dot differences: the pool, and how much of it must be paid for or removed.
+    pool_rating: int | None
+    excess: int
+    # Extra creation picks the troupe gives, rather than a difference in one trait.
+    extra: bool
 
 
 class SettlementChoice(BaseModel):
     category: str
     name: str
     detail: str = ""
+    # Which difference, when a trait has both a cost and a starting-dot difference.
+    difference: str = "cost_differs"
     settlement: Settlement
 
 
@@ -109,6 +124,9 @@ def difference_out(d: reconciliation.Difference) -> DifferenceOut:
         old_cost=d.old_cost,
         new_cost=d.new_cost,
         allowed_settlements=list(d.allowed_settlements()),  # type: ignore[arg-type]
+        pool_rating=d.pool_rating,
+        excess=d.excess,
+        extra=d.extra_picks > 0,
     )
 
 
@@ -133,7 +151,17 @@ def request_home_troupe(
         user,
         character,
         troupe,
-        {(s.category, s.name, s.detail): s.settlement for s in body.settlements},
+        {
+            (
+                reconciliation.CREATION
+                if s.difference == "creation_differs"
+                else reconciliation.COST,
+                s.category,
+                s.name,
+                s.detail,
+            ): s.settlement
+            for s in body.settlements
+        },
         body.note,
     )
     db.commit()

@@ -28,3 +28,5 @@ export type Progress = Schemas["Progress"];
 export type TableOut = Schemas["TableOut"];
 export type ResultOut = Schemas["ResultOut"];
 export type Role = Schemas["Role"];
+export type CreationOut = Schemas["CreationOut"];
+export type PoolOut = Schemas["PoolOut"];

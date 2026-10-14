@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from horatio.rules.model import ActionKindData, AllowanceRuleData
 from horatio.rules.store import add_house_action_kind, add_house_allowance_rule
-from tests.api_helpers import Person, Troupe, sign_up
+from tests.api_helpers import Person, Troupe, new_character, sign_up
 
 NOW = datetime.now(UTC)
 
@@ -23,8 +23,7 @@ def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
 
 def member_character(troupe: Troupe, player: Person, name: str, elite: int = 0) -> str:
     """An approved character whose home troupe is `troupe`."""
-    response = player.client.post("/characters", json={"splat": "vampire", "name": name})
-    character_id = response.json()["id"]
+    character_id = new_character(troupe, player, name)
     if elite:
         bought = player.client.put(
             f"/characters/{character_id}/traits",

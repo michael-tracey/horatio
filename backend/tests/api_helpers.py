@@ -1,13 +1,15 @@
 """Helpers for API tests: people signed in as each role."""
 
+import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio.models import User
+from horatio.models import Character, User
 
 PASSWORD = "correct horse battery"
 
@@ -46,6 +48,7 @@ class Troupe:
 
     def __init__(self, client_for: Callable[[], TestClient], session: Session) -> None:
         self.client_for = client_for
+        self.session = session
         self.custodian = sign_up(client_for, "custodian", custodian=True, session=session)
         self.lead = sign_up(client_for, "lead")
         self.storyteller = sign_up(client_for, "storyteller")
@@ -68,3 +71,25 @@ class Troupe:
                 f"/troupes/{self.id}/staff", json={"email": person.email, "role": role}
             )
             assert response.status_code == 200, response.text
+
+
+def new_character(
+    troupe: Troupe, player: Person, name: str = "Agnes", *, finished: bool = True
+) -> str:
+    """A new Vampire. `finished` skips placing creation picks, for tests about
+    something else; tests about creation place them through the API."""
+    response = player.client.post("/characters", json={"splat": "vampire", "name": name})
+    assert response.status_code == 201, response.text
+    character_id: str = response.json()["id"]
+    if finished:
+        character = troupe.session.get_one(Character, uuid.UUID(character_id))
+        character.creation_completed_at = datetime.now(UTC)
+        troupe.session.flush()
+    return character_id
+
+
+STARTING_TRAITS = {"Humanity", "Healthy", "Injured", "Incapacitated", "Willpower"}
+
+
+def without_starting_traits(traits: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [t for t in traits if t["name"] not in STARTING_TRAITS]

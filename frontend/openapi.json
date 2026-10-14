@@ -355,6 +355,10 @@
       },
       "CharacterOut": {
         "properties": {
+          "creation_complete": {
+            "title": "Creation Complete",
+            "type": "boolean"
+          },
           "home_troupe_id": {
             "anyOf": [
               {
@@ -396,9 +400,31 @@
           "splat",
           "name",
           "status",
-          "home_troupe_id"
+          "home_troupe_id",
+          "creation_complete"
         ],
         "title": "CharacterOut",
+        "type": "object"
+      },
+      "CreationOut": {
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "pools": {
+            "items": {
+              "$ref": "#/components/schemas/PoolOut"
+            },
+            "title": "Pools",
+            "type": "array"
+          }
+        },
+        "required": [
+          "complete",
+          "pools"
+        ],
+        "title": "CreationOut",
         "type": "object"
       },
       "CycleOut": {
@@ -517,7 +543,10 @@
                 "keep_price",
                 "pay_difference",
                 "refund_difference",
-                "remove_and_refund"
+                "remove_and_refund",
+                "pay_for_dots",
+                "remove_dots",
+                "add_free_dots"
               ],
               "type": "string"
             },
@@ -535,6 +564,14 @@
           "difference": {
             "title": "Difference",
             "type": "string"
+          },
+          "excess": {
+            "title": "Excess",
+            "type": "integer"
+          },
+          "extra": {
+            "title": "Extra",
+            "type": "boolean"
           },
           "name": {
             "title": "Name",
@@ -555,6 +592,17 @@
             "title": "Old Cost",
             "type": "integer"
           },
+          "pool_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pool Rating"
+          },
           "rating": {
             "title": "Rating",
             "type": "integer"
@@ -568,7 +616,10 @@
           "rating",
           "old_cost",
           "new_cost",
-          "allowed_settlements"
+          "allowed_settlements",
+          "pool_rating",
+          "excess",
+          "extra"
         ],
         "title": "DifferenceOut",
         "type": "object"
@@ -967,6 +1018,110 @@
         "title": "PendingChange",
         "type": "object"
       },
+      "Pick": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "Pick",
+        "type": "object"
+      },
+      "PickedTrait": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pick": {
+            "title": "Pick",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "pick"
+        ],
+        "title": "PickedTrait",
+        "type": "object"
+      },
+      "PoolOut": {
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "integer"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "remaining": {
+            "title": "Remaining",
+            "type": "integer"
+          },
+          "traits": {
+            "items": {
+              "$ref": "#/components/schemas/PickedTrait"
+            },
+            "title": "Traits",
+            "type": "array"
+          },
+          "used": {
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "category_name",
+          "rating",
+          "kind",
+          "allowed",
+          "used",
+          "remaining",
+          "traits"
+        ],
+        "title": "PoolOut",
+        "type": "object"
+      },
       "Progress": {
         "properties": {
           "assigned": {
@@ -1338,6 +1493,24 @@
       },
       "ReconciliationOut": {
         "properties": {
+          "allowed_settlements": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Settlements",
+            "type": "array"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -1345,6 +1518,10 @@
           "difference": {
             "title": "Difference",
             "type": "string"
+          },
+          "extra": {
+            "title": "Extra",
+            "type": "boolean"
           },
           "id": {
             "format": "uuid",
@@ -1365,6 +1542,17 @@
           "old_cost": {
             "title": "Old Cost",
             "type": "integer"
+          },
+          "pool_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pool Rating"
           },
           "proposed_settlement": {
             "title": "Proposed Settlement",
@@ -1393,13 +1581,17 @@
         "required": [
           "id",
           "trait",
+          "category",
+          "pool_rating",
           "detail",
           "difference",
           "rating",
           "old_cost",
           "new_cost",
           "proposed_settlement",
-          "settlement"
+          "settlement",
+          "allowed_settlements",
+          "extra"
         ],
         "title": "ReconciliationOut",
         "type": "object"
@@ -1475,6 +1667,11 @@
             "title": "Detail",
             "type": "string"
           },
+          "difference": {
+            "default": "cost_differs",
+            "title": "Difference",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -1484,7 +1681,10 @@
               "keep_price",
               "pay_difference",
               "refund_difference",
-              "remove_and_refund"
+              "remove_and_refund",
+              "pay_for_dots",
+              "remove_dots",
+              "add_free_dots"
             ],
             "title": "Settlement",
             "type": "string"
@@ -1510,7 +1710,10 @@
               "keep_price",
               "pay_difference",
               "refund_difference",
-              "remove_and_refund"
+              "remove_and_refund",
+              "pay_for_dots",
+              "remove_dots",
+              "add_free_dots"
             ],
             "title": "Settlement",
             "type": "string"
@@ -1996,6 +2199,29 @@
           "my_role"
         ],
         "title": "TroupeOut",
+        "type": "object"
+      },
+      "Unpick": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "Unpick",
         "type": "object"
       },
       "ValidationError": {
@@ -2764,6 +2990,198 @@
         "summary": "Request Approval",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/creation": {
+      "get": {
+        "operationId": "read_creation_api_characters__character_id__creation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Creation",
+        "tags": [
+          "creation"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/creation/complete": {
+      "post": {
+        "operationId": "complete_api_characters__character_id__creation_complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete",
+        "tags": [
+          "creation"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/creation/picks": {
+      "put": {
+        "operationId": "place_pick_api_characters__character_id__creation_picks_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pick"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Place Pick",
+        "tags": [
+          "creation"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/creation/picks/remove": {
+      "post": {
+        "operationId": "remove_pick_api_characters__character_id__creation_picks_remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Unpick"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Pick",
+        "tags": [
+          "creation"
         ]
       }
     },

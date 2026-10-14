@@ -11,17 +11,21 @@ from horatio.models import (
     ActionKind,
     AllowanceRule,
     CostRule,
+    CreationRule,
     RuleSet,
+    StartingTrait,
     TraitCategory,
     TraitDefinition,
 )
-from horatio.rules.files import check_allowance_rule, check_cost_rule
+from horatio.rules.files import check_allowance_rule, check_cost_rule, check_creation_rules
 from horatio.rules.model import (
     ActionKindData,
     AllowanceRuleData,
     CategoryData,
     CostRuleData,
+    CreationRuleData,
     RuleSetData,
+    StartingTraitData,
     TraitData,
     TroupeRules,
 )
@@ -125,8 +129,77 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
     )
     for allowance_rule in data.allowance_rules:
         session.add(allowance_row(rule_set, None, allowance_rule, definitions_by_key=definitions))
+    session.execute(
+        delete(CreationRule).where(
+            CreationRule.rule_set_id == rule_set.id, CreationRule.troupe_id.is_(None)
+        )
+    )
+    for creation_rule in data.creation_rules:
+        session.add(
+            creation_row(rule_set.id, None, categories[creation_rule.category].id, creation_rule)
+        )
+    session.execute(
+        delete(StartingTrait).where(
+            StartingTrait.rule_set_id == rule_set.id, StartingTrait.troupe_id.is_(None)
+        )
+    )
+    for starting in data.starting_traits:
+        session.add(
+            StartingTrait(
+                rule_set_id=rule_set.id,
+                troupe_id=None,
+                trait_definition_id=definitions[(starting.category, starting.name)].id,
+                rating=starting.rating,
+            )
+        )
     session.flush()
     return rule_set
+
+
+def creation_row(
+    rule_set_id: uuid.UUID,
+    troupe_id: uuid.UUID | None,
+    category_id: uuid.UUID,
+    rule: CreationRuleData,
+) -> CreationRule:
+    return CreationRule(
+        rule_set_id=rule_set_id,
+        troupe_id=troupe_id,
+        category_id=category_id,
+        rating=rule.rating,
+        picks=rule.picks,
+        points=rule.points,
+    )
+
+
+def set_house_creation_rules(
+    session: Session,
+    troupe_id: uuid.UUID,
+    splat: str,
+    category: str,
+    rules: list[CreationRuleData],
+) -> None:
+    """Replace a troupe's creation rules for one category. An empty list goes back
+    to the generic rules for it."""
+    if any(r.category != category for r in rules):
+        raise ValueError("every rule must be for the category being set")
+    check_creation_rules(rules, read_troupe_rules(session, splat, troupe_id).rule_set)
+    rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
+    category_id = session.scalars(
+        select(TraitCategory.id).where(
+            TraitCategory.rule_set_id == rule_set.id, TraitCategory.key == category
+        )
+    ).one()
+    session.execute(
+        delete(CreationRule).where(
+            CreationRule.rule_set_id == rule_set.id,
+            CreationRule.troupe_id == troupe_id,
+            CreationRule.category_id == category_id,
+        )
+    )
+    for rule in rules:
+        session.add(creation_row(rule_set.id, troupe_id, category_id, rule))
+    session.flush()
 
 
 def allowance_row(
@@ -302,6 +375,39 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
             house=row.troupe_id is not None,
         )
 
+    creation_rows = list(
+        session.scalars(
+            select(CreationRule)
+            .where(CreationRule.rule_set_id == rule_set.id)
+            .where(CreationRule.troupe_id.is_(None) | (CreationRule.troupe_id == troupe_id))
+            .order_by(CreationRule.id)
+        )
+    )
+
+    def creation_data(row: CreationRule) -> CreationRuleData:
+        return CreationRuleData(
+            category=category_keys[row.category_id],
+            rating=row.rating,
+            picks=row.picks,
+            points=row.points,
+            house=row.troupe_id is not None,
+        )
+
+    starting_rows = list(
+        session.scalars(
+            select(StartingTrait)
+            .where(StartingTrait.rule_set_id == rule_set.id)
+            .where(StartingTrait.troupe_id.is_(None) | (StartingTrait.troupe_id == troupe_id))
+            .order_by(StartingTrait.id)
+        )
+    )
+
+    def starting_data(row: StartingTrait) -> StartingTraitData:
+        category, name = definition_keys[row.trait_definition_id]
+        return StartingTraitData(
+            category=category, name=name, rating=row.rating, house=row.troupe_id is not None
+        )
+
     data = RuleSetData(
         key=rule_set.key,
         splat=rule_set.splat,
@@ -332,6 +438,8 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         },
         action_kinds={r.key: kind_data(r) for r in kind_rows if r.troupe_id is None},
         allowance_rules=[allowance_data(r) for r in allowance_rows if r.troupe_id is None],
+        creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is None],
+        starting_traits=[starting_data(r) for r in starting_rows if r.troupe_id is None],
     )
     return TroupeRules(
         rule_set=data,
@@ -340,4 +448,6 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         house_allowance_rules=[
             allowance_data(r) for r in allowance_rows if r.troupe_id is not None
         ],
+        house_creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is not None],
+        house_starting_traits=[starting_data(r) for r in starting_rows if r.troupe_id is not None],
     )

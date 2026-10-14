@@ -1,21 +1,27 @@
 """Joining troupes, and moving a character to a new home troupe.
 
-A home troupe change compares what the character actually paid for each trait
-(its purchases, and any earlier settlements) with what the new troupe's rules
-charge. Each difference is settled one by one: the player proposes how, the
-new troupe's storytellers or assistant storytellers confirm or change it, and
-a character with any difference unsettled is not let in (CONTEXT.md:
-Reconciliation).
+A home troupe change finds two kinds of difference between the character and
+the new troupe's rules (CONTEXT.md: Reconciliation):
 
-Approval moves the home troupe, applies the settlements as XP entries, and
-freezes the sheet as approved. For a character's first home troupe, that is
-also the sheet's first approval.
+- **Purchases.** What the character actually paid for each trait (purchases,
+  and earlier settlements) against what the new rules charge.
+- **Starting dots.** The character's creation picks against the new troupe's
+  creation rules. Where the troupe gives fewer picks at a rating (or fewer
+  points), enough of the character's picks there must be paid for at the new
+  prices or removed. Where it gives more, the character may take them, which
+  reopens character creation to place just those.
 
-Creation-rule differences are not reconciled yet; creation rules do not exist.
+Each difference is settled one by one: the player proposes how, the new
+troupe's storytellers or assistant storytellers confirm or change it, and a
+character with any difference unsettled is not let in.
+
+Approval moves the home troupe, applies the settlements, and freezes the sheet
+as approved. For a character's first home troupe, that is also the sheet's
+first approval.
 """
 
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -23,6 +29,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from horatio import audit
+from horatio.creation import Pool, pools_for
 from horatio.models import (
     Approval,
     Character,
@@ -33,9 +40,11 @@ from horatio.models import (
     User,
     XpEntry,
 )
+from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import (
+    SheetRow,
     conflict,
     ensure_unlocked,
     freeze_sheet,
@@ -44,7 +53,12 @@ from horatio.sheets import (
     xp_balance,
 )
 
-ItemKey = tuple[str, str, str]  # category, name, detail
+# Which group a difference belongs to, category, name, detail. A trait can have
+# both a purchase difference and a starting-dot difference, settled separately.
+ItemKey = tuple[str, str, str, str]
+
+COST = "cost"
+CREATION = "creation"
 
 
 @dataclass
@@ -52,30 +66,50 @@ class Difference:
     category: str
     name: str
     detail: str
-    trait_definition_id: uuid.UUID
-    difference: str  # cost_differs | not_allowed
+    trait_definition_id: uuid.UUID | None
+    difference: str  # cost_differs | not_allowed | creation_differs
     rating: int
     old_cost: int
     new_cost: int | None
+    # Starting-dot differences: the pool, and how much of it must be paid for or
+    # removed across all its traits (picks, or points). Extra picks have no trait.
+    pool_category: str | None = None
+    pool_rating: int | None = None
+    excess: int = 0
+    extra_picks: int = 0
+    can_remove: bool = False
+
+    @property
+    def group(self) -> str:
+        return CREATION if self.difference == "creation_differs" else COST
 
     @property
     def key(self) -> ItemKey:
-        return (self.category, self.name, self.detail)
+        return (self.group, self.category, self.name, self.detail)
 
     def allowed_settlements(self) -> tuple[str, ...]:
         if self.difference == "not_allowed":
             return ("remove_and_refund", "keep_price")
+        if self.difference == "creation_differs":
+            if self.extra_picks:
+                return ("add_free_dots", "keep_price")
+            choices = ["pay_for_dots"] if self.new_cost is not None else []
+            if self.can_remove:
+                choices.append("remove_dots")
+            return (*choices, "keep_price")
         assert self.new_cost is not None
         change = "pay_difference" if self.new_cost > self.old_cost else "refund_difference"
         return (change, "keep_price", "remove_and_refund")
 
     def xp_delta(self, settlement: str) -> int:
         """XP gained (positive) or spent (negative) by settling this way."""
-        if settlement == "keep_price":
+        if settlement in ("keep_price", "remove_dots", "add_free_dots"):
             return 0
         if settlement == "remove_and_refund":
             return self.old_cost
         assert self.new_cost is not None
+        if settlement == "pay_for_dots":
+            return -self.new_cost
         return self.old_cost - self.new_cost
 
 
@@ -148,15 +182,17 @@ def paid_for(db: Session, character: Character) -> Mapping[tuple[uuid.UUID, str]
         key = (definition_id, detail or "")
         paid[key] = paid.get(key, 0) - amount
     for definition_id, detail, amount in settlements:
+        if definition_id is None:
+            continue
         key = (definition_id, detail or "")
         # A settlement that refunded XP lowered what was effectively paid.
         paid[key] = paid.get(key, 0) - amount
     return paid
 
 
-def find_differences(db: Session, character: Character, troupe: Troupe) -> list[Difference]:
-    rules = read_troupe_rules(db, character.splat, troupe.id)
-    rows = sheet_rows(db, character)
+def cost_differences(
+    db: Session, character: Character, rules: TroupeRules, rows: Sequence[SheetRow]
+) -> list[Difference]:
     sheet = [r.as_rules_trait() for r in rows]
     paid = paid_for(db, character)
     differences: list[Difference] = []
@@ -188,6 +224,108 @@ def find_differences(db: Session, character: Character, troupe: Troupe) -> list[
     return differences
 
 
+def cost_of_pick(rules: TroupeRules, rows: Sequence[SheetRow], row: SheetRow) -> int | None:
+    """What a pick's free dots cost to buy under `rules`, or None if they cannot be bought."""
+    sheet = [r.as_rules_trait() for r in rows]
+    pick = row.trait.creation_pick or 0
+    current = row.as_rules_trait()
+    bought = SheetTrait(
+        category=current.category,
+        name=current.name,
+        rating=current.rating,
+        free_rating=current.free_rating - pick,
+        detail=current.detail,
+    )
+    try:
+        return trait_cost(rules, sheet, bought).cost - trait_cost(rules, sheet, current).cost
+    except NotAllowed:
+        return None
+    except PricingError as error:
+        raise unprocessable(f"{row.definition.name}: {error}") from error
+
+
+def creation_differences(
+    rules: TroupeRules, current_rules: TroupeRules, rows: Sequence[SheetRow], character: Character
+) -> list[Difference]:
+    """Picks the new troupe gives fewer of than the character placed (each trait
+    in that pool, needing enough of them paid for or removed), and picks it gives
+    more of than the character's current rules did."""
+    if character.creation_completed_at is None:
+        return []
+    target = pools_for(rules.creation_rules(), rows)
+    current = pools_for(current_rules.creation_rules(), rows)
+    picked = [r for r in rows if r.trait.creation_pick is not None]
+    placed = {id(r) for pool in target.values() for r in pool.traits}
+
+    differences: list[Difference] = []
+
+    def excess_items(rows_in_pool: Sequence[SheetRow], pool: Pool | None, excess: int) -> None:
+        for row in rows_in_pool:
+            pick = row.trait.creation_pick or 0
+            differences.append(
+                Difference(
+                    category=row.category.key,
+                    name=row.definition.name,
+                    detail=row.trait.detail,
+                    trait_definition_id=row.definition.id,
+                    difference="creation_differs",
+                    rating=pick,
+                    old_cost=0,
+                    new_cost=cost_of_pick(rules, rows, row),
+                    pool_category=row.category.key,
+                    pool_rating=pool.rating if pool else pick,
+                    excess=excess,
+                    can_remove=(row.trait.rating or 0) == row.trait.free_rating,
+                )
+            )
+
+    # Picks that fit no pool in the new troupe's rules: every one is excess.
+    strays: dict[tuple[str, int], list[SheetRow]] = {}
+    for row in picked:
+        if id(row) not in placed:
+            strays.setdefault((row.category.key, row.trait.creation_pick or 0), []).append(row)
+    for group in strays.values():
+        points = all(r.category.house_rules_per_trait for r in group)
+        excess_items(
+            group, None, sum(r.trait.creation_pick or 0 for r in group) if points else len(group)
+        )
+
+    for pool in target.values():
+        if pool.remaining < 0:
+            excess_items(pool.traits, pool, -pool.remaining)
+            continue
+        before = current.get((pool.category, pool.rating))
+        extra = pool.allowed - (before.allowed if before and before.kind == pool.kind else 0)
+        if extra > 0 and pool.kind == "picks":
+            unit = "pick" if extra == 1 else "picks"
+            label = pool.category.replace("_", " ")
+            differences.append(
+                Difference(
+                    category=pool.category,
+                    name=f"{extra} more {label} {unit} at {pool.rating}",
+                    detail="",
+                    trait_definition_id=None,
+                    difference="creation_differs",
+                    rating=pool.rating,
+                    old_cost=0,
+                    new_cost=None,
+                    pool_category=pool.category,
+                    pool_rating=pool.rating,
+                    extra_picks=extra,
+                )
+            )
+    return differences
+
+
+def find_differences(db: Session, character: Character, troupe: Troupe) -> list[Difference]:
+    rules = read_troupe_rules(db, character.splat, troupe.id)
+    current_rules = read_troupe_rules(db, character.splat, character.home_troupe_id)
+    rows = sheet_rows(db, character)
+    return cost_differences(db, character, rules, rows) + creation_differences(
+        rules, current_rules, rows, character
+    )
+
+
 # --- requesting and deciding ----------------------------------------------------------
 
 
@@ -216,6 +354,29 @@ def check_settlements(
     for d in differences:
         if settlements[d.key] not in d.allowed_settlements():
             raise unprocessable(f"{d.name} cannot be settled with {settlements[d.key]!r}.")
+
+    # Where the new troupe gives fewer starting dots, enough must be paid for or removed.
+    covered: dict[tuple[str, int], int] = {}
+    needed: dict[tuple[str, int], int] = {}
+    for d in differences:
+        if d.difference != "creation_differs" or not d.excess or d.pool_category is None:
+            continue
+        pool = (d.pool_category, d.pool_rating or 0)
+        needed[pool] = d.excess
+        if settlements[d.key] in ("pay_for_dots", "remove_dots"):
+            points = d.pool_rating == 0
+            covered[pool] = covered.get(pool, 0) + (d.rating if points else 1)
+    short = [
+        f"{c.replace('_', ' ')} at {r}"
+        for (c, r), n in needed.items()
+        if covered.get((c, r), 0) < n
+    ]
+    if short:
+        raise unprocessable(
+            "This troupe gives fewer starting dots: pay for or remove enough of these picks: "
+            + ", ".join(short)
+        )
+
     if xp + sum(d.xp_delta(settlements[d.key]) for d in differences) < 0:
         raise conflict("Those settlements cost more XP than the character has.")
 
@@ -231,6 +392,8 @@ def request_change(
     if character.home_troupe_id == troupe.id:
         raise conflict("That is already the character's home troupe.")
     ensure_unlocked(db, character)
+    if character.creation_completed_at is None:
+        raise conflict("Finish character creation before choosing a home troupe.")
     join(db, player, character, troupe)
 
     differences = find_differences(db, character, troupe)
@@ -255,11 +418,13 @@ def request_change(
             ReconciliationItem(
                 home_troupe_change_id=change.id,
                 trait_definition_id=d.trait_definition_id,
-                detail=d.detail,
+                detail=d.detail if d.trait_definition_id else d.name,
                 difference=d.difference,
                 rating=d.rating,
                 old_cost=d.old_cost,
                 new_cost=d.new_cost,
+                pool_category=d.pool_category,
+                pool_rating=d.pool_rating,
                 proposed_settlement=settlements[d.key],
             )
         )
@@ -288,17 +453,33 @@ def items_for(db: Session, approval: Approval) -> list[ReconciliationItem]:
     )
 
 
-def as_difference(item: ReconciliationItem) -> Difference:
+def as_difference(
+    item: ReconciliationItem, rows: Mapping[tuple[uuid.UUID, str], SheetRow]
+) -> Difference:
+    row = rows.get((item.trait_definition_id, item.detail)) if item.trait_definition_id else None
     return Difference(
-        category="",
-        name=str(item.id),
+        category=item.pool_category or "",
+        name=item.detail if item.trait_definition_id is None else str(item.id),
         detail=item.detail,
         trait_definition_id=item.trait_definition_id,
         difference=item.difference,
         rating=item.rating,
         old_cost=item.old_cost,
         new_cost=item.new_cost,
+        pool_category=item.pool_category,
+        pool_rating=item.pool_rating,
+        extra_picks=1
+        if item.difference == "creation_differs" and item.trait_definition_id is None
+        else 0,
+        can_remove=row is not None and (row.trait.rating or 0) == row.trait.free_rating,
     )
+
+
+def allowed_settlements(
+    db: Session, approval: Approval, item: ReconciliationItem, character: Character
+) -> tuple[str, ...]:
+    rows = {(r.definition.id, r.trait.detail): r for r in sheet_rows(db, character)}
+    return as_difference(item, rows).allowed_settlements()
 
 
 def approve_change(
@@ -318,10 +499,11 @@ def approve_change(
     if unknown:
         raise unprocessable("Settlements were given for differences this request does not have.")
 
+    rows = {(r.definition.id, r.trait.detail): r for r in sheet_rows(db, character)}
     total = 0
     for item in items:
         settlement = overrides.get(item.id, item.proposed_settlement)
-        difference = as_difference(item)
+        difference = as_difference(item, rows)
         if settlement not in difference.allowed_settlements():
             raise unprocessable(f"That difference cannot be settled with {settlement!r}.")
         delta = difference.xp_delta(settlement)
@@ -331,7 +513,7 @@ def approve_change(
     if xp_balance(db, character) + total < 0:
         raise conflict("Those settlements cost more XP than the character has.")
 
-    rows = {(r.definition.id, r.trait.detail): r for r in sheet_rows(db, character)}
+    reopen = False
     for item in items:
         assert item.xp_delta is not None
         if item.xp_delta:
@@ -340,26 +522,36 @@ def approve_change(
                     character_id=character.id,
                     kind="settlement",
                     amount=item.xp_delta,
-                    reason=f"Joining a new home troupe: {item.settlement.replace('_', ' ')}"
-                    if item.settlement
-                    else "Joining a new home troupe",
+                    reason="Joining a new home troupe: "
+                    + (item.settlement or "").replace("_", " "),
                     entered_by=staff.id,
                     reconciliation_item_id=item.id,
                 )
             )
-        if item.settlement == "remove_and_refund":
-            row = rows.get((item.trait_definition_id, item.detail))
-            if row is not None:
-                if row.trait.free_rating:
-                    row.trait.rating = row.trait.free_rating
-                else:
-                    db.delete(row.trait)
+        row = (
+            rows.get((item.trait_definition_id, item.detail)) if item.trait_definition_id else None
+        )
+        if item.settlement == "remove_and_refund" and row is not None:
+            if row.trait.free_rating:
+                row.trait.rating = row.trait.free_rating
+            else:
+                db.delete(row.trait)
+        elif item.settlement == "pay_for_dots" and row is not None:
+            row.trait.free_rating -= row.trait.creation_pick or 0
+            row.trait.creation_pick = None
+        elif item.settlement == "remove_dots" and row is not None:
+            db.delete(row.trait)
+        elif item.settlement == "add_free_dots":
+            reopen = True
     db.flush()
 
     old_troupe = change.from_troupe_id
     character.home_troupe_id = change.to_troupe_id
     character.status = "active"
     freeze_sheet(db, staff, character)
+    if reopen:
+        # The new troupe gives more starting dots: let the player place them.
+        character.creation_completed_at = None
     if old_troupe is not None:
         # So the old troupe's staff can see their character has moved.
         audit.record(

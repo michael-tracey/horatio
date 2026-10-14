@@ -4,13 +4,8 @@ import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { describeDifference, settlementLabel } from "../../settlements";
 
-const SETTLEMENT_LABELS: Record<string, string> = {
-  pay_difference: "Pay the difference",
-  refund_difference: "Refund the difference",
-  keep_price: "Keep the price I paid",
-  remove_and_refund: "Remove it and refund me",
-};
 
 export function TroupesTab({ character }: { character: CharacterOut }) {
   const path = { params: { path: { character_id: character.id } } };
@@ -90,7 +85,13 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
           <ErrorText error={withdraw.error} />
         </Card>
       ) : (
-        <HomeTroupe character={character} troupes={troupes.data ?? []} currentHome={character.home_troupe_id} />
+        character.creation_complete ? (
+          <HomeTroupe character={character} troupes={troupes.data ?? []} currentHome={character.home_troupe_id} />
+        ) : (
+          <Card title="Home troupe">
+            <Notice>Finish character creation on the Sheet tab before choosing a home troupe.</Notice>
+          </Card>
+        )
       )}
     </div>
   );
@@ -102,7 +103,7 @@ function HomeTroupe({ character, troupes, currentHome }: { character: CharacterO
   const [differences, setDifferences] = useState<DifferenceOut[] | null>(null);
   const [settlements, setSettlements] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
-  const key = (d: DifferenceOut) => `${d.category}/${d.name}/${d.detail}`;
+  const key = (d: DifferenceOut) => `${d.difference === "creation_differs"}/${d.category}/${d.name}/${d.detail}`;
 
   const preview = useAction(async (troupe_id: string) => {
     const found = await unwrap(api.POST("/api/characters/{character_id}/home-troupe/preview", { ...path, body: { troupe_id } }));
@@ -120,6 +121,7 @@ function HomeTroupe({ character, troupes, currentHome }: { character: CharacterO
             category: d.category,
             name: d.name,
             detail: d.detail,
+            difference: d.difference,
             settlement: settlements[key(d)] as DifferenceOut["allowed_settlements"][number],
           })),
         },
@@ -159,16 +161,13 @@ function HomeTroupe({ character, troupes, currentHome }: { character: CharacterO
             <Notice>Nothing differs: this troupe's rules price the sheet as you paid for it.</Notice>
           ) : (
             <>
-              <p className="text-sm">These traits cost differently there. Say how to settle each one:</p>
+              <p className="text-sm">This troupe's rules differ from what you built with. Say how to settle each one:</p>
               {differences.map((d) => (
-                <Field
-                  key={key(d)}
-                  label={`${d.name}${d.detail ? `: ${d.detail}` : ""} — paid ${d.old_cost}, ${d.difference === "not_allowed" ? "not allowed there" : `costs ${d.new_cost} there`}`}
-                >
+                <Field key={key(d)} label={`${d.name}${d.detail ? `: ${d.detail}` : ""} — ${describeDifference(d)}`}>
                   <Select value={settlements[key(d)]} onChange={(e) => setSettlements({ ...settlements, [key(d)]: e.target.value })}>
                     {d.allowed_settlements.map((s) => (
                       <option key={s} value={s}>
-                        {SETTLEMENT_LABELS[s]}
+                        {settlementLabel(s, d)}
                       </option>
                     ))}
                   </Select>

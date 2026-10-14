@@ -1,6 +1,8 @@
 # Rewrite from scratch rather than port Yorick
 
-Yorick already had working React and Vue ports, both passing its full E2E suite against the legacy jQuery Mobile markup, plus a Parse 8 / parse-server 9 upgrade. We chose to start a fresh codebase anyway, because those ports were tied to Parse's object model and a 2015 page structure, and keeping either would have meant keeping both. Yorick is used as a reference for features and behaviour, not as code to carry over: its Playwright specs serve as the feature inventory, its typed rule modules (`client/src/domain/rules/`) serve as reference tables for checking the new rules, and its data is imported once from MongoDB.
+Yorick already had working React and Vue ports, both passing its full E2E suite against the legacy jQuery Mobile markup, plus a Parse 8 / parse-server 9 upgrade. We chose to start a fresh codebase anyway, because those ports were tied to Parse's object model and a 2015 page structure, and keeping either would have meant keeping both. Yorick is used as a reference for features and behaviour, not as code to carry over: its Playwright specs serve as the feature inventory, and its typed rule modules (`client/src/domain/rules/`) serve as reference tables for checking the new rules.
+
+Horatio launches as a new product with fresh data: nothing is imported from Yorick's MongoDB (decided 2026-10-14). The `legacy_id` columns and the bcrypt password support exist only in case that changes.
 
 ## Considered Options
 

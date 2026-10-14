@@ -55,6 +55,10 @@ SETTLEMENTS = (
     "pay_difference",
     "refund_difference",
     "remove_and_refund",
+    # Starting-dot differences:
+    "pay_for_dots",
+    "remove_dots",
+    "add_free_dots",
 )
 
 
@@ -64,7 +68,9 @@ class ReconciliationItem(Record):
 
     __tablename__ = "reconciliation_items"
     __table_args__ = (
-        CheckConstraint("difference in ('cost_differs', 'not_allowed')", name="difference"),
+        CheckConstraint(
+            "difference in ('cost_differs', 'not_allowed', 'creation_differs')", name="difference"
+        ),
         CheckConstraint(f"proposed_settlement in {SETTLEMENTS}", name="proposed_settlement"),
         CheckConstraint(f"settlement is null or settlement in {SETTLEMENTS}", name="settlement"),
     )
@@ -72,9 +78,15 @@ class ReconciliationItem(Record):
     home_troupe_change_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("home_troupe_changes.id"), index=True
     )
-    trait_definition_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_definitions.id"))
+    # Null for a difference about a whole creation pool, such as extra picks.
+    trait_definition_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("trait_definitions.id")
+    )
     detail: Mapped[str] = mapped_column(default="", server_default="")
     difference: Mapped[str]
+    # For creation differences: the category and pick rating (0 for a points budget).
+    pool_category: Mapped[str | None]
+    pool_rating: Mapped[int | None]
     rating: Mapped[int]
     # XP the character paid for the trait, and what the new rules charge (null if not allowed).
     old_cost: Mapped[int]

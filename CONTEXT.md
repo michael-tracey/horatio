@@ -84,8 +84,20 @@ A rule saying what XP a trait, or a whole category of traits, costs, possibly on
 _Avoid_: Price, cost table
 
 **Creation Rule**:
-A rule saying how many starting dots a new character picks at each rating in a category.
-_Avoid_: Creation pool, picks
+A rule saying what a new character gets free in a category: a number of picks at a given rating, or a budget of points.
+_Avoid_: Creation pool, seed
+
+**Creation Pick**:
+Placing one pick from a creation rule on a trait, which gives the trait that many free dots.
+_Avoid_: Starting dot assignment, freebie
+
+**Starting Trait**:
+A trait every new character of a splat starts with, free, such as Willpower.
+_Avoid_: Default trait, seed trait
+
+**Character Creation**:
+The stage a new character is in until its player finishes it; creation picks can only be placed during it.
+_Avoid_: Wizard, setup
 
 **House Rule**:
 A troupe's change to its rule set: a different cost, allowance or creation rule, or an action kind of its own. A house rule for a merit or flaw always names that one merit or flaw, and may carry its own text.

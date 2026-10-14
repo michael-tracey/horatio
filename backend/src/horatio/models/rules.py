@@ -113,3 +113,35 @@ class AllowanceRule(Record):
     min_rating: Mapped[int] = mapped_column(default=1, server_default="1")
     scheme: Mapped[str]
     amount: Mapped[int]
+
+
+class CreationRule(Record):
+    """`troupe_id` null: part of the generic rule set; set: a house rule. A
+    troupe's creation rules for a category replace all the generic ones for it."""
+
+    __tablename__ = "creation_rules"
+    __table_args__ = (
+        CheckConstraint(
+            "(points is null and rating > 0 and picks > 0)"
+            " or (points > 0 and rating is null and picks is null)",
+            name="picks_or_points",
+        ),
+    )
+
+    rule_set_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rule_sets.id"), index=True)
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
+    category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_categories.id"))
+    rating: Mapped[int | None]
+    picks: Mapped[int | None]
+    points: Mapped[int | None]
+
+
+class StartingTrait(Record):
+    """A trait every new character starts with, free."""
+
+    __tablename__ = "starting_traits"
+
+    rule_set_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rule_sets.id"), index=True)
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
+    trait_definition_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_definitions.id"))
+    rating: Mapped[int | None]

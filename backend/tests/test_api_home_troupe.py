@@ -12,18 +12,12 @@ from sqlalchemy.orm import Session
 from horatio.models import AuditEvent
 from horatio.rules.model import CostRuleData
 from horatio.rules.store import add_house_rule
-from tests.api_helpers import Person, Troupe, sign_up
+from tests.api_helpers import Person, Troupe, new_character, sign_up, without_starting_traits
 
 
 @pytest.fixture
 def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
     return Troupe(client_for, session)
-
-
-def new_character(person: Person) -> str:
-    response = person.client.post("/characters", json={"splat": "vampire", "name": "Agnes"})
-    assert response.status_code == 201, response.text
-    return response.json()["id"]
 
 
 def buy(person: Person, character_id: str, category: str, name: str, rating: int | None) -> Any:
@@ -73,7 +67,7 @@ def second_troupe(troupe: Troupe) -> str:
 
 
 def test_joining_shares_the_sheet_with_the_troupes_staff(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     assert troupe.assistant.client.get(f"/characters/{character_id}").status_code == 404
 
     joined = troupe.player.client.post(
@@ -94,7 +88,7 @@ def test_joining_shares_the_sheet_with_the_troupes_staff(troupe: Troupe) -> None
 
 
 def test_only_the_player_adds_their_character_to_a_troupe(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
 
     response = troupe.stranger.client.post(
         f"/characters/{character_id}/troupes", json={"troupe_id": troupe.id}
@@ -107,7 +101,7 @@ def test_only_the_player_adds_their_character_to_a_troupe(troupe: Troupe) -> Non
 
 
 def test_a_first_home_troupe_with_nothing_to_reconcile(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "clan", "Brujah", None)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
 
@@ -135,7 +129,7 @@ def test_a_first_home_troupe_with_nothing_to_reconcile(troupe: Troupe) -> None:
 
 
 def test_every_difference_needs_a_settlement(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 2)  # 1 + 2 = 3 XP under the plain rules
     house_rule(session, troupe, CostRuleData("skills", "per_dot", rate=3))
 
@@ -153,6 +147,9 @@ def test_every_difference_needs_a_settlement(troupe: Troupe, session: Session) -
             "old_cost": 3,
             "new_cost": 6,
             "allowed_settlements": ["pay_difference", "keep_price", "remove_and_refund"],
+            "pool_rating": None,
+            "excess": 0,
+            "extra": False,
         }
     ]
     # Not let in with the difference unsettled.
@@ -162,7 +159,7 @@ def test_every_difference_needs_a_settlement(troupe: Troupe, session: Session) -
 
 
 def test_paying_the_difference(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
     house_rule(session, troupe, CostRuleData("skills", "per_dot", rate=3))
 
@@ -185,7 +182,7 @@ def test_paying_the_difference(troupe: Troupe, session: Session) -> None:
 
 
 def test_staff_can_settle_differently_from_the_player(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
     house_rule(session, troupe, CostRuleData("skills", "per_dot", rate=3))
     request_home(
@@ -213,7 +210,7 @@ def test_staff_can_settle_differently_from_the_player(troupe: Troupe, session: S
 
 
 def test_a_banned_trait_is_removed_and_refunded(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "merits", "Acute Sense", 1)
     house_rule(
         session,
@@ -236,14 +233,14 @@ def test_a_banned_trait_is_removed_and_refunded(troupe: Troupe, session: Session
     troupe.lead.client.post(f"/approvals/{queue(troupe.lead, troupe.id)[0]['id']}/approve", json={})
 
     after = sheet(troupe.player, character_id)
-    assert after["traits"] == []
+    assert without_starting_traits(after["traits"]) == []
     assert after["xp"]["balance"] == 30
 
 
 def test_settlements_the_character_cannot_afford_are_refused(
     troupe: Troupe, session: Session
 ) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "attributes", "Physical", 9)  # 27 of 30 XP
     house_rule(session, troupe, CostRuleData("attributes", "per_dot", rate=4))
 
@@ -258,7 +255,7 @@ def test_settlements_the_character_cannot_afford_are_refused(
 
 
 def test_the_sheet_is_locked_until_the_request_is_decided_or_withdrawn(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     request_home(troupe.player, character_id, troupe.id)
 
     locked = troupe.player.client.put(
@@ -273,7 +270,7 @@ def test_the_sheet_is_locked_until_the_request_is_decided_or_withdrawn(troupe: T
 
 
 def test_only_the_new_troupes_running_staff_decide(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     other = sign_up(troupe.client_for, "other-lead")
     other_troupe = troupe.custodian.client.post(
         "/troupes", json={"name": "Elsewhere", "lead_email": other.email}
@@ -287,7 +284,7 @@ def test_only_the_new_troupes_running_staff_decide(troupe: Troupe) -> None:
 
 
 def test_declined_requests_leave_the_character_where_it_was(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     request_home(troupe.player, character_id, troupe.id)
     approval_id = queue(troupe.lead, troupe.id)[0]["id"]
 
@@ -318,7 +315,7 @@ def make_home(
 def test_moving_home_troupes_reconciles_against_what_was_actually_paid(
     troupe: Troupe, session: Session
 ) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 2)  # 3 XP
     house_rule(session, troupe, CostRuleData("skills", "per_dot", rate=3))
     make_home(
@@ -354,14 +351,14 @@ def test_moving_home_troupes_reconciles_against_what_was_actually_paid(
 
 
 def test_requesting_the_current_home_troupe_is_refused(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home(troupe, troupe.lead, character_id, troupe.id)
 
     assert request_home(troupe.player, character_id, troupe.id).status_code == 409
 
 
 def test_leaving_the_home_troupe_leaves_no_home_troupe(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home(troupe, troupe.lead, character_id, troupe.id)
 
     troupe.player.client.delete(f"/characters/{character_id}/troupes/{troupe.id}")
@@ -370,7 +367,7 @@ def test_leaving_the_home_troupe_leaves_no_home_troupe(troupe: Troupe) -> None:
 
 
 def test_after_joining_sheet_changes_go_through_the_normal_queue(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home(troupe, troupe.lead, character_id, troupe.id)
     buy(troupe.player, character_id, "skills", "Dodge", 1)
 
