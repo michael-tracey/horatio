@@ -88,7 +88,7 @@ A rule saying how many starting dots a new character picks at each rating in a c
 _Avoid_: Creation pool, picks
 
 **House Rule**:
-A troupe's change to its rule set: a different cost, allowance or creation rule, or an action kind of its own. A house rule for a merit always names that one merit, and may carry its own text.
+A troupe's change to its rule set: a different cost, allowance or creation rule, or an action kind of its own. A house rule for a merit or flaw always names that one merit or flaw, and may carry its own text.
 _Avoid_: Override, custom rule, homebrew
 
 **Troupe Rules**:
@@ -102,7 +102,7 @@ The character's sheet as last approved by a storyteller or assistant storyteller
 _Avoid_: Current sheet, live sheet
 
 **Reconciliation**:
-Finding and settling, one by one, the differences between a character's purchases and the troupe rules of the home troupe it is joining. A character whose differences are not all settled is not let into the troupe.
+Finding and settling, one by one, the differences between a character's purchases and starting dots and the troupe rules of the home troupe it is joining. A character whose differences are not all settled is not let into the troupe.
 _Avoid_: Conversion, re-costing, audit
 
 **Settlement**:
@@ -176,7 +176,7 @@ A category of downtime action, such as general, feeding, investigation, or elite
 _Avoid_: Action type, category
 
 **Participant**:
-A character taking part in a downtime cycle. Participants are the characters whose home troupe runs the cycle when it opens; storytellers and assistant storytellers can add or remove participants afterwards.
+A character taking part in a downtime cycle. Participants are the characters whose home troupe runs the cycle when it opens; storytellers and assistant storytellers can add or remove participants afterwards, but only characters whose home troupe it is.
 _Avoid_: Roster entry, entrant
 
 **Action Allowance**:
