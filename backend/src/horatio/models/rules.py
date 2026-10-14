@@ -85,6 +85,23 @@ class TraitDefinition(Record):
 SCHEME_CHECK = "scheme in ('per_dot', 'progressive', 'table', 'fixed', 'free', 'not_allowed')"
 
 
+class CheckOverride(Record):
+    """A troupe's house rule for one check (horatio.rules.checks): a different
+    strength, or `off`."""
+
+    __tablename__ = "check_overrides"
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "check_key"),
+        CheckConstraint(
+            "strength in ('refuse', 'complete', 'review', 'note', 'off')", name="strength"
+        ),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    check_key: Mapped[str]
+    strength: Mapped[str]
+
+
 class CostRule(Record):
     """A cost rule. `troupe_id` null: part of the generic rule set; set: a house rule."""
 

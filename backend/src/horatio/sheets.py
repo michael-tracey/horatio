@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
 from horatio import audit
@@ -258,9 +258,7 @@ def check_context(db: Session, character: Character, sheet: Sequence[SheetTrait]
 def sheet_violations(db: Session, character: Character) -> list[Violation]:
     """The checks the character's sheet breaks now."""
     sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
-    return violations(
-        rules_for(db, character).rule_set.checks, sheet, check_context(db, character, sheet)
-    )
+    return violations(rules_for(db, character).checks(), sheet, check_context(db, character, sheet))
 
 
 def blocking(violation: Violation, character: Character) -> bool:
@@ -276,12 +274,13 @@ def unavailable(db: Session, character: Character, category_key: str) -> dict[st
     """For each trait in a category the character does not hold, why a check would
     refuse it, if one would. A merit or flaw is tried at its point value, anything
     else at 1 dot."""
-    rule_set = rules_for(db, character).rule_set
+    rules = rules_for(db, character)
+    rule_set = rules.rule_set
     rows = sheet_rows(db, character)
     sheet = [r.as_rules_trait() for r in rows]
     held = {r.definition.name for r in rows if r.category.key == category_key}
     context = check_context(db, character, sheet)
-    before = {v.key for v in violations(rule_set.checks, sheet, context)}
+    before = {v.key for v in violations(rules.checks(), sheet, context)}
     rated = rule_set.categories[category_key].rated
     reasons: dict[str, str] = {}
     for (category, name), trait in rule_set.traits.items():
@@ -292,7 +291,7 @@ def unavailable(db: Session, character: Character, category_key: str) -> dict[st
         trial = [t for t in sheet if rated or t.category != category] + [candidate]
         new = [
             v
-            for v in violations(rule_set.checks, trial, check_context(db, character, trial))
+            for v in violations(rules.checks(), trial, check_context(db, character, trial))
             if blocking(v, character) and v.key not in before
         ]
         if new:
@@ -391,6 +390,68 @@ def held_beyond_limit(db: Session, character: Character) -> dict[str, int]:
     }
 
 
+def hold_for_review(
+    db: Session,
+    user: User,
+    character: Character,
+    violation: Violation,
+    ratings_before: Mapping[TraitKey, int],
+    xp_before: set[uuid.UUID],
+) -> None:
+    """A change that breaks a review check goes ahead but waits on the home troupe,
+    like a discipline dot: declining takes the dots back and refunds the XP."""
+    subject = violation.subject
+    key = (subject.category, subject.name, subject.detail)
+    before, after = ratings_before.get(key, 0), subject.rating or 0
+    definition, _ = find_definition(db, character, subject.category, subject.name)
+    if after <= before or any(
+        d.trait_definition_id == definition.id and d.detail == subject.detail
+        for _, d in pending_disciplines(db, character)
+    ):
+        return
+    spent = -sum(
+        db.scalars(
+            select(XpEntry.amount).where(
+                XpEntry.character_id == character.id,
+                XpEntry.trait_definition_id == definition.id,
+                XpEntry.id.not_in(xp_before) if xp_before else true(),
+            )
+        )
+    )
+    assert character.home_troupe_id is not None
+    approval = Approval(
+        character_id=character.id,
+        troupe_id=character.home_troupe_id,
+        kind="review",
+        requested_by=user.id,
+        player_note=violation.message,
+    )
+    db.add(approval)
+    db.flush()
+    db.add(
+        DisciplinePurchase(
+            approval_id=approval.id,
+            trait_definition_id=definition.id,
+            detail=subject.detail,
+            from_rating=before,
+            to_rating=after,
+            cost=spent,
+        )
+    )
+    db.flush()
+    audit.record(
+        db,
+        user,
+        "approval.request",
+        troupe_id=approval.troupe_id,
+        character_id=character.id,
+        approval_id=approval.id,
+        kind="review",
+        name=subject.name,
+        rating=after,
+    )
+
+
 def creation_only_traits(db: Session, character: Character) -> dict[TraitKey, int | None]:
     """The character's traits that are chosen at creation only, with their ratings."""
     selectors = rules_for(db, character).rule_set.creation_only
@@ -415,6 +476,8 @@ def checked(db: Session, character: Character, user: User | None = None) -> Iter
     before = {v.key for v in sheet_violations(db, character)}
     over_before = held_beyond_limit(db, character)
     fixed_before = creation_only_traits(db, character)
+    ratings_before = {r.key: r.trait.rating or 0 for r in sheet_rows(db, character)}
+    xp_before = set(db.scalars(select(XpEntry.id).where(XpEntry.character_id == character.id)))
     savepoint = db.begin_nested()
     try:
         yield
@@ -428,11 +491,12 @@ def checked(db: Session, character: Character, user: User | None = None) -> Iter
         savepoint.commit()
         return
     db.expire_all()
-    problems = [
-        v.message
-        for v in sheet_violations(db, character)
-        if blocking(v, character) and v.key not in before
-    ]
+    now_broken = [v for v in sheet_violations(db, character) if v.key not in before]
+    problems = [v.message for v in now_broken if blocking(v, character)]
+    if user is not None and character.home_troupe_id is not None and not problems:
+        for violation in now_broken:
+            if violation.check.strength == "review":
+                hold_for_review(db, user, character, violation, ratings_before, xp_before)
     rule_set = rules_for(db, character).rule_set
     for key, count in held_beyond_limit(db, character).items():
         if count > over_before.get(key, 0):
@@ -892,7 +956,7 @@ def decide(
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
     character = lock_character(db, approval.character_id)
-    if not approve and approval.kind == "discipline":
+    if not approve and approval.kind in ("discipline", "review"):
         undo_discipline(db, staff, character, approval, "declined")
     elif approve and approval.kind == "discipline":
         bought = db.scalars(
@@ -925,8 +989,8 @@ def decide(
 
 
 def discipline_details(db: Session, approval: Approval) -> dict[str, Any]:
-    """What the log says about a discipline request: which discipline, to what rating."""
-    if approval.kind != "discipline":
+    """What the log says about a held purchase: which trait, to what rating."""
+    if approval.kind not in ("discipline", "review"):
         return {}
     found = db.execute(
         select(TraitDefinition.name, DisciplinePurchase.to_rating)
@@ -977,7 +1041,7 @@ def undo_discipline(
 def withdraw(db: Session, player: User, approval: Approval) -> Approval:
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
-    if approval.kind == "discipline":
+    if approval.kind in ("discipline", "review"):
         undo_discipline(
             db, player, lock_character(db, approval.character_id), approval, "withdrawn"
         )

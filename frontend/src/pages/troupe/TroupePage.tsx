@@ -11,6 +11,7 @@ import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
+import { RulesTab } from "./RulesTab";
 import { StaffTab } from "./StaffTab";
 import { TablesTab } from "./TablesTab";
 import { TitlesTab } from "./TitlesTab";
@@ -54,6 +55,7 @@ export function TroupePage() {
           ...(can.running ? [{ to: `${base}/downtimes`, label: "Downtimes" }] : []),
           ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
           ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
+          ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
           ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
         ]}
       />
@@ -64,6 +66,7 @@ export function TroupePage() {
         {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
+        {can.running && <Route path="rules" element={<RulesTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}

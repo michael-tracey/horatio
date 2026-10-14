@@ -69,7 +69,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           {approval.character_name}
         </Link>
       }
-      actions={<Badge tone={joining ? "gold" : "mist"}>{joining ? "asking to make this home" : approval.kind === "discipline" ? "discipline" : "sheet changes"}</Badge>}
+      actions={<Badge tone={joining ? "gold" : "mist"}>{joining ? "asking to make this home" : approval.kind === "discipline" ? "discipline" : approval.kind === "review" ? "rule review" : "sheet changes"}</Badge>}
     >
       {approval.player_note && <p className="mb-3 text-sm italic">"{approval.player_note}"</p>}
       {d && (

@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from horatio.models import (
     ActionKind,
     AllowanceRule,
+    CheckOverride,
     CostRule,
     CreationRule,
     RuleSet,
@@ -310,6 +311,26 @@ def add_house_action_kind(
 
 
 @changes_rules
+def set_check_override(
+    session: Session, troupe_id: uuid.UUID, check_key: str, strength: str | None
+) -> None:
+    """Give a check a house strength in a troupe, or (None) go back to the rule set's."""
+    row = session.scalar(
+        select(CheckOverride).where(
+            CheckOverride.troupe_id == troupe_id, CheckOverride.check_key == check_key
+        )
+    )
+    if strength is None:
+        if row is not None:
+            session.delete(row)
+    elif row is None:
+        session.add(CheckOverride(troupe_id=troupe_id, check_key=check_key, strength=strength))
+    else:
+        row.strength = strength
+    session.flush()
+
+
+@changes_rules
 def add_house_rule(
     session: Session, troupe_id: uuid.UUID, splat: str, rule: CostRuleData
 ) -> CostRule:
@@ -522,4 +543,12 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         ],
         house_creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is not None],
         house_starting_traits=[starting_data(r) for r in starting_rows if r.troupe_id is not None],
+        check_overrides={
+            o.check_key: o.strength
+            for o in session.scalars(
+                select(CheckOverride).where(CheckOverride.troupe_id == troupe_id)
+            )
+        }
+        if troupe_id is not None
+        else {},
     )

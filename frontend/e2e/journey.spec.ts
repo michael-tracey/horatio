@@ -176,6 +176,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("Agnes joined the troupe.")).toBeVisible();
   await expect(lead.page.getByText(/lead approved Agnes's Celerity/)).toBeVisible();
   await lead.page.screenshot(shots("log"));
+  // The troupe's rules: the lead can play a check differently.
+  await lead.page.getByRole("link", { name: "Rules", exact: true }).click();
+  await lead.page.getByLabel("Search rules").fill("Calm Heart");
+  await lead.page.getByLabel(/How we play: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
+  await expect(lead.page.getByText("1 played differently here.")).toBeVisible();
 
   // The lead runs a cycle.
   await lead.page.getByRole("link", { name: "Downtimes" }).click();

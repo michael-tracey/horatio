@@ -184,7 +184,7 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
             Approval.status == "pending",
         )
     ):
-        if approval.kind == "discipline":
+        if approval.kind in ("discipline", "review"):
             undo_discipline(db, player, character, approval, "withdrawn")
         approval.status = "withdrawn"
         approval.decided_at = datetime.now(UTC)

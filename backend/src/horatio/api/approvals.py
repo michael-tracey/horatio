@@ -101,7 +101,7 @@ def reconciliation_out(db: DbSession, approval: Approval) -> list[Reconciliation
 
 
 def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
-    if approval.kind != "discipline":
+    if approval.kind not in ("discipline", "review"):
         return None
     found = db.execute(
         select(DisciplinePurchase, TraitDefinition.name)

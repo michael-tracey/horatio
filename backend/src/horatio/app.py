@@ -11,6 +11,7 @@ from horatio.api import (
     characters,
     creation,
     downtimes,
+    house_rules,
     membership,
     notifications,
     npcs,
@@ -65,6 +66,7 @@ for module in (
     npcs,
     titles,
     notifications,
+    house_rules,
 ):
     api.include_router(module.router)
 

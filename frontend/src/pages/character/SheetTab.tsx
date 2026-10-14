@@ -403,7 +403,7 @@ function TroupesCard({ character, sheet, mine }: { character: CharacterOut; shee
       )}
       {sheet.pending_disciplines.length > 0 && (
         <div className="mt-3 border-t border-ash pt-3 text-sm">
-          <p className="mb-2 text-mist">Disciplines waiting for the home troupe to approve. The XP is held, and refunded if they decline.</p>
+          <p className="mb-2 text-mist">Waiting for the home troupe to approve. The XP is held, and refunded if they decline.</p>
           <ul className="flex flex-col gap-1">
             {sheet.pending_disciplines.map((d) => (
               <li key={d.approval_id} className="flex flex-wrap items-center justify-between gap-2">

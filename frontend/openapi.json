@@ -495,6 +495,90 @@
         "title": "CharacterOut",
         "type": "object"
       },
+      "CheckChange": {
+        "properties": {
+          "strength": {
+            "anyOf": [
+              {
+                "enum": [
+                  "refuse",
+                  "complete",
+                  "review",
+                  "note",
+                  "off"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strength"
+          }
+        },
+        "required": [
+          "strength"
+        ],
+        "title": "CheckChange",
+        "type": "object"
+      },
+      "CheckOut": {
+        "properties": {
+          "about": {
+            "title": "About",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "strength": {
+            "title": "Strength",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "category",
+          "about",
+          "message",
+          "page",
+          "strength",
+          "house"
+        ],
+        "title": "CheckOut",
+        "type": "object"
+      },
       "ChoiceChange": {
         "properties": {
           "category": {
@@ -6753,6 +6837,115 @@
         "summary": "Set Titles",
         "tags": [
           "titles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/checks": {
+      "get": {
+        "operationId": "list_checks_api_troupes__troupe_id__checks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CheckOut"
+                  },
+                  "title": "Response List Checks Api Troupes  Troupe Id  Checks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Checks",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/checks/{key}": {
+      "put": {
+        "operationId": "change_check_api_troupes__troupe_id__checks__key__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Check",
+        "tags": [
+          "house rules"
         ]
       }
     },

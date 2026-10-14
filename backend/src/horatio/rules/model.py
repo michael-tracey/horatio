@@ -186,10 +186,24 @@ class TroupeRules:
     house_allowance_rules: Sequence[AllowanceRuleData] = ()
     house_creation_rules: Sequence[CreationRuleData] = ()
     house_starting_traits: Sequence[StartingTraitData] = ()
+    # Check key to its house strength ("off" drops the check).
+    check_overrides: Mapping[str, str] = field(default_factory=dict)
 
     @property
     def splat(self) -> str:
         return self.rule_set.splat
+
+    def checks(self) -> list["CheckData"]:
+        """The rule set's checks with the troupe's house strengths applied."""
+        from dataclasses import replace
+
+        found: list[CheckData] = []
+        for check in self.rule_set.checks:
+            strength = self.check_overrides.get(check.key)
+            if strength == "off":
+                continue
+            found.append(replace(check, strength=strength) if strength else check)  # type: ignore[arg-type]
+        return found
 
     def action_kinds(self) -> dict[str, ActionKindData]:
         kinds = dict(self.rule_set.action_kinds)

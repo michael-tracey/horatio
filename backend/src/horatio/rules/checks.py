@@ -32,7 +32,10 @@ Condition vocabulary (every key in one table must hold):
 
 A check's strength says what happens when a change breaks it: "refuse" stops
 the change; "complete" lets it be while the character is being built, but
-creation cannot be finished until it holds; "note" only shows on the sheet.
+creation cannot be finished until it holds; "review" lets it through once the
+character has a home troupe, waiting on that troupe's approval (and freely
+before, as acceptance reviews the whole sheet); "note" only shows on the sheet.
+A troupe can change any check's strength, or switch it off.
 """
 
 from collections.abc import Mapping, Sequence
@@ -42,7 +45,7 @@ from typing import Any, Literal
 from horatio.rules.conditions import OPERATORS
 from horatio.rules.model import SheetTrait
 
-Strength = Literal["refuse", "complete", "note"]
+Strength = Literal["refuse", "complete", "review", "note"]
 Condition = Mapping[str, Any]
 
 CONDITION_KEYS = frozenset(

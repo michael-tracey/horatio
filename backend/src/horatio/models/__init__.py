@@ -26,6 +26,7 @@ from horatio.models.people import AuthIdentity, Session, User
 from horatio.models.rules import (
     ActionKind,
     AllowanceRule,
+    CheckOverride,
     CostRule,
     CreationRule,
     RuleSet,
@@ -63,6 +64,7 @@ __all__ = [
     "Character",
     "CharacterTitle",
     "CharacterTrait",
+    "CheckOverride",
     "CostRule",
     "CreationRule",
     "HomeTroupeChange",

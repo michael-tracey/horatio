@@ -15,7 +15,8 @@ class Approval(Record):
     __tablename__ = "approvals"
     __table_args__ = (
         CheckConstraint(
-            "kind in ('sheet_change', 'home_troupe_change', 'discipline')", name="kind"
+            "kind in ('sheet_change', 'home_troupe_change', 'discipline', 'review')",
+            name="kind",
         ),
         CheckConstraint(
             "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
@@ -28,7 +29,7 @@ class Approval(Record):
             "troupe_id",
             "kind",
             unique=True,
-            postgresql_where=text("status = 'pending' and kind <> 'discipline'"),
+            postgresql_where=text("status = 'pending' and kind not in ('discipline', 'review')"),
         ),
     )
 

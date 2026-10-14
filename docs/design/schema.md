@@ -544,8 +544,14 @@ Recorded here for review; each is easy to change.
 - Categories also carry `change_cost` (swap the choice after creation, e.g. a
   focus for 10 XP, written as a `fee` XP entry that reconciliation ignores) and
   `points_limit` (merits held, or XP paid out by flaws).
-- Still to come: a troupe switching checks off or changing their strength, and a
-  `review` strength that sends a purchase to the home troupe's approvals.
+- `check_overrides` (`troupe_id`, `check_key`, `strength`): a troupe plays a check
+  at another strength, or `off`; applied when the troupe's rules are read, so only
+  to characters whose home it is. Storytellers set them on the troupe's Rules tab.
+- Strength `review`: once the character has a home troupe, a change that breaks
+  the check goes ahead but is held like a discipline dot (an `approvals` row of
+  kind `review` with a `discipline_purchases` row): declining takes the dots back
+  and refunds the XP. Before acceptance it is allowed, as acceptance reviews the
+  whole sheet.
 
 **Grants: traits that give other traits (issue #2)**
 
