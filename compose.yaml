@@ -1,0 +1,16 @@
+# Local development database. `docker compose up -d`, then run migrations from backend/.
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: horatio
+      POSTGRES_PASSWORD: horatio
+      POSTGRES_DB: horatio
+    ports:
+      # Not 5432, so it does not clash with a Postgres already running locally.
+      - "54329:5432"
+    volumes:
+      - db-data:/var/lib/postgresql
+
+volumes:
+  db-data:

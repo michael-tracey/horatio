@@ -1,0 +1,58 @@
+import uuid
+from datetime import datetime
+
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, UniqueConstraint, func, text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from horatio.models.base import Imported, Record
+
+
+class Troupe(Imported, Record):
+    """The top-level group. Archived rather than deleted."""
+
+    __tablename__ = "troupes"
+
+    name: Mapped[str]
+    description: Mapped[str] = mapped_column(default="", server_default="")
+    # Not null: every troupe has exactly one lead storyteller, enforced here
+    # rather than by counting rows in troupe_staff.
+    lead_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TroupeStaff(Record):
+    """A storyteller, assistant storyteller or narrator. The lead is not listed here."""
+
+    __tablename__ = "troupe_staff"
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "user_id"),
+        CheckConstraint(
+            "role in ('storyteller', 'assistant_storyteller', 'narrator')", name="role"
+        ),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    role: Mapped[str]
+
+
+class TroupeMembership(Record):
+    """A character's membership of a troupe. Kept after the character leaves."""
+
+    __tablename__ = "troupe_memberships"
+    __table_args__ = (
+        # A character can rejoin a troupe, but is only a current member once.
+        Index(
+            "uq_troupe_memberships_current",
+            "troupe_id",
+            "character_id",
+            unique=True,
+            postgresql_where=text("left_at is null"),
+        ),
+        CheckConstraint("left_at is null or left_at >= joined_at", name="left_after_joined"),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
