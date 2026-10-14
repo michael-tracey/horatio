@@ -156,6 +156,17 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("link", { name: "Results" }).click();
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));
+
+  // The printable sheet: the troupe's approved version, in the paper sheet's order.
+  await p.getByRole("link", { name: "Sheet", exact: true }).click();
+  await p.getByRole("link", { name: "Print the sheet" }).click();
+  await expect(p.getByText(/Approved by Court of Ash/)).toBeVisible();
+  await expect(p.getByText("Brawl")).toBeVisible();
+  await p.screenshot(shots("print"));
+  if (test.info().project.name === "desktop") {
+    await p.emulateMedia({ media: "print" });
+    await p.pdf({ path: "test-results/screens/sheet.pdf", format: "Letter" });
+  }
 });
 
 

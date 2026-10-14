@@ -254,3 +254,41 @@ def test_the_log_reads_newest_first(troupe: Troupe) -> None:
     ]
     # Staff changes from setting the troupe up are there too.
     assert "lead made narrator narrator." in messages
+
+
+# --- printing ----------------------------------------------------------------------------------
+
+
+def test_printing_shows_the_troupes_approved_sheet(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    join(troupe.player, character_id, troupe.id)
+    buy(troupe.player, character_id, "Brawl", 2)
+    request = ask(troupe.player, character_id)[0]
+    troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
+    buy(troupe.player, character_id, "Dodge", 1)  # not approved yet
+
+    printed = troupe.player.client.get(f"/characters/{character_id}/print").json()
+    current = troupe.player.client.get(
+        f"/characters/{character_id}/print", params={"current": True}
+    ).json()
+
+    assert (printed["approved"], printed["version"], printed["troupe_name"]) == (
+        True,
+        1,
+        "Lords of the Night",
+    )
+    assert printed["approved_by"] == "lead"
+    names = [t["name"] for t in printed["traits"]]
+    assert "Brawl" in names and "Dodge" not in names
+    assert next(t for t in printed["traits"] if t["name"] == "Brawl")["attribute"] == "Physical"
+    assert current["approved"] is False
+    assert "Dodge" in [t["name"] for t in current["traits"]]
+
+
+def test_a_vault_character_prints_as_not_approved(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+
+    printed = troupe.player.client.get(f"/characters/{character_id}/print").json()
+
+    assert (printed["approved"], printed["troupe_name"]) == (False, None)
+    assert troupe.narrator.client.get(f"/characters/{character_id}/print").status_code == 404

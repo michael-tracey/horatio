@@ -33,3 +33,4 @@ export type PoolOut = Schemas["PoolOut"];
 export type StandingOut = Schemas["StandingOut"];
 export type RosterEntry = Schemas["RosterEntry"];
 export type LogEntry = Schemas["LogEntry"];
+export type PrintedSheet = Schemas["PrintedSheet"];

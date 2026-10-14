@@ -368,6 +368,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/print": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Printed Sheet
+         * @description The sheet to print. By default the approved sheet of `troupe_id` (or the home
+         *     troupe); `current=true`, or no approved sheet, prints the sheet as it stands.
+         */
+        get: operations["printed_sheet_api_characters__character_id__print_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/quote": {
         parameters: {
             query?: never;
@@ -1639,6 +1660,44 @@ export interface components {
             traits: components["schemas"]["PickedTrait"][];
             /** Used */
             used: number;
+        };
+        /** PrintedSheet */
+        PrintedSheet: {
+            /** Approved */
+            approved: boolean;
+            /** Approved At */
+            approved_at: string | null;
+            /** Approved By */
+            approved_by: string | null;
+            /** Character Name */
+            character_name: string;
+            /** Player Name */
+            player_name: string;
+            /** Splat */
+            splat: string;
+            /** Traits */
+            traits: components["schemas"]["PrintedTrait"][];
+            /** Troupe Name */
+            troupe_name: string | null;
+            /** Version */
+            version: number | null;
+        };
+        /** PrintedTrait */
+        PrintedTrait: {
+            /** Attribute */
+            attribute: string | null;
+            /** Category */
+            category: string;
+            /** Category Name */
+            category_name: string;
+            /** Detail */
+            detail: string;
+            /** Group */
+            group: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number | null;
         };
         /** Progress */
         Progress: {
@@ -3025,6 +3084,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DifferenceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    printed_sheet_api_characters__character_id__print_get: {
+        parameters: {
+            query?: {
+                troupe_id?: string | null;
+                current?: boolean;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintedSheet"];
                 };
             };
             /** @description Validation Error */

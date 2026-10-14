@@ -11,6 +11,7 @@ from horatio.api import (
     creation,
     downtimes,
     membership,
+    printing,
     responses,
     roster,
     rules,
@@ -55,6 +56,7 @@ for module in (
     downtimes,
     responses,
     roster,
+    printing,
 ):
     api.include_router(module.router)
 

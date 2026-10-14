@@ -4,6 +4,7 @@ import { Loading } from "./components/ui";
 import { useMe } from "./hooks";
 import { CharacterPage } from "./pages/character/CharacterPage";
 import { CharactersPage } from "./pages/CharactersPage";
+import { PrintPage } from "./pages/PrintPage";
 import { CyclePage } from "./pages/troupe/CyclePage";
 import { SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupePage } from "./pages/troupe/TroupePage";
@@ -19,6 +20,10 @@ function RequireSignIn() {
 export function App() {
   return (
     <Routes>
+      {/* The printed sheet stands alone: no header, black on white. */}
+      <Route element={<RequireSignIn />}>
+        <Route path="/print/characters/:characterId" element={<PrintPage />} />
+      </Route>
       <Route element={<Layout />}>
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />

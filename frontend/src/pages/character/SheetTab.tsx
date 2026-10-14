@@ -107,6 +107,12 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
         {message && !change.error && <Notice>{message}</Notice>}
       </div>
       <aside className="flex flex-col gap-4">
+        <Link
+          to={`/print/characters/${character.id}${s.viewing_troupe_id ? `?troupe=${s.viewing_troupe_id}` : ""}`}
+          className="inline-flex min-h-10 items-center justify-center rounded-md border border-ash bg-dusk px-4 text-sm hover:border-mist"
+        >
+          Print the sheet
+        </Link>
         <Card title="Experience">
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
