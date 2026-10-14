@@ -20,15 +20,15 @@ The people who run a troupe: its storytellers, assistant storytellers and narrat
 _Avoid_: Admins, ST team
 
 **Storyteller**:
-A staff member who leads a troupe.
+A staff member who leads a troupe, and the only role that manages the troupe's staff and house rules.
 _Avoid_: ST (in names), head ST, GM, admin
 
 **Assistant Storyteller**:
-A staff member who helps the storytellers run a troupe.
+A staff member who can do everything a storyteller can except manage staff and house rules.
 _Avoid_: AST (in names), sub-ST
 
 **Narrator**:
-A staff member with limited access who helps run scenes and downtimes.
+A staff member who can do whatever a player in the troupe can, and also answer the downtime actions assigned to them.
 _Avoid_: Helper, volunteer
 
 ### Characters
@@ -52,21 +52,25 @@ The generic rules for a splat that the system ships with, including what each tr
 _Avoid_: Core rules, ruleset (one word)
 
 **House Rule**:
-A troupe's change to one value in a rule set, such as the cost of a merit or skill.
+A troupe's change to one value in a rule set, such as the cost of a merit or skill, or an allowance rule.
 _Avoid_: Override, custom rule, homebrew
 
 **Troupe Rules**:
-A rule set with one troupe's house rules applied; what that troupe's characters actually play by.
+A rule set with one troupe's house rules applied. A character plays by its home troupe's troupe rules, or by the plain rule set if it has no home troupe.
 _Avoid_: Effective rules, local rules
 
 ### Character records
 
 **Approved Sheet**:
-The character's sheet as last approved by a storyteller; edits awaiting approval are not part of it.
+The character's sheet as last approved by a storyteller or assistant storyteller; edits awaiting approval are not part of it.
 _Avoid_: Current sheet, live sheet
 
+**Purchase**:
+A trait bought for a character, recorded with the cost paid at the time; later changes to the rules never alter it.
+_Avoid_: Spend, buy
+
 **Approval**:
-A storyteller's acceptance of a change a player has asked for.
+A storyteller's or assistant storyteller's acceptance of a change a player has asked for.
 _Avoid_: Sign-off, review
 
 **Home Troupe**:
@@ -74,7 +78,7 @@ The one troupe whose downtime cycles a character takes part in, chosen from the 
 _Avoid_: Main troupe, primary troupe
 
 **Home Troupe Change**:
-A player's request to move a character's home troupe, decided by the storytellers of the new troupe and taking effect from that troupe's next cycle.
+A player's request to move a character's home troupe, decided by the storytellers or assistant storytellers of the new troupe and taking effect from that troupe's next cycle.
 _Avoid_: Transfer
 
 ### Downtimes
@@ -100,7 +104,7 @@ A question that spends one of the character's actions of a given action kind.
 _Avoid_: Action field
 
 **Custom Question**:
-A question a storyteller adds that spends no action, such as a nomination or plot prompt.
+A question storytellers or assistant storytellers add that spends no action, such as a nomination or plot prompt.
 _Avoid_: Extra question, survey question
 
 **Action Kind**:
@@ -116,7 +120,7 @@ A rule saying how a trait adds to or removes from an action allowance.
 _Avoid_: Bonus, modifier
 
 **Allowance Adjustment**:
-A storyteller's change to one character's action allowance for one cycle, with a stated reason.
+A storyteller's or assistant storyteller's change to one character's action allowance for one cycle, with a stated reason.
 _Avoid_: Override
 
 **Submission**:
