@@ -2865,7 +2865,7 @@ properties = { rating = 1, type = "Clan", requirement = "Ventrue" }
 category = "merits"
 name = "Auspicious"
 description = "Duplicate any General merit worth up to 3 points."
-properties = { rating = 1, type = "Clan", requirement = "requires_specialization" }
+properties = { rating = 1, type = "Clan", requirement = "Caitiff" }
 
 [[traits]]
 category = "merits"
@@ -2965,12 +2965,12 @@ properties = { rating = 2 }
 [[traits]]
 category = "merits"
 name = "Bloodline: Ahrimanes"
-properties = { rating = 4 }
+properties = { rating = 4, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Ananke"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "merits"
@@ -2980,12 +2980,12 @@ properties = { rating = 2 }
 [[traits]]
 category = "merits"
 name = "Bloodline: Angelis Ater"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Baali" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Brahman"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Ravnos" }
 
 [[traits]]
 category = "merits"
@@ -2995,7 +2995,7 @@ properties = { rating = 2 }
 [[traits]]
 category = "merits"
 name = "Bloodline: Carpathian"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "merits"
@@ -3005,7 +3005,7 @@ properties = { rating = 2 }
 [[traits]]
 category = "merits"
 name = "Bloodline: Coyote"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "merits"
@@ -3015,87 +3015,87 @@ properties = { rating = 2 }
 [[traits]]
 category = "merits"
 name = "Bloodline: Crusader"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Ventrue" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Healer"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Salubri" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Ishtarri"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Kiasyd"
-properties = { rating = 4 }
+properties = { rating = 4, type = "Clan", requirement = "Lasombra" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Knights of the Moon"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Koldun"
-properties = { rating = 4 }
+properties = { rating = 4, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Lamia"
-properties = { rating = 4 }
+properties = { rating = 4, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Noiad"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Premascine"
-properties = { rating = 4 }
+properties = { rating = 4, type = "Clan", requirement = "Giovanni" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Samedi"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Sorcerer"
-properties = { rating = 4 }
+properties = { rating = 4, type = "Clan", requirement = "Assamite" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Telyav"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Tremere" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Tlacique"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: True Brujah"
-properties = { rating = 4 }
+properties = { rating = 4, type = "Clan", requirement = "Brujah" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Vipers"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Vizier"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Assamite" }
 
 [[traits]]
 category = "merits"
 name = "Bloodline: Volgirre"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "merits"
@@ -3673,14 +3673,14 @@ category = "merits"
 name = "Necromantic Expertise"
 description = "Opens up List 5 as an additional in Clan Discipline learnable w/o a teacher. Purchasable multiple times."
 page_reference = "240"
-properties = { rating = 1, type = "Clan", requirement = "requires_specialization" }
+properties = { rating = 1, type = "Clan", requirement = "Giovanni" }
 
 [[traits]]
 category = "merits"
 name = "Necromantic Insight"
 description = "Opens up List 5 as an additional in Clan Discipline learnable w/o a teacher. Purchasable multiple times."
 page_reference = "246"
-properties = { rating = 1, type = "Clan", requirement = "requires_specialization" }
+properties = { rating = 1, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "merits"
@@ -4437,7 +4437,7 @@ category = "merits"
 name = "Unnatural Adaptation"
 description = "Choose two special abilities from List 8."
 page_reference = "242"
-properties = { rating = 4, type = "Clan", requirement = "requires_specialization" }
+properties = { rating = 4, type = "Clan", requirement = "Nosferatu" }
 
 [[traits]]
 category = "merits"
@@ -4467,7 +4467,7 @@ properties = { rating = 3, type = "General" }
 category = "merits"
 name = "Vestiges of Greatness"
 description = "Opens up List 2 for last Discipline slot"
-properties = { rating = 3, type = "Clan", requirement = "requires_specialization" }
+properties = { rating = 3, type = "Clan", requirement = "Caitiff" }
 
 [[traits]]
 category = "merits"

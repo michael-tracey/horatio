@@ -112,6 +112,121 @@ RITUAL_LEVELS = {
     "Thaumaturgy: Warding Circle": 1,
 }
 
+# Each clan"s merits, as the core book lists them (pp. 238-248), for merits whose
+# Yorick requirement does not name the clan.
+CLAN_MERITS = {
+    "Assamite": [
+        "Surprise Attack",
+        "Bloodline: Vizier",
+        "Awakening the Steel",
+        "Bloodline: Sorcerer",
+    ],
+    "Brujah": [
+        "Brotherhood",
+        "Burning Wrath",
+        "Scourge of Alecto",
+        "Bloodline: True Brujah",
+    ],
+    "Followers of Set": [
+        "Personal Cult",
+        "Bloodline: Tlacique",
+        "Bloodline: Vipers",
+        "Addictive Blood",
+        "Setite Sorcery",
+    ],
+    "Gangrel": [
+        "Protean Blood",
+        "Bloodline: Coyote",
+        "Bloodline: Noiad",
+        "Shape of the Beast's Wrath",
+        "Bloodline: Ahrimanes",
+    ],
+    "Giovanni": [
+        "Necromantic Expertise",
+        "Mook",
+        "Ghostly Retainer",
+        "Bloodline: Premascine",
+    ],
+    "Lasombra": [
+        "Angelic Visage",
+        "Born in Shadow",
+        "Walk the Abyss",
+        "Bloodline: Kiasyd",
+    ],
+    "Malkavian": [
+        "Expanded Consciousness",
+        "Bloodline: Ananke",
+        "Bloodline: Knights of the Moon",
+        "Labyrinthine Mind",
+        "Sophistry",
+    ],
+    "Nosferatu": [
+        "Unseeing Eye",
+        "Hidden Advantage",
+        "Pliable Blood",
+        "Unnatural Adaptation",
+    ],
+    "Toreador": [
+        "Artist's Blessing",
+        "Bloodline: Ishtarri",
+        "Bloodline: Volgirre",
+        "Absent Sway",
+        "Dancer's Grace",
+    ],
+    "Tremere": [
+        "Thaumaturgic Expertise",
+        "Bloodline: Telyav",
+        "Talisman",
+        "Countermagic",
+    ],
+    "Tzimisce": [
+        "Blood of the Tzimisce",
+        "Szlachta",
+        "Bloodline: Carpathian",
+        "Bloodline: Koldun",
+    ],
+    "Ventrue": [
+        "Aura of Command",
+        "Bloodline: Crusader",
+        "Paragon",
+        "Regal Bearing",
+    ],
+    "Caitiff": [
+        "Auspicious",
+        "Eclipsed Blood",
+        "Vestiges of Greatness",
+    ],
+    "Baali": [
+        "Infernal Heritage",
+        "Bloodline: Angelis Ater",
+    ],
+    "Cappadocians": [
+        "Necromantic Insight",
+        "Bloodline: Samedi",
+        "Pierced Shroud",
+        "Bloodline: Lamia",
+    ],
+    "Ravnos": [
+        "Waking Dream",
+        "Bloodline: Brahman",
+        "Escape Artist",
+    ],
+    "Salubri": [
+        "Righteous Fury",
+        "Spiritual Armor",
+        "Bloodline: Healer",
+    ],
+    "Daughters of Cacophony": [
+        "Supernatural Aria",
+        "Soaring Octaves",
+    ],
+    "Gargoyles": [
+        "Flight",
+        "Dark Statue",
+    ],
+}
+CLAN_OF_MERIT = {merit: clan for clan, merits in CLAN_MERITS.items() for merit in merits}
+
 # Spelling fixes to Yorick's requirement column.
 REQUIREMENTS = {"Follower of Set": "Followers of Set"}
 
@@ -212,11 +327,18 @@ def main(csv_path: str) -> None:
         if category == "skills" and name in ATTRIBUTE_OF:
             properties.append(f"attribute = {toml_string(ATTRIBUTE_OF[name])}")
         for key in ("type", "requirement"):
+            if "properties" in row:
+                break  # Hand-written traits carry their own.
             if key == "requirement" and (category, name) in NOT_REQUIRED:
                 continue
-            if row.get(key, "").strip():
-                value = row[key].strip()
-                properties.append(f"{key} = {toml_string(REQUIREMENTS.get(value, value))}")
+            value = REQUIREMENTS.get(row.get(key, "").strip(), row.get(key, "").strip())
+            if category == "merits" and name in CLAN_OF_MERIT:
+                if key == "requirement" and value in ("", "requires_specialization"):
+                    value = CLAN_OF_MERIT[name]
+                if key == "type" and not value:
+                    value = "Clan"
+            if value:
+                properties.append(f"{key} = {toml_string(value)}")
         if properties:
             lines.append("properties = { " + ", ".join(properties) + " }")
         lines.append("")
