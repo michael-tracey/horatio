@@ -133,7 +133,10 @@ description**), `page_reference`.
 `rule_set_id`, `troupe_id` (null = generic rule; set = **house rule**),
 `category`, `trait_definition_id` (nullable: null means the whole category),
 `condition` (JSONB, nullable), `scheme` (`per_dot` | `progressive` | `fixed` |
-`not_allowed`), `rate`.
+`not_allowed`), `rate`, `text` (nullable: a house rule's own wording, shown
+with the trait description).
+A house rule for a merit must name the merit (`trait_definition_id` not null).
+Troupes re-price merits one merit at a time, never as a whole category.
 
 | Scheme | Meaning | Yorick example |
 |---|---|---|
@@ -152,7 +155,9 @@ from the character's home troupe, keep those whose condition holds, and use the
 most specific one. More specific means a named trait beats a whole category,
 and a rule with a condition beats one without. A house rule beats a generic
 rule at equal specificity. So a troupe can re-price all skills, one merit, or
-out-of-clan disciplines for low generations, each with one row.
+out-of-clan disciplines for low generations, each with one row. Because merit
+house rules always name their merit, a troupe's merit price always wins over
+the generic one.
 
 **`allowance_rules`**: how traits change a character's action allowance.
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),
@@ -164,6 +169,7 @@ negative, for flaws). The same "house rule beats generic rule" lookup applies.
 "skills: one at 4, two at 3…").
 `rule_set_id`, `troupe_id` (nullable), `category`, `rating`, `picks`.
 Creation dots go into `character_traits.free_rating`, not into purchases.
+Troupes can house-rule creation rules.
 
 ## 4. Approvals and reconciliation
 
@@ -184,7 +190,9 @@ work from.
 `proposed_settlement` (the player's choice), `settlement` (the staff's final
 choice), `xp_delta`.
 Settlements are `keep_price` | `pay_difference` | `refund_difference` |
-`remove_and_refund`. Approving the change writes one `settlement` XP entry for
+`remove_and_refund`. The player must propose a settlement for every item
+before the request can be submitted; a character with any unsettled item is
+not let into the troupe. Approving the change writes one `settlement` XP entry for
 each item with a non-zero `xp_delta`, applies any trait removals, and freezes a
 new sheet version, all in one transaction.
 
@@ -208,9 +216,13 @@ action questions), `prompt`, `help_text`, `answer_type` (`long_text` |
 **`cycle_participants`**: who is in a cycle, and their **action allowance**.
 `cycle_id`, `character_id`, `allowance` (JSONB: action kind → count),
 `allowance_breakdown` (JSONB: which rules produced it, shown to the player).
-Written once, when the cycle opens, for every active character whose home
-troupe is the cycle's troupe at that moment. This one snapshot settles two
-rules from the glossary without extra logic:
+Also `added_by` (null when added at opening), `removed_at`, `removed_by`.
+Written when the cycle opens, for every active character whose home
+troupe is the cycle's troupe at that moment. Storytellers and assistant
+storytellers can add or remove participants afterwards. An added participant's
+allowance is worked out when they are added. A removed participant is marked
+removed rather than deleted, so their submission and its responses stay. The
+opening snapshot settles two rules from the glossary without extra logic:
 - the allowance is fixed when the cycle opens;
 - a home troupe change approved mid-cycle cannot put a character into a second
   cycle, because it is not on the new troupe's list until that troupe's next
@@ -266,36 +278,25 @@ action to this record", and every route calls it.
   off. `xp_entries.reason` covers awards for now; a `game_sessions` table can
   be added without changing anything above.
 
-## New terms proposed for the glossary
+## Decisions from review
 
-These are words this design needed that `CONTEXT.md` does not define yet:
+1. Troupes can add their own action kinds.
+2. Troupes can house-rule creation rules.
+3. Every reconciliation difference must have a proposed settlement, or the
+   character is not let into the troupe.
+4. The proposed terms are now in `CONTEXT.md`. Staff can add and remove
+   participants after a cycle opens.
+5. Merit house rules are per merit, with a new cost and optional text.
 
-- **Cost Rule**: a rule in a rule set saying what a trait or category costs.
-  A house rule is a cost rule or allowance rule that belongs to a troupe.
-- **Rating**: how many dots a character has in a trait.
-- **Free Rating**: dots a character has without paying XP for them, from
-  creation or from another trait.
-- **Creation Rule**: how many starting dots a new character picks at each
-  rating.
-- **Sheet Version**: one approved sheet, frozen. The approved sheet is the latest
-  one.
-- **Settlement**: the XP change that settles one reconciliation difference.
-- **Participant**: a character taking part in a downtime cycle.
+## Open questions
 
-## Questions for review
-
-1. **Can troupes add their own action kinds,** or only re-price the generic
-   ones? The draft allows adding.
-2. **Can troupes house-rule creation rules** (starting dots), or only costs and
-   allowances?
-3. **Who settles reconciliation for a character's first home troupe if the
-   player proposes nothing?** The draft defaults every item to `keep_price` for
-   staff to change.
-4. **Are the proposed new terms right,** especially Participant? "Roster" is
-   the obvious alternative.
-5. **Does a troupe's category-wide house rule beat a generic rule for one
-   named trait?** Example: the generic rules price merit X specially, and a
-   troupe sets "all merits cost 2 per dot". Under the draft's precedence the
-   generic merit X rule still wins, because it is more specific. The
-   alternative is that any house rule beats any generic rule, so "all merits"
-   really means all merits.
+1. **Can a participant be in two open cycles at once?** A storyteller adding a
+   character by hand could put it into a cycle while it is already a
+   participant in another troupe's open cycle. The draft proposes refusing
+   that, so a character only ever has one live downtime.
+2. **Do creation-rule differences need reconciling?** If a troupe's house
+   rules give more or fewer starting dots than the generic rules, a character
+   built under the generic rules will not match. The draft only reconciles
+   purchases.
+3. **Flaws:** should they follow the merit rule (house rules name one flaw), or
+   can a troupe re-price all flaws at once?

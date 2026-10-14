@@ -71,8 +71,24 @@ _Avoid_: Core rules, ruleset (one word)
 The flavour text shown for a trait when a player is choosing it.
 _Avoid_: Blurb, help text
 
+**Rating**:
+How many dots a character has in a trait.
+_Avoid_: Level, value, score
+
+**Free Rating**:
+The part of a rating the character did not pay XP for, from creation or granted by another trait.
+_Avoid_: Free value, bonus dots
+
+**Cost Rule**:
+A rule saying what XP a trait, or a whole category of traits, costs, possibly only under a condition such as being in-clan.
+_Avoid_: Price, cost table
+
+**Creation Rule**:
+A rule saying how many starting dots a new character picks at each rating in a category.
+_Avoid_: Creation pool, picks
+
 **House Rule**:
-A troupe's change to one value in a rule set, such as the cost of a merit or skill, or an allowance rule.
+A troupe's change to its rule set: a different cost, allowance or creation rule, or an action kind of its own. A house rule for a merit always names that one merit, and may carry its own text.
 _Avoid_: Override, custom rule, homebrew
 
 **Troupe Rules**:
@@ -86,8 +102,12 @@ The character's sheet as last approved by a storyteller or assistant storyteller
 _Avoid_: Current sheet, live sheet
 
 **Reconciliation**:
-Finding and settling, one by one, the differences between a character's purchases and the troupe rules of the home troupe it is joining.
+Finding and settling, one by one, the differences between a character's purchases and the troupe rules of the home troupe it is joining. A character whose differences are not all settled is not let into the troupe.
 _Avoid_: Conversion, re-costing, audit
+
+**Settlement**:
+The XP change that settles one reconciliation difference, recorded alongside the purchase it corrects.
+_Avoid_: Adjustment, correction
 
 **Purchase**:
 A trait bought for a character, recorded with the cost paid at the time; only reconciliation can change it, never a later rule change.
@@ -108,6 +128,10 @@ _Avoid_: Avatar, image, photo
 **Printable Sheet**:
 The layout of a character's approved sheet for printing and bringing to a game.
 _Avoid_: PDF, printout, character card
+
+**Sheet Version**:
+One approved sheet, frozen; the approved sheet is the latest one.
+_Avoid_: Snapshot, revision
 
 **Approval**:
 A storyteller's or assistant storyteller's acceptance of a change a player has asked for.
@@ -150,6 +174,10 @@ _Avoid_: Extra question, survey question
 **Action Kind**:
 A category of downtime action, such as general, feeding, investigation, or elite or underworld influence.
 _Avoid_: Action type, category
+
+**Participant**:
+A character taking part in a downtime cycle. Participants are the characters whose home troupe runs the cycle when it opens; storytellers and assistant storytellers can add or remove participants afterwards.
+_Avoid_: Roster entry, entrant
 
 **Action Allowance**:
 How many actions of each action kind a character may take in one downtime cycle, fixed when the cycle opens; unused actions are lost.
