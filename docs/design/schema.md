@@ -261,6 +261,7 @@ the action kind's extra fields).
 `answer_id` (unique), `body`, `status` (`unassigned` | `assigned` |
 `written`), `assigned_to_user_id` (nullable), `assigned_to_any_narrator`
 (bool), `assigned_by`, `written_by`, `written_at`.
+A narrator answering a response sees the question, the player's answer and the character's name, never the character's sheet.
 A **decline** clears the assignment back to `unassigned` and is recorded in the
 audit log. Accepting an any-narrator response sets `assigned_to_user_id` and
 clears the flag.

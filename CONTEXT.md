@@ -8,7 +8,7 @@ runs the downtimes those characters take between games.
 ### People and groups
 
 **Player**:
-A person who plays one or more characters.
+A person who plays one or more characters. A player sees only their own characters' sheets, never other players'.
 _Avoid_: User (for the person in the game), member
 
 **Troupe**:
@@ -20,7 +20,7 @@ A troupe its lead storyteller has deleted: closed to all use, but kept with its 
 _Avoid_: Deleted troupe, closed troupe
 
 **Custodian**:
-The site administrator, above all troupes, who appoints lead storytellers and manages the system itself.
+The site administrator, above all troupes, who appoints lead storytellers, manages the system itself, and can do anything in any troupe.
 _Avoid_: Admin, superuser, site owner
 
 **Staff**:
@@ -40,7 +40,7 @@ A staff member who can do everything a storyteller can except manage staff and h
 _Avoid_: AST (in names), sub-ST
 
 **Narrator**:
-A staff member who can do whatever a player in the troupe can, and also answer downtime actions assigned to them or to any narrator.
+A staff member who can do whatever a player in the troupe can, and also answer downtime actions assigned to them or to any narrator. A narrator never sees character sheets, not even for the actions they answer.
 _Avoid_: Helper, volunteer
 
 ### Characters

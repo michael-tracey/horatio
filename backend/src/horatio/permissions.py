@@ -8,7 +8,8 @@ Roles come from CONTEXT.md:
 - storytellers and the lead are the only ones who manage staff and house rules;
 - assistant storytellers can do everything else a storyteller can;
 - narrators can do whatever a player in the troupe can, and answer downtime
-  actions assigned to them or to any narrator.
+  actions assigned to them or to any narrator, but never see character sheets;
+- players see only their own characters' sheets.
 
 `TROUPE_POLICY` is the whole of that as data, so it can be read and tested in
 one place.

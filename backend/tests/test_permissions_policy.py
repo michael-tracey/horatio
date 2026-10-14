@@ -47,3 +47,8 @@ def test_people_without_a_role_can_do_none_of_it(action: TroupeAction) -> None:
 @pytest.mark.parametrize("action", list(TroupeAction))
 def test_the_custodian_can_do_everything(action: TroupeAction) -> None:
     assert allows(None, action, is_custodian=True)
+
+
+def test_narrators_never_see_character_sheets() -> None:
+    """Not even for downtime actions they answer (CONTEXT.md: Narrator)."""
+    assert not allows(Role.NARRATOR, TroupeAction.VIEW_MEMBER_CHARACTERS)
