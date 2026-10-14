@@ -374,11 +374,75 @@ category = "paths"
 scheme = "per_dot"
 rate = 10
 
+# True Brujah pay double for Morality (p. 45).
+[[cost_rules]]
+category = "paths"
+condition = { clan = "Brujah: True Brujah" }
+scheme = "per_dot"
+rate = 20
+
 # A merit's rating is its point value, so each point costs 1 XP.
 [[cost_rules]]
 category = "merits"
 scheme = "per_dot"
 rate = 1
+
+# A Path merit costs 2 rather than 3 for the clan that keeps it (pp. 254-259).
+[[cost_rules]]
+category = "merits"
+trait = "Path of Blood"
+condition = { clan_family = "Assamite" }
+scheme = "fixed"
+rate = 2
+
+[[cost_rules]]
+category = "merits"
+trait = "Path of Death and the Soul"
+condition = { clan_family = "Giovanni" }
+scheme = "fixed"
+rate = 2
+
+[[cost_rules]]
+category = "merits"
+trait = "Path of Ecstasy"
+condition = { clan_family = "Followers of Set" }
+scheme = "fixed"
+rate = 2
+
+[[cost_rules]]
+category = "merits"
+trait = "Path of Metamorphosis"
+condition = { clan_family = "Tzimisce" }
+scheme = "fixed"
+rate = 2
+
+[[cost_rules]]
+category = "merits"
+trait = "Path of Night"
+condition = { clan_family = "Lasombra" }
+scheme = "fixed"
+rate = 2
+
+[[cost_rules]]
+category = "merits"
+trait = "Path of Paradox"
+condition = { clan_family = "Ravnos" }
+scheme = "fixed"
+rate = 2
+
+[[cost_rules]]
+category = "merits"
+trait = "Path of Power and the Inner Voice"
+condition = { clan = "Brujah: True Brujah" }
+scheme = "fixed"
+rate = 2
+
+[[cost_rules]]
+category = "merits"
+trait = "Path of Typhon-Set"
+condition = { clan = "Followers of Set: Vipers" }
+scheme = "fixed"
+rate = 2
 
 # A flaw's rating is its point value, and each point gives 1 XP back.
 [[cost_rules]]

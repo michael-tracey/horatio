@@ -52,9 +52,13 @@ def vampire_is_in_clan(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: S
 
 
 def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Facts:
+    clan = next((t.name for t in sheet if t.category == "clan"), "")
     return {
         "generation": vampire_generation(sheet),
         "in_clan": vampire_is_in_clan(rules, sheet, trait) or priced_in_clan(rules, sheet, trait),
+        # The clan or bloodline exactly ("Brujah: True Brujah"), and its clan ("Brujah").
+        "clan": clan,
+        "clan_family": clan.split(":")[0].strip(),
     }
 
 
@@ -68,7 +72,7 @@ def priced_in_clan(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: Sheet
 
 SPLATS: dict[str, Splat] = {
     "vampire": Splat(
-        fact_names=frozenset({"generation", "in_clan"}),
+        fact_names=frozenset({"generation", "in_clan", "clan", "clan_family"}),
         facts=vampire_facts,
         in_clan=vampire_in_clan_disciplines,
     ),

@@ -963,3 +963,18 @@ forbids = { self = { rating = 5 }, not = { has_any = [
 ] } }
 message = "A level 5 Necromancy ritual needs a path of Necromancy at 5 or more."
 page = "172"
+
+# No more rituals than dots of that magic's paths (p. 187).
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " } } }
+message = "A thaumaturge knows no more rituals than their dots of Thaumaturgy."
+page = "187"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " } } }
+message = "A necromancer knows no more rituals than their dots of Necromancy."
+page = "172"

@@ -27,6 +27,10 @@ Condition vocabulary (every key in one table must hold):
     in_clan = true                  the subject is one of the character's in-clan
                                     disciplines
     accepted = true                 a home troupe has accepted the character
+    more_than_dots = { count = { category, name_prefix }, dots = { category, name_prefix } }
+                                    the sheet holds more traits of the first kind
+                                    than it has dots of the second (rituals against
+                                    Thaumaturgy)
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
@@ -50,7 +54,7 @@ Condition = Mapping[str, Any]
 
 CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count", "parent",
-     "self", "copies", "in_clan", "accepted", "any_of", "not"}
+     "self", "copies", "in_clan", "accepted", "more_than_dots", "any_of", "not"}
 )  # fmt: skip
 
 
@@ -193,6 +197,22 @@ def matches(
             ok = (subject.name in context.in_clan or subject.full_name in context.in_clan) == test
         elif key == "accepted":
             ok = context.accepted == test
+        elif key == "more_than_dots":
+            counted, dotted = test["count"], test["dots"]
+            held = sum(
+                1
+                for t in sheet
+                if t.category == counted["category"]
+                and t.name.startswith(counted.get("name_prefix", ""))
+                and t.rating != 0
+            )
+            dots = sum(
+                t.rating or 0
+                for t in sheet
+                if t.category == dotted["category"]
+                and t.name.startswith(dotted.get("name_prefix", ""))
+            )
+            ok = held > dots
         elif key == "any_of":
             ok = any(matches(c, sheet, subject, context) for c in test)
         elif key == "not":

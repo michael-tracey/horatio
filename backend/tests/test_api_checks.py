@@ -181,3 +181,52 @@ def test_rituals_are_bought_at_their_level_with_a_path_that_high(troupe: Troupe)
     bought = take(troupe.player, character_id, "rituals", ritual, level)
     assert bought.status_code == 200, bought.text
     assert bought.json()["cost"] == 4
+
+
+def test_a_path_merit_costs_two_for_its_clan(troupe: Troupe) -> None:
+    lasombra = as_clan(troupe, "Lasombra")
+    brujah = as_clan(troupe, "Brujah")
+
+    def price(character_id: str) -> int:
+        return troupe.player.client.post(
+            f"/characters/{character_id}/quote",
+            json={"category": "merits", "name": "Path of Night", "rating": 3},
+        ).json()["cost"]
+
+    assert (price(lasombra), price(brujah)) == (2, 3)
+
+
+def test_true_brujah_pay_double_for_morality(troupe: Troupe) -> None:
+    true_brujah = as_clan(troupe, "Brujah: True Brujah")
+
+    raised = take(troupe.player, true_brujah, "paths", "Humanity", 6)
+
+    assert raised.json()["cost"] == 20
+
+
+def test_no_more_rituals_than_thaumaturgy_dots(troupe: Troupe) -> None:
+    character_id = as_clan(troupe, "Tremere")
+    troupe.session.add(
+        XpEntry(
+            character_id=uuid.UUID(character_id),
+            kind="award",
+            amount=100,
+            reason="Test",
+            entered_by=uuid.UUID(troupe.custodian.id),
+        )
+    )
+    troupe.session.flush()
+    take(troupe.player, character_id, "disciplines", "Thaumaturgy: Path of Blood", 1)
+    catalogue = troupe.player.client.get("/rules/vampire").json()["traits"]
+    first, second = [
+        t["name"]
+        for t in catalogue
+        if t["category"] == "rituals"
+        and t["name"].startswith("Thaumaturgy: ")
+        and t["fixed_rating"] == 1
+    ][:2]
+
+    assert take(troupe.player, character_id, "rituals", first, 1).status_code == 200
+    refused = take(troupe.player, character_id, "rituals", second, 1)
+    assert refused.status_code == 409
+    assert "no more rituals than their dots" in refused.json()["detail"]
