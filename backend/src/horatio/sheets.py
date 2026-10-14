@@ -14,6 +14,7 @@ looked at.
 """
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -403,16 +404,27 @@ def request_approval(db: Session, player: User, character: Character, note: str)
     return approval
 
 
-def decide(db: Session, staff: User, approval: Approval, approve: bool, note: str) -> Approval:
+def decide(
+    db: Session,
+    staff: User,
+    approval: Approval,
+    approve: bool,
+    note: str,
+    settlement_overrides: Mapping[uuid.UUID, str] | None = None,
+) -> Approval:
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
     character = lock_character(db, approval.character_id)
+    if approve and approval.kind == "sheet_change":
+        freeze_sheet(db, staff, character)
+    elif approve and approval.kind == "home_troupe_change":
+        from horatio.reconciliation import approve_change  # imports this module
+
+        approve_change(db, staff, approval, character, settlement_overrides or {})
     approval.status = "approved" if approve else "declined"
     approval.decided_by = staff.id
     approval.decided_at = datetime.now(UTC)
     approval.staff_note = note
-    if approve and approval.kind == "sheet_change":
-        freeze_sheet(db, staff, character)
     db.flush()
     audit.record(
         db,

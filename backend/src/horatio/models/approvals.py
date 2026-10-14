@@ -37,3 +37,49 @@ class Approval(Record):
     decided_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     staff_note: Mapped[str] = mapped_column(default="", server_default="")
+
+
+class HomeTroupeChange(Record):
+    """The details of a home troupe change request."""
+
+    __tablename__ = "home_troupe_changes"
+
+    approval_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("approvals.id"), unique=True)
+    # Null for a character's first home troupe.
+    from_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
+    to_troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"))
+
+
+SETTLEMENTS = (
+    "keep_price",
+    "pay_difference",
+    "refund_difference",
+    "remove_and_refund",
+)
+
+
+class ReconciliationItem(Record):
+    """One difference between what a character paid for a trait and what the new
+    home troupe's rules charge for it, and how it is settled."""
+
+    __tablename__ = "reconciliation_items"
+    __table_args__ = (
+        CheckConstraint("difference in ('cost_differs', 'not_allowed')", name="difference"),
+        CheckConstraint(f"proposed_settlement in {SETTLEMENTS}", name="proposed_settlement"),
+        CheckConstraint(f"settlement is null or settlement in {SETTLEMENTS}", name="settlement"),
+    )
+
+    home_troupe_change_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("home_troupe_changes.id"), index=True
+    )
+    trait_definition_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_definitions.id"))
+    detail: Mapped[str] = mapped_column(default="", server_default="")
+    difference: Mapped[str]
+    rating: Mapped[int]
+    # XP the character paid for the trait, and what the new rules charge (null if not allowed).
+    old_cost: Mapped[int]
+    new_cost: Mapped[int | None]
+    proposed_settlement: Mapped[str]
+    # Set when the request is decided: the staff's final choice.
+    settlement: Mapped[str | None]
+    xp_delta: Mapped[int | None]

@@ -78,6 +78,10 @@ class XpEntry(Record):
             " and cost_basis is not null)",
             name="purchase_is_complete",
         ),
+        CheckConstraint(
+            "kind <> 'settlement' or reconciliation_item_id is not null",
+            name="settlement_names_its_difference",
+        ),
     )
 
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
@@ -95,3 +99,7 @@ class XpEntry(Record):
     to_rating: Mapped[int | None]
     # The cost rule that priced a purchase, as it stood at the time.
     cost_basis: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # For a settlement: the reconciliation difference it settles.
+    reconciliation_item_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("reconciliation_items.id")
+    )

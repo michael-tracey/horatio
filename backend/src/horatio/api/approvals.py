@@ -10,19 +10,61 @@ from sqlalchemy import select
 from horatio import sheets
 from horatio.api.sheets import ApprovalOut, PendingChange, approval_out
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Approval, Character, Troupe
+from horatio.models import Approval, Character, TraitDefinition, Troupe
 from horatio.permissions import TroupeAction, require_troupe_action
+from horatio.reconciliation import items_for
 
 router = APIRouter(tags=["approvals"])
 
 
+class ReconciliationOut(BaseModel):
+    id: uuid.UUID
+    trait: str
+    detail: str
+    difference: str
+    rating: int
+    old_cost: int
+    new_cost: int | None
+    proposed_settlement: str
+    settlement: str | None
+
+
 class QueuedApproval(ApprovalOut):
     character_name: str
+    # For a sheet change: how the sheet differs from its approved version.
     changes: list[PendingChange]
+    # For a home troupe change: each difference and how it is to be settled.
+    reconciliation: list[ReconciliationOut]
+
+
+class SettlementOverride(BaseModel):
+    item_id: uuid.UUID
+    settlement: Literal["keep_price", "pay_difference", "refund_difference", "remove_and_refund"]
 
 
 class Decision(BaseModel):
     note: str = ""
+    # Home troupe changes only: settle these differences differently from the player's proposal.
+    settlements: list[SettlementOverride] = []
+
+
+def reconciliation_out(db: DbSession, approval: Approval) -> list[ReconciliationOut]:
+    if approval.kind != "home_troupe_change":
+        return []
+    return [
+        ReconciliationOut(
+            id=item.id,
+            trait=db.get_one(TraitDefinition, item.trait_definition_id).name,
+            detail=item.detail,
+            difference=item.difference,
+            rating=item.rating,
+            old_cost=item.old_cost,
+            new_cost=item.new_cost,
+            proposed_settlement=item.proposed_settlement,
+            settlement=item.settlement,
+        )
+        for item in items_for(db, approval)
+    ]
 
 
 @router.get("/troupes/{troupe_id}/approvals")
@@ -47,8 +89,9 @@ def troupe_approvals(
             **approval_out(a).model_dump(),
             character_name=c.name,
             changes=[PendingChange(**ch) for ch in sheets.pending_changes(db, c)]
-            if a.status == "pending"
+            if a.status == "pending" and a.kind == "sheet_change"
             else [],
+            reconciliation=reconciliation_out(db, a),
         )
         for a, c in rows
     ]
@@ -62,7 +105,14 @@ def decide(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such request.")
     troupe = db.get_one(Troupe, approval.troupe_id)
     require_troupe_action(db, user, troupe, TroupeAction.APPROVE_CHANGES)
-    sheets.decide(db, user, approval, approve, body.note)
+    sheets.decide(
+        db,
+        user,
+        approval,
+        approve,
+        body.note,
+        {o.item_id: o.settlement for o in body.settlements},
+    )
     db.commit()
     return approval_out(approval)
 

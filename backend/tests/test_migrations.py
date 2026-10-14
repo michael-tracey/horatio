@@ -20,3 +20,16 @@ def test_migrations_downgrade_and_upgrade_cleanly(engine: Engine, alembic_config
     command.downgrade(alembic_config, "base")
     command.upgrade(alembic_config, "head")
     load_rules(engine)  # the downgrade dropped them; later tests need them
+
+
+def test_check_constraints_match_models(engine: Engine) -> None:
+    """Alembic's autogenerate does not compare check constraints, so this does."""
+    from sqlalchemy import CheckConstraint, inspect
+
+    inspector = inspect(engine)
+    for table in Base.metadata.sorted_tables:
+        in_models = {
+            str(c.name) for c in table.constraints if isinstance(c, CheckConstraint) and c.name
+        }
+        in_database = {str(c["name"]) for c in inspector.get_check_constraints(table.name)}
+        assert in_models == in_database, table.name

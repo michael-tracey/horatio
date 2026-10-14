@@ -3,7 +3,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from horatio.api import approvals, auth, characters, rules, sheets, troupes
+from horatio.api import approvals, auth, characters, membership, rules, sheets, troupes
 
 app = FastAPI(title="Horatio")
 
@@ -32,6 +32,7 @@ app.include_router(auth.router)
 app.include_router(troupes.router)
 app.include_router(characters.router)
 app.include_router(sheets.router)
+app.include_router(membership.router)
 app.include_router(approvals.router)
 app.include_router(rules.router)
 

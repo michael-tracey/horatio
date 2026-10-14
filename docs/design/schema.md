@@ -340,3 +340,24 @@ Recorded here for review; each is easy to change.
   rules (Gangrel: Anda, Lasombra: Corsairs, Lhiannan, Nagaraja, Nosferatu:
   Creeps, Nosferatu: Nictuku, Tzimisce: Bratovitch), so they are not in the
   catalogue yet.
+
+**Troupes and home troupes (step 2)**
+
+- A player adds a character to any running troupe, and removes it, without
+  approval. Joining shares the sheet with that troupe's running staff.
+  Asking for a home troupe also joins it.
+- Leaving the home troupe leaves the character with no home troupe; it then
+  plays by the plain rule set.
+- "What the character paid" for a trait is its purchases net of refunds and
+  of earlier settlements, so a second move reconciles against the real total.
+- Settlement choices on offer: a trait the new troupe bans can be removed and
+  refunded, or kept at its price; any other difference can be paid or
+  refunded, kept at its price, or removed and refunded.
+- Settlements the character cannot afford are refused, at request and again
+  at approval.
+- Approval applies settlements as `settlement` XP entries, moves the home
+  troupe, makes a draft active, and freezes the sheet as approved. The old
+  troupe gets an audit event (`home_troupe.moved_away`); there are no
+  notifications yet.
+- Creation-rule differences are not reconciled: creation rules do not exist
+  yet.
