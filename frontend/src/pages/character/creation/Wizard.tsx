@@ -176,6 +176,11 @@ function StepView({
               picks={mine}
               onChange={set}
               tag={category === "disciplines" ? (t: TraitOut) => (inClan.has(t.name) ? "in-clan" : null) : undefined}
+              sections={
+                traits.some((t) => t.attribute)
+                  ? { order: ["Physical", "Social", "Mental"], of: (t: TraitOut) => t.attribute }
+                  : undefined
+              }
             />
           );
         })}

@@ -5369,133 +5369,156 @@ name = "Unaffiliated"
 category = "skills"
 name = "Academics"
 page_reference = "unknown"
+properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Animal Ken"
 page_reference = "unknown"
+properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Athletics"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Awareness"
 page_reference = "unknown"
+properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Brawl"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Computer"
 page_reference = "unknown"
+properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Crafts"
 page_reference = "unknown"
-properties = { requirement = "requires_specialization" }
+properties = { attribute = "Mental", requirement = "requires_specialization" }
 
 [[traits]]
 category = "skills"
 name = "Dodge"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Drive"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Empathy"
 page_reference = "unknown"
+properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Firearms"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Intimidation"
 page_reference = "unknown"
+properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Investigation"
 page_reference = "unknown"
+properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Leadership"
 page_reference = "unknown"
+properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Linguistics"
+properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Lore"
 page_reference = "unknown"
+properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Medicine"
 page_reference = "unknown"
+properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Melee"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Occult"
 page_reference = "unknown"
+properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Performance"
 page_reference = "unknown"
-properties = { requirement = "requires_specialization" }
+properties = { attribute = "Social", requirement = "requires_specialization" }
 
 [[traits]]
 category = "skills"
 name = "Science"
 page_reference = "unknown"
-properties = { requirement = "requires_specialization" }
+properties = { attribute = "Mental", requirement = "requires_specialization" }
 
 [[traits]]
 category = "skills"
 name = "Security"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Stealth"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Streetwise"
 page_reference = "unknown"
+properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Subterfuge"
 page_reference = "unknown"
+properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Survival"
 page_reference = "unknown"
+properties = { attribute = "Physical" }
 
 [[traits]]
 category = "status_traits"

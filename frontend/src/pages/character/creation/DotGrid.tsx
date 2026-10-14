@@ -27,9 +27,13 @@ export function DotGrid({
   onChange,
   tag,
   showTitle = true,
+  sections,
 }: {
   title: string;
   showTitle?: boolean;
+  /** Split the rows under headings, such as skills by attribute. Traits no
+   * section claims go last, under "Other". */
+  sections?: { order: string[]; of: (trait: TraitOut) => string | null };
   traits: TraitOut[];
   allowed: Allowed;
   picks: Picks;
@@ -41,6 +45,51 @@ export function DotGrid({
     .sort((a, b) => b - a);
   const maxDots = Math.max(...ratings);
   const { query, setQuery, shown } = useFiltered(traits, picks);
+  const groups: [string | null, TraitOut[]][] = sections
+    ? [...sections.order, "Other"]
+        .map((h): [string, TraitOut[]] => [
+          h,
+          shown.filter((t) => (h === "Other" ? !sections.order.includes(sections.of(t) ?? "") : sections.of(t) === h)),
+        ])
+        .filter(([, ts]) => ts.length > 0)
+    : [[null, shown]];
+  const row = (trait: TraitOut) => {
+    const rating = picks[trait.name] ?? 0;
+    const label = tag?.(trait);
+    return (
+      <li key={trait.name} className="flex items-center justify-between gap-3 py-1.5">
+        <span className="min-w-0 text-sm">
+          <span className={rating ? "text-parchment" : "text-mist"}>{trait.name}</span>
+          {label && <span className="ml-2 text-xs text-gold">{label}</span>}
+        </span>
+        <span className="flex shrink-0 gap-0.5">
+          {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
+            const pickable = dot in allowed;
+            const enabled = pickable && canTap(picks, allowed, trait.name, dot);
+            const filled = dot <= rating;
+            return (
+              <button
+                key={dot}
+                type="button"
+                aria-label={`${trait.name} ${dot}`}
+                aria-pressed={rating === dot}
+                disabled={!enabled}
+                onClick={() => onChange(tap(picks, allowed, trait.name, dot))}
+                className={[
+                  "grid h-8 w-7 place-items-center rounded text-lg leading-none",
+                  pickable ? "hover:bg-ash" : "cursor-default",
+                  filled ? "text-blood-bright" : pickable ? "text-mist" : "text-ash",
+                  !enabled && pickable && !filled ? "opacity-30" : "",
+                ].join(" ")}
+              >
+                {filled ? "●" : pickable ? "○" : "·"}
+              </button>
+            );
+          })}
+        </span>
+      </li>
+    );
+  };
 
   return (
     <section aria-label={title} className="flex flex-col gap-3">
@@ -62,45 +111,12 @@ export function DotGrid({
       {traits.length >= SEARCH_FROM && (
         <Input aria-label={`Search ${title}`} placeholder="Search…" value={query} onChange={(e) => setQuery(e.target.value)} />
       )}
-      <ul className="divide-y divide-ash/60">
-        {shown.map((trait) => {
-          const rating = picks[trait.name] ?? 0;
-          const label = tag?.(trait);
-          return (
-            <li key={trait.name} className="flex items-center justify-between gap-3 py-1.5">
-              <span className="min-w-0 text-sm">
-                <span className={rating ? "text-parchment" : "text-mist"}>{trait.name}</span>
-                {label && <span className="ml-2 text-xs text-gold">{label}</span>}
-              </span>
-              <span className="flex shrink-0 gap-0.5">
-                {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
-                  const pickable = dot in allowed;
-                  const enabled = pickable && canTap(picks, allowed, trait.name, dot);
-                  const filled = dot <= rating;
-                  return (
-                    <button
-                      key={dot}
-                      type="button"
-                      aria-label={`${trait.name} ${dot}`}
-                      aria-pressed={rating === dot}
-                      disabled={!enabled}
-                      onClick={() => onChange(tap(picks, allowed, trait.name, dot))}
-                      className={[
-                        "grid h-8 w-7 place-items-center rounded text-lg leading-none",
-                        pickable ? "hover:bg-ash" : "cursor-default",
-                        filled ? "text-blood-bright" : pickable ? "text-mist" : "text-ash",
-                        !enabled && pickable && !filled ? "opacity-30" : "",
-                      ].join(" ")}
-                    >
-                      {filled ? "●" : pickable ? "○" : "·"}
-                    </button>
-                  );
-                })}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      {groups.map(([heading, traitsIn]) => (
+        <div key={heading ?? "all"}>
+          {heading && <h4 className="mt-2 mb-1 font-sans text-xs tracking-wide text-mist uppercase">{heading}</h4>}
+          <ul className="divide-y divide-ash/60">{traitsIn.map(row)}</ul>
+        </div>
+      ))}
     </section>
   );
 }

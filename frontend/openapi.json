@@ -2088,6 +2088,17 @@
       },
       "TraitOut": {
         "properties": {
+          "attribute": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribute"
+          },
           "category": {
             "title": "Category",
             "type": "string"
@@ -2162,7 +2173,8 @@
           "page_reference",
           "fixed_rating",
           "house_rule",
-          "in_clan"
+          "in_clan",
+          "attribute"
         ],
         "title": "TraitOut",
         "type": "object"

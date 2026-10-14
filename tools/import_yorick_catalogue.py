@@ -58,6 +58,24 @@ EXTRA = [
     ("willpower_sources", "Willpower"),
 ]
 
+# Which attribute each skill generally goes with, for grouping skills on screen.
+# Yorick never recorded this; it is the usual split, kept here to be corrected.
+SKILL_ATTRIBUTES = {
+    "Physical": [
+        "Athletics", "Brawl", "Dodge", "Drive", "Firearms", "Melee", "Security", "Stealth",
+        "Survival",
+    ],
+    "Social": [
+        "Animal Ken", "Empathy", "Intimidation", "Leadership", "Performance", "Streetwise",
+        "Subterfuge",
+    ],
+    "Mental": [
+        "Academics", "Awareness", "Computer", "Crafts", "Investigation", "Linguistics", "Lore",
+        "Medicine", "Occult", "Science",
+    ],
+}
+ATTRIBUTE_OF = {skill: attr for attr, skills in SKILL_ATTRIBUTES.items() for skill in skills}
+
 # Merits and flaws are bought at their point value, never another rating.
 FIXED_RATING = {"merits", "flaws"}
 
@@ -98,6 +116,8 @@ def main(csv_path: str) -> None:
         properties: list[str] = []
         if category in FIXED_RATING and row.get("value", "").strip().lstrip("-").isdigit():
             properties.append(f"rating = {abs(int(row['value']))}")
+        if category == "skills" and name in ATTRIBUTE_OF:
+            properties.append(f"attribute = {toml_string(ATTRIBUTE_OF[name])}")
         for key in ("type", "requirement"):
             if row.get(key, "").strip():
                 properties.append(f"{key} = {toml_string(row[key].strip())}")

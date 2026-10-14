@@ -1910,6 +1910,8 @@ export interface components {
         };
         /** TraitOut */
         TraitOut: {
+            /** Attribute */
+            attribute: string | null;
             /** Category */
             category: string;
             /** Description */

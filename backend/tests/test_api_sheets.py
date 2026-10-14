@@ -350,3 +350,15 @@ def test_the_catalogue_lists_traits_with_house_rule_text(troupe: Troupe, session
         "Rare in our city"
     )
     assert {c["key"] for c in plain["categories"]} >= {"clan", "skills", "merits"}
+
+
+def test_the_catalogue_says_which_attribute_a_skill_goes_with(troupe: Troupe) -> None:
+    skills = troupe.player.client.get("/rules/vampire", params={"category": "skills"}).json()
+
+    attributes = {t["name"]: t["attribute"] for t in skills["traits"]}
+    assert (attributes["Brawl"], attributes["Empathy"], attributes["Occult"]) == (
+        "Physical",
+        "Social",
+        "Mental",
+    )
+    assert None not in attributes.values()
