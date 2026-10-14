@@ -6,8 +6,10 @@ license = "AGPL-3.0-only"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.14",
+    "email-validator>=2.2",
     "fastapi>=0.115",
     "psycopg[binary]>=3.2",
+    "pwdlib[argon2,bcrypt]>=0.2",
     "pydantic-settings>=2.6",
     "sqlalchemy>=2.0.36",
     "uvicorn[standard]>=0.32",
@@ -49,3 +51,4 @@ venv = ".venv"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]

@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     # Matches compose.yaml at the repo root.
     database_url: str = "postgresql+psycopg://horatio:horatio@localhost:54329/horatio"
 
+    # Sign-in sessions.
+    session_cookie_name: str = "horatio_session"
+    session_days: int = 30
+    # Secure cookies are only sent over HTTPS. Turn off only for local HTTP development.
+    cookie_secure: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:

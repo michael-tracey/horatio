@@ -26,7 +26,10 @@ cd backend
 uv sync
 uv run alembic upgrade head   # create the tables
 uv run python -m horatio.rules  # load the generic rule sets
-uv run uvicorn horatio.app:app --reload
+HORATIO_COOKIE_SECURE=false uv run uvicorn horatio.app:app --reload
+# API docs: http://localhost:8000/docs
+# After signing up, make yourself custodian:
+uv run python -m horatio.custodian you@example.com
 
 uv run pytest                 # starts its own throwaway Postgres
 uv run ruff check . && uv run ruff format --check . && uv run pyright

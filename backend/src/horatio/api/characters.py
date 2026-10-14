@@ -1,0 +1,93 @@
+import uuid
+
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+
+from horatio.auth.deps import CurrentUser, DbSession
+from horatio.models import Character, RuleSet
+from horatio.permissions import can_edit_character, visible_character
+
+router = APIRouter(prefix="/characters", tags=["characters"])
+
+
+class CharacterOut(BaseModel):
+    id: uuid.UUID
+    player_id: uuid.UUID
+    splat: str
+    name: str
+    status: str
+    home_troupe_id: uuid.UUID | None
+
+
+class NewCharacter(BaseModel):
+    splat: str
+    name: str = Field(min_length=1, max_length=200)
+
+
+class CharacterChanges(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+
+
+def character_out(character: Character) -> CharacterOut:
+    return CharacterOut(
+        id=character.id,
+        player_id=character.player_id,
+        splat=character.splat,
+        name=character.name,
+        status=character.status,
+        home_troupe_id=character.home_troupe_id,
+    )
+
+
+def editable_character(db: DbSession, user: CurrentUser, character_id: uuid.UUID) -> Character:
+    character = visible_character(db, user, character_id)
+    if not can_edit_character(user, character):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player can change it.")
+    if character.status == "retired":
+        raise HTTPException(status.HTTP_409_CONFLICT, "This character is retired.")
+    return character
+
+
+@router.get("")
+def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterOut]:
+    characters = db.scalars(
+        select(Character).where(Character.player_id == user.id).order_by(Character.name)
+    )
+    return [character_out(c) for c in characters]
+
+
+@router.post("", status_code=status.HTTP_201_CREATED)
+def create_character(body: NewCharacter, db: DbSession, user: CurrentUser) -> CharacterOut:
+    """Players build characters on their own, outside any troupe, as drafts."""
+    if db.scalar(select(RuleSet.id).where(RuleSet.splat == body.splat)) is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No rules for {body.splat!r}.")
+    character = Character(player_id=user.id, splat=body.splat, name=body.name)
+    db.add(character)
+    db.commit()
+    db.refresh(character)
+    return character_out(character)
+
+
+@router.get("/{character_id}")
+def read_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CharacterOut:
+    return character_out(visible_character(db, user, character_id))
+
+
+@router.patch("/{character_id}")
+def change_character(
+    character_id: uuid.UUID, body: CharacterChanges, db: DbSession, user: CurrentUser
+) -> CharacterOut:
+    character = editable_character(db, user, character_id)
+    character.name = body.name
+    db.commit()
+    return character_out(character)
+
+
+@router.post("/{character_id}/retire")
+def retire_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CharacterOut:
+    """Characters are never deleted, only retired."""
+    character = editable_character(db, user, character_id)
+    character.status = "retired"
+    db.commit()
+    return character_out(character)
