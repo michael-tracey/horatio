@@ -370,10 +370,17 @@ function CreationPanel({ character, creation, locked }: { character: CharacterOu
   const left = creation.pools.filter((p) => p.kind === "picks").reduce((n, p) => n + p.remaining, 0);
 
   return (
-    <Card title="Character creation">
+    <Card
+      title="Character creation"
+      actions={
+        <Link to={`/characters/${character.id}/create`}>
+          <Button tabIndex={-1}>Open the creation wizard</Button>
+        </Link>
+      }
+    >
       <p className="mb-3 text-sm text-mist">
-        Place your starting dots with the panel on the right: each pick gives one trait that many free dots, and merits
-        and flaws come from a budget of points. Experience can buy more at any time.
+        The wizard walks through each step. You can also place picks one at a time with the panel on the right: each
+        pick gives one trait that many free dots, and merits and flaws come from a budget of points.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {[...byCategory].map(([category, pools]) => (

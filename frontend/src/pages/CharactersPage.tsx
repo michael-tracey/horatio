@@ -12,7 +12,7 @@ export function CharactersPage() {
   const [splat, setSplat] = useState("vampire");
   const create = useAction(async () => {
     const character = await unwrap(api.POST("/api/characters", { body: { name, splat } }));
-    navigate(`/characters/${character.id}`);
+    navigate(`/characters/${character.id}/create`);
   });
 
   return (

@@ -3,6 +3,7 @@ import { Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
+import { CreationWizard } from "./creation/Wizard";
 import { DowntimeTab } from "./DowntimeTab";
 import { ResultsTab } from "./ResultsTab";
 import { SheetTab } from "./SheetTab";
@@ -30,6 +31,7 @@ export function CharacterPage() {
       </PageTitle>
       <Tabs
         tabs={[
+          ...(mine && !c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
           { to: base, label: "Sheet", end: true },
           { to: `${base}/xp`, label: "Experience" },
           ...(mine
@@ -44,6 +46,7 @@ export function CharacterPage() {
       <Routes>
         <Route index element={<SheetTab character={c} mine={mine} />} />
         <Route path="xp" element={<XpTab characterId={c.id} />} />
+        {mine && !c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (
           <>
             <Route path="troupes" element={<TroupesTab character={c} />} />

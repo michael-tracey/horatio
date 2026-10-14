@@ -180,6 +180,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/creation/categories/{category}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Category Picks
+         * @description Replace every creation pick in one category at once: one step of the wizard.
+         */
+        put: operations["set_category_picks_api_characters__character_id__creation_categories__category__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/creation/complete": {
         parameters: {
             query?: never;
@@ -1149,6 +1169,26 @@ export interface components {
             /** Rated */
             rated: boolean;
         };
+        /** CategoryPick */
+        CategoryPick: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /**
+             * Rating
+             * @default 1
+             */
+            rating: number;
+        };
+        /** CategoryPicks */
+        CategoryPicks: {
+            /** Picks */
+            picks: components["schemas"]["CategoryPick"][];
+        };
         /** ChangeOut */
         ChangeOut: {
             /** Cost */
@@ -1878,6 +1918,8 @@ export interface components {
             fixed_rating: number | null;
             /** House Rule */
             house_rule: string | null;
+            /** In Clan */
+            in_clan: string[] | null;
             /** Name */
             name: string;
             /** Page Reference */
@@ -2421,6 +2463,42 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_category_picks_api_characters__character_id__creation_categories__category__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryPicks"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

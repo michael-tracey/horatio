@@ -307,6 +307,47 @@
         "title": "CategoryOut",
         "type": "object"
       },
+      "CategoryPick": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CategoryPick",
+        "type": "object"
+      },
+      "CategoryPicks": {
+        "properties": {
+          "picks": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryPick"
+            },
+            "title": "Picks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "picks"
+        ],
+        "title": "CategoryPicks",
+        "type": "object"
+      },
       "ChangeOut": {
         "properties": {
           "cost": {
@@ -2084,6 +2125,20 @@
             ],
             "title": "House Rule"
           },
+          "in_clan": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Clan"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -2106,7 +2161,8 @@
           "description",
           "page_reference",
           "fixed_rating",
-          "house_rule"
+          "house_rule",
+          "in_clan"
         ],
         "title": "TraitOut",
         "type": "object"
@@ -3031,6 +3087,69 @@
           }
         },
         "summary": "Read Creation",
+        "tags": [
+          "creation"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/creation/categories/{category}": {
+      "put": {
+        "description": "Replace every creation pick in one category at once: one step of the wizard.",
+        "operationId": "set_category_picks_api_characters__character_id__creation_categories__category__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryPicks"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Category Picks",
         "tags": [
           "creation"
         ]

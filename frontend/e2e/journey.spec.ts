@@ -54,49 +54,43 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Save" }).click();
   await expect(lead.page.getByText("narrator · Narrator")).toBeVisible();
 
-  // The player builds a character: creation picks, a clan, then Influence bought with XP.
+  // The player builds a character in the creation wizard, then buys Influence with XP.
   const p = player.page;
   await p.getByLabel("Name").fill("Agnes");
   await p.getByRole("button", { name: "Create" }).click();
-  await expect(p.getByRole("heading", { name: "Agnes" })).toBeVisible();
-  await expect(p.getByRole("heading", { name: "Character creation" })).toBeVisible();
-  const choose = async (category: string, trait: string, button: string) => {
-    await p.getByLabel("Category").selectOption({ label: category });
-    await p.getByLabel("Trait").selectOption(trait);
-    await p.getByRole("button", { name: button }).click();
-    await expect(p.locator("main").getByText(trait, { exact: true }).first()).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
+  const next = async (heading: string) => {
+    await p.getByRole("button", { name: "Save and continue" }).click();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
   };
-  // Picks go highest first, which is the pick the form offers first.
-  for (const [category, trait] of [
-    ["Attributes", "Physical"],
-    ["Attributes", "Social"],
-    ["Attributes", "Mental"],
-    ["Physical Focus", "Strength"],
-    ["Mental Focus", "Wits"],
-    ["Social Focus", "Charisma"],
-    ["Skills", "Brawl"],
-    ["Skills", "Dodge"],
-    ["Skills", "Athletics"],
-    ["Skills", "Awareness"],
-    ["Skills", "Empathy"],
-    ["Skills", "Firearms"],
-    ["Skills", "Investigation"],
-    ["Skills", "Leadership"],
-    ["Skills", "Medicine"],
-    ["Skills", "Melee"],
-    ["Backgrounds", "Fame"],
-    ["Backgrounds", "Herd"],
-    ["Backgrounds", "Allies"],
-    ["Disciplines", "Celerity"],
-    ["Disciplines", "Potence"],
-    ["Disciplines", "Presence"],
-  ] as const) {
-    await choose(category, trait, "Place pick");
-  }
+  const tap = async (...dots: string[]) => {
+    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
+  };
+  await next("Attributes");
+  await tap("Physical 7", "Social 5", "Mental 3");
+  await tap("Mental 7"); // swaps with Physical
+  await expect(p.getByRole("button", { name: "Physical 3", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await next("Focuses");
+  await tap("Strength 1", "Wits 1", "Charisma 1");
+  await next("Skills");
+  await tap("Brawl 4", "Dodge 3", "Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2");
+  await tap("Investigation 1", "Leadership 1", "Medicine 1", "Melee 1");
+  await expect(p.getByRole("button", { name: "Stealth 3", exact: true })).toBeDisabled();
   await p.screenshot(shots("creation"));
+  await next("Backgrounds");
+  await tap("Fame 3", "Herd 2", "Allies 1");
+  await next("Disciplines");
+  await expect(p.getByText("in-clan").first()).toBeVisible();
+  await tap("Celerity 2", "Potence 1", "Presence 1");
+  await next("Merits & flaws");
+  await p.getByLabel("Search Merits").fill("Acute");
+  await p.getByLabel(/Acute Sense/).check();
+  await next("Review");
+  await p.screenshot(shots("review"));
   await p.getByRole("button", { name: "Finish creation" }).click();
-  await expect(p.getByRole("heading", { name: "Character creation" })).toBeHidden();
-  await choose("Clan", "Brujah", "Choose");
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   await p.getByLabel("Category").selectOption({ label: "Backgrounds" });
   await p.getByLabel("Trait").selectOption("Influences: The Elite");
   await p.getByRole("button", { name: "Buy" }).click();

@@ -188,6 +188,96 @@ def remove_pick(
     )
 
 
+@dataclass
+class PickSpec:
+    name: str
+    rating: int
+    detail: str = ""
+
+
+def set_category_picks(
+    db: Session, player: User, character: Character, category: str, picks: Sequence[PickSpec]
+) -> None:
+    """Replace every creation pick in one category at once: one wizard step.
+
+    The new picks need not fill the pools (a step can be saved half done), but
+    must fit them. Picks on traits with bought dots cannot move or go, and a
+    new pick cannot land on a trait that already has dots.
+    """
+    ensure_creating(db, character)
+    all_pools = {key: p for key, p in pools(db, character).items() if key[0] == category}
+    if not all_pools:
+        raise unprocessable(f"There are no creation picks for {category}.")
+    points = all_pools.get((category, 0))
+    is_points = points is not None and points.kind == "points"
+
+    wanted: dict[tuple[str, str], int] = {}
+    definitions = {}
+    for spec in picks:
+        definition, _ = find_definition(db, character, category, spec.name)
+        key = (definition.name, spec.detail)
+        if key in wanted:
+            raise unprocessable(f"{spec.name} is picked twice.")
+        fixed = definition.properties.get("rating")
+        wanted[key] = fixed if is_points and fixed is not None else spec.rating
+        definitions[key] = definition
+
+    if is_points:
+        assert points is not None
+        if sum(wanted.values()) > points.allowed:
+            raise conflict(
+                f"That is {sum(wanted.values())} points; the budget is {points.allowed}."
+            )
+    else:
+        for rating in set(wanted.values()):
+            pool = all_pools.get((category, rating))
+            if pool is None:
+                raise unprocessable(f"There are no {category.replace('_', ' ')} picks at {rating}.")
+            used = sum(1 for r in wanted.values() if r == rating)
+            if used > pool.allowed:
+                raise conflict(f"Only {pool.allowed} at {rating}; that is {used}.")
+
+    rows = {
+        (r.definition.name, r.trait.detail): r
+        for r in sheet_rows(db, character)
+        if r.category.key == category
+    }
+    for key, row in rows.items():
+        pick = row.trait.creation_pick
+        if pick is None or wanted.get(key) == pick:
+            continue
+        if (row.trait.rating or 0) > row.trait.free_rating:
+            raise conflict(f"{key[0]} has bought dots on top of its pick; undo them first.")
+        db.delete(row.trait)
+    db.flush()
+
+    for key, rating in wanted.items():
+        row = rows.get(key)
+        if row is not None and row.trait.creation_pick == rating:
+            continue
+        if row is not None and row.trait.creation_pick is None and (row.trait.rating or 0) > 0:
+            raise conflict(f"{key[0]} already has dots; a pick goes on a trait that has none.")
+        db.add(
+            CharacterTrait(
+                character_id=character.id,
+                trait_definition_id=definitions[key].id,
+                detail=key[1],
+                rating=rating,
+                free_rating=rating,
+                creation_pick=rating,
+            )
+        )
+    db.flush()
+    audit.record(
+        db,
+        player,
+        "creation.set_category",
+        character_id=character.id,
+        category=category,
+        picks={f"{n}{': ' + d if d else ''}": r for (n, d), r in wanted.items()},
+    )
+
+
 def complete(db: Session, player: User, character: Character) -> None:
     ensure_creating(db, character)
     unplaced = [p for p in pools(db, character).values() if p.kind == "picks" and p.remaining > 0]

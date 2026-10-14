@@ -30,6 +30,8 @@ class TraitOut(BaseModel):
     fixed_rating: int | None
     # Text from a house rule for this trait in the troupe asked about.
     house_rule: str | None
+    # For a clan: its in-clan disciplines.
+    in_clan: list[str] | None
 
 
 class CatalogueOut(BaseModel):
@@ -72,6 +74,7 @@ def catalogue(
                 page_reference=t.page_reference,
                 fixed_rating=t.properties.get("rating"),
                 house_rule=house_text.get((t.category, t.name)),
+                in_clan=t.properties.get("in_clan"),
             )
             for t in sorted(rules.rule_set.traits.values(), key=lambda t: (t.category, t.name))
             if category is None or t.category == category

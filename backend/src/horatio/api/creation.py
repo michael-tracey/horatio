@@ -46,6 +46,17 @@ class Pick(BaseModel):
     rating: int = Field(default=1, ge=1)
 
 
+class CategoryPick(BaseModel):
+    name: str
+    detail: str = Field(default="", max_length=200)
+    # Ignored for merits and flaws, which use their point value.
+    rating: int = Field(default=1, ge=1)
+
+
+class CategoryPicks(BaseModel):
+    picks: list[CategoryPick]
+
+
 class Unpick(BaseModel):
     category: str
     name: str
@@ -91,6 +102,23 @@ def place_pick(
 ) -> CreationOut:
     character = players_character(db, user, character_id)
     creation.place_pick(db, user, character, body.category, body.name, body.detail, body.rating)
+    db.commit()
+    return creation_out(db, character)
+
+
+@router.put("/categories/{category}")
+def set_category_picks(
+    character_id: uuid.UUID, category: str, body: CategoryPicks, db: DbSession, user: CurrentUser
+) -> CreationOut:
+    """Replace every creation pick in one category at once: one step of the wizard."""
+    character = players_character(db, user, character_id)
+    creation.set_category_picks(
+        db,
+        user,
+        character,
+        category,
+        [creation.PickSpec(name=p.name, rating=p.rating, detail=p.detail) for p in body.picks],
+    )
     db.commit()
     return creation_out(db, character)
 

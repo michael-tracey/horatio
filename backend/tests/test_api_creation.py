@@ -407,3 +407,96 @@ def test_staff_see_and_can_change_starting_dot_settlements(troupe: Troupe) -> No
 
     brawl = trait(troupe.player, character_id, "Brawl")
     assert (brawl["rating"], brawl["free_rating"]) == (4, 4)
+
+
+# --- whole steps at once (the wizard) ---------------------------------------------------------
+
+
+def set_step(person: Person, character_id: str, category: str, picks: list[tuple[str, int]]) -> Any:
+    return person.client.put(
+        f"/characters/{character_id}/creation/categories/{category}",
+        json={"picks": [{"name": n, "rating": r} for n, r in picks]},
+    )
+
+
+def test_a_whole_step_is_saved_in_one_go(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+
+    state = set_step(
+        troupe.player, character_id, "attributes", [("Physical", 7), ("Social", 5), ("Mental", 3)]
+    ).json()
+
+    assert [
+        (p["rating"], p["traits"]) for p in state["pools"] if p["category"] == "attributes"
+    ] == [
+        (7, [{"name": "Physical", "detail": "", "pick": 7}]),
+        (5, [{"name": "Social", "detail": "", "pick": 5}]),
+        (3, [{"name": "Mental", "detail": "", "pick": 3}]),
+    ]
+
+
+def test_saving_a_step_again_replaces_it(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+    set_step(
+        troupe.player, character_id, "attributes", [("Physical", 7), ("Social", 5), ("Mental", 3)]
+    )
+
+    # Swap Physical and Mental.
+    set_step(
+        troupe.player, character_id, "attributes", [("Mental", 7), ("Social", 5), ("Physical", 3)]
+    )
+
+    assert trait(troupe.player, character_id, "Mental")["rating"] == 7
+    assert trait(troupe.player, character_id, "Physical")["rating"] == 3
+    # Half a step is fine to save; it just is not finished.
+    set_step(troupe.player, character_id, "attributes", [("Mental", 7)])
+    assert "Physical" not in [t["name"] for t in sheet(troupe.player, character_id)["traits"]]
+
+
+def test_a_step_must_fit_the_pools(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+
+    two_sevens = set_step(
+        troupe.player, character_id, "attributes", [("Physical", 7), ("Social", 7)]
+    )
+    no_sixes = set_step(troupe.player, character_id, "attributes", [("Physical", 6)])
+    too_many_points = set_step(
+        troupe.player,
+        character_id,
+        "merits",
+        [("Abyssal Horror", 1), ("Additional Uncommon Discipline", 1)],
+    )
+
+    assert two_sevens.status_code == 409
+    assert no_sixes.status_code == 422
+    assert too_many_points.status_code == 409  # 3 + 5 points of 7
+
+
+def test_merits_in_a_step_use_their_point_value(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+
+    state = set_step(
+        troupe.player, character_id, "merits", [("Absent Sway", 1), ("Acute Sense", 1)]
+    ).json()
+
+    assert pool(state, "merits", 0)["used"] == 3  # 2 + 1
+
+
+def test_a_step_leaves_bought_dots_alone(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+    set_step(troupe.player, character_id, "skills", [("Brawl", 4)])
+    troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "skills", "name": "Brawl", "rating": 5},
+    )
+    troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "skills", "name": "Dodge", "rating": 1},
+    )
+
+    moved = set_step(troupe.player, character_id, "skills", [("Brawl", 3)])
+    onto_bought = set_step(troupe.player, character_id, "skills", [("Brawl", 4), ("Dodge", 3)])
+
+    assert moved.status_code == 409
+    assert onto_bought.status_code == 409
+    assert trait(troupe.player, character_id, "Brawl")["rating"] == 5
