@@ -169,3 +169,49 @@ kind = "raise_max"
 target = { category = "skills" }
 amount = 1
 page = "101"
+
+# --- cheaper traits -------------------------------------------------------------
+
+[[grants]]
+source = { category = "merits", name = "Supernatural Aria" }
+kind = "cost_percent"
+target = { category = "skills", name = "Performance", detail = "Singing" }
+amount = 50
+page = "247"
+
+# An extra path learned at in-clan cost, though not in-clan; the merit's detail
+# names the path (pp. 238, 240, 243, 244, 246).
+[[grants]]
+source = { category = "merits", name = "Thaumaturgic Expertise" }
+kind = "price_in_clan"
+target = { category = "disciplines", choose = "any", choose_prefix = "Thaumaturgy: " }
+amount = 0
+page = "243"
+
+[[grants]]
+source = { category = "merits", name = "Necromantic Expertise" }
+kind = "price_in_clan"
+target = { category = "disciplines", choose = "any", choose_prefix = "Necromancy: ", except = ["Necromancy: Mortis Path"] }
+amount = 0
+page = "240"
+
+[[grants]]
+source = { category = "merits", name = "Necromantic Insight" }
+kind = "price_in_clan"
+target = { category = "disciplines", choose = "any", choose_prefix = "Necromancy: " }
+amount = 0
+page = "246"
+
+[[grants]]
+source = { category = "merits", name = "Bloodline: Sorcerer" }
+kind = "price_in_clan"
+target = { category = "disciplines", choose = "any", choose_prefix = "Thaumaturgy: " }
+amount = 0
+page = "238"
+
+[[grants]]
+source = { category = "merits", name = "Bloodline: Koldun" }
+kind = "price_in_clan"
+target = { category = "disciplines", choose = "any", choose_prefix = "Thaumaturgy: " }
+amount = 0
+page = "245"

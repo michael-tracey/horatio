@@ -54,8 +54,16 @@ def vampire_is_in_clan(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: S
 def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Facts:
     return {
         "generation": vampire_generation(sheet),
-        "in_clan": vampire_is_in_clan(rules, sheet, trait),
+        "in_clan": vampire_is_in_clan(rules, sheet, trait) or priced_in_clan(rules, sheet, trait),
     }
+
+
+def priced_in_clan(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> bool:
+    """A grant prices the trait as in-clan (Thaumaturgic Expertise's extra path)."""
+    from horatio.rules.grants import effects, matching
+
+    found = effects(rules.rule_set.grants, sheet, rules.rule_set)
+    return matching(found.in_clan_priced, trait) is not None
 
 
 SPLATS: dict[str, Splat] = {

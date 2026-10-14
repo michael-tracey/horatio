@@ -211,3 +211,45 @@ def test_health_and_willpower_are_not_set_by_hand(troupe: Troupe) -> None:
         refused = take(troupe.player, character_id, category, name, 7)
         assert refused.status_code == 422
         assert "come from the rest of the sheet" in refused.json()["detail"]
+
+
+def test_supernatural_aria_halves_singing(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Daughters of Cacophony")
+    take(troupe.player, character_id, "merits", "Supernatural Aria", 1)
+
+    singing = troupe.player.client.post(
+        f"/characters/{character_id}/quote",
+        json={"category": "skills", "name": "Performance", "detail": "Singing", "rating": 2},
+    )
+    dancing = troupe.player.client.post(
+        f"/characters/{character_id}/quote",
+        json={"category": "skills", "name": "Performance", "detail": "Dancing", "rating": 2},
+    )
+
+    # A Neonate pays 1 + 2 = 3 for two dots; half of that, rounded up, is 2.
+    assert (singing.json()["cost"], dancing.json()["cost"]) == (2, 3)
+
+
+def test_thaumaturgic_expertise_prices_another_path_in_clan(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Tremere")
+
+    def price(path: str) -> int:
+        return troupe.player.client.post(
+            f"/characters/{character_id}/quote",
+            json={"category": "disciplines", "name": path, "rating": 1},
+        ).json()["cost"]
+
+    out_of_clan = price("Thaumaturgy: Path of Conjuring")
+    take(
+        troupe.player,
+        character_id,
+        "merits",
+        "Thaumaturgic Expertise",
+        1,
+        "Thaumaturgy: Path of Conjuring",
+    )
+
+    assert (
+        price("Thaumaturgy: Path of Conjuring") == price("Thaumaturgy: Path of Blood") < out_of_clan
+    )
+    assert price("Thaumaturgy: Lure of Flames") == out_of_clan

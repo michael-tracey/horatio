@@ -8,6 +8,10 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
                  a background); dots already bought there are refunded
     raise_max    the trait can go `amount` higher than its category usually allows
                  (Blood of the Tzimisce: Lore +2)
+    price_in_clan  the trait is priced as in-clan without being in-clan
+                 (Thaumaturgic Expertise: another path)
+    cost_percent the trait costs `amount` percent of its price, rounded up
+                 (Supernatural Aria: Performance: Singing at 50)
 
 A grant can also hold only `when` a condition holds, in the vocabulary of
 horatio.rules.checks: Fortitude gives a Stamina-focused character a health level
@@ -26,7 +30,8 @@ from typing import Any, Literal
 from horatio.rules.checks import matches
 from horatio.rules.model import RuleSetData, SheetTrait
 
-Kind = Literal["add", "free_up_to", "raise_max"]
+Kind = Literal["add", "free_up_to", "raise_max", "price_in_clan", "cost_percent"]
+KINDS = ("add", "free_up_to", "raise_max", "price_in_clan", "cost_percent")
 TraitKey = tuple[str, str, str]  # category, name, detail
 
 
@@ -56,6 +61,10 @@ class Effects:
     free_up_to: dict[TraitKey, int] = field(default_factory=dict)
     # Raises: (category, name or None for the whole category, detail or None, amount).
     raises: list[tuple[str, str | None, str | None, int]] = field(default_factory=list)
+    # Traits priced as in-clan, and price percentages, by (category, name, detail
+    # or None for any).
+    in_clan_priced: set[tuple[str, str, str | None]] = field(default_factory=set)
+    cost_percent: dict[tuple[str, str, str | None], int] = field(default_factory=dict)
     # Which source traits each granted trait owes its dots to.
     sources: dict[TraitKey, list[str]] = field(default_factory=dict)
     # Source traits whose detail does not say what they grant.
@@ -74,7 +83,15 @@ def choices(grant: GrantData, rule_set: RuleSetData) -> list[str]:
     if choose is None:
         return []
     if choose == "any":
-        return sorted({n for (c, n) in rule_set.traits if c in grant.categories})
+        prefix = grant.target.get("choose_prefix", "")
+        excluded = set(grant.target.get("except", []))
+        return sorted(
+            {
+                n
+                for (c, n) in rule_set.traits
+                if c in grant.categories and n.startswith(prefix) and n not in excluded
+            }
+        )
     return list(choose)
 
 
@@ -82,8 +99,12 @@ def chosen_target(
     grant: GrantData, detail: str, rule_set: RuleSetData
 ) -> tuple[str, str, str] | None:
     """The trait a source's detail chooses, or None if it chooses nothing valid."""
-    name, _, sub = (part.strip() for part in detail.partition(":"))
-    if name not in choices(grant, rule_set):
+    options = choices(grant, rule_set)
+    if detail.strip() in options:
+        name, sub = detail.strip(), ""
+    else:
+        name, _, sub = (part.strip() for part in detail.partition(":"))
+    if name not in options:
         return None
     category = next((c for c in grant.categories if (c, name) in rule_set.traits), None)
     if category is None:
@@ -111,6 +132,26 @@ def effects(
                 if grant.kind == "raise_max":
                     found.raises.append((category, name, detail or None, grant.amount))
                     continue
+                if grant.kind == "price_in_clan":
+                    found.in_clan_priced.add((category, name, detail or None))
+                    continue
+                if grant.kind == "cost_percent":
+                    found.cost_percent[(category, name, detail or None)] = grant.amount
+                    continue
+            elif grant.kind in ("price_in_clan", "cost_percent"):
+                targets: list[str] = grant.target.get("names") or [grant.target["name"]]
+                for category in grant.categories:
+                    for name in targets:
+                        key3: tuple[str, str, str | None] = (
+                            category,
+                            name,
+                            grant.target.get("detail"),
+                        )
+                        if grant.kind == "price_in_clan":
+                            found.in_clan_priced.add(key3)
+                        else:
+                            found.cost_percent[key3] = grant.amount
+                continue
             elif grant.kind == "raise_max":
                 names = grant.target.get("names") or [grant.target.get("name")]
                 for category in grant.categories:
@@ -130,6 +171,20 @@ def effects(
                 found.free_up_to[key] = max(found.free_up_to.get(key, 0), grant.amount)
             found.sources.setdefault(key, []).append(label)
     return found
+
+
+def matching(
+    keys: Mapping[tuple[str, str, str | None], Any] | set[tuple[str, str, str | None]],
+    trait: SheetTrait,
+) -> tuple[str, str, str | None] | None:
+    """The entry for `trait`: its detail exactly, or any detail."""
+    for key in (
+        (trait.category, trait.name, trait.detail or None),
+        (trait.category, trait.name, None),
+    ):
+        if key in keys:
+            return key
+    return None
 
 
 def raised_by(effects: Effects, category: str, name: str, detail: str) -> int:
@@ -163,7 +218,7 @@ def validate_grant(
     source = (grant.source["category"], grant.source["name"])
     if source not in rule_set_traits:
         raise ValueError(f"grant {grant.key} comes from an unknown trait {source}")
-    if grant.kind not in ("add", "free_up_to", "raise_max"):
+    if grant.kind not in KINDS:
         raise ValueError(f"grant {grant.key} has unknown kind {grant.kind!r}")
     for category in grant.categories:
         if category not in categories:
@@ -177,5 +232,5 @@ def validate_grant(
     for name in names:
         if not any((c, name) in rule_set_traits for c in grant.categories):
             raise ValueError(f"grant {grant.key} names unknown trait {name!r}")
-    if grant.kind != "raise_max" and not (grant.target.get("name") or choose):
+    if grant.kind in ("add", "free_up_to") and not (grant.target.get("name") or choose):
         raise ValueError(f"grant {grant.key} must name one trait, or let the player choose one")
