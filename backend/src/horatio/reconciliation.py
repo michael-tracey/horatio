@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, titles
 from horatio.creation import Pool, pools_for
 from horatio.models import (
     Approval,
@@ -129,6 +129,8 @@ def current_membership(
 
 
 def join(db: Session, player: User, character: Character, troupe: Troupe) -> TroupeMembership:
+    if character.kind == "npc" and character.owner_troupe_id != troupe.id:
+        raise conflict("An NPC belongs to its own troupe and cannot join others.")
     if troupe.archived_at is not None:
         raise conflict("That troupe is archived.")
     if character.status == "retired":
@@ -149,7 +151,10 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
     pending = pending_change(db, character)
     if pending is not None and pending[1].to_troupe_id == troupe.id:
         raise conflict("Withdraw the request to make this the home troupe first.")
+    if character.kind == "npc":
+        raise conflict("An NPC stays in its troupe until it is deleted.")
     membership.left_at = datetime.now(UTC)
+    titles.drop_all(db, troupe.id, character.id)
     if character.home_troupe_id == troupe.id:
         character.home_troupe_id = None
     # Requests waiting in a troupe the character has left are moot.

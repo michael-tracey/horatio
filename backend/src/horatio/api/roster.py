@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import sheets
+from horatio import sheets, titles
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Approval, AuditEvent, Character, TroupeMembership, User
@@ -21,6 +21,8 @@ class RosterEntry(BaseModel):
     character_id: uuid.UUID
     character_name: str
     player_name: str
+    kind: str  # pc | npc
+    titles: list[str]
     standing: str  # draft | approved
     note: str
     home: bool
@@ -64,7 +66,9 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         RosterEntry(
             character_id=c.id,
             character_name=c.name,
-            player_name=player,
+            player_name=player if c.kind == "pc" else "NPC",
+            kind=c.kind,
+            titles=titles.held(db, troupe_id, c.id),
             standing=m.standing,
             note=m.standing_note,
             home=c.home_troupe_id == troupe_id,
@@ -119,6 +123,12 @@ MESSAGES: dict[str, str] = {
     "downtime.participant_added": "{actor} added {character} to a downtime cycle.",
     "downtime.participant_removed": "{actor} removed {character} from a downtime cycle.",
     "downtime.allowance_adjusted": "{actor} adjusted {character}'s actions: {reason}",
+    "npc.created": "{actor} made an NPC, {character}.",
+    "npc.deleted": "{actor} deleted the NPC {character}.",
+    "title.given": "{actor} gave {character} the title {title}.",
+    "title.taken": "{actor} took the title {title} from {character}.",
+    "title.added": "{actor} added the title {title} to the troupe.",
+    "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
 }
 
 

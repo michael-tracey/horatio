@@ -26,7 +26,13 @@ from horatio.models.rules import (
     TraitCategory,
     TraitDefinition,
 )
-from horatio.models.troupes import Troupe, TroupeMembership, TroupeStaff
+from horatio.models.troupes import (
+    CharacterTitle,
+    Troupe,
+    TroupeMembership,
+    TroupeStaff,
+    TroupeTitle,
+)
 
 __all__ = [
     "ActionKind",
@@ -45,6 +51,7 @@ __all__ = [
     "AuthIdentity",
     "Base",
     "Character",
+    "CharacterTitle",
     "CharacterTrait",
     "CostRule",
     "CreationRule",
@@ -59,6 +66,7 @@ __all__ = [
     "Troupe",
     "TroupeMembership",
     "TroupeStaff",
+    "TroupeTitle",
     "User",
     "XpEntry",
 ]

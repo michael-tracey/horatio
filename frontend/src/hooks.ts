@@ -27,6 +27,11 @@ export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>)
   const client = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => client.invalidateQueries(),
+    onSuccess: async () => {
+      // A query still on its first load is not restarted by invalidation alone: it
+      // keeps the request it started before this change, and shows stale data.
+      await client.cancelQueries();
+      await client.invalidateQueries();
+    },
   });
 }

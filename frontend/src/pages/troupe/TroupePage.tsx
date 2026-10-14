@@ -6,12 +6,14 @@ import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
 import { CyclesTab } from "./CyclesTab";
 import { LogTab } from "./LogTab";
+import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { StaffTab } from "./StaffTab";
 import { TablesTab } from "./TablesTab";
+import { TitlesTab } from "./TitlesTab";
 
 export function TroupePage() {
   const { troupeId = "" } = useParams();
@@ -37,6 +39,8 @@ export function TroupePage() {
           { to: base, label: "About", end: true },
           ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
           ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
+          ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
+          ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
           ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals" }] : []),
           ...(can.running ? [{ to: `${base}/downtimes`, label: "Downtimes" }] : []),
           ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
@@ -48,6 +52,8 @@ export function TroupePage() {
         <Route index element={<OverviewTab troupe={t} can={can} />} />
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
+        {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
+        {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}

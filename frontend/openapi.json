@@ -417,9 +417,25 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "owner_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe Id"
           },
           "player_id": {
             "format": "uuid",
@@ -442,7 +458,9 @@
           "name",
           "status",
           "home_troupe_id",
-          "creation_complete"
+          "creation_complete",
+          "kind",
+          "owner_troupe_id"
         ],
         "title": "CharacterOut",
         "type": "object"
@@ -676,6 +694,22 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HeldTitles": {
+        "properties": {
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "titles"
+        ],
+        "title": "HeldTitles",
         "type": "object"
       },
       "HomeTroupeRequest": {
@@ -976,6 +1010,46 @@
           "email"
         ],
         "title": "NewLead",
+        "type": "object"
+      },
+      "NewNpc": {
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "wizard": {
+            "default": false,
+            "title": "Wizard",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "NewNpc",
+        "type": "object"
+      },
+      "NewTitle": {
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "NewTitle",
         "type": "object"
       },
       "NewTroupe": {
@@ -1286,6 +1360,10 @@
             "title": "Character Name",
             "type": "string"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "player_name": {
             "title": "Player Name",
             "type": "string"
@@ -1293,6 +1371,13 @@
           "splat": {
             "title": "Splat",
             "type": "string"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
           },
           "traits": {
             "items": {
@@ -1329,6 +1414,8 @@
           "player_name",
           "splat",
           "troupe_name",
+          "titles",
+          "kind",
           "approved",
           "version",
           "approved_at",
@@ -1764,6 +1851,42 @@
         "title": "QuoteOut",
         "type": "object"
       },
+      "Rating": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "Rating",
+        "type": "object"
+      },
       "ReconciliationOut": {
         "properties": {
           "allowed_settlements": {
@@ -1949,6 +2072,10 @@
             "title": "Joined At",
             "type": "string"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "note": {
             "title": "Note",
             "type": "string"
@@ -1961,6 +2088,13 @@
             "title": "Standing",
             "type": "string"
           },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
           "waiting": {
             "title": "Waiting",
             "type": "boolean"
@@ -1970,6 +2104,8 @@
           "character_id",
           "character_name",
           "player_name",
+          "kind",
+          "titles",
           "standing",
           "note",
           "home",
@@ -2056,6 +2192,10 @@
             "title": "Character Id",
             "type": "string"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -2112,6 +2252,7 @@
           "character_id",
           "name",
           "status",
+          "kind",
           "standings",
           "viewing_troupe_id",
           "traits",
@@ -2316,6 +2457,13 @@
             "title": "Standing",
             "type": "string"
           },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
           "troupe_id": {
             "format": "uuid",
             "title": "Troupe Id",
@@ -2337,7 +2485,8 @@
           "note",
           "home",
           "needs_approval",
-          "waiting"
+          "waiting",
+          "titles"
         ],
         "title": "StandingOut",
         "type": "object"
@@ -2392,6 +2541,96 @@
           "id"
         ],
         "title": "TableOut",
+        "type": "object"
+      },
+      "Tally": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/TallyLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "lines"
+        ],
+        "title": "Tally",
+        "type": "object"
+      },
+      "TallyLineOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "detail",
+          "rating",
+          "cost",
+          "note"
+        ],
+        "title": "TallyLineOut",
+        "type": "object"
+      },
+      "TitlesOut": {
+        "properties": {
+          "catalogue": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Catalogue",
+            "type": "array"
+          },
+          "troupe": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Troupe",
+            "type": "array"
+          }
+        },
+        "required": [
+          "catalogue",
+          "troupe"
+        ],
+        "title": "TitlesOut",
         "type": "object"
       },
       "TraitChange": {
@@ -4040,6 +4279,104 @@
         "summary": "Preview Home Troupe",
         "tags": [
           "membership"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/npc/ratings": {
+      "put": {
+        "description": "Set one of an NPC's traits straight to a rating, and get the new tally.",
+        "operationId": "set_rating_api_characters__character_id__npc_ratings_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Rating"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tally"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Rating",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/npc/tally": {
+      "get": {
+        "description": "What the NPC's sheet would be worth in experience under its troupe's rules.",
+        "operationId": "tally_api_characters__character_id__npc_tally_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tally"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tally",
+        "tags": [
+          "npcs"
         ]
       }
     },
@@ -5943,6 +6280,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/characters/{character_id}/titles": {
+      "put": {
+        "description": "Give a character in this troupe exactly these titles.",
+        "operationId": "set_titles_api_troupes__troupe_id__characters__character_id__titles_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeldTitles"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeldTitles"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Titles",
+        "tags": [
+          "titles"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/cycles": {
       "get": {
         "operationId": "list_cycles_api_troupes__troupe_id__cycles_get",
@@ -6167,6 +6568,104 @@
         "summary": "Log",
         "tags": [
           "roster"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/npcs": {
+      "get": {
+        "operationId": "list_npcs_api_troupes__troupe_id__npcs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CharacterOut"
+                  },
+                  "title": "Response List Npcs Api Troupes  Troupe Id  Npcs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Npcs",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "post": {
+        "operationId": "create_npc_api_troupes__troupe_id__npcs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewNpc"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Npc",
+        "tags": [
+          "npcs"
         ]
       }
     },
@@ -6463,6 +6962,152 @@
         "summary": "Remove Staff",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/titles": {
+      "get": {
+        "operationId": "list_titles_api_troupes__troupe_id__titles_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Titles",
+        "tags": [
+          "titles"
+        ]
+      },
+      "post": {
+        "operationId": "add_title_api_troupes__troupe_id__titles_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTitle"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Title",
+        "tags": [
+          "titles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/titles/{name}": {
+      "delete": {
+        "operationId": "remove_title_api_troupes__troupe_id__titles__name__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Title",
+        "tags": [
+          "titles"
         ]
       }
     },

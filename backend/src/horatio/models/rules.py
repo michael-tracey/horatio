@@ -18,6 +18,7 @@ class RuleSet(Record):
     name: Mapped[str]
     version: Mapped[int]
     starting_xp: Mapped[int] = mapped_column(default=0, server_default="0")
+    titles: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class TraitCategory(Record):

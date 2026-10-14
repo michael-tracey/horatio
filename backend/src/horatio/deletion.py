@@ -18,6 +18,7 @@ from horatio.models import (
     Approval,
     AuditEvent,
     Character,
+    CharacterTitle,
     CharacterTrait,
     CycleParticipant,
     Delivery,
@@ -34,7 +35,9 @@ from horatio.sheets import conflict, memberships
 
 
 def delete_character(db: Session, player: User, character: Character) -> None:
-    if memberships(db, character):
+    """For a PC, its player deletes it once it is in no troupe. An NPC is deleted by
+    its troupe's staff whenever they like."""
+    if character.kind == "pc" and memberships(db, character):
         raise conflict("Remove the character from every troupe before deleting it.")
 
     name = character.name
@@ -46,7 +49,7 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         audit.record(
             db,
             player,
-            "character.deleted",
+            "npc.deleted" if character.kind == "npc" else "character.deleted",
             troupe_id=troupe_id,
             character_id=character.id,
             character_name=name,
@@ -82,6 +85,7 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(delete(TroupeMembership).where(TroupeMembership.character_id == cid))
     db.execute(delete(SheetVersion).where(SheetVersion.character_id == cid))
     db.execute(delete(CharacterTrait).where(CharacterTrait.character_id == cid))
+    db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))
     db.delete(character)
     db.flush()

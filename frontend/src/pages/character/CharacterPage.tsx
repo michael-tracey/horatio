@@ -5,6 +5,7 @@ import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui"
 import { useMe } from "../../hooks";
 import { CreationWizard } from "./creation/Wizard";
 import { DowntimeTab } from "./DowntimeTab";
+import { NpcBuilder } from "./NpcBuilder";
 import { ResultsTab } from "./ResultsTab";
 import { SheetTab } from "./SheetTab";
 import { TroupesTab } from "./TroupesTab";
@@ -21,8 +22,32 @@ export function CharacterPage() {
   if (character.isPending) return <Loading />;
   if (character.error) return <ErrorText error={character.error} />;
   const c = character.data;
-  const mine = c.player_id === me.data?.id;
   const base = `/characters/${c.id}`;
+
+  if (c.kind === "npc") {
+    // Only the troupe's running staff can see an NPC at all, and they can all edit it.
+    return (
+      <>
+        <PageTitle subtitle="NPC" actions={<Badge tone="gold">NPC</Badge>}>
+          {c.name}
+        </PageTitle>
+        <Tabs
+          tabs={[
+            ...(!c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
+            { to: base, label: "Build", end: true },
+            { to: `${base}/sheet`, label: "Sheet" },
+          ]}
+        />
+        <Routes>
+          <Route index element={<NpcBuilder character={c} />} />
+          <Route path="sheet" element={<SheetTab character={c} mine={false} />} />
+          {!c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
+        </Routes>
+      </>
+    );
+  }
+
+  const mine = c.player_id === me.data?.id;
 
   return (
     <>

@@ -45,6 +45,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
     else:
         rule_set.splat, rule_set.name, rule_set.version = data.splat, data.name, data.version
     rule_set.starting_xp = data.starting_xp
+    rule_set.titles = list(data.titles)
     session.flush()
 
     categories = {
@@ -416,6 +417,7 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         name=rule_set.name,
         version=rule_set.version,
         starting_xp=rule_set.starting_xp,
+        titles=tuple(rule_set.titles),
         categories={
             c.key: CategoryData(
                 key=c.key,

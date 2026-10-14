@@ -2,6 +2,70 @@
 # from a Yorick descriptions export. Clans, with their in-clan disciplines,
 # are in bns_met_vampire.toml.
 
+# Titles a troupe can give its characters; each troupe can add its own.
+titles = [
+  "Abbot",
+  "Actuary",
+  "Advocate",
+  "Agent",
+  "Alastor",
+  "Ambassador",
+  "Ancilla",
+  "Archbishop",
+  "Architect",
+  "Archon",
+  "Baron",
+  "Bishop",
+  "Blood Duchess",
+  "Blood Duke",
+  "Capo",
+  "Cardinal",
+  "Constable",
+  "Dominion",
+  "Don",
+  "Dona",
+  "Ductus",
+  "Elder",
+  "Emissary",
+  "Executioner",
+  "Grand Inquisitor",
+  "Harpy",
+  "Hierophant",
+  "High Priest",
+  "High Priestess",
+  "Imperator",
+  "Inner Circle",
+  "Josian Archon",
+  "Judge Inquisitor",
+  "Justicar",
+  "Keeper of Elysium",
+  "Knight Inquisitor",
+  "Lord",
+  "Lord Commander",
+  "Malak",
+  "Moshir",
+  "Myrmidon",
+  "Netaji",
+  "Pontifex",
+  "Priest",
+  "Primogen",
+  "Prince",
+  "Priscus",
+  "Regent",
+  "Rom baro",
+  "Scourge",
+  "Seneschal",
+  "Seraph",
+  "Shadow King",
+  "Shadow Queen",
+  "Sheriff",
+  "Soldier",
+  "Templar",
+  "Trustee",
+  "Watcher",
+  "Whip",
+]
+
 [[traits]]
 category = "academics_specializations"
 name = "Anthropology"
@@ -106,18 +170,6 @@ name = "Statistics"
 [[traits]]
 category = "academics_specializations"
 name = "Systems Sciences"
-
-[[traits]]
-category = "antecedence"
-name = "NPC"
-
-[[traits]]
-category = "antecedence"
-name = "Primary"
-
-[[traits]]
-category = "antecedence"
-name = "Secondary"
 
 [[traits]]
 category = "archetype"
@@ -6358,306 +6410,6 @@ name = "Will to Survive"
 [[traits]]
 category = "techniques"
 name = "Wolf's Blood"
-
-[[traits]]
-category = "title"
-name = "Abbot"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Actuary"
-properties = { type = "Independent Alliance" }
-
-[[traits]]
-category = "title"
-name = "Advocate"
-properties = { type = "Anarch" }
-
-[[traits]]
-category = "title"
-name = "Agent"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Alastor"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Ambassador"
-properties = { type = "Anarch" }
-
-[[traits]]
-category = "title"
-name = "Ancilla"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Archbishop"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Architect"
-properties = { type = "Anarch" }
-
-[[traits]]
-category = "title"
-name = "Archon"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Baron"
-properties = { type = "Anarch" }
-
-[[traits]]
-category = "title"
-name = "Bishop"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Blood Duchess"
-properties = { type = "Lasombra" }
-
-[[traits]]
-category = "title"
-name = "Blood Duke"
-properties = { type = "Lasombra" }
-
-[[traits]]
-category = "title"
-name = "Capo"
-properties = { type = "Giovanni" }
-
-[[traits]]
-category = "title"
-name = "Cardinal"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Constable"
-properties = { type = "Anarch" }
-
-[[traits]]
-category = "title"
-name = "Dominion"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Don"
-properties = { type = "Giovanni" }
-
-[[traits]]
-category = "title"
-name = "Dona"
-properties = { type = "Giovanni" }
-
-[[traits]]
-category = "title"
-name = "Ductus"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Elder"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Emissary"
-properties = { type = "Independent Alliance" }
-
-[[traits]]
-category = "title"
-name = "Executioner"
-properties = { type = "Independent Alliance" }
-
-[[traits]]
-category = "title"
-name = "Grand Inquisitor"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Harpy"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Hierophant"
-properties = { type = "Followers of Set" }
-
-[[traits]]
-category = "title"
-name = "High Priest"
-properties = { type = "Followers of Set" }
-
-[[traits]]
-category = "title"
-name = "High Priestess"
-properties = { type = "Followers of Set" }
-
-[[traits]]
-category = "title"
-name = "Imperator"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Inner Circle"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Josian Archon"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Judge Inquisitor"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Justicar"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Keeper of Elysium"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Knight Inquisitor"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Lord"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Lord Commander"
-properties = { type = "Lasombra" }
-
-[[traits]]
-category = "title"
-name = "Malak"
-properties = { type = "Independent Alliance" }
-
-[[traits]]
-category = "title"
-name = "Moshir"
-properties = { type = "Followers of Set" }
-
-[[traits]]
-category = "title"
-name = "Myrmidon"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Netaji"
-properties = { type = "Ravnos" }
-
-[[traits]]
-category = "title"
-name = "Pontifex"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Priest"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Primogen"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Prince"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Priscus"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Regent"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Rom baro"
-properties = { type = "Ravnos" }
-
-[[traits]]
-category = "title"
-name = "Scourge"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Seneschal"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Seraph"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Shadow King"
-properties = { type = "Lasombra" }
-
-[[traits]]
-category = "title"
-name = "Shadow Queen"
-properties = { type = "Lasombra" }
-
-[[traits]]
-category = "title"
-name = "Sheriff"
-properties = { type = "Camarilla" }
-
-[[traits]]
-category = "title"
-name = "Soldier"
-properties = { type = "Giovanni" }
-
-[[traits]]
-category = "title"
-name = "Templar"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Trustee"
-properties = { type = "Independent Alliance" }
-
-[[traits]]
-category = "title"
-name = "Watcher"
-properties = { type = "Sabbat" }
-
-[[traits]]
-category = "title"
-name = "Whip"
-properties = { type = "Camarilla" }
 
 [[traits]]
 category = "vampiric_texts"

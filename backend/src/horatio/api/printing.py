@@ -8,7 +8,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from horatio import sheets
+from horatio import sheets, titles
 from horatio.api.sheets import viewing_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import SheetVersion, TraitCategory, TraitDefinition, Troupe, User
@@ -34,6 +34,9 @@ class PrintedSheet(BaseModel):
     player_name: str
     splat: str
     troupe_name: str | None
+    # Titles held in that troupe.
+    titles: list[str]
+    kind: str  # pc | npc
     # Whether this is a troupe's approved sheet, and which version.
     approved: bool
     version: int | None
@@ -95,9 +98,13 @@ def printed_sheet(
     ]
     return PrintedSheet(
         character_name=character.name,
-        player_name=db.get_one(User, character.player_id).display_name,
+        player_name=(
+            db.get_one(User, character.player_id).display_name if character.kind == "pc" else "NPC"
+        ),
         splat=character.splat,
         troupe_name=db.get_one(Troupe, troupe).name if troupe else None,
+        titles=titles.held(db, troupe, character.id) if troupe else [],
+        kind=character.kind,
         approved=version is not None,
         version=version.number if version else None,
         approved_at=version.approved_at if version else None,

@@ -22,6 +22,9 @@ class CharacterOut(BaseModel):
     status: str
     home_troupe_id: uuid.UUID | None
     creation_complete: bool
+    kind: str  # pc | npc
+    # The troupe an NPC belongs to.
+    owner_troupe_id: uuid.UUID | None
 
 
 class NewCharacter(BaseModel):
@@ -42,12 +45,14 @@ def character_out(character: Character) -> CharacterOut:
         status=character.status,
         home_troupe_id=character.home_troupe_id,
         creation_complete=character.creation_completed_at is not None,
+        kind=character.kind,
+        owner_troupe_id=character.owner_troupe_id,
     )
 
 
 def editable_character(db: DbSession, user: CurrentUser, character_id: uuid.UUID) -> Character:
     character = visible_character(db, user, character_id)
-    if not can_edit_character(user, character):
+    if not can_edit_character(db, user, character):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player can change it.")
     if character.status == "retired":
         raise HTTPException(status.HTTP_409_CONFLICT, "This character is retired.")
@@ -57,7 +62,9 @@ def editable_character(db: DbSession, user: CurrentUser, character_id: uuid.UUID
 @router.get("")
 def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterOut]:
     characters = db.scalars(
-        select(Character).where(Character.player_id == user.id).order_by(Character.name)
+        select(Character)
+        .where(Character.player_id == user.id, Character.kind == "pc")
+        .order_by(Character.name)
     )
     return [character_out(c) for c in characters]
 
@@ -97,7 +104,7 @@ def delete_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) 
     """Delete a character for good. It must be in no troupe: leaving each one first
     is what tells those troupes' storytellers."""
     character = visible_character(db, user, character_id)
-    if not can_edit_character(user, character):
+    if not can_edit_character(db, user, character):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player can delete it.")
     deletion.delete_character(db, user, lock_character(db, character.id))
     db.commit()

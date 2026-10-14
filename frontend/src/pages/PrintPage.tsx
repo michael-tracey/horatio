@@ -113,7 +113,7 @@ const BLOOD = [
 ] as const;
 
 const SHOWN_ELSEWHERE = new Set([
-  "clan", "archetype", "sect", "faction", "title", "antecedence", "attributes",
+  "clan", "archetype", "sect", "faction", "attributes",
   "focus_physicals", "focus_mentals", "focus_socials", "skills", "backgrounds",
   "disciplines", "merits", "flaws", "paths", "health_levels", "willpower_sources", "status_traits",
 ]);
@@ -156,12 +156,14 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
             <dt className="font-bold">Sect</dt>
             <dd className="border-b border-black">{one(t, "sect")}</dd>
             <dt className="font-bold">Title</dt>
-            <dd className="border-b border-black">{one(t, "title")}</dd>
+            <dd className="border-b border-black">{sheet.titles.join(", ")}</dd>
           </dl>
           <div className="text-right">
             <p className="font-display text-2xl tracking-widest uppercase">{sheet.splat}</p>
             <p className="text-[10px]">
-              {sheet.approved
+              {sheet.kind === "npc"
+                ? `NPC of ${sheet.troupe_name}`
+                : sheet.approved
                 ? `Approved by ${sheet.troupe_name}, version ${sheet.version}`
                 : sheet.troupe_name
                   ? `Not approved by ${sheet.troupe_name}`

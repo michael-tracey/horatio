@@ -183,3 +183,47 @@ test("a character in no troupe can be deleted from the vault", async ({ browser 
   await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
   await expect(page.getByText("No characters yet.")).toBeVisible();
 });
+
+test("storytellers build an NPC quickly and give it a title", async ({ browser }) => {
+  const custodian = await person(browser, "npc-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "npc-lead");
+  const troupeName = `Court of Smoke ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  const created = custodian.page.waitForResponse((r) => r.url().endsWith("/api/troupes") && r.request().method() === "POST");
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  const response = await created;
+  expect(response.status(), await response.text()).toBe(201);
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await p.locator("main").getByRole("link", { name: "NPCs", exact: true }).click();
+  await expect(p.getByRole("heading", { name: "New NPC" })).toBeVisible();
+  await p.getByLabel("Name").fill("Prince Vasquez");
+  await p.getByRole("button", { name: "Quick build" }).click();
+  await expect(p.getByRole("heading", { name: "Prince Vasquez" })).toBeVisible();
+
+  await p.getByLabel("Clan").selectOption("Ventrue");
+  await expect(p.getByLabel("Clan")).toHaveValue("Ventrue");
+  await p.getByRole("button", { name: "Social 7", exact: true }).click(); // attributes: 3 a dot
+  await expect(p.getByText("21 XP")).toBeVisible();
+  await p.getByRole("button", { name: "Leadership 3", exact: true }).click(); // 1 + 2 + 3
+  await expect(p.getByText("27 XP")).toBeVisible();
+  await p.screenshot(shots("npc"));
+
+  // Titles are given on the troupe's Characters tab.
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await p.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
+  await p.getByLabel("Give Prince Vasquez a title").fill("Prince");
+  await p.getByLabel("Give Prince Vasquez a title").press("Enter");
+  await expect(p.locator("main").getByText("Prince", { exact: true })).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText("npc-lead gave Prince Vasquez the title Prince.")).toBeVisible();
+});

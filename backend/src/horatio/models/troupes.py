@@ -66,3 +66,24 @@ class TroupeMembership(Record):
     approved_version_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("sheet_versions.id", use_alter=True)
     )
+
+
+class TroupeTitle(Record):
+    """A title a troupe added to the rule set's list."""
+
+    __tablename__ = "troupe_titles"
+    __table_args__ = (UniqueConstraint("troupe_id", "name"),)
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    name: Mapped[str]
+
+
+class CharacterTitle(Record):
+    """A title a character holds in one troupe (CONTEXT.md: Title)."""
+
+    __tablename__ = "character_titles"
+    __table_args__ = (UniqueConstraint("troupe_id", "character_id", "name"),)
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    name: Mapped[str]

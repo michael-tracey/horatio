@@ -251,6 +251,7 @@ def open_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -
         .where(
             Character.home_troupe_id == troupe.id,
             Character.status == "active",
+            Character.kind == "pc",
             TroupeMembership.troupe_id == troupe.id,
             TroupeMembership.left_at.is_(None),
             TroupeMembership.standing == "approved",
@@ -296,6 +297,7 @@ def add_participant(
     standing = membership(db, character, troupe.id)
     if (
         character.home_troupe_id != troupe.id
+        or character.kind != "pc"
         or character.status != "active"
         or standing is None
         or standing.standing != "approved"

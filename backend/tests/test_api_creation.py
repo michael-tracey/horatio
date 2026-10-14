@@ -166,29 +166,6 @@ def test_merits_and_flaws_come_from_a_points_budget(troupe: Troupe) -> None:
     assert pool(creation(troupe.player, character_id), "merits", 0)["remaining"] == 2
 
 
-def test_picks_and_purchases_do_not_mix(troupe: Troupe) -> None:
-    character_id = creating(troupe)
-    pick(troupe.player, character_id, "attributes", "Physical", 7)
-    bought = troupe.player.client.put(
-        f"/characters/{character_id}/traits",
-        json={"category": "attributes", "name": "Physical", "rating": 8},
-    )
-    assert bought.json()["cost"] == 3  # only the eighth dot is paid for
-
-    # Taking the pick back would strand the bought dot.
-    unpick = troupe.player.client.post(
-        f"/characters/{character_id}/creation/picks/remove",
-        json={"category": "attributes", "name": "Physical"},
-    )
-    assert unpick.status_code == 409
-    # And a pick cannot go on a trait that has bought dots.
-    troupe.player.client.put(
-        f"/characters/{character_id}/traits",
-        json={"category": "skills", "name": "Brawl", "rating": 1},
-    )
-    assert pick(troupe.player, character_id, "skills", "Brawl", 4).status_code == 409
-
-
 def test_taking_a_pick_back(troupe: Troupe) -> None:
     character_id = creating(troupe)
     pick(troupe.player, character_id, "skills", "Brawl", 4)
@@ -490,29 +467,6 @@ def test_merits_in_a_step_use_their_point_value(troupe: Troupe) -> None:
     assert pool(state, "merits", 0)["used"] == 3  # 2 + 1
 
 
-def test_a_step_leaves_bought_dots_alone(troupe: Troupe) -> None:
-    character_id = creating(troupe)
-    set_step(troupe.player, character_id, "skills", [("Brawl", 4)])
-    troupe.player.client.put(
-        f"/characters/{character_id}/traits",
-        json={"category": "skills", "name": "Brawl", "rating": 5},
-    )
-    troupe.player.client.put(
-        f"/characters/{character_id}/traits",
-        json={"category": "skills", "name": "Dodge", "rating": 1},
-    )
-
-    moved = set_step(troupe.player, character_id, "skills", [("Brawl", 3)])
-    onto_bought = set_step(troupe.player, character_id, "skills", [("Brawl", 4), ("Dodge", 3)])
-
-    assert moved.status_code == 409
-    assert onto_bought.status_code == 409
-    assert trait(troupe.player, character_id, "Brawl")["rating"] == 5
-
-
-# --- in-clan disciplines --------------------------------------------------------------------------
-
-
 def test_starting_disciplines_must_be_in_clan(troupe: Troupe) -> None:
     character_id = creating(troupe)
 
@@ -557,3 +511,23 @@ def test_changing_clan_after_picking_blocks_finishing(troupe: Troupe) -> None:
 
     assert response.status_code == 409
     assert "Celerity" in response.json()["detail"]
+
+
+def test_experience_waits_until_creation_is_finished(troupe: Troupe) -> None:
+    """A PC is built through character creation; buying comes after."""
+    character_id = creating(troupe)
+
+    early = troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "skills", "name": "Brawl", "rating": 1},
+    )
+    assert early.status_code == 409
+    assert "creation wizard" in early.json()["detail"]
+
+    build(troupe.player, character_id)
+    later = troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "skills", "name": "Brawl", "rating": 5},
+    )
+    assert later.status_code == 200
+    assert later.json()["cost"] == 5  # only the fifth dot: four are free from the pick

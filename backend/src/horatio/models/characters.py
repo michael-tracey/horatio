@@ -13,9 +13,18 @@ class Character(Imported, Record):
     """A persona a player plays. Belongs to its player, never deleted, only retired."""
 
     __tablename__ = "characters"
-    __table_args__ = (CheckConstraint("status in ('active', 'retired')", name="status"),)
+    __table_args__ = (
+        CheckConstraint("status in ('active', 'retired')", name="status"),
+        CheckConstraint("kind in ('pc', 'npc')", name="kind"),
+        CheckConstraint("(kind = 'npc') = (owner_troupe_id is not null)", name="npc_has_troupe"),
+    )
 
+    # For a PC, its player. For an NPC, the staff member who made it; the NPC
+    # itself belongs to its troupe.
     player_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    kind: Mapped[str] = mapped_column(default="pc", server_default="pc")
+    # The troupe an NPC belongs to (CONTEXT.md: NPC). Null for a PC.
+    owner_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
     # The splat's rule set is the one with this splat (rule_sets.splat).
     splat: Mapped[str]
     name: Mapped[str]

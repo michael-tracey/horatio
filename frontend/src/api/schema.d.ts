@@ -368,6 +368,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/npc/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Rating
+         * @description Set one of an NPC's traits straight to a rating, and get the new tally.
+         */
+        put: operations["set_rating_api_characters__character_id__npc_ratings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/npc/tally": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tally
+         * @description What the NPC's sheet would be worth in experience under its troupe's rules.
+         */
+        get: operations["tally_api_characters__character_id__npc_tally_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/print": {
         parameters: {
             query?: never;
@@ -966,6 +1006,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/characters/{character_id}/titles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Titles
+         * @description Give a character in this troupe exactly these titles.
+         */
+        put: operations["set_titles_api_troupes__troupe_id__characters__character_id__titles_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/cycles": {
         parameters: {
             query?: never;
@@ -1018,6 +1078,24 @@ export interface paths {
         get: operations["log_api_troupes__troupe_id__log_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/npcs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Npcs */
+        get: operations["list_npcs_api_troupes__troupe_id__npcs_get"];
+        put?: never;
+        /** Create Npc */
+        post: operations["create_npc_api_troupes__troupe_id__npcs_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1095,6 +1173,41 @@ export interface paths {
         post?: never;
         /** Remove Staff */
         delete: operations["remove_staff_api_troupes__troupe_id__staff__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/titles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Titles */
+        get: operations["list_titles_api_troupes__troupe_id__titles_get"];
+        put?: never;
+        /** Add Title */
+        post: operations["add_title_api_troupes__troupe_id__titles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/titles/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Title */
+        delete: operations["remove_title_api_troupes__troupe_id__titles__name__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1312,8 +1425,12 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Kind */
+            kind: string;
             /** Name */
             name: string;
+            /** Owner Troupe Id */
+            owner_troupe_id: string | null;
             /**
              * Player Id
              * Format: uuid
@@ -1411,6 +1528,11 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HeldTitles */
+        HeldTitles: {
+            /** Titles */
+            titles: string[];
         };
         /** HomeTroupeRequest */
         HomeTroupeRequest: {
@@ -1551,6 +1673,26 @@ export interface components {
              */
             email: string;
         };
+        /** NewNpc */
+        NewNpc: {
+            /** Name */
+            name: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /**
+             * Wizard
+             * @default false
+             */
+            wizard: boolean;
+        };
+        /** NewTitle */
+        NewTitle: {
+            /** Name */
+            name: string;
+        };
         /** NewTroupe */
         NewTroupe: {
             /**
@@ -1671,10 +1813,14 @@ export interface components {
             approved_by: string | null;
             /** Character Name */
             character_name: string;
+            /** Kind */
+            kind: string;
             /** Player Name */
             player_name: string;
             /** Splat */
             splat: string;
+            /** Titles */
+            titles: string[];
             /** Traits */
             traits: components["schemas"]["PrintedTrait"][];
             /** Troupe Name */
@@ -1856,6 +2002,20 @@ export interface components {
             /** To Rating */
             to_rating: number | null;
         };
+        /** Rating */
+        Rating: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating?: number | null;
+        };
         /** ReconciliationOut */
         ReconciliationOut: {
             /** Allowed Settlements */
@@ -1928,12 +2088,16 @@ export interface components {
              * Format: date-time
              */
             joined_at: string;
+            /** Kind */
+            kind: string;
             /** Note */
             note: string;
             /** Player Name */
             player_name: string;
             /** Standing */
             standing: string;
+            /** Titles */
+            titles: string[];
             /** Waiting */
             waiting: boolean;
         };
@@ -1979,6 +2143,8 @@ export interface components {
              * Format: uuid
              */
             character_id: string;
+            /** Kind */
+            kind: string;
             /** Name */
             name: string;
             /** Pending Approvals */
@@ -2081,6 +2247,8 @@ export interface components {
             note: string;
             /** Standing */
             standing: string;
+            /** Titles */
+            titles: string[];
             /**
              * Troupe Id
              * Format: uuid
@@ -2109,6 +2277,35 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** Tally */
+        Tally: {
+            /** Lines */
+            lines: components["schemas"]["TallyLineOut"][];
+            /** Total */
+            total: number;
+        };
+        /** TallyLineOut */
+        TallyLineOut: {
+            /** Category */
+            category: string;
+            /** Cost */
+            cost: number | null;
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
+            /** Rating */
+            rating: number;
+        };
+        /** TitlesOut */
+        TitlesOut: {
+            /** Catalogue */
+            catalogue: string[];
+            /** Troupe */
+            troupe: string[];
         };
         /** TraitChange */
         TraitChange: {
@@ -3084,6 +3281,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DifferenceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_rating_api_characters__character_id__npc_ratings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Rating"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tally"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tally_api_characters__character_id__npc_tally_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tally"];
                 };
             };
             /** @description Validation Error */
@@ -4341,6 +4604,42 @@ export interface operations {
             };
         };
     };
+    set_titles_api_troupes__troupe_id__characters__character_id__titles_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeldTitles"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeldTitles"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_cycles_api_troupes__troupe_id__cycles_get: {
         parameters: {
             query?: never;
@@ -4463,6 +4762,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_npcs_api_troupes__troupe_id__npcs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_npc_api_troupes__troupe_id__npcs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewNpc"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOut"];
                 };
             };
             /** @description Validation Error */
@@ -4658,6 +5023,104 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_titles_api_troupes__troupe_id__titles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_title_api_troupes__troupe_id__titles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewTitle"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_title_api_troupes__troupe_id__titles__name__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitlesOut"];
+                };
             };
             /** @description Validation Error */
             422: {

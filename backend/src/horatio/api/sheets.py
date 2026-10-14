@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import sheets
+from horatio import sheets, titles
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Approval, Character, TraitDefinition, Troupe, User, XpEntry
 from horatio.permissions import (
@@ -72,12 +72,15 @@ class StandingOut(BaseModel):
     # The sheet differs from what this troupe approved, or it never has.
     needs_approval: bool
     waiting: bool
+    # Titles the character holds in this troupe.
+    titles: list[str]
 
 
 class SheetOut(BaseModel):
     character_id: uuid.UUID
     name: str
     status: str
+    kind: str  # pc | npc
     standings: list[StandingOut]
     # Whose approved sheet `approved_rating` and `pending_changes` compare against.
     viewing_troupe_id: uuid.UUID | None
@@ -176,6 +179,7 @@ def sheet_out(db: DbSession, character: Character, troupe_id: uuid.UUID | None =
         character_id=character.id,
         name=character.name,
         status=character.status,
+        kind=character.kind,
         standings=[
             StandingOut(
                 troupe_id=m.troupe_id,
@@ -185,6 +189,7 @@ def sheet_out(db: DbSession, character: Character, troupe_id: uuid.UUID | None =
                 home=m.troupe_id == character.home_troupe_id,
                 needs_approval=sheets.needs_approval(db, character, m),
                 waiting=any(a.troupe_id == m.troupe_id for a in pending),
+                titles=titles.held(db, m.troupe_id, character.id),
             )
             for m in joined
         ],
@@ -218,7 +223,7 @@ def sheet_out(db: DbSession, character: Character, troupe_id: uuid.UUID | None =
 
 def players_character(db: DbSession, user: User, character_id: uuid.UUID) -> Character:
     character = visible_character(db, user, character_id)
-    if not can_edit_character(user, character):
+    if not can_edit_character(db, user, character):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player can change it.")
     return sheets.lock_character(db, character.id)
 

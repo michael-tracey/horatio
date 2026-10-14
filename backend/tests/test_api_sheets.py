@@ -14,18 +14,12 @@ from horatio.models import AuditEvent, Character, TroupeMembership, User
 from horatio.rules.model import CostRuleData
 from horatio.rules.store import add_house_rule
 from horatio.sheets import freeze_sheet
-from tests.api_helpers import Person, Troupe, without_starting_traits
+from tests.api_helpers import Person, Troupe, new_character, without_starting_traits
 
 
 @pytest.fixture
 def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
     return Troupe(client_for, session)
-
-
-def new_character(person: Person) -> str:
-    response = person.client.post("/characters", json={"splat": "vampire", "name": "Agnes"})
-    assert response.status_code == 201, response.text
-    return response.json()["id"]
 
 
 def buy(
@@ -59,7 +53,7 @@ def make_home_troupe_member(session: Session, troupe: Troupe, character_id: str)
 
 
 def test_new_characters_start_with_30_xp(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
 
     assert sheet(troupe.player, character_id)["xp"] == {"balance": 30, "earned": 30, "spent": 0}
     history = troupe.player.client.get(f"/characters/{character_id}/xp").json()
@@ -69,7 +63,7 @@ def test_new_characters_start_with_30_xp(troupe: Troupe) -> None:
 
 
 def test_buying_a_skill(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
 
     response = buy(troupe.player, character_id, "skills", "Brawl", 2)
 
@@ -94,7 +88,7 @@ def test_buying_a_skill(troupe: Troupe) -> None:
 
 
 def test_a_quote_prices_without_buying(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
 
     response = troupe.player.client.post(
         f"/characters/{character_id}/quote",
@@ -107,7 +101,7 @@ def test_a_quote_prices_without_buying(troupe: Troupe) -> None:
 
 
 def test_you_cannot_spend_xp_you_do_not_have(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     assert buy(troupe.player, character_id, "skills", "Brawl", 5).json()["cost"] == 15
 
     response = buy(troupe.player, character_id, "attributes", "Physical", 6)  # 18 XP
@@ -118,7 +112,7 @@ def test_you_cannot_spend_xp_you_do_not_have(troupe: Troupe) -> None:
 
 
 def test_merits_cost_their_point_value_and_flaws_give_xp(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
 
     assert buy(troupe.player, character_id, "merits", "Acute Sense", 3).status_code == 422
     assert buy(troupe.player, character_id, "merits", "Acute Sense", 1).json()["cost"] == 1
@@ -130,7 +124,7 @@ def test_merits_cost_their_point_value_and_flaws_give_xp(troupe: Troupe) -> None
 
 
 def test_choosing_a_clan_replaces_the_last_choice_and_costs_nothing(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
 
     buy(troupe.player, character_id, "clan", "Brujah", None)
     response = buy(troupe.player, character_id, "clan", "Tremere", None)
@@ -142,7 +136,7 @@ def test_choosing_a_clan_replaces_the_last_choice_and_costs_nothing(troupe: Trou
 
 
 def test_the_clan_sets_in_clan_discipline_prices(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "clan", "Brujah", None)
 
     in_clan = buy(troupe.player, character_id, "disciplines", "Celerity", 2)
@@ -156,7 +150,7 @@ def test_the_clan_sets_in_clan_discipline_prices(troupe: Troupe) -> None:
 
 
 def test_only_catalogue_traits_can_be_bought(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
 
     assert buy(troupe.player, character_id, "skills", "Juggling", 1).status_code == 422
     assert buy(troupe.player, character_id, "clan", "Brujah", 2).status_code == 422
@@ -164,7 +158,7 @@ def test_only_catalogue_traits_can_be_bought(troupe: Troupe) -> None:
 
 
 def test_unapproved_purchases_can_be_undone_for_a_refund(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 3)
 
     response = buy(troupe.player, character_id, "skills", "Brawl", 1)
@@ -177,7 +171,7 @@ def test_unapproved_purchases_can_be_undone_for_a_refund(troupe: Troupe) -> None
 
 
 def test_purchases_use_the_home_troupes_house_rules(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
     add_house_rule(
         session, uuid.UUID(troupe.id), "vampire", CostRuleData("skills", "per_dot", rate=1)
@@ -187,7 +181,7 @@ def test_purchases_use_the_home_troupes_house_rules(troupe: Troupe, session: Ses
 
 
 def test_purchases_are_audited(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 1)
 
     event = session.scalars(select(AuditEvent).where(AuditEvent.action == "sheet.purchase")).one()
@@ -201,7 +195,7 @@ def test_purchases_are_audited(troupe: Troupe, session: Session) -> None:
 def test_sheets_are_private_from_other_players_and_narrators(
     troupe: Troupe, session: Session
 ) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
 
     assert troupe.stranger.client.get(f"/characters/{character_id}/sheet").status_code == 404
@@ -210,14 +204,14 @@ def test_sheets_are_private_from_other_players_and_narrators(
 
 
 def test_staff_cannot_edit_a_players_sheet(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
 
     assert buy(troupe.storyteller, character_id, "skills", "Brawl", 1).status_code == 403
 
 
 def test_home_troupe_running_staff_award_xp(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     award = {"amount": 5, "reason": "Attended October game"}
     assert troupe.assistant.client.post(
         f"/characters/{character_id}/xp", json=award
@@ -242,7 +236,7 @@ def test_home_troupe_running_staff_award_xp(troupe: Troupe, session: Session) ->
 
 
 def test_a_character_in_no_troupe_has_nobody_to_ask(troupe: Troupe) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 1)
 
     assert (
@@ -252,7 +246,7 @@ def test_a_character_in_no_troupe_has_nobody_to_ask(troupe: Troupe) -> None:
 
 
 def test_approving_a_sheet_change(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
 
@@ -288,7 +282,7 @@ def test_approving_a_sheet_change(troupe: Troupe, session: Session) -> None:
 
 
 def test_declining_unlocks_the_sheet(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
     approval_id = troupe.player.client.post(f"/characters/{character_id}/approval", json={}).json()[
@@ -309,7 +303,7 @@ def test_declining_unlocks_the_sheet(troupe: Troupe, session: Session) -> None:
 
 
 def test_withdrawing_a_request(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
     troupe.player.client.post(f"/characters/{character_id}/approval", json={})
@@ -320,7 +314,7 @@ def test_withdrawing_a_request(troupe: Troupe, session: Session) -> None:
 
 
 def test_nothing_to_approve(troupe: Troupe, session: Session) -> None:
-    character_id = new_character(troupe.player)
+    character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
 
     assert (

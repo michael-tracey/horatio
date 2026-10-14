@@ -134,6 +134,8 @@ class RuleSetData:
     allowance_rules: Sequence[AllowanceRuleData] = ()
     creation_rules: Sequence[CreationRuleData] = ()
     starting_traits: Sequence[StartingTraitData] = ()
+    # Titles a troupe can give (CONTEXT.md: Title); troupes can add their own.
+    titles: Sequence[str] = ()
 
     def trait_properties(self, category: str, name: str) -> Mapping[str, Any]:
         trait = self.traits.get((category, name))

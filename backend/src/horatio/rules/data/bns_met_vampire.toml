@@ -57,18 +57,6 @@ group = "Identity"
 rated = false
 
 [[categories]]
-key = "title"
-name = "Title"
-group = "Identity"
-rated = false
-
-[[categories]]
-key = "antecedence"
-name = "Antecedence"
-group = "Identity"
-rated = false
-
-[[categories]]
 key = "attributes"
 name = "Attributes"
 group = "Attributes"

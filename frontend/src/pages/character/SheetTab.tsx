@@ -82,7 +82,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
       <div className="flex flex-col gap-4">
-        {mine && !character.creation_complete && creation.data && (
+        {mine && character.kind === "pc" && !character.creation_complete && creation.data && (
           <CreationPanel character={character} creation={creation.data} locked={locked} />
         )}
         {(character.creation_complete || !mine) && <Standings character={character} sheet={s} mine={mine} onView={setViewing} />}
@@ -129,8 +129,9 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
             </div>
           </dl>
         </Card>
-        {!locked && catalogue.data && (
-          <AddTrait character={character} catalogue={catalogue.data} creation={creation.data} onDone={setMessage} />
+        {/* A PC is built in the creation wizard; buying with experience comes after. NPCs use the quick builder. */}
+        {!locked && catalogue.data && character.kind === "pc" && character.creation_complete && (
+          <AddTrait character={character} catalogue={catalogue.data} onDone={setMessage} />
         )}
         {mine && s.pending_approvals.length > 0 && <Notice>The sheet is locked while changes wait for approval.</Notice>}
       </aside>
@@ -176,39 +177,12 @@ function TraitRow({ trait, locked, onChange }: { trait: SheetTraitOut; locked: b
   );
 }
 
-function AddTrait({
-  character,
-  catalogue,
-  creation,
-  onDone,
-}: {
-  character: CharacterOut;
-  catalogue: CatalogueOut;
-  creation?: CreationOut;
-  onDone: (m: string) => void;
-}) {
+function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; catalogue: CatalogueOut; onDone: (m: string) => void }) {
   const [category, setCategory] = useState(catalogue.categories[0]?.key ?? "");
   const [name, setName] = useState("");
   const [detail, setDetail] = useState("");
   const [rating, setRating] = useState(1);
   const [quote, setQuote] = useState<number | null>(null);
-  // "xp" to buy with experience, or the rating of the creation pick to place.
-  const openPools = (creation?.pools ?? []).filter((p) => p.category === category && p.remaining > 0);
-  const [how, setHow] = useState<string>("auto");
-  const using = how === "auto" ? (openPools[0] ? String(openPools[0].rating) : "xp") : how;
-
-  const placePick = useAction(async () => {
-    await unwrap(
-      api.PUT("/api/characters/{character_id}/creation/picks", {
-        params: { path: { character_id: character.id } },
-        body: { category, name, detail, rating: Math.max(1, Number(using)) },
-      }),
-    );
-    onDone(`Placed a creation pick on ${name}.`);
-    setName("");
-    setDetail("");
-  });
-
   const cat = catalogue.categories.find((c) => c.key === category);
   const traits = useMemo(() => catalogue.traits.filter((t) => t.category === category), [catalogue, category]);
   const trait = traits.find((t) => t.name === name);
@@ -233,8 +207,7 @@ function AddTrait({
         className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
-          if (using === "xp") buy.mutate(undefined);
-          else placePick.mutate(undefined);
+          buy.mutate(undefined);
         }}
       >
         <Field label="Category">
@@ -244,7 +217,6 @@ function AddTrait({
               setCategory(e.target.value);
               setName("");
               setQuote(null);
-              setHow("auto");
             }}
           >
             {catalogue.categories.map((c) => (
@@ -277,19 +249,7 @@ function AddTrait({
         <Field label="Detail" hint="Optional: a specialisation, subject, or name.">
           <Input value={detail} onChange={(e) => setDetail(e.target.value)} />
         </Field>
-        {openPools.length > 0 && (
-          <Field label="How" hint="Creation picks give free dots; they are only available until you finish creation.">
-            <Select value={using} onChange={(e) => setHow(e.target.value)}>
-              {openPools.map((p) => (
-                <option key={p.rating} value={String(p.rating)}>
-                  {p.kind === "points" ? `From creation points (${p.remaining} left)` : `Creation pick at ${p.rating} (${p.remaining} left)`}
-                </option>
-              ))}
-              <option value="xp">Buy with experience</option>
-            </Select>
-          </Field>
-        )}
-        {cat?.rated && fixed === null && using === "xp" && (
+        {cat?.rated && fixed === null && (
           <Field label="Rating">
             <Input
               type="number"
@@ -303,16 +263,16 @@ function AddTrait({
             />
           </Field>
         )}
-        {quote !== null && using === "xp" && <p className="text-sm">Costs {quote} XP.</p>}
-        <ErrorText error={price.error ?? buy.error ?? placePick.error} />
+        {quote !== null && <p className="text-sm">Costs {quote} XP.</p>}
+        <ErrorText error={price.error ?? buy.error} />
         <div className="flex gap-2">
-          {cat?.rated && using === "xp" && (
+          {cat?.rated && (
             <Button type="button" variant="secondary" disabled={!name || price.isPending} onClick={() => price.mutate(undefined)}>
               Price it
             </Button>
           )}
-          <Button type="submit" disabled={!name || buy.isPending || placePick.isPending}>
-            {using !== "xp" ? "Place pick" : cat?.rated ? "Buy" : "Choose"}
+          <Button type="submit" disabled={!name || buy.isPending}>
+            {cat?.rated ? "Buy" : "Choose"}
           </Button>
         </div>
       </form>
@@ -366,6 +326,11 @@ function Standings({
             <Badge tone={t.standing === "approved" ? "gold" : "blood"}>{t.standing}</Badge>
             {t.home && <Badge>home</Badge>}
             {t.waiting && <Badge>waiting</Badge>}
+            {t.titles.map((title) => (
+              <Badge key={title} tone="gold">
+                {title}
+              </Badge>
+            ))}
             {!t.waiting && t.standing === "approved" && t.needs_approval && <span className="text-xs text-mist">has unapproved changes</span>}
             {t.note && <span className="w-full text-xs text-blood-bright">Sent back to draft: {t.note}</span>}
           </li>
@@ -431,8 +396,8 @@ function CreationPanel({ character, creation, locked }: { character: CharacterOu
       }
     >
       <p className="mb-3 text-sm text-mist">
-        The wizard walks through each step. You can also place picks one at a time with the panel on the right: each
-        pick gives one trait that many free dots, and merits and flaws come from a budget of points.
+        Characters are built in the creation wizard, one step at a time. Experience can be spent once creation is
+        finished.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {[...byCategory].map(([category, pools]) => (

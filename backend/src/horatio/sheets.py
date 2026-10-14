@@ -42,6 +42,11 @@ from horatio.rules.store import read_troupe_rules
 
 TraitKey = tuple[str, str, str]  # category, name, detail
 
+FINISH_CREATION_FIRST = (
+    "Build the character in the creation wizard first; "
+    + "experience can be spent once it is finished."
+)
+
 
 def conflict(message: str) -> HTTPException:
     return HTTPException(status.HTTP_409_CONFLICT, message)
@@ -296,6 +301,10 @@ def set_trait(
         )
         return Change(quote=None, trait=trait)
 
+    if character.kind == "npc":
+        raise conflict("Set an NPC's ratings directly; NPCs spend no experience.")
+    if character.creation_completed_at is None:
+        raise conflict(FINISH_CREATION_FIRST)
     quote, current_rating = quote_change(db, character, category_key, name, detail, rating)
     assert quote is not None and rating is not None and current_rating is not None
 
@@ -422,12 +431,16 @@ def freeze_sheet(
 
 
 def needs_approval(db: Session, character: Character, m: TroupeMembership) -> bool:
+    if character.kind == "npc":
+        return False  # NPCs belong to their troupe; there is nothing to approve.
     return m.standing == "draft" or bool(pending_changes(db, character, m.troupe_id))
 
 
 def request_approval(db: Session, player: User, character: Character, note: str) -> list[Approval]:
     """Put the sheet to every troupe the character is in that has not approved it as
     it stands: drafts, and troupes whose approved sheet is out of date."""
+    if character.kind == "npc":
+        raise conflict("NPCs need no approval; they belong to their troupe.")
     if character.creation_completed_at is None:
         raise conflict("Finish character creation before asking for approval.")
     ensure_unlocked(db, character)

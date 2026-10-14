@@ -50,6 +50,8 @@ class TroupeAction(StrEnum):
     MANAGE_RANDOM_TABLES = "manage_random_tables"
     VIEW_LOG = "view_log"
     SET_STANDING = "set_standing"
+    MANAGE_NPCS = "manage_npcs"
+    MANAGE_TITLES = "manage_titles"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -75,6 +77,8 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.MANAGE_RANDOM_TABLES: frozenset(_RUNNING),
     TroupeAction.VIEW_LOG: frozenset(_RUNNING),
     TroupeAction.SET_STANDING: frozenset(_RUNNING),
+    TroupeAction.MANAGE_NPCS: frozenset(_RUNNING),
+    TroupeAction.MANAGE_TITLES: frozenset(_RUNNING),
 }
 
 
@@ -109,8 +113,9 @@ def require_custodian(user: User) -> None:
 
 
 def can_view_character(db: Session, user: User, character: Character) -> bool:
-    """Its player, the custodian, and the running staff of any troupe it currently belongs to."""
-    if user.is_custodian or character.player_id == user.id:
+    """A PC's player, the custodian, and the running staff of any troupe it currently
+    belongs to (for an NPC, the troupe that keeps it)."""
+    if user.is_custodian or (character.kind == "pc" and character.player_id == user.id):
         return True
     running = [r.value for r in TROUPE_POLICY[TroupeAction.VIEW_MEMBER_CHARACTERS]]
     member_troupes = select(TroupeMembership.troupe_id).where(
@@ -127,9 +132,15 @@ def can_view_character(db: Session, user: User, character: Character) -> bool:
     return bool(db.scalar(select(is_lead | is_staff)))
 
 
-def can_edit_character(user: User, character: Character) -> bool:
-    """Only the player edits their character; staff approve, they do not edit."""
-    return character.player_id == user.id
+def can_edit_character(db: Session, user: User, character: Character) -> bool:
+    """A PC is edited only by its player; staff approve, they do not edit. An NPC is
+    edited by the running staff of the troupe it belongs to (CONTEXT.md: NPC)."""
+    if character.kind == "pc":
+        return character.player_id == user.id
+    troupe = db.get(Troupe, character.owner_troupe_id)
+    return troupe is not None and allows(
+        troupe_role(db, user, troupe), TroupeAction.MANAGE_NPCS, is_custodian=user.is_custodian
+    )
 
 
 def visible_character(db: Session, user: User, character_id: uuid.UUID) -> Character:

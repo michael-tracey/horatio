@@ -459,3 +459,27 @@ Recorded here for review; each is easy to change.
 - Starting disciplines are in-clan only (`restriction = "in_clan"` on the
   Vampire creation rules), checked when picks are placed and again when
   creation is finished, since the clan can change in between.
+
+**PCs, NPCs and titles**
+
+- `characters.kind` is `pc` or `npc`, replacing antecedence (there is no
+  Secondary). The antecedence and title categories are gone from the rule set;
+  the migration removed any already chosen, including from saved approved sheets.
+- PCs are built only through the creation wizard: spending XP is refused until
+  creation is finished.
+- An NPC belongs to a troupe (`owner_troupe_id`, also its home troupe, so the
+  troupe's house rules price it). It is approved there from the start, needs
+  no approval, cannot join other troupes or leave its own, and never takes
+  part in downtimes. The troupe's storytellers and assistant storytellers see,
+  edit and delete it; narrators and players never see it.
+- NPCs can be built in the wizard, or quickly: ratings are set directly, no XP
+  is spent, and a running tally shows what the build would cost a PC in that
+  troupe.
+- Titles are per-troupe tags given by storytellers and assistant storytellers,
+  from the rule set's list (imported from Yorick) plus titles the troupe adds.
+  A character can hold several. They show on the troupe's Characters tab, the
+  player's sheet and the printout for that troupe, and go when the character
+  leaves.
+- Fixed in passing: a change made while a list was still loading for the first
+  time could leave the list stale; mutations now cancel in-flight loads before
+  refreshing.

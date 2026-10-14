@@ -49,6 +49,18 @@ _Avoid_: Helper, volunteer
 A persona a player plays, belonging to exactly one splat. It belongs to its player and lives in their vault; the player adds it to troupes, each of which decides for itself whether it is a draft or approved there. A character is never deleted.
 _Avoid_: Sheet (that is the character's record, not the character), PC
 
+**PC**:
+A player character: built by its player through character creation, approved by each troupe it joins.
+_Avoid_: Primary, player character (in names)
+
+**NPC**:
+A character a troupe's storytellers or assistant storytellers make and keep for that troupe. It belongs to the troupe, needs no approval, takes no part in downtimes, and can be built quickly by setting ratings directly.
+_Avoid_: Secondary, antecedence
+
+**Title**:
+A position a character holds in one troupe, such as Prince or Primogen, given by that troupe's storytellers or assistant storytellers. A title means nothing outside its troupe.
+_Avoid_: Rank, office, court position
+
 **Vault**:
 A player's own characters, whether or not they are in any troupe.
 _Avoid_: Library, roster

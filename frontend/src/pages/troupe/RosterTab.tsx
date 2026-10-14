@@ -45,17 +45,18 @@ function RosterRow({ troupeId, entry }: { troupeId: string; entry: RosterEntry }
             {entry.character_name}
           </Link>
           <span className="text-sm text-mist">{entry.player_name}</span>
-          <Badge tone={entry.standing === "approved" ? "gold" : "blood"}>{entry.standing}</Badge>
+          {entry.kind === "npc" ? <Badge>NPC</Badge> : <Badge tone={entry.standing === "approved" ? "gold" : "blood"}>{entry.standing}</Badge>}
           {entry.home && <Badge>home</Badge>}
           {entry.waiting && <Badge>waiting for you</Badge>}
         </span>
-        {entry.standing === "approved" && (
+        {entry.kind === "pc" && entry.standing === "approved" && (
           <Button variant="ghost" onClick={() => setOpen(!open)}>
             Send back to draft
           </Button>
         )}
       </div>
       {entry.note && <p className="text-xs text-blood-bright">Sent back to draft: {entry.note}</p>}
+      <TitleEditor troupeId={troupeId} entry={entry} />
       {open && (
         <form
           className="flex flex-wrap gap-2"
@@ -72,5 +73,53 @@ function RosterRow({ troupeId, entry }: { troupeId: string; entry: RosterEntry }
       )}
       <ErrorText error={back.error} />
     </li>
+  );
+}
+
+/** The character's titles here as chips, with a picker to give another. */
+function TitleEditor({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
+  const [adding, setAdding] = useState("");
+  const titles = useQuery({
+    queryKey: ["titles", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/titles", { params: { path: { troupe_id: troupeId } } })),
+    staleTime: 60_000,
+  });
+  const save = useAction((names: string[]) =>
+    unwrap(
+      api.PUT("/api/troupes/{troupe_id}/characters/{character_id}/titles", {
+        params: { path: { troupe_id: troupeId, character_id: entry.character_id } },
+        body: { titles: names },
+      }),
+    ),
+  );
+  const all = [...(titles.data?.troupe ?? []), ...(titles.data?.catalogue ?? [])].filter((t) => !entry.titles.includes(t));
+  const listId = `titles-${entry.character_id}`;
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      {entry.titles.map((t) => (
+        <span key={t} className="flex items-center gap-1">
+          <Badge tone="gold">{t}</Badge>
+          <button aria-label={`Take the title ${t} from ${entry.character_name}`} className="text-mist hover:text-blood-bright" onClick={() => save.mutate(entry.titles.filter((x) => x !== t))}>
+            ×
+          </button>
+        </span>
+      ))}
+      <form
+        className="flex gap-1"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (adding) save.mutate([...entry.titles, adding]);
+          setAdding("");
+        }}
+      >
+        <Input list={listId} aria-label={`Give ${entry.character_name} a title`} placeholder="Give a title…" value={adding} onChange={(e) => setAdding(e.target.value)} className="h-8 min-h-8 w-44 py-1 text-xs" />
+        <datalist id={listId}>
+          {all.map((t) => (
+            <option key={t} value={t} />
+          ))}
+        </datalist>
+      </form>
+      <ErrorText error={save.error} />
+    </div>
   );
 }

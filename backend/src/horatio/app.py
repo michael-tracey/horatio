@@ -11,11 +11,13 @@ from horatio.api import (
     creation,
     downtimes,
     membership,
+    npcs,
     printing,
     responses,
     roster,
     rules,
     sheets,
+    titles,
     troupes,
 )
 from horatio.config import get_settings
@@ -57,6 +59,8 @@ for module in (
     responses,
     roster,
     printing,
+    npcs,
+    titles,
 ):
     api.include_router(module.router)
 

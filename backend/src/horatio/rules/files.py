@@ -146,9 +146,12 @@ def load_rule_set(path: Path) -> RuleSetData:
         for c in raw["categories"]
     }
     raw_traits = list(raw.get("traits", []))
+    titles = list(raw.get("titles", []))
     for trait_file in raw.get("trait_files", []):
         with (path.parent / trait_file).open("rb") as f:
-            raw_traits += tomllib.load(f).get("traits", [])
+            included = tomllib.load(f)
+        raw_traits += included.get("traits", [])
+        titles += included.get("titles", [])
     traits: dict[tuple[str, str], TraitData] = {}
     for t in raw_traits:
         if (t["category"], t["name"]) in traits:
@@ -190,6 +193,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             StartingTraitData(category=t["category"], name=t["name"], rating=t.get("rating"))
             for t in raw.get("starting_traits", [])
         ],
+        titles=tuple(sorted(set(titles))),
     )
     for allowance_rule in allowance_rules:
         check_allowance_rule(allowance_rule, rule_set)
