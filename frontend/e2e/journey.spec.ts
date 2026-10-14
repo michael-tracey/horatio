@@ -114,8 +114,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
   await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
 
-  // The lead accepts it.
-  await lead.page.getByRole("link", { name: "Approvals" }).click();
+  // The lead's bell says so, and leads straight to the troupe's approvals, whose tab counts it too.
+  await lead.page.reload();
+  await lead.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await lead.page.screenshot(shots("bell"));
+  await lead.page.getByRole("button", { name: /Agnes asks to make Court of Ash .* its home/ }).click();
+  await expect(lead.page.getByRole("link", { name: /Approvals/ }).getByLabel("1 waiting")).toBeVisible();
   await expect(lead.page.getByText("asking to make this home")).toBeVisible();
   await lead.page.screenshot(shots("approvals"));
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();

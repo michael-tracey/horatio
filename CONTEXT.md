@@ -173,6 +173,10 @@ _Avoid_: Snapshot, revision
 The home troupe's storytellers' or assistant storytellers' decision on a home troupe change or a discipline purchase. Nothing else on a sheet is approved: edits take effect at once.
 _Avoid_: Sign-off, review
 
+**Notification**:
+Something in a person's bell. A task is work waiting on them, such as an approval to decide; it goes when the work is done. A message tells them something happened, such as downtime results arriving; it stays until read.
+_Avoid_: Alert, inbox item
+
 **Discipline Purchase**:
 A discipline dot bought once the character has a home troupe. The experience is spent at once and the dot shows as awaiting approval until the home troupe decides; declining, withdrawing or leaving the troupe takes the dot back and refunds the experience.
 _Avoid_: Discipline request, teaching

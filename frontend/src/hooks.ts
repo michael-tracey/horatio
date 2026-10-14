@@ -35,3 +35,18 @@ export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>)
     },
   });
 }
+
+/**
+ * The signed-in person's bell: tasks waiting on them and their messages. Checked
+ * every minute and whenever the window comes back into focus; any change made
+ * in the app refreshes it at once (see useAction).
+ */
+export function useNotifications(enabled: boolean) {
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => unwrap(api.GET("/api/notifications")),
+    enabled,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+  });
+}

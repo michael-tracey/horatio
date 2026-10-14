@@ -512,3 +512,16 @@ Recorded here for review; each is easy to change.
 - Which categories wait on the home troupe is `NEEDS_HOME_APPROVAL` in `sheets.py`
   (just disciplines for now).
 
+**Notifications (the bell)**
+
+- Tasks are not stored: `horatio/notifications.py` works them out from what is
+  waiting (today, pending approvals in troupes where the person holds a role that
+  approves changes; the custodian alone is not asked). They appear and go exactly
+  as the work does, and cannot be marked read.
+- Messages are `notifications` rows (`user_id`, `kind`, `troupe_id`,
+  `character_id`, `summary`, `link`, `read_at`), written by `notify()` in the same
+  transaction as the event. The first is `downtime.delivered`, to the player.
+- New kinds of task are a function in `TASK_SOURCES`; new messages are a `notify()`
+  call where the event happens. The app polls `/notifications` every minute and on
+  focus, and refreshes it after any change.
+

@@ -36,6 +36,7 @@ from horatio.models import (
     TroupeStaff,
     User,
 )
+from horatio.notifications import notify
 from horatio.permissions import Role, troupe_role
 from horatio.sheets import conflict, unprocessable
 
@@ -350,6 +351,15 @@ def deliver_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe
                 sent_at=now(),
                 attempts=1,
             )
+        )
+        notify(
+            db,
+            [character.player_id],
+            "downtime.delivered",
+            f"Downtime results for {character.name} ({cycle.name}) are ready.",
+            f"/characters/{character.id}/results",
+            troupe_id=troupe.id,
+            character_id=character.id,
         )
         count += 1
     db.flush()

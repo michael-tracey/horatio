@@ -22,6 +22,15 @@ export function TroupePage() {
     queryKey: ["troupe", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
   });
+  // What waits on the Approvals tab; shares the tab's own query, so they agree.
+  const running = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).running : false;
+  const waiting = useQuery({
+    queryKey: ["approvals", troupeId, "pending"],
+    queryFn: () =>
+      unwrap(api.GET("/api/troupes/{troupe_id}/approvals", { params: { path: { troupe_id: troupeId }, query: { state: "pending" } } })),
+    enabled: running,
+    refetchInterval: 60_000,
+  });
 
   if (troupe.isPending) return <Loading />;
   if (troupe.error) return <ErrorText error={troupe.error} />;
@@ -41,7 +50,7 @@ export function TroupePage() {
           ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
           ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
           ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
-          ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals" }] : []),
+          ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
           ...(can.running ? [{ to: `${base}/downtimes`, label: "Downtimes" }] : []),
           ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
           ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),

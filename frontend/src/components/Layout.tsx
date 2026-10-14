@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import { useAction, useMe } from "../hooks";
+import { NotificationBell } from "./NotificationBell";
 
 export function Layout() {
   const me = useMe();
@@ -28,6 +29,7 @@ export function Layout() {
               <NavLink to="/troupes" className={link}>
                 Troupes
               </NavLink>
+              <NotificationBell />
               <span className="hidden text-mist sm:inline">·</span>
               <span className="hidden text-mist sm:inline">
                 {me.data.display_name}

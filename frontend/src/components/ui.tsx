@@ -126,7 +126,20 @@ export function PageTitle({ children, subtitle, actions }: { children: ReactNode
   );
 }
 
-export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolean }[] }) {
+/** A small round count, such as how many things are waiting. Shows nothing at zero. */
+export function CountBubble({ count, label }: { count: number; label: string }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      aria-label={`${count} ${label}`}
+      className="inline-grid h-5 min-w-5 place-items-center rounded-full bg-blood px-1.5 font-sans text-[11px] leading-none font-semibold text-parchment"
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolean; count?: number }[] }) {
   return (
     <nav className="-mx-4 mb-6 flex gap-1 overflow-x-auto border-b border-ash px-4 sm:mx-0 sm:px-0">
       {tabs.map((t) => (
@@ -141,7 +154,10 @@ export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolea
             )
           }
         >
-          {t.label}
+          <span className="inline-flex items-center gap-1.5">
+            {t.label}
+            {t.count !== undefined && <CountBubble count={t.count} label="waiting" />}
+          </span>
         </NavLink>
       ))}
     </nav>

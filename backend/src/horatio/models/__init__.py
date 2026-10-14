@@ -20,6 +20,7 @@ from horatio.models.downtimes import (
     Response,
     Submission,
 )
+from horatio.models.notifications import Notification
 from horatio.models.people import AuthIdentity, Session, User
 from horatio.models.rules import (
     ActionKind,
@@ -50,6 +51,7 @@ __all__ = [
     "DowntimeCycle",
     "RandomTable",
     "Response",
+    "Notification",
     "Question",
     "Submission",
     "Approval",
