@@ -103,6 +103,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Buy" }).click();
   await expect(p.getByText("29", { exact: true })).toBeVisible(); // 30 − 1 for Influence
   await p.screenshot(shots("sheet"));
+  // The character's own log says when, who and what.
+  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText("bought Influences: The Elite 1 for Agnes (1 XP).", { exact: false })).toBeVisible();
 
   // …and asks to make the troupe its home.
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();

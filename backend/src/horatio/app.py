@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from horatio.api import (
     approvals,
     auth,
+    character_log,
     characters,
     creation,
     downtimes,
@@ -58,6 +59,7 @@ for module in (
     downtimes,
     responses,
     roster,
+    character_log,
     printing,
     npcs,
     titles,

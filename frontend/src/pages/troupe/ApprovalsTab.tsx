@@ -9,7 +9,6 @@ import { describeDifference, settlementLabel } from "../../settlements";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
 
-
 export function ApprovalsTab({ troupeId }: { troupeId: string }) {
   const [state, setState] = useState<State>("pending");
   const queue = useQuery({
@@ -38,7 +37,38 @@ export function ApprovalsTab({ troupeId }: { troupeId: string }) {
         <Empty>Nothing {state}.</Empty>
       )}
       <ErrorText error={queue.error} />
+      {state === "pending" && <UnaskedDrafts troupeId={troupeId} />}
     </>
+  );
+}
+
+/** Drafts here whose players have not asked for approval yet: nothing to decide, but
+ * staff should know they are there. */
+function UnaskedDrafts({ troupeId }: { troupeId: string }) {
+  const roster = useQuery({
+    queryKey: ["roster", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", { params: { path: { troupe_id: troupeId } } })),
+  });
+  const drafts = (roster.data ?? []).filter((r) => r.kind === "pc" && r.standing === "draft" && !r.waiting);
+  if (!drafts.length) return null;
+  return (
+    <Card title="Drafts not yet put up for approval" className="mt-6">
+      <p className="mb-2 text-sm text-mist">
+        These characters are in the troupe as drafts. Their players have not asked for approval yet, so there is nothing to decide until they
+        do.
+      </p>
+      <ul className="text-sm">
+        {drafts.map((d) => (
+          <li key={d.character_id} className="flex flex-wrap items-center gap-2 py-1">
+            <Link className="hover:text-gold" to={`/characters/${d.character_id}?troupe=${troupeId}`}>
+              {d.character_name}
+            </Link>
+            <span className="text-mist">({d.player_name})</span>
+            {d.note && <span className="text-xs text-blood-bright">Sent back to draft: {d.note}</span>}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

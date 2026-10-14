@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import Select, select
 
 from horatio import sheets, titles
 from horatio.api.downtimes import staff_troupe
@@ -115,7 +115,6 @@ MESSAGES: dict[str, str] = {
     "troupe.lead_appointed": "{actor} appointed {member} lead storyteller.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
     "troupe.archived": "{actor} archived the troupe.",
-    "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
     "downtime.cycle_created": "{actor} created a downtime cycle.",
     "downtime.cycle_opened": "{actor} opened a downtime cycle ({participants} taking part).",
     "downtime.cycle_closed": "{actor} closed a downtime cycle.",
@@ -130,15 +129,44 @@ MESSAGES: dict[str, str] = {
     "title.taken": "{actor} took the title {title} from {character}.",
     "title.added": "{actor} added the title {title} to the troupe.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
+    "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
+    "sheet.choose": "{actor} chose {name} as {character}'s {category}.",
+    "creation.pick": "{actor} picked {name} {rating} for {character}.",
+    "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
+    "creation.set_category": "{actor} set {character}'s starting {category}: {picks}.",
+    "creation.complete": "{actor} finished creating {character}.",
 }
 
 
+def purchase_message(data: dict[str, Any]) -> str:
+    name = data["name"] + (f": {data['detail']}" if data.get("detail") else "")
+    name = name.replace("{", "{{").replace("}", "}}")
+    before, after, cost = data["from_rating"] or 0, data["to_rating"], data["cost"]
+    if after == 0:
+        change = f"removed {{character}}'s {name}"
+    elif before == 0:
+        change = f"bought {name} {after} for {{character}}"
+    else:
+        verb = "raised" if after > before else "lowered"
+        change = f"{verb} {{character}}'s {name} from {before} to {after}"
+    price = f" ({cost} XP)" if cost > 0 else f" ({-cost} XP back)" if cost < 0 else ""
+    return f"{{actor}} {change}{price}."
+
+
 def message(action: str, actor: str | None, character: str | None, data: dict[str, Any]) -> str:
-    template = MESSAGES.get(action, action.replace("_", " ").replace(".", ": "))
     values = {**data, "actor": actor or "Someone", "character": character or "A character"}
+    if isinstance(values.get("category"), str):
+        values["category"] = values["category"].replace("_", " ")
+    if isinstance(values.get("picks"), dict):
+        picks: dict[str, Any] = values["picks"]
+        values["picks"] = ", ".join(f"{n} {r}" for n, r in picks.items()) or "none"
     try:
+        if action == "sheet.purchase":
+            template = purchase_message(data)
+        else:
+            template = MESSAGES.get(action, action.replace("_", " ").replace(".", ": "))
         return template.format(**values)
-    except (KeyError, IndexError):
+    except (KeyError, IndexError, TypeError):
         return action.replace("_", " ").replace(".", ": ")
 
 
@@ -161,6 +189,11 @@ def log(
     )
     if before is not None:
         query = query.where(AuditEvent.created_at < before)
+    return log_entries(db, query)
+
+
+def log_entries(db: DbSession, query: Select[AuditEvent, str]) -> list[LogEntry]:
+    """Read the events `query` selects, with their actors' names, as log entries."""
     entries: list[LogEntry] = []
     for event, actor in db.execute(query):
         name = event.data.get("character_name")
