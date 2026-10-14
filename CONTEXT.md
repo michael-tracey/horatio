@@ -16,19 +16,23 @@ The top-level group: it runs games, has its own staff and house rules, and chara
 _Avoid_: Game, chapter, chronicle, organisation
 
 **Staff**:
-The people who run a troupe: its storytellers, assistant storytellers and narrators.
+The people who run a troupe: its lead storyteller, storytellers, assistant storytellers and narrators.
 _Avoid_: Admins, ST team
 
+**Lead Storyteller**:
+A storyteller who can also rename the troupe, edit its description and delete it.
+_Avoid_: Head ST, LST (in names), owner
+
 **Storyteller**:
-A staff member who leads a troupe, and the only role that manages the troupe's staff and house rules.
-_Avoid_: ST (in names), head ST, GM, admin
+A staff member who runs a troupe; storytellers and the lead storyteller are the only roles that manage the troupe's staff and house rules.
+_Avoid_: ST (in names), GM, admin
 
 **Assistant Storyteller**:
 A staff member who can do everything a storyteller can except manage staff and house rules.
 _Avoid_: AST (in names), sub-ST
 
 **Narrator**:
-A staff member who can do whatever a player in the troupe can, and also answer the downtime actions assigned to them.
+A staff member who can do whatever a player in the troupe can, and also answer downtime actions assigned to them or to any narrator.
 _Avoid_: Helper, volunteer
 
 ### Characters
@@ -132,8 +136,12 @@ A staff member's answer to one question in a submission.
 _Avoid_: Result, reply, outcome
 
 **Assignment**:
-The staff member responsible for writing a response, or the troupe's shared pool when no one has claimed it.
-_Avoid_: Colour, task owner
+Who is to write a response: one staff member, or any narrator. Only storytellers and assistant storytellers assign.
+_Avoid_: Colour, task owner, Any Staff
+
+**Any Narrator**:
+An assignment that any of the troupe's narrators may accept, after which it becomes theirs.
+_Avoid_: Shared pool, general tasks
 
 **Delivery**:
 Sending a submission's responses to its player.
