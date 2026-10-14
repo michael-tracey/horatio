@@ -6,7 +6,7 @@ import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut } from
 import { Button, Card, ErrorText, Field, Loading, Notice, Select } from "../../../components/ui";
 import { useAction } from "../../../hooks";
 import { DotGrid, PointsList } from "./DotGrid";
-import type { Allowed, Picks } from "./logic";
+import { identityChoices, type Allowed, type Picks } from "./logic";
 
 type Step = { key: string; title: string; categories: string[]; intro?: string };
 
@@ -216,7 +216,7 @@ function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut;
       }),
     ),
   );
-  const choices = catalogue.categories.filter((c) => !c.rated && catalogue.traits.some((t) => t.category === c.key));
+  const choices = identityChoices(catalogue, sheet);
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-mist">Who is {character.name}? Clan matters most: it decides which disciplines are in-clan.</p>

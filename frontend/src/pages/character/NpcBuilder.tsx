@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { identityChoices } from "./creation/logic";
 
 type Change = { category: string; name: string; rating: number | null };
 
@@ -72,7 +73,7 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
 }
 
 function Identity({ sheet, catalogue, onChange }: { sheet: SheetOut; catalogue: CatalogueOut; onChange: (c: Change) => void }) {
-  const choices = catalogue.categories.filter((c) => !c.rated && catalogue.traits.some((t) => t.category === c.key));
+  const choices = identityChoices(catalogue, sheet);
   return (
     <Card title="Who">
       <div className="grid gap-3 sm:grid-cols-2">

@@ -4,6 +4,8 @@
  * rating picked; `allowed` maps each rating to how many picks it has.
  */
 
+import type { CatalogueOut, CategoryOut } from "../../../api/types";
+
 export type Picks = Record<string, number>;
 export type Allowed = Record<number, number>;
 
@@ -65,4 +67,15 @@ export function togglePoints(picks: Picks, budget: number, name: string, points:
 
 export function spent(picks: Picks): number {
   return Object.values(picks).reduce((a, b) => a + b, 0);
+}
+
+/** The unrated choices (clan, sect…) to offer, leaving out any whose
+ * requirement the sheet does not meet: faction only for the Sabbat. */
+export function identityChoices(catalogue: CatalogueOut, sheet: { traits: { category: string; name: string }[] }): CategoryOut[] {
+  return catalogue.categories.filter(
+    (c) =>
+      !c.rated &&
+      catalogue.traits.some((t) => t.category === c.key) &&
+      (!c.requires || sheet.traits.some((t) => t.category === c.requires!.category && t.name === c.requires!.name)),
+  );
 }

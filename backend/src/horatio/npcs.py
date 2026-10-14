@@ -17,7 +17,14 @@ from horatio import audit
 from horatio.creation import grant_starting_traits
 from horatio.models import Character, CharacterTrait, Troupe, TroupeMembership, User
 from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
-from horatio.sheets import conflict, find_definition, rules_for, sheet_rows, unprocessable
+from horatio.sheets import (
+    conflict,
+    find_definition,
+    replace_choice,
+    rules_for,
+    sheet_rows,
+    unprocessable,
+)
 
 
 def create_npc(
@@ -57,16 +64,10 @@ def set_rating(
     if npc.kind != "npc":
         raise conflict("Only an NPC's ratings can be set directly.")
     definition, category = find_definition(db, npc, category_key, name)
-    rows = [r for r in sheet_rows(db, npc) if r.category.id == category.id]
     if not category.rated:
         if rating is not None:
             raise unprocessable(f"{category.name} has no rating.")
-        for row in rows:
-            db.delete(row.trait)
-        db.flush()
-        db.add(
-            CharacterTrait(character_id=npc.id, trait_definition_id=definition.id, detail=detail)
-        )
+        replace_choice(db, npc, definition, category, detail)
         db.flush()
         return
     if rating is None or rating < 0:

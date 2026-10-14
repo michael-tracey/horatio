@@ -25,6 +25,9 @@ class CategoryData:
     # Merits and flaws: a troupe re-prices them one trait at a time, never the
     # whole category (docs/design/schema.md, decision 5).
     house_rules_per_trait: bool = False
+    # Only shown and allowed when the character has this choice, for example
+    # {"category": "sect", "name": "Sabbat"} for faction.
+    requires: Mapping[str, str] | None = None
 
 
 @dataclass(frozen=True)

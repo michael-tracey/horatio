@@ -1374,6 +1374,10 @@ export interface components {
             name: string;
             /** Rated */
             rated: boolean;
+            /** Requires */
+            requires?: {
+                [key: string]: string;
+            } | null;
         };
         /** CategoryPick */
         CategoryPick: {
@@ -2344,6 +2348,8 @@ export interface components {
         };
         /** TroupeChanges */
         TroupeChanges: {
+            /** Allowed Sects */
+            allowed_sects?: string[] | null;
             /** Description */
             description?: string | null;
             /** Name */
@@ -2359,6 +2365,8 @@ export interface components {
         };
         /** TroupeOut */
         TroupeOut: {
+            /** Allowed Sects */
+            allowed_sects: string[];
             /** Archived */
             archived: boolean;
             /** Description */

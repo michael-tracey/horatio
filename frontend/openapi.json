@@ -295,6 +295,20 @@
           "rated": {
             "title": "Rated",
             "type": "boolean"
+          },
+          "requires": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requires"
           }
         },
         "required": [
@@ -2775,6 +2789,20 @@
       },
       "TroupeChanges": {
         "properties": {
+          "allowed_sects": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Sects"
+          },
           "description": {
             "anyOf": [
               {
@@ -2819,6 +2847,13 @@
       },
       "TroupeOut": {
         "properties": {
+          "allowed_sects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Sects",
+            "type": "array"
+          },
           "archived": {
             "title": "Archived",
             "type": "boolean"
@@ -2858,6 +2893,7 @@
           "description",
           "lead_user_id",
           "archived",
+          "allowed_sects",
           "my_role"
         ],
         "title": "TroupeOut",

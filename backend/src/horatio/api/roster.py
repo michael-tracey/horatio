@@ -115,6 +115,7 @@ MESSAGES: dict[str, str] = {
     "troupe.lead_appointed": "{actor} appointed {member} lead storyteller.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
     "troupe.archived": "{actor} archived the troupe.",
+    "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
     "downtime.cycle_created": "{actor} created a downtime cycle.",
     "downtime.cycle_opened": "{actor} opened a downtime cycle ({participants} taking part).",
     "downtime.cycle_closed": "{actor} closed a downtime cycle.",

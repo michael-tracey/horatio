@@ -53,7 +53,8 @@ to argon2 on the user's next sign-in.
 `user_id`, `token_hash`, `expires_at`, `revoked_at`.
 
 **`troupes`**
-`name`, `description`, `lead_user_id` (**not null**), `archived_at` (nullable).
+`name`, `description`, `lead_user_id` (**not null**), `archived_at` (nullable),
+`allowed_sects` (JSON list of sect names; empty means any).
 Keeping the lead as a non-null column on the troupe is what makes "exactly one
 lead storyteller" a database guarantee rather than an application check.
 Handing over the lead is an update to this column.
@@ -480,6 +481,19 @@ Recorded here for review; each is easy to change.
   A character can hold several. They show on the troupe's Characters tab, the
   player's sheet and the printout for that troupe, and go when the character
   leaves.
+
+**Sects and factions**
+
+- A trait category can name a choice it `requires`: faction requires the
+  Sabbat sect. Without it the category is hidden in the wizard and the NPC
+  builder and choosing from it is refused; changing away from the Sabbat drops
+  the faction, for PCs and NPCs alike.
+- A troupe can limit which sects' PCs may join (`troupes.allowed_sects`, set by
+  its storytellers and lead as a house rule; none ticked means any). It is
+  checked when a PC joins or asks for the troupe as home, and a PC with no sect
+  yet is refused by a limited troupe. NPCs are never limited. Characters
+  already in the troupe stay when the list changes, and a member changing sect
+  later is left to the troupe's approval of the sheet.
 - Fixed in passing: a change made while a list was still loading for the first
   time could leave the list stale; mutations now cancel in-flight loads before
   refreshing.

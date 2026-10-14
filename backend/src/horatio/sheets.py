@@ -200,6 +200,39 @@ def find_definition(
     return found[0], found[1]
 
 
+def replace_choice(
+    db: Session,
+    character: Character,
+    definition: TraitDefinition,
+    category: TraitCategory,
+    detail: str,
+) -> CharacterTrait:
+    """Make `definition` the character's choice in an unrated category such as a
+    clan or sect. A choice that needs another one (a faction needs the Sabbat
+    sect) is refused without it, and choices that no longer hold are dropped."""
+    rows = sheet_rows(db, character)
+    chosen = {(r.category.key, r.definition.name) for r in rows if r.category.id != category.id}
+    chosen.add((category.key, definition.name))
+
+    def met(needed: TraitCategory) -> bool:
+        return not needed.requires or (
+            (needed.requires["category"], needed.requires["name"]) in chosen
+        )
+
+    if not met(category):
+        assert category.requires is not None
+        raise unprocessable(f"Only a {category.requires['name']} character has a {category.name}.")
+    for row in rows:
+        if row.category.id == category.id or not met(row.category):
+            db.delete(row.trait)
+    db.flush()
+    trait = CharacterTrait(
+        character_id=character.id, trait_definition_id=definition.id, rating=None, detail=detail
+    )
+    db.add(trait)
+    return trait
+
+
 def start_character(db: Session, player: User, character: Character) -> None:
     """Give a new character the rule set's starting XP."""
     starting_xp = db.scalar(select(RuleSet.starting_xp).where(RuleSet.splat == character.splat))
@@ -285,16 +318,9 @@ def set_trait(
 
     if not category.rated:
         quote_change(db, character, category_key, name, detail, rating)  # validates
-        for row in sheet_rows(db, character):
-            if row.category.id == category.id:
-                db.delete(row.trait)
-        db.flush()
-        trait = CharacterTrait(
-            character_id=character.id, trait_definition_id=definition.id, rating=None, detail=detail
-        )
+        trait = replace_choice(db, character, definition, category, detail)
         if note is not None:
             trait.note = note
-        db.add(trait)
         db.flush()
         audit.record(
             db, player, "sheet.choose", character_id=character.id, category=category.key, name=name

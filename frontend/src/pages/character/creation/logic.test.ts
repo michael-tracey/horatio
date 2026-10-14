@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canTap, left, tap, togglePoints } from "./logic";
+import type { CatalogueOut } from "../../../api/types";
+import { canTap, identityChoices, left, tap, togglePoints } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
@@ -50,5 +51,28 @@ describe("togglePoints", () => {
 
   it("removes on a second toggle", () => {
     expect(togglePoints({ "Acute Sense": 1 }, 7, "Acute Sense", 1)).toEqual({});
+  });
+});
+
+describe("identityChoices", () => {
+  const catalogue = {
+    categories: [
+      { key: "sect", name: "Sect", group: "Identity", rated: false, max_rating: null },
+      { key: "faction", name: "Faction", group: "Identity", rated: false, max_rating: null, requires: { category: "sect", name: "Sabbat" } },
+      { key: "skills", name: "Skills", group: "Abilities", rated: true, max_rating: 5 },
+    ],
+    traits: [
+      { category: "sect", name: "Sabbat" },
+      { category: "sect", name: "Camarilla" },
+      { category: "faction", name: "Orthodox" },
+      { category: "skills", name: "Brawl" },
+    ],
+  } as unknown as CatalogueOut;
+  const keys = (traits: { category: string; name: string }[]) => identityChoices(catalogue, { traits }).map((c) => c.key);
+
+  it("offers faction only to the Sabbat", () => {
+    expect(keys([])).toEqual(["sect"]);
+    expect(keys([{ category: "sect", name: "Camarilla" }])).toEqual(["sect"]);
+    expect(keys([{ category: "sect", name: "Sabbat" }])).toEqual(["sect", "faction"]);
   });
 });

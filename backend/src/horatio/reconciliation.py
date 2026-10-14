@@ -128,6 +128,22 @@ def current_membership(
     )
 
 
+def check_sect(db: Session, character: Character, troupe: Troupe) -> None:
+    """A troupe can take player characters from only some sects. NPCs are its own."""
+    if character.kind != "pc" or not troupe.allowed_sects:
+        return
+    sect = next(
+        (r.definition.name for r in sheet_rows(db, character) if r.category.key == "sect"), None
+    )
+    if sect is None:
+        raise conflict(
+            f"{troupe.name} takes only {', '.join(troupe.allowed_sects)} characters. "
+            "Choose a sect first."
+        )
+    if sect not in troupe.allowed_sects:
+        raise conflict(f"{troupe.name} does not take {sect} characters.")
+
+
 def join(db: Session, player: User, character: Character, troupe: Troupe) -> TroupeMembership:
     if character.kind == "npc" and character.owner_troupe_id != troupe.id:
         raise conflict("An NPC belongs to its own troupe and cannot join others.")
@@ -137,6 +153,7 @@ def join(db: Session, player: User, character: Character, troupe: Troupe) -> Tro
         raise conflict("This character is retired.")
     membership = current_membership(db, character, troupe)
     if membership is None:
+        check_sect(db, character, troupe)
         membership = TroupeMembership(troupe_id=troupe.id, character_id=character.id)
         db.add(membership)
         db.flush()

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, UniqueConstraint, func, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from horatio.models.base import Imported, Record
@@ -18,6 +19,8 @@ class Troupe(Imported, Record):
     # rather than by counting rows in troupe_staff.
     lead_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Sects whose PCs may join; empty means any.
+    allowed_sects: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class TroupeStaff(Record):

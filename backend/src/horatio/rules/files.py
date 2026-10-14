@@ -142,6 +142,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             rated=c.get("rated", True),
             max_rating=c.get("max_rating", DEFAULT_MAX_RATING) if c.get("rated", True) else None,
             house_rules_per_trait=c.get("house_rules_per_trait", False),
+            requires=c.get("requires"),
         )
         for c in raw["categories"]
     }
@@ -208,6 +209,16 @@ def load_rule_set(path: Path) -> RuleSetData:
     for category, _name in traits:
         if category not in categories:
             raise ValueError(f"{path.name}: trait in unknown category {category!r}")
+    for category in categories.values():
+        if (
+            category.requires is not None
+            and (
+                category.requires.get("category"),
+                category.requires.get("name"),
+            )
+            not in traits
+        ):
+            raise ValueError(f"{path.name}: {category.key} requires an unknown trait")
     return rule_set
 
 

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
@@ -52,6 +53,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
           </div>
         </Card>
       )}
+      <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       {me.data?.is_custodian && (
         <Card title="Lead storyteller">
           <form
@@ -72,5 +74,44 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
         </Card>
       )}
     </div>
+  );
+}
+
+/** Which sects' player characters may join. None ticked means any may. */
+function SectsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
+  const catalogue = useQuery({
+    queryKey: ["catalogue", "vampire", null],
+    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
+    staleTime: 5 * 60_000,
+    enabled: canEdit,
+  });
+  const save = useAction((allowed_sects: string[]) =>
+    unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { allowed_sects } })),
+  );
+  const allowed = troupe.allowed_sects;
+  const sects = (catalogue.data?.traits ?? []).filter((t) => t.category === "sect").map((t) => t.name);
+
+  return (
+    <Card title="Sects">
+      {!canEdit ? (
+        <p className="text-sm">{allowed.length ? `Player characters from ${allowed.join(", ")} may join.` : "Player characters from any sect may join."}</p>
+      ) : (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-sm text-mist">Which sects may player characters join from? Leave all unticked to take any sect. NPCs are not limited.</legend>
+          {sects.map((sect) => (
+            <label key={sect} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={allowed.includes(sect)}
+                disabled={save.isPending}
+                onChange={(e) => save.mutate(e.target.checked ? [...allowed, sect] : allowed.filter((s) => s !== sect))}
+              />
+              {sect}
+            </label>
+          ))}
+          <ErrorText error={save.error ?? catalogue.error} />
+        </fieldset>
+      )}
+    </Card>
   );
 }

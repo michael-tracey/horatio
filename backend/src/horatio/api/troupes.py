@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 
 from horatio import audit
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Troupe, TroupeStaff, User
+from horatio.models import TraitCategory, TraitDefinition, Troupe, TroupeStaff, User
 from horatio.permissions import (
     Role,
     TroupeAction,
@@ -27,6 +27,8 @@ class TroupeOut(BaseModel):
     description: str
     lead_user_id: uuid.UUID
     archived: bool
+    # Sects whose player characters may join; empty means any.
+    allowed_sects: list[str]
     # The caller's own role here, if any.
     my_role: Role | None
 
@@ -40,6 +42,7 @@ class NewTroupe(BaseModel):
 class TroupeChanges(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = None
+    allowed_sects: list[str] | None = None
 
 
 class NewLead(BaseModel):
@@ -64,6 +67,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         description=troupe.description,
         lead_user_id=troupe.lead_user_id,
         archived=troupe.archived_at is not None,
+        allowed_sects=troupe.allowed_sects,
         my_role=troupe_role(db, user, troupe),
     )
 
@@ -120,6 +124,28 @@ def change_troupe(
     if body.description is not None:
         require_troupe_action(db, user, troupe, TroupeAction.EDIT_DESCRIPTION)
         troupe.description = body.description
+    if body.allowed_sects is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        known = set(
+            db.scalars(
+                select(TraitDefinition.name)
+                .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+                .where(TraitCategory.key == "sect")
+            )
+        )
+        unknown = sorted(set(body.allowed_sects) - known)
+        if unknown:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, f"No such sect: {', '.join(unknown)}."
+            )
+        troupe.allowed_sects = sorted(set(body.allowed_sects))
+        audit.record(
+            db,
+            user,
+            "troupe.sects_limited",
+            troupe_id=troupe.id,
+            sects=", ".join(troupe.allowed_sects) or "any",
+        )
     db.commit()
     return troupe_out(db, user, troupe)
 

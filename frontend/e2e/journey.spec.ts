@@ -61,6 +61,13 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
   await p.getByLabel("Clan").selectOption("Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
+  // Only the Sabbat have a faction, and leaving the Sabbat drops it.
+  await expect(p.getByLabel("Faction")).toHaveCount(0);
+  await p.getByLabel("Sect").selectOption("Sabbat");
+  await p.getByLabel("Faction").selectOption("Orthodox");
+  await expect(p.getByLabel("Faction")).toHaveValue("Orthodox");
+  await p.getByLabel("Sect").selectOption("Camarilla");
+  await expect(p.getByLabel("Faction")).toHaveCount(0);
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();

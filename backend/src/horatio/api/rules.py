@@ -19,6 +19,8 @@ class CategoryOut(BaseModel):
     group: str
     rated: bool
     max_rating: int | None
+    # Only shown when the character has this choice, e.g. faction needs the Sabbat sect.
+    requires: dict[str, str] | None = None
 
 
 class TraitOut(BaseModel):
@@ -64,7 +66,12 @@ def catalogue(
         name=rules.rule_set.name,
         categories=[
             CategoryOut(
-                key=c.key, name=c.name, group=c.group, rated=c.rated, max_rating=c.max_rating
+                key=c.key,
+                name=c.name,
+                group=c.group,
+                rated=c.rated,
+                max_rating=c.max_rating,
+                requires=dict(c.requires) if c.requires else None,
             )
             for c in rules.rule_set.categories.values()
         ],

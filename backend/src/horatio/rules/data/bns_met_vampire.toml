@@ -55,6 +55,8 @@ key = "faction"
 name = "Faction"
 group = "Identity"
 rated = false
+# Only Sabbat vampires have a faction.
+requires = { category = "sect", name = "Sabbat" }
 
 [[categories]]
 key = "attributes"
