@@ -49,6 +49,8 @@ def set_session_cookie(response: Response, token: str) -> None:
         httponly=True,
         secure=settings.cookie_secure,
         samesite="lax",
+        # Without a path the cookie would only be sent back to /api/auth.
+        path="/",
     )
 
 
@@ -92,7 +94,7 @@ def sign_out(request: Request, db: DbSession, response: Response) -> None:
     if token:
         end_session(db, token)
         db.commit()
-    response.delete_cookie(settings.session_cookie_name)
+    response.delete_cookie(settings.session_cookie_name, path="/")
 
 
 @router.get("/me")

@@ -30,6 +30,7 @@ def test_the_session_cookie_is_http_only(client_for: Callable[[], TestClient]) -
     cookie = response.headers["set-cookie"].lower()
     assert "httponly" in cookie
     assert "samesite=lax" in cookie
+    assert "path=/;" in cookie or cookie.endswith("path=/")
 
 
 def test_one_account_per_email_regardless_of_case(client_for: Callable[[], TestClient]) -> None:

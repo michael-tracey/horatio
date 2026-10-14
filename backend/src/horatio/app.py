@@ -1,7 +1,8 @@
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi.responses import FileResponse, JSONResponse
 
 from horatio.api import (
     approvals,
@@ -14,6 +15,7 @@ from horatio.api import (
     sheets,
     troupes,
 )
+from horatio.config import get_settings
 
 app = FastAPI(title="Horatio")
 
@@ -38,17 +40,44 @@ async def require_csrf_header(
     return await call_next(request)
 
 
-app.include_router(auth.router)
-app.include_router(troupes.router)
-app.include_router(characters.router)
-app.include_router(sheets.router)
-app.include_router(membership.router)
-app.include_router(approvals.router)
-app.include_router(rules.router)
-app.include_router(downtimes.router)
-app.include_router(responses.router)
+api = APIRouter(prefix="/api")
+for module in (
+    auth,
+    troupes,
+    characters,
+    sheets,
+    membership,
+    approvals,
+    rules,
+    downtimes,
+    responses,
+):
+    api.include_router(module.router)
 
 
-@app.get("/health")
+@api.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+app.include_router(api)
+
+
+def serve_frontend(dist: Path) -> None:
+    """Serve the built frontend: its files as they are, and index.html for every
+    other path that is not the API, so the app's own routes load on refresh."""
+    index = dist / "index.html"
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def frontend(path: str) -> FileResponse:
+        if path.startswith("api/"):
+            raise HTTPException(status_code=404)
+        candidate = (dist / path).resolve()
+        if path and candidate.is_file() and candidate.is_relative_to(dist.resolve()):
+            return FileResponse(candidate)
+        return FileResponse(index)
+
+
+_frontend_dist = get_settings().frontend_dist
+if _frontend_dist and (Path(_frontend_dist) / "index.html").is_file():
+    serve_frontend(Path(_frontend_dist))

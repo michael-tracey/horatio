@@ -15,12 +15,14 @@ from testcontainers.community.postgres import PostgresContainer
 
 from horatio.app import app
 from horatio.auth import passwords
+from horatio.config import get_settings
 from horatio.db import get_session
 from horatio.rules.files import DATA_DIR, load_rule_set
 from horatio.rules.store import sync_rule_set
 
 # The test client talks plain HTTP, which would never send a Secure cookie back.
 os.environ["HORATIO_COOKIE_SECURE"] = "false"
+get_settings.cache_clear()  # importing the app has already read the settings once
 
 # Real argon2 settings are slow on purpose; tests sign up hundreds of people.
 passwords._hasher = PasswordHash(  # pyright: ignore[reportPrivateUsage]
@@ -86,7 +88,7 @@ def client_for(session: Session) -> Iterator[Callable[[], TestClient]]:
     clients: list[TestClient] = []
 
     def make() -> TestClient:
-        client = TestClient(app, headers={"X-Horatio": "1"})
+        client = TestClient(app, base_url="http://testserver/api", headers={"X-Horatio": "1"})
         clients.append(client)
         return client
 

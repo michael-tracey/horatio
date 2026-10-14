@@ -1,0 +1,30 @@
+import type { components } from "./schema";
+
+type Schemas = components["schemas"];
+
+export type Me = Schemas["Me"];
+export type CharacterOut = Schemas["CharacterOut"];
+export type SheetOut = Schemas["SheetOut"];
+export type SheetTraitOut = Schemas["SheetTraitOut"];
+export type XpEntryOut = Schemas["XpEntryOut"];
+export type ApprovalOut = Schemas["ApprovalOut"];
+export type QueuedApproval = Schemas["QueuedApproval"];
+export type CatalogueOut = Schemas["CatalogueOut"];
+export type TraitOut = Schemas["TraitOut"];
+export type CategoryOut = Schemas["CategoryOut"];
+export type TroupeOut = Schemas["TroupeOut"];
+export type StaffMember = Schemas["StaffMember"];
+export type MembershipOut = Schemas["MembershipOut"];
+export type DifferenceOut = Schemas["DifferenceOut"];
+export type CycleOut = Schemas["CycleOut"];
+export type QuestionOut = Schemas["QuestionOut"];
+export type QuestionIn = Schemas["QuestionIn"];
+export type ParticipantOut = Schemas["ParticipantOut"];
+export type MyDowntime = Schemas["MyDowntime"];
+export type AnswerIn = Schemas["AnswerIn"];
+export type WorkItemOut = Schemas["WorkItemOut"];
+export type WorkCycle = Schemas["WorkCycle"];
+export type Progress = Schemas["Progress"];
+export type TableOut = Schemas["TableOut"];
+export type ResultOut = Schemas["ResultOut"];
+export type Role = Schemas["Role"];

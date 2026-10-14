@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # Secure cookies are only sent over HTTPS. Turn off only for local HTTP development.
     cookie_secure: bool = True
 
+    # The built frontend (frontend/dist). When set, the API serves it too.
+    frontend_dist: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

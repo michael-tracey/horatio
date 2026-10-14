@@ -268,3 +268,13 @@ def test_staff_from_other_troupes_see_nothing(scene: Scene) -> None:
 
     assert outsider.client.get(f"/cycles/{scene.cycle['id']}/responses/mine").status_code == 403
     assert outsider.client.get(f"/responses/{target}").status_code == 403
+
+
+def test_narrators_find_the_cycles_they_work_on(scene: Scene) -> None:
+    troupe = scene.troupe
+    new_cycle(troupe)  # a draft, which nobody works on yet
+
+    cycles = troupe.narrator.client.get(f"/troupes/{troupe.id}/work-cycles").json()
+
+    assert [(c["name"], c["status"]) for c in cycles] == [("October 2026", "open")]
+    assert troupe.player.client.get(f"/troupes/{troupe.id}/work-cycles").status_code == 403

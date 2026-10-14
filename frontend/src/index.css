@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* Horatio's palette: candlelit parchment on night, with a blood-red accent. */
+@theme {
+  --color-night: #141016;
+  --color-dusk: #1e1922;
+  --color-ash: #2c2531;
+  --color-mist: #9b8fa3;
+  --color-parchment: #ede4d3;
+  --color-blood: #a3253a;
+  --color-blood-bright: #c8384f;
+  --color-gold: #c9a24a;
+  --font-display: "Cinzel", "Georgia", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    background: var(--color-night);
+    color: var(--color-parchment);
+  }
+  body {
+    font-family: var(--font-sans);
+    min-height: 100vh;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+}

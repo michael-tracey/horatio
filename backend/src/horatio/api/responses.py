@@ -45,6 +45,12 @@ class WorkItemOut(BaseModel):
     body: str
 
 
+class WorkCycle(BaseModel):
+    id: uuid.UUID
+    name: str
+    status: str
+
+
 class Assignment(BaseModel):
     user_id: uuid.UUID | None = None
     any_narrator: bool = False
@@ -119,6 +125,18 @@ def response_item(
 
 
 # --- staff: the work list ---------------------------------------------------------------
+
+
+@router.get("/troupes/{troupe_id}/work-cycles")
+def work_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkCycle]:
+    """Cycles with downtimes to answer, for any staff member, narrators included."""
+    staff_troupe(db, user, troupe_id, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
+    cycles = db.scalars(
+        select(DowntimeCycle)
+        .where(DowntimeCycle.troupe_id == troupe_id, DowntimeCycle.status != "draft")
+        .order_by(DowntimeCycle.id.desc())
+    )
+    return [WorkCycle(id=c.id, name=c.name, status=c.status) for c in cycles]
 
 
 @router.get("/cycles/{cycle_id}/responses")

@@ -1,0 +1,71 @@
+name: frontend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: uv sync --locked
+        working-directory: backend
+      # The API types must match the backend's OpenAPI spec.
+      - run: npm run api && git diff --exit-code -- openapi.json src/api/schema.d.ts
+        working-directory: frontend
+      - run: npm run typecheck
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: horatio
+          POSTGRES_PASSWORD: horatio
+          POSTGRES_DB: horatio
+        ports: ["54329:5432"]
+        options: >-
+          --health-cmd "pg_isready -U horatio" --health-interval 2s --health-timeout 5s --health-retries 20
+    env:
+      HORATIO_COOKIE_SECURE: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --locked && uv run alembic upgrade head && uv run python -m horatio.rules
+        working-directory: backend
+      - run: npm ci && npm run build && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Start Horatio
+        working-directory: backend
+        run: |
+          HORATIO_FRONTEND_DIST=$GITHUB_WORKSPACE/frontend/dist uv run uvicorn horatio.app:app --port 8766 &
+          for i in $(seq 1 30); do curl -sf localhost:8766/api/health && break; sleep 1; done
+      - run: npx playwright test
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results
+          path: frontend/test-results
+          retention-days: 7

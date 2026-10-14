@@ -27,13 +27,36 @@ uv sync
 uv run alembic upgrade head   # create the tables
 uv run python -m horatio.rules  # load the generic rule sets
 HORATIO_COOKIE_SECURE=false uv run uvicorn horatio.app:app --reload
-# API docs: http://localhost:8000/docs
+# API docs: http://localhost:8000/docs (everything is under /api)
 # After signing up, make yourself custodian:
 uv run python -m horatio.custodian you@example.com
 
 uv run pytest                 # starts its own throwaway Postgres
 uv run ruff check . && uv run ruff format --check . && uv run pyright
 ```
+
+In another terminal, the frontend (React, TypeScript, Vite) at http://localhost:5173:
+
+```bash
+cd frontend
+npm install
+npm run dev          # proxies /api to the backend on :8000
+npm run api          # regenerate API types after changing the backend
+npm run typecheck && npm test
+```
+
+End-to-end tests drive the whole app in a browser, against a backend serving
+the built frontend:
+
+```bash
+npm run build
+(cd ../backend && HORATIO_COOKIE_SECURE=false HORATIO_FRONTEND_DIST=$PWD/../frontend/dist \
+  uv run uvicorn horatio.app:app --port 8766) &
+npx playwright test
+```
+
+In production the backend serves the built frontend itself
+(`HORATIO_FRONTEND_DIST`), so the app and API share one origin.
 
 Model changes need a migration: `uv run alembic revision --autogenerate -m "..."`,
 then read what it generated. `tests/test_migrations.py` fails if the models and
