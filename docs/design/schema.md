@@ -1,6 +1,6 @@
-# Schema design (draft 1)
+# Schema design
 
-Status: **proposal for review**. Nothing here is built yet. Table and column
+Status: **agreed after review**. Nothing here is built yet. Table and column
 names follow `CONTEXT.md`. Where this document needs a word the glossary does
 not have yet, it says so in [New terms](#new-terms-proposed-for-the-glossary).
 
@@ -290,7 +290,6 @@ action to this record", and every route calls it.
 4. The proposed terms are now in `CONTEXT.md`. Staff can add and remove
    participants after a cycle opens.
 5. Merit house rules are per merit, with a new cost and optional text.
-
 6. A character can only be a participant in its home troupe's cycles.
 7. Starting dots are reconciled as well as purchases.
 8. Flaws are re-priced one flaw at a time, like merits.
