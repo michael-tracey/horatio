@@ -1,10 +1,11 @@
 """Reading rule sets from the TOML files in `horatio/rules/data/`, and checking them."""
 
 import tomllib
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from horatio.rules.checks import CheckData, check_from_dict, validate_condition
 from horatio.rules.conditions import validate
 from horatio.rules.model import (
     DEFAULT_MAX_RATING,
@@ -127,6 +128,83 @@ def check_cost_rule(rule: CostRuleData, rule_set: RuleSetData) -> None:
     validate(rule.condition, SPLATS[rule_set.splat].fact_names)
 
 
+# What Yorick's `requirement` column says about generation, as a condition on the
+# Generation background.
+GENERATION_REQUIREMENTS: dict[str, dict[str, int]] = {
+    "Neonate": {"lte": 1},
+    "Neonate or Ancilla": {"lte": 2},
+    "Master or Luminary Elder": {"gte": 4},
+}
+
+
+def derived_checks(traits: Mapping[tuple[str, str], TraitData]) -> list[dict[str, Any]]:
+    """Checks that follow from the catalogue itself: a merit or flaw whose
+    requirement names a clan or bloodline is only for that clan (MET: VTM p. 238),
+    and one whose requirement names a generation only for that generation."""
+    clans = {name for (category, name) in traits if category == "clan"}
+    families = {name.split(":")[0].strip() for name in clans}
+    found: list[dict[str, Any]] = []
+    for (category, name), trait in sorted(traits.items()):
+        requirement = trait.properties.get("requirement")
+        if category not in ("merits", "flaws") or not requirement:
+            continue
+        page = trait.page_reference
+        if requirement in clans and ":" in requirement:
+            requires: dict[str, Any] = {"clan": [requirement]}
+        elif requirement in families:
+            requires = {"clan_family": [requirement]}
+        elif requirement in GENERATION_REQUIREMENTS:
+            requires = {"generation": GENERATION_REQUIREMENTS[requirement]}
+        else:
+            continue
+        found.append(
+            {
+                "key": f"{category}/{name}/requirement",
+                "category": category,
+                "name": name,
+                "requires": requires,
+                "message": f"{name} is only for {requirement}"
+                + (" characters." if requirement in GENERATION_REQUIREMENTS else "."),
+                **({"page": page} if page else {}),
+            }
+        )
+    return found
+
+
+def load_checks(
+    where: str,
+    raw_checks: list[dict[str, Any]],
+    traits: Mapping[tuple[str, str], TraitData],
+    categories: Mapping[str, CategoryData],
+) -> list[CheckData]:
+    """The rule set's checks, written and derived, each with a key and validated."""
+    known = set(traits)
+    checks: list[CheckData] = []
+    seen: dict[str, int] = {}
+    for raw in derived_checks(traits) + raw_checks:
+        subject = raw.get("name") or raw.get("name_prefix") or "*"
+        if "key" not in raw:
+            base = f"{raw['category']}/{subject}"
+            seen[base] = seen.get(base, 0) + 1
+            raw = {**raw, "key": f"{base}/{seen[base]}"}
+        if raw["category"] not in categories:
+            raise ValueError(
+                f"{where}: check {raw['key']} is about unknown category {raw['category']!r}"
+            )
+        if raw.get("name") and (raw["category"], raw["name"]) not in known:
+            raise ValueError(f"{where}: check {raw['key']} is about an unknown trait")
+        if not (raw.get("requires") or raw.get("forbids")):
+            raise ValueError(f"{where}: check {raw['key']} neither requires nor forbids anything")
+        for condition in (raw.get("requires"), raw.get("forbids")):
+            if condition:
+                validate_condition(condition, known)
+        checks.append(check_from_dict(raw))
+    keys = [c.key for c in checks]
+    if len(keys) != len(set(keys)):
+        raise ValueError(f"{where}: two checks share a key")
+    return checks
+
+
 def load_rule_set(path: Path) -> RuleSetData:
     with path.open("rb") as f:
         raw = tomllib.load(f)
@@ -166,6 +244,11 @@ def load_rule_set(path: Path) -> RuleSetData:
             page_reference=t.get("page_reference"),
             properties=t.get("properties", {}),
         )
+    raw_checks = list(raw.get("checks", []))
+    for check_file in raw.get("check_files", []):
+        with (path.parent / check_file).open("rb") as f:
+            raw_checks += tomllib.load(f).get("checks", [])
+    checks = load_checks(path.name, raw_checks, traits, categories)
     action_kinds = {
         k["key"]: ActionKindData(key=k["key"], name=k["name"], fields=tuple(k.get("fields", [])))
         for k in raw.get("action_kinds", [])
@@ -197,6 +280,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             for t in raw.get("starting_traits", [])
         ],
         titles=tuple(sorted(set(titles))),
+        checks=checks,
     )
     for allowance_rule in allowance_rules:
         check_allowance_rule(allowance_rule, rule_set)
@@ -225,5 +309,7 @@ def load_rule_set(path: Path) -> RuleSetData:
 
 
 def all_rule_set_files() -> Iterable[Path]:
-    """Rule set files; `*_traits.toml` files are catalogues they include."""
-    return sorted(p for p in DATA_DIR.glob("*.toml") if not p.name.endswith("_traits.toml"))
+    """Rule set files; `*_traits.toml` and `*_checks.toml` files are parts they include."""
+    return sorted(
+        p for p in DATA_DIR.glob("*.toml") if not p.name.endswith(("_traits.toml", "_checks.toml"))
+    )

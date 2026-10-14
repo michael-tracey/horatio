@@ -38,7 +38,7 @@ def limits(person: Person, character_id: str) -> dict[str, tuple[int, int]]:
 def test_a_character_never_holds_more_than_seven_merit_points(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     take(troupe.player, character_id, "merits", "Abyssal Horror", 3)
-    take(troupe.player, character_id, "merits", "Absent Sway", 3)
+    take(troupe.player, character_id, "merits", "Rugged", 3)
     assert take(troupe.player, character_id, "merits", "Acute Sense", 1).status_code == 200
 
     refused = take(troupe.player, character_id, "merits", "Adaptive", 1)
@@ -58,12 +58,12 @@ def test_merit_points_count_at_the_troupes_price(troupe: Troupe, session: Sessio
         session,
         uuid.UUID(troupe.id),
         "vampire",
-        CostRuleData(category="merits", trait="Absent Sway", scheme="fixed", rate=2),
+        CostRuleData(category="merits", trait="Rugged", scheme="fixed", rate=2),
     )
     character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
     take(troupe.player, character_id, "merits", "Abyssal Horror", 3)
-    take(troupe.player, character_id, "merits", "Absent Sway", 3)  # 2 here
+    take(troupe.player, character_id, "merits", "Rugged", 3)  # 2 here
 
     assert take(troupe.player, character_id, "merits", "Acute Sense", 1).status_code == 200
     assert take(troupe.player, character_id, "merits", "Adaptive", 1).status_code == 200

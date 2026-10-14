@@ -17,6 +17,7 @@ from horatio.models import (
     TraitCategory,
     TraitDefinition,
 )
+from horatio.rules.checks import check_from_dict, check_to_dict
 from horatio.rules.files import check_allowance_rule, check_cost_rule, check_creation_rules
 from horatio.rules.model import (
     ActionKindData,
@@ -46,6 +47,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         rule_set.splat, rule_set.name, rule_set.version = data.splat, data.name, data.version
     rule_set.starting_xp = data.starting_xp
     rule_set.titles = list(data.titles)
+    rule_set.checks = [check_to_dict(c) for c in data.checks]
     session.flush()
 
     categories = {
@@ -421,6 +423,7 @@ def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         version=rule_set.version,
         starting_xp=rule_set.starting_xp,
         titles=tuple(rule_set.titles),
+        checks=tuple(check_from_dict(c) for c in rule_set.checks),
         categories={
             c.key: CategoryData(
                 key=c.key,

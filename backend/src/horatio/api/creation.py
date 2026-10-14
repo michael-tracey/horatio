@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from horatio import creation
+from horatio import creation, sheets
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character
@@ -104,7 +104,8 @@ def place_pick(
     character_id: uuid.UUID, body: Pick, db: DbSession, user: CurrentUser
 ) -> CreationOut:
     character = players_character(db, user, character_id)
-    creation.place_pick(db, user, character, body.category, body.name, body.detail, body.rating)
+    with sheets.checked(db, character):
+        creation.place_pick(db, user, character, body.category, body.name, body.detail, body.rating)
     db.commit()
     return creation_out(db, character)
 
@@ -115,13 +116,14 @@ def set_category_picks(
 ) -> CreationOut:
     """Replace every creation pick in one category at once: one step of the wizard."""
     character = players_character(db, user, character_id)
-    creation.set_category_picks(
-        db,
-        user,
-        character,
-        category,
-        [creation.PickSpec(name=p.name, rating=p.rating, detail=p.detail) for p in body.picks],
-    )
+    with sheets.checked(db, character):
+        creation.set_category_picks(
+            db,
+            user,
+            character,
+            category,
+            [creation.PickSpec(name=p.name, rating=p.rating, detail=p.detail) for p in body.picks],
+        )
     db.commit()
     return creation_out(db, character)
 

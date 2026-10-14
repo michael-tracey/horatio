@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, SheetTraitOut } from "../../api/types";
 import { Badge, Button, Card, Dots, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, useUnavailable } from "../../hooks";
 
 type TraitChange = { category: string; name: string; detail: string; rating: number | null };
 
@@ -87,6 +87,17 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
           <CreationPanel character={character} creation={creation.data} locked={locked} />
         )}
         {(character.creation_complete || !mine) && <TroupesCard character={character} sheet={s} mine={mine} />}
+        {s.problems.length > 0 && (
+          <Card title="Against the rules">
+            <ul className="flex flex-col gap-1 text-sm">
+              {s.problems.map((p) => (
+                <li key={`${p.category}/${p.name}/${p.message}`} className={p.strength === "refuse" ? "text-blood-bright" : "text-mist"}>
+                  {p.message}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
         {groups.size === 0 && <Empty>The sheet is empty. Add traits from the panel{mine ? "" : " once the player does"}.</Empty>}
         {[...groups].map(([group, categories]) => (
           <Card key={group} title={group}>
@@ -271,6 +282,7 @@ function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; c
   const traits = useMemo(() => catalogue.traits.filter((t) => t.category === category), [catalogue, category]);
   const trait = traits.find((t) => t.name === name);
   const fixed = trait?.fixed_rating ?? null;
+  const unavailable = useUnavailable(character.id, category).data ?? {};
   const body: TraitChange = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null };
 
   const price = useAction(async () => {
@@ -321,9 +333,10 @@ function AddTrait({ character, catalogue, onDone }: { character: CharacterOut; c
           >
             <option value="">Choose…</option>
             {traits.map((t) => (
-              <option key={t.name} value={t.name}>
+              <option key={t.name} value={t.name} disabled={t.name in unavailable} title={unavailable[t.name]}>
                 {t.name}
                 {t.fixed_rating ? ` (${t.fixed_rating})` : ""}
+                {t.name in unavailable ? " — not allowed" : ""}
               </option>
             ))}
           </Select>

@@ -127,6 +127,10 @@ _Avoid_: Wizard, setup
 A troupe's change to its rule set: a different cost, allowance or creation rule, or an action kind of its own. A house rule for a merit or flaw always names that one merit or flaw, and may carry its own text.
 _Avoid_: Override, custom rule, homebrew
 
+**Check**:
+A rule about what a sheet may hold rather than what it costs, such as a clan-only merit or two flaws that cannot be taken together. A change that breaks one is refused, with the reason and the page.
+_Avoid_: Validation, restriction, prerequisite (one kind of check)
+
 **Troupe Rules**:
 A rule set with one troupe's house rules applied. A character plays by its home troupe's troupe rules, or by the plain rule set if it has no home troupe.
 _Avoid_: Effective rules, local rules

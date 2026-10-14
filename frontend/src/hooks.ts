@@ -50,3 +50,13 @@ export function useNotifications(enabled: boolean) {
     refetchOnWindowFocus: true,
   });
 }
+
+/** Traits in a category the character cannot take, and why (the rule set's checks). */
+export function useUnavailable(characterId: string, category: string, enabled = true) {
+  return useQuery({
+    queryKey: ["unavailable", characterId, category],
+    queryFn: () =>
+      unwrap(api.GET("/api/characters/{character_id}/unavailable", { params: { path: { character_id: characterId }, query: { category } } })),
+    enabled: enabled && !!category,
+  });
+}

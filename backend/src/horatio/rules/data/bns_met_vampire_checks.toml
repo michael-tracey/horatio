@@ -1,0 +1,245 @@
+# What a Vampire sheet may hold, beyond what it costs (horatio.rules.checks).
+# Page numbers are MET: Vampire The Masquerade (core). Merits and flaws whose
+# catalogue requirement names a clan, bloodline or generation get their check
+# automatically; these are the rest.
+
+# --- barred by clan or bloodline --------------------------------------------
+
+[[checks]]
+category = "merits"
+name = "Calm Heart"
+forbids = { clan = ["Brujah"] }
+message = "Brujah cannot take Calm Heart (True Brujah can)."
+page = "249"
+
+[[checks]]
+category = "merits"
+name = "Brotherhood"
+forbids = { clan = ["Brujah: True Brujah"] }
+message = "True Brujah cannot take Brotherhood."
+page = "239"
+
+[[checks]]
+category = "merits"
+name = "Unbondable"
+forbids = { clan_family = ["Tremere"] }
+message = "Tremere, including their bloodlines, cannot take Unbondable."
+page = "253"
+
+# --- clan weaknesses ----------------------------------------------------------
+
+[[checks]]
+category = "focus_socials"
+name = "Appearance"
+forbids = { clan_family = ["Nosferatu"] }
+message = "Nosferatu cannot have the Appearance focus."
+page = "60"
+
+[[checks]]
+category = "skills"
+name = "Empathy"
+forbids = { clan = ["Brujah: True Brujah"] }
+message = "True Brujah cannot take Empathy."
+page = "45"
+
+[[checks]]
+category = "backgrounds"
+name = "Herd"
+forbids = { clan_family = ["Salubri"] }
+message = "Salubri cannot take Herd."
+page = "77"
+
+[[checks]]
+category = "clan"
+name = "Caitiff"
+forbids = { has = { category = "backgrounds", name = "Generation", rating = 3 } }
+message = "Caitiff cannot have more than 2 dots of Generation."
+page = "69"
+
+[[checks]]
+category = "flaws"
+name = "Bound to the Earth"
+forbids = { clan_family = ["Tzimisce"] }
+message = "Bound to the Earth repeats the Tzimisce weakness, so a Tzimisce cannot take it."
+page = "236"
+
+# --- cannot be held together ----------------------------------------------------
+
+[[checks]]
+category = "merits"
+name = "Acute Sense"
+detail = "Hearing"
+forbids = { has = { category = "flaws", name = "Hard of Hearing" } }
+message = "Acute Sense (Hearing) and Hard of Hearing cannot be held together."
+page = "236"
+
+[[checks]]
+category = "merits"
+name = "Light Sleeper"
+forbids = { has = { category = "flaws", name = "Deep Sleeper" } }
+message = "Light Sleeper and Deep Sleeper cannot be held together."
+page = "236"
+
+[[checks]]
+category = "flaws"
+name = "Lesser Generation 1"
+forbids = { has = { category = "flaws", name = "Thin Blooded" } }
+message = "Lesser Generation and Thin Blooded cannot be held together."
+page = "264"
+
+[[checks]]
+category = "flaws"
+name = "Lesser Generation 2"
+forbids = { has = { category = "flaws", name = "Thin Blooded" } }
+message = "Lesser Generation and Thin Blooded cannot be held together."
+page = "264"
+
+[[checks]]
+category = "merits"
+name = "Infernal Heritage"
+forbids = { has = { category = "merits", name = "Path of Evil Revelations" } }
+message = "Infernal Heritage already includes the Path of Evil Revelations."
+page = "246"
+
+[[checks]]
+category = "merits"
+name = "Magic Resistance"
+forbids = { any_of = [
+  { has = { category = "flaws", name = "Magic Susceptibility" } },
+  { has_any = [
+    { category = "merits", name = "Thaumaturgic Training" },
+    { category = "merits", name = "Necromantic Training" },
+  ] },
+  { count = { category = "disciplines", name_prefix = "Thaumaturgy", gte = 1 } },
+  { count = { category = "disciplines", name_prefix = "Necromancy", gte = 1 } },
+] }
+message = "Magic Resistance cannot be held with blood magic or Magic Susceptibility."
+page = "252"
+
+[[checks]]
+category = "merits"
+name = "Personal Masquerade"
+forbids = { any_of = [
+  { on_path = true },
+  { count = { category = "merits", name_prefix = "Path of", gte = 1 } },
+] }
+message = "A character on a Path of Enlightenment cannot have Personal Masquerade."
+page = "252"
+
+[[checks]]
+category = "merits"
+name = "Whisper of Life"
+forbids = { any_of = [
+  { on_path = true },
+  { count = { category = "merits", name_prefix = "Path of", gte = 1 } },
+] }
+message = "A character on a Path of Enlightenment cannot have Whisper of Life."
+page = "253"
+
+# --- only one -------------------------------------------------------------------
+
+[[checks]]
+category = "merits"
+name_prefix = "Path of"
+forbids = { count = { category = "merits", name_prefix = "Path of", gte = 2 } }
+message = "A character can follow only one Path of Enlightenment."
+page = "253"
+
+[[checks]]
+category = "merits"
+name = "Additional Common Discipline"
+forbids = { has_any = [
+  { category = "merits", name = "Additional Uncommon Discipline" },
+  { category = "merits", name = "Pliable Blood" },
+] }
+message = "Only one merit can add an in-clan discipline."
+page = "248"
+
+[[checks]]
+category = "merits"
+name = "Additional Uncommon Discipline"
+forbids = { has = { category = "merits", name = "Pliable Blood" } }
+message = "Only one merit can add an in-clan discipline."
+page = "248"
+
+# --- flaws that bar traits ------------------------------------------------------
+
+[[checks]]
+category = "flaws"
+name = "Archaic"
+forbids = { has_any = [
+  { category = "skills", name = "Computer" },
+  { category = "skills", name = "Drive" },
+  { category = "skills", name = "Science" },
+  { category = "skills", name = "Security" },
+] }
+message = "An Archaic character cannot have Computer, Drive, Science or Security."
+page = "259"
+
+[[checks]]
+category = "flaws"
+name = "Illiterate"
+forbids = { has_any = [
+  { category = "skills", name = "Academics" },
+  { category = "skills", name = "Computer" },
+  { category = "skills", name = "Science" },
+] }
+message = "An Illiterate character cannot have Academics, Computer or Science."
+page = "263"
+
+[[checks]]
+category = "flaws"
+name = "Obvious Predator"
+forbids = { has_any = [
+  { category = "backgrounds", name = "Allies" },
+  { category = "backgrounds", name = "Contacts" },
+  { category = "backgrounds", name = "Influences: The Elite" },
+  { category = "backgrounds", name = "Influences: The Underworld" },
+] }
+message = "An Obvious Predator cannot have Allies, Contacts or Influences."
+page = "264"
+
+[[checks]]
+category = "flaws"
+name = "Methuselah's Thirst"
+forbids = { has = { category = "backgrounds", name = "Herd" } }
+message = "A character with Methuselah's Thirst cannot benefit from Herd."
+page = "264"
+
+[[checks]]
+category = "flaws"
+name = "Childlike"
+forbids = { has = { category = "attributes", name = "Physical", rating = 6 } }
+message = "A Childlike character's Physical attribute cannot go above 5."
+page = "260"
+
+# --- prerequisites --------------------------------------------------------------
+
+[[checks]]
+category = "merits"
+name = "Szlachta"
+requires = { has = { category = "disciplines", name = "Vicissitude", rating = 3 } }
+message = "Szlachta needs at least 3 dots of Vicissitude."
+page = "244"
+
+[[checks]]
+category = "merits"
+name = "Golconda Seeker"
+requires = { has_all = [
+  { category = "skills", name = "Lore", rating = 4 },
+  { category = "paths", name = "Humanity", rating = 5 },
+] }
+message = "Golconda Seeker needs Lore 4 and Humanity 5 or more."
+page = "249"
+
+[[checks]]
+category = "elder_disciplines"
+requires = { parent = { category = "disciplines", rating = 5 } }
+message = "An elder power needs all 5 dots of its discipline first."
+page = "212"
+
+[[checks]]
+category = "elder_disciplines"
+forbids = { generation = 3, count = { category = "elder_disciplines", gte = 2 } }
+message = "A Pretender Elder can learn only one elder power."
+page = "101"

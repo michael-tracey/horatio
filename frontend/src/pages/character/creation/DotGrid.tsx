@@ -128,12 +128,15 @@ export function PointsList({
   budget,
   picks,
   onChange,
+  unavailable = {},
 }: {
   title: string;
   traits: TraitOut[];
   budget: number;
   picks: Picks;
   onChange: (picks: Picks) => void;
+  /** Traits the rules do not allow this character, and why. */
+  unavailable?: Record<string, string>;
 }) {
   const { query, setQuery, shown } = useFiltered(traits, picks);
   const used = spent(picks);
@@ -155,7 +158,8 @@ export function PointsList({
         {visible.map((t) => {
           const points = t.fixed_rating ?? 1;
           const chosen = t.name in picks;
-          const affordable = chosen || used + points <= budget;
+          const barred = chosen ? undefined : unavailable[t.name];
+          const affordable = chosen || (used + points <= budget && !barred);
           return (
             <li key={t.name}>
               <label className={`flex items-start gap-2 rounded px-2 py-1.5 text-sm ${chosen ? "bg-ash/60" : "hover:bg-ash/40"} ${affordable ? "" : "opacity-40"}`}>
@@ -168,6 +172,7 @@ export function PointsList({
                 />
                 <span className="min-w-0">
                   <span className="text-parchment">{t.name}</span> <span className="text-gold">({points})</span>
+                  {barred && <span className="mt-0.5 block text-xs text-blood-bright">{barred}</span>}
                   {t.description && <span className="mt-0.5 block text-xs text-mist">{t.description}</span>}
                 </span>
               </label>

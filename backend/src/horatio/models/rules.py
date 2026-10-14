@@ -19,6 +19,8 @@ class RuleSet(Record):
     version: Mapped[int]
     starting_xp: Mapped[int] = mapped_column(default=0, server_default="0")
     titles: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # What a sheet may hold (horatio.rules.checks), as written in the rule set file.
+    checks: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class TraitCategory(Record):

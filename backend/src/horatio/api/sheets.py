@@ -62,6 +62,15 @@ class ApprovalOut(BaseModel):
     staff_note: str
 
 
+class ProblemOut(BaseModel):
+    """A check the sheet breaks: one the troupe should look at (refuse), or a note."""
+
+    category: str
+    name: str
+    strength: str
+    message: str
+
+
 class LimitOut(BaseModel):
     """Points held in a category with a limit: merits held, or flaws paying XP."""
 
@@ -104,6 +113,7 @@ class SheetOut(BaseModel):
     pending_approvals: list[ApprovalOut]
     pending_disciplines: list[PendingDisciplineOut]
     limits: list[LimitOut]
+    problems: list[ProblemOut]
 
 
 class TraitChange(BaseModel):
@@ -228,6 +238,15 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             spent=-sum(a for a in entries if a < 0),
         ),
         pending_approvals=[approval_out(a) for a in pending],
+        problems=[
+            ProblemOut(
+                category=v.subject.category,
+                name=v.subject.full_name,
+                strength=v.check.strength,
+                message=v.message,
+            )
+            for v in sheets.sheet_violations(db, character)
+        ],
         limits=[
             LimitOut(
                 category=c.key,
@@ -300,9 +319,10 @@ def change_trait(
     character_id: uuid.UUID, body: TraitChange, db: DbSession, user: CurrentUser
 ) -> ChangeOut:
     character = players_character(db, user, character_id)
-    change = sheets.set_trait(
-        db, user, character, body.category, body.name, body.detail, body.rating, body.note
-    )
+    with sheets.checked(db, character):
+        change = sheets.set_trait(
+            db, user, character, body.category, body.name, body.detail, body.rating, body.note
+        )
     db.commit()
     return ChangeOut(cost=change.quote.cost if change.quote else 0, sheet=sheet_out(db, character))
 
@@ -313,9 +333,24 @@ def change_choice(
 ) -> ChangeOut:
     """Swap a focus (or another swappable choice) for another, for its change cost."""
     character = players_character(db, user, character_id)
-    cost = sheets.change_choice(db, user, character, body.category, body.from_name, body.to_name)
+    with sheets.checked(db, character):
+        cost = sheets.change_choice(
+            db, user, character, body.category, body.from_name, body.to_name
+        )
     db.commit()
     return ChangeOut(cost=cost, sheet=sheet_out(db, character))
+
+
+@router.get("/unavailable")
+def unavailable(
+    character_id: uuid.UUID, category: str, db: DbSession, user: CurrentUser
+) -> dict[str, str]:
+    """Traits in `category` the character cannot take, and why."""
+    character = visible_character(db, user, character_id)
+    rules = sheets.rules_for(db, character)
+    if category not in rules.rule_set.categories:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No category {category!r}.")
+    return sheets.unavailable(db, character, category)
 
 
 @router.get("/xp")

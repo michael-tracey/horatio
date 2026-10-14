@@ -28,6 +28,9 @@ starting_xp = 30
 # Further [[traits]] tables, loaded as part of this rule set.
 trait_files = ["bns_met_vampire_traits.toml"]
 
+# What a sheet may hold, beyond what it costs (horatio.rules.checks).
+check_files = ["bns_met_vampire_checks.toml"]
+
 # ---------------------------------------------------------------------------
 # Categories, in sheet order. max_rating is the highest rating a trait can
 # reach; unrated categories hold one choice (such as a clan) rather than dots.

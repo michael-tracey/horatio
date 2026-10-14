@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut } from "../../../api/types";
 import { Button, Card, ErrorText, Field, Loading, Notice, Select } from "../../../components/ui";
-import { useAction } from "../../../hooks";
+import { useAction, useUnavailable } from "../../../hooks";
 import { DotGrid, PointsList } from "./DotGrid";
 import { identityChoices, type Allowed, type Picks } from "./logic";
 
@@ -162,7 +162,18 @@ function StepView({
           const mine = picks[category] ?? {};
           const set = (next: Picks) => setPicks({ ...picks, [category]: next });
           if (pools[0]?.kind === "points") {
-            return <PointsList key={category} title={nameOf(category)} traits={traitsOf(category)} budget={pools[0].allowed} picks={mine} onChange={set} />;
+            return (
+              <CheckedPointsList
+                key={category}
+                characterId={character.id}
+                category={category}
+                title={nameOf(category)}
+                traits={traitsOf(category)}
+                budget={pools[0].allowed}
+                picks={mine}
+                onChange={set}
+              />
+            );
           }
           let traits = traitsOf(category);
           // Picks restricted to in-clan disciplines offer only those.
@@ -288,4 +299,10 @@ function ReviewStep({ character, creation, steps }: { character: CharacterOut; c
       </Button>
     </div>
   );
+}
+
+/** A points list that greys out what the rules do not allow this character. */
+function CheckedPointsList({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof PointsList>[0]) {
+  const unavailable = useUnavailable(characterId, category);
+  return <PointsList {...props} unavailable={unavailable.data ?? {}} />;
 }

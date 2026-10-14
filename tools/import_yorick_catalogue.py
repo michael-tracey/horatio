@@ -75,6 +75,10 @@ BOOK_RATINGS = {
 # Spelling fixes to Yorick's requirement column.
 REQUIREMENTS = {"Follower of Set": "Followers of Set"}
 
+# Requirements Yorick recorded that the book does not make: Weak Stomach only
+# hits Neonates harder (p. 266); anyone can take it.
+NOT_REQUIRED = {("flaws", "Weak Stomach")}
+
 # Book traits Yorick never had, with their properties.
 EXTRA_TRAITS = {
     ("merits", "Blood of the Tzimisce"): {
@@ -166,6 +170,8 @@ def main(csv_path: str) -> None:
         if category == "skills" and name in ATTRIBUTE_OF:
             properties.append(f"attribute = {toml_string(ATTRIBUTE_OF[name])}")
         for key in ("type", "requirement"):
+            if key == "requirement" and (category, name) in NOT_REQUIRED:
+                continue
             if row.get(key, "").strip():
                 value = row[key].strip()
                 properties.append(f"{key} = {toml_string(REQUIREMENTS.get(value, value))}")

@@ -1659,6 +1659,35 @@
         "title": "PrintedTrait",
         "type": "object"
       },
+      "ProblemOut": {
+        "description": "A check the sheet breaks: one the troupe should look at (refuse), or a note.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "strength": {
+            "title": "Strength",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "strength",
+          "message"
+        ],
+        "title": "ProblemOut",
+        "type": "object"
+      },
       "Progress": {
         "properties": {
           "assigned": {
@@ -2429,6 +2458,13 @@
             "title": "Pending Disciplines",
             "type": "array"
           },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/ProblemOut"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -2462,7 +2498,8 @@
           "xp",
           "pending_approvals",
           "pending_disciplines",
-          "limits"
+          "limits",
+          "problems"
         ],
         "title": "SheetOut",
         "type": "object"
@@ -5063,6 +5100,63 @@
         "summary": "Leave Troupe",
         "tags": [
           "membership"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/unavailable": {
+      "get": {
+        "description": "Traits in `category` the character cannot take, and why.",
+        "operationId": "unavailable_api_characters__character_id__unavailable_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Unavailable Api Characters  Character Id  Unavailable Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unavailable",
+        "tags": [
+          "sheets"
         ]
       }
     },

@@ -585,6 +585,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/unavailable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unavailable
+         * @description Traits in `category` the character cannot take, and why.
+         */
+        get: operations["unavailable_api_characters__character_id__unavailable_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/xp": {
         parameters: {
             query?: never;
@@ -1962,6 +1982,20 @@ export interface components {
             /** Rating */
             rating: number | null;
         };
+        /**
+         * ProblemOut
+         * @description A check the sheet breaks: one the troupe should look at (refuse), or a note.
+         */
+        ProblemOut: {
+            /** Category */
+            category: string;
+            /** Message */
+            message: string;
+            /** Name */
+            name: string;
+            /** Strength */
+            strength: string;
+        };
         /** Progress */
         Progress: {
             /** Assigned */
@@ -2274,6 +2308,8 @@ export interface components {
             pending_approvals: components["schemas"]["ApprovalOut"][];
             /** Pending Disciplines */
             pending_disciplines: components["schemas"]["PendingDisciplineOut"][];
+            /** Problems */
+            problems: components["schemas"]["ProblemOut"][];
             /** Status */
             status: string;
             /** Traits */
@@ -3760,6 +3796,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unavailable_api_characters__character_id__unavailable_get: {
+        parameters: {
+            query: {
+                category: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
             };
             /** @description Validation Error */
             422: {

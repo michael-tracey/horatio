@@ -92,6 +92,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("in-clan").first()).toBeVisible();
   await tap("Celerity 2", "Potence 1", "Presence 1");
   await next("Merits & flaws");
+  // Clan merits are only for their clan: a Brujah sees Absent Sway barred, with the reason.
+  await p.getByLabel("Search Merits").fill("Absent Sway");
+  await expect(p.getByText(/Absent Sway is only for Toreador/)).toBeVisible();
   await p.getByLabel("Search Merits").fill("Acute");
   await p.getByLabel(/Acute Sense/).check();
   await next("Review");

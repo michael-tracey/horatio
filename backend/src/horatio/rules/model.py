@@ -7,7 +7,10 @@ with no home troupe plays by a `TroupeRules` with no house rules.
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, get_args
+
+if TYPE_CHECKING:
+    from horatio.rules.checks import CheckData
 
 Scheme = Literal["per_dot", "progressive", "table", "fixed", "free", "not_allowed"]
 SCHEMES: tuple[str, ...] = get_args(Scheme)
@@ -145,6 +148,8 @@ class RuleSetData:
     starting_traits: Sequence[StartingTraitData] = ()
     # Titles a troupe can give (CONTEXT.md: Title); troupes can add their own.
     titles: Sequence[str] = ()
+    # What a sheet may hold (horatio.rules.checks).
+    checks: Sequence["CheckData"] = ()
 
     def trait_properties(self, category: str, name: str) -> Mapping[str, Any]:
         trait = self.traits.get((category, name))

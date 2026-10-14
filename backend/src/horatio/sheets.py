@@ -14,7 +14,8 @@ the differences there are.
 """
 
 import uuid
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
@@ -37,6 +38,7 @@ from horatio.models import (
     User,
     XpEntry,
 )
+from horatio.rules.checks import Violation, violations
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import PricingError, Quote, points, purchase_cost
 from horatio.rules.store import read_troupe_rules
@@ -241,6 +243,60 @@ def find_definition(
     if found is None:
         raise unprocessable(f"There is no {category_key} trait called {name!r}.")
     return found[0], found[1]
+
+
+def sheet_violations(db: Session, character: Character) -> list[Violation]:
+    """The checks the character's sheet breaks now."""
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    return violations(rules_for(db, character).rule_set.checks, sheet)
+
+
+def unavailable(db: Session, character: Character, category_key: str) -> dict[str, str]:
+    """For each trait in a category the character does not hold, why a check would
+    refuse it, if one would. A merit or flaw is tried at its point value, anything
+    else at 1 dot."""
+    rule_set = rules_for(db, character).rule_set
+    rows = sheet_rows(db, character)
+    sheet = [r.as_rules_trait() for r in rows]
+    held = {r.definition.name for r in rows if r.category.key == category_key}
+    before = {v.key for v in violations(rule_set.checks, sheet)}
+    rated = rule_set.categories[category_key].rated
+    reasons: dict[str, str] = {}
+    for (category, name), trait in rule_set.traits.items():
+        if category != category_key or name in held:
+            continue
+        rating = trait.properties.get("rating", 1) if rated else None
+        candidate = SheetTrait(category=category, name=name, rating=rating, free_rating=0)
+        trial = [t for t in sheet if rated or t.category != category] + [candidate]
+        new = [
+            v
+            for v in violations(rule_set.checks, trial)
+            if v.check.strength == "refuse" and v.key not in before
+        ]
+        if new:
+            reasons[name] = new[0].message
+    return reasons
+
+
+@contextmanager
+def checked(db: Session, character: Character) -> Iterator[None]:
+    """Make a change to a player character's sheet, then refuse it if it breaks a
+    check the sheet did not already break. The caller's transaction is rolled back
+    with the refusal. NPCs are their staff's to build as they like."""
+    before = {v.key for v in sheet_violations(db, character)}
+    yield
+    if character.kind != "pc":
+        return
+    db.flush()
+    db.expire_all()
+    new = [
+        v
+        for v in sheet_violations(db, character)
+        if v.check.strength == "refuse" and v.key not in before
+    ]
+    if new:
+        db.rollback()
+        raise conflict(" ".join(dict.fromkeys(v.message for v in new)))
 
 
 def replace_choice(

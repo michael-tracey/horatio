@@ -1987,7 +1987,7 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Weak Stomach"
 description = "Calculate Blood pool as if has -1 Generation. Neonates reduce Blood pool by 2 Blood."
-properties = { rating = 3, type = "General", requirement = "Neonate" }
+properties = { rating = 3, type = "General" }
 
 [[traits]]
 category = "flaws"

@@ -525,3 +525,25 @@ Recorded here for review; each is easy to change.
   call where the event happens. The app polls `/notifications` every minute and on
   focus, and refreshes it after any change.
 
+**Checks: what a sheet may hold (issues #1, #3)**
+
+- `rule_sets.checks` (JSON) holds the rule set's checks, loaded from
+  `*_checks.toml` files the rule set names in `check_files`, plus checks derived
+  from the catalogue: a merit or flaw whose `requirement` names a clan, bloodline
+  or generation is only for that one.
+- A check names a subject (a trait, a whole category, or a name prefix) and
+  `requires` or `forbids` a condition; the vocabulary is in
+  `horatio/rules/checks.py`. Strength is `refuse` or `note`.
+- Every change a player makes to a PC's sheet runs inside `sheets.checked`: if the
+  change breaks a refuse-strength check the sheet did not already break, it is
+  rolled back and refused with the check's message. Existing problems (after a
+  rules change) never block unrelated changes. NPCs are built freely; their
+  problems only show.
+- `/characters/{id}/unavailable?category=` lists what the checks would refuse and
+  why, so the wizard and the sheet can grey those choices out.
+- Categories also carry `change_cost` (swap the choice after creation, e.g. a
+  focus for 10 XP, written as a `fee` XP entry that reconciliation ignores) and
+  `points_limit` (merits held, or XP paid out by flaws).
+- Still to come: a troupe switching checks off or changing their strength, and a
+  `review` strength that sends a purchase to the home troupe's approvals.
+
