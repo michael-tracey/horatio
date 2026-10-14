@@ -12,16 +12,20 @@ A person who plays one or more characters.
 _Avoid_: User (for the person in the game), member
 
 **Troupe**:
-The top-level group: it runs games, has its own staff and house rules, and characters belong to it. Nothing sits above a troupe.
+The top-level group: it runs games, has its own staff and house rules, and characters join it. No group sits above a troupe.
 _Avoid_: Game, chapter, chronicle, organisation
+
+**Custodian**:
+The site administrator, above all troupes, who appoints lead storytellers and manages the system itself.
+_Avoid_: Admin, superuser, site owner
 
 **Staff**:
 The people who run a troupe: its lead storyteller, storytellers, assistant storytellers and narrators.
 _Avoid_: Admins, ST team
 
 **Lead Storyteller**:
-A storyteller who can also rename the troupe, edit its description and delete it.
-_Avoid_: Head ST, LST (in names), owner
+The troupe's one owner: a storyteller who can also rename the troupe, edit its description and delete it. Every troupe has exactly one.
+_Avoid_: Head ST, LST (in names), co-lead
 
 **Storyteller**:
 A staff member who runs a troupe; storytellers and the lead storyteller are the only roles that manage the troupe's staff and house rules.
@@ -38,7 +42,7 @@ _Avoid_: Helper, volunteer
 ### Characters
 
 **Character**:
-A persona a player plays, belonging to exactly one splat.
+A persona a player plays, belonging to exactly one splat. It belongs to its player, who builds it outside any troupe and then adds it to troupes; a character is never deleted.
 _Avoid_: Sheet (that is the character's record, not the character), PC
 
 **Splat**:
@@ -69,8 +73,12 @@ _Avoid_: Effective rules, local rules
 The character's sheet as last approved by a storyteller or assistant storyteller; edits awaiting approval are not part of it.
 _Avoid_: Current sheet, live sheet
 
+**Reconciliation**:
+Finding and settling the differences between a character's purchases and the troupe rules of the home troupe it is joining.
+_Avoid_: Conversion, re-costing, audit
+
 **Purchase**:
-A trait bought for a character, recorded with the cost paid at the time; later changes to the rules never alter it.
+A trait bought for a character, recorded with the cost paid at the time; only reconciliation can change it, never a later rule change.
 _Avoid_: Spend, buy
 
 **Approval**:
