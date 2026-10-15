@@ -32,6 +32,10 @@ Condition vocabulary (every key in one table must hold):
                                     the sheet holds more traits of the first kind
                                     than it has dots of the second (rituals against
                                     Thaumaturgy)
+    above_in_clan = { category, name_prefix }
+                                    the subject is rated above every in-clan trait
+                                    of that kind the sheet holds (a path of
+                                    Thaumaturgy above the clan's primary path)
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
@@ -55,7 +59,7 @@ Condition = Mapping[str, Any]
 
 CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count", "parent",
-     "self", "copies", "in_clan", "accepted", "more_than_dots", "any_of", "not"}
+     "self", "copies", "in_clan", "accepted", "more_than_dots", "above_in_clan", "any_of", "not"}
 )  # fmt: skip
 
 
@@ -68,6 +72,8 @@ class Context:
     # The character's in-clan disciplines, by name ("Celerity") or full name
     # ("Thaumaturgy: Path of Blood").
     in_clan: frozenset[str] = frozenset()
+    # Truly native only: in_clan without the paths a merit prices as in-clan.
+    native: frozenset[str] = frozenset()
 
 
 NO_CONTEXT = Context()
@@ -214,6 +220,16 @@ def matches(
                 and t.name.startswith(dotted.get("name_prefix", ""))
             )
             ok = held > dots * test.get("per_dot", 1)
+        elif key == "above_in_clan":
+            primaries = [
+                t.rating or 0
+                for t in sheet
+                if t.category == test["category"]
+                and t.name.startswith(test.get("name_prefix", ""))
+                and t.name in context.native
+                and t.name != subject.name
+            ]
+            ok = bool(primaries) and (subject.rating or 0) > max(primaries)
         elif key == "any_of":
             ok = any(matches(c, sheet, subject, context) for c in test)
         elif key == "not":

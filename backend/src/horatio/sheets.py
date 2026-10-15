@@ -251,10 +251,11 @@ def check_context(db: Session, character: Character, sheet: Sequence[SheetTrait]
     rules = rules_for(db, character)
     # Paths a merit prices as in-clan (Thaumaturgic Expertise) count as in-clan here.
     priced = effects(rules.rule_set.grants, sheet, rules.rule_set).in_clan_priced
+    native = frozenset(SPLATS[character.splat].in_clan(rules, sheet))
     return Context(
         accepted=character.home_troupe_id is not None,
-        in_clan=frozenset(SPLATS[character.splat].in_clan(rules, sheet))
-        | {f"{name}: {detail}" if detail else name for _, name, detail in priced},
+        in_clan=native | {f"{name}: {detail}" if detail else name for _, name, detail in priced},
+        native=native,
     )
 
 

@@ -246,3 +246,43 @@ def test_one_lore_specialisation_per_dot_or_two_with_loremaster(troupe: Troupe) 
     take(troupe.player, character_id, "merits", "Loremaster", 1)
     assert take(troupe.player, character_id, "lore_specializations", specs[1]).status_code == 200
     assert take(troupe.player, character_id, "lore_specializations", specs[2]).status_code == 409
+
+
+def test_no_path_above_the_primary(troupe: Troupe) -> None:
+    character_id = as_clan(troupe, "Tremere")
+    troupe.session.add(
+        XpEntry(
+            character_id=uuid.UUID(character_id),
+            kind="award",
+            amount=100,
+            reason="Test",
+            entered_by=uuid.UUID(troupe.custodian.id),
+        )
+    )
+    troupe.session.flush()
+    take(troupe.player, character_id, "disciplines", "Thaumaturgy: Path of Blood", 2)
+    take(
+        troupe.player,
+        character_id,
+        "merits",
+        "Thaumaturgic Expertise",
+        1,
+        "Thaumaturgy: Lure of Flames",
+    )
+
+    assert (
+        take(
+            troupe.player, character_id, "disciplines", "Thaumaturgy: Lure of Flames", 2
+        ).status_code
+        == 200
+    )
+    refused = take(troupe.player, character_id, "disciplines", "Thaumaturgy: Lure of Flames", 3)
+    assert refused.status_code == 409
+    assert "primary path" in refused.json()["detail"]
+    # The primary path itself can always go higher.
+    assert (
+        take(
+            troupe.player, character_id, "disciplines", "Thaumaturgy: Path of Blood", 3
+        ).status_code
+        == 200
+    )
