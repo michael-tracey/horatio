@@ -71,16 +71,23 @@ export function Field({ label, hint, children }: { label: string; hint?: ReactNo
 const control =
   "min-h-10 w-full rounded-md border border-ash bg-night px-3 py-2 text-parchment placeholder:text-mist/60 focus:border-gold focus:outline-none";
 
+/** The control classes, full width unless the caller gives a width of its own
+ * (Tailwind does not let a later width class win over an earlier one). */
+function controlClass(className?: string): string {
+  const sized = className?.split(/\s+/).some((c) => /^(sm:|md:|lg:)?(w|min-w|max-w|flex)-/.test(c) || c === "flex-1");
+  return cx(sized ? control.replace("w-full ", "") : control, className);
+}
+
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={cx(control, props.className)} />;
+  return <input {...props} className={controlClass(props.className)} />;
 }
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className={cx(control, props.className)} />;
+  return <select {...props} className={controlClass(props.className)} />;
 }
 
 export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea rows={4} {...props} className={cx(control, props.className)} />;
+  return <textarea rows={4} {...props} className={controlClass(props.className)} />;
 }
 
 export function ErrorText({ error }: { error: unknown }) {

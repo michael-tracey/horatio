@@ -179,8 +179,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // The troupe's rules: the lead can play a check differently.
   await lead.page.getByRole("link", { name: "Rules", exact: true }).click();
   await lead.page.getByLabel("Search rules").fill("Calm Heart");
-  await lead.page.getByLabel(/How we play: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
-  await expect(lead.page.getByText("1 played differently here.")).toBeVisible();
+  await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
+  await expect(lead.page.getByText("Only those played differently (1)")).toBeVisible();
+  await lead.page.screenshot(shots("rules"));
 
   // The lead runs a cycle.
   await lead.page.getByRole("link", { name: "Downtimes" }).click();

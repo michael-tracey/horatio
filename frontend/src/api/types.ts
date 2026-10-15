@@ -37,3 +37,4 @@ export type PrintedSheet = Schemas["PrintedSheet"];
 export type Tally = Schemas["Tally"];
 export type TitlesOut = Schemas["TitlesOut"];
 export type NotificationOut = Schemas["NotificationOut"];
+export type CheckOut = Schemas["CheckOut"];
