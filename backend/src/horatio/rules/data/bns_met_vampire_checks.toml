@@ -1004,3 +1004,11 @@ category = "linguistics_specializations"
 forbids = { more_than_dots = { count = { category = "linguistics_specializations" }, dots = { category = "skills", name_prefix = "Linguistics" }, per_dot = 2 } }
 message = "Natural Linguist gives two Linguistics specialisations per dot of Linguistics, no more."
 page = "252"
+
+# Thin Blooded vampires are always Caitiff (p. 265).
+[[checks]]
+category = "flaws"
+name = "Thin Blooded"
+requires = { clan = ["Caitiff"] }
+message = "Thin Blooded vampires are always Caitiff."
+page = "265"

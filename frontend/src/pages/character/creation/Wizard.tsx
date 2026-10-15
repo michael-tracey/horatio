@@ -269,7 +269,49 @@ function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut;
         ))}
       </div>
       <ErrorText error={choose.error} />
+      {clanOf(sheet) === "Caitiff" && <ExtraInClan character={character} sheet={sheet} catalogue={catalogue} />}
     </div>
+  );
+}
+
+function clanOf(sheet: SheetOut): string | undefined {
+  return sheet.traits.find((t) => t.category === "clan")?.name;
+}
+
+/** A Caitiff has no clan disciplines: the player picks three, from the common ones (p. 246). */
+function ExtraInClan({ character, sheet, catalogue }: { character: CharacterOut; sheet: SheetOut; catalogue: CatalogueOut }) {
+  const unavailable = useUnavailable(character.id, "extra_in_clan_disciplines").data ?? {};
+  const held = new Set(sheet.traits.filter((t) => t.category === "extra_in_clan_disciplines").map((t) => t.name));
+  const toggle = useAction((body: { name: string; on: boolean }) =>
+    unwrap(
+      api.PUT("/api/characters/{character_id}/traits", {
+        params: { path: { character_id: character.id } },
+        body: { category: "extra_in_clan_disciplines", name: body.name, detail: "", rating: body.on ? 1 : 0, teacher: "" },
+      }),
+    ),
+  );
+  const options = catalogue.traits.filter(
+    (t) => t.category === "extra_in_clan_disciplines" && (held.has(t.name) || !(t.name in unavailable)) && !t.name.includes(":"),
+  );
+  return (
+    <fieldset className="flex flex-col gap-2 rounded-md border border-ash p-3">
+      <legend className="px-1 text-sm text-parchment">In-clan disciplines ({held.size} of 3)</legend>
+      <p className="text-xs text-mist">Caitiff choose their three in-clan disciplines from the common ones.</p>
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+        {options.map((t) => (
+          <label key={t.name} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={held.has(t.name)}
+              disabled={toggle.isPending || (!held.has(t.name) && held.size >= 3)}
+              onChange={(e) => toggle.mutate({ name: t.name, on: e.target.checked })}
+            />
+            {t.name}
+          </label>
+        ))}
+      </div>
+      <ErrorText error={toggle.error} />
+    </fieldset>
   );
 }
 

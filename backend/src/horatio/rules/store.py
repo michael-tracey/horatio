@@ -213,6 +213,7 @@ def creation_row(
         picks=rule.picks,
         points=rule.points,
         restriction=rule.restriction,
+        when=dict(rule.when) if rule.when else None,
     )
 
 
@@ -470,6 +471,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
             points=row.points,
             restriction=row.restriction,
             house=row.troupe_id is not None,
+            when=row.when,
         )
 
     starting_rows = list(

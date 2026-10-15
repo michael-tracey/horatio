@@ -639,6 +639,17 @@ def quote_change(
     return quote, current_rating
 
 
+def chosen_during_creation(db: Session, character: Character, category: TraitCategory) -> bool:
+    """Free traits no creation pick covers, such as a Caitiff's in-clan disciplines,
+    are chosen during creation like a clan."""
+    rules = rules_for(db, character)
+    if any(r.category == category.key for r in rules.creation_rules()):
+        return False
+    return all(
+        r.scheme == "free" for r in rules.rule_set.cost_rules if r.category == category.key
+    ) and any(r.category == category.key for r in rules.rule_set.cost_rules)
+
+
 def owed_for(
     db: Session, character: Character, category: TraitCategory, gained: int, fixed: bool
 ) -> int:
@@ -741,7 +752,9 @@ def set_trait(
 
     if character.kind == "npc":
         raise conflict("Set an NPC's ratings directly; NPCs spend no experience.")
-    if character.creation_completed_at is None:
+    if character.creation_completed_at is None and not chosen_during_creation(
+        db, character, category
+    ):
         raise conflict(FINISH_CREATION_FIRST)
     quote, current_rating = quote_change(db, character, category_key, name, detail, rating)
     assert quote is not None and rating is not None and current_rating is not None
@@ -792,7 +805,7 @@ def set_trait(
         and character.home_troupe_id is not None
         and character.kind == "pc"
     )
-    if rating != current_rating:
+    if rating != current_rating and quote.cost != 0:
         db.add(
             XpEntry(
                 character_id=character.id,

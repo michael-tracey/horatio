@@ -887,12 +887,14 @@ category = "backgrounds"
 rating = 1
 picks = 1
 
-# Starting disciplines must be in-clan: one at 2, the other two at 1.
+# Starting disciplines must be in-clan: one at 2, the other two at 1. Thin
+# Blooded vampires get only the two at 1 (p. 266).
 [[creation_rules]]
 category = "disciplines"
 rating = 2
 picks = 1
 restriction = "in_clan"
+when = { not = { has = { category = "flaws", name = "Thin Blooded" } } }
 
 [[creation_rules]]
 category = "disciplines"

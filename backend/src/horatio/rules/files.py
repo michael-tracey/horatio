@@ -316,6 +316,7 @@ def load_rule_set(path: Path) -> RuleSetData:
                 picks=r.get("picks"),
                 points=r.get("points"),
                 restriction=r.get("restriction"),
+                when=r.get("when"),
             )
             for r in raw.get("creation_rules", [])
         ],

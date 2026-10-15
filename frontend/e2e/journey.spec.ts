@@ -292,3 +292,19 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
   await expect(p.getByText("npc-lead gave Prince Vasquez the title Prince.")).toBeVisible();
 });
+
+test("a Caitiff chooses their in-clan disciplines while creating", async ({ browser }) => {
+  const { page } = await person(browser, "caitiff");
+  await page.getByLabel("Name").fill("Nobody's Child");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  await page.getByLabel("Clan").selectOption("Caitiff");
+  for (const name of ["Auspex", "Celerity", "Potence"]) {
+    await page.getByRole("checkbox", { name }).click();
+    await expect(page.getByRole("checkbox", { name })).toBeChecked();
+  }
+  await expect(page.getByText("In-clan disciplines (3 of 3)")).toBeVisible();
+  // Uncommon disciplines are never offered; once three are chosen, nothing else is.
+  await expect(page.getByRole("checkbox", { name: "Protean" })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: "Dominate" })).toHaveCount(0);
+});

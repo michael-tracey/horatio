@@ -95,11 +95,40 @@ def test_before_acceptance_out_of_clan_is_common_only_and_up_to_three(troupe: Tr
     assert take(troupe.player, character_id, "disciplines", "Protean", 1).status_code == 200
 
 
-def test_thin_blooded_disciplines_stop_at_four(troupe: Troupe) -> None:
-    character_id = creating(troupe)
-    assert pick(troupe.player, character_id, "flaws", "Thin Blooded").status_code == 200
+def caitiff_build(troupe: Troupe, thin_blooded: bool) -> str:
+    """A Caitiff through creation, with Auspex, Celerity and Potence in-clan."""
+    character_id = creating(troupe, clan="Caitiff")
+    for name in ("Auspex", "Celerity", "Potence"):
+        chosen = take(troupe.player, character_id, "extra_in_clan_disciplines", name)
+        assert chosen.status_code == 200, chosen.text
+    if thin_blooded:
+        assert pick(troupe.player, character_id, "flaws", "Thin Blooded").status_code == 200
     for category, name, rating in FULL_BUILD:
+        if category == "disciplines":
+            continue
         pick(troupe.player, character_id, category, name, rating)
+    return character_id
+
+
+def test_a_caitiff_chooses_in_clan_disciplines_while_creating(troupe: Troupe) -> None:
+    character_id = caitiff_build(troupe, thin_blooded=False)
+    for name, rating in (("Celerity", 2), ("Auspex", 1), ("Potence", 1)):
+        assert pick(troupe.player, character_id, "disciplines", name, rating).status_code == 200
+
+    finished = troupe.player.client.post(f"/characters/{character_id}/creation/complete")
+
+    assert finished.status_code == 200, finished.text
+
+
+def test_thin_blooded_start_with_one_dot_in_two_disciplines(troupe: Troupe) -> None:
+    character_id = caitiff_build(troupe, thin_blooded=True)
+    pools = troupe.player.client.get(f"/characters/{character_id}/creation").json()["pools"]
+
+    assert [(p["rating"], p["allowed"]) for p in pools if p["category"] == "disciplines"] == [
+        (1, 2)
+    ]
+    for name in ("Celerity", "Auspex"):
+        assert pick(troupe.player, character_id, "disciplines", name, 1).status_code == 200
     finished = troupe.player.client.post(f"/characters/{character_id}/creation/complete")
     assert finished.status_code == 200, finished.text
     give_xp(troupe, character_id, 100)
@@ -108,8 +137,15 @@ def test_thin_blooded_disciplines_stop_at_four(troupe: Troupe) -> None:
     refused = take(troupe.player, character_id, "disciplines", "Celerity", 5)
     assert refused.status_code == 409
     assert "Thin Blooded" in refused.json()["detail"]
-    # And it was chosen at creation, so it stays.
-    assert take(troupe.player, character_id, "flaws", "Thin Blooded", 0).status_code in (409, 422)
+
+
+def test_thin_blooded_vampires_are_caitiff(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+
+    refused = pick(troupe.player, character_id, "flaws", "Thin Blooded")
+
+    assert refused.status_code == 409
+    assert "always Caitiff" in refused.json()["detail"]
 
 
 def test_humanity_stops_at_six(troupe: Troupe) -> None:

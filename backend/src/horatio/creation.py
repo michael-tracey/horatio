@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.models import Character, CharacterTrait, User
+from horatio.rules.checks import matches
 from horatio.rules.model import CreationRuleData, SheetTrait, TroupeRules
 from horatio.rules.splats import SPLATS
 from horatio.sheets import (
@@ -69,7 +70,11 @@ def pools_for(
     """The pools these creation rules give, with the picks already placed in them.
     Picks that fit no pool are left out; `stray_picks` finds them."""
     pools: dict[tuple[str, int], Pool] = {}
+    sheet = [row.as_rules_trait() for row in rows]
     for rule in rules:
+        # A creation rule's condition is about the sheet, not one trait.
+        if rule.when and not matches(rule.when, sheet, SheetTrait(category="", name="")):
+            continue
         key = pool_key(rule)
         if rule.points is not None:
             pools[key] = Pool(rule.category, 0, "points", rule.points, restriction=rule.restriction)

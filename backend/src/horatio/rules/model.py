@@ -135,6 +135,9 @@ class CreationRuleData:
     # A splat fact a trait must have to take one of these picks, such as "in_clan".
     restriction: str | None = None
     house: bool = False
+    # Only while the sheet meets this condition (horatio.rules.checks): Thin
+    # Blooded vampires get no 2-dot discipline pick.
+    when: Mapping[str, Any] | None = None
 
 
 @dataclass(frozen=True)

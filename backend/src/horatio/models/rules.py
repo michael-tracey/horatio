@@ -183,6 +183,8 @@ class CreationRule(Record):
     points: Mapped[int | None]
     # A splat fact the trait must have to take a pick, such as "in_clan".
     restriction: Mapped[str | None]
+    # Only while the sheet meets this condition (horatio.rules.checks).
+    when: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class StartingTrait(Record):
