@@ -237,6 +237,31 @@ CLAN_MERITS = {
 }
 CLAN_OF_MERIT = {merit: clan for clan, merits in CLAN_MERITS.items() for merit in merits}
 
+# The areas both Influences cover, in place of Yorick's lists.
+INFLUENCE_AREAS = [
+    "Academics",
+    "Activist Organizations",
+    "Arts",
+    "Commercial Industry",
+    "Criminal Organizations",
+    "Emergency Services",
+    "Entertainment",
+    "Finance",
+    "High Society",
+    "Infrastructure",
+    "Law Enforcement",
+    "Legal",
+    "Local Government",
+    "Manufacturing",
+    "News Media",
+    "Occult",
+    "Religious Groups/Organizations",
+    "Science/Medical",
+    "Social Media",
+    "Transportation",
+]
+INFLUENCE_CATEGORIES = ("influence_elite_specializations", "influence_underworld_specializations")
+
 # Spelling fixes to Yorick's requirement column.
 REQUIREMENTS = {"Follower of Set": "Followers of Set"}
 
@@ -297,8 +322,14 @@ def main(csv_path: str) -> None:
         name = row["name"].strip()
         if category is None or not name or (category, name) in seen:
             continue
+        if category in INFLUENCE_CATEGORIES:
+            continue  # INFLUENCE_AREAS replaces these.
         seen.add((category, name))
         entries.append((category, name, row))
+    for category in INFLUENCE_CATEGORIES:
+        for name in INFLUENCE_AREAS:
+            seen.add((category, name))
+            entries.append((category, name, {}))
     for category, name in EXTRA:
         if (category, name) not in seen:
             seen.add((category, name))

@@ -196,8 +196,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await elite.getByRole("button", { name: "Save our list" }).click();
   await expect(elite.getByText("Finance, Police")).toBeVisible();
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
-  await p.getByLabel("Choose Influence: Elite").selectOption("Police");
+  await p.reload(); // to see the list the lead has just set
   await p.getByRole("button", { name: "Add to Influence: Elite" }).click();
+  await p.getByRole("button", { name: "Police", exact: true }).click();
   await expect(p.getByRole("button", { name: "Remove Police" })).toBeVisible();
   await p.screenshot(shots("specializations"));
 

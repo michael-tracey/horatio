@@ -82,6 +82,8 @@ class TraitDefinition(Record):
     page_reference: Mapped[str | None]
     # Splat-specific data the rules read, such as a clan's in-clan disciplines.
     properties: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # No longer in the rule set's files: not offered, but kept for sheets that hold it.
+    retired: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 SCHEME_CHECK = "scheme in ('per_dot', 'progressive', 'table', 'fixed', 'free', 'not_allowed')"

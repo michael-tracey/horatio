@@ -63,7 +63,7 @@ def test_a_troupe_sets_its_own_list_and_its_characters_choose_from_it(troupe: Tr
     )
 
     assert take(troupe.player, character_id, ELITE, "Custom", 1, "Police").status_code == 200
-    refused = take(troupe.player, character_id, ELITE, "Banks")
+    refused = take(troupe.player, character_id, ELITE, "Legal")
     assert refused.status_code == 409
     assert refused.json()["detail"] == "This troupe's Influence: Elite are: Finance, Police."
 
@@ -154,3 +154,14 @@ def select_definition(category: str, name: str) -> Any:
         .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
         .where(TraitCategory.key == category, TraitDefinition.name == name)
     )
+
+
+def test_influences_offer_the_standard_areas(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+
+    kinds = troupe.player.client.get(f"/characters/{character_id}/specializations").json()
+
+    for kind in ("influence_elite_specializations", "influence_underworld_specializations"):
+        options = next(k for k in kinds if k["category"] == kind)["options"]
+        assert len(options) == 20
+        assert {"Finance", "Law Enforcement", "Religious Groups/Organizations"} <= set(options)

@@ -2064,248 +2064,6 @@ category = "health_levels"
 name = "Injured"
 
 [[traits]]
-category = "influence_elite_specializations"
-name = "Banks"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Bureaucracy"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Catholic churches"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Church"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "City airports"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Custom"
-properties = { requirement = "requires_specialization" }
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Fashion industry"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Finance"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Health"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "High Society"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Industry"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Internet bloggers"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Legal"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Media"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Morticians"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Occult"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Organized Crime"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Police"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Political"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Steel mill workers"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Street"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Street gangs"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Taxi drivers"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Teamsters"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Television stations"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "The homeless"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Theatre"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Transportation"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "University"
-
-[[traits]]
-category = "influence_elite_specializations"
-name = "Video game companies"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Banks"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Bureaucracy"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Catholic churches"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Church"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "City airports"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Custom"
-properties = { requirement = "requires_specialization" }
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Fashion industry"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Finance"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Health"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "High Society"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Industry"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Internet bloggers"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Legal"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Media"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Morticians"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Occult"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Organized Crime"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Police"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Political"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Steel mill workers"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Street"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Street gangs"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Taxi drivers"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Teamsters"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Television stations"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "The homeless"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Theatre"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Transportation"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "University"
-
-[[traits]]
-category = "influence_underworld_specializations"
-name = "Video game companies"
-
-[[traits]]
 category = "linguistics_specializations"
 name = "Arabic"
 
@@ -6587,6 +6345,166 @@ category = "vampiric_texts"
 name = "Veneficorum Artum Sanguis"
 
 [[traits]]
+category = "influence_elite_specializations"
+name = "Academics"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Activist Organizations"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Arts"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Commercial Industry"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Criminal Organizations"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Emergency Services"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Entertainment"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Finance"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "High Society"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Infrastructure"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Law Enforcement"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Legal"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Local Government"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Manufacturing"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "News Media"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Occult"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Religious Groups/Organizations"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Science/Medical"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Social Media"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Transportation"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Academics"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Activist Organizations"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Arts"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Commercial Industry"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Criminal Organizations"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Emergency Services"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Entertainment"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Finance"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "High Society"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Infrastructure"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Law Enforcement"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Legal"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Local Government"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Manufacturing"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "News Media"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Occult"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Religious Groups/Organizations"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Science/Medical"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Social Media"
+
+[[traits]]
+category = "influence_underworld_specializations"
+name = "Transportation"
+
+[[traits]]
 category = "attributes"
 name = "Physical"
 
@@ -6620,6 +6538,14 @@ name = "Custom"
 
 [[traits]]
 category = "allies_specializations"
+name = "Custom"
+
+[[traits]]
+category = "influence_elite_specializations"
+name = "Custom"
+
+[[traits]]
+category = "influence_underworld_specializations"
 name = "Custom"
 
 [[traits]]

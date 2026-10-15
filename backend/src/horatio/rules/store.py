@@ -128,6 +128,10 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.description = trait.description
         row.page_reference = trait.page_reference
         row.properties = dict(trait.properties)
+        row.retired = False
+    for key, row in definitions.items():
+        if key not in data.traits:
+            row.retired = True
     session.flush()
 
     session.execute(
@@ -532,6 +536,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 properties=d.properties,
             )
             for d in definitions
+            if not d.retired
         },
         action_kinds={r.key: kind_data(r) for r in kind_rows if r.troupe_id is None},
         allowance_rules=[allowance_data(r) for r in allowance_rows if r.troupe_id is None],

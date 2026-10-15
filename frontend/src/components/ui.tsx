@@ -32,12 +32,25 @@ export function Button({
   );
 }
 
-export function Card({ title, actions, children, className }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({
+  title,
+  actions,
+  children,
+  className,
+  dense,
+}: {
+  title?: ReactNode;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  /** Less padding and a smaller title, for screens with many cards (a sheet). */
+  dense?: boolean;
+}) {
   return (
-    <section className={cx("rounded-lg border border-ash bg-dusk p-4 sm:p-5", className)}>
+    <section className={cx("rounded-lg border border-ash bg-dusk", dense ? "p-3 sm:p-4" : "p-4 sm:p-5", className)}>
       {(title || actions) && (
-        <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          {title && <h2 className="text-lg text-gold">{title}</h2>}
+        <header className={cx("flex flex-wrap items-center justify-between gap-2", dense ? "mb-2" : "mb-3")}>
+          {title && <h2 className={dense ? "text-base text-gold" : "text-lg text-gold"}>{title}</h2>}
           {actions}
         </header>
       )}
