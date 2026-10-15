@@ -215,3 +215,148 @@ kind = "price_in_clan"
 target = { category = "disciplines", choose = "any", choose_prefix = "Thaumaturgy: " }
 amount = 0
 page = "245"
+
+# --- Paths of Enlightenment (pp. 253-259, 305) ----------------------------------
+# Taking a Path merit converts the character's Morality from Humanity to that
+# Path, keeping its dots; without the merit it turns back. Infernal Heritage
+# has already converted it to the Path of Evil Revelations (p. 246).
+
+[[grants]]
+source = { category = "merits", name = "Path of Blood" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Blood" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Caine" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Caine" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Cathari" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Cathari" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Chivalry" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Chivalry" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Death and the Soul" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Death and the Soul" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Ecstasy" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Ecstasy" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Evil Revelations" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Evil Revelations" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Feral Heart" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Feral Heart" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Harmony" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Harmony" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Heaven" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Heaven" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Honorable Accord" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Honorable Accord" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Lilith" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Lilith" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Metamorphosis" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Metamorphosis" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Night" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Night" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Orion" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Orion" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Paradox" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Paradox" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Power and the Inner Voice" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Power and the Inner Voice" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Scorched Heart" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Scorched Heart" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Typhon-Set" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Typhon-Set" }
+amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Infernal Heritage" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Evil Revelations" }
+amount = 0

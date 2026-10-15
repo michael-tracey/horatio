@@ -1021,3 +1021,184 @@ name_prefix = "Thaumaturgy: "
 forbids = { above_in_clan = { category = "disciplines", name_prefix = "Thaumaturgy: " } }
 message = "No path of Thaumaturgy can go above the primary path."
 page = "187"
+
+# --- Morality ------------------------------------------------------------------------
+
+# One Morality at a time (p. 253).
+[[checks]]
+category = "paths"
+forbids = { count = { category = "paths", gte = 2 } }
+message = "A character follows one Morality at a time."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Blood"
+requires = { has_any = [
+  { category = "merits", name = "Path of Blood" },
+] }
+message = "The Path of Blood comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Caine"
+requires = { has_any = [
+  { category = "merits", name = "Path of Caine" },
+] }
+message = "The Path of Caine comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Cathari"
+requires = { has_any = [
+  { category = "merits", name = "Path of Cathari" },
+] }
+message = "The Path of Cathari comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Chivalry"
+requires = { has_any = [
+  { category = "merits", name = "Path of Chivalry" },
+] }
+message = "The Path of Chivalry comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Death and the Soul"
+requires = { has_any = [
+  { category = "merits", name = "Path of Death and the Soul" },
+] }
+message = "The Path of Death and the Soul comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Ecstasy"
+requires = { has_any = [
+  { category = "merits", name = "Path of Ecstasy" },
+] }
+message = "The Path of Ecstasy comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Evil Revelations"
+requires = { has_any = [
+  { category = "merits", name = "Path of Evil Revelations" },
+  { category = "merits", name = "Infernal Heritage" },
+] }
+message = "The Path of Evil Revelations comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Feral Heart"
+requires = { has_any = [
+  { category = "merits", name = "Path of Feral Heart" },
+] }
+message = "The Path of Feral Heart comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Harmony"
+requires = { has_any = [
+  { category = "merits", name = "Path of Harmony" },
+] }
+message = "The Path of Harmony comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Heaven"
+requires = { has_any = [
+  { category = "merits", name = "Path of Heaven" },
+] }
+message = "The Path of Heaven comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Honorable Accord"
+requires = { has_any = [
+  { category = "merits", name = "Path of Honorable Accord" },
+] }
+message = "The Path of Honorable Accord comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Lilith"
+requires = { has_any = [
+  { category = "merits", name = "Path of Lilith" },
+] }
+message = "The Path of Lilith comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Metamorphosis"
+requires = { has_any = [
+  { category = "merits", name = "Path of Metamorphosis" },
+] }
+message = "The Path of Metamorphosis comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Night"
+requires = { has_any = [
+  { category = "merits", name = "Path of Night" },
+] }
+message = "The Path of Night comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Orion"
+requires = { has_any = [
+  { category = "merits", name = "Path of Orion" },
+] }
+message = "The Path of Orion comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Paradox"
+requires = { has_any = [
+  { category = "merits", name = "Path of Paradox" },
+] }
+message = "The Path of Paradox comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Power and the Inner Voice"
+requires = { has_any = [
+  { category = "merits", name = "Path of Power and the Inner Voice" },
+] }
+message = "The Path of Power and the Inner Voice comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Scorched Heart"
+requires = { has_any = [
+  { category = "merits", name = "Path of Scorched Heart" },
+] }
+message = "The Path of Scorched Heart comes from its merit."
+page = "253"
+
+[[checks]]
+category = "paths"
+name = "Typhon-Set"
+requires = { has_any = [
+  { category = "merits", name = "Path of Typhon-Set" },
+] }
+message = "The Path of Typhon-Set comes from its merit."
+page = "253"

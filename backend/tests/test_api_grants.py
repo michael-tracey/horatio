@@ -253,3 +253,32 @@ def test_thaumaturgic_expertise_prices_another_path_in_clan(troupe: Troupe) -> N
         price("Thaumaturgy: Path of Conjuring") == price("Thaumaturgy: Path of Blood") < out_of_clan
     )
     assert price("Thaumaturgy: Lure of Flames") == out_of_clan
+
+
+def test_a_path_merit_converts_humanity_and_back(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Lasombra")
+
+    assert take(troupe.player, character_id, "merits", "Path of Night", 3).status_code == 200
+    assert ratings(troupe.player, character_id, "paths") == {"Night": 5}
+    # On a Path now, so Personal Masquerade is out of reach.
+    assert take(troupe.player, character_id, "merits", "Personal Masquerade", 1).status_code == 409
+
+    take(troupe.player, character_id, "merits", "Path of Night", 0)
+
+    assert ratings(troupe.player, character_id, "paths") == {"Humanity": 5}
+
+
+def test_a_path_comes_only_from_its_merit(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+
+    refused = take(troupe.player, character_id, "paths", "Night", 1)
+
+    assert refused.status_code == 409
+
+
+def test_infernal_heritage_is_already_on_evil_revelations(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Baali")
+
+    take(troupe.player, character_id, "merits", "Infernal Heritage", 1)
+
+    assert ratings(troupe.player, character_id, "paths") == {"Evil Revelations": 5}

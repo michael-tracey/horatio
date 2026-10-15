@@ -310,11 +310,41 @@ def sheet_effects(db: Session, character: Character) -> Effects:
     return effects(rule_set.grants, sheet, rule_set)
 
 
+def convert(db: Session, character: Character, rules: TroupeRules, found: Effects) -> None:
+    """Bring conversions into line: a held Path merit turns Humanity into that
+    Path, keeping its dots; without the merit the Path turns back into Humanity."""
+    targets = {
+        (g.convert_from["category"], g.convert_from["name"]): set()
+        for g in rules.rule_set.grants
+        if g.kind == "convert" and g.convert_from
+    }
+    for g in rules.rule_set.grants:
+        if g.kind == "convert" and g.convert_from:
+            targets[(g.convert_from["category"], g.convert_from["name"])].add(g.target["name"])
+    rows = sheet_rows(db, character)
+    for (category, origin), possible in targets.items():
+        wanted = found.converts.get((category, origin), origin)
+        current = next(
+            (
+                r
+                for r in rows
+                if r.category.key == category and r.definition.name in possible | {origin}
+            ),
+            None,
+        )
+        if current is None or current.definition.name == wanted:
+            continue
+        definition, _ = find_definition(db, character, category, wanted)
+        current.trait.trait_definition_id = definition.id
+    db.flush()
+
+
 def apply_grants(db: Session, user: User, character: Character) -> None:
     """Bring every granted trait into line with the grants the sheet now holds:
     add what new grants give, take back what lost grants gave (nothing refunded,
     MET: VTM p. 236), and refund dots a `free_up_to` grant now makes free."""
     rules = rules_for(db, character)
+    convert(db, character, rules, sheet_effects(db, character))
     found = sheet_effects(db, character)
     wanted: dict[TraitKey, tuple[int, int]] = {
         key: (amount, 0) for key, amount in found.added.items()
