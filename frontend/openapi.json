@@ -222,6 +222,27 @@
         "title": "Assignment",
         "type": "object"
       },
+      "BuildingTroupe": {
+        "properties": {
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "troupe_id"
+        ],
+        "title": "BuildingTroupe",
+        "type": "object"
+      },
       "CatalogueOut": {
         "properties": {
           "categories": {
@@ -325,6 +346,20 @@
               }
             ],
             "title": "Requires"
+          },
+          "specializes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specializes"
           }
         },
         "required": [
@@ -426,6 +461,18 @@
       },
       "CharacterOut": {
         "properties": {
+          "building_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Building Troupe Id"
+          },
           "creation_complete": {
             "title": "Creation Complete",
             "type": "boolean"
@@ -488,6 +535,7 @@
           "name",
           "status",
           "home_troupe_id",
+          "building_troupe_id",
           "creation_complete",
           "kind",
           "owner_troupe_id"
@@ -731,6 +779,31 @@
         "title": "Delivered",
         "type": "object"
       },
+      "DetailChange": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "detail"
+        ],
+        "title": "DetailChange",
+        "type": "object"
+      },
       "DifferenceOut": {
         "properties": {
           "allowed_settlements": {
@@ -912,6 +985,68 @@
           "troupe_id"
         ],
         "title": "HomeTroupeRequest",
+        "type": "object"
+      },
+      "KindOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "custom": {
+            "title": "Custom",
+            "type": "boolean"
+          },
+          "from_troupe": {
+            "title": "From Troupe",
+            "type": "boolean"
+          },
+          "held": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Held",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "parent_category": {
+            "title": "Parent Category",
+            "type": "string"
+          },
+          "parent_name": {
+            "title": "Parent Name",
+            "type": "string"
+          },
+          "parent_rating": {
+            "title": "Parent Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "parent_category",
+          "parent_name",
+          "parent_rating",
+          "options",
+          "from_troupe",
+          "custom",
+          "held"
+        ],
+        "title": "KindOut",
         "type": "object"
       },
       "LimitOut": {
@@ -1152,6 +1287,18 @@
       },
       "NewCharacter": {
         "properties": {
+          "building_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Building Troupe Id"
+          },
           "name": {
             "maxLength": 200,
             "minLength": 1,
@@ -1365,6 +1512,23 @@
           "count"
         ],
         "title": "NotificationsOut",
+        "type": "object"
+      },
+      "OptionList": {
+        "properties": {
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Names",
+            "type": "array"
+          }
+        },
+        "required": [
+          "names"
+        ],
+        "title": "OptionList",
         "type": "object"
       },
       "ParticipantOut": {
@@ -3196,6 +3360,52 @@
         "title": "TroupeChoice",
         "type": "object"
       },
+      "TroupeKindOut": {
+        "properties": {
+          "catalogue": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Catalogue",
+            "type": "array"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_name": {
+            "title": "Parent Name",
+            "type": "string"
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "parent_name",
+          "catalogue",
+          "troupe"
+        ],
+        "title": "TroupeKindOut",
+        "type": "object"
+      },
       "TroupeOut": {
         "properties": {
           "allowed_sects": {
@@ -3990,6 +4200,60 @@
           }
         },
         "summary": "Change Character",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/building-troupe": {
+      "put": {
+        "description": "Build by a troupe's rules (or, with none, the plain rule set) until a home\ntroupe accepts the character; then that troupe's rules apply.",
+        "operationId": "set_building_troupe_api_characters__character_id__building_troupe_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildingTroupe"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Building Troupe",
         "tags": [
           "characters"
         ]
@@ -5004,6 +5268,53 @@
         ]
       }
     },
+    "/api/characters/{character_id}/specializations": {
+      "get": {
+        "operationId": "character_kinds_api_characters__character_id__specializations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KindOut"
+                  },
+                  "title": "Response Character Kinds Api Characters  Character Id  Specializations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Kinds",
+        "tags": [
+          "specialisations"
+        ]
+      }
+    },
     "/api/characters/{character_id}/traits": {
       "put": {
         "operationId": "change_trait_api_characters__character_id__traits_put",
@@ -5108,6 +5419,60 @@
         "summary": "Change Choice",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/traits/detail": {
+      "put": {
+        "description": "Fill in a trait's missing detail, such as a Crafts bought without a field.",
+        "operationId": "set_detail_api_characters__character_id__traits_detail_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DetailChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Detail",
+        "tags": [
+          "specialisations"
         ]
       }
     },
@@ -7422,6 +7787,120 @@
         "summary": "Roll Table",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/specializations": {
+      "get": {
+        "operationId": "troupe_kinds_api_troupes__troupe_id__specializations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TroupeKindOut"
+                  },
+                  "title": "Response Troupe Kinds Api Troupes  Troupe Id  Specializations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Kinds",
+        "tags": [
+          "specialisations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/specializations/{category}": {
+      "put": {
+        "description": "Replace a troupe's list for one kind of specialisation; empty goes back to the\ncatalogue's.",
+        "operationId": "set_troupe_kind_api_troupes__troupe_id__specializations__category__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptionList"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TroupeKindOut"
+                  },
+                  "title": "Response Set Troupe Kind Api Troupes  Troupe Id  Specializations  Category  Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Troupe Kind",
+        "tags": [
+          "specialisations"
         ]
       }
     },

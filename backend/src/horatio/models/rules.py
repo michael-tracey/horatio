@@ -65,6 +65,8 @@ class TraitCategory(Record):
     downtime_waived_by: Mapped[list[dict[str, str]]] = mapped_column(
         JSONB, default=list, server_default="[]"
     )
+    # For a specialisation category: the skill or background it specialises.
+    specializes: Mapped[dict[str, str] | None] = mapped_column(JSONB)
 
 
 class TraitDefinition(Record):

@@ -6,6 +6,7 @@ import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, SheetTraitOut }
 import { Badge, Button, Card, Dots, Empty, ErrorText, Loading, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AddTraitPanel } from "./AddTraitPanel";
+import { NEEDS_FIELD, SetField, SpecializationRow, useSpecializations } from "./Specializations";
 
 type TraitChange = { category: string; name: string; detail: string; rating: number | null; teacher?: string };
 
@@ -51,7 +52,9 @@ export function addableByGroup(catalogue: CatalogueOut | undefined) {
     if (!c.rated) continue;
     const list = groups.get(c.group) ?? [];
     groups.set(c.group, list);
-    if (!c.derived && c.change_cost == null && c.key !== "extra_in_clan_disciplines") list.push(c.key);
+    // Not added here: extra in-clan disciplines (chosen at creation) and Paths
+    // (which come from their merits).
+    if (!c.derived && c.change_cost == null && !c.specializes && !["extra_in_clan_disciplines", "paths"].includes(c.key)) list.push(c.key);
   }
   return groups;
 }
@@ -71,6 +74,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   const creation = useCreation(character);
   const [message, setMessage] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
+  const kinds = useSpecializations(character.id);
 
   const swap = useAction(async (body: { category: string; from_name: string; to_name: string }) => {
     const result = await unwrap(
@@ -94,10 +98,13 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
   const movingHome = s.pending_approvals.some((a) => a.kind === "home_troupe_change");
   const locked = !mine || movingHome || s.status === "retired";
   // Identity (clan, sect...) is shown with the name, in the page title.
+  // Specialisations show under their skill or background, not as traits of their own.
+  const specCategories = new Set(catalogue.data?.categories.filter((c) => c.specializes).map((c) => c.key));
   const groups = groupTraits(
-    s.traits.filter((t) => t.rating !== null),
+    s.traits.filter((t) => t.rating !== null && !specCategories.has(t.category)),
     catalogue.data,
   );
+  const kindOf = (t: SheetTraitOut) => kinds.data?.find((k) => k.parent_category === t.category && k.parent_name === t.name);
   const addable = addableByGroup(catalogue.data);
   const canAdd = !locked && character.kind === "pc" && character.creation_complete && !!catalogue.data;
   // Every part that holds traits, then parts the player can add to.
@@ -160,7 +167,7 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
                 <div key={category}>
                   <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">{category}</h3>
                   <ul className="flex flex-col gap-1">
-                    {traits.map((t) => (
+                    {traits.map((t) => [
                       <TraitRow
                         key={t.id}
                         trait={t}
@@ -173,8 +180,14 @@ export function SheetTab({ character, mine }: { character: CharacterOut; mine: b
                             : null
                         }
                         onSwap={(to) => swap.mutate({ category: t.category, from_name: t.name, to_name: to })}
-                      />
-                    ))}
+                      />,
+                      kindOf(t) && (
+                        <SpecializationRow key={`${t.id}/specs`} character={character} kind={kindOf(t)!} editable={mine && !locked && s.status !== "retired"} />
+                      ),
+                      mine && !locked && t.category === "skills" && NEEDS_FIELD.has(t.name) && !t.detail && (
+                        <SetField key={`${t.id}/field`} character={character} trait={t} />
+                      ),
+                    ])}
                   </ul>
                 </div>
               ))}

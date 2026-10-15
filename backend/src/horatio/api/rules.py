@@ -28,6 +28,8 @@ class CategoryOut(BaseModel):
     points_limit: int | None = None
     # Worked out from the rest of the sheet (health, Willpower); never bought.
     derived: bool = False
+    # For a specialisation category: the skill or background it specialises.
+    specializes: dict[str, str] | None = None
 
 
 class TraitOut(BaseModel):
@@ -95,6 +97,7 @@ def catalogue(
                 change_cost=c.change_cost,
                 points_limit=c.points_limit,
                 derived=c.derived,
+                specializes=dict(c.specializes) if c.specializes else None,
             )
             for c in rules.rule_set.categories.values()
         ],

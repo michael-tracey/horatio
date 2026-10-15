@@ -150,6 +150,27 @@ export interface paths {
         patch: operations["change_character_api_characters__character_id__patch"];
         trace?: never;
     };
+    "/api/characters/{character_id}/building-troupe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Building Troupe
+         * @description Build by a troupe's rules (or, with none, the plain rule set) until a home
+         *     troupe accepts the character; then that troupe's rules apply.
+         */
+        put: operations["set_building_troupe_api_characters__character_id__building_troupe_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/creation": {
         parameters: {
             query?: never;
@@ -507,6 +528,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/specializations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Character Kinds */
+        get: operations["character_kinds_api_characters__character_id__specializations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/traits": {
         parameters: {
             query?: never;
@@ -538,6 +576,26 @@ export interface paths {
          * @description Swap a focus (or another swappable choice) for another, for its change cost.
          */
         post: operations["change_choice_api_characters__character_id__traits_change_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/traits/detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Detail
+         * @description Fill in a trait's missing detail, such as a Crafts bought without a field.
+         */
+        put: operations["set_detail_api_characters__character_id__traits_detail_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1245,6 +1303,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/specializations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Troupe Kinds */
+        get: operations["troupe_kinds_api_troupes__troupe_id__specializations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/specializations/{category}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Troupe Kind
+         * @description Replace a troupe's list for one kind of specialisation; empty goes back to the
+         *     catalogue's.
+         */
+        put: operations["set_troupe_kind_api_troupes__troupe_id__specializations__category__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/staff": {
         parameters: {
             query?: never;
@@ -1448,6 +1544,11 @@ export interface components {
             /** User Id */
             user_id?: string | null;
         };
+        /** BuildingTroupe */
+        BuildingTroupe: {
+            /** Troupe Id */
+            troupe_id: string | null;
+        };
         /** CatalogueOut */
         CatalogueOut: {
             /** Categories */
@@ -1482,6 +1583,10 @@ export interface components {
             rated: boolean;
             /** Requires */
             requires?: {
+                [key: string]: string;
+            } | null;
+            /** Specializes */
+            specializes?: {
                 [key: string]: string;
             } | null;
         };
@@ -1526,6 +1631,8 @@ export interface components {
         };
         /** CharacterOut */
         CharacterOut: {
+            /** Building Troupe Id */
+            building_troupe_id: string | null;
             /** Creation Complete */
             creation_complete: boolean;
             /** Home Troupe Id */
@@ -1640,6 +1747,15 @@ export interface components {
             /** Delivered */
             delivered: number;
         };
+        /** DetailChange */
+        DetailChange: {
+            /** Category */
+            category: string;
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+        };
         /** DifferenceOut */
         DifferenceOut: {
             /** Allowed Settlements */
@@ -1707,6 +1823,29 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /** KindOut */
+        KindOut: {
+            /** Category */
+            category: string;
+            /** Custom */
+            custom: boolean;
+            /** From Troupe */
+            from_troupe: boolean;
+            /** Held */
+            held: {
+                [key: string]: string;
+            }[];
+            /** Name */
+            name: string;
+            /** Options */
+            options: string[];
+            /** Parent Category */
+            parent_category: string;
+            /** Parent Name */
+            parent_name: string;
+            /** Parent Rating */
+            parent_rating: number;
         };
         /**
          * LimitOut
@@ -1813,6 +1952,8 @@ export interface components {
         };
         /** NewCharacter */
         NewCharacter: {
+            /** Building Troupe Id */
+            building_troupe_id?: string | null;
             /** Name */
             name: string;
             /** Splat */
@@ -1906,6 +2047,11 @@ export interface components {
             count: number;
             /** Items */
             items: components["schemas"]["NotificationOut"][];
+        };
+        /** OptionList */
+        OptionList: {
+            /** Names */
+            names: string[];
         };
         /** ParticipantOut */
         ParticipantOut: {
@@ -2585,6 +2731,19 @@ export interface components {
              */
             troupe_id: string;
         };
+        /** TroupeKindOut */
+        TroupeKindOut: {
+            /** Catalogue */
+            catalogue: string[];
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /** Parent Name */
+            parent_name: string;
+            /** Troupe */
+            troupe: string[] | null;
+        };
         /** TroupeOut */
         TroupeOut: {
             /** Allowed Sects */
@@ -3047,6 +3206,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CharacterChanges"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_building_troupe_api_characters__character_id__building_troupe_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildingTroupe"];
             };
         };
         responses: {
@@ -3725,6 +3919,37 @@ export interface operations {
             };
         };
     };
+    character_kinds_api_characters__character_id__specializations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     change_trait_api_characters__character_id__traits_put: {
         parameters: {
             query?: never;
@@ -3782,6 +4007,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_detail_api_characters__character_id__traits_detail_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetailChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetOut"];
                 };
             };
             /** @description Validation Error */
@@ -5310,6 +5570,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Roll"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_kinds_api_troupes__troupe_id__specializations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeKindOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_troupe_kind_api_troupes__troupe_id__specializations__category__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OptionList"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeKindOut"][];
                 };
             };
             /** @description Validation Error */

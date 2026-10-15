@@ -6615,6 +6615,14 @@ category = "willpower_sources"
 name = "Willpower"
 
 [[traits]]
+category = "contacts_specializations"
+name = "Custom"
+
+[[traits]]
+category = "allies_specializations"
+name = "Custom"
+
+[[traits]]
 category = "merits"
 name = "Blood of the Tzimisce"
 page_reference = "244"

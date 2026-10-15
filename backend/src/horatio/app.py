@@ -20,6 +20,7 @@ from horatio.api import (
     roster,
     rules,
     sheets,
+    specializations,
     titles,
     troupes,
 )
@@ -67,6 +68,7 @@ for module in (
     titles,
     notifications,
     house_rules,
+    specializations,
 ):
     api.include_router(module.router)
 

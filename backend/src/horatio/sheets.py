@@ -102,8 +102,14 @@ def lock_character(db: Session, character_id: uuid.UUID) -> Character:
     return character
 
 
+def rules_troupe(character: Character) -> uuid.UUID | None:
+    """Whose rules the character plays by: its home troupe's, else the troupe it is
+    being built for, else none (the plain rule set)."""
+    return character.home_troupe_id or character.building_troupe_id
+
+
 def rules_for(db: Session, character: Character) -> TroupeRules:
-    return read_troupe_rules(db, character.splat, character.home_troupe_id)
+    return read_troupe_rules(db, character.splat, rules_troupe(character))
 
 
 def sheet_rows(db: Session, character: Character) -> list[SheetRow]:
@@ -769,6 +775,10 @@ def set_trait(
     `teacher` names who teaches a discipline dot that waits on the home troupe."""
     ensure_unlocked(db, character)
     definition, category = find_definition(db, character, category_key, name)
+    if rating:
+        from horatio.specializations import check_choice  # imports this module
+
+        check_choice(db, character, category, name, detail)
 
     if not category.rated:
         quote_change(db, character, category_key, name, detail, rating)  # validates
@@ -962,6 +972,50 @@ def change_choice(
         cost=cost,
     )
     return cost
+
+
+def set_detail(
+    db: Session, player: User, character: Character, category_key: str, name: str, detail: str
+) -> CharacterTrait:
+    """Give a trait held without a detail its detail, such as the field of a
+    Crafts bought before fields were asked for. Before acceptance any detail can
+    be changed; afterwards only a missing one filled in."""
+    ensure_unlocked(db, character)
+    definition, category = find_definition(db, character, category_key, name)
+    trait = db.scalar(
+        select(CharacterTrait)
+        .where(
+            CharacterTrait.character_id == character.id,
+            CharacterTrait.trait_definition_id == definition.id,
+        )
+        .order_by(CharacterTrait.detail)
+    )
+    if trait is None:
+        raise conflict(f"The character does not have {name}.")
+    if trait.detail and character.home_troupe_id is not None:
+        raise conflict(f"{name} already has its detail: {trait.detail}.")
+    clash = db.scalar(
+        select(CharacterTrait.id).where(
+            CharacterTrait.character_id == character.id,
+            CharacterTrait.trait_definition_id == definition.id,
+            CharacterTrait.detail == detail,
+        )
+    )
+    if clash is not None:
+        raise conflict(f"The character already has {name}: {detail}.")
+    before = trait.detail
+    trait.detail = detail
+    db.flush()
+    audit.record(
+        db,
+        player,
+        "sheet.detail",
+        character_id=character.id,
+        name=name,
+        detail=detail,
+        before=before or "none",
+    )
+    return trait
 
 
 def freeze_sheet(

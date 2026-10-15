@@ -121,6 +121,8 @@ MESSAGES: dict[str, str] = {
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
     "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
     "house.check": "{actor} set the rule {check} to {strength}.",
+    "troupe.specializations": "{actor} set the troupe's {kind}: {count} options.",
+    "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",
     "sheet.choose": "{actor} chose {name} as {character}'s {category}.",
     "sheet.change": "{actor} changed {character}'s {category}: {from_name} → {name} ({cost} XP).",
     "creation.pick": "{actor} picked {name} {rating} for {character}.",

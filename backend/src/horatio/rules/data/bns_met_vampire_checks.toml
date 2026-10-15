@@ -1202,3 +1202,54 @@ requires = { has_any = [
 ] }
 message = "The Path of Typhon-Set comes from its merit."
 page = "253"
+
+# --- specialisations per dot (pp. 92, 98, 99, 102) -----------------------------------
+
+[[checks]]
+category = "contacts_specializations"
+forbids = { more_than_dots = { count = { category = "contacts_specializations" }, dots = { category = "backgrounds", name_prefix = "Contacts" } } }
+strength = "refuse"
+message = "Each dot of Contacts gives one contact."
+page = "99"
+
+[[checks]]
+category = "allies_specializations"
+forbids = { more_than_dots = { count = { category = "allies_specializations" }, dots = { category = "backgrounds", name_prefix = "Allies" } } }
+strength = "refuse"
+message = "Each dot of Allies gives one group of allies."
+page = "98"
+
+[[checks]]
+category = "haven_specializations"
+forbids = { more_than_dots = { count = { category = "haven_specializations" }, dots = { category = "backgrounds", name_prefix = "Haven" } } }
+strength = "refuse"
+message = "Each dot of Haven gives one advantage."
+page = "102"
+
+[[checks]]
+category = "academics_specializations"
+forbids = { more_than_dots = { count = { category = "academics_specializations" }, dots = { category = "skills", name_prefix = "Academics" } } }
+strength = "refuse"
+message = "Each dot of Academics gives one field of study."
+page = "92"
+
+[[checks]]
+category = "drive_specializations"
+forbids = { more_than_dots = { count = { category = "drive_specializations" }, dots = { category = "skills", name_prefix = "Drive" } } }
+strength = "note"
+message = "Each dot of Drive gives one kind of vehicle."
+page = "94"
+
+[[checks]]
+category = "influence_elite_specializations"
+forbids = { more_than_dots = { count = { category = "influence_elite_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Elite" } } }
+strength = "note"
+message = "Each dot of Influences: The Elite gives one area."
+page = "103"
+
+[[checks]]
+category = "influence_underworld_specializations"
+forbids = { more_than_dots = { count = { category = "influence_underworld_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Underworld" } } }
+strength = "note"
+message = "Each dot of Influences: The Underworld gives one area."
+page = "103"

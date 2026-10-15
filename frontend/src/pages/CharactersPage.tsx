@@ -4,14 +4,16 @@ import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Select } from "../components/ui";
 import { useAction } from "../hooks";
+import { BuildFor } from "./character/BuildFor";
 
 export function CharactersPage() {
   const navigate = useNavigate();
   const characters = useQuery({ queryKey: ["characters"], queryFn: () => unwrap(api.GET("/api/characters")) });
   const [name, setName] = useState("");
   const [splat, setSplat] = useState("vampire");
+  const [buildFor, setBuildFor] = useState<string | null>(null);
   const create = useAction(async () => {
-    const character = await unwrap(api.POST("/api/characters", { body: { name, splat } }));
+    const character = await unwrap(api.POST("/api/characters", { body: { name, splat, building_troupe_id: buildFor } }));
     navigate(`/characters/${character.id}/create`);
   });
 
@@ -57,6 +59,7 @@ export function CharactersPage() {
                 <option value="vampire">Vampire</option>
               </Select>
             </Field>
+            <BuildFor value={buildFor} onChange={setBuildFor} />
             <ErrorText error={create.error} />
             <Button type="submit" disabled={create.isPending}>
               Create

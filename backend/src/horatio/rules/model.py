@@ -52,6 +52,9 @@ class CategoryData:
     # discipline, buying a merit), unless the sheet holds a trait that waives it.
     downtime_actions: int | None = None
     downtime_waived_by: Sequence[Mapping[str, str]] = ()
+    # For a specialisation category: the skill or background it specialises,
+    # as {category, name}.
+    specializes: Mapping[str, str] | None = None
 
 
 @dataclass(frozen=True)

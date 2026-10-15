@@ -94,10 +94,15 @@ def new_character(
         )
         assert chosen.status_code == 200, chosen.text
     if finished:
-        character = troupe.session.get_one(Character, uuid.UUID(character_id))
-        character.creation_completed_at = datetime.now(UTC)
-        troupe.session.flush()
+        finish(troupe, character_id)
     return character_id
+
+
+def finish(troupe: Troupe, character_id: str) -> None:
+    """Mark creation finished without placing picks, for tests about something else."""
+    character = troupe.session.get_one(Character, uuid.UUID(character_id))
+    character.creation_completed_at = datetime.now(UTC)
+    troupe.session.flush()
 
 
 STARTING_TRAITS = {"Humanity", "Healthy", "Injured", "Incapacitated", "Willpower"}

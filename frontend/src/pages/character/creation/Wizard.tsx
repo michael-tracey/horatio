@@ -5,6 +5,7 @@ import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut } from "../../../api/types";
 import { Button, Card, ErrorText, Field, Loading, Notice, Select } from "../../../components/ui";
 import { useAction, useUnavailable } from "../../../hooks";
+import { BuildFor } from "../BuildFor";
 import { DotGrid, PointsList } from "./DotGrid";
 import { identityChoices, type Allowed, type Picks } from "./logic";
 
@@ -250,6 +251,7 @@ function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut;
   const choices = identityChoices(catalogue, sheet);
   return (
     <div className="flex flex-col gap-4">
+      <BuildForCharacter character={character} />
       <p className="text-sm text-mist">Who is {character.name}? Clan matters most: it decides which disciplines are in-clan.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {choices.map((c) => (
@@ -367,4 +369,22 @@ function ReviewStep({ character, creation, steps }: { character: CharacterOut; c
 function CheckedPointsList({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof PointsList>[0]) {
   const unavailable = useUnavailable(characterId, category);
   return <PointsList {...props} unavailable={unavailable.data ?? {}} />;
+}
+
+/** Change which troupe's rules the character is built by, until a troupe accepts it. */
+function BuildForCharacter({ character }: { character: CharacterOut }) {
+  const change = useAction((troupe_id: string | null) =>
+    unwrap(
+      api.PUT("/api/characters/{character_id}/building-troupe", {
+        params: { path: { character_id: character.id } },
+        body: { troupe_id },
+      }),
+    ),
+  );
+  return (
+    <div className="flex flex-col gap-1">
+      <BuildFor value={character.building_troupe_id} onChange={(t) => change.mutate(t)} disabled={change.isPending || character.home_troupe_id !== null} />
+      <ErrorText error={change.error} />
+    </div>
+  );
 }

@@ -254,6 +254,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             buy_off_factor=c.get("buy_off_factor"),
             downtime_actions=c.get("downtime_actions"),
             downtime_waived_by=tuple(c.get("downtime_waived_by", [])),
+            specializes=c.get("specializes"),
         )
         for c in raw["categories"]
     }

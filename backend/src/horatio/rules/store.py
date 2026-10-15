@@ -108,6 +108,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.buy_off_factor = category.buy_off_factor
         row.downtime_actions = category.downtime_actions
         row.downtime_waived_by = [dict(w) for w in category.downtime_waived_by]
+        row.specializes = dict(category.specializes) if category.specializes else None
     session.flush()
 
     definitions = {
@@ -517,6 +518,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 buy_off_factor=c.buy_off_factor,
                 downtime_actions=c.downtime_actions,
                 downtime_waived_by=tuple(c.downtime_waived_by),
+                specializes=c.specializes,
             )
             for c in categories
         },

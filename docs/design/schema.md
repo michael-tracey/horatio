@@ -571,3 +571,19 @@ Recorded here for review; each is easy to change.
 - Troupe rules are cached on the session; the functions in `rules/store.py` that
   write rules drop the cache.
 
+**Specialisations and building for a troupe**
+
+- A specialisation category `specializes` a skill or background (Lore, Academics,
+  Drive, Linguistics, Haven, Contacts, Allies, both Influences). A specialisation
+  is a trait in it: a catalogue name, or `Custom` with the text as its detail. The
+  sheet shows them under their parent; checks hold them to one per dot.
+- `troupe_specializations` (`troupe_id`, `category_key`, `name`): a troupe's own
+  list for a kind. Characters playing by that troupe's rules choose from it
+  (stored as `Custom` with the option as detail); an empty list goes back to the
+  catalogue.
+- `characters.building_troupe_id`: until a home troupe accepts the character, the
+  troupe whose rules it is built by (`sheets.rules_troupe`: home, else building,
+  else the plain rule set). Chosen when creating or on the wizard's first step.
+- A trait held without a detail it needs (Crafts with no field) can have one set
+  (`PUT /characters/{id}/traits/detail`); before acceptance any detail can change.
+

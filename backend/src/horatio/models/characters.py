@@ -31,6 +31,9 @@ class Character(Imported, Record):
     # active | retired. Accepted once a troupe accepts it as home (home_troupe_id).
     status: Mapped[str] = mapped_column(default="active", server_default="active")
     home_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
+    # Until a home troupe accepts it, the troupe it is built for: its rules (house
+    # rules, specialisation lists) apply. None builds by the plain rule set.
+    building_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
     # Null while the player is still placing creation picks (CONTEXT.md: Character Creation).
     creation_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

@@ -49,6 +49,7 @@ from horatio.sheets import (
     ensure_unlocked,
     freeze_sheet,
     pending_disciplines,
+    rules_troupe,
     sheet_rows,
     undo_discipline,
     unprocessable,
@@ -355,7 +356,7 @@ def creation_differences(
 
 def find_differences(db: Session, character: Character, troupe: Troupe) -> list[Difference]:
     rules = read_troupe_rules(db, character.splat, troupe.id)
-    current_rules = read_troupe_rules(db, character.splat, character.home_troupe_id)
+    current_rules = read_troupe_rules(db, character.splat, rules_troupe(character))
     rows = sheet_rows(db, character)
     return cost_differences(db, character, rules, rows) + creation_differences(
         rules, current_rules, rows, character

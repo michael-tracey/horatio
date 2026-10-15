@@ -38,6 +38,7 @@ from horatio.models.troupes import (
     CharacterTitle,
     Troupe,
     TroupeMembership,
+    TroupeSpecialization,
     TroupeStaff,
     TroupeTitle,
 )
@@ -77,6 +78,7 @@ __all__ = [
     "TraitDefinition",
     "Troupe",
     "TroupeMembership",
+    "TroupeSpecialization",
     "TroupeStaff",
     "TroupeTitle",
     "User",

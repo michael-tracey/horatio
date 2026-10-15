@@ -54,6 +54,16 @@ EXTRA = [
     ("focus_physicals", "Dexterity"),
     ("focus_physicals", "Stamina"),
     ("willpower_sources", "Willpower"),
+    # Free-text specialisations (a contact's name, a troupe's own option) are
+    # "Custom" with the text as their detail.
+    ("lore_specializations", "Custom"),
+    ("academics_specializations", "Custom"),
+    ("drive_specializations", "Custom"),
+    ("linguistics_specializations", "Custom"),
+    ("contacts_specializations", "Custom"),
+    ("allies_specializations", "Custom"),
+    ("influence_elite_specializations", "Custom"),
+    ("influence_underworld_specializations", "Custom"),
 ]
 
 # Where Yorick's values were one troupe's home rules rather than the book's, the

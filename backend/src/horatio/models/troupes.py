@@ -66,6 +66,19 @@ class TroupeMembership(Record):
     )
 
 
+class TroupeSpecialization(Record):
+    """An option a troupe offers for one kind of specialisation (an Influence's
+    areas, its city's notable Contacts). Where a troupe has a list for a kind,
+    its characters choose from it."""
+
+    __tablename__ = "troupe_specializations"
+    __table_args__ = (UniqueConstraint("troupe_id", "category_key", "name"),)
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    category_key: Mapped[str]
+    name: Mapped[str]
+
+
 class TroupeTitle(Record):
     """A title a troupe added to the rule set's list."""
 

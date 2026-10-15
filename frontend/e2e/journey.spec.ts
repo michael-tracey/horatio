@@ -57,6 +57,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // The player builds a character in the creation wizard, then buys Influence with XP.
   const p = player.page;
   await p.getByLabel("Name").fill("Agnes");
+  // Built for the troupe from the start, so its rules and lists apply. (The page
+  // loaded before the troupe existed.)
+  await p.reload();
+  await p.getByLabel("Name").fill("Agnes");
+  await p.getByLabel("Build for").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
   await p.getByLabel("Clan").selectOption("Brujah");
@@ -182,6 +187,19 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
   await expect(lead.page.getByText("Only those played differently (1)")).toBeVisible();
   await lead.page.screenshot(shots("rules"));
+
+  // The troupe lists the areas its Elite influence covers; Agnes picks one.
+  await lead.page.getByRole("link", { name: "Specialisations", exact: true }).click();
+  const elite = lead.page.locator("section").filter({ has: lead.page.getByRole("heading", { name: "Influence: Elite", exact: true }) });
+  await elite.getByRole("button", { name: "Make our own list" }).click();
+  await elite.getByLabel("Influence: Elite, one per line").fill("Police\nFinance");
+  await elite.getByRole("button", { name: "Save our list" }).click();
+  await expect(elite.getByText("Finance, Police")).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  await p.getByLabel("Choose Influence: Elite").selectOption("Police");
+  await p.getByRole("button", { name: "Add to Influence: Elite" }).click();
+  await expect(p.getByRole("button", { name: "Remove Police" })).toBeVisible();
+  await p.screenshot(shots("specializations"));
 
   // The lead runs a cycle.
   await lead.page.getByRole("link", { name: "Downtimes" }).click();
