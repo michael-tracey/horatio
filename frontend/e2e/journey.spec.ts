@@ -198,6 +198,13 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.screenshot(shots("costs"));
   await lead.page.getByRole("button", { name: "Save price" }).click();
   await expect(lead.page.getByText("replaced here")).toBeVisible();
+  // A fixed price for a merit held at one rating is its value here, which the editor says.
+  await lead.page.getByRole("button", { name: "Add a price" }).click();
+  await lead.page.getByLabel("Category").selectOption({ label: "Merits" });
+  await lead.page.getByLabel("Trait").fill("Talisman");
+  await lead.page.getByLabel("How it's priced").selectOption({ label: "One price, whatever the rating" });
+  await expect(lead.page.getByText("Talisman is always held at one rating (3 by the book).", { exact: false })).toBeVisible();
+  await lead.page.getByRole("button", { name: "Cancel" }).click();
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
   await p.getByRole("button", { name: "Raise Investigation" }).click();
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();

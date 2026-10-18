@@ -109,6 +109,24 @@ def points(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -
     return abs(price(choose_rule(rules, sheet, trait), trait.rating))
 
 
+def fixed_rating(
+    rules: TroupeRules, sheet: Sequence[SheetTrait], category: str, name: str
+) -> int | None:
+    """The rating this character holds a merit or flaw at, or None for a trait
+    bought dot by dot. A troupe's fixed price for it is its value, where that price
+    is the one that applies to the character; otherwise the catalogue's rating."""
+    book = rules.rule_set.trait_properties(category, name).get("rating")
+    if book is None:
+        return None
+    try:
+        rule = choose_rule(rules, sheet, SheetTrait(category=category, name=name, rating=book))
+    except PricingError:
+        return book
+    if rule.house and rule.scheme == "fixed" and rule.rate:
+        return abs(rule.rate)
+    return book
+
+
 def trait_cost(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Quote:
     """What the character has paid for this trait at its current rating."""
     category = rules.rule_set.categories.get(trait.category)

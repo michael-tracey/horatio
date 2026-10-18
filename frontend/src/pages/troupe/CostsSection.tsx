@@ -173,11 +173,15 @@ function PriceEditor({ troupeId, data, editing, onClose }: { troupeId: string; d
   const [text, setText] = useState(editing.kind === "change" ? (editing.cost.text ?? "") : "");
   const cat = data.categories.find((c) => c.key === category);
   const catalogue = useQuery({
-    queryKey: ["catalogue", "vampire", troupeId],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: { troupe_id: troupeId } } })),
+    // The rule set's own catalogue, for the book ratings of merits and flaws.
+    queryKey: ["catalogue", "vampire", null],
+    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
     enabled: editing.kind === "new",
   });
   const traits = (catalogue.data?.traits ?? []).filter((t) => t.category === category).map((t) => t.name);
+  // A merit or flaw held at one rating, by the book: a fixed price here is its value.
+  const bookRating =
+    start?.fixed_rating ?? catalogue.data?.traits.find((t) => t.category === category && t.name === trait)?.fixed_rating ?? null;
 
   const pricing: Pricing = {
     scheme,
@@ -271,6 +275,13 @@ function PriceEditor({ troupeId, data, editing, onClose }: { troupeId: string; d
             </Field>
           )}
         </div>
+        {bookRating !== null && (
+          <p className="text-sm text-mist">
+            {trait} is always held at one rating ({bookRating} by the book). A fixed price here is also its value in this troupe: the
+            rating it is held at, and what it counts toward the points limit and the starting points.
+            {scheme !== "fixed" && " Only a fixed price changes its rating."}
+          </p>
+        )}
         <Field label="Note for players" hint="Shown with the trait as “House rule: …”. Optional.">
           <Input value={text} onChange={(e) => setText(e.target.value)} />
         </Field>

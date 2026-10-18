@@ -866,6 +866,17 @@
             ],
             "title": "Condition Text"
           },
+          "fixed_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed Rating"
+          },
           "house": {
             "title": "House",
             "type": "boolean"
