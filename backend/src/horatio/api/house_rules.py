@@ -1,5 +1,5 @@
-"""A troupe's house rules: its own prices for traits, and its settings for checks
-(switching one off, or changing how strict it is)."""
+"""A troupe's house rules: its settings for checks (switching one off, or changing
+how strict it is), its own prices for traits, and what new characters start with."""
 
 import uuid
 from collections.abc import Mapping
@@ -11,10 +11,11 @@ from pydantic import BaseModel
 from horatio import audit
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.creation import RESTRICTION_TEXT
 from horatio.models import User
 from horatio.permissions import TroupeAction
-from horatio.rules import conditions, pricing
-from horatio.rules.model import CostRuleData, RuleSetData, Scheme
+from horatio.rules import checks, conditions, pricing
+from horatio.rules.model import CostRuleData, CreationRuleData, RuleSetData, Scheme
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import (
     DuplicateHouseRule,
@@ -25,6 +26,7 @@ from horatio.rules.store import (
     remove_house_rule,
     same_subject,
     set_check_override,
+    set_house_creation_rules,
 )
 from horatio.sheets import sync_troupe_fixed_ratings
 
@@ -317,3 +319,169 @@ def remove_cost(
     log_price(db, user, "house.cost_removed", troupe.id, old)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- Starting points ---------------------------------------------------------
+
+
+class StartingRule(BaseModel):
+    """Picks at a rating (`picks` and `rating`), or a budget of `points`."""
+
+    rating: int | None = None
+    picks: int | None = None
+    points: int | None = None
+    # A fact the trait must have to take a pick: "in_clan".
+    restriction: str | None = None
+    # Only while the sheet meets this; only a rule set rule's own condition.
+    when: dict[str, Any] | None = None
+    when_text: str | None = None
+
+
+class StartingCategoryOut(BaseModel):
+    key: str
+    name: str
+    max_rating: int | None
+    # As this troupe plays it, and as the rule set has it.
+    rules: list[StartingRule]
+    book: list[StartingRule]
+    text: str
+    book_text: str
+    house: bool
+
+
+class StartingChange(BaseModel):
+    rules: list[StartingRule]
+
+
+def starting_rule(rule: CreationRuleData) -> StartingRule:
+    return StartingRule(
+        rating=rule.rating,
+        picks=rule.picks,
+        points=rule.points,
+        restriction=rule.restriction,
+        when=dict(rule.when) if rule.when else None,
+        when_text=checks.describe(rule.when) if rule.when else None,
+    )
+
+
+def describe_starting(rules: list[CreationRuleData]) -> str:
+    """A category's starting picks or points in plain words: "1 at 4, 2 at 3"."""
+    if not rules:
+        return "none"
+    parts: list[str] = []
+    for rule in sorted(rules, key=lambda r: -(r.rating or 0)):
+        part = (
+            f"{rule.points} points" if rule.points is not None else f"{rule.picks} at {rule.rating}"
+        )
+        if rule.restriction:
+            part += f" {RESTRICTION_TEXT.get(rule.restriction, rule.restriction)}"
+        if rule.when:
+            part += f" ({checks.describe(rule.when)})"
+        parts.append(part)
+    qualified = any(r.restriction or r.when for r in rules)
+    return ("; " if qualified else ", ").join(parts)
+
+
+def starting_out(db: DbSession, troupe_id: uuid.UUID) -> list[StartingCategoryOut]:
+    rules = read_troupe_rules(db, "vampire", troupe_id)
+    played = rules.creation_rules()
+    found: list[StartingCategoryOut] = []
+    for category in rules.rule_set.categories.values():
+        book = [r for r in rules.rule_set.creation_rules if r.category == category.key]
+        if not book:
+            continue
+        mine = [r for r in played if r.category == category.key]
+        found.append(
+            StartingCategoryOut(
+                key=category.key,
+                name=category.name,
+                max_rating=category.max_rating,
+                rules=[starting_rule(r) for r in mine],
+                book=[starting_rule(r) for r in book],
+                text=describe_starting(mine),
+                book_text=describe_starting(book),
+                house=any(r.house for r in mine),
+            )
+        )
+    return found
+
+
+def starting_category(db: DbSession, troupe_id: uuid.UUID, key: str) -> StartingCategoryOut:
+    found = next((c for c in starting_out(db, troupe_id) if c.key == key), None)
+    if found is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No starting points for that category.")
+    return found
+
+
+@router.get("/creation")
+def list_starting(
+    troupe_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> list[StartingCategoryOut]:
+    staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    return starting_out(db, troupe_id)
+
+
+@router.put("/creation/{category}")
+def change_starting(
+    troupe_id: uuid.UUID, category: str, body: StartingChange, db: DbSession, user: CurrentUser
+) -> StartingCategoryOut:
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    current = starting_category(db, troupe.id, category)
+    if not body.rules:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Give at least one pick or a budget; go back to the rule set's to undo a change.",
+        )
+    conditions_allowed = [r.when for r in current.book if r.when]
+    if any(r.when and r.when not in conditions_allowed for r in body.rules):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "A starting rule can only have the condition of one of the rule set's.",
+        )
+    rules = [
+        CreationRuleData(
+            category=category,
+            rating=r.rating,
+            picks=r.picks,
+            points=r.points,
+            restriction=r.restriction or None,
+            when=r.when or None,
+            house=True,
+        )
+        for r in body.rules
+    ]
+    try:
+        set_house_creation_rules(db, troupe.id, "vampire", category, rules)
+    except ValueError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
+    changed = starting_category(db, troupe.id, category)
+    audit.record(
+        db,
+        user,
+        "house.creation_set",
+        troupe_id=troupe.id,
+        category=changed.name,
+        text=changed.text,
+    )
+    db.commit()
+    return changed
+
+
+@router.delete("/creation/{category}")
+def reset_starting(
+    troupe_id: uuid.UUID, category: str, db: DbSession, user: CurrentUser
+) -> StartingCategoryOut:
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    starting_category(db, troupe.id, category)
+    set_house_creation_rules(db, troupe.id, "vampire", category, [])
+    changed = starting_category(db, troupe.id, category)
+    audit.record(
+        db,
+        user,
+        "house.creation_reset",
+        troupe_id=troupe.id,
+        category=changed.name,
+        text=changed.text,
+    )
+    db.commit()
+    return changed

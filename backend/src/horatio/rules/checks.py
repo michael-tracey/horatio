@@ -52,6 +52,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from horatio.rules.conditions import OPERATORS
+from horatio.rules.conditions import describe as describe_facts
 from horatio.rules.model import SheetTrait
 
 Strength = Literal["refuse", "complete", "review", "note"]
@@ -256,6 +257,28 @@ def violations(
             if broken:
                 found.append(Violation(check, trait))
     return found
+
+
+def describe(condition: Condition) -> str:
+    """A condition in plain words, for the commonest forms ("without Thin
+    Blooded", "for Tremere"); anything else reads as "under a condition"."""
+    parts: list[str] = []
+    for key, test in condition.items():
+        if key == "has":
+            parts.append(f"with {test['name']}")
+        elif key == "not" and set(test) == {"has"}:
+            parts.append(f"without {test['has']['name']}")
+        elif key in ("clan", "clan_family"):
+            parts.append("for " + " or ".join(test))
+        elif key == "generation":
+            parts.append(
+                describe_facts({"generation": test}, {"generation": "Generation {}"}) or ""
+            )
+        elif key == "any_of":
+            parts.append(" or ".join(describe(c) for c in test))
+        else:
+            return "under a condition"
+    return ", ".join(parts)
 
 
 def validate_condition(condition: Condition, known: set[tuple[str, str]]) -> None:

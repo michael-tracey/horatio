@@ -123,6 +123,8 @@ MESSAGES: dict[str, str] = {
     "house.check": "{actor} set the rule {check} to {strength}.",
     "house.cost_added": "{actor} priced {what} at {price}.",
     "house.cost_changed": "{actor} changed the price of {what} to {price}.",
+    "house.creation_set": "{actor} set the troupe's starting {category}: {text}.",
+    "house.creation_reset": "{actor} put the starting {category} back to the rule set's: {text}.",
     "house.cost_removed": "{actor} removed the troupe's price for {what} ({price}).",
     "troupe.specializations": "{actor} set the troupe's {kind}: {count} options.",
     "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",

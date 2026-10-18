@@ -6,6 +6,7 @@ import type { CheckOut } from "../../api/types";
 import { Badge, Card, ErrorText, Input, Loading, Select, SubTabs } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { CostsSection } from "./CostsSection";
+import { StartingSection } from "./StartingSection";
 
 type Strength = "refuse" | "complete" | "review" | "note" | "off";
 
@@ -61,7 +62,7 @@ const ABOUT: Record<string, string> = {
 
 /**
  * The troupe's house rules, part by part: how it plays the rule set's checks,
- * and what traits cost here.
+ * what traits cost here, and what new characters start with.
  */
 export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const base = `/troupes/${troupeId}/rules`;
@@ -72,11 +73,13 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         tabs={[
           { to: base, label: "Checks", end: true },
           { to: `${base}/costs`, label: "Costs" },
+          { to: `${base}/starting`, label: "Starting points" },
         ]}
       />
       <Routes>
         <Route index element={<ChecksSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="costs" element={<CostsSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />
       </Routes>
     </>
   );

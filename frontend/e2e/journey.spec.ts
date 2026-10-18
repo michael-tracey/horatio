@@ -276,6 +276,47 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 });
 
 
+test("a troupe changes what new characters start with", async ({ browser }) => {
+  const custodian = await person(browser, "start-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "start-lead");
+  const player = await person(browser, "start-player");
+  const troupeName = `Court of Embers ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // The lead gives new characters a bigger merit budget.
+  const l = lead.page;
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  await l.getByRole("link", { name: "Rules", exact: true }).click();
+  await l.getByRole("link", { name: "Starting points", exact: true }).click();
+  await l.getByRole("button", { name: "Change starting Merits" }).click();
+  await l.getByLabel("Points for merits").fill("9");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(l.getByText("The rule set's: 7 points")).toBeVisible();
+  await l.screenshot(shots("starting"));
+
+  // A character built for the troupe has that budget in the wizard.
+  const p = player.page;
+  await p.reload();
+  await p.getByLabel("Name").fill("Mara");
+  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Create" }).click();
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
+  for (const heading of ["Attributes", "Focuses", "Skills", "Backgrounds", "Disciplines", "Merits & flaws"]) {
+    await p.getByRole("button", { name: "Save and continue" }).click();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  }
+  await expect(p.getByText("0 of 9 points")).toBeVisible();
+});
+
 test("a character in no troupe can be deleted from the vault", async ({ browser }) => {
   const { page } = await person(browser, "deleter");
   await page.getByLabel("Name").fill("Short-lived");
