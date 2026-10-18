@@ -340,10 +340,13 @@ def set_check_override(
 def add_house_rule(
     session: Session, troupe_id: uuid.UUID, splat: str, rule: CostRuleData
 ) -> CostRule:
-    """Add one house rule, after checking the pricing code could apply it."""
-    rules = read_troupe_rules(session, splat, None)
+    """Add one house rule, after checking the pricing code could apply it. A
+    troupe has at most one price for each trait (or category) and condition."""
+    rules = read_troupe_rules(session, splat, troupe_id)
     house = replace(rule, house=True)
     check_cost_rule(house, rules.rule_set)
+    if any(same_subject(r, house) for r in rules.house_rules):
+        raise DuplicateHouseRule("the troupe already has a price for that")
 
     rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
     category = session.scalars(
@@ -372,6 +375,63 @@ def add_house_rule(
     session.add(row)
     session.flush()
     return row
+
+
+class DuplicateHouseRule(ValueError):
+    pass
+
+
+def same_subject(a: CostRuleData, b: CostRuleData) -> bool:
+    """Whether two cost rules price the same thing under the same condition, so
+    that a house rule would replace the other."""
+    return (a.category, a.trait, dict(a.condition or {})) == (
+        b.category,
+        b.trait,
+        dict(b.condition or {}),
+    )
+
+
+def house_cost_rules(
+    session: Session, splat: str, troupe_id: uuid.UUID
+) -> list[tuple[uuid.UUID, CostRuleData]]:
+    """A troupe's own cost rules, each with its id, oldest first."""
+    rules = read_troupe_rules(session, splat, troupe_id)
+    ids = session.scalars(
+        select(CostRule.id)
+        .join(RuleSet, CostRule.rule_set_id == RuleSet.id)
+        .where(RuleSet.splat == splat, CostRule.troupe_id == troupe_id)
+        .order_by(CostRule.id)
+    ).all()
+    # read_troupe_rules reads them in the same order.
+    return list(zip(ids, rules.house_rules, strict=True))
+
+
+@changes_rules
+def change_house_rule(
+    session: Session, troupe_id: uuid.UUID, splat: str, rule_id: uuid.UUID, rule: CostRuleData
+) -> CostRule:
+    """Change how a troupe's cost rule prices its trait or category; what it
+    prices, and when, stay as they are."""
+    row = session.get(CostRule, rule_id)
+    if row is None or row.troupe_id != troupe_id:
+        raise LookupError("no such house rule")
+    rules = read_troupe_rules(session, splat, troupe_id)
+    check_cost_rule(replace(rule, house=True), rules.rule_set)
+    row.scheme = rule.scheme
+    row.rate = rule.rate
+    row.cost_table = list(rule.table) if rule.table else None
+    row.text = rule.text
+    session.flush()
+    return row
+
+
+@changes_rules
+def remove_house_rule(session: Session, troupe_id: uuid.UUID, rule_id: uuid.UUID) -> None:
+    row = session.get(CostRule, rule_id)
+    if row is None or row.troupe_id != troupe_id:
+        raise LookupError("no such house rule")
+    session.delete(row)
+    session.flush()
 
 
 def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None) -> TroupeRules:

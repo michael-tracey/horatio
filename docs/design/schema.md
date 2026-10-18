@@ -162,12 +162,15 @@ for example `{"in_clan": true}` or `{"generation": {"gte": 3, "lt": 5}}`. The
 **values** are data a troupe can change. The **meaning** of a fact such as
 "in-clan" stays in code (`horatio/rules/splats.py`).
 
-To choose a cost rule: **any matching house rule beats any matching generic
-rule**. Within whichever of the two has a match, a rule naming the trait beats
-a whole category, and a rule testing more facts beats one testing fewer. Two
-rules still tied is a mistake in the rules and is refused, never guessed. So a
-troupe that re-prices all skills gets all skills at its price, even where the
-generic rules had a more specific skills rule. A trait no rule covers is
+To choose a cost rule: **the most specific matching rule wins, whoever set
+it**. House rules and generic rules compete together: a rule naming the trait
+beats a whole category, a rule testing more facts beats one testing fewer, and
+a house rule wins a tie. Two rules still tied is a mistake in the rules and is
+refused, never guessed. So a troupe that re-prices all skills leaves the
+generic rules' more specific skills rule (Generation 1) alone; to change that
+one too, it gives the same condition its own price, which the Costs screen does
+by changing that row. A troupe has at most one price for each trait (or
+category) and condition. A trait no rule covers is
 refused too, never treated as free.
 
 The generic rule sets live in `backend/src/horatio/rules/data/` as TOML and
@@ -180,7 +183,8 @@ against 13,952 prices produced by Yorick's own cost code
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),
 `action_kind_id`, `trait_definition_id` (nullable: null is the base allowance
 everyone gets), `min_rating`, `scheme` (`fixed` | `per_dot`), `amount` (may be
-negative, for flaws). The same "house rule beats generic rule" lookup applies.
+negative, for flaws). A house rule for the same action kind and trait replaces
+the generic one.
 
 **`creation_rules`**: the starting dots a new character picks (Yorick's
 "skills: one at 4, two at 3…").
