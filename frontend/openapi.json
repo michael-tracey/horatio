@@ -1,6 +1,24 @@
 {
   "components": {
     "schemas": {
+      "ActionKindOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "ActionKindOut",
+        "type": "object"
+      },
       "AdjustmentIn": {
         "properties": {
           "action_kind": {
@@ -48,6 +66,89 @@
         "title": "AdjustmentOut",
         "type": "object"
       },
+      "AllowanceChange": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "min_rating": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Min Rating",
+            "type": "integer"
+          },
+          "scheme": {
+            "default": "fixed",
+            "enum": [
+              "fixed",
+              "per_dot"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "AllowanceChange",
+        "type": "object"
+      },
+      "AllowanceIn": {
+        "properties": {
+          "action_kind": {
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "min_rating": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Min Rating",
+            "type": "integer"
+          },
+          "scheme": {
+            "default": "fixed",
+            "enum": [
+              "fixed",
+              "per_dot"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          }
+        },
+        "required": [
+          "amount",
+          "action_kind"
+        ],
+        "title": "AllowanceIn",
+        "type": "object"
+      },
       "AllowanceLineOut": {
         "properties": {
           "action_kind": {
@@ -69,6 +170,119 @@
           "amount"
         ],
         "title": "AllowanceLineOut",
+        "type": "object"
+      },
+      "AllowanceOut": {
+        "properties": {
+          "action_kind": {
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "amount_text": {
+            "title": "Amount Text",
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "min_rating": {
+            "title": "Min Rating",
+            "type": "integer"
+          },
+          "replaced": {
+            "default": false,
+            "title": "Replaced",
+            "type": "boolean"
+          },
+          "scheme": {
+            "enum": [
+              "fixed",
+              "per_dot"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          },
+          "who": {
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "action_kind",
+          "category",
+          "trait",
+          "min_rating",
+          "scheme",
+          "amount",
+          "who",
+          "amount_text",
+          "house"
+        ],
+        "title": "AllowanceOut",
+        "type": "object"
+      },
+      "AllowancesOut": {
+        "properties": {
+          "action_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/ActionKindOut"
+            },
+            "title": "Action Kinds",
+            "type": "array"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/AllowanceOut"
+            },
+            "title": "Rules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "action_kinds",
+          "rules"
+        ],
+        "title": "AllowancesOut",
         "type": "object"
       },
       "AnswerIn": {
@@ -7542,6 +7756,207 @@
         "summary": "Change Troupe",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/allowances": {
+      "get": {
+        "operationId": "list_allowances_api_troupes__troupe_id__allowances_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Allowances",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "post": {
+        "operationId": "add_allowance_api_troupes__troupe_id__allowances_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllowanceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Allowance",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/allowances/{rule_id}": {
+      "delete": {
+        "operationId": "remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Allowance",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "operationId": "change_allowance_api_troupes__troupe_id__allowances__rule_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllowanceChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Allowance",
+        "tags": [
+          "house rules"
         ]
       }
     },

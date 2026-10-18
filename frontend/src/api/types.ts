@@ -43,3 +43,5 @@ export type CostsOut = Schemas["CostsOut"];
 export type CostCategoryOut = Schemas["CostCategoryOut"];
 export type StartingCategoryOut = Schemas["StartingCategoryOut"];
 export type StartingRule = Schemas["StartingRule"];
+export type AllowanceOut = Schemas["AllowanceOut"];
+export type AllowancesOut = Schemas["AllowancesOut"];

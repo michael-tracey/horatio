@@ -1098,6 +1098,42 @@ export interface paths {
         patch: operations["change_troupe_api_troupes__troupe_id__patch"];
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/allowances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Allowances */
+        get: operations["list_allowances_api_troupes__troupe_id__allowances_get"];
+        put?: never;
+        /** Add Allowance */
+        post: operations["add_allowance_api_troupes__troupe_id__allowances_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/allowances/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Allowance */
+        put: operations["change_allowance_api_troupes__troupe_id__allowances__rule_id__put"];
+        post?: never;
+        /** Remove Allowance */
+        delete: operations["remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/approvals": {
         parameters: {
             query?: never;
@@ -1509,6 +1545,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionKindOut */
+        ActionKindOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+        };
         /** AdjustmentIn */
         AdjustmentIn: {
             /** Action Kind */
@@ -1527,6 +1570,44 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** AllowanceChange */
+        AllowanceChange: {
+            /** Amount */
+            amount: number;
+            /**
+             * Min Rating
+             * @default 1
+             */
+            min_rating: number;
+            /**
+             * Scheme
+             * @default fixed
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+        };
+        /** AllowanceIn */
+        AllowanceIn: {
+            /** Action Kind */
+            action_kind: string;
+            /** Amount */
+            amount: number;
+            /** Category */
+            category?: string | null;
+            /**
+             * Min Rating
+             * @default 1
+             */
+            min_rating: number;
+            /**
+             * Scheme
+             * @default fixed
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+            /** Trait */
+            trait?: string | null;
+        };
         /** AllowanceLineOut */
         AllowanceLineOut: {
             /** Action Kind */
@@ -1535,6 +1616,44 @@ export interface components {
             amount: number;
             /** Source */
             source: string;
+        };
+        /** AllowanceOut */
+        AllowanceOut: {
+            /** Action Kind */
+            action_kind: string;
+            /** Amount */
+            amount: number;
+            /** Amount Text */
+            amount_text: string;
+            /** Category */
+            category: string | null;
+            /** House */
+            house: boolean;
+            /** Id */
+            id: string | null;
+            /** Min Rating */
+            min_rating: number;
+            /**
+             * Replaced
+             * @default false
+             */
+            replaced: boolean;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+            /** Trait */
+            trait: string | null;
+            /** Who */
+            who: string;
+        };
+        /** AllowancesOut */
+        AllowancesOut: {
+            /** Action Kinds */
+            action_kinds: components["schemas"]["ActionKindOut"][];
+            /** Rules */
+            rules: components["schemas"]["AllowanceOut"][];
         };
         /** AnswerIn */
         AnswerIn: {
@@ -5317,6 +5436,138 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_allowances_api_troupes__troupe_id__allowances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowancesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_allowance_api_troupes__troupe_id__allowances_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllowanceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_allowance_api_troupes__troupe_id__allowances__rule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllowanceChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
