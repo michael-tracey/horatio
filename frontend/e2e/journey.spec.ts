@@ -274,6 +274,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();
   await expect(lead.page.getByText("always on")).toBeVisible();
   await expect(lead.page.getByText(/Discord is not set up on this server/)).toBeVisible();
+  await expect(lead.page.getByText(/Email is not set up on this server/)).toBeVisible();
 
   // The printable sheet, in the paper sheet's order.
   await p.getByRole("link", { name: "Sheet", exact: true }).click();

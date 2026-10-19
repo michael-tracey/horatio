@@ -95,6 +95,29 @@ Storytellers then use *Add Horatio to your Discord* on their troupe's
 Connectors tab and pick each character's private channel. The bot asks only
 to view channels and send messages.
 
+**Email.** Horatio sends mail from its own address through one SMTP service,
+with the troupe's storyteller address as Reply-To; no troupe connects its own
+mail account. Set:
+
+- `HORATIO_SMTP_HOST`, `HORATIO_SMTP_PORT` (587), `HORATIO_SMTP_USERNAME`,
+  `HORATIO_SMTP_PASSWORD`; `HORATIO_SMTP_STARTTLS` (true, for port 587) or
+  `HORATIO_SMTP_SSL` (true, for port 465).
+- `HORATIO_MAIL_FROM`, such as `Horatio <horatio@mail.example.org>`.
+
+Any provider with SMTP works (Amazon SES, Postmark, Mailgun…). So that mail
+from the sending domain is delivered rather than marked as spam, publish:
+
+- **SPF**: a TXT record on the sending domain allowing the provider, such as
+  `v=spf1 include:amazonses.com ~all` (your provider gives the exact value).
+- **DKIM**: the CNAME or TXT records your provider gives, so it signs mail for
+  your domain.
+- **DMARC**: a TXT record at `_dmarc.<domain>`, starting with
+  `v=DMARC1; p=none; rua=mailto:<you>` and tightening to `p=quarantine` once
+  reports look clean.
+
+Locally, `./start-local.sh` starts Mailpit and points Horatio at it: mail
+appears at <http://localhost:8025>.
+
 Model changes need a migration: `uv run alembic revision --autogenerate -m "..."`,
 then read what it generated. `tests/test_migrations.py` fails if the models and
 migrations disagree.

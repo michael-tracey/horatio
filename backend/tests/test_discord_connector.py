@@ -200,7 +200,11 @@ def test_a_failure_part_way_says_how_much_was_sent(fake_discord: FakeDiscord) ->
 
 def test_without_server_configuration_discord_is_unavailable(scene: Scene) -> None:  # noqa: F811
     troupe = scene.troupe
-    [listed] = troupe.storyteller.client.get(f"/troupes/{troupe.id}/connectors").json()
+    listed = next(
+        c
+        for c in troupe.storyteller.client.get(f"/troupes/{troupe.id}/connectors").json()
+        if c["kind"] == "discord"
+    )
 
     assert listed["kind"] == "discord"
     assert "HORATIO_DISCORD_BOT_TOKEN" in listed["unavailable"]
@@ -270,7 +274,11 @@ def test_disconnecting_forgets_the_server(
     gone = troupe.storyteller.client.delete(f"/troupes/{troupe.id}/discord")
 
     assert gone.status_code == 204
-    [listed] = troupe.storyteller.client.get(f"/troupes/{troupe.id}/connectors").json()
+    listed = next(
+        c
+        for c in troupe.storyteller.client.get(f"/troupes/{troupe.id}/connectors").json()
+        if c["kind"] == "discord"
+    )
     assert (listed["enabled"], listed["settings"]) == (False, {})
     assert troupe.storyteller.client.delete(f"/troupes/{troupe.id}/discord").status_code == 404
 

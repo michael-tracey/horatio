@@ -121,7 +121,7 @@ def test_storytellers_set_up_a_connector(scene: Scene, fake: FakeConnector) -> N
 
     assert changed.status_code == 200, changed.text
     assert (changed.json()["enabled"], changed.json()["mode"]) == (True, "full")
-    [listed] = troupe.assistant.client.get(url).json()
+    listed = next(c for c in troupe.assistant.client.get(url).json() if c["kind"] == "discord")
     assert (listed["kind"], listed["name"], listed["unavailable"]) == ("discord", "Fake chat", None)
     log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
     assert "storyteller turned the Fake chat connector on." in log

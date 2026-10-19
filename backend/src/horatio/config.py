@@ -31,6 +31,18 @@ class Settings(BaseSettings):
     discord_client_secret: str | None = None
     discord_bot_token: str | None = None
 
+    # Email (horatio.connectors.email): Horatio sends from its own address through
+    # one SMTP service; troupes' storytellers get replies. Host and from-address
+    # are needed for the email connector.
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    # STARTTLS on a plain connection (port 587), or TLS from the start (port 465).
+    smtp_starttls: bool = True
+    smtp_ssl: bool = False
+    mail_from: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
