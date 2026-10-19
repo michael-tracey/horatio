@@ -35,9 +35,17 @@ class PoolOut(BaseModel):
     traits: list[PickedTrait]
 
 
+class StepNeed(BaseModel):
+    # The category whose step must meet it, such as "backgrounds".
+    step: str
+    message: str
+
+
 class CreationOut(BaseModel):
     complete: bool
     pools: list[PoolOut]
+    # What the sheet must have before the wizard moves on from a step.
+    needs: list[StepNeed]
 
 
 class Pick(BaseModel):
@@ -68,8 +76,14 @@ class Unpick(BaseModel):
 def creation_out(db: DbSession, character: Character) -> CreationOut:
     pools = creation.pools(db, character)
     catalogue = creation.rules_for(db, character).rule_set.categories
+    needs = [
+        StepNeed(step=v.check.step, message=v.message)
+        for v in sheets.sheet_violations(db, character)
+        if v.check.step is not None and v.check.strength in ("refuse", "complete")
+    ]
     return CreationOut(
         complete=character.creation_completed_at is not None,
+        needs=list({(n.step, n.message): n for n in needs}.values()),
         pools=[
             PoolOut(
                 category=p.category,

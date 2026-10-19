@@ -199,6 +199,13 @@ def load_checks(
         for condition in (raw.get("requires"), raw.get("forbids")):
             if condition:
                 validate_condition(condition, known)
+        if raw.get("step") is not None and (
+            raw["step"] not in categories or raw.get("strength") != "complete"
+        ):
+            raise ValueError(
+                f"{where}: check {raw['key']} names a step; it must be a category,"
+                " on a complete check"
+            )
         checks.append(check_from_dict(raw))
     keys = [c.key for c in checks]
     if len(keys) != len(set(keys)):

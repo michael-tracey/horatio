@@ -22,7 +22,7 @@ const csrf: Middleware = {
 export const api = createClient<paths>({ credentials: "same-origin" });
 api.use(csrf);
 
-function detailOf(error: unknown): string {
+function detailOf(error: unknown, status: number): string {
   if (error && typeof error === "object" && "detail" in error) {
     const detail = (error as { detail: unknown }).detail;
     if (typeof detail === "string") return detail;
@@ -32,7 +32,8 @@ function detailOf(error: unknown): string {
         .join("; ");
     }
   }
-  return "Something went wrong.";
+  // A server error without a message: say so, with its status, rather than nothing.
+  return `Something went wrong (${status}).`;
 }
 
 /** The response's data, or an ApiError. */
@@ -40,6 +41,6 @@ export async function unwrap<T>(
   call: Promise<{ data?: T; error?: unknown; response: Response }>,
 ): Promise<T> {
   const { data, error, response } = await call;
-  if (!response.ok) throw new ApiError(response.status, detailOf(error));
+  if (!response.ok) throw new ApiError(response.status, detailOf(error, response.status));
   return data as T;
 }

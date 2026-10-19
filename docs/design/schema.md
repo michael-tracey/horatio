@@ -578,6 +578,17 @@ Recorded here for review; each is easy to change.
   kind `review` with a `discipline_purchases` row): declining takes the dots back
   and refunds the XP. Before acceptance it is allowed, as acceptance reviews the
   whole sheet.
+- A `complete` check can name a creation `step`, the category whose picks must
+  meet it (a vampire's Generation, on `backgrounds`). `GET
+  /characters/{id}/creation` lists such checks the sheet breaks as `needs`, and
+  the wizard does not move on from, or past, that step until they hold (issue #31).
+- A trait whose catalogue properties carry `sect` (the Rituals background and
+  the Sabbat ritae: `sect = "Sabbat"`) is left out of a troupe's catalogue when
+  the troupe's `allowed_sects` leave that sect out, and so is a category left
+  empty by it. A check still refuses it to characters of other sects.
+- Traits Yorick describes nowhere (attributes, focuses, skills, backgrounds,
+  disciplines) take their descriptions from `tools/vampire_descriptions.toml`,
+  written in our own words, when the catalogue is generated.
 
 **Grants: traits that give other traits (issue #2)**
 

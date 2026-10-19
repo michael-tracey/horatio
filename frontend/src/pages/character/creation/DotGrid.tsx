@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
-import { canTap, left, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
+import { canTap, clear, left, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
 
 const SEARCH_FROM = 12;
 /** Skills bought once per field, such as Performance: Singing (MET: VTM p. 92). */
@@ -17,10 +17,14 @@ function useFiltered(traits: TraitOut[], picks: Picks) {
   return { query, setQuery, shown };
 }
 
+/** Holds the counters in view while a long list scrolls under them (on a phone, the page). */
+const STICKY = "sticky top-0 z-10 -mx-2 bg-dusk/95 px-2 py-2 backdrop-blur";
+
 /**
  * Every trait in a category, each with a row of dots. Tap a dot to set that
- * rating; tap it again to clear. Only ratings with picks can be tapped, and a
- * rating with none left greys out (a single pick swaps instead).
+ * rating; tap it again, or Clear, to take it back. Only ratings with picks can
+ * be tapped, and a rating with none left greys out (in a ranking, such as
+ * attributes, tapping a taken rating swaps instead).
  */
 export function DotGrid({
   title,
@@ -33,6 +37,7 @@ export function DotGrid({
   sections,
   details = {},
   onDetail,
+  unavailable = {},
 }: {
   title: string;
   showTitle?: boolean;
@@ -47,7 +52,15 @@ export function DotGrid({
   /** The field each picked Crafts, Performance or Science is for. */
   details?: Record<string, string>;
   onDetail?: (name: string, detail: string) => void;
+  /** Traits the rules do not allow this character, and why. */
+  unavailable?: Record<string, string>;
 }) {
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const toggle = (name: string) => {
+    const next = new Set(open);
+    if (!next.delete(name)) next.add(name);
+    setOpen(next);
+  };
   const ratings = Object.keys(allowed)
     .map(Number)
     .sort((a, b) => b - a);
@@ -64,53 +77,88 @@ export function DotGrid({
   const row = (trait: TraitOut) => {
     const rating = picks[trait.name] ?? 0;
     const label = tag?.(trait);
+    const barred = rating ? undefined : unavailable[trait.name];
+    const about = trait.description ? `about-${title}-${trait.name}`.replace(/\W+/g, "-") : undefined;
+    const shown = open.has(trait.name);
     return (
-      <li key={trait.name} className="flex items-center justify-between gap-3 py-1.5">
-        <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-          <span className={rating ? "text-parchment" : "text-mist"}>{trait.name}</span>
-          {label && <span className="text-xs text-gold">{label}</span>}
-          {rating > 0 && NEEDS_FIELD.has(trait.name) && onDetail && (
-            <Input
-              aria-label={`${trait.name} field`}
-              placeholder="Field, such as Singing"
-              value={details[trait.name] ?? ""}
-              onChange={(e) => onDetail(trait.name, e.target.value)}
-              className="h-8 w-40 py-0"
-            />
-          )}
-        </span>
-        <span className="flex shrink-0 gap-0.5">
-          {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
-            const pickable = dot in allowed;
-            const enabled = pickable && canTap(picks, allowed, trait.name, dot);
-            const filled = dot <= rating;
-            return (
+      <li key={trait.name} className="py-1.5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            {about ? (
               <button
-                key={dot}
                 type="button"
-                aria-label={`${trait.name} ${dot}`}
-                aria-pressed={rating === dot}
-                disabled={!enabled}
-                onClick={() => onChange(tap(picks, allowed, trait.name, dot))}
-                className={[
-                  "grid h-8 w-7 place-items-center rounded text-lg leading-none",
-                  pickable ? "hover:bg-ash" : "cursor-default",
-                  filled ? "text-blood-bright" : pickable ? "text-mist" : "text-ash",
-                  !enabled && pickable && !filled ? "opacity-30" : "",
-                ].join(" ")}
+                aria-expanded={shown}
+                aria-controls={about}
+                aria-label={`About ${trait.name}`}
+                onClick={() => toggle(trait.name)}
+                className="-ml-1 grid h-7 w-6 place-items-center rounded text-mist hover:bg-ash hover:text-parchment"
               >
-                {filled ? "●" : pickable ? "○" : "·"}
+                <Chevron open={shown} />
               </button>
-            );
-          })}
-        </span>
+            ) : (
+              <span className="w-5" aria-hidden />
+            )}
+            <span className={rating ? "text-parchment" : barred ? "text-ash" : "text-mist"}>{trait.name}</span>
+            {label && <span className="text-xs text-gold">{label}</span>}
+            {rating > 0 && NEEDS_FIELD.has(trait.name) && onDetail && (
+              <Input
+                aria-label={`${trait.name} field`}
+                placeholder="Field, such as Singing"
+                value={details[trait.name] ?? ""}
+                onChange={(e) => onDetail(trait.name, e.target.value)}
+                className="h-8 w-40 py-0"
+              />
+            )}
+          </span>
+          <span className="flex shrink-0 items-center gap-0.5">
+            {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
+              const pickable = dot in allowed;
+              const enabled = pickable && !barred && canTap(picks, allowed, trait.name, dot);
+              const filled = dot <= rating;
+              return (
+                <button
+                  key={dot}
+                  type="button"
+                  aria-label={`${trait.name} ${dot}`}
+                  aria-pressed={rating === dot}
+                  disabled={!enabled}
+                  onClick={() => onChange(tap(picks, allowed, trait.name, dot))}
+                  className={[
+                    "grid h-8 w-7 place-items-center rounded text-lg leading-none",
+                    pickable ? "hover:bg-ash" : "cursor-default",
+                    filled ? "text-blood-bright" : pickable ? "text-mist" : "text-ash",
+                    !enabled && pickable && !filled ? "opacity-30" : "",
+                  ].join(" ")}
+                >
+                  {filled ? "●" : pickable ? "○" : "·"}
+                </button>
+              );
+            })}
+            {/* Kept in place when hidden, so every row's dots line up. */}
+            <button
+              type="button"
+              aria-label={`Clear ${trait.name}`}
+              disabled={!rating}
+              onClick={() => onChange(clear(picks, trait.name))}
+              className={`ml-1 h-8 rounded px-2 text-xs text-mist hover:bg-ash hover:text-parchment ${rating ? "" : "invisible"}`}
+            >
+              Clear
+            </button>
+          </span>
+        </div>
+        {barred && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{barred}</p>}
+        {about && (
+          <p id={about} hidden={!shown} className="mt-1 pl-6 text-xs leading-relaxed text-mist">
+            {trait.description}
+          </p>
+        )}
       </li>
     );
   };
 
   return (
     <section aria-label={title} className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className={`flex flex-wrap items-center justify-between gap-2 ${STICKY}`}>
         {showTitle ? <h3 className="text-base text-gold">{title}</h3> : <span />}
         <ul className="flex flex-wrap gap-1.5" aria-label={`${title} picks left`}>
           {ratings.map((r) => {
@@ -171,14 +219,16 @@ export function PointsList({
 
   return (
     <section aria-label={title} className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-base text-gold">{title}</h3>
-        <Badge tone={used < budget ? "gold" : "mist"}>
-          {used} of {budget} points
-        </Badge>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded bg-ash">
-        <div className="h-full bg-gold" style={{ width: `${(100 * used) / budget}%` }} />
+      <div className={`flex flex-col gap-2 ${STICKY}`}>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-base text-gold">{title}</h3>
+          <Badge tone={used < budget ? "gold" : "mist"}>
+            {used} of {budget} points
+          </Badge>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded bg-ash">
+          <div className="h-full bg-gold" style={{ width: `${(100 * used) / budget}%` }} />
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {filterable && (
@@ -242,5 +292,14 @@ export function PointsList({
         <p className="text-xs text-mist">Search to see all {listed.length}.</p>
       )}
     </section>
+  );
+}
+
+/** Points right when closed, down when open. */
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}>
+      <path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

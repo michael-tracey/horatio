@@ -1376,6 +1376,13 @@
             "title": "Complete",
             "type": "boolean"
           },
+          "needs": {
+            "items": {
+              "$ref": "#/components/schemas/StepNeed"
+            },
+            "title": "Needs",
+            "type": "array"
+          },
           "pools": {
             "items": {
               "$ref": "#/components/schemas/PoolOut"
@@ -1386,7 +1393,8 @@
         },
         "required": [
           "complete",
-          "pools"
+          "pools",
+          "needs"
         ],
         "title": "CreationOut",
         "type": "object"
@@ -4442,6 +4450,24 @@
           }
         },
         "title": "StartingRule",
+        "type": "object"
+      },
+      "StepNeed": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "step": {
+            "title": "Step",
+            "type": "string"
+          }
+        },
+        "required": [
+          "step",
+          "message"
+        ],
+        "title": "StepNeed",
         "type": "object"
       },
       "TableIn": {
@@ -8674,7 +8700,7 @@
     },
     "/api/rules/{splat}": {
       "get": {
-        "description": "The rule set's categories and traits, with any house-rule text from `troupe_id`.",
+        "description": "The rule set's categories and traits, with any house-rule text from `troupe_id`.\nA troupe that takes only some sects does not see traits for the others (the\nSabbat's Rituals), nor a category left empty without them.",
         "operationId": "catalogue_api_rules__splat__get",
         "parameters": [
           {

@@ -1239,6 +1239,8 @@ export interface paths {
         /**
          * Catalogue
          * @description The rule set's categories and traits, with any house-rule text from `troupe_id`.
+         *     A troupe that takes only some sects does not see traits for the others (the
+         *     Sabbat's Rituals), nor a category left empty without them.
          */
         get: operations["catalogue_api_rules__splat__get"];
         put?: never;
@@ -2327,6 +2329,8 @@ export interface components {
         CreationOut: {
             /** Complete */
             complete: boolean;
+            /** Needs */
+            needs: components["schemas"]["StepNeed"][];
             /** Pools */
             pools: components["schemas"]["PoolOut"][];
         };
@@ -3500,6 +3504,13 @@ export interface components {
             } | null;
             /** When Text */
             when_text?: string | null;
+        };
+        /** StepNeed */
+        StepNeed: {
+            /** Message */
+            message: string;
+            /** Step */
+            step: string;
         };
         /** TableIn */
         TableIn: {

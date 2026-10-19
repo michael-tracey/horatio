@@ -338,236 +338,292 @@ name = "Untrustworthy"
 [[traits]]
 category = "backgrounds"
 name = "Allies"
+description = "Mortals who help you because they want to, each with their own talents. They can act on your behalf between games."
 page_reference = "98"
 
 [[traits]]
 category = "backgrounds"
 name = "Alternate Identity"
+description = "A second, well-established identity, with the papers, history and acquaintances to make it convincing."
 page_reference = "98"
 
 [[traits]]
 category = "backgrounds"
 name = "Contacts"
+description = "People in a field who pass you information when you ask."
 page_reference = "99"
 
 [[traits]]
 category = "backgrounds"
 name = "Fame"
+description = "Mortals know who you are, which opens doors but makes it harder to go unnoticed."
 page_reference = "99"
 
 [[traits]]
 category = "backgrounds"
 name = "Generation"
+description = "How close your blood is to Caine's. Every vampire needs at least 1 dot; more dots mean potent blood and a larger blood pool."
 page_reference = "100"
 
 [[traits]]
 category = "backgrounds"
 name = "Haven"
+description = "A safe place to rest by day. More dots make it larger and more secure."
 page_reference = "102"
 
 [[traits]]
 category = "backgrounds"
 name = "Herd"
+description = "Mortals you can feed on easily, so finding blood takes less effort."
 page_reference = "102"
 
 [[traits]]
 category = "backgrounds"
 name = "Influences: The Elite"
+description = "Pull among society's powerful, such as politics, finance, the media and high society. Used between games to make things happen."
 page_reference = "103"
 
 [[traits]]
 category = "backgrounds"
 name = "Influences: The Underworld"
+description = "Pull among society's underside, such as crime, the street and the transient. Used between games to make things happen."
 page_reference = "103"
 
 [[traits]]
 category = "backgrounds"
 name = "Resources"
+description = "Money and property: the more dots, the more you can afford and the better you live."
 page_reference = "103"
 
 [[traits]]
 category = "backgrounds"
 name = "Retainers"
+description = "Loyal servants, often ghouls, who serve you directly."
 page_reference = "104"
 properties = { requirement = "requires_specialization" }
 
 [[traits]]
 category = "backgrounds"
 name = "Rituals"
+description = "For initiated Sabbat only: the ritae you know and can lead for your pack, such as the Vaulderie. More dots, more ritae."
+properties = { sect = "Sabbat" }
 
 [[traits]]
 category = "backgrounds"
 name = "Shared Haven"
+description = "A haven you share with others, each of you adding to it."
 page_reference = "102"
 properties = { requirement = "requires_specialization" }
 
 [[traits]]
 category = "disciplines"
 name = "Animalism"
+description = "Kinship with beasts and the Beast within: speak to and command animals, and soothe or rouse frenzy."
 
 [[traits]]
 category = "disciplines"
 name = "Auspex"
+description = "Heightened senses and psychic insight: see auras, read minds, and send your senses far away."
 
 [[traits]]
 category = "disciplines"
 name = "Celerity"
+description = "Supernatural speed: act faster, and more often, than others can."
 
 [[traits]]
 category = "disciplines"
 name = "Chimerstry"
+description = "Illusions that deceive every sense, growing real enough to harm. The Ravnos discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Daimoinon"
+description = "Infernal power: sense sin and weakness in others, and corrupt and curse them. The Baali discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Dementation"
+description = "Madness as a weapon: unsettle, confuse and break others' minds. A Malkavian discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Dominate"
+description = "Command the mind through eye contact and voice: give orders, rewrite memories, even possess."
 
 [[traits]]
 category = "disciplines"
 name = "Fortitude"
+description = "Supernatural toughness: shrug off harm, even from fire and sunlight."
 
 [[traits]]
 category = "disciplines"
 name = "Kineticism"
+description = "Store kinetic energy as charges, and release it in bursts of force. Learned only by Caitiff, through the Inceptor merit."
 
 [[traits]]
 category = "disciplines"
 name = "Melpominee"
+description = "The voice as a supernatural instrument: carry it far, stir emotions, and shatter with song. The Daughters of Cacophony's discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Mytherceria"
+description = "Fae-touched magic born of the Kiasyd's strange heritage. The Kiasyd discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Necromancy: Ash Path"
+description = "Necromancy of the Shadowlands, the realm of the dead: see into it, reach into it and walk there."
 
 [[traits]]
 category = "disciplines"
 name = "Necromancy: Bone Path"
+description = "Necromancy of corpses: raise and command the dead body, and animate it with a spirit."
 
 [[traits]]
 category = "disciplines"
 name = "Necromancy: Mortis Path"
+description = "Necromancy of death and decay: wither the living, and cheat death yourself."
 
 [[traits]]
 category = "disciplines"
 name = "Necromancy: Path of Grief"
+description = "Necromancy that draws on the mind's bond with death, bringing grief and the emotions of loss to the surface."
 
 [[traits]]
 category = "disciplines"
 name = "Necromancy: Path of Soul Bonding"
+description = "Necromancy that binds wraiths, the souls of the dead, and draws on their knowledge and power."
 
 [[traits]]
 category = "disciplines"
 name = "Necromancy: Sepulchre Path"
+description = "Necromancy of ghosts: see, summon and command the restless dead."
 
 [[traits]]
 category = "disciplines"
 name = "Obeah"
+description = "The gentle power of healing: sense pain and mend wounds of body and mind. The Salubri healers' discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Obfuscate"
+description = "Hide in plain sight: go unnoticed, wear another face, or vanish from memory."
 
 [[traits]]
 category = "disciplines"
 name = "Obtenebration"
+description = "Command of shadow: shape darkness into arms and tendrils, and become shadow yourself. The Lasombra discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Potence"
+description = "Supernatural strength: hit harder, lift more, break what should not break."
 
 [[traits]]
 category = "disciplines"
 name = "Presence"
+description = "Supernatural charisma: draw admiration, inspire awe or terror, and command devotion."
 
 [[traits]]
 category = "disciplines"
 name = "Protean"
+description = "Shapeshifting: claws, sight in the dark, sinking into the earth, and taking animal form. The Gangrel discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Quietus"
+description = "The assassin's art: silence, poison and turning your blood into a weapon. The Assamite discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Serpentis"
+description = "The serpent's gifts: a hypnotic gaze, a serpent's tongue and skin, and a serpent's form. The Followers of Set's discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Spiritus"
+description = "Shamanic bond with the spirits of nature: sense, call on and borrow from them. The Ahrimanes' discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Temporis"
+description = "Mastery of time: slow it for others, speed it for yourself, and sense its flow. The True Brujah discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Thanatosis"
+description = "Death and decay: encourage and feed on blight and deterioration, in your own flesh and others'. The Samedi discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Green Path"
+description = "Blood magic over plants: speak with them, make them grow and move at your command."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Lure of Flames"
+description = "Blood magic that summons and directs fire, which vampires dread above all."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Movement of the Mind"
+description = "Blood magic that moves objects and people by will alone, up to flight."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Path of Blood"
+description = "The core of blood magic: taste and steal blood, sense its potency, and boil it in the veins."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Path of Caelestikinesis"
+description = "Blood magic drawn from the stars and the forces that move the heavens."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Path of Conjuring"
+description = "Blood magic that conjures objects out of nothing, temporary at first, lasting later."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Path of Corruption"
+description = "Blood magic that twists minds and morals, warping vices and virtues."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Path of Elemental Mastery"
+description = "Blood magic over earth, stone and the inanimate world."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Path of Neptune's Might"
+description = "Blood magic over water: see through it, move it and drown with it."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Path of Technomancy"
+description = "Blood magic over machines and electronics: sense, control and corrupt them."
 
 [[traits]]
 category = "disciplines"
 name = "Thaumaturgy: Path of Weather Mastery"
+description = "Blood magic over the weather: fog, rain, wind and lightning."
 
 [[traits]]
 category = "disciplines"
 name = "Valeren"
+description = "The warrior's discipline, created by the Salubri to defend their clan in battle."
 
 [[traits]]
 category = "disciplines"
 name = "Vicissitude"
+description = "Flesh-shaping: sculpt your own body and others', down to bone. The Tzimisce discipline."
 
 [[traits]]
 category = "disciplines"
 name = "Visceratika"
+description = "Gifts of stone: skin like granite, merging into rock, and sensing through it. The Gargoyles' discipline."
 
 [[traits]]
 category = "drive_specializations"
@@ -1998,26 +2054,32 @@ properties = { rating = 3, type = "General" }
 [[traits]]
 category = "focus_mentals"
 name = "Intelligence"
+description = "Reasoning, memory and learning. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "focus_mentals"
 name = "Perception"
+description = "Noticing things and reading what is around you. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "focus_mentals"
 name = "Wits"
+description = "Thinking fast and reacting quickly. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "focus_socials"
 name = "Appearance"
+description = "Looks, and how readily others are drawn to you. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "focus_socials"
 name = "Charisma"
+description = "Charm and the force of your personality. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "focus_socials"
 name = "Manipulation"
+description = "Getting people to do what you want without their noticing. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "haven_specializations"
@@ -5183,122 +5245,122 @@ properties = { rating = 1 }
 [[traits]]
 category = "sabbat_rituals"
 name = "Acceptance"
-properties = { type = "Ignoblis" }
+properties = { type = "Ignoblis", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Atra Sacramentum"
-properties = { type = "Faction" }
+properties = { type = "Faction", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Binding"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Blessing of St. Blaise"
-properties = { type = "Faction" }
+properties = { type = "Faction", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Blood Bath"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Blood Feast"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Contrition"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Creation Rite"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Danse Macabre"
-properties = { type = "Ignoblis" }
+properties = { type = "Ignoblis", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Fire Dance"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Games of Instinct"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "High Holidays"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Irad's Will"
-properties = { type = "Faction" }
+properties = { type = "Faction", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Monomancy"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Running the Gauntlet"
-properties = { type = "Ignoblis" }
+properties = { type = "Ignoblis", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Sacrificial Rites"
-properties = { type = "Ignoblis" }
+properties = { type = "Ignoblis", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Sermons of Caine"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Stealth"
-properties = { type = "Ignoblis" }
+properties = { type = "Ignoblis", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Sun Dance"
-properties = { type = "Ignoblis" }
+properties = { type = "Ignoblis", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Tower of Babel"
-properties = { type = "Faction" }
+properties = { type = "Faction", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Vaulderie"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Vision Quest"
-properties = { type = "Ignoblis" }
+properties = { type = "Ignoblis", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "War Party"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
 name = "Wild Hunt"
-properties = { type = "Auctoritas" }
+properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sect"
@@ -5339,155 +5401,181 @@ name = "Unaffiliated"
 [[traits]]
 category = "skills"
 name = "Academics"
+description = "A broad education: history, the arts, philosophy and the like. Lets you research, critique and recall what an educated person would know."
 page_reference = "unknown"
 properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Animal Ken"
+description = "Understanding animals: calming, training and reading them, and getting them to trust you."
 page_reference = "unknown"
 properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Athletics"
+description = "Running, jumping, climbing, swimming and throwing. Physical training beyond the everyday."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Awareness"
+description = "Keen senses and a feel for when something unnatural is at work around you."
 page_reference = "unknown"
 properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Brawl"
+description = "Fighting with your body: fists, feet, grapples and claws."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Computer"
+description = "Using, programming and breaking into computers and networks."
 page_reference = "unknown"
 properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Crafts"
+description = "Making things with skill, from fine art to mechanical repair. Taken for one field at a time, such as Carpentry or Painting."
 page_reference = "unknown"
 properties = { attribute = "Mental", requirement = "requires_specialization" }
 
 [[traits]]
 category = "skills"
 name = "Dodge"
+description = "Getting out of the way of blows, bullets and anything else thrown at you."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Drive"
+description = "Driving well under pressure: chases, stunts and dangerous conditions. Further dots cover other kinds of vehicle."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Empathy"
+description = "Reading moods, motives and emotions, and understanding what makes people tick."
 page_reference = "unknown"
 properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Firearms"
+description = "Handling, maintaining and shooting guns accurately."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Intimidation"
+description = "Frightening people into backing down or doing what you want, through threat or sheer presence."
 page_reference = "unknown"
 properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Investigation"
+description = "Searching scenes, following leads and piecing clues together."
 page_reference = "unknown"
 properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Leadership"
+description = "Inspiring and directing others, and planning so a group works well together."
 page_reference = "unknown"
 properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Linguistics"
+description = "Languages beyond your native tongue: each dot is another language you speak fluently."
 properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Lore"
+description = "Hidden knowledge of the supernatural world, such as Kindred or a clan. Each dot gives a specialisation in one subject."
 page_reference = "unknown"
 properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Medicine"
+description = "Anatomy, first aid, diagnosis and treatment, and knowledge of drugs."
 page_reference = "unknown"
 properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Melee"
+description = "Fighting with hand-held weapons, from knives to swords and clubs."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Occult"
+description = "Knowledge of magic, myth and the mystical, true and false alike."
 page_reference = "unknown"
 properties = { attribute = "Mental" }
 
 [[traits]]
 category = "skills"
 name = "Performance"
+description = "Entertaining an audience with talent and technique. Taken for one field at a time, such as Singing or Acting."
 page_reference = "unknown"
 properties = { attribute = "Social", requirement = "requires_specialization" }
 
 [[traits]]
 category = "skills"
 name = "Science"
+description = "Formal study of a scientific field. Taken for one field at a time, such as Chemistry or Physics."
 page_reference = "unknown"
 properties = { attribute = "Mental", requirement = "requires_specialization" }
 
 [[traits]]
 category = "skills"
 name = "Security"
+description = "Locks, alarms and surveillance: getting past them, or setting them up."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Stealth"
+description = "Moving unseen and unheard, and hiding when others look for you."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
 [[traits]]
 category = "skills"
 name = "Streetwise"
+description = "Knowing the streets: their people, rules, slang and where to get things."
 page_reference = "unknown"
 properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Subterfuge"
+description = "Lying, bluffing and misdirection, and spotting when someone does it to you."
 page_reference = "unknown"
 properties = { attribute = "Social" }
 
 [[traits]]
 category = "skills"
 name = "Survival"
+description = "Finding your way and staying alive in the wild: tracking, shelter and navigation."
 page_reference = "unknown"
 properties = { attribute = "Physical" }
 
@@ -6633,26 +6721,32 @@ name = "Transportation"
 [[traits]]
 category = "attributes"
 name = "Physical"
+description = "Strength, speed and toughness. Your test pool for physical challenges, including most combat."
 
 [[traits]]
 category = "attributes"
 name = "Social"
+description = "Charm, presence and the ability to sway others. Your test pool for social challenges."
 
 [[traits]]
 category = "attributes"
 name = "Mental"
+description = "Reason, awareness and force of will. Your test pool for mental challenges."
 
 [[traits]]
 category = "focus_physicals"
 name = "Strength"
+description = "Raw muscle: lifting, breaking and hitting hard. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "focus_physicals"
 name = "Dexterity"
+description = "Speed, agility and precision. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "focus_physicals"
 name = "Stamina"
+description = "Toughness and endurance. Some powers do more for a character with this focus."
 
 [[traits]]
 category = "willpower_sources"
