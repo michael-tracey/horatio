@@ -7,6 +7,7 @@ import type { ConnectorOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { DiscordSettings } from "./DiscordSettings";
+import { EmailSettings } from "./EmailSettings";
 
 type Settings = Record<string, unknown>;
 
@@ -16,6 +17,7 @@ export const SETTINGS_EDITORS: Record<
   (props: { troupeId: string; settings: Settings; onChange: (settings: Settings) => void; canEdit: boolean }) => ReactNode
 > = {
   discord: DiscordSettings,
+  email: EmailSettings,
 };
 
 /**

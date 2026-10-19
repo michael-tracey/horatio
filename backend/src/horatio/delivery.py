@@ -18,6 +18,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+import horatio.connectors.discord
+import horatio.connectors.email
 from horatio.config import get_settings
 from horatio.connectors import CONNECTORS, Message, Recipient, SendError
 from horatio.models import (
@@ -32,6 +34,9 @@ from horatio.models import (
 )
 
 log = logging.getLogger(__name__)
+
+# Each connector registers itself when imported.
+CONNECTOR_MODULES = (horatio.connectors.discord, horatio.connectors.email)
 
 MAX_ATTEMPTS = 6
 FIRST_WAIT = timedelta(minutes=1)
