@@ -37,11 +37,11 @@ def limits(person: Person, character_id: str) -> dict[str, tuple[int, int]]:
 
 def test_a_character_never_holds_more_than_seven_merit_points(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
-    take(troupe.player, character_id, "merits", "Abyssal Horror", 3)
+    take(troupe.player, character_id, "merits", "Iron Will", 3)
     take(troupe.player, character_id, "merits", "Rugged", 3)
     assert take(troupe.player, character_id, "merits", "Acute Sense", 1).status_code == 200
 
-    refused = take(troupe.player, character_id, "merits", "Adaptive", 1)
+    refused = take(troupe.player, character_id, "merits", "Light Sleeper", 1)
 
     assert refused.status_code == 409
     assert refused.json()["detail"] == (
@@ -50,7 +50,7 @@ def test_a_character_never_holds_more_than_seven_merit_points(troupe: Troupe) ->
     assert limits(troupe.player, character_id)["merits"] == (7, 7)
     # Dropping one makes room again.
     take(troupe.player, character_id, "merits", "Acute Sense", 0)
-    assert take(troupe.player, character_id, "merits", "Adaptive", 1).status_code == 200
+    assert take(troupe.player, character_id, "merits", "Light Sleeper", 1).status_code == 200
 
 
 def test_merit_points_count_at_the_troupes_price(troupe: Troupe, session: Session) -> None:
@@ -62,11 +62,11 @@ def test_merit_points_count_at_the_troupes_price(troupe: Troupe, session: Sessio
     )
     character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
-    take(troupe.player, character_id, "merits", "Abyssal Horror", 3)
+    take(troupe.player, character_id, "merits", "Iron Will", 3)
     take(troupe.player, character_id, "merits", "Rugged", 2)  # a 3-point merit by the book
 
     assert take(troupe.player, character_id, "merits", "Acute Sense", 1).status_code == 200
-    assert take(troupe.player, character_id, "merits", "Adaptive", 1).status_code == 200
+    assert take(troupe.player, character_id, "merits", "Light Sleeper", 1).status_code == 200
     assert limits(troupe.player, character_id)["merits"] == (7, 7)
 
 

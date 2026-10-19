@@ -116,12 +116,18 @@ class Violation:
 
     @property
     def message(self) -> str:
-        page = f" (p. {self.check.page})" if self.check.page else ""
+        page = f" ({page_text(self.check.page)})" if self.check.page else ""
         return (self.check.message or f"{self.subject.full_name} is not allowed here.") + page
 
     @property
     def key(self) -> tuple[str, str, str, str]:
         return (self.check.key, self.subject.category, self.subject.name, self.subject.detail)
+
+
+def page_text(page: str) -> str:
+    """A page reference as written: "p. 225" for the core book, or the reference
+    as given for a supplement ("Vol. 2, p. 98")."""
+    return f"p. {page}" if page[:1].isdigit() else page
 
 
 def clan_of(sheet: Sequence[SheetTrait]) -> str | None:

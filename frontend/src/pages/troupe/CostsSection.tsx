@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { CostCategoryOut, CostOut, CostsOut } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { pageText } from "./bookPage";
 import { flat, overlaps, parseTable, previewRatings, priceAt, SCHEMES } from "./costs";
 import type { Pricing, Scheme } from "./costs";
 
@@ -109,7 +110,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
                         <span className={c.replaced ? "" : "text-parchment"}>{subject(c, category)}</span>
                         {": "}
                         <span>{c.price_text}</span>
-                        {c.page && <span className="text-mist"> p. {c.page}</span>}
+                        {c.page && <span className="text-mist"> {pageText(c.page)}</span>}
                         {c.text && <span className="block text-xs text-mist no-underline">House rule: {c.text}</span>}
                       </span>
                       <span className="flex shrink-0 items-center gap-2">

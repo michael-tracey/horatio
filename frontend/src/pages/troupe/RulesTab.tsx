@@ -6,6 +6,7 @@ import type { CheckOut } from "../../api/types";
 import { Badge, Card, ErrorText, Input, Loading, Select, SubTabs } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AllowancesSection } from "./AllowancesSection";
+import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
 import { StartingSection } from "./StartingSection";
 
@@ -185,7 +186,7 @@ function RuleRow({ rule, canEdit, onChange }: { rule: CheckOut; canEdit: boolean
     <li className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:gap-4">
       <span className="min-w-0 flex-1 text-sm">
         <span className="text-parchment">{rule.message || rule.about}</span>
-        {rule.page && <span className="text-mist"> p. {rule.page}</span>}
+        {rule.page && <span className="text-mist"> {pageText(rule.page)}</span>}
         {rule.house && <span className="ml-2 text-xs text-gold">(changed here)</span>}
       </span>
       <span className="flex shrink-0 items-center gap-2">

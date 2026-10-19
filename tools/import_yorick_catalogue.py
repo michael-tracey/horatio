@@ -80,46 +80,8 @@ BOOK_RATINGS = {
     ("merits", "Sophistry"): 4,
     ("merits", "Talisman"): 3,
     ("merits", "Unnatural Adaptation"): 4,
-}
-
-# Ritual levels from the core book (Necromancy pp. 172-186, Thaumaturgy pp.
-# 186-211): a ritual is bought at its level, for twice that in XP.
-RITUAL_LEVELS = {
-    "Necromancy: Bastone Diabolico": 4,
-    "Necromancy: Black Blood": 2,
-    "Necromancy: Chill of Oblivion": 5,
-    "Necromancy: Lethe's Waters": 3,
-    "Necromancy: Moldering Presence": 3,
-    "Necromancy: Rise, Cerberus": 2,
-    "Necromancy: Ritual of Xipe Totec": 4,
-    "Necromancy: Scales of Maat": 2,
-    "Necromancy: Spirit Beacon": 2,
-    "Necromancy: Strength of Rotten Flesh": 4,
-    "Necromancy: The Servant Undying": 3,
-    "Necromancy: Weight of the Tomb": 5,
-    "Thaumaturgy: Banish Big Brother": 2,
-    "Thaumaturgy: Blood Contract": 5,
-    "Thaumaturgy: Blood Mastery": 1,
-    "Thaumaturgy: Burning Blade": 2,
-    "Thaumaturgy: Cobra's Favor": 5,
-    "Thaumaturgy: Craft Bloodstone": 2,
-    "Thaumaturgy: Defense of the Sacred Haven": 1,
-    "Thaumaturgy: Deflection of Wooden Doom": 1,
-    "Thaumaturgy: Detect the Hidden Observer": 3,
-    "Thaumaturgy: Engaging the Vessel of Transference": 1,
-    "Thaumaturgy: Eyes of the Night Hawk": 2,
-    "Thaumaturgy: Incorporeal Passage": 3,
-    "Thaumaturgy: Mirror Walk": 3,
-    "Thaumaturgy: Mirror of Second Sight": 3,
-    "Thaumaturgy: Paper Flesh": 5,
-    "Thaumaturgy: Pavis of the Foul Presence": 3,
-    "Thaumaturgy: Recure of the Homeland": 2,
-    "Thaumaturgy: Scry": 3,
-    "Thaumaturgy: Severed Hand": 3,
-    "Thaumaturgy: Shaft of Belated Quiescence": 3,
-    "Thaumaturgy: Soul of the Homunculi": 3,
-    "Thaumaturgy: Stone of the True Form": 5,
-    "Thaumaturgy: Warding Circle": 1,
+    # MET: VTM Volume 2 Issue 1, p. 46.
+    ("merits", "Inceptor"): 3,
 }
 
 # Each clan"s merits, as the core book lists them (pp. 238-248), for merits whose
@@ -235,7 +197,80 @@ CLAN_MERITS = {
         "Dark Statue",
     ],
 }
-CLAN_OF_MERIT = {merit: clan for clan, merits in CLAN_MERITS.items() for merit in merits}
+
+# The clan and bloodline merits of MET: VTM Volume 2 Issue 1 ("Alternative Clan
+# Merits", pp. 25-53) and Volume 2 ("Additional Bloodlines", pp. 31-64, and pp.
+# 259-260), by the clan or bloodline (a clan entry in bns_met_vampire.toml) that
+# may take them, under the catalogue's spelling. Ritual Master is both a Giovanni
+# and a Tremere merit, so a check covers it instead.
+SUPPLEMENT_CLAN_MERITS = {
+    "Assamite": ["The Blade Whisper", "Bane's Blessing", "Web of Knives"],
+    "Assamite: Vizier": ["Obsessive Study", "Blood Secrets", "Trials of Blood"],
+    "Assamite: Sorcerer": ["Thaumaturgically Gifted", "The Judge's Resilience", "Talismonger"],
+    "Brujah": ["Breaking Point", "Iron Heart", "Fervent Iconoclast"],
+    "Brujah: True Brujah": ["Timely Intervention", "Renaissance Mindset", "Borrowed Time"],
+    "Followers of Set": ["Bane of the Aeons", "Shedding the Snake's Skin", "Voudoun Master"],
+    "Followers of Set: Tlacique": ["The Heart of the Matter", "Blood Knows the Way", "Obsidian Claws"],
+    "Followers of Set: Vipers": ["Serpentine Embrace", "Iron Scales", "Typhonic Beast"],
+    "Gangrel": ["Seasoned Traveler", "Sanguine Indulgence", "Rending"],
+    "Gangrel: Ahrimanes": ["Seekers of the Hidden", "Spirit Guide", "Sage of the Spirits"],
+    "Gangrel: Coyote": ["The Man in Black", "Luck of the Damned", "Skullduggery"],
+    "Gangrel: Noiad": ["Aquatic Predator", "Blood in the Water", "Sea Witch"],
+    "Giovanni": ["Power Broker", "Soul Economy"],
+    "Giovanni: Premascine": ["Death's Virtuoso", "Blood of the Ancients", "Scion of Death"],
+    "Lasombra": ["Social Elite", "Trusted Confessor", "Flexible Morals"],
+    "Lasombra: Kiasyd": ["Fae Blood", "Humble Abode", "The Friendly Folk"],
+    "Malkavian": ["Strength of Madness", "Malkavian Time", "Method to the Madness"],
+    "Malkavian: Ananke": ["Power Object", "Memento Mori", "Death Becomes You"],
+    "Malkavian: Knights of the Moon": ["Quixotic", "Preternatural Awareness", "Madness Hunter"],
+    "Nosferatu": ["Beneath Notice", "Painfully Shy", "Ardent Companion"],
+    "Toreador": ["Immortal Beauty", "Greater Colors", "Ephemeral Rhapsody"],
+    "Toreador: Ishtarri": ["Jack Be Nimble", "Master of Vice", "Itty Bitty Living Space"],
+    "Toreador: Volgirre": ["Prodigy of the Flesh", "Visceral Artisan", "Old Habits"],
+    "Tremere": ["Quick Caster", "Spellslinger"],
+    "Tremere: Telyav": ["Ritual Supremacy", "Ritual Fluency", "Forge of the Soul"],
+    "Tzimisce": ["Polymorphic Demeanor", "Emptiness of Faith", "Vozhd"],
+    "Tzimisce: Carpathian": ["Knowledge is a Sword", "Flower of Kupala", "Scholomonariue"],
+    "Tzimisce: Koldun": ["Kupala's Bounty", "No Place Like.Home", "Spiritual Animist"],
+    "Ventrue": ["The Duty of Kings", "Ventrue Royalty", "Primacy of the Blood"],
+    "Ventrue: Crusader": ["To the Manor Born", "Strength of Honor", "Hard as Steel"],
+    "Caitiff": ["Adaptive", "Piece That Remains", "Inceptor"],
+    "Baali": ["Subtle as Hell", "Moloch's Heir"],
+    "Cappadocians": ["Chosen of Cappadocius", "Blood Deceit", "Not My Time"],
+    "Cappadocians: Lamia": ["Beauty of the Beholder", "Not On My Watch", "Blessing of the Gorgons"],
+    "Cappadocians: Samedi": ["Whispers from Beyond", "Walking Dead", "Loa's Rebirth"],
+    "Ravnos": ["Mind Games", "Shady Dealings", "Jaded Existence"],
+    "Ravnos: Brahman": ["Abstract Awareness", "Chimerical Templar", "Pierce the Veil"],
+    # The Salubri warrior caste's; a check keeps them from the Healer bloodline.
+    "Salubri": ["Sight Beyond Sight", "Demon Slayer", "Sanguine Anointing"],
+    "Salubri: Healer": ["Lifegiver", "Touched by an Angel", "The Master's Path"],
+    "Daughters of Cacophony": ["Rhythm of Battle", "Diva", "Songs Beyond Mortal Ken"],
+    "Gargoyles": ["Arcane Branding", "Bonds of Stolen Vitae", "Art Imitates Life"],
+    "Gangrel: Anda": ["All the Best Toys", "Dust in the Wind", "The Beast Within"],
+    "Tzimisce: Bratovitch": ["Local Legends", "Become the Slasher", "Master of the Hounds"],
+    "Lasombra: Corsairs": ["Rush of Battle", "Parley", "Abyssal Horror"],
+    "Nosferatu: Creeps": ["Extrasensory Perceptions", "Fear Factor", "Shrinking Violet"],
+}
+# Volume 2's bloodline merits, for their parent clans (pp. 31-55).
+BLOODLINE_MERIT_CLANS = {
+    "Bloodline: Anda": "Gangrel",
+    "Bloodline: Bratovitch": "Tzimisce",
+    "Bloodline: Corsairs": "Lasombra",
+    "Bloodline: Creeps": "Nosferatu",
+}
+CLAN_OF_MERIT = {
+    **{merit: clan for clans in (CLAN_MERITS, SUPPLEMENT_CLAN_MERITS) for clan, merits in clans.items() for merit in merits},
+    **BLOODLINE_MERIT_CLANS,
+}
+
+# Clan flaws Yorick names "Clan: Flaw" (Volume 2, "Alternative Clan Specific
+# Flaws", pp. 268-286, and the Lhiannan and Nagaraja flaws, pp. 56-64): the clan
+# each prefix means, where Yorick's spelling differs.
+FLAW_PREFIX_CLANS = {
+    "Cappadocian": "Cappadocians",
+    "Daughters of Cacophany": "Daughters of Cacophony",
+    "Gargoyle": "Gargoyles",
+}
 
 # The areas both Influences cover, in place of Yorick's lists.
 INFLUENCE_AREAS = [
@@ -283,6 +318,52 @@ EXTRA_TRAITS = {
     ("merits", "Thaumaturgic Expertise"): {
         "page_reference": "243",
         "properties": {"rating": 1, "type": "Clan", "requirement": "Tremere"},
+    },
+    # MET: VTM Volume 2.
+    ("merits", "Dark Magics"): {
+        "note": "A demonic pact teaches one path of Thaumaturgy, bought at out-of-clan costs; using it briefly taints your aura.",
+        "page_reference": "Vol. 2, p. 259",
+        "properties": {"rating": 3, "type": "Clan", "requirement": "Baali"},
+    },
+    ("merits", "Favored of the Decani"): {
+        "note": "Once per game session, automatically succeed at a Daimoinon challenge, or turn a win into an exceptional success; your aura is stained for an hour.",
+        "page_reference": "Vol. 2, p. 260",
+        "properties": {"rating": 1, "type": "Clan", "requirement": "Baali: Angelis Ater"},
+    },
+    ("merits", "Song of the Fifth Trumpet"): {
+        "note": "Mortals who see your Daimoinon powers are terrified into silence. You sense those who have made, or would make, infernal pacts.",
+        "page_reference": "Vol. 2, p. 260",
+        "properties": {"rating": 2, "type": "Clan", "requirement": "Baali: Angelis Ater"},
+    },
+    ("merits", "Shadows of the Past"): {
+        "note": "Descended from the first Black Angels: in-clan disciplines are Daimoinon, Obtenebration and Dominate, plus up to 3 points of Lasombra merits free. Creation only.",
+        "page_reference": "Vol. 2, p. 260",
+        "properties": {"rating": 3, "type": "Clan", "requirement": "Baali: Angelis Ater"},
+    },
+    ("merits", "Blight of the Ever-Hungry"): {
+        "note": "In-clan disciplines become Auspex, Potence and Necromancy: Path of the Graveborne; a serrated maw bites without a grapple. Creation only.",
+        "page_reference": "Vol. 2, p. 62",
+        "properties": {"rating": 3, "type": "Clan", "requirement": "Nagaraja"},
+    },
+    ("flaws", "Followers of Set: Temperament of Storms"): {
+        "note": "Unless a storm is brewing or it is nearly dark, your difficulty to resist frenzy is increased by 2.",
+        "page_reference": "Vol. 2, p. 271",
+        "properties": {"rating": 2, "type": "Clan", "requirement": "Followers of Set"},
+    },
+    ("flaws", "Baali: Devil's Mark"): {
+        "note": "A visible infernal deformity. Obfuscate can hide it but Vicissitude cannot remove it.",
+        "page_reference": "Vol. 2, p. 281",
+        "properties": {"rating": 1, "type": "Clan", "requirement": "Baali"},
+    },
+    ("flaws", "Baali: Carrion Comfort"): {
+        "note": "You can feed only on the dead or carrion-eaters: no Herd, and an extra downtime action to feed or you start the game at half Blood.",
+        "page_reference": "Vol. 2, p. 281",
+        "properties": {"rating": 2, "type": "Clan", "requirement": "Baali"},
+    },
+    ("flaws", "Baali: Infernal Thrall"): {
+        "note": "Indebted to a demon master as if you had Infernal Power, with none of its benefits; disobeying costs 5 aggravated damage.",
+        "page_reference": "Vol. 2, p. 281",
+        "properties": {"rating": 3, "type": "Clan", "requirement": "Baali"},
     },
 }
 
@@ -360,8 +441,12 @@ def main(csv_path: str) -> None:
         properties: list[str] = []
         if "properties" in row:
             properties = [f"{k} = {json.dumps(v)}" for k, v in row["properties"].items()]
-        elif category == "rituals" and name in RITUAL_LEVELS:
-            properties.append(f"rating = {RITUAL_LEVELS[name]}")
+        elif category == "rituals" and row.get("value", "").strip().isdigit():
+            # A ritual's level, which it is bought at. Yorick's values match the
+            # books for every ritual: the core book (Necromancy pp. 181-186,
+            # Thaumaturgy pp. 202-211) and MET: VTM Volume 2 (Abyss Mysticism
+            # pp. 100-113, Necromancy pp. 133-147, Thaumaturgy pp. 163-183).
+            properties.append(f"rating = {int(row['value'])}")
         elif category in FIXED_RATING and row.get("value", "").strip().lstrip("-").isdigit():
             rating = BOOK_RATINGS.get((category, name), abs(int(row["value"])))
             properties.append(f"rating = {rating}")
@@ -373,6 +458,9 @@ def main(csv_path: str) -> None:
             if key == "requirement" and (category, name) in NOT_REQUIRED:
                 continue
             value = REQUIREMENTS.get(row.get(key, "").strip(), row.get(key, "").strip())
+            if category == "flaws" and ": " in name and key == "requirement" and not value:
+                prefix = name.split(": ")[0]
+                value = FLAW_PREFIX_CLANS.get(prefix, prefix)
             if category == "merits" and name in CLAN_OF_MERIT:
                 if key == "requirement" and value in ("", "requires_specialization"):
                     value = CLAN_OF_MERIT[name]
