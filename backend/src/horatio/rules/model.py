@@ -230,6 +230,25 @@ class TroupeRules:
         generic = [r for r in self.rule_set.creation_rules if r.category not in house_categories]
         return generic + list(self.house_creation_rules)
 
+    def fixed_rating(self, category: str, name: str) -> int | None:
+        """The rating a merit or flaw is always held at, or None for a trait bought
+        dot by dot: the troupe's fixed price for it with no condition, else the
+        catalogue's rating. For one character, `pricing.fixed_rating` says which
+        price applies to them."""
+        fixed = self.rule_set.trait_properties(category, name).get("rating")
+        if fixed is None:
+            return None
+        for rule in self.house_rules:
+            if (
+                rule.category == category
+                and rule.trait == name
+                and not rule.condition
+                and rule.scheme == "fixed"
+                and rule.rate
+            ):
+                return abs(rule.rate)
+        return fixed
+
     def starting_traits(self) -> list[StartingTraitData]:
         house = {(t.category, t.name): t for t in self.house_starting_traits}
         traits = [house.pop((t.category, t.name), t) for t in self.rule_set.starting_traits]

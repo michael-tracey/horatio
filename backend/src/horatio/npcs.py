@@ -20,6 +20,7 @@ from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
 from horatio.sheets import (
     conflict,
     find_definition,
+    held_at,
     replace_choice,
     rules_for,
     sheet_rows,
@@ -74,7 +75,7 @@ def set_rating(
         raise unprocessable(f"{category.name} needs a rating.")
     if category.max_rating is not None and rating > category.max_rating:
         raise unprocessable(f"{category.name} cannot go above {category.max_rating}.")
-    fixed = definition.properties.get("rating")
+    fixed = held_at(db, npc, category.key, definition.name)
     if fixed is not None and rating not in (0, fixed):
         raise unprocessable(f"{name} is always rated {fixed}.")
 

@@ -6,6 +6,7 @@ import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut } from
 import { Button, Card, ErrorText, Field, Loading, Notice, Select } from "../../../components/ui";
 import { useAction, useUnavailable } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
+import { rulesTroupe } from "../rules";
 import { DotGrid, PointsList } from "./DotGrid";
 import { identityChoices, type Allowed, type Picks } from "./logic";
 
@@ -63,9 +64,9 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
   const creation = useQuery({ queryKey: ["creation", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/creation", path)) });
   const sheet = useQuery({ queryKey: ["sheet", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", path)) });
   const catalogue = useQuery({
-    queryKey: ["catalogue", character.splat, character.home_troupe_id],
+    queryKey: ["catalogue", character.splat, rulesTroupe(character)],
     queryFn: () =>
-      unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: character.splat }, query: { troupe_id: character.home_troupe_id ?? undefined } } })),
+      unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: character.splat }, query: { troupe_id: rulesTroupe(character) } } })),
     staleTime: 5 * 60_000,
   });
 

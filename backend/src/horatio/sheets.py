@@ -41,7 +41,14 @@ from horatio.models import (
 from horatio.rules.checks import Context, Violation, violations
 from horatio.rules.grants import Effects, choices, effects, raised_by
 from horatio.rules.model import SheetTrait, TroupeRules
-from horatio.rules.pricing import PricingError, Quote, points, purchase_cost, trait_cost
+from horatio.rules.pricing import (
+    PricingError,
+    Quote,
+    fixed_rating,
+    points,
+    purchase_cost,
+    trait_cost,
+)
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import read_troupe_rules
 
@@ -110,6 +117,43 @@ def rules_troupe(character: Character) -> uuid.UUID | None:
 
 def rules_for(db: Session, character: Character) -> TroupeRules:
     return read_troupe_rules(db, character.splat, rules_troupe(character))
+
+
+def sync_fixed_ratings(db: Session, character: Character) -> None:
+    """Hold each fixed-rating merit and flaw at its value under the character's
+    rules, after those rules change: a troupe's new price for it, or a new home or
+    building troupe. Nothing is refunded or charged; purchases keep what they cost."""
+    rules = rules_for(db, character)
+    rows = sheet_rows(db, character)
+    sheet = [r.as_rules_trait() for r in rows]
+    for row in rows:
+        value = fixed_rating(rules, sheet, row.category.key, row.definition.name)
+        trait = row.trait
+        if value is None or not trait.rating or trait.rating == value:
+            continue
+        trait.rating = value
+        trait.free_rating = min(trait.free_rating, value)
+        trait.granted_rating = min(trait.granted_rating, value)
+        if trait.creation_pick is not None:
+            trait.creation_pick = min(trait.creation_pick, value)
+    db.flush()
+
+
+def held_at(db: Session, character: Character, category: str, name: str) -> int | None:
+    """The rating the character holds a merit or flaw at (pricing.fixed_rating)."""
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    return fixed_rating(rules_for(db, character), sheet, category, name)
+
+
+def sync_troupe_fixed_ratings(db: Session, troupe_id: uuid.UUID) -> None:
+    """`sync_fixed_ratings` for every character playing by the troupe's rules."""
+    for character in db.scalars(
+        select(Character).where(
+            (Character.home_troupe_id == troupe_id)
+            | (Character.home_troupe_id.is_(None) & (Character.building_troupe_id == troupe_id))
+        )
+    ):
+        sync_fixed_ratings(db, character)
 
 
 def sheet_rows(db: Session, character: Character) -> list[SheetRow]:
@@ -387,10 +431,10 @@ def unavailable(db: Session, character: Character, category_key: str) -> dict[st
     before = {v.key for v in violations(rules.checks(), sheet, context)}
     rated = rule_set.categories[category_key].rated
     reasons: dict[str, str] = {}
-    for (category, name), trait in rule_set.traits.items():
+    for category, name in rule_set.traits:
         if category != category_key or name in held:
             continue
-        rating = trait.properties.get("rating", 1) if rated else None
+        rating = (fixed_rating(rules, sheet, category, name) or 1) if rated else None
         candidate = SheetTrait(category=category, name=name, rating=rating, free_rating=0)
         trial = [t for t in sheet if rated or t.category != category] + [candidate]
         new = [
@@ -740,7 +784,9 @@ def quote_change(
 
     if rating is None:
         raise unprocessable(f"{category.name} needs a rating.")
-    fixed = definition.properties.get("rating")
+    fixed = fixed_rating(
+        rules_for(db, character), [r.as_rules_trait() for r in rows], category.key, definition.name
+    )
     if fixed is not None and rating not in (0, fixed):
         raise unprocessable(f"{name} is always rated {fixed}.")
 

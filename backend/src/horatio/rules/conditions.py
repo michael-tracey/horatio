@@ -42,6 +42,41 @@ def clause_count(condition: Mapping[str, Any] | None) -> int:
     return len(condition) if condition else 0
 
 
+# How each operator reads in a condition's plain-words description.
+OPERATOR_WORDS: dict[str, str] = {
+    "eq": "{}",
+    "ne": "not {}",
+    "lt": "below {}",
+    "lte": "{} or less",
+    "gt": "above {}",
+    "gte": "{} or more",
+    "in": "{}",
+}
+
+
+def describe(condition: Mapping[str, Any] | None, words: Mapping[str, Any]) -> str | None:
+    """A condition in plain words, such as "out-of-clan, Generation 5 or more".
+    `words` gives each fact a template ("Generation {}"), or for a yes-or-no fact
+    the words for yes and no."""
+    if not condition:
+        return None
+    parts: list[str] = []
+    for fact, test in condition.items():
+        wording = words.get(fact, f"{fact} {{}}")
+        if isinstance(wording, tuple):
+            parts.append(wording[0] if test else wording[1])
+            continue
+        tests = test.items() if isinstance(test, Mapping) else [("eq", test)]
+        values = " and ".join(
+            OPERATOR_WORDS[op].format(
+                " or ".join(map(str, value)) if isinstance(value, list | tuple) else value
+            )
+            for op, value in tests
+        )
+        parts.append(wording.format(values))
+    return ", ".join(parts)
+
+
 def validate(condition: Mapping[str, Any] | None, known_facts: Collection[str]) -> None:
     """Refuse a condition that names an unknown fact or operator."""
     for fact, test in (condition or {}).items():
