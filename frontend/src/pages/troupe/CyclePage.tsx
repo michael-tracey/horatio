@@ -72,6 +72,10 @@ function Overview({ cycle }: { cycle: CycleOut }) {
           <dd>{new Date(cycle.closes_at).toLocaleString()}</dd>
           <dt className="text-mist">Accepted until</dt>
           <dd>{new Date(cycle.grace_ends_at).toLocaleString()}</dd>
+          <dt className="text-mist">XP for completing</dt>
+          <dd>
+            <CompletionXp cycle={cycle} />
+          </dd>
         </dl>
         <div className="mt-4 flex flex-wrap gap-2">
           {cycle.status === "draft" && (
@@ -126,6 +130,55 @@ function Overview({ cycle }: { cycle: CycleOut }) {
         </Card>
       )}
     </div>
+  );
+}
+
+/** What submitting earns each character; changeable until the cycle closes. */
+function CompletionXp({ cycle }: { cycle: CycleOut }) {
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState(cycle.completion_xp);
+  const save = useAction(async () => {
+    await unwrap(api.PATCH("/api/cycles/{cycle_id}", { params: { path: { cycle_id: cycle.id } }, body: { completion_xp: amount } }));
+    setEditing(false);
+  });
+  const changeable = cycle.status === "draft" || cycle.status === "open";
+  if (!editing) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        {cycle.completion_xp}
+        {changeable && (
+          <button
+            type="button"
+            className="text-xs text-mist underline hover:text-parchment"
+            onClick={() => {
+              setAmount(cycle.completion_xp);
+              setEditing(true);
+            }}
+          >
+            Change
+          </button>
+        )}
+      </span>
+    );
+  }
+  return (
+    <form
+      className="flex flex-wrap items-center gap-1.5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate(undefined);
+      }}
+    >
+      <Input aria-label="XP for completing" type="number" min={0} max={100} required value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="h-8 w-20 py-0" />
+      <Button type="submit" className="min-h-8 px-2" disabled={save.isPending}>
+        Save
+      </Button>
+      <Button type="button" variant="ghost" className="min-h-8 px-2" onClick={() => setEditing(false)}>
+        Cancel
+      </Button>
+      {cycle.status === "open" && <span className="w-full text-xs text-mist">Characters who have already submitted keep what they got.</span>}
+      <ErrorText error={save.error} />
+    </form>
   );
 }
 
@@ -287,6 +340,7 @@ function ParticipantCard({ cycle, participant }: { cycle: CycleOut; participant:
               {participant.submitted_late ? " (late)" : ""}
             </Badge>
           )}
+          {participant.completion_xp_awarded != null && <Badge tone="gold">+{participant.completion_xp_awarded} XP</Badge>}
         </span>
       }
     >

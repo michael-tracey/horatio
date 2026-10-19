@@ -821,7 +821,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Change Cycle */
+        patch: operations["change_cycle_api_cycles__cycle_id__patch"];
         trace?: never;
     };
     "/api/cycles/{cycle_id}/close": {
@@ -2554,6 +2555,11 @@ export interface components {
             /** Pools */
             pools: components["schemas"]["PoolOut"][];
         };
+        /** CycleChanges */
+        CycleChanges: {
+            /** Completion Xp */
+            completion_xp: number;
+        };
         /** CycleOut */
         CycleOut: {
             /** Closed At */
@@ -2563,6 +2569,8 @@ export interface components {
              * Format: date-time
              */
             closes_at: string;
+            /** Completion Xp */
+            completion_xp: number;
             /**
              * Grace Ends At
              * Format: date-time
@@ -2905,6 +2913,10 @@ export interface components {
              * Format: date-time
              */
             closes_at: string;
+            /** Completion Xp */
+            completion_xp: number;
+            /** Completion Xp Awarded */
+            completion_xp_awarded: number | null;
             /**
              * Cycle Id
              * Format: uuid
@@ -2940,6 +2952,8 @@ export interface components {
              * Format: date-time
              */
             closes_at: string;
+            /** Completion Xp */
+            completion_xp?: number | null;
             /**
              * Grace Ends At
              * Format: date-time
@@ -3080,6 +3094,8 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Completion Xp Awarded */
+            completion_xp_awarded: number | null;
             /**
              * Id
              * Format: uuid
@@ -3895,8 +3911,12 @@ export interface components {
             allowed_sects?: string[] | null;
             /** Description */
             description?: string | null;
+            /** Downtime Xp */
+            downtime_xp?: number | null;
             /** Name */
             name?: string | null;
+            /** Session Xp */
+            session_xp?: number | null;
         };
         /** TroupeChoice */
         TroupeChoice: {
@@ -3927,6 +3947,8 @@ export interface components {
             archived: boolean;
             /** Description */
             description: string;
+            /** Downtime Xp */
+            downtime_xp: number;
             /**
              * Id
              * Format: uuid
@@ -3940,6 +3962,8 @@ export interface components {
             my_role: components["schemas"]["Role"] | null;
             /** Name */
             name: string;
+            /** Session Xp */
+            session_xp: number;
         };
         /** TroupeRequestOut */
         TroupeRequestOut: {
@@ -5695,6 +5719,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_cycle_api_cycles__cycle_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CycleChanges"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

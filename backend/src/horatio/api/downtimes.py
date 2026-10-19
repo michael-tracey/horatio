@@ -19,6 +19,7 @@ from horatio.models import (
     Submission,
     Troupe,
     User,
+    XpEntry,
 )
 from horatio.permissions import TroupeAction, require_troupe_action
 
@@ -48,6 +49,12 @@ class NewCycle(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     closes_at: datetime
     grace_ends_at: datetime
+    # XP for completing it; leave out for the troupe's usual amount.
+    completion_xp: int | None = Field(default=None, ge=0, le=100)
+
+
+class CycleChanges(BaseModel):
+    completion_xp: int = Field(ge=0, le=100)
 
 
 class CycleOut(BaseModel):
@@ -59,6 +66,8 @@ class CycleOut(BaseModel):
     closes_at: datetime
     grace_ends_at: datetime
     closed_at: datetime | None
+    # XP each character gets for submitting its downtime.
+    completion_xp: int
     questions: list[QuestionOut]
 
 
@@ -85,6 +94,8 @@ class ParticipantOut(BaseModel):
     late_accepted: bool
     submission_status: str | None
     submitted_late: bool
+    # The XP given for completing this downtime, once submitted.
+    completion_xp_awarded: int | None
 
 
 class CharacterChoice(BaseModel):
@@ -124,6 +135,9 @@ class MyDowntime(BaseModel):
     answers: list[AnswerOut]
     status: str  # draft | submitted
     late: bool
+    # What submitting earns, and what it did earn once submitted.
+    completion_xp: int
+    completion_xp_awarded: int | None
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -154,8 +168,15 @@ def cycle_out(db: DbSession, cycle: DowntimeCycle) -> CycleOut:
         closes_at=cycle.closes_at,
         grace_ends_at=cycle.grace_ends_at,
         closed_at=cycle.closed_at,
+        completion_xp=cycle.completion_xp,
         questions=[question_out(q) for q in downtimes.questions(db, cycle)],
     )
+
+
+def completion_awarded(db: DbSession, p: CycleParticipant) -> int | None:
+    if p.completion_xp_entry_id is None:
+        return None
+    return db.get_one(XpEntry, p.completion_xp_entry_id).amount
 
 
 def participant_out(db: DbSession, p: CycleParticipant) -> ParticipantOut:
@@ -175,6 +196,7 @@ def participant_out(db: DbSession, p: CycleParticipant) -> ParticipantOut:
         late_accepted=p.late_accepted_by is not None,
         submission_status=submission.status if submission else None,
         submitted_late=submission.late if submission else False,
+        completion_xp_awarded=completion_awarded(db, p),
     )
 
 
@@ -226,7 +248,9 @@ def create_cycle(
     troupe_id: uuid.UUID, body: NewCycle, db: DbSession, user: CurrentUser
 ) -> CycleOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_CYCLES)
-    cycle = downtimes.create_cycle(db, user, troupe, body.name, body.closes_at, body.grace_ends_at)
+    cycle = downtimes.create_cycle(
+        db, user, troupe, body.name, body.closes_at, body.grace_ends_at, body.completion_xp
+    )
     db.commit()
     return cycle_out(db, cycle)
 
@@ -234,6 +258,16 @@ def create_cycle(
 @router.get("/cycles/{cycle_id}")
 def read_cycle(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CycleOut:
     cycle, _ = staff_cycle(db, user, cycle_id)
+    return cycle_out(db, cycle)
+
+
+@router.patch("/cycles/{cycle_id}")
+def change_cycle(
+    cycle_id: uuid.UUID, body: CycleChanges, db: DbSession, user: CurrentUser
+) -> CycleOut:
+    cycle, _ = staff_cycle(db, user, cycle_id)
+    downtimes.set_completion_xp(db, user, cycle, body.completion_xp)
+    db.commit()
     return cycle_out(db, cycle)
 
 
@@ -376,6 +410,8 @@ def my_downtime_out(
         ],
         status=submission.status if submission else "draft",
         late=submission.late if submission else False,
+        completion_xp=cycle.completion_xp,
+        completion_xp_awarded=completion_awarded(db, participant),
     )
 
 

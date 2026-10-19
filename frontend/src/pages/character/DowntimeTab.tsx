@@ -88,6 +88,11 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             Due <time>{new Date(d.closes_at).toLocaleString()}</time>
           </p>
           <p className="text-xs text-mist">Accepted until {new Date(d.grace_ends_at).toLocaleString()}</p>
+          {d.completion_xp_awarded != null ? (
+            <p className="mt-2 text-sm text-gold">You earned {d.completion_xp_awarded} XP for completing it.</p>
+          ) : (
+            d.completion_xp > 0 && <p className="mt-2 text-sm">Submitting it earns {d.completion_xp} XP.</p>
+          )}
           <div className="mt-3">
             {d.status === "submitted" ? <Badge tone="gold">submitted{d.late ? " (late)" : ""}</Badge> : <Badge>draft</Badge>}
           </div>

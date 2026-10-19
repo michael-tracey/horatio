@@ -21,6 +21,10 @@ class Troupe(Imported, Record):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Sects whose PCs may join; empty means any.
     allowed_sects: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Experience the troupe usually gives: for a game session, and for completing a
+    # downtime. Defaults for awarding and for new cycles; each can be changed there.
+    session_xp: Mapped[int] = mapped_column(default=8, server_default="8")
+    downtime_xp: Mapped[int] = mapped_column(default=2, server_default="2")
 
 
 class TroupeRequest(Record):
