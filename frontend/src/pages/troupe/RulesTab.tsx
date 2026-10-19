@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Route, Routes } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CheckOut } from "../../api/types";
-import { Badge, Card, ErrorText, Input, Loading, Select } from "../../components/ui";
+import { Badge, Card, ErrorText, Input, Loading, Select, SubTabs } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { CostsSection } from "./CostsSection";
 
 type Strength = "refuse" | "complete" | "review" | "note" | "off";
 
@@ -58,11 +60,34 @@ const ABOUT: Record<string, string> = {
 };
 
 /**
+ * The troupe's house rules, part by part: how it plays the rule set's checks,
+ * and what traits cost here.
+ */
+export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+  const base = `/troupes/${troupeId}/rules`;
+  return (
+    <>
+      <SubTabs
+        label="House rules"
+        tabs={[
+          { to: base, label: "Checks", end: true },
+          { to: `${base}/costs`, label: "Costs" },
+        ]}
+      />
+      <Routes>
+        <Route index element={<ChecksSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="costs" element={<CostsSection troupeId={troupeId} canEdit={canEdit} />} />
+      </Routes>
+    </>
+  );
+}
+
+/**
  * The rule set's checks and how this troupe plays them. Storytellers can make a
  * check stricter or looser, review it themselves, or switch it off; it applies
  * to characters whose home troupe this is.
  */
-export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const [query, setQuery] = useState("");
   const [onlyChanged, setOnlyChanged] = useState(false);
   const checks = useQuery({

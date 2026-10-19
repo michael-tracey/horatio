@@ -187,6 +187,21 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
   await expect(lead.page.getByText("Only those played differently (1)")).toBeVisible();
   await lead.page.screenshot(shots("rules"));
+  // …and set its own price: Generation 1 skills at a flat 1 XP a dot, which Agnes pays.
+  await lead.page.getByRole("link", { name: "Costs", exact: true }).click();
+  await lead.page.getByRole("button", { name: "Change the price for All skills, Generation 1" }).click();
+  await lead.page.getByLabel("How it's priced").selectOption({ label: "The same for each dot" });
+  await lead.page.getByLabel("XP per dot").fill("1");
+  await lead.page.getByLabel("Note for players").fill("Skills come easily here");
+  await expect(lead.page.getByRole("row", { name: "As written 1 3 6 10 15" })).toBeVisible();
+  await expect(lead.page.getByRole("row", { name: "With the change 1 2 3 4 5" })).toBeVisible();
+  await lead.page.screenshot(shots("costs"));
+  await lead.page.getByRole("button", { name: "Save price" }).click();
+  await expect(lead.page.getByText("replaced here")).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  await p.getByRole("button", { name: "Raise Investigation" }).click();
+  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText("raised Agnes's Investigation from 1 to 2 (1 XP).", { exact: false })).toBeVisible();
 
   // The troupe lists the areas its Elite influence covers; Agnes picks one.
   await lead.page.getByRole("link", { name: "Specialisations", exact: true }).click();

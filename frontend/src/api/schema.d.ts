@@ -1189,6 +1189,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Costs */
+        get: operations["list_costs_api_troupes__troupe_id__costs_get"];
+        put?: never;
+        /** Add Cost */
+        post: operations["add_cost_api_troupes__troupe_id__costs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/costs/{cost_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Cost */
+        put: operations["change_cost_api_troupes__troupe_id__costs__cost_id__put"];
+        post?: never;
+        /** Remove Cost */
+        delete: operations["remove_cost_api_troupes__troupe_id__costs__cost_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/cycles": {
         parameters: {
             query?: never;
@@ -1688,6 +1724,101 @@ export interface components {
             from_name: string;
             /** To Name */
             to_name: string;
+        };
+        /** CostCategoryOut */
+        CostCategoryOut: {
+            /** Group */
+            group: string;
+            /** Key */
+            key: string;
+            /** Max Rating */
+            max_rating: number | null;
+            /** Name */
+            name: string;
+            /** Per Trait */
+            per_trait: boolean;
+            /** Unit */
+            unit: string;
+        };
+        /** CostChange */
+        CostChange: {
+            /** Rate */
+            rate?: number | null;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table?: number[] | null;
+            /** Text */
+            text?: string | null;
+        };
+        /** CostIn */
+        CostIn: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Rate */
+            rate?: number | null;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table?: number[] | null;
+            /** Text */
+            text?: string | null;
+            /** Trait */
+            trait?: string | null;
+        };
+        /** CostOut */
+        CostOut: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            } | null;
+            /** Condition Text */
+            condition_text: string | null;
+            /** House */
+            house: boolean;
+            /** Id */
+            id: string | null;
+            /** Page */
+            page: string | null;
+            /** Price Text */
+            price_text: string;
+            /** Rate */
+            rate: number | null;
+            /**
+             * Replaced
+             * @default false
+             */
+            replaced: boolean;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table: number[] | null;
+            /** Text */
+            text: string | null;
+            /** Trait */
+            trait: string | null;
+        };
+        /** CostsOut */
+        CostsOut: {
+            /** Categories */
+            categories: components["schemas"]["CostCategoryOut"][];
+            /** Costs */
+            costs: components["schemas"]["CostOut"][];
         };
         /** CreationOut */
         CreationOut: {
@@ -5272,6 +5403,138 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CheckOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_costs_api_troupes__troupe_id__costs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_cost_api_troupes__troupe_id__costs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_cost_api_troupes__troupe_id__costs__cost_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                cost_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_cost_api_troupes__troupe_id__costs__cost_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                cost_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

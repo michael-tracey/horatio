@@ -113,18 +113,44 @@ def test_a_rule_with_more_conditions_beats_one_with_fewer() -> None:
     assert cost(rules, skill(3), generation(2)) == 6
 
 
-def test_any_house_rule_beats_any_generic_rule() -> None:
-    """A troupe re-pricing all skills means all skills, even where the generic
-    rules had a more specific rule."""
+def test_a_house_rule_beats_an_equally_specific_generic_rule() -> None:
     generic = rule_set(
         CostRuleData("skills", "per_dot", rate=2),
         CostRuleData("skills", "per_dot", rate=1, condition={"generation": 1}),
     )
     rules = TroupeRules(
-        generic, house_rules=[CostRuleData("skills", "per_dot", rate=5, house=True)]
+        generic,
+        house_rules=[
+            CostRuleData("skills", "per_dot", rate=5, house=True),
+            CostRuleData("skills", "per_dot", rate=3, condition={"generation": 1}, house=True),
+        ],
     )
 
-    assert cost(rules, skill(2), generation(1)) == 10
+    assert cost(rules, skill(2), generation(2)) == 10
+    assert cost(rules, skill(2), generation(1)) == 6
+
+
+def test_a_more_specific_generic_rule_beats_a_house_rule() -> None:
+    """A troupe re-pricing a whole category leaves the rule set's prices for
+    single traits, and for narrower conditions, alone."""
+    generic = rule_set(
+        CostRuleData("merits", "per_dot", rate=1),
+        CostRuleData("merits", "fixed", rate=2, trait="Lucky", condition={"generation": 1}),
+        CostRuleData("skills", "per_dot", rate=2),
+        CostRuleData("skills", "per_dot", rate=1, condition={"generation": 1}),
+    )
+    rules = TroupeRules(
+        generic,
+        house_rules=[
+            CostRuleData("merits", "per_dot", rate=2, house=True),
+            CostRuleData("skills", "per_dot", rate=5, house=True),
+        ],
+    )
+    lucky = SheetTrait(category="merits", name="Lucky", rating=3)
+
+    assert cost(rules, lucky, generation(1)) == 2
+    assert cost(rules, lucky, generation(2)) == 6
+    assert cost(rules, skill(2), generation(1)) == 2
 
 
 def test_a_house_rule_for_one_merit_leaves_other_merits_alone() -> None:
