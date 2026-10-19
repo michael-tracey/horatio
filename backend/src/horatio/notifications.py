@@ -30,6 +30,7 @@ from horatio.models import (
     Notification,
     TraitDefinition,
     Troupe,
+    TroupeRequest,
     TroupeStaff,
     User,
 )
@@ -125,7 +126,32 @@ def approval_tasks(db: Session, user: User) -> list[Item]:
     return items
 
 
-TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [approval_tasks]
+def troupe_request_tasks(db: Session, user: User) -> list[Item]:
+    """New troupes people have asked for: the custodian's own work."""
+    if not user.is_custodian:
+        return []
+    rows = db.execute(
+        select(TroupeRequest, User.display_name)
+        .join(User, TroupeRequest.requester_id == User.id)
+        .where(TroupeRequest.status == "pending")
+    )
+    return [
+        Item(
+            id=f"troupe_request:{request.id}",
+            kind="troupe_request",
+            task=True,
+            troupe_id=None,
+            troupe_name=None,
+            summary=f"{requester} asks for a new troupe, {request.name}",
+            link="/custodian/troupe-requests",
+            at=request.created_at,
+            read=False,
+        )
+        for request, requester in rows
+    ]
+
+
+TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [approval_tasks, troupe_request_tasks]
 
 # Read messages older than this many are left out of the list.
 READ_MESSAGES_SHOWN = 20

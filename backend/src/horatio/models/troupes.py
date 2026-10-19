@@ -23,6 +23,31 @@ class Troupe(Imported, Record):
     allowed_sects: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
+class TroupeRequest(Record):
+    """Someone asking the custodian for a new troupe, which they would lead. Kept
+    after it is decided or withdrawn, as the record of how the troupe began."""
+
+    __tablename__ = "troupe_requests"
+    __table_args__ = (
+        CheckConstraint(
+            "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
+        ),
+    )
+
+    requester_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    name: Mapped[str]
+    description: Mapped[str] = mapped_column(default="", server_default="")
+    # Anything the requester wants the custodian to know.
+    note: Mapped[str] = mapped_column(default="", server_default="")
+    status: Mapped[str] = mapped_column(default="pending", server_default="pending", index=True)
+    decided_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Why it was declined, if the custodian said.
+    reason: Mapped[str] = mapped_column(default="", server_default="")
+    # The troupe approving it made.
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
+
+
 class TroupeStaff(Record):
     """A storyteller, assistant storyteller or narrator. The lead is not listed here."""
 
