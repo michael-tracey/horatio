@@ -34,8 +34,9 @@ Condition vocabulary (every key in one table must hold):
                                     Thaumaturgy)
     above_in_clan = { category, name_prefix }
                                     the subject is rated above every in-clan trait
-                                    of that kind the sheet holds (a path of
-                                    Thaumaturgy above the clan's primary path)
+                                    of that kind the sheet holds, or the primary
+                                    path the player named (a path of Thaumaturgy
+                                    above the primary path)
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
@@ -74,6 +75,8 @@ class Context:
     in_clan: frozenset[str] = frozenset()
     # Truly native only: in_clan without the paths a merit prices as in-clan.
     native: frozenset[str] = frozenset()
+    # Primary paths the player named, where the clan has no in-clan path.
+    primary: frozenset[str] = frozenset()
 
 
 NO_CONTEXT = Context()
@@ -226,7 +229,7 @@ def matches(
                 for t in sheet
                 if t.category == test["category"]
                 and t.name.startswith(test.get("name_prefix", ""))
-                and t.name in context.native
+                and (t.name in context.native or t.name in context.primary)
                 and t.name != subject.name
             ]
             ok = bool(primaries) and (subject.rating or 0) > max(primaries)

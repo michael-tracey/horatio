@@ -127,6 +127,7 @@ MESSAGES: dict[str, str] = {
     "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
     "house.check": "{actor} set the rule {check} to {strength}.",
     "troupe.specializations": "{actor} set the troupe's {kind}: {count} options.",
+    "sheet.primary_path": "{actor} named {path} {character}'s primary path of {discipline}.",
     "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",
     "sheet.choose": "{actor} chose {name} as {character}'s {category}.",
     "sheet.change": "{actor} changed {character}'s {category}: {from_name} → {name} ({cost} XP).",

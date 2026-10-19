@@ -2110,6 +2110,69 @@
         "title": "PoolOut",
         "type": "object"
       },
+      "PrimaryPathChange": {
+        "properties": {
+          "discipline": {
+            "title": "Discipline",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          }
+        },
+        "required": [
+          "discipline",
+          "path"
+        ],
+        "title": "PrimaryPathChange",
+        "type": "object"
+      },
+      "PrimaryPathOut": {
+        "properties": {
+          "discipline": {
+            "title": "Discipline",
+            "type": "string"
+          },
+          "native": {
+            "title": "Native",
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          }
+        },
+        "required": [
+          "discipline",
+          "path",
+          "native",
+          "options"
+        ],
+        "title": "PrimaryPathOut",
+        "type": "object"
+      },
       "PrintedSheet": {
         "properties": {
           "accepted_at": {
@@ -3062,6 +3125,14 @@
               "$ref": "#/components/schemas/PendingDisciplineOut"
             },
             "title": "Pending Disciplines",
+            "type": "array"
+          },
+          "primary_paths": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PrimaryPathOut"
+            },
+            "title": "Primary Paths",
             "type": "array"
           },
           "problems": {
@@ -5411,6 +5482,60 @@
         "summary": "Tally",
         "tags": [
           "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/primary-path": {
+      "put": {
+        "description": "Name the primary path of a discipline, for a clan with no in-clan path.",
+        "operationId": "name_primary_path_api_characters__character_id__primary_path_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrimaryPathChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Name Primary Path",
+        "tags": [
+          "sheets"
         ]
       }
     },

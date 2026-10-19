@@ -107,6 +107,21 @@ class PendingDisciplineOut(BaseModel):
     cost: int
 
 
+class PrimaryPathOut(BaseModel):
+    discipline: str
+    # The clan's in-clan path, or the one the player named; None until named.
+    path: str | None
+    native: bool
+    # The paths held, highest first, to name one from.
+    options: list[str]
+
+
+class PrimaryPathChange(BaseModel):
+    discipline: str
+    # None un-names it.
+    path: str | None
+
+
 class SheetOut(BaseModel):
     character_id: uuid.UUID
     name: str
@@ -120,6 +135,8 @@ class SheetOut(BaseModel):
     pending_disciplines: list[PendingDisciplineOut]
     limits: list[LimitOut]
     problems: list[ProblemOut]
+    # For each discipline learned as paths, which path is primary (MET: VTM p. 187).
+    primary_paths: list[PrimaryPathOut] = []
 
 
 class TraitChange(BaseModel):
@@ -253,6 +270,10 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             unbanked=unbanked_xp(db, character) if character.kind == "pc" else 0,
         ),
         pending_approvals=[approval_out(a) for a in pending],
+        primary_paths=[
+            PrimaryPathOut(discipline=p.discipline, path=p.path, native=p.native, options=p.options)
+            for p in sheets.primary_paths(db, character)
+        ],
         problems=[
             ProblemOut(
                 category=v.subject.category,
@@ -348,6 +369,17 @@ def change_trait(
         )
     db.commit()
     return ChangeOut(cost=change.quote.cost if change.quote else 0, sheet=sheet_out(db, character))
+
+
+@router.put("/primary-path")
+def name_primary_path(
+    character_id: uuid.UUID, body: PrimaryPathChange, db: DbSession, user: CurrentUser
+) -> SheetOut:
+    """Name the primary path of a discipline, for a clan with no in-clan path."""
+    character = players_character(db, user, character_id)
+    sheets.name_primary_path(db, user, character, body.discipline, body.path)
+    db.commit()
+    return sheet_out(db, character)
 
 
 @router.post("/traits/change")
