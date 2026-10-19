@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
+import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { LogTab } from "./LogTab";
 import { NpcsTab } from "./NpcsTab";
@@ -54,6 +55,7 @@ export function TroupePage() {
           ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
           ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
           ...(can.running ? [{ to: `${base}/downtimes`, label: "Downtimes" }] : []),
+          ...(can.running ? [{ to: `${base}/connectors`, label: "Connectors" }] : []),
           ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
           ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
           ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
@@ -72,6 +74,7 @@ export function TroupePage() {
         {can.running && <Route path="specializations" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
+        {can.running && <Route path="connectors" element={<ConnectorsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}
         {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}

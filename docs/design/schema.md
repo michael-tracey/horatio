@@ -271,12 +271,23 @@ A **decline** clears the assignment back to `unassigned` and is recorded in the
 audit log. Accepting an any-narrator response sets `assigned_to_user_id` and
 clears the flag.
 
-**`deliveries`**: `submission_id`, `channel` (`discord` | `email`), `status`
-(`pending` | `sent` | `failed`), `test_mode` (bool), `sent_at`, `attempts`,
-`last_error`, `external_ids` (JSONB: Discord message ids).
+**`deliveries`**: `submission_id`, `channel` (`horatio` | `discord` | `email`),
+`status` (`pending` | `sent` | `failed`), `test_mode` (bool), `message`,
+`sent_at`, `attempts`, `last_error`, `external_ids` (JSONB: the service's ids
+and the target), `next_attempt_at` (a pending delivery's next try, backing off
+after failures), `marked_by` (who marked it sent by hand).
 At most one non-test `sent` delivery per submission and channel, enforced by a
 partial unique index. That is the old "never send twice" rule as a database
-constraint.
+constraint. Delivering a cycle again only adds deliveries that do not exist
+yet (per channel and test mode).
+
+**`troupe_connectors`**: a troupe's connectors (CONTEXT.md: Connector).
+`troupe_id`, `kind` (`discord` | `email`; one each), `enabled`, `mode`
+(`full` | `alert`), `test_mode`, `settings` (JSONB, no secrets: servers,
+channels, test targets). The code for each kind is in `horatio/connectors/`;
+`horatio.delivery` queues deliveries on enabled connectors and a worker in the
+API process sends them, every `HORATIO_DELIVERY_INTERVAL` seconds, each row
+locked (`SKIP LOCKED`) while it is sent.
 
 **`random_tables`**, **`random_table_entries`**: the old fill tables (feed,
 herd, patrol, discipline), owned by a troupe. Placeholders such as
@@ -401,8 +412,10 @@ Recorded here for review; each is easy to change.
 - Delivery needs the cycle closed, sends each submission with written
   responses once, and puts the results in the app for the player
   (`GET /characters/{id}/downtime/results`). Nothing can be rewritten after
-  delivery. Discord and email delivery are not built: they need a bot token
-  and a mail service.
+  delivery. A troupe's connectors (Discord, email) each get a copy, queued and
+  sent in the background with retries; storytellers see each participant
+  against each channel on the cycle's Delivery tab, and can retry a failure or
+  mark it sent by hand.
 - Fill tables belong to a troupe. Running staff edit them; any staff member
   can roll. `[Name]` placeholders are filled from the table of that name.
 - Not built yet: influence rumours (need the old tool's Age and Blocks rules

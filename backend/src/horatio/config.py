@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # The built frontend (frontend/dist). When set, the API serves it too.
     frontend_dist: str | None = None
 
+    # Where people reach the app, for links in messages sent outside it.
+    public_url: str = "http://localhost:5173"
+    # How often the API sends deliveries waiting on connectors, in seconds; 0 stops it.
+    delivery_interval: float = 15
+
 
 @lru_cache
 def get_settings() -> Settings:

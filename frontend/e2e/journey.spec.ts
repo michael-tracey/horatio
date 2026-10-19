@@ -259,6 +259,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Close submissions" }).click();
   await lead.page.getByRole("button", { name: "Deliver results" }).click();
   await expect(lead.page.getByText("Delivered 1 downtime.")).toBeVisible();
+  // The Delivery tab shows each participant against each channel; with no connectors, in Horatio only.
+  await lead.page.getByRole("link", { name: "Delivery", exact: true }).click();
+  await expect(lead.page.getByRole("columnheader", { name: "In Horatio" })).toBeVisible();
+  await expect(lead.page.getByRole("row", { name: /Agnes.*sent/ })).toBeVisible();
+  await lead.page.getByRole("link", { name: "Overview" }).click();
   await p.getByRole("link", { name: "Results" }).click();
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));

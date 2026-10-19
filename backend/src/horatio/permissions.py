@@ -5,7 +5,8 @@ Roles come from CONTEXT.md:
 - the custodian runs the whole system, above every troupe;
 - a troupe's lead storyteller is a storyteller who can also rename, describe
   and archive it;
-- storytellers and the lead are the only ones who manage staff and house rules;
+- storytellers and the lead are the only ones who manage staff, house rules and
+  connectors;
 - assistant storytellers can do everything else a storyteller can;
 - narrators can do whatever a player in the troupe can, and answer downtime
   actions assigned to them or to any narrator, but never see character sheets;
@@ -38,6 +39,7 @@ class TroupeAction(StrEnum):
     ARCHIVE = "archive"
     MANAGE_STAFF = "manage_staff"
     MANAGE_HOUSE_RULES = "manage_house_rules"
+    MANAGE_CONNECTORS = "manage_connectors"
     VIEW_STAFF = "view_staff"
     VIEW_MEMBER_CHARACTERS = "view_member_characters"
     APPROVE_CHANGES = "approve_changes"
@@ -64,6 +66,7 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.ARCHIVE: frozenset(_LEAD),
     TroupeAction.MANAGE_STAFF: frozenset(_STORYTELLERS),
     TroupeAction.MANAGE_HOUSE_RULES: frozenset(_STORYTELLERS),
+    TroupeAction.MANAGE_CONNECTORS: frozenset(_STORYTELLERS),
     TroupeAction.VIEW_STAFF: frozenset(_ALL_STAFF),
     TroupeAction.VIEW_MEMBER_CHARACTERS: frozenset(_RUNNING),
     TroupeAction.APPROVE_CHANGES: frozenset(_RUNNING),

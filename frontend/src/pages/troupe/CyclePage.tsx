@@ -6,6 +6,7 @@ import type { CycleOut, ParticipantOut, QuestionIn, WorkItemOut } from "../../ap
 import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { DeliveryTab } from "./DeliveryTab";
 
 export function CyclePage() {
   const { cycleId = "" } = useParams();
@@ -35,6 +36,7 @@ export function CyclePage() {
           { to: `${base}/form`, label: "Form" },
           { to: `${base}/participants`, label: "Participants" },
           { to: `${base}/responses`, label: "Responses" },
+          ...(c.status === "closed" || c.status === "complete" ? [{ to: `${base}/delivery`, label: "Delivery" }] : []),
         ]}
       />
       <Routes>
@@ -42,6 +44,7 @@ export function CyclePage() {
         <Route path="form" element={<FormEditor cycle={c} />} />
         <Route path="participants" element={<Participants cycle={c} />} />
         <Route path="responses" element={<Responses cycle={c} />} />
+        <Route path="delivery" element={<DeliveryTab cycleId={c.id} troupeId={c.troupe_id} />} />
       </Routes>
     </>
   );
@@ -54,10 +57,10 @@ function Overview({ cycle }: { cycle: CycleOut }) {
     queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}/progress", path)),
     enabled: cycle.status !== "draft",
   });
-  const [delivered, setDelivered] = useState<number | null>(null);
+  const [delivered, setDelivered] = useState<{ delivered: number; queued: number } | null>(null);
   const open = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/open", path)));
   const close = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/close", path)));
-  const deliver = useAction(async () => setDelivered((await unwrap(api.POST("/api/cycles/{cycle_id}/deliver", path))).delivered));
+  const deliver = useAction(async () => setDelivered(await unwrap(api.POST("/api/cycles/{cycle_id}/deliver", path))));
   const complete = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/complete", path)));
   const p = progress.data;
 
@@ -91,7 +94,21 @@ function Overview({ cycle }: { cycle: CycleOut }) {
         {cycle.status === "draft" && (
           <p className="mt-3 text-xs text-mist">Opening fixes who takes part and how many actions each character has.</p>
         )}
-        {delivered !== null && <Notice>Delivered {delivered} downtime{delivered === 1 ? "" : "s"}.</Notice>}
+        {delivered !== null && (
+          <Notice>
+            Delivered {delivered.delivered} downtime{delivered.delivered === 1 ? "" : "s"}.
+            {delivered.queued > 0 && (
+              <>
+                {" "}
+                {delivered.queued} {delivered.queued === 1 ? "copy is" : "copies are"} on the way through the troupe's connectors;{" "}
+                <Link to="delivery" className="underline">
+                  see Delivery
+                </Link>
+                .
+              </>
+            )}
+          </Notice>
+        )}
         <ErrorText error={open.error ?? close.error ?? deliver.error ?? complete.error} />
       </Card>
       {p && (

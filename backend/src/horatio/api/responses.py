@@ -86,7 +86,9 @@ class Roll(BaseModel):
 
 
 class Delivered(BaseModel):
+    # Delivered in Horatio, and queued on the troupe's connectors.
     delivered: int
+    queued: int = 0
 
 
 class ResultOut(BaseModel):
@@ -291,9 +293,9 @@ def roll_table(troupe_id: uuid.UUID, name: str, db: DbSession, user: CurrentUser
 @router.post("/cycles/{cycle_id}/deliver")
 def deliver(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Delivered:
     cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.DELIVER_RESPONSES)
-    count = responses.deliver_cycle(db, user, cycle, troupe)
+    count, queued = responses.deliver_cycle(db, user, cycle, troupe)
     db.commit()
-    return Delivered(delivered=count)
+    return Delivered(delivered=count, queued=queued)
 
 
 @router.post("/cycles/{cycle_id}/complete")
