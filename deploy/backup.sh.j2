@@ -1,0 +1,17 @@
+#!/bin/bash
+# Written by Horatio's deploy/playbook.yml. Nightly: dump the horatio database,
+# upload it to gs://{{ backup_bucket }} (which deletes copies after 30 days) and
+# keep the last week here too. Restore: see deploy/README.md.
+set -euo pipefail
+dir={{ app_dir }}/backups
+name="horatio-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
+
+docker exec horatio-db pg_dump -U horatio --no-owner horatio | gzip > "$dir/$name"
+token=$(curl -sf -H "Metadata-Flavor: Google" \
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
+  | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+curl -sf -X POST --data-binary "@$dir/$name" \
+  -H "Authorization: Bearer $token" -H "Content-Type: application/gzip" \
+  "https://storage.googleapis.com/upload/storage/v1/b/{{ backup_bucket }}/o?uploadType=media&name=$name" >/dev/null
+find "$dir" -name 'horatio-*.sql.gz' -mtime +7 -delete
+echo "$(date -u +%FT%TZ) backed up $name"

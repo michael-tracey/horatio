@@ -1,0 +1,237 @@
+---
+# Deploys Horatio to the shared docker host (the infra repo's docker-host), beside
+# codex-mysterium's API and the lotslarp bot. Run by deploy.sh, which passes:
+#   docker_image   the image just pushed to Artifact Registry
+#   env_file_src   deploy/production.env on the deployer's machine
+#
+# On the host, under /opt/docker-apps/horatio:
+#   horatio-db    Postgres 18; data in ./postgres
+#   horatio-api   the app, on 127.0.0.1:{{ api_port }}, behind the host's nginx
+# A one-off container migrates the database and reloads the rules before the app
+# container is replaced, so a failed migration leaves the running version up.
+- name: Deploy Horatio
+  hosts: all
+  become: yes
+  vars:
+    app_dir: /opt/docker-apps/horatio
+    domain: horatio.lotslarp.org
+    api_port: 8100
+    network: horatio
+    postgres_image: postgres:18
+    backup_bucket: lotslarp-horatio-backups
+    acme_root: /var/www/letsencrypt
+    env_lines: "{{ lookup('file', env_file_src).splitlines() }}"
+    db_password: "{{ env_lines | select('match', '^HORATIO_DB_PASSWORD=') | first | regex_replace('^HORATIO_DB_PASSWORD=', '') }}"
+    letsencrypt_email: "{{ env_lines | select('match', '^HORATIO_LETSENCRYPT_EMAIL=') | first | regex_replace('^HORATIO_LETSENCRYPT_EMAIL=', '') }}"
+    database_url: "postgresql+psycopg://horatio:{{ db_password }}@horatio-db:5432/horatio"
+
+  tasks:
+    - name: Check the settings deploy.sh should have checked
+      assert:
+        that:
+          - db_password | length >= 16
+          - letsencrypt_email | length > 0
+        fail_msg: deploy/production.env needs HORATIO_DB_PASSWORD (16+ characters) and HORATIO_LETSENCRYPT_EMAIL.
+        quiet: yes
+
+    - name: Create the app's directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0750'
+      loop:
+        - "{{ app_dir }}"
+        - "{{ app_dir }}/backups"
+
+    - name: Create the database's directory
+      file:
+        path: "{{ app_dir }}/postgres"
+        state: directory
+        mode: '0700'
+
+    # --- the app's settings ---------------------------------------------------------
+
+    - name: Write the app's environment
+      # Settings with a value only: an empty one would read as "" rather than unset.
+      template:
+        src: app.env.j2
+        dest: "{{ app_dir }}/app.env"
+        owner: root
+        group: root
+        mode: '0600'
+      no_log: true
+
+    # --- images --------------------------------------------------------------------
+
+    - name: Get the host's service account token
+      shell: 'curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" | python3 -c "import sys,json; print(json.load(sys.stdin)[\"access_token\"])"'
+      register: gce_token
+      changed_when: false
+      no_log: true
+
+    - name: Log in to Artifact Registry
+      community.docker.docker_login:
+        registry: us-east1-docker.pkg.dev
+        username: oauth2accesstoken
+        password: "{{ gce_token.stdout }}"
+      no_log: true
+
+    - name: Pull the app's image
+      community.docker.docker_image:
+        name: "{{ docker_image }}"
+        source: pull
+        force_source: yes
+
+    # --- database ------------------------------------------------------------------
+
+    - name: Create the app's network
+      community.docker.docker_network:
+        name: "{{ network }}"
+
+    - name: Run Postgres
+      community.docker.docker_container:
+        name: horatio-db
+        image: "{{ postgres_image }}"
+        state: started
+        restart_policy: always
+        networks:
+          - name: "{{ network }}"
+        networks_cli_compatible: yes
+        env:
+          POSTGRES_USER: horatio
+          POSTGRES_DB: horatio
+          # Only read when the data directory is first created.
+          POSTGRES_PASSWORD: "{{ db_password }}"
+        volumes:
+          # Postgres 18 keeps its data under /var/lib/postgresql/18.
+          - "{{ app_dir }}/postgres:/var/lib/postgresql"
+        memory: 512m
+        log_driver: gcplogs
+        log_options:
+          gcp-log-cmd: "true"
+      no_log: true
+
+    - name: Wait for Postgres
+      command: docker exec horatio-db pg_isready -U horatio -d horatio
+      register: ready
+      until: ready.rc == 0
+      retries: 30
+      delay: 2
+      changed_when: false
+
+    # --- migrate, then replace the app ----------------------------------------------
+
+    - name: Migrate the database and load the rules
+      community.docker.docker_container:
+        name: horatio-migrate
+        image: "{{ docker_image }}"
+        command: ["sh", "-c", "alembic upgrade head && python -m horatio.rules"]
+        detach: no
+        cleanup: yes
+        networks:
+          - name: "{{ network }}"
+        networks_cli_compatible: yes
+        env_file: "{{ app_dir }}/app.env"
+      register: migrated
+
+    - name: Show what the migration did
+      debug:
+        msg: "{{ migrated.container.Output | default('') }}"
+
+    - name: Run the app
+      community.docker.docker_container:
+        name: horatio-api
+        image: "{{ docker_image }}"
+        state: started
+        recreate: yes
+        restart_policy: always
+        networks:
+          - name: "{{ network }}"
+        networks_cli_compatible: yes
+        env_file: "{{ app_dir }}/app.env"
+        ports:
+          - "127.0.0.1:{{ api_port }}:8000"
+        memory: 512m
+        log_driver: gcplogs
+        log_options:
+          gcp-log-cmd: "true"
+
+    - name: Wait for the app
+      uri:
+        url: "http://127.0.0.1:{{ api_port }}/api/health"
+      register: health
+      until: health.status == 200
+      retries: 30
+      delay: 2
+
+    # --- nginx and TLS ---------------------------------------------------------------
+
+    - name: Create the ACME challenge directory
+      file:
+        path: "{{ acme_root }}"
+        state: directory
+        mode: '0755'
+
+    - name: Look for the TLS certificate
+      stat:
+        path: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+      register: cert
+
+    - name: Configure nginx (HTTP only until there is a certificate)
+      template:
+        src: nginx-horatio.conf.j2
+        dest: /etc/nginx/sites-available/horatio.conf
+        mode: '0644'
+      vars:
+        tls: "{{ cert.stat.exists }}"
+
+    - name: Enable the nginx site
+      file:
+        src: /etc/nginx/sites-available/horatio.conf
+        dest: /etc/nginx/sites-enabled/horatio.conf
+        state: link
+
+    - name: Check and reload nginx
+      shell: nginx -t && systemctl reload nginx
+      changed_when: false
+
+    - name: Get a certificate from Let's Encrypt
+      command: >
+        certbot certonly --webroot -w {{ acme_root }} -d {{ domain }}
+        --email {{ letsencrypt_email }} --agree-tos --non-interactive
+        --deploy-hook "systemctl reload nginx"
+      when: not cert.stat.exists
+
+    - name: Configure nginx with TLS
+      template:
+        src: nginx-horatio.conf.j2
+        dest: /etc/nginx/sites-available/horatio.conf
+        mode: '0644'
+      vars:
+        tls: true
+      when: not cert.stat.exists
+
+    - name: Check and reload nginx with TLS
+      shell: nginx -t && systemctl reload nginx
+      when: not cert.stat.exists
+
+    # --- backups ------------------------------------------------------------------------
+
+    - name: Install the nightly backup
+      template:
+        src: backup.sh.j2
+        dest: "{{ app_dir }}/backup.sh"
+        mode: '0750'
+
+    - name: Run the backup every night
+      cron:
+        name: horatio backup
+        minute: "17"
+        hour: "3"
+        job: "{{ app_dir }}/backup.sh >> /var/log/horatio-backup.log 2>&1"
+
+    - name: Remove unused images
+      command: docker image prune -af
+      changed_when: false

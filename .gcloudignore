@@ -1,0 +1,20 @@
+# What `gcloud builds submit` uploads: the same as the image needs. Never the
+# rulebook PDFs (sources/), local environments or secrets.
+.git
+.gitignore
+sources/
+example-sheet.png
+NEXT_STEPS.md
+.local/
+**/.venv/
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+backend/tests/
+**/.env
+deploy/production.env
+docs/

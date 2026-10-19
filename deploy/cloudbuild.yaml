@@ -1,0 +1,24 @@
+# Builds the Horatio image (../Dockerfile) and pushes it to Artifact Registry in
+# the lotslarp project. Run by deploy.sh; what is uploaded is set by ../.gcloudignore.
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_SERVICE_NAME:$_TAG'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_SERVICE_NAME:latest'
+      - '.'
+
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_SERVICE_NAME:$_TAG'
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_SERVICE_NAME:latest'
+
+substitutions:
+  _SERVICE_NAME: 'horatio'
+  _REGION: 'us-east1'
+  _ARTIFACT_REGISTRY_REPO: 'horatio'
+  _TAG: 'manual'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
