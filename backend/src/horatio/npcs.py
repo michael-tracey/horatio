@@ -61,7 +61,8 @@ def set_rating(
     rating: int | None,
 ) -> None:
     """Set an NPC's trait straight to `rating` (0 removes it), with no experience spent.
-    Unrated traits replace the category's choice."""
+    Unrated traits replace the category's choice, and so does a new trait in a
+    category that holds one (a focus)."""
     if npc.kind != "npc":
         raise conflict("Only an NPC's ratings can be set directly.")
     definition, category = find_definition(db, npc, category_key, name)
@@ -92,6 +93,13 @@ def set_rating(
         db.flush()
         return
     if trait is None:
+        if category.max_held == 1:
+            # A choice such as a focus: the new one replaces the one chosen before
+            # (one a merit grants stays).
+            for row in sheet_rows(db, npc):
+                if row.category.key == category.key and not row.trait.granted_rating:
+                    db.delete(row.trait)
+            db.flush()
         trait = CharacterTrait(
             character_id=npc.id, trait_definition_id=definition.id, detail=detail
         )

@@ -400,6 +400,13 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByLabel("Clan")).toHaveValue("Ventrue");
   await p.getByRole("button", { name: "Social 7", exact: true }).click(); // attributes: 3 a dot
   await expect(p.getByText("21 XP")).toBeVisible();
+  // Each attribute's focus is chosen beside it, one of three; choosing again swaps it.
+  await expect(p.getByRole("heading", { name: "Focuses" })).toHaveCount(0);
+  await p.getByLabel("Social focus").selectOption("Charisma");
+  await expect(p.getByLabel("Social focus")).toHaveValue("Charisma");
+  await p.getByLabel("Social focus").selectOption("Manipulation");
+  await expect(p.getByLabel("Social focus")).toHaveValue("Manipulation");
+  await expect(p.getByText("21 XP")).toBeVisible(); // focuses are free
   await p.getByRole("button", { name: "Leadership 3", exact: true }).click(); // 1 + 2 + 3
   await expect(p.getByText("27 XP")).toBeVisible();
   await p.screenshot(shots("npc"));

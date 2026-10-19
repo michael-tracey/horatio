@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
@@ -9,10 +9,15 @@ import { identityChoices } from "./creation/logic";
 
 type Change = { category: string; name: string; rating: number | null };
 
-/** Sections of the quick builder, in sheet order. Long lists get a search box. */
+/** Each attribute, in sheet order, with the category its focus is chosen from (MET: VTM p. 90). */
+const ATTRIBUTES: [string, string][] = [
+  ["Physical", "focus_physicals"],
+  ["Social", "focus_socials"],
+  ["Mental", "focus_mentals"],
+];
+
+/** Sections of the quick builder after attributes, in sheet order. Long lists get a search box. */
 const SECTIONS: { title: string; categories: string[]; split?: boolean }[] = [
-  { title: "Attributes", categories: ["attributes"] },
-  { title: "Focuses", categories: ["focus_physicals", "focus_mentals", "focus_socials"] },
   { title: "Skills", categories: ["skills"], split: true },
   { title: "Backgrounds", categories: ["backgrounds"] },
   { title: "Disciplines", categories: ["disciplines"] },
@@ -45,6 +50,7 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
     <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
       <div className="flex flex-col gap-4">
         <Identity sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
+        <Attributes sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         {SECTIONS.map((section) => (
           <Section key={section.title} {...section} sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         ))}
@@ -93,6 +99,54 @@ function Identity({ sheet, catalogue, onChange }: { sheet: SheetOut; catalogue: 
           </Field>
         ))}
       </div>
+    </Card>
+  );
+}
+
+/** Attributes as dots, each with its focus beside it: one of three, chosen like a PC's. */
+function Attributes({ sheet, catalogue, onChange }: { sheet: SheetOut; catalogue: CatalogueOut; onChange: (c: Change) => void }) {
+  const max = catalogue.categories.find((c) => c.key === "attributes")?.max_rating ?? 10;
+  return (
+    <Card title="Attributes">
+      <ul>
+        {ATTRIBUTES.map(([name, focusCategory]) => {
+          const trait = catalogue.traits.find((t) => t.category === "attributes" && t.name === name);
+          if (!trait) return null;
+          const options = catalogue.traits.filter((t) => t.category === focusCategory);
+          const focus = sheet.traits.find((t) => t.category === focusCategory && (t.rating ?? 0) > 0)?.name ?? "";
+          const rating = sheet.traits.find((t) => t.category === "attributes" && t.name === name)?.rating ?? 0;
+          return (
+            <Row
+              key={name}
+              trait={trait}
+              rating={rating}
+              max={max}
+              onChange={onChange}
+              aside={
+                options.length > 0 && (
+                  <Select
+                    aria-label={`${name} focus`}
+                    value={focus}
+                    onChange={(e) =>
+                      onChange(
+                        e.target.value
+                          ? { category: focusCategory, name: e.target.value, rating: 1 }
+                          : { category: focusCategory, name: focus, rating: 0 },
+                      )
+                    }
+                    className="h-8 w-40 py-0 text-sm"
+                  >
+                    <option value="">No focus</option>
+                    {options.map((o) => (
+                      <option key={o.name}>{o.name}</option>
+                    ))}
+                  </Select>
+                )
+              }
+            />
+          );
+        })}
+      </ul>
     </Card>
   );
 }
@@ -152,7 +206,20 @@ function Section({
   );
 }
 
-function Row({ trait, rating, max, onChange }: { trait: TraitOut; rating: number; max: number; onChange: (c: Change) => void }) {
+function Row({
+  trait,
+  rating,
+  max,
+  onChange,
+  aside,
+}: {
+  trait: TraitOut;
+  rating: number;
+  max: number;
+  onChange: (c: Change) => void;
+  /** Shown beside the name, such as an attribute's focus. */
+  aside?: ReactNode;
+}) {
   if (trait.fixed_rating) {
     const on = rating > 0;
     return (
@@ -169,8 +236,11 @@ function Row({ trait, rating, max, onChange }: { trait: TraitOut; rating: number
   const usual = trait.category === "attributes" ? 10 : 5;
   const dots = Math.min(Math.max(usual, rating + 1), max);
   return (
-    <li className="flex items-center justify-between gap-2 py-0.5 text-sm">
-      <span className={rating ? "text-parchment" : "text-mist"}>{trait.name}</span>
+    <li className={`flex flex-wrap items-center justify-between gap-2 text-sm ${aside ? "py-1.5" : "py-0.5"}`}>
+      <span className="flex flex-wrap items-center gap-3">
+        <span className={`${aside ? "w-16" : ""} ${rating ? "text-parchment" : "text-mist"}`}>{trait.name}</span>
+        {aside}
+      </span>
       <span className="flex">
         {Array.from({ length: dots }, (_, i) => i + 1).map((dot) => (
           <button
