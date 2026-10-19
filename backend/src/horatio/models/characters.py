@@ -36,6 +36,9 @@ class Character(Imported, Record):
     building_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
     # Null while the player is still placing creation picks (CONTEXT.md: Character Creation).
     creation_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The primary path the player named, by discipline, where the clan has no
+    # in-clan path: {"Thaumaturgy": "Thaumaturgy: Path of Corruption"}.
+    primary_paths: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class CharacterTrait(Record):

@@ -306,6 +306,100 @@ def check_context(db: Session, character: Character, sheet: Sequence[SheetTrait]
         accepted=character.home_troupe_id is not None,
         in_clan=native | {f"{name}: {detail}" if detail else name for _, name, detail in priced},
         native=native,
+        primary=frozenset(character.primary_paths.values()),
+    )
+
+
+def path_disciplines(rules: TroupeRules) -> list[str]:
+    """Disciplines learned as paths with a primary path the others cannot go
+    above, as the troupe's checks say: "Thaumaturgy"."""
+    found: list[str] = []
+    for check in rules.checks():
+        for condition in (check.requires, check.forbids):
+            test = (condition or {}).get("above_in_clan")
+            if test and test.get("name_prefix"):
+                found.append(test["name_prefix"].removesuffix(": ").strip())
+    return sorted(set(found))
+
+
+@dataclass(frozen=True)
+class PrimaryPath:
+    discipline: str
+    # The primary path: the clan's in-clan one, or the one the player named.
+    path: str | None
+    native: bool
+    # Where the player names it: the paths held, highest first.
+    options: list[str]
+
+
+def primary_paths(db: Session, character: Character) -> list[PrimaryPath]:
+    """For each path discipline the character has paths in, which is primary."""
+    rules = rules_for(db, character)
+    rows = sheet_rows(db, character)
+    sheet = [r.as_rules_trait() for r in rows]
+    native = check_context(db, character, sheet).native
+    found: list[PrimaryPath] = []
+    for discipline in path_disciplines(rules):
+        held = sorted(
+            (
+                t
+                for t in sheet
+                if t.category == "disciplines" and t.name.startswith(f"{discipline}: ")
+            ),
+            key=lambda t: (-(t.rating or 0), t.name),
+        )
+        held = [t for t in held if t.rating]
+        if not held:
+            continue
+        in_clan_path = next((t.name for t in held if t.name in native), None)
+        if in_clan_path is not None:
+            found.append(PrimaryPath(discipline, in_clan_path, native=True, options=[]))
+            continue
+        named = character.primary_paths.get(discipline)
+        found.append(
+            PrimaryPath(
+                discipline,
+                named if named in {t.name for t in held} else None,
+                native=False,
+                options=[t.name for t in held],
+            )
+        )
+    return found
+
+
+def name_primary_path(
+    db: Session, user: User, character: Character, discipline: str, path: str | None
+) -> None:
+    """Name the character's primary path of a discipline, where its clan has no
+    in-clan path; None un-names it. The primary is the first path to reach 2 dots,
+    so no other path may be higher than it (MET: VTM p. 187)."""
+    current = {p.discipline: p for p in primary_paths(db, character)}
+    if discipline not in path_disciplines(rules_for(db, character)):
+        raise unprocessable(f"{discipline} has no primary path.")
+    chosen = current.get(discipline)
+    if chosen is not None and chosen.native:
+        raise conflict(f"{chosen.path} is the primary path, as the clan's in-clan path.")
+    if path is not None:
+        if chosen is None or path not in chosen.options:
+            raise unprocessable(f"Name a path of {discipline} the character has.")
+        rating = {r.definition.name: r.trait.rating or 0 for r in sheet_rows(db, character)}
+        higher = next((p for p in chosen.options if rating[p] > rating[path]), None)
+        if higher is not None:
+            raise conflict(
+                f"{higher} is higher; no path can go above the primary path, "
+                "so name the highest (p. 187)."
+            )
+    named = {k: v for k, v in character.primary_paths.items() if k != discipline}
+    character.primary_paths = {**named, discipline: path} if path else named
+    db.flush()
+    audit.record(
+        db,
+        user,
+        "sheet.primary_path",
+        troupe_id=character.home_troupe_id,
+        character_id=character.id,
+        discipline=discipline,
+        path=path or "none",
     )
 
 

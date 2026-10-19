@@ -135,6 +135,7 @@ MESSAGES: dict[str, str] = {
     "house.allowance_removed": "{actor} removed the troupe's actions for {who} ({amount}).",
     "house.cost_removed": "{actor} removed the troupe's price for {what} ({price}).",
     "troupe.specializations": "{actor} set the troupe's {kind}: {count} options.",
+    "sheet.primary_path": "{actor} named {path} {character}'s primary path of {discipline}.",
     "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",
     "sheet.choose": "{actor} chose {name} as {character}'s {category}.",
     "sheet.change": "{actor} changed {character}'s {category}: {from_name} → {name} ({cost} XP).",

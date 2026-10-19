@@ -450,6 +450,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/primary-path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Name Primary Path
+         * @description Name the primary path of a discipline, for a clan with no in-clan path.
+         */
+        put: operations["name_primary_path_api_characters__character_id__primary_path_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/print": {
         parameters: {
             query?: never;
@@ -2709,6 +2729,24 @@ export interface components {
             /** Used */
             used: number;
         };
+        /** PrimaryPathChange */
+        PrimaryPathChange: {
+            /** Discipline */
+            discipline: string;
+            /** Path */
+            path: string | null;
+        };
+        /** PrimaryPathOut */
+        PrimaryPathOut: {
+            /** Discipline */
+            discipline: string;
+            /** Native */
+            native: boolean;
+            /** Options */
+            options: string[];
+            /** Path */
+            path: string | null;
+        };
         /** PrintedSheet */
         PrintedSheet: {
             /** Accepted At */
@@ -3077,6 +3115,11 @@ export interface components {
             pending_approvals: components["schemas"]["ApprovalOut"][];
             /** Pending Disciplines */
             pending_disciplines: components["schemas"]["PendingDisciplineOut"][];
+            /**
+             * Primary Paths
+             * @default []
+             */
+            primary_paths: components["schemas"]["PrimaryPathOut"][];
             /** Problems */
             problems: components["schemas"]["ProblemOut"][];
             /** Status */
@@ -4380,6 +4423,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Tally"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    name_primary_path_api_characters__character_id__primary_path_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrimaryPathChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetOut"];
                 };
             };
             /** @description Validation Error */
