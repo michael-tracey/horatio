@@ -41,7 +41,14 @@ from horatio.models import (
 from horatio.rules.checks import Context, Violation, violations
 from horatio.rules.grants import Effects, choices, effects, raised_by
 from horatio.rules.model import SheetTrait, TroupeRules
-from horatio.rules.pricing import PricingError, Quote, points, purchase_cost, trait_cost
+from horatio.rules.pricing import (
+    PricingError,
+    Quote,
+    fixed_rating,
+    points,
+    purchase_cost,
+    trait_cost,
+)
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import read_troupe_rules
 
@@ -110,6 +117,43 @@ def rules_troupe(character: Character) -> uuid.UUID | None:
 
 def rules_for(db: Session, character: Character) -> TroupeRules:
     return read_troupe_rules(db, character.splat, rules_troupe(character))
+
+
+def sync_fixed_ratings(db: Session, character: Character) -> None:
+    """Hold each fixed-rating merit and flaw at its value under the character's
+    rules, after those rules change: a troupe's new price for it, or a new home or
+    building troupe. Nothing is refunded or charged; purchases keep what they cost."""
+    rules = rules_for(db, character)
+    rows = sheet_rows(db, character)
+    sheet = [r.as_rules_trait() for r in rows]
+    for row in rows:
+        value = fixed_rating(rules, sheet, row.category.key, row.definition.name)
+        trait = row.trait
+        if value is None or not trait.rating or trait.rating == value:
+            continue
+        trait.rating = value
+        trait.free_rating = min(trait.free_rating, value)
+        trait.granted_rating = min(trait.granted_rating, value)
+        if trait.creation_pick is not None:
+            trait.creation_pick = min(trait.creation_pick, value)
+    db.flush()
+
+
+def held_at(db: Session, character: Character, category: str, name: str) -> int | None:
+    """The rating the character holds a merit or flaw at (pricing.fixed_rating)."""
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    return fixed_rating(rules_for(db, character), sheet, category, name)
+
+
+def sync_troupe_fixed_ratings(db: Session, troupe_id: uuid.UUID) -> None:
+    """`sync_fixed_ratings` for every character playing by the troupe's rules."""
+    for character in db.scalars(
+        select(Character).where(
+            (Character.home_troupe_id == troupe_id)
+            | (Character.home_troupe_id.is_(None) & (Character.building_troupe_id == troupe_id))
+        )
+    ):
+        sync_fixed_ratings(db, character)
 
 
 def sheet_rows(db: Session, character: Character) -> list[SheetRow]:
@@ -262,6 +306,100 @@ def check_context(db: Session, character: Character, sheet: Sequence[SheetTrait]
         accepted=character.home_troupe_id is not None,
         in_clan=native | {f"{name}: {detail}" if detail else name for _, name, detail in priced},
         native=native,
+        primary=frozenset(character.primary_paths.values()),
+    )
+
+
+def path_disciplines(rules: TroupeRules) -> list[str]:
+    """Disciplines learned as paths with a primary path the others cannot go
+    above, as the troupe's checks say: "Thaumaturgy"."""
+    found: list[str] = []
+    for check in rules.checks():
+        for condition in (check.requires, check.forbids):
+            test = (condition or {}).get("above_in_clan")
+            if test and test.get("name_prefix"):
+                found.append(test["name_prefix"].removesuffix(": ").strip())
+    return sorted(set(found))
+
+
+@dataclass(frozen=True)
+class PrimaryPath:
+    discipline: str
+    # The primary path: the clan's in-clan one, or the one the player named.
+    path: str | None
+    native: bool
+    # Where the player names it: the paths held, highest first.
+    options: list[str]
+
+
+def primary_paths(db: Session, character: Character) -> list[PrimaryPath]:
+    """For each path discipline the character has paths in, which is primary."""
+    rules = rules_for(db, character)
+    rows = sheet_rows(db, character)
+    sheet = [r.as_rules_trait() for r in rows]
+    native = check_context(db, character, sheet).native
+    found: list[PrimaryPath] = []
+    for discipline in path_disciplines(rules):
+        held = sorted(
+            (
+                t
+                for t in sheet
+                if t.category == "disciplines" and t.name.startswith(f"{discipline}: ")
+            ),
+            key=lambda t: (-(t.rating or 0), t.name),
+        )
+        held = [t for t in held if t.rating]
+        if not held:
+            continue
+        in_clan_path = next((t.name for t in held if t.name in native), None)
+        if in_clan_path is not None:
+            found.append(PrimaryPath(discipline, in_clan_path, native=True, options=[]))
+            continue
+        named = character.primary_paths.get(discipline)
+        found.append(
+            PrimaryPath(
+                discipline,
+                named if named in {t.name for t in held} else None,
+                native=False,
+                options=[t.name for t in held],
+            )
+        )
+    return found
+
+
+def name_primary_path(
+    db: Session, user: User, character: Character, discipline: str, path: str | None
+) -> None:
+    """Name the character's primary path of a discipline, where its clan has no
+    in-clan path; None un-names it. The primary is the first path to reach 2 dots,
+    so no other path may be higher than it (MET: VTM p. 187)."""
+    current = {p.discipline: p for p in primary_paths(db, character)}
+    if discipline not in path_disciplines(rules_for(db, character)):
+        raise unprocessable(f"{discipline} has no primary path.")
+    chosen = current.get(discipline)
+    if chosen is not None and chosen.native:
+        raise conflict(f"{chosen.path} is the primary path, as the clan's in-clan path.")
+    if path is not None:
+        if chosen is None or path not in chosen.options:
+            raise unprocessable(f"Name a path of {discipline} the character has.")
+        rating = {r.definition.name: r.trait.rating or 0 for r in sheet_rows(db, character)}
+        higher = next((p for p in chosen.options if rating[p] > rating[path]), None)
+        if higher is not None:
+            raise conflict(
+                f"{higher} is higher; no path can go above the primary path, "
+                "so name the highest (p. 187)."
+            )
+    named = {k: v for k, v in character.primary_paths.items() if k != discipline}
+    character.primary_paths = {**named, discipline: path} if path else named
+    db.flush()
+    audit.record(
+        db,
+        user,
+        "sheet.primary_path",
+        troupe_id=character.home_troupe_id,
+        character_id=character.id,
+        discipline=discipline,
+        path=path or "none",
     )
 
 
@@ -293,10 +431,10 @@ def unavailable(db: Session, character: Character, category_key: str) -> dict[st
     before = {v.key for v in violations(rules.checks(), sheet, context)}
     rated = rule_set.categories[category_key].rated
     reasons: dict[str, str] = {}
-    for (category, name), trait in rule_set.traits.items():
+    for category, name in rule_set.traits:
         if category != category_key or name in held:
             continue
-        rating = trait.properties.get("rating", 1) if rated else None
+        rating = (fixed_rating(rules, sheet, category, name) or 1) if rated else None
         candidate = SheetTrait(category=category, name=name, rating=rating, free_rating=0)
         trial = [t for t in sheet if rated or t.category != category] + [candidate]
         new = [
@@ -646,7 +784,9 @@ def quote_change(
 
     if rating is None:
         raise unprocessable(f"{category.name} needs a rating.")
-    fixed = definition.properties.get("rating")
+    fixed = fixed_rating(
+        rules_for(db, character), [r.as_rules_trait() for r in rows], category.key, definition.name
+    )
     if fixed is not None and rating not in (0, fixed):
         raise unprocessable(f"{name} is always rated {fixed}.")
 

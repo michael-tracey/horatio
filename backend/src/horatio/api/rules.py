@@ -107,7 +107,7 @@ def catalogue(
                 name=t.name,
                 description=t.description,
                 page_reference=t.page_reference,
-                fixed_rating=t.properties.get("rating"),
+                fixed_rating=rules.fixed_rating(t.category, t.name),
                 house_rule=house_text.get((t.category, t.name)),
                 in_clan=t.properties.get("in_clan"),
                 attribute=t.properties.get("attribute"),

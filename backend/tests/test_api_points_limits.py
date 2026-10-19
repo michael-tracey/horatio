@@ -63,7 +63,7 @@ def test_merit_points_count_at_the_troupes_price(troupe: Troupe, session: Sessio
     character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
     take(troupe.player, character_id, "merits", "Iron Will", 3)
-    take(troupe.player, character_id, "merits", "Rugged", 3)  # 2 here
+    take(troupe.player, character_id, "merits", "Rugged", 2)  # a 3-point merit by the book
 
     assert take(troupe.player, character_id, "merits", "Acute Sense", 1).status_code == 200
     assert take(troupe.player, character_id, "merits", "Light Sleeper", 1).status_code == 200

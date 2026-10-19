@@ -5,7 +5,11 @@ import pytest
 from horatio.permissions import TROUPE_POLICY, Role, TroupeAction, allows
 
 LEAD_ONLY = {TroupeAction.RENAME, TroupeAction.EDIT_DESCRIPTION, TroupeAction.ARCHIVE}
-STORYTELLERS_ONLY = {TroupeAction.MANAGE_STAFF, TroupeAction.MANAGE_HOUSE_RULES}
+STORYTELLERS_ONLY = {
+    TroupeAction.MANAGE_STAFF,
+    TroupeAction.MANAGE_HOUSE_RULES,
+    TroupeAction.MANAGE_CONNECTORS,
+}
 NARRATOR_CAN = {TroupeAction.VIEW_STAFF, TroupeAction.ANSWER_ASSIGNED_RESPONSES}
 
 
@@ -26,7 +30,9 @@ def test_storytellers_can_do_everything_but_rename_describe_or_archive(
 
 
 @pytest.mark.parametrize("action", list(TroupeAction))
-def test_assistant_storytellers_cannot_manage_staff_or_house_rules(action: TroupeAction) -> None:
+def test_assistant_storytellers_cannot_manage_staff_house_rules_or_connectors(
+    action: TroupeAction,
+) -> None:
     assert allows(Role.ASSISTANT_STORYTELLER, action) == (
         action not in LEAD_ONLY | STORYTELLERS_ONLY
     )

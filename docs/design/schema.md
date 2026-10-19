@@ -162,12 +162,15 @@ for example `{"in_clan": true}` or `{"generation": {"gte": 3, "lt": 5}}`. The
 **values** are data a troupe can change. The **meaning** of a fact such as
 "in-clan" stays in code (`horatio/rules/splats.py`).
 
-To choose a cost rule: **any matching house rule beats any matching generic
-rule**. Within whichever of the two has a match, a rule naming the trait beats
-a whole category, and a rule testing more facts beats one testing fewer. Two
-rules still tied is a mistake in the rules and is refused, never guessed. So a
-troupe that re-prices all skills gets all skills at its price, even where the
-generic rules had a more specific skills rule. A trait no rule covers is
+To choose a cost rule: **the most specific matching rule wins, whoever set
+it**. House rules and generic rules compete together: a rule naming the trait
+beats a whole category, a rule testing more facts beats one testing fewer, and
+a house rule wins a tie. Two rules still tied is a mistake in the rules and is
+refused, never guessed. So a troupe that re-prices all skills leaves the
+generic rules' more specific skills rule (Generation 1) alone; to change that
+one too, it gives the same condition its own price, which the Costs screen does
+by changing that row. A troupe has at most one price for each trait (or
+category) and condition. A trait no rule covers is
 refused too, never treated as free.
 
 The generic rule sets live in `backend/src/horatio/rules/data/` as TOML and
@@ -180,7 +183,8 @@ against 13,952 prices produced by Yorick's own cost code
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),
 `action_kind_id`, `trait_definition_id` (nullable: null is the base allowance
 everyone gets), `min_rating`, `scheme` (`fixed` | `per_dot`), `amount` (may be
-negative, for flaws). The same "house rule beats generic rule" lookup applies.
+negative, for flaws). A house rule for the same action kind and trait replaces
+the generic one.
 
 **`creation_rules`**: the starting dots a new character picks (Yorick's
 "skills: one at 4, two at 3…").
@@ -267,12 +271,23 @@ A **decline** clears the assignment back to `unassigned` and is recorded in the
 audit log. Accepting an any-narrator response sets `assigned_to_user_id` and
 clears the flag.
 
-**`deliveries`**: `submission_id`, `channel` (`discord` | `email`), `status`
-(`pending` | `sent` | `failed`), `test_mode` (bool), `sent_at`, `attempts`,
-`last_error`, `external_ids` (JSONB: Discord message ids).
+**`deliveries`**: `submission_id`, `channel` (`horatio` | `discord` | `email`),
+`status` (`pending` | `sent` | `failed`), `test_mode` (bool), `message`,
+`sent_at`, `attempts`, `last_error`, `external_ids` (JSONB: the service's ids
+and the target), `next_attempt_at` (a pending delivery's next try, backing off
+after failures), `marked_by` (who marked it sent by hand).
 At most one non-test `sent` delivery per submission and channel, enforced by a
 partial unique index. That is the old "never send twice" rule as a database
-constraint.
+constraint. Delivering a cycle again only adds deliveries that do not exist
+yet (per channel and test mode).
+
+**`troupe_connectors`**: a troupe's connectors (CONTEXT.md: Connector).
+`troupe_id`, `kind` (`discord` | `email`; one each), `enabled`, `mode`
+(`full` | `alert`), `test_mode`, `settings` (JSONB, no secrets: servers,
+channels, test targets). The code for each kind is in `horatio/connectors/`;
+`horatio.delivery` queues deliveries on enabled connectors and a worker in the
+API process sends them, every `HORATIO_DELIVERY_INTERVAL` seconds, each row
+locked (`SKIP LOCKED`) while it is sent.
 
 **`random_tables`**, **`random_table_entries`**: the old fill tables (feed,
 herd, patrol, discipline), owned by a troupe. Placeholders such as
@@ -397,8 +412,10 @@ Recorded here for review; each is easy to change.
 - Delivery needs the cycle closed, sends each submission with written
   responses once, and puts the results in the app for the player
   (`GET /characters/{id}/downtime/results`). Nothing can be rewritten after
-  delivery. Discord and email delivery are not built: they need a bot token
-  and a mail service.
+  delivery. A troupe's connectors (Discord, email) each get a copy, queued and
+  sent in the background with retries; storytellers see each participant
+  against each channel on the cycle's Delivery tab, and can retry a failure or
+  mark it sent by hand.
 - Fill tables belong to a troupe. Running staff edit them; any staff member
   can roll. `[Name]` placeholders are filled from the table of that name.
 - Not built yet: influence rumours (need the old tool's Age and Blocks rules

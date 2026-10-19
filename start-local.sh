@@ -71,6 +71,18 @@ uv run alembic upgrade head >"$LOGS/migrate.log" 2>&1 || fail "Migration failed;
 say "Loading the rule sets"
 uv run python -m horatio.rules >"$LOGS/rules.log" 2>&1 || fail "Loading rules failed; see $LOGS/rules.log"
 
+# Mail goes to the local Mailpit (http://localhost:8025), unless backend/.env or
+# the environment names a real mail server.
+if [[ -z "${HORATIO_SMTP_HOST:-}" ]] && ! grep -qs '^HORATIO_SMTP_HOST=' .env; then
+  export HORATIO_SMTP_HOST=localhost HORATIO_SMTP_PORT=1025 HORATIO_SMTP_STARTTLS=false
+  export HORATIO_MAIL_FROM="${HORATIO_MAIL_FROM:-Horatio <horatio@example.com>}"
+fi
+
+# Links in messages Horatio sends point at the app.
+if [[ -z "${HORATIO_PUBLIC_URL:-}" ]] && ! grep -qs '^HORATIO_PUBLIC_URL=' .env; then
+  export HORATIO_PUBLIC_URL="http://localhost:$APP_PORT"
+fi
+
 say "Starting the API on :$API_PORT"
 # setsid gives each server its own process group, so stop-local.sh can stop it
 # together with its children (uvicorn's reloader, Vite's workers).
@@ -111,6 +123,7 @@ cat <<EOF
 Horatio is running.
   App       http://localhost:$APP_PORT
   API docs  http://localhost:$API_PORT/docs
+  Mail      http://localhost:8025 (unless backend/.env names a mail server)
   Logs      $LOGS/
 
 After signing up, make yourself custodian (to create troupes):

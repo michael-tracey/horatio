@@ -22,6 +22,7 @@ import {
 } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AddTraitPanel } from "./AddTraitPanel";
+import { rulesTroupe } from "./rules";
 import {
   NEEDS_FIELD,
   SetField,
@@ -51,13 +52,13 @@ function useSheet(characterId: string) {
 
 function useCatalogue(character: CharacterOut) {
   return useQuery({
-    queryKey: ["catalogue", character.splat, character.home_troupe_id],
+    queryKey: ["catalogue", character.splat, rulesTroupe(character)],
     queryFn: () =>
       unwrap(
         api.GET("/api/rules/{splat}", {
           params: {
             path: { splat: character.splat },
-            query: { troupe_id: character.home_troupe_id ?? undefined },
+            query: { troupe_id: rulesTroupe(character) },
           },
         }),
       ),
@@ -291,6 +292,10 @@ export function SheetTab({
               {!groups.has(group) && (
                 <p className="text-sm text-mist">None yet.</p>
               )}
+              {[...(groups.get(group)?.values() ?? [])].some((ts) => ts.some((t) => t.category === "disciplines")) &&
+                s.primary_paths.map((p) => (
+                  <PrimaryPathRow key={p.discipline} characterId={character.id} primary={p} locked={locked} />
+                ))}
               <div className={wide(group) && !single(group) ? "grid gap-x-6 gap-y-2 sm:grid-cols-2" : "flex flex-col gap-2"}>
                 {[
                   ...(groups.get(group) ?? new Map<string, SheetTraitOut[]>()),
@@ -771,5 +776,53 @@ function CreationPanel({
         {left > 0 ? `Finish creation (${left} picks left)` : "Finish creation"}
       </Button>
     </Card>
+  );
+}
+
+type PrimaryPath = SheetOut["primary_paths"][number];
+
+/**
+ * Which path of a discipline is primary: no other may go above it. A clan with
+ * an in-clan path has it as primary; otherwise the player names the first path
+ * that reached 2 dots, which must be the highest (MET: VTM p. 187).
+ */
+function PrimaryPathRow({ characterId, primary, locked }: { characterId: string; primary: PrimaryPath; locked: boolean }) {
+  const name = useAction((path: string | null) =>
+    unwrap(
+      api.PUT("/api/characters/{character_id}/primary-path", {
+        params: { path: { character_id: characterId } },
+        body: { discipline: primary.discipline, path },
+      }),
+    ),
+  );
+  const short = (path: string) => path.replace(`${primary.discipline}: `, "");
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+      <span className="text-mist">Primary path of {primary.discipline}:</span>
+      {primary.native || locked ? (
+        <span className="text-parchment">
+          {primary.path ? short(primary.path) : "not named"}
+          {primary.native && <span className="text-mist"> (in-clan)</span>}
+        </span>
+      ) : (
+        <Select
+          aria-label={`Primary path of ${primary.discipline}`}
+          value={primary.path ?? ""}
+          onChange={(e) => name.mutate(e.target.value || null)}
+          className="min-h-8 w-auto py-1 text-sm"
+        >
+          <option value="">Not named</option>
+          {primary.options.map((o) => (
+            <option key={o} value={o}>
+              {short(o)}
+            </option>
+          ))}
+        </Select>
+      )}
+      {!primary.native && !primary.path && (
+        <span className="text-xs text-mist">Name the first path that reached 2 dots; no other path can go above it.</span>
+      )}
+      <ErrorText error={name.error} />
+    </div>
   );
 }

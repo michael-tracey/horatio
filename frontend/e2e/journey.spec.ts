@@ -187,6 +187,28 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
   await expect(lead.page.getByText("Only those played differently (1)")).toBeVisible();
   await lead.page.screenshot(shots("rules"));
+  // …and set its own price: Generation 1 skills at a flat 1 XP a dot, which Agnes pays.
+  await lead.page.getByRole("link", { name: "Costs", exact: true }).click();
+  await lead.page.getByRole("button", { name: "Change the price for All skills, Generation 1" }).click();
+  await lead.page.getByLabel("How it's priced").selectOption({ label: "The same for each dot" });
+  await lead.page.getByLabel("XP per dot").fill("1");
+  await lead.page.getByLabel("Note for players").fill("Skills come easily here");
+  await expect(lead.page.getByRole("row", { name: "As written 1 3 6 10 15" })).toBeVisible();
+  await expect(lead.page.getByRole("row", { name: "With the change 1 2 3 4 5" })).toBeVisible();
+  await lead.page.screenshot(shots("costs"));
+  await lead.page.getByRole("button", { name: "Save price" }).click();
+  await expect(lead.page.getByText("replaced here")).toBeVisible();
+  // A fixed price for a merit held at one rating is its value here, which the editor says.
+  await lead.page.getByRole("button", { name: "Add a price" }).click();
+  await lead.page.getByLabel("Category").selectOption({ label: "Merits" });
+  await lead.page.getByLabel("Trait").fill("Talisman");
+  await lead.page.getByLabel("How it's priced").selectOption({ label: "One price, whatever the rating" });
+  await expect(lead.page.getByText("Talisman is always held at one rating (3 by the book).", { exact: false })).toBeVisible();
+  await lead.page.getByRole("button", { name: "Cancel" }).click();
+  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  await p.getByRole("button", { name: "Raise Investigation" }).click();
+  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText("raised Agnes's Investigation from 1 to 2 (1 XP).", { exact: false })).toBeVisible();
 
   // The troupe lists the areas its Elite influence covers; Agnes picks one.
   await lead.page.getByRole("link", { name: "Specialisations", exact: true }).click();
@@ -237,9 +259,22 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Close submissions" }).click();
   await lead.page.getByRole("button", { name: "Deliver results" }).click();
   await expect(lead.page.getByText("Delivered 1 downtime.")).toBeVisible();
+  // The Delivery tab shows each participant against each channel; with no connectors, in Horatio only.
+  await lead.page.getByRole("link", { name: "Delivery", exact: true }).click();
+  await expect(lead.page.getByRole("columnheader", { name: "In Horatio" })).toBeVisible();
+  await expect(lead.page.getByRole("row", { name: /Agnes.*sent/ })).toBeVisible();
+  await lead.page.getByRole("link", { name: "Overview" }).click();
   await p.getByRole("link", { name: "Results" }).click();
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));
+
+  // Results always go out in Horatio; Discord needs the server set up first.
+  await lead.page.getByRole("link", { name: "Troupes" }).click();
+  await lead.page.getByRole("link", { name: troupeName }).click();
+  await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();
+  await expect(lead.page.getByText("always on")).toBeVisible();
+  await expect(lead.page.getByText(/Discord is not set up on this server/)).toBeVisible();
+  await expect(lead.page.getByText(/Email is not set up on this server/)).toBeVisible();
 
   // The printable sheet, in the paper sheet's order.
   await p.getByRole("link", { name: "Sheet", exact: true }).click();
@@ -253,6 +288,55 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   }
 });
 
+
+test("a troupe changes what new characters start with and their downtime actions", async ({ browser }) => {
+  const custodian = await person(browser, "start-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "start-lead");
+  const player = await person(browser, "start-player");
+  const troupeName = `Court of Embers ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // The lead gives new characters a bigger merit budget.
+  const l = lead.page;
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  await l.getByRole("link", { name: "Rules", exact: true }).click();
+  await l.getByRole("link", { name: "Starting points", exact: true }).click();
+  await l.getByRole("button", { name: "Change starting Merits" }).click();
+  await l.getByLabel("Points for merits").fill("9");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(l.getByText("The rule set's: 7 points")).toBeVisible();
+  await l.screenshot(shots("starting"));
+  // …and four downtime actions a cycle instead of three.
+  await l.getByRole("link", { name: "Downtime actions", exact: true }).click();
+  await l.getByRole("button", { name: "Change actions for Everyone" }).click();
+  await l.getByLabel("Downtime actions each cycle").fill("4");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(l.getByText("replaced here")).toBeVisible();
+  await expect(l.getByText("4 downtime actions")).toBeVisible();
+  await l.screenshot(shots("actions"));
+
+  // A character built for the troupe has that budget in the wizard.
+  const p = player.page;
+  await p.reload();
+  await p.getByLabel("Name").fill("Mara");
+  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Create" }).click();
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
+  for (const heading of ["Attributes", "Focuses", "Skills", "Backgrounds", "Disciplines", "Merits & flaws"]) {
+    await p.getByRole("button", { name: "Save and continue" }).click();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  }
+  await expect(p.getByText("0 of 9 points")).toBeVisible();
+});
 
 test("a character in no troupe can be deleted from the vault", async ({ browser }) => {
   const { page } = await person(browser, "deleter");

@@ -2059,8 +2059,9 @@ requires = { clan = ["Caitiff"] }
 message = "Thin Blooded vampires are always Caitiff."
 page = "265"
 
-# No other path of Thaumaturgy above the primary path; for a clan with an
-# in-clan path (Tremere: Path of Blood), that path is the primary (p. 187).
+# No other path of Thaumaturgy above the primary path: the first to reach 2 dots.
+# For a clan with an in-clan path (Tremere: Path of Blood), that path is the
+# primary; otherwise the player names it on the sheet (p. 187).
 [[checks]]
 category = "disciplines"
 name_prefix = "Thaumaturgy: "

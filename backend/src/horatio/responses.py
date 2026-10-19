@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, delivery
 from horatio.models import (
     Answer,
     Character,
@@ -314,9 +314,13 @@ def compose(db: Session, cycle: DowntimeCycle, character: Character, submission:
     return "\n\n".join(parts)
 
 
-def deliver_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -> int:
-    """Deliver every submission that has written responses and was not delivered
-    already. Returns how many were delivered."""
+def deliver_cycle(
+    db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe
+) -> tuple[int, int]:
+    """Deliver every submission that has written responses: in Horatio, where it
+    was not delivered already, and queued on each of the troupe's connectors that
+    has nothing for it yet. Returns how many were delivered in Horatio, and how
+    many deliveries were queued on connectors."""
     if cycle.status not in ("closed", "complete"):
         raise conflict("Close the cycle before delivering results.")
     rows = db.execute(
@@ -329,10 +333,9 @@ def deliver_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe
             Submission.status == "submitted",
         )
     )
-    count = 0
+    connectors = delivery.enabled_connectors(db, troupe.id)
+    count = queued = 0
     for submission, character in rows:
-        if delivered(db, submission.id):
-            continue
         has_written = db.scalar(
             select(Response.id)
             .join(Answer, Response.answer_id == Answer.id)
@@ -341,12 +344,16 @@ def deliver_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe
         )
         if has_written is None:
             continue
+        message = compose(db, cycle, character, submission)
+        queued += delivery.queue(db, staff, connectors, cycle, character, submission, message)
+        if delivered(db, submission.id):
+            continue
         db.add(
             Delivery(
                 submission_id=submission.id,
                 channel="horatio",
                 status="sent",
-                message=compose(db, cycle, character, submission),
+                message=message,
                 sent_by=staff.id,
                 sent_at=now(),
                 attempts=1,
@@ -364,9 +371,15 @@ def deliver_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe
         count += 1
     db.flush()
     audit.record(
-        db, staff, "downtime.delivered", troupe_id=troupe.id, cycle_id=cycle.id, count=count
+        db,
+        staff,
+        "downtime.delivered",
+        troupe_id=troupe.id,
+        cycle_id=cycle.id,
+        count=count,
+        queued=queued,
     )
-    return count
+    return count, queued
 
 
 def complete_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:

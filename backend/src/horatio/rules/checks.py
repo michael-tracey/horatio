@@ -34,8 +34,9 @@ Condition vocabulary (every key in one table must hold):
                                     Thaumaturgy)
     above_in_clan = { category, name_prefix }
                                     the subject is rated above every in-clan trait
-                                    of that kind the sheet holds (a path of
-                                    Thaumaturgy above the clan's primary path)
+                                    of that kind the sheet holds, or the primary
+                                    path the player named (a path of Thaumaturgy
+                                    above the primary path)
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
@@ -52,6 +53,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from horatio.rules.conditions import OPERATORS
+from horatio.rules.conditions import describe as describe_facts
 from horatio.rules.model import SheetTrait
 
 Strength = Literal["refuse", "complete", "review", "note"]
@@ -74,6 +76,8 @@ class Context:
     in_clan: frozenset[str] = frozenset()
     # Truly native only: in_clan without the paths a merit prices as in-clan.
     native: frozenset[str] = frozenset()
+    # Primary paths the player named, where the clan has no in-clan path.
+    primary: frozenset[str] = frozenset()
 
 
 NO_CONTEXT = Context()
@@ -232,7 +236,7 @@ def matches(
                 for t in sheet
                 if t.category == test["category"]
                 and t.name.startswith(test.get("name_prefix", ""))
-                and t.name in context.native
+                and (t.name in context.native or t.name in context.primary)
                 and t.name != subject.name
             ]
             ok = bool(primaries) and (subject.rating or 0) > max(primaries)
@@ -262,6 +266,28 @@ def violations(
             if broken:
                 found.append(Violation(check, trait))
     return found
+
+
+def describe(condition: Condition) -> str:
+    """A condition in plain words, for the commonest forms ("without Thin
+    Blooded", "for Tremere"); anything else reads as "under a condition"."""
+    parts: list[str] = []
+    for key, test in condition.items():
+        if key == "has":
+            parts.append(f"with {test['name']}")
+        elif key == "not" and set(test) == {"has"}:
+            parts.append(f"without {test['has']['name']}")
+        elif key in ("clan", "clan_family"):
+            parts.append("for " + " or ".join(test))
+        elif key == "generation":
+            parts.append(
+                describe_facts({"generation": test}, {"generation": "Generation {}"}) or ""
+            )
+        elif key == "any_of":
+            parts.append(" or ".join(describe(c) for c in test))
+        else:
+            return "under a condition"
+    return ", ".join(parts)
 
 
 def validate_condition(condition: Condition, known: set[tuple[str, str]]) -> None:

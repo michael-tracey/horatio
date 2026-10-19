@@ -74,6 +74,50 @@ npx playwright test
 In production the backend serves the built frontend itself
 (`HORATIO_FRONTEND_DIST`), so the app and API share one origin.
 
+### Delivering downtime results
+
+Results always appear in Horatio. Troupes can also switch on connectors that
+send a copy; a worker inside the API sends them every
+`HORATIO_DELIVERY_INTERVAL` seconds (default 15; `0` turns it off). Links in
+messages use `HORATIO_PUBLIC_URL` (default `http://localhost:5173`).
+
+**Discord.** Horatio posts through one bot that each troupe adds to its own
+server. To set it up once for the whole site:
+
+1. Create an application at <https://discord.com/developers/applications>.
+2. Under *Bot*, reset and copy the token. No privileged intents are needed.
+3. Under *OAuth2*, copy the client id and secret, and add the redirect
+   `{HORATIO_PUBLIC_URL}/api/discord/callback`.
+4. Set `HORATIO_DISCORD_CLIENT_ID`, `HORATIO_DISCORD_CLIENT_SECRET` and
+   `HORATIO_DISCORD_BOT_TOKEN`.
+
+Storytellers then use *Add Horatio to your Discord* on their troupe's
+Connectors tab and pick each character's private channel. The bot asks only
+to view channels and send messages.
+
+**Email.** Horatio sends mail from its own address through one SMTP service,
+with the troupe's storyteller address as Reply-To; no troupe connects its own
+mail account. Set:
+
+- `HORATIO_SMTP_HOST`, `HORATIO_SMTP_PORT` (587), `HORATIO_SMTP_USERNAME`,
+  `HORATIO_SMTP_PASSWORD`; `HORATIO_SMTP_STARTTLS` (true, for port 587) or
+  `HORATIO_SMTP_SSL` (true, for port 465).
+- `HORATIO_MAIL_FROM`, such as `Horatio <horatio@mail.example.org>`.
+
+Any provider with SMTP works (Amazon SES, Postmark, Mailgun…). So that mail
+from the sending domain is delivered rather than marked as spam, publish:
+
+- **SPF**: a TXT record on the sending domain allowing the provider, such as
+  `v=spf1 include:amazonses.com ~all` (your provider gives the exact value).
+- **DKIM**: the CNAME or TXT records your provider gives, so it signs mail for
+  your domain.
+- **DMARC**: a TXT record at `_dmarc.<domain>`, starting with
+  `v=DMARC1; p=none; rua=mailto:<you>` and tightening to `p=quarantine` once
+  reports look clean.
+
+Locally, `./start-local.sh` starts Mailpit and points Horatio at it: mail
+appears at <http://localhost:8025>.
+
 Model changes need a migration: `uv run alembic revision --autogenerate -m "..."`,
 then read what it generated. `tests/test_migrations.py` fails if the models and
 migrations disagree.

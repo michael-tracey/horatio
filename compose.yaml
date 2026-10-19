@@ -12,5 +12,13 @@ services:
     volumes:
       - db-data:/var/lib/postgresql
 
+  # Catches mail Horatio sends while developing: SMTP on 1025, a web inbox on
+  # http://localhost:8025. start-local.sh points Horatio at it.
+  mail:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   db-data:

@@ -20,6 +20,29 @@ class Settings(BaseSettings):
     # The built frontend (frontend/dist). When set, the API serves it too.
     frontend_dist: str | None = None
 
+    # Where people reach the app, for links in messages sent outside it.
+    public_url: str = "http://localhost:5173"
+    # How often the API sends deliveries waiting on connectors, in seconds; 0 stops it.
+    delivery_interval: float = 15
+
+    # The Horatio Discord app (horatio.connectors.discord): one bot that troupes
+    # invite to their servers. All three are needed for the Discord connector.
+    discord_client_id: str | None = None
+    discord_client_secret: str | None = None
+    discord_bot_token: str | None = None
+
+    # Email (horatio.connectors.email): Horatio sends from its own address through
+    # one SMTP service; troupes' storytellers get replies. Host and from-address
+    # are needed for the email connector.
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    # STARTTLS on a plain connection (port 587), or TLS from the start (port 465).
+    smtp_starttls: bool = True
+    smtp_ssl: bool = False
+    mail_from: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

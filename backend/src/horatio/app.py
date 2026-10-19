@@ -1,15 +1,20 @@
-from collections.abc import Awaitable, Callable
+import asyncio
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 
+from horatio import delivery
 from horatio.api import (
     approvals,
     auth,
     character_log,
     characters,
+    connectors,
     creation,
+    discord,
     downtimes,
     house_rules,
     membership,
@@ -26,7 +31,18 @@ from horatio.api import (
 )
 from horatio.config import get_settings
 
-app = FastAPI(title="Horatio")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Run the delivery worker alongside the API (horatio.delivery)."""
+    interval = get_settings().delivery_interval
+    worker = asyncio.create_task(delivery.send_forever(interval)) if interval > 0 else None
+    yield
+    if worker is not None:
+        worker.cancel()
+
+
+app = FastAPI(title="Horatio", lifespan=lifespan)
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 CSRF_HEADER = "X-Horatio"
@@ -69,6 +85,8 @@ for module in (
     notifications,
     house_rules,
     specializations,
+    connectors,
+    discord,
 ):
     api.include_router(module.router)
 

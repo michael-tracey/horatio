@@ -450,6 +450,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/primary-path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Name Primary Path
+         * @description Name the primary path of a discipline, for a clan with no in-clan path.
+         */
+        put: operations["name_primary_path_api_characters__character_id__primary_path_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/print": {
         parameters: {
             query?: never;
@@ -752,6 +772,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cycle Deliveries
+         * @description Each submission against each channel: how its delivery went.
+         */
+        get: operations["cycle_deliveries_api_cycles__cycle_id__deliveries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}/open": {
         parameters: {
             query?: never;
@@ -906,6 +946,40 @@ export interface paths {
         get: operations["my_responses_api_cycles__cycle_id__responses_mine_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliveries/{delivery_id}/mark-sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Delivery Sent */
+        post: operations["mark_delivery_sent_api_deliveries__delivery_id__mark_sent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliveries/{delivery_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Delivery */
+        post: operations["retry_delivery_api_deliveries__delivery_id__retry_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1098,6 +1172,42 @@ export interface paths {
         patch: operations["change_troupe_api_troupes__troupe_id__patch"];
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/allowances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Allowances */
+        get: operations["list_allowances_api_troupes__troupe_id__allowances_get"];
+        put?: never;
+        /** Add Allowance */
+        post: operations["add_allowance_api_troupes__troupe_id__allowances_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/allowances/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Allowance */
+        put: operations["change_allowance_api_troupes__troupe_id__allowances__rule_id__put"];
+        post?: never;
+        /** Remove Allowance */
+        delete: operations["remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/approvals": {
         parameters: {
             query?: never;
@@ -1189,6 +1299,115 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Connectors
+         * @description The connectors this server offers, as the troupe has set them up. In-app
+         *     delivery is always on and is not listed.
+         */
+        get: operations["list_connectors_api_troupes__troupe_id__connectors_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/connectors/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Connector */
+        put: operations["change_connector_api_troupes__troupe_id__connectors__kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Costs */
+        get: operations["list_costs_api_troupes__troupe_id__costs_get"];
+        put?: never;
+        /** Add Cost */
+        post: operations["add_cost_api_troupes__troupe_id__costs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/costs/{cost_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Cost */
+        put: operations["change_cost_api_troupes__troupe_id__costs__cost_id__put"];
+        post?: never;
+        /** Remove Cost */
+        delete: operations["remove_cost_api_troupes__troupe_id__costs__cost_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/creation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Starting */
+        get: operations["list_starting_api_troupes__troupe_id__creation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/creation/{category}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Starting */
+        put: operations["change_starting_api_troupes__troupe_id__creation__category__put"];
+        post?: never;
+        /** Reset Starting */
+        delete: operations["reset_starting_api_troupes__troupe_id__creation__category__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/cycles": {
         parameters: {
             query?: never;
@@ -1201,6 +1420,52 @@ export interface paths {
         put?: never;
         /** Create Cycle */
         post: operations["create_cycle_api_troupes__troupe_id__cycles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discord Setup
+         * @description The connected server, its text channels, and the troupe's characters.
+         */
+        get: operations["discord_setup_api_troupes__troupe_id__discord_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Discord Disconnect
+         * @description Forget the troupe's server and its channels, and stop sending to Discord.
+         *     The bot stays in the server until someone there removes it.
+         */
+        delete: operations["discord_disconnect_api_troupes__troupe_id__discord_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/discord/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discord Invite
+         * @description Discord's page for adding the Horatio bot to the troupe's server. Discord
+         *     sends the storyteller back to `/api/discord/callback`.
+         */
+        post: operations["discord_invite_api_troupes__troupe_id__discord_invite_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1438,6 +1703,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionKindOut */
+        ActionKindOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+        };
         /** AdjustmentIn */
         AdjustmentIn: {
             /** Action Kind */
@@ -1456,6 +1728,44 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** AllowanceChange */
+        AllowanceChange: {
+            /** Amount */
+            amount: number;
+            /**
+             * Min Rating
+             * @default 1
+             */
+            min_rating: number;
+            /**
+             * Scheme
+             * @default fixed
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+        };
+        /** AllowanceIn */
+        AllowanceIn: {
+            /** Action Kind */
+            action_kind: string;
+            /** Amount */
+            amount: number;
+            /** Category */
+            category?: string | null;
+            /**
+             * Min Rating
+             * @default 1
+             */
+            min_rating: number;
+            /**
+             * Scheme
+             * @default fixed
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+            /** Trait */
+            trait?: string | null;
+        };
         /** AllowanceLineOut */
         AllowanceLineOut: {
             /** Action Kind */
@@ -1464,6 +1774,44 @@ export interface components {
             amount: number;
             /** Source */
             source: string;
+        };
+        /** AllowanceOut */
+        AllowanceOut: {
+            /** Action Kind */
+            action_kind: string;
+            /** Amount */
+            amount: number;
+            /** Amount Text */
+            amount_text: string;
+            /** Category */
+            category: string | null;
+            /** House */
+            house: boolean;
+            /** Id */
+            id: string | null;
+            /** Min Rating */
+            min_rating: number;
+            /**
+             * Replaced
+             * @default false
+             */
+            replaced: boolean;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+            /** Trait */
+            trait: string | null;
+            /** Who */
+            who: string;
+        };
+        /** AllowancesOut */
+        AllowancesOut: {
+            /** Action Kinds */
+            action_kinds: components["schemas"]["ActionKindOut"][];
+            /** Rules */
+            rules: components["schemas"]["AllowanceOut"][];
         };
         /** AnswerIn */
         AnswerIn: {
@@ -1616,6 +1964,17 @@ export interface components {
             cost: number;
             sheet: components["schemas"]["SheetOut"];
         };
+        /** ChannelOut */
+        ChannelOut: {
+            /** Category */
+            category: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Private */
+            private: boolean;
+        };
         /** CharacterChanges */
         CharacterChanges: {
             /** Name */
@@ -1658,6 +2017,16 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** CharacterRef */
+        CharacterRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** CheckChange */
         CheckChange: {
             /** Strength */
@@ -1688,6 +2057,148 @@ export interface components {
             from_name: string;
             /** To Name */
             to_name: string;
+        };
+        /** ConnectorChange */
+        ConnectorChange: {
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Mode
+             * @default alert
+             * @enum {string}
+             */
+            mode: "full" | "alert";
+            /**
+             * Settings
+             * @default {}
+             */
+            settings: {
+                [key: string]: unknown;
+            };
+            /**
+             * Test Mode
+             * @default false
+             */
+            test_mode: boolean;
+        };
+        /** ConnectorOut */
+        ConnectorOut: {
+            /** Enabled */
+            enabled: boolean;
+            /** Kind */
+            kind: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "full" | "alert";
+            /** Name */
+            name: string;
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** Test Mode */
+            test_mode: boolean;
+            /** Unavailable */
+            unavailable: string | null;
+        };
+        /** CostCategoryOut */
+        CostCategoryOut: {
+            /** Group */
+            group: string;
+            /** Key */
+            key: string;
+            /** Max Rating */
+            max_rating: number | null;
+            /** Name */
+            name: string;
+            /** Per Trait */
+            per_trait: boolean;
+            /** Unit */
+            unit: string;
+        };
+        /** CostChange */
+        CostChange: {
+            /** Rate */
+            rate?: number | null;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table?: number[] | null;
+            /** Text */
+            text?: string | null;
+        };
+        /** CostIn */
+        CostIn: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Rate */
+            rate?: number | null;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table?: number[] | null;
+            /** Text */
+            text?: string | null;
+            /** Trait */
+            trait?: string | null;
+        };
+        /** CostOut */
+        CostOut: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            } | null;
+            /** Condition Text */
+            condition_text: string | null;
+            /** Fixed Rating */
+            fixed_rating?: number | null;
+            /** House */
+            house: boolean;
+            /** Id */
+            id: string | null;
+            /** Page */
+            page: string | null;
+            /** Price Text */
+            price_text: string;
+            /** Rate */
+            rate: number | null;
+            /**
+             * Replaced
+             * @default false
+             */
+            replaced: boolean;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table: number[] | null;
+            /** Text */
+            text: string | null;
+            /** Trait */
+            trait: string | null;
+        };
+        /** CostsOut */
+        CostsOut: {
+            /** Categories */
+            categories: components["schemas"]["CostCategoryOut"][];
+            /** Costs */
+            costs: components["schemas"]["CostOut"][];
         };
         /** CreationOut */
         CreationOut: {
@@ -1746,6 +2257,45 @@ export interface components {
         Delivered: {
             /** Delivered */
             delivered: number;
+            /**
+             * Queued
+             * @default 0
+             */
+            queued: number;
+        };
+        /** DeliveryOut */
+        DeliveryOut: {
+            /** Attempts */
+            attempts: number;
+            /** Channel */
+            channel: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Error */
+            last_error: string | null;
+            /** Marked By */
+            marked_by: string | null;
+            /** Next Attempt At */
+            next_attempt_at: string | null;
+            /** Sent At */
+            sent_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "sent" | "failed";
+            /** Test Mode */
+            test_mode: boolean;
+        };
+        /** DeliveryStatus */
+        DeliveryStatus: {
+            /** Channels */
+            channels: string[];
+            /** Participants */
+            participants: components["schemas"]["ParticipantDeliveries"][];
         };
         /** DetailChange */
         DetailChange: {
@@ -1796,6 +2346,17 @@ export interface components {
             /** To Rating */
             to_rating: number;
         };
+        /** DiscordSetup */
+        DiscordSetup: {
+            /** Channels */
+            channels: components["schemas"]["ChannelOut"][];
+            /** Characters */
+            characters: components["schemas"]["CharacterRef"][];
+            /** Guild Id */
+            guild_id: string | null;
+            /** Guild Name */
+            guild_name: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1823,6 +2384,11 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /** Invite */
+        Invite: {
+            /** Url */
+            url: string;
         };
         /** KindOut */
         KindOut: {
@@ -2053,6 +2619,20 @@ export interface components {
             /** Names */
             names: string[];
         };
+        /** ParticipantDeliveries */
+        ParticipantDeliveries: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Deliveries */
+            deliveries: {
+                [key: string]: components["schemas"]["DeliveryOut"];
+            };
+        };
         /** ParticipantOut */
         ParticipantOut: {
             /** Adjustments */
@@ -2148,6 +2728,24 @@ export interface components {
             traits: components["schemas"]["PickedTrait"][];
             /** Used */
             used: number;
+        };
+        /** PrimaryPathChange */
+        PrimaryPathChange: {
+            /** Discipline */
+            discipline: string;
+            /** Path */
+            path: string | null;
+        };
+        /** PrimaryPathOut */
+        PrimaryPathOut: {
+            /** Discipline */
+            discipline: string;
+            /** Native */
+            native: boolean;
+            /** Options */
+            options: string[];
+            /** Path */
+            path: string | null;
         };
         /** PrintedSheet */
         PrintedSheet: {
@@ -2517,6 +3115,11 @@ export interface components {
             pending_approvals: components["schemas"]["ApprovalOut"][];
             /** Pending Disciplines */
             pending_disciplines: components["schemas"]["PendingDisciplineOut"][];
+            /**
+             * Primary Paths
+             * @default []
+             */
+            primary_paths: components["schemas"]["PrimaryPathOut"][];
             /** Problems */
             problems: components["schemas"]["ProblemOut"][];
             /** Status */
@@ -2619,6 +3222,50 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** StartingCategoryOut */
+        StartingCategoryOut: {
+            /** Book */
+            book: components["schemas"]["StartingRule"][];
+            /** Book Text */
+            book_text: string;
+            /** House */
+            house: boolean;
+            /** Key */
+            key: string;
+            /** Max Rating */
+            max_rating: number | null;
+            /** Name */
+            name: string;
+            /** Rules */
+            rules: components["schemas"]["StartingRule"][];
+            /** Text */
+            text: string;
+        };
+        /** StartingChange */
+        StartingChange: {
+            /** Rules */
+            rules: components["schemas"]["StartingRule"][];
+        };
+        /**
+         * StartingRule
+         * @description Picks at a rating (`picks` and `rating`), or a budget of `points`.
+         */
+        StartingRule: {
+            /** Picks */
+            picks?: number | null;
+            /** Points */
+            points?: number | null;
+            /** Rating */
+            rating?: number | null;
+            /** Restriction */
+            restriction?: string | null;
+            /** When */
+            when?: {
+                [key: string]: unknown;
+            } | null;
+            /** When Text */
+            when_text?: string | null;
         };
         /** TableIn */
         TableIn: {
@@ -3789,6 +4436,41 @@ export interface operations {
             };
         };
     };
+    name_primary_path_api_characters__character_id__primary_path_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrimaryPathChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     printed_sheet_api_characters__character_id__print_get: {
         parameters: {
             query?: {
@@ -4376,6 +5058,37 @@ export interface operations {
             };
         };
     };
+    cycle_deliveries_api_cycles__cycle_id__deliveries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     open_cycle_api_cycles__cycle_id__open_post: {
         parameters: {
             query?: never;
@@ -4686,6 +5399,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_delivery_sent_api_deliveries__delivery_id__mark_sent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                delivery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_delivery_api_deliveries__delivery_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                delivery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryOut"];
                 };
             };
             /** @description Validation Error */
@@ -5117,6 +5892,138 @@ export interface operations {
             };
         };
     };
+    list_allowances_api_troupes__troupe_id__allowances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowancesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_allowance_api_troupes__troupe_id__allowances_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllowanceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_allowance_api_troupes__troupe_id__allowances__rule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllowanceChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     troupe_approvals_api_troupes__troupe_id__approvals_get: {
         parameters: {
             query?: {
@@ -5284,6 +6191,304 @@ export interface operations {
             };
         };
     };
+    list_connectors_api_troupes__troupe_id__connectors_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_connector_api_troupes__troupe_id__connectors__kind__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectorChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_costs_api_troupes__troupe_id__costs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_cost_api_troupes__troupe_id__costs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_cost_api_troupes__troupe_id__costs__cost_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                cost_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_cost_api_troupes__troupe_id__costs__cost_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                cost_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_starting_api_troupes__troupe_id__creation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_starting_api_troupes__troupe_id__creation__category__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartingChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_starting_api_troupes__troupe_id__creation__category__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_cycles_api_troupes__troupe_id__cycles_get: {
         parameters: {
             query?: never;
@@ -5337,6 +6542,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CycleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_setup_api_troupes__troupe_id__discord_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordSetup"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_disconnect_api_troupes__troupe_id__discord_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_invite_api_troupes__troupe_id__discord_invite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invite"];
                 };
             };
             /** @description Validation Error */
