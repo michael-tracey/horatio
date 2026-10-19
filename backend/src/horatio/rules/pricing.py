@@ -4,10 +4,13 @@ The cost of a trait at a rating is the price of that rating less the price of
 its free rating, the part the character did not pay for. A purchase costs the
 difference between the trait's cost after and before.
 
-Choosing the cost rule: house rules beat generic rules outright. Within
-whichever of those has a match, a rule naming the trait beats a whole
-category, and a rule testing more facts beats one testing fewer. Two rules
-left tied is a mistake in the rules, and is refused rather than guessed at.
+Choosing the cost rule: house rules and generic rules compete together, and
+the most specific one wins. A rule naming the trait beats a whole category,
+and a rule testing more facts beats one testing fewer; a house rule wins a
+tie. So a troupe re-pricing all merits leaves a generic price for one merit
+alone, and a troupe replaces a generic rule by giving the same trait and
+condition its own price. Two rules left tied is a mistake in the rules, and
+is refused rather than guessed at.
 """
 
 from collections.abc import Sequence
@@ -61,14 +64,12 @@ def choose_rule(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTra
             and holds(rule.condition, facts)
         )
 
-    matching = [r for r in rules.house_rules if applies(r)] or [
-        r for r in rules.rule_set.cost_rules if applies(r)
-    ]
+    matching = [r for r in [*rules.house_rules, *rules.rule_set.cost_rules] if applies(r)]
     if not matching:
         raise NoCostRule(f"no cost rule for {trait.category} {trait.name!r}")
 
-    def specificity(rule: CostRuleData) -> tuple[bool, int]:
-        return (rule.trait is not None, clause_count(rule.condition))
+    def specificity(rule: CostRuleData) -> tuple[bool, int, bool]:
+        return (rule.trait is not None, clause_count(rule.condition), rule.house)
 
     best = max(specificity(r) for r in matching)
     chosen = [r for r in matching if specificity(r) == best]
@@ -106,6 +107,24 @@ def points(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -
     if not trait.rating:
         return 0
     return abs(price(choose_rule(rules, sheet, trait), trait.rating))
+
+
+def fixed_rating(
+    rules: TroupeRules, sheet: Sequence[SheetTrait], category: str, name: str
+) -> int | None:
+    """The rating this character holds a merit or flaw at, or None for a trait
+    bought dot by dot. A troupe's fixed price for it is its value, where that price
+    is the one that applies to the character; otherwise the catalogue's rating."""
+    book = rules.rule_set.trait_properties(category, name).get("rating")
+    if book is None:
+        return None
+    try:
+        rule = choose_rule(rules, sheet, SheetTrait(category=category, name=name, rating=book))
+    except PricingError:
+        return book
+    if rule.house and rule.scheme == "fixed" and rule.rate:
+        return abs(rule.rate)
+    return book
 
 
 def trait_cost(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Quote:
@@ -150,3 +169,25 @@ def purchase_cost(
         ),
     )
     return Quote(cost=after.cost - before.cost, rule=after.rule)
+
+
+def describe(rule: CostRuleData, unit: str = "dot") -> str:
+    """How a rule prices, in plain words: "3 XP per dot", "1 XP back per point"."""
+
+    def xp(amount: int) -> str:
+        return f"{amount} XP" if amount >= 0 else f"{-amount} XP back"
+
+    if rule.scheme == "free":
+        return "free"
+    if rule.scheme == "not_allowed":
+        return "cannot be bought"
+    if rule.scheme == "table":
+        assert rule.table is not None
+        shown = ", ".join(map(str, rule.table[:5])) + (", …" if len(rule.table) > 5 else "")
+        return f"{shown} XP for each {unit} in turn"
+    assert rule.rate is not None
+    if rule.scheme == "per_dot":
+        return f"{xp(rule.rate)} per {unit}"
+    if rule.scheme == "progressive":
+        return f"{xp(rule.rate)} × the new {unit}'s number"
+    return xp(rule.rate)

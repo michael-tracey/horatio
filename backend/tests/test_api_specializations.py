@@ -117,13 +117,14 @@ def test_building_for_a_troupe_uses_its_house_rules(troupe: Troupe, session: Ses
     plain = new_character(troupe, troupe.player)
     built = built_for(troupe)
 
-    def price(character_id: str) -> int:
+    def price(character_id: str, rating: int) -> int:
         return troupe.player.client.post(
             f"/characters/{character_id}/quote",
-            json={"category": "merits", "name": "Rugged", "rating": 3},
+            json={"category": "merits", "name": "Rugged", "rating": rating},
         ).json()["cost"]
 
-    assert (price(plain), price(built)) == (3, 2)
+    # The troupe's price is Rugged's value there: a 2-point merit.
+    assert (price(plain, 3), price(built, 2)) == (3, 2)
     # Building for the troupe, asking it to be home finds nothing to reconcile.
     preview = troupe.player.client.post(
         f"/characters/{built}/home-troupe/preview", json={"troupe_id": troupe.id}
