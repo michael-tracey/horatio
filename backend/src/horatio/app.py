@@ -14,6 +14,7 @@ from horatio.api import (
     characters,
     connectors,
     creation,
+    discord,
     downtimes,
     house_rules,
     membership,
@@ -85,6 +86,7 @@ for module in (
     house_rules,
     specializations,
     connectors,
+    discord,
 ):
     api.include_router(module.router)
 

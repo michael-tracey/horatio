@@ -33,7 +33,9 @@ class FakeConnector(Connector):
     def unavailable(self) -> str | None:
         return self.down
 
-    def check_settings(self, settings: Mapping[str, Any]) -> dict[str, Any]:
+    def check_settings(
+        self, settings: Mapping[str, Any], current: Mapping[str, Any]
+    ) -> dict[str, Any]:
         if "test_target" not in settings:
             raise ValueError("Name a test target.")
         return dict(settings)
@@ -55,9 +57,11 @@ class FakeConnector(Connector):
 @pytest.fixture
 def fake() -> Iterator[FakeConnector]:
     connector = FakeConnector()
+    real = CONNECTORS.get("discord")
     CONNECTORS["discord"] = connector
     yield connector
-    CONNECTORS.pop("discord", None)
+    if real is not None:
+        CONNECTORS["discord"] = real
 
 
 @pytest.fixture

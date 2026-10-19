@@ -111,6 +111,8 @@ MESSAGES: dict[str, str] = {
     "downtime.submitted": "{character} submitted a downtime.",
     "downtime.delivered": "{actor} delivered {count} downtime results.",
     "connector.changed": "{actor} turned the {connector} connector {state}.",
+    "connector.discord_connected": "{actor} connected the Discord server {server}.",
+    "connector.discord_disconnected": "{actor} disconnected the Discord server {server}.",
     "delivery.retried": "{actor} retried {character}'s {channel} delivery.",
     "delivery.marked_sent": "{actor} marked {character}'s {channel} delivery as sent by hand.",
     "downtime.participant_added": "{actor} added {character} to a downtime cycle.",

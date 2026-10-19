@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     # How often the API sends deliveries waiting on connectors, in seconds; 0 stops it.
     delivery_interval: float = 15
 
+    # The Horatio Discord app (horatio.connectors.discord): one bot that troupes
+    # invite to their servers. All three are needed for the Discord connector.
+    discord_client_id: str | None = None
+    discord_client_secret: str | None = None
+    discord_bot_token: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

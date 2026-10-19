@@ -1406,6 +1406,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discord Setup
+         * @description The connected server, its text channels, and the troupe's characters.
+         */
+        get: operations["discord_setup_api_troupes__troupe_id__discord_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Discord Disconnect
+         * @description Forget the troupe's server and its channels, and stop sending to Discord.
+         *     The bot stays in the server until someone there removes it.
+         */
+        delete: operations["discord_disconnect_api_troupes__troupe_id__discord_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/discord/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discord Invite
+         * @description Discord's page for adding the Horatio bot to the troupe's server. Discord
+         *     sends the storyteller back to `/api/discord/callback`.
+         */
+        post: operations["discord_invite_api_troupes__troupe_id__discord_invite_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/lead": {
         parameters: {
             query?: never;
@@ -1898,6 +1944,17 @@ export interface components {
             cost: number;
             sheet: components["schemas"]["SheetOut"];
         };
+        /** ChannelOut */
+        ChannelOut: {
+            /** Category */
+            category: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Private */
+            private: boolean;
+        };
         /** CharacterChanges */
         CharacterChanges: {
             /** Name */
@@ -1939,6 +1996,16 @@ export interface components {
             splat: string;
             /** Status */
             status: string;
+        };
+        /** CharacterRef */
+        CharacterRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** CheckChange */
         CheckChange: {
@@ -2259,6 +2326,17 @@ export interface components {
             /** To Rating */
             to_rating: number;
         };
+        /** DiscordSetup */
+        DiscordSetup: {
+            /** Channels */
+            channels: components["schemas"]["ChannelOut"][];
+            /** Characters */
+            characters: components["schemas"]["CharacterRef"][];
+            /** Guild Id */
+            guild_id: string | null;
+            /** Guild Name */
+            guild_name: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -2286,6 +2364,11 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /** Invite */
+        Invite: {
+            /** Url */
+            url: string;
         };
         /** KindOut */
         KindOut: {
@@ -6381,6 +6464,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CycleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_setup_api_troupes__troupe_id__discord_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordSetup"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_disconnect_api_troupes__troupe_id__discord_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discord_invite_api_troupes__troupe_id__discord_invite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invite"];
                 };
             };
             /** @description Validation Error */
