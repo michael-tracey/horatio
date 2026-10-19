@@ -436,6 +436,56 @@
         "title": "Assignment",
         "type": "object"
       },
+      "BackupOut": {
+        "properties": {
+          "made_at": {
+            "format": "date-time",
+            "title": "Made At",
+            "type": "string"
+          },
+          "manual": {
+            "title": "Manual",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "made_at",
+          "size",
+          "manual"
+        ],
+        "title": "BackupOut",
+        "type": "object"
+      },
+      "BackupsOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "backups": {
+            "items": {
+              "$ref": "#/components/schemas/BackupOut"
+            },
+            "title": "Backups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "available",
+          "backups"
+        ],
+        "title": "BackupsOut",
+        "type": "object"
+      },
       "BuildingTroupe": {
         "properties": {
           "troupe_id": {
@@ -5692,6 +5742,82 @@
         "summary": "Sign Up",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/backups": {
+      "get": {
+        "operationId": "list_backups_api_backups_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Backups",
+        "tags": [
+          "backups"
+        ]
+      },
+      "post": {
+        "operationId": "make_backup_api_backups_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Make Backup",
+        "tags": [
+          "backups"
+        ]
+      }
+    },
+    "/api/backups/{name}": {
+      "get": {
+        "description": "The backup's file. It holds everything, password hashes included, so each\ndownload is logged.",
+        "operationId": "download_backup_api_backups__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Backup",
+        "tags": [
+          "backups"
         ]
       }
     },

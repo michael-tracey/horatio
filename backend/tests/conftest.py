@@ -52,6 +52,8 @@ def no_outside_services(monkeypatch: pytest.MonkeyPatch) -> None:
         if name in type(settings).model_fields:
             monkeypatch.setattr(settings, name, None)
     monkeypatch.setattr(settings, "public_url", "http://localhost:5173")
+    # Nor do they write backups anywhere real; a test that wants them sets a directory.
+    monkeypatch.setattr(settings, "backup_dir", None)
 
 
 @pytest.fixture(scope="session")

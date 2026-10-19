@@ -488,6 +488,7 @@ test("a player fills in their profile, and the custodian resets their password",
   // The custodian finds them and sees the profile.
   const c = custodian.page;
   await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
   await c.locator("main").getByRole("link", { name: new RegExp(player.email) }).click();

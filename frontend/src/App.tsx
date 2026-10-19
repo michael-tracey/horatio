@@ -5,7 +5,7 @@ import { useMe } from "./hooks";
 import { CharacterPage } from "./pages/character/CharacterPage";
 import { AccountPage } from "./pages/AccountPage";
 import { CharactersPage } from "./pages/CharactersPage";
-import { PeoplePage } from "./pages/PeoplePage";
+import { CustodianPage } from "./pages/custodian/CustodianPage";
 import { PlayerPage } from "./pages/PlayerPage";
 import { PrintPage, TroupePrintPage } from "./pages/PrintPage";
 import { CyclePage } from "./pages/troupe/CyclePage";
@@ -41,7 +41,8 @@ export function App() {
           <Route path="/cycles/:cycleId/*" element={<CyclePage />} />
           <Route path="/players/:userId" element={<PlayerPage />} />
           <Route path="/account" element={<AccountPage />} />
-          <Route path="/people" element={<PeoplePage />} />
+          <Route path="/custodian/*" element={<CustodianPage />} />
+          <Route path="/people" element={<Navigate to="/custodian/people" replace />} />
         </Route>
         <Route path="*" element={<p className="text-mist">There is nothing here.</p>} />
       </Route>

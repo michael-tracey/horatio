@@ -147,6 +147,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Backups */
+        get: operations["list_backups_api_backups_get"];
+        put?: never;
+        /** Make Backup */
+        post: operations["make_backup_api_backups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/backups/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Backup
+         * @description The backup's file. It holds everything, password hashes included, so each
+         *     download is logged.
+         */
+        get: operations["download_backup_api_backups__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters": {
         parameters: {
             query?: never;
@@ -2059,6 +2098,27 @@ export interface components {
             any_narrator: boolean;
             /** User Id */
             user_id?: string | null;
+        };
+        /** BackupOut */
+        BackupOut: {
+            /**
+             * Made At
+             * Format: date-time
+             */
+            made_at: string;
+            /** Manual */
+            manual: boolean;
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+        };
+        /** BackupsOut */
+        BackupsOut: {
+            /** Available */
+            available: boolean;
+            /** Backups */
+            backups: components["schemas"]["BackupOut"][];
         };
         /** BuildingTroupe */
         BuildingTroupe: {
@@ -4108,6 +4168,75 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Me"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_backups_api_backups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupsOut"];
+                };
+            };
+        };
+    };
+    make_backup_api_backups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupOut"];
+                };
+            };
+        };
+    };
+    download_backup_api_backups__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
