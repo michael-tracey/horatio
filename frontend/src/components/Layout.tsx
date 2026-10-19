@@ -22,7 +22,7 @@ export function Layout() {
             Horatio
           </Link>
           {me.data && (
-            <nav className="flex items-center gap-4 text-sm">
+            <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <NavLink to="/characters" className={link}>
                 Characters
               </NavLink>
