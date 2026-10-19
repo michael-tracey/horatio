@@ -36,7 +36,79 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
           ))}
         </ul>
       </Card>
+      <ExperienceDefaults troupeId={troupeId} canEdit={canEdit} />
     </div>
+  );
+}
+
+/** The XP this troupe usually gives: what awarding and new downtime cycles start at. */
+function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+  const path = { params: { path: { troupe_id: troupeId } } };
+  const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ session_xp: 8, downtime_xp: 2 });
+  const save = useAction(async () => {
+    await unwrap(api.PATCH("/api/troupes/{troupe_id}", { ...path, body: form }));
+    setEditing(false);
+  });
+  if (!troupe.data) return null;
+  const t = troupe.data;
+  return (
+    <Card
+      title="Experience"
+      actions={
+        canEdit &&
+        !editing && (
+          <Button
+            variant="ghost"
+            className="min-h-8 px-2"
+            onClick={() => {
+              setForm({ session_xp: t.session_xp, downtime_xp: t.downtime_xp });
+              setEditing(true);
+            }}
+          >
+            Change
+          </Button>
+        )
+      }
+    >
+      <p className="mb-3 text-sm text-mist">
+        What this troupe usually gives. Awarding XP starts at the session amount, and each new downtime cycle at the completion amount; either can be changed
+        there.
+      </p>
+      {editing ? (
+        <form
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save.mutate(undefined);
+          }}
+        >
+          <label className="flex flex-col gap-1 text-sm">
+            For a game session
+            <Input type="number" min={0} max={100} required value={form.session_xp} onChange={(e) => setForm({ ...form, session_xp: Number(e.target.value) })} className="w-24" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            For completing a downtime
+            <Input type="number" min={0} max={100} required value={form.downtime_xp} onChange={(e) => setForm({ ...form, downtime_xp: Number(e.target.value) })} className="w-24" />
+          </label>
+          <Button type="submit" disabled={save.isPending}>
+            Save
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+          <ErrorText error={save.error} />
+        </form>
+      ) : (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt className="text-mist">For a game session</dt>
+          <dd>{t.session_xp} XP</dd>
+          <dt className="text-mist">For completing a downtime</dt>
+          <dd>{t.downtime_xp} XP</dd>
+        </dl>
+      )}
+    </Card>
   );
 }
 

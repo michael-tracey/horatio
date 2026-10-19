@@ -29,6 +29,9 @@ class TroupeOut(BaseModel):
     archived: bool
     # Sects whose player characters may join; empty means any.
     allowed_sects: list[str]
+    # The usual XP for a game session and for completing a downtime.
+    session_xp: int
+    downtime_xp: int
     # The caller's own role here, if any.
     my_role: Role | None
 
@@ -43,6 +46,8 @@ class TroupeChanges(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = None
     allowed_sects: list[str] | None = None
+    session_xp: int | None = Field(default=None, ge=0, le=100)
+    downtime_xp: int | None = Field(default=None, ge=0, le=100)
 
 
 class NewLead(BaseModel):
@@ -68,6 +73,8 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         lead_user_id=troupe.lead_user_id,
         archived=troupe.archived_at is not None,
         allowed_sects=troupe.allowed_sects,
+        session_xp=troupe.session_xp,
+        downtime_xp=troupe.downtime_xp,
         my_role=troupe_role(db, user, troupe),
     )
 
@@ -145,6 +152,20 @@ def change_troupe(
             "troupe.sects_limited",
             troupe_id=troupe.id,
             sects=", ".join(troupe.allowed_sects) or "any",
+        )
+    if body.session_xp is not None or body.downtime_xp is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.session_xp is not None:
+            troupe.session_xp = body.session_xp
+        if body.downtime_xp is not None:
+            troupe.downtime_xp = body.downtime_xp
+        audit.record(
+            db,
+            user,
+            "troupe.xp_defaults",
+            troupe_id=troupe.id,
+            session_xp=troupe.session_xp,
+            downtime_xp=troupe.downtime_xp,
         )
     db.commit()
     return troupe_out(db, user, troupe)

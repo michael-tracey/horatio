@@ -14,12 +14,21 @@ function inDays(days: number): string {
 export function CyclesTab({ troupeId }: { troupeId: string }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const cycles = useQuery({ queryKey: ["cycles", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/cycles", path)) });
+  const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
   const [form, setForm] = useState({ name: "", closes_at: inDays(21), grace_ends_at: inDays(28) });
+  // Until changed here, a new cycle earns the troupe's usual amount.
+  const [completionXp, setCompletionXp] = useState<number | null>(null);
+  const xp = completionXp ?? troupe.data?.downtime_xp ?? 2;
   const create = useAction(() =>
     unwrap(
       api.POST("/api/troupes/{troupe_id}/cycles", {
         ...path,
-        body: { name: form.name, closes_at: new Date(form.closes_at).toISOString(), grace_ends_at: new Date(form.grace_ends_at).toISOString() },
+        body: {
+          name: form.name,
+          closes_at: new Date(form.closes_at).toISOString(),
+          grace_ends_at: new Date(form.grace_ends_at).toISOString(),
+          completion_xp: xp,
+        },
       }),
     ),
   );
@@ -61,6 +70,9 @@ export function CyclesTab({ troupeId }: { troupeId: string }) {
           </Field>
           <Field label="Accepted until" hint="The grace period: late downtimes are still taken until then.">
             <Input type="datetime-local" required value={form.grace_ends_at} onChange={(e) => setForm({ ...form, grace_ends_at: e.target.value })} />
+          </Field>
+          <Field label="XP for completing" hint="Each character gets this when its downtime is submitted. The troupe's usual amount is on Starting points.">
+            <Input type="number" min={0} max={100} required value={xp} onChange={(e) => setCompletionXp(Number(e.target.value))} className="w-24" />
           </Field>
           <ErrorText error={create.error} />
           <Button type="submit" disabled={create.isPending}>

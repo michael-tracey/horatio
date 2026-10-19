@@ -34,6 +34,7 @@ from horatio.models import (
     Submission,
     Troupe,
     User,
+    XpEntry,
 )
 from horatio.rules.allowance import allowance
 from horatio.rules.model import SheetTrait
@@ -168,7 +169,10 @@ def create_cycle(
     name: str,
     closes_at: datetime,
     grace_ends_at: datetime,
+    completion_xp: int | None = None,
 ) -> DowntimeCycle:
+    """A new cycle, its form copied from the troupe's last one. Completing it earns
+    `completion_xp`, or the troupe's usual amount."""
     if grace_ends_at < closes_at:
         raise unprocessable("The grace period cannot end before the cycle closes.")
     previous = db.scalar(
@@ -178,7 +182,11 @@ def create_cycle(
         .limit(1)
     )
     cycle = DowntimeCycle(
-        troupe_id=troupe.id, name=name, closes_at=closes_at, grace_ends_at=grace_ends_at
+        troupe_id=troupe.id,
+        name=name,
+        closes_at=closes_at,
+        grace_ends_at=grace_ends_at,
+        completion_xp=troupe.downtime_xp if completion_xp is None else completion_xp,
     )
     db.add(cycle)
     db.flush()
@@ -202,6 +210,54 @@ def create_cycle(
     write_questions(db, staff, cycle, specs, troupe)
     audit.record(db, staff, "downtime.cycle_created", troupe_id=troupe.id, cycle_id=cycle.id)
     return cycle
+
+
+def set_completion_xp(db: Session, staff: User, cycle: DowntimeCycle, amount: int) -> None:
+    """Change what completing the cycle earns, until it closes. Awards already given
+    stand; storytellers correct one by hand if they need to."""
+    if cycle.status not in ("draft", "open"):
+        raise conflict("This cycle has closed; its experience for completing is settled.")
+    cycle.completion_xp = amount
+    audit.record(
+        db,
+        staff,
+        "downtime.completion_xp_set",
+        troupe_id=cycle.troupe_id,
+        cycle_id=cycle.id,
+        amount=amount,
+    )
+
+
+def award_completion_xp(
+    db: Session,
+    player: User,
+    character: Character,
+    cycle: DowntimeCycle,
+    participant: CycleParticipant,
+) -> None:
+    """On submitting: the cycle's XP for completing it, once per participant however
+    often it is reopened and submitted again."""
+    if character.kind != "pc" or participant.completion_xp_entry_id or cycle.completion_xp <= 0:
+        return
+    entry = XpEntry(
+        character_id=character.id,
+        kind="award",
+        amount=cycle.completion_xp,
+        reason=f"Completed downtime: {cycle.name}",
+        entered_by=player.id,
+    )
+    db.add(entry)
+    db.flush()
+    participant.completion_xp_entry_id = entry.id
+    audit.record(
+        db,
+        player,
+        "xp.downtime_completed",
+        troupe_id=cycle.troupe_id,
+        character_id=character.id,
+        cycle_id=cycle.id,
+        amount=cycle.completion_xp,
+    )
 
 
 def allowance_sheet(db: Session, character: Character) -> list[SheetTrait]:
@@ -644,6 +700,7 @@ def submit(
         cycle_id=cycle.id,
         late=submission.late,
     )
+    award_completion_xp(db, player, character, cycle, participant)
     return submission
 
 

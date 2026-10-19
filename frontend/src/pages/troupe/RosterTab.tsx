@@ -220,15 +220,21 @@ function RosterRow({
         )}
       </span>
       <TitleEditor troupeId={troupeId} entry={entry} />
-      {entry.home && entry.kind === "pc" && <AwardXp entry={entry} />}
+      {entry.home && entry.kind === "pc" && <AwardXp troupeId={troupeId} entry={entry} />}
     </li>
   );
 }
 
 /** Experience for a character whose home troupe this is: amount and reason, as the XP history shows them. */
-function AwardXp({ entry }: { entry: RosterEntry }) {
+function AwardXp({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
+  // Starts at the troupe's usual XP for a session (Starting points).
+  const troupe = useQuery({
+    queryKey: ["troupe", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
+  });
+  const sessionXp = troupe.data?.session_xp ?? 8;
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState(3);
+  const [amount, setAmount] = useState(sessionXp);
   const [reason, setReason] = useState("");
   const award = useAction(async () => {
     await unwrap(
@@ -243,7 +249,13 @@ function AwardXp({ entry }: { entry: RosterEntry }) {
   if (!open) {
     return (
       <div>
-        <Button variant="ghost" onClick={() => setOpen(true)}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setAmount(sessionXp);
+            setOpen(true);
+          }}
+        >
           Award XP
         </Button>
       </div>

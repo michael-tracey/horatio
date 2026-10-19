@@ -1449,6 +1449,21 @@
         "title": "CreationOut",
         "type": "object"
       },
+      "CycleChanges": {
+        "properties": {
+          "completion_xp": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Completion Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "completion_xp"
+        ],
+        "title": "CycleChanges",
+        "type": "object"
+      },
       "CycleOut": {
         "properties": {
           "closed_at": {
@@ -1467,6 +1482,10 @@
             "format": "date-time",
             "title": "Closes At",
             "type": "string"
+          },
+          "completion_xp": {
+            "title": "Completion Xp",
+            "type": "integer"
           },
           "grace_ends_at": {
             "format": "date-time",
@@ -1520,6 +1539,7 @@
           "closes_at",
           "grace_ends_at",
           "closed_at",
+          "completion_xp",
           "questions"
         ],
         "title": "CycleOut",
@@ -2371,6 +2391,21 @@
             "title": "Closes At",
             "type": "string"
           },
+          "completion_xp": {
+            "title": "Completion Xp",
+            "type": "integer"
+          },
+          "completion_xp_awarded": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Xp Awarded"
+          },
           "cycle_id": {
             "format": "uuid",
             "title": "Cycle Id",
@@ -2412,7 +2447,9 @@
           "questions",
           "answers",
           "status",
-          "late"
+          "late",
+          "completion_xp",
+          "completion_xp_awarded"
         ],
         "title": "MyDowntime",
         "type": "object"
@@ -2455,6 +2492,19 @@
             "format": "date-time",
             "title": "Closes At",
             "type": "string"
+          },
+          "completion_xp": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Xp"
           },
           "grace_ends_at": {
             "format": "date-time",
@@ -2768,6 +2818,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "completion_xp_awarded": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Xp Awarded"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -2807,7 +2868,8 @@
           "removed",
           "late_accepted",
           "submission_status",
-          "submitted_late"
+          "submitted_late",
+          "completion_xp_awarded"
         ],
         "title": "ParticipantOut",
         "type": "object"
@@ -5017,6 +5079,19 @@
             ],
             "title": "Description"
           },
+          "downtime_xp": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downtime Xp"
+          },
           "name": {
             "anyOf": [
               {
@@ -5029,6 +5104,19 @@
               }
             ],
             "title": "Name"
+          },
+          "session_xp": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Xp"
           }
         },
         "title": "TroupeChanges",
@@ -5111,6 +5199,10 @@
             "title": "Description",
             "type": "string"
           },
+          "downtime_xp": {
+            "title": "Downtime Xp",
+            "type": "integer"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -5134,6 +5226,10 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "session_xp": {
+            "title": "Session Xp",
+            "type": "integer"
           }
         },
         "required": [
@@ -5143,6 +5239,8 @@
           "lead_user_id",
           "archived",
           "allowed_sects",
+          "session_xp",
+          "downtime_xp",
           "my_role"
         ],
         "title": "TroupeOut",
@@ -7960,6 +8058,57 @@
           }
         },
         "summary": "Read Cycle",
+        "tags": [
+          "downtimes"
+        ]
+      },
+      "patch": {
+        "operationId": "change_cycle_api_cycles__cycle_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CycleChanges"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Cycle",
         "tags": [
           "downtimes"
         ]

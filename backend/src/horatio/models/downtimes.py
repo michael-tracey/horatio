@@ -33,6 +33,8 @@ class DowntimeCycle(Record):
     closes_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     grace_ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Experience each character gets for submitting its downtime; 0 for none.
+    completion_xp: Mapped[int] = mapped_column(default=2, server_default="2")
 
 
 class Question(Record):
@@ -81,6 +83,8 @@ class CycleParticipant(Record):
     removed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     # A storyteller let this participant submit after the grace period.
     late_accepted_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # The award for completing this downtime, once given: never given twice.
+    completion_xp_entry_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("xp_entries.id"))
 
 
 class AllowanceAdjustment(Record):
