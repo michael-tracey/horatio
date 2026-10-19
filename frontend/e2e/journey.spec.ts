@@ -193,6 +193,15 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // The troupe's characters and log show what happened.
   await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
   await expect(lead.page.getByText("home", { exact: true })).toBeVisible();
+  // Ticked characters print together, in a new tab.
+  await expect(lead.page.getByRole("button", { name: "Print selected (0)" })).toBeDisabled();
+  await lead.page.getByLabel("Select Agnes").check();
+  const printTab = lead.page.context().waitForEvent("page");
+  await lead.page.getByRole("button", { name: "Print selected (1)" }).click();
+  const printed = await printTab;
+  await expect(printed.getByText("1 sheet", { exact: true })).toBeVisible();
+  await expect(printed.getByText("Agnes", { exact: true }).first()).toBeVisible();
+  await printed.close();
   await lead.page.getByRole("link", { name: "Log", exact: true }).click();
   await expect(lead.page.getByText("lead accepted Agnes (player); this is its home.")).toBeVisible();
   await expect(lead.page.getByText("Agnes (player) joined the troupe.")).toBeVisible();

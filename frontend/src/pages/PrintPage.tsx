@@ -30,7 +30,55 @@ export function PrintPage() {
 
   if (sheet.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
-  return <Sheet sheet={sheet.data} />;
+  return (
+    <PrintShell>
+      <Sheet sheet={sheet.data} />
+    </PrintShell>
+  );
+}
+
+/**
+ * Several of a troupe's sheets in one document, each starting on a new page:
+ * those named in `?characters=`, in that order, or every character in the troupe.
+ */
+export function TroupePrintPage() {
+  const { troupeId = "" } = useParams();
+  const [params] = useSearchParams();
+  const ids = params.get("characters")?.split(",").filter(Boolean);
+  const sheets = useQuery({
+    queryKey: ["print-troupe", troupeId, params.toString()],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/print", { params: { path: { troupe_id: troupeId }, query: { characters: ids } } })),
+  });
+
+  if (sheets.isPending) return <p className="p-8 text-black">Loading…</p>;
+  if (sheets.error) return <p className="p-8 text-black">{sheets.error.message}</p>;
+  return (
+    <PrintShell count={sheets.data.length}>
+      {sheets.data.map((sheet, i) => (
+        <div key={i} className={i > 0 ? "mt-6 break-before-page print:mt-0" : ""}>
+          <Sheet sheet={sheet} />
+        </div>
+      ))}
+    </PrintShell>
+  );
+}
+
+/** The grey desk the paper sits on, with Back and Print above it; only the paper prints. */
+function PrintShell({ count, children }: { count?: number; children: ReactNode }) {
+  return (
+    <div className="min-h-screen bg-neutral-200 py-6 text-black print:min-h-0 print:bg-white print:py-0">
+      <div className="mx-auto mb-4 flex max-w-[8.5in] items-center justify-between gap-4 px-4 print:hidden">
+        <button onClick={() => window.history.back()} className="text-sm underline">
+          ← Back
+        </button>
+        {count !== undefined && <span className="text-sm">{count === 1 ? "1 sheet" : `${count} sheets`}</span>}
+        <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
+          Print
+        </button>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 function by(traits: Trait[], ...categories: string[]) {
@@ -136,148 +184,138 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
   for (const x of others) otherGroups.set(x.category_name, [...(otherGroups.get(x.category_name) ?? []), x]);
 
   return (
-    <div className="min-h-screen bg-neutral-200 py-6 text-black print:min-h-0 print:bg-white print:py-0">
-      <div className="mx-auto mb-4 flex max-w-[8.5in] justify-between px-4 print:hidden">
-        <button onClick={() => window.history.back()} className="text-sm underline">
-          ← Back
-        </button>
-        <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
-          Print
-        </button>
-      </div>
-      <article className="mx-auto flex max-w-[8.5in] flex-col gap-3 bg-white p-[0.45in] font-serif shadow print:max-w-none print:p-0 print:shadow-none">
-        <header className="grid grid-cols-[1fr_auto] items-start gap-4 border-b-2 border-black pb-2">
-          <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-2 text-[12px]">
-            <dt className="font-bold">Character</dt>
-            <dd className="border-b border-black">{sheet.character_name}</dd>
-            <dt className="font-bold">Player</dt>
-            <dd className="border-b border-black">{sheet.player_name}</dd>
-            <dt className="font-bold">Clan</dt>
-            <dd className="border-b border-black">{one(t, "clan")}</dd>
-            <dt className="font-bold">Archetype</dt>
-            <dd className="border-b border-black">{one(t, "archetype")}</dd>
-            <dt className="font-bold">Sect</dt>
-            <dd className="border-b border-black">{one(t, "sect")}</dd>
-            <dt className="font-bold">Title</dt>
-            <dd className="border-b border-black">{sheet.titles.join(", ")}</dd>
-          </dl>
-          <div className="text-right">
-            <p className="font-display text-2xl tracking-widest uppercase">{sheet.splat}</p>
-            <p className="text-[10px]">
-              {sheet.kind === "npc"
-                ? `NPC of ${sheet.troupe_name}`
-                : sheet.home
-                  ? `Home troupe: ${sheet.troupe_name}`
-                  : sheet.troupe_name
-                    ? `Visiting ${sheet.troupe_name}`
-                    : "No home troupe yet"}
-            </p>
-          </div>
-        </header>
+    <article className="mx-auto flex max-w-[8.5in] flex-col gap-3 bg-white p-[0.45in] font-serif shadow print:max-w-none print:p-0 print:shadow-none">
+      <header className="grid grid-cols-[1fr_auto] items-start gap-4 border-b-2 border-black pb-2">
+        <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-2 text-[12px]">
+          <dt className="font-bold">Character</dt>
+          <dd className="border-b border-black">{sheet.character_name}</dd>
+          <dt className="font-bold">Player</dt>
+          <dd className="border-b border-black">{sheet.player_name}</dd>
+          <dt className="font-bold">Clan</dt>
+          <dd className="border-b border-black">{one(t, "clan")}</dd>
+          <dt className="font-bold">Archetype</dt>
+          <dd className="border-b border-black">{one(t, "archetype")}</dd>
+          <dt className="font-bold">Sect</dt>
+          <dd className="border-b border-black">{one(t, "sect")}</dd>
+          <dt className="font-bold">Title</dt>
+          <dd className="border-b border-black">{sheet.titles.join(", ")}</dd>
+        </dl>
+        <div className="text-right">
+          <p className="font-display text-2xl tracking-widest uppercase">{sheet.splat}</p>
+          <p className="text-[10px]">
+            {sheet.kind === "npc"
+              ? `NPC of ${sheet.troupe_name}`
+              : sheet.home
+                ? `Home troupe: ${sheet.troupe_name}`
+                : sheet.troupe_name
+                  ? `Visiting ${sheet.troupe_name}`
+                  : "No home troupe yet"}
+          </p>
+        </div>
+      </header>
 
-        <Section title="Attributes">
-          <div className="grid grid-cols-3 gap-4 text-[12px]">
-            {(
-              [
-                ["Physical", "focus_physicals"],
-                ["Social", "focus_socials"],
-                ["Mental", "focus_mentals"],
-              ] as const
-            ).map(([name, focus]) => (
-              <div key={name}>
-                <div className="flex items-baseline justify-between font-bold">
-                  {name} <Dots value={rating(t, "attributes", name)} of={10} />
-                </div>
-                <p className="text-[11px]">Focus: {by(t, focus).map((f) => f.name).join(", ") || "—"}</p>
+      <Section title="Attributes">
+        <div className="grid grid-cols-3 gap-4 text-[12px]">
+          {(
+            [
+              ["Physical", "focus_physicals"],
+              ["Social", "focus_socials"],
+              ["Mental", "focus_mentals"],
+            ] as const
+          ).map(([name, focus]) => (
+            <div key={name}>
+              <div className="flex items-baseline justify-between font-bold">
+                {name} <Dots value={rating(t, "attributes", name)} of={10} />
               </div>
-            ))}
+              <p className="text-[11px]">Focus: {by(t, focus).map((f) => f.name).join(", ") || "—"}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Skills">
+        <div className="grid grid-cols-3 gap-x-4">
+          {[0, 1, 2].map((col) => (
+            <TraitList key={col} traits={skills.slice(col * third, (col + 1) * third)} empty={col === 2 ? 2 : 0} />
+          ))}
+        </div>
+      </Section>
+
+      <div className="grid grid-cols-3 gap-4">
+        <Section title="Backgrounds">
+          <TraitList traits={by(t, "backgrounds")} empty={4} />
+        </Section>
+        <Section title="Disciplines">
+          <TraitList traits={by(t, "disciplines")} empty={4} />
+        </Section>
+        <Section title="Merits & Flaws">
+          <TraitList traits={by(t, "merits", "flaws")} empty={4} />
+        </Section>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <Section title="Blood">
+          <p className="mb-1 text-center text-[10px]">
+            {maxBlood} blood · {perTurn} per turn
+          </p>
+          <div className="flex justify-center">
+            <Boxes count={maxBlood} />
           </div>
         </Section>
-
-        <Section title="Skills">
-          <div className="grid grid-cols-3 gap-x-4">
-            {[0, 1, 2].map((col) => (
-              <TraitList key={col} traits={skills.slice(col * third, (col + 1) * third)} empty={col === 2 ? 2 : 0} />
-            ))}
+        <Section title="Willpower">
+          <div className="flex justify-center">
+            <Boxes count={willpower} numbered />
           </div>
         </Section>
+        <Section title="Morality">
+          <p className="mb-1 text-center text-[11px]">{path?.name ?? "—"}</p>
+          <div className="flex justify-center">
+            <Boxes count={path?.rating ?? 0} numbered />
+          </div>
+        </Section>
+      </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <Section title="Backgrounds">
-            <TraitList traits={by(t, "backgrounds")} empty={4} />
-          </Section>
-          <Section title="Disciplines">
-            <TraitList traits={by(t, "disciplines")} empty={4} />
-          </Section>
-          <Section title="Merits & Flaws">
-            <TraitList traits={by(t, "merits", "flaws")} empty={4} />
-          </Section>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <Section title="Blood">
-            <p className="mb-1 text-center text-[10px]">
-              {maxBlood} blood · {perTurn} per turn
-            </p>
-            <div className="flex justify-center">
-              <Boxes count={maxBlood} />
-            </div>
-          </Section>
-          <Section title="Willpower">
-            <div className="flex justify-center">
-              <Boxes count={willpower} numbered />
-            </div>
-          </Section>
-          <Section title="Morality">
-            <p className="mb-1 text-center text-[11px]">{path?.name ?? "—"}</p>
-            <div className="flex justify-center">
-              <Boxes count={path?.rating ?? 0} numbered />
-            </div>
-          </Section>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <Section title="Health Levels">
-            <ul className="text-[12px] leading-6">
-              {by(t, "health_levels")
-                .sort((a, b) => ["Healthy", "Injured", "Incapacitated"].indexOf(a.name) - ["Healthy", "Injured", "Incapacitated"].indexOf(b.name))
-                .map((h) => (
-                  <li key={h.name} className="flex items-center justify-between">
-                    {h.name} <Boxes count={h.rating ?? 0} />
-                  </li>
-                ))}
-            </ul>
-          </Section>
-          <Section title="Status">
-            <TraitList traits={by(t, "status_traits")} empty={3} />
-          </Section>
-          <Section title="Test Pools">
-            <p className="text-[12px]">
-              Initiative: <strong>{Math.max(physical, mental)}</strong>
-            </p>
-            <ul className="mt-1 text-[11px] leading-5">
-              {[0, 1, 2].map((i) => (
-                <li key={i} className="h-5 border-b border-dotted border-neutral-400" />
+      <div className="grid grid-cols-3 gap-4">
+        <Section title="Health Levels">
+          <ul className="text-[12px] leading-6">
+            {by(t, "health_levels")
+              .sort((a, b) => ["Healthy", "Injured", "Incapacitated"].indexOf(a.name) - ["Healthy", "Injured", "Incapacitated"].indexOf(b.name))
+              .map((h) => (
+                <li key={h.name} className="flex items-center justify-between">
+                  {h.name} <Boxes count={h.rating ?? 0} />
+                </li>
               ))}
-            </ul>
-          </Section>
-        </div>
-
-        {otherGroups.size > 0 && (
-          <div className="grid grid-cols-3 gap-4">
-            {[...otherGroups].map(([name, traits]) => (
-              <Section key={name} title={name}>
-                <TraitList traits={traits} empty={0} />
-              </Section>
+          </ul>
+        </Section>
+        <Section title="Status">
+          <TraitList traits={by(t, "status_traits")} empty={3} />
+        </Section>
+        <Section title="Test Pools">
+          <p className="text-[12px]">
+            Initiative: <strong>{Math.max(physical, mental)}</strong>
+          </p>
+          <ul className="mt-1 text-[11px] leading-5">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="h-5 border-b border-dotted border-neutral-400" />
             ))}
-          </div>
-        )}
+          </ul>
+        </Section>
+      </div>
 
-        <footer className="mt-auto border-t border-black pt-1 text-center text-[9px] text-neutral-600">
-          Printed from Horatio {new Date().toLocaleDateString()}
-          {sheet.home && sheet.accepted_at && ` · accepted ${new Date(sheet.accepted_at).toLocaleDateString()} by ${sheet.accepted_by}`}
-        </footer>
-      </article>
-    </div>
+      {otherGroups.size > 0 && (
+        <div className="grid grid-cols-3 gap-4">
+          {[...otherGroups].map(([name, traits]) => (
+            <Section key={name} title={name}>
+              <TraitList traits={traits} empty={0} />
+            </Section>
+          ))}
+        </div>
+      )}
+
+      <footer className="mt-auto border-t border-black pt-1 text-center text-[9px] text-neutral-600">
+        Printed from Horatio {new Date().toLocaleDateString()}
+        {sheet.home && sheet.accepted_at && ` · accepted ${new Date(sheet.accepted_at).toLocaleDateString()} by ${sheet.accepted_by}`}
+      </footer>
+    </article>
   );
 }
