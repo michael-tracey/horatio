@@ -39,6 +39,9 @@ const STRENGTHS: { value: Strength; label: string; meaning: string; tone: "blood
 ];
 const strength = (value: string) => STRENGTHS.find((s) => s.value === value);
 
+/** "p. 225" for the core book; a supplement's reference as given ("Vol. 2, p. 98"). */
+const pageText = (page: string) => (/^\d/.test(page) ? `p. ${page}` : page);
+
 /** Headings for what a rule is about, by trait category. */
 const ABOUT: Record<string, string> = {
   merits: "Merits",
@@ -153,7 +156,7 @@ function RuleRow({ rule, canEdit, onChange }: { rule: CheckOut; canEdit: boolean
     <li className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:gap-4">
       <span className="min-w-0 flex-1 text-sm">
         <span className="text-parchment">{rule.message || rule.about}</span>
-        {rule.page && <span className="text-mist"> p. {rule.page}</span>}
+        {rule.page && <span className="text-mist"> {pageText(rule.page)}</span>}
         {rule.house && <span className="ml-2 text-xs text-gold">(changed here)</span>}
       </span>
       <span className="flex shrink-0 items-center gap-2">

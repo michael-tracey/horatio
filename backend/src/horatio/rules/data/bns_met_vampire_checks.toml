@@ -26,6 +26,43 @@ forbids = { clan_family = ["Tremere"] }
 message = "Tremere, including their bloodlines, cannot take Unbondable."
 page = "253"
 
+# Ritual Master is both a Giovanni and a Tremere merit (Volume 2 Issue 1, pp. 34, 41).
+[[checks]]
+category = "merits"
+name = "Ritual Master"
+requires = { clan_family = ["Giovanni", "Tremere"] }
+message = "Ritual Master is only for Giovanni and Tremere."
+page = "Vol. 2 Issue 1, p. 34"
+
+# The Salubri warrior caste's merits are not for the Healer bloodline.
+[[checks]]
+category = "merits"
+name = "Sight Beyond Sight"
+forbids = { clan = ["Salubri: Healer"] }
+message = "The Healer bloodline cannot take Sight Beyond Sight."
+page = "Vol. 2 Issue 1, p. 51"
+
+[[checks]]
+category = "merits"
+name = "Demon Slayer"
+forbids = { clan = ["Salubri: Healer"] }
+message = "The Healer bloodline cannot take Demon Slayer."
+page = "Vol. 2 Issue 1, p. 51"
+
+[[checks]]
+category = "merits"
+name = "Sanguine Anointing"
+forbids = { clan = ["Salubri: Healer"] }
+message = "The Healer bloodline cannot take Sanguine Anointing."
+page = "Vol. 2 Issue 1, p. 51"
+
+[[checks]]
+category = "flaws"
+name = "Brujah: Coldly Logical"
+forbids = { clan = ["Brujah: True Brujah"] }
+message = "True Brujah cannot take Coldly Logical."
+page = "Vol. 2, p. 270"
+
 # --- clan weaknesses ----------------------------------------------------------
 
 [[checks]]
@@ -135,6 +172,43 @@ forbids = { any_of = [
 ] }
 message = "A character on a Path of Enlightenment cannot have Whisper of Life."
 page = "253"
+
+# From the supplements: MET: VTM Volume 2 Issue 1 and Volume 2.
+
+[[checks]]
+category = "techniques"
+name = "Retain the Quick Blood"
+forbids = { has = { category = "flaws", name = "Assamite: Diluted Blood" } }
+message = "Diluted Blood bars Retain the Quick Blood."
+page = "Vol. 2, p. 269"
+
+[[checks]]
+category = "backgrounds"
+name = "Influences: The Elite"
+forbids = { has = { category = "flaws", name = "Followers of Set: Low Down and Dirty" } }
+message = "Low Down and Dirty bars the Elite influence background."
+page = "Vol. 2, p. 271"
+
+[[checks]]
+category = "merits"
+name = "Personal Masquerade"
+forbids = { has = { category = "flaws", name = "Followers of Set: Serpentine Physiology" } }
+message = "Serpentine Physiology bars Personal Masquerade."
+page = "Vol. 2, p. 271"
+
+[[checks]]
+category = "merits"
+name = "Whisper of Life"
+forbids = { has = { category = "flaws", name = "Followers of Set: Serpentine Physiology" } }
+message = "Serpentine Physiology bars Whisper of Life."
+page = "Vol. 2, p. 271"
+
+[[checks]]
+category = "backgrounds"
+name = "Herd"
+forbids = { has = { category = "flaws", name = "Baali: Carrion Comfort" } }
+message = "Carrion Comfort bars the Herd background."
+page = "Vol. 2, p. 281"
 
 # --- only one -------------------------------------------------------------------
 
@@ -262,6 +336,23 @@ name_prefix = "Bloodline:"
 [[creation_only]]
 category = "merits"
 name = "Uncommon Clan"
+
+# Volume 2 Issue 1, pp. 46, 53; Volume 2, pp. 62, 260.
+[[creation_only]]
+category = "merits"
+name = "Inceptor"
+
+[[creation_only]]
+category = "merits"
+name = "Bonds of Stolen Vitae"
+
+[[creation_only]]
+category = "merits"
+name = "Blight of the Ever-Hungry"
+
+[[creation_only]]
+category = "merits"
+name = "Shadows of the Past"
 
 [[creation_only]]
 category = "merits"
@@ -432,7 +523,7 @@ message = "A path of Necromancy needs Necromantic Training, a merit that grants 
 page = "112"
 
 # --- technique prerequisites (pp. 224–234) ---------------------------------------
-# Techniques from the core book; supplements add more.
+# Techniques from the core book.
 
 [[checks]]
 category = "techniques"
@@ -687,12 +778,12 @@ page = "231"
 
 [[checks]]
 category = "techniques"
-name = "Telepathic Directive"
+name = "Retain the Quick Blood"
 requires = { has_all = [
   { category = "disciplines", name = "Quietus", rating = 2 },
   { category = "disciplines", name = "Celerity", rating = 2 },
 ] }
-message = "Telepathic Directive needs Quietus 2 and Celerity 2."
+message = "Retain the Quick Blood needs Quietus 2 and Celerity 2."
 page = "231"
 
 [[checks]]
@@ -707,13 +798,13 @@ page = "232"
 
 [[checks]]
 category = "techniques"
-name = "Will to Survive"
+name = "Unnatural Grace"
 requires = { has_all = [
   { category = "disciplines", name = "Celerity", rating = 1 },
   { category = "disciplines", name = "Fortitude", rating = 1 },
   { category = "disciplines", name = "Presence", rating = 1 },
 ] }
-message = "Will to Survive needs Celerity 1 and Fortitude 1 and Presence 1."
+message = "Unnatural Grace needs Celerity 1, Fortitude 1 and Presence 1."
 page = "232"
 
 [[checks]]
@@ -795,6 +886,903 @@ requires = { has_all = [
 ] }
 message = "Ligeia's Lament needs Melpominee 2 and Dominate 2."
 page = "229"
+
+
+# --- supplement technique prerequisites --------------------------------------------
+# From MET: VTM Volume 2 Issue 1 (pp. 56–85) and Volume 2 (pp. 75–91), plus the
+# core book's Quickened Blood and Radiant Gaze. Where the catalogue spells a name
+# differently from the book, the message uses the book's.
+
+[[checks]]
+category = "techniques"
+name = "Abrupt Internment"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Abrupt Internment needs Protean 3 and Fortitude 1."
+page = "Vol. 2 Issue 1, p. 56"
+
+[[checks]]
+category = "techniques"
+name = "Alchemical Attunement"
+requires = { has_all = [
+  { category = "disciplines", name = "Visceratika", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Alchemical Attunement needs Visceratika 3 and Fortitude 1."
+page = "Vol. 2 Issue 1, p. 57"
+
+[[checks]]
+category = "techniques"
+name = "Alpha of the Pack"
+requires = { has_all = [
+  { category = "disciplines", name = "Spiritus", rating = 2 },
+  { category = "disciplines", name = "Presence", rating = 3 },
+] }
+message = "Alpha of the Pack needs Spiritus 2 and Presence 3."
+page = "Vol. 2, p. 83"
+
+[[checks]]
+category = "techniques"
+name = "Badger's Hide"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Badger's Hide needs Protean 3 and Fortitude 2."
+page = "Vol. 2 Issue 1, p. 58"
+
+[[checks]]
+category = "techniques"
+name = "Beast's Vigor"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Beast's Vigor needs Animalism 3 and Fortitude 2."
+page = "Vol. 2 Issue 1, p. 58"
+
+[[checks]]
+category = "techniques"
+name = "Beastial Allure"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 2 },
+  { category = "disciplines", name = "Presence", rating = 3 },
+] }
+message = "Bestial Allure needs Animalism 2 and Presence 3."
+page = "Vol. 2 Issue 1, p. 59"
+
+[[checks]]
+category = "techniques"
+name = "Black Mist"
+requires = { has_all = [
+  { category = "disciplines", name = "Obtenebration", rating = 2 },
+  { category = "disciplines", name = "Dominate", rating = 3 },
+] }
+message = "Black Mist needs Obtenebration 2 and Dominate 3."
+page = "Vol. 2 Issue 1, p. 59"
+
+[[checks]]
+category = "techniques"
+name = "Bliss"
+requires = { has_all = [
+  { category = "disciplines", name = "Presence", rating = 3 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Bliss needs Presence 3 and Dominate 2."
+page = "Vol. 2, p. 89"
+
+[[checks]]
+category = "techniques"
+name = "Blood Tempering"
+requires = { has_all = [
+  { category = "disciplines", name = "Quietus", rating = 2 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Blood Tempering needs Quietus 2 and Fortitude 2."
+page = "Vol. 2 Issue 1, p. 60"
+
+[[checks]]
+category = "techniques"
+name = "Bonecraft Prodigy"
+requires = { has_all = [
+  { category = "disciplines", name = "Vicissitude", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 3 },
+] }
+message = "Bonecraft Prodigy needs Vicissitude 3 and Fortitude 3."
+page = "Vol. 2 Issue 1, p. 61"
+
+[[checks]]
+category = "techniques"
+name = "Bullet Time"
+requires = { has_all = [
+  { category = "disciplines", name = "Temporis", rating = 3 },
+  { category = "disciplines", name = "Auspex", rating = 1 },
+] }
+message = "Bullet Time needs Temporis 3 and Auspex 1."
+page = "Vol. 2 Issue 1, p. 62"
+
+[[checks]]
+category = "techniques"
+name = "Call Upon the Changeling Soul"
+requires = { has_all = [
+  { category = "disciplines", name = "Mytherceria", rating = 3 },
+  { category = "disciplines", name = "Obfuscate", rating = 3 },
+] }
+message = "Call Upon the Changeling Soul needs Mytherceria 3 and Obfuscate 3."
+page = "Vol. 2 Issue 1, p. 62"
+
+[[checks]]
+category = "techniques"
+name = "Catch a Whiff of Madness"
+requires = { has_all = [
+  { category = "disciplines", name = "Dementation", rating = 3 },
+  { category = "disciplines", name = "Auspex", rating = 2 },
+] }
+message = "Catch a Whiff of Madness needs Dementation 3 and Auspex 2."
+page = "Vol. 2, p. 87"
+
+[[checks]]
+category = "techniques"
+name = "Crazy Like a Fox"
+requires = { has_all = [
+  { category = "disciplines", name = "Dementation", rating = 3 },
+  { category = "disciplines", name = "Presence", rating = 2 },
+] }
+message = "Crazy Like a Fox needs Dementation 3 and Presence 2."
+page = "Vol. 2 Issue 1, p. 62"
+
+[[checks]]
+category = "techniques"
+name = "Cunning Counselor"
+requires = { has_all = [
+  { category = "disciplines", name = "Serpentis", rating = 2 },
+  { category = "disciplines", name = "Presence", rating = 3 },
+] }
+message = "Cunning Counselor needs Serpentis 2 and Presence 3."
+page = "Vol. 2, p. 91"
+
+[[checks]]
+category = "techniques"
+name = "Death's Caress"
+requires = { has_all = [
+  { category = "disciplines", name = "Thanatosis", rating = 4 },
+  { category = "disciplines", name = "Potence", rating = 1 },
+] }
+message = "Death's Caress needs Thanatosis 4 and Potence 1."
+page = "Vol. 2 Issue 1, p. 63"
+
+[[checks]]
+category = "techniques"
+name = "Displacement Aura"
+requires = { has_all = [
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+  { category = "disciplines", name = "Obfuscate", rating = 2 },
+] }
+message = "Displacement Aura needs Fortitude 1 and Obfuscate 2."
+page = "Vol. 2 Issue 1, p. 63"
+
+[[checks]]
+category = "techniques"
+name = "Distant Friend"
+requires = { has_all = [
+  { category = "disciplines", name = "Presence", rating = 4 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Distant Friend needs Presence 4 and Dominate 2."
+page = "Vol. 2, p. 90"
+
+[[checks]]
+category = "techniques"
+name = "Dynamic Form"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 4 },
+  { category = "disciplines", name = "Animalism", rating = 2 },
+] }
+message = "Dynamic Form needs Protean 4 and Animalism 2."
+page = "Vol. 2 Issue 1, p. 63"
+
+[[checks]]
+category = "techniques"
+name = "Earworm"
+requires = { has_all = [
+  { category = "disciplines", name = "Melpominee", rating = 1 },
+  { category = "disciplines", name = "Dementation", rating = 1 },
+] }
+message = "Earworm needs Melpominee 1 and Dementation 1."
+page = "Vol. 2 Issue 1, p. 64"
+
+[[checks]]
+category = "techniques"
+name = "Enervation of Psyche"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 4 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Enervation of Psyche needs Auspex 4 and Dominate 2."
+page = "Vol. 2 Issue 1, p. 64"
+
+[[checks]]
+category = "techniques"
+name = "Enhance the Wild Ride"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 2 },
+  { category = "disciplines", name = "Animalism", rating = 4 },
+] }
+message = "Enhance the Wild Ride needs Protean 2 and Animalism 4."
+page = "Vol. 2 Issue 1, p. 64"
+
+[[checks]]
+category = "techniques"
+name = "Escape Clause"
+requires = { has_all = [
+  { category = "disciplines", name = "Daimoinon", rating = 2 },
+  { category = "disciplines", name = "Dominate", rating = 4 },
+] }
+message = "Escape Clause needs Daimoinon 2 and Dominate 4."
+page = "Vol. 2 Issue 1, p. 65"
+
+[[checks]]
+category = "techniques"
+name = "Evil Eye"
+requires = { has_all = [
+  { category = "disciplines", name = "Thanatosis", rating = 4 },
+  { category = "disciplines", name = "Auspex", rating = 2 },
+] }
+message = "Evil Eye needs Thanatosis 4 and Auspex 2."
+page = "Vol. 2 Issue 1, p. 65"
+
+[[checks]]
+category = "techniques"
+name = "Eye of Unforgiving Heaven"
+requires = { has_all = [
+  { category = "disciplines", name = "Valeren", rating = 4 },
+  { category = "disciplines", name = "Auspex", rating = 4 },
+] }
+message = "Eye of Unforgiving Heaven needs Valeren 4 and Auspex 4."
+page = "Vol. 2 Issue 1, p. 65"
+
+[[checks]]
+category = "techniques"
+name = "Familiar Faces"
+requires = { has_all = [
+  { category = "disciplines", name = "Visceratika", rating = 2 },
+  { category = "disciplines", name = "Auspex", rating = 1 },
+] }
+message = "Familiar Faces needs Visceratika 2 and Auspex 1."
+page = "Vol. 2 Issue 1, p. 66"
+
+[[checks]]
+category = "techniques"
+name = "Feed the Blighted Wolf"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 3 },
+  { category = "disciplines", name = "Potence", rating = 2 },
+] }
+message = "Feed the Blighted Wolf needs Animalism 3 and Potence 2."
+page = "Vol. 2 Issue 1, p. 67"
+
+[[checks]]
+category = "techniques"
+name = "Feral Ichor"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 2 },
+  { category = "disciplines", name = "Quietus", rating = 2 },
+] }
+message = "Feral Ichor needs Protean 2 and Quietus 2."
+page = "Vol. 2 Issue 1, p. 66"
+
+[[checks]]
+category = "techniques"
+name = "Final Strike"
+requires = { has_all = [
+  { category = "disciplines", name = "Temporis", rating = 5 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Final Strike needs Temporis 5 and Dominate 2."
+page = "Vol. 2 Issue 1, p. 67"
+
+[[checks]]
+category = "techniques"
+name = "Give 'Em Hell"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 3 },
+  { category = "disciplines", name = "Presence", rating = 2 },
+] }
+message = "Give 'Em Hell needs Auspex 3 and Presence 2."
+page = "Vol. 2 Issue 1, p. 67"
+
+[[checks]]
+category = "techniques"
+name = "Guardian's Vigil"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 2 },
+  { category = "disciplines", name = "Celerity", rating = 2 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Guardian's Vigil needs Auspex 2, Celerity 2 and Fortitude 2."
+page = "Vol. 2 Issue 1, p. 68"
+
+[[checks]]
+category = "techniques"
+name = "Harbinger of Grace"
+requires = { has_all = [
+  { category = "disciplines", name = "Obeah", rating = 4 },
+  { category = "disciplines", name = "Obfuscate", rating = 3 },
+] }
+message = "Harbinger of Grace needs Obeah 4 and Obfuscate 3."
+page = "Vol. 2 Issue 1, p. 68"
+
+[[checks]]
+category = "techniques"
+name = "Harbinger of Vengeance"
+requires = { has_all = [
+  { category = "disciplines", name = "Valeren", rating = 4 },
+  { category = "disciplines", name = "Obfuscate", rating = 3 },
+] }
+message = "Harbinger of Vengeance needs Valeren 4 and Obfuscate 3."
+page = "Vol. 2 Issue 1, p. 69"
+
+[[checks]]
+category = "techniques"
+name = "Healer's Intuition"
+requires = { has_all = [
+  { category = "disciplines", name = "Obeah", rating = 1 },
+  { category = "disciplines", name = "Auspex", rating = 4 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Healer's Intuition needs Obeah 1, Auspex 4 and Fortitude 1."
+page = "Vol. 2 Issue 1, p. 69"
+
+[[checks]]
+category = "techniques"
+name = "Illusory Augmentation"
+requires = { has_all = [
+  { category = "disciplines", name = "Chimerstry", rating = 3 },
+  { category = "disciplines", name = "Potence", rating = 1 },
+] }
+message = "Illusory Augmentation needs Chimerstry 3 and Potence 1."
+page = "Vol. 2 Issue 1, p. 70"
+
+[[checks]]
+category = "techniques"
+name = "Inertial Tampering"
+requires = { has_all = [
+  { category = "disciplines", name = "Temporis", rating = 2 },
+  { category = "disciplines", name = "Presence", rating = 3 },
+] }
+message = "Inertial Tampering needs Temporis 2 and Presence 3."
+page = "Vol. 2 Issue 1, p. 70"
+
+[[checks]]
+category = "techniques"
+name = "Instantaneous Transformation"
+requires = { has_all = [
+  { category = "disciplines", name = "Celerity", rating = 2 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Instantaneous Transformation needs Celerity 2 and Fortitude 1."
+page = "Vol. 2, p. 90"
+
+[[checks]]
+category = "techniques"
+name = "Kinetic Wave"
+requires = { has_all = [
+  { category = "disciplines", name = "Kineticism", rating = 2 },
+  { category = "disciplines", name = "Potence", rating = 2 },
+] }
+message = "Kinetic Wave needs Kineticism 2 and Potence 2."
+page = "Vol. 2, p. 76"
+
+[[checks]]
+category = "techniques"
+name = "Madman's Quill"
+requires = { has_all = [
+  { category = "disciplines", name = "Dementation", rating = 4 },
+  { category = "disciplines", name = "Auspex", rating = 3 },
+] }
+message = "Madman's Quill needs Dementation 4 and Auspex 3."
+page = "Vol. 2, p. 87"
+
+[[checks]]
+category = "techniques"
+name = "Manic Episode"
+requires = { has_all = [
+  { category = "disciplines", name = "Dementation", rating = 3 },
+  { category = "disciplines", name = "Celerity", rating = 1 },
+] }
+message = "Manic Episode needs Dementation 3 and Celerity 1."
+page = "Vol. 2 Issue 1, p. 71"
+
+[[checks]]
+category = "techniques"
+name = "Martyr's Defiance"
+requires = { has_all = [
+  { category = "disciplines", name = "Obeah", rating = 4 },
+  { category = "disciplines", name = "Fortitude", rating = 3 },
+] }
+message = "Martyr's Defiance needs Obeah 4 and Fortitude 3."
+page = "Vol. 2 Issue 1, p. 72"
+
+[[checks]]
+category = "techniques"
+name = "Mass Hypnosis"
+requires = { has_all = [
+  { category = "disciplines", name = "Serpentis", rating = 1 },
+  { category = "disciplines", name = "Presence", rating = 2 },
+] }
+message = "Mass Hypnosis needs Serpentis 1 and Presence 2."
+page = "Vol. 2 Issue 1, p. 71"
+
+[[checks]]
+category = "techniques"
+name = "Master of Illusion"
+requires = { has_all = [
+  { category = "disciplines", name = "Chimerstry", rating = 5 },
+  { category = "disciplines", name = "Celerity", rating = 3 },
+] }
+message = "Master of Illusion needs Chimerstry 5 and Celerity 3."
+page = "Vol. 2 Issue 1, p. 71"
+
+[[checks]]
+category = "techniques"
+name = "Maw of the Anaconda"
+requires = { has_all = [
+  { category = "disciplines", name = "Serpentis", rating = 2 },
+  { category = "disciplines", name = "Potence", rating = 1 },
+] }
+message = "Maw of the Anaconda needs Serpentis 2 and Potence 1."
+page = "Vol. 2 Issue 1, p. 72"
+
+[[checks]]
+category = "techniques"
+name = "Memory Rift"
+requires = { has_all = [
+  { category = "disciplines", name = "Obfuscate", rating = 4 },
+  { category = "disciplines", name = "Dominate", rating = 3 },
+] }
+message = "Memory Rift needs Obfuscate 4 and Dominate 3."
+page = "Vol. 2, p. 88"
+
+[[checks]]
+category = "techniques"
+name = "Mortal Terror"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 3 },
+  { category = "disciplines", name = "Presence", rating = 2 },
+] }
+message = "Mortal Terror needs Animalism 3 and Presence 2."
+page = "Vol. 2 Issue 1, p. 72"
+
+[[checks]]
+category = "techniques"
+name = "Mortician's Secret"
+requires = { has_all = [
+  { category = "disciplines", name = "Thanatosis", rating = 1 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Mortician's Secret needs Thanatosis 1 and Fortitude 2."
+page = "Vol. 2 Issue 1, p. 73"
+
+[[checks]]
+category = "techniques"
+name = "Ominous Premonition"
+requires = { has_all = [
+  { category = "disciplines", name = "Daimoinon", rating = 2 },
+  { category = "disciplines", name = "Auspex", rating = 2 },
+] }
+message = "Ominous Premonition needs Daimoinon 2 and Auspex 2."
+page = "Vol. 2 Issue 1, p. 73"
+
+[[checks]]
+category = "techniques"
+name = "Perfected Insticts"
+requires = { has_all = [
+  { category = "disciplines", name = "Spiritus", rating = 2 },
+  { category = "disciplines", name = "Animalism", rating = 4 },
+] }
+message = "Perfected Instincts needs Spiritus 2 and Animalism 4."
+page = "Vol. 2, p. 83"
+
+[[checks]]
+category = "techniques"
+name = "Poisonous Thoughts"
+requires = { has_all = [
+  { category = "disciplines", name = "Dementation", rating = 4 },
+  { category = "disciplines", name = "Auspex", rating = 4 },
+] }
+message = "Poisonous Thoughts needs Dementation 4 and Auspex 4."
+page = "Vol. 2, p. 91"
+
+[[checks]]
+category = "techniques"
+name = "Poisonous Will"
+requires = { has_all = [
+  { category = "disciplines", name = "Quietus", rating = 3 },
+  { category = "disciplines", name = "Animalism", rating = 3 },
+] }
+message = "Poisonous Will needs Quietus 3 and Animalism 3."
+page = "Vol. 2 Issue 1, p. 74"
+
+[[checks]]
+category = "techniques"
+name = "Predatory Senses"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 1 },
+  { category = "disciplines", name = "Auspex", rating = 1 },
+] }
+message = "Predatory Senses needs Protean 1 and Auspex 1."
+page = "Vol. 2 Issue 1, p. 74"
+
+[[checks]]
+category = "techniques"
+name = "Prevailing Force"
+requires = { has_all = [
+  { category = "disciplines", name = "Kineticism", rating = 5 },
+  { category = "disciplines", name = "Potence", rating = 2 },
+] }
+message = "Prevailing Force needs Kineticism 5 and Potence 2."
+page = "Vol. 2, p. 76"
+
+[[checks]]
+category = "techniques"
+name = "Primal Grace"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 4 },
+  { category = "disciplines", name = "Presence", rating = 1 },
+] }
+message = "Primal Grace needs Protean 4 and Presence 1."
+page = "Vol. 2 Issue 1, p. 74"
+
+[[checks]]
+category = "techniques"
+name = "Pulse of Undeath"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 2 },
+  { category = "disciplines", name = "Celerity", rating = 1 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+  { category = "disciplines", name = "Potence", rating = 1 },
+] }
+message = "Pulse of Undeath needs Auspex 2, Celerity 1, Fortitude 1 and Potence 1."
+page = "Vol. 2 Issue 1, p. 75"
+
+[[checks]]
+category = "techniques"
+name = "Quick Hands, Quick Work"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 2 },
+  { category = "disciplines", name = "Celerity", rating = 2 },
+] }
+message = "Quick Hands, Quick Work needs Auspex 2 and Celerity 2."
+page = "Vol. 2 Issue 1, p. 76"
+
+[[checks]]
+category = "techniques"
+name = "Quickened Blood"
+requires = { has_all = [
+  { category = "disciplines", name = "Celerity", rating = 2 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Quickened Blood needs Celerity 2 and Fortitude 1."
+page = "230"
+
+[[checks]]
+category = "techniques"
+name = "Quicksilver Contemplation"
+requires = { has_all = [
+  { category = "disciplines", name = "Temporis", rating = 3 },
+  { category = "disciplines", name = "Auspex", rating = 2 },
+] }
+message = "Quicksilver Contemplation needs Temporis 3 and Auspex 2."
+page = "Vol. 2, p. 88"
+
+[[checks]]
+category = "techniques"
+name = "Radiant Gaze"
+requires = { has_all = [
+  { category = "disciplines", name = "Serpentis", rating = 2 },
+  { category = "disciplines", name = "Dominate", rating = 3 },
+] }
+message = "Radiant Gaze needs Serpentis 2 and Dominate 3."
+page = "230"
+
+[[checks]]
+category = "techniques"
+name = "Rend Flesh"
+requires = { has_all = [
+  { category = "disciplines", name = "Vicissitude", rating = 2 },
+  { category = "disciplines", name = "Potence", rating = 2 },
+] }
+message = "Rend Flesh needs Vicissitude 2 and Potence 2."
+page = "Vol. 2 Issue 1, p. 76"
+
+[[checks]]
+category = "techniques"
+name = "Resplendence of Supple Form"
+requires = { has_all = [
+  { category = "disciplines", name = "Vicissitude", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Resplendence of the Supple Form needs Vicissitude 3 and Fortitude 2."
+page = "Vol. 2 Issue 1, p. 76"
+
+[[checks]]
+category = "techniques"
+name = "Saguinary Expulsion"
+requires = { has_all = [
+  { category = "disciplines", name = "Potence", rating = 1 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Sanguinary Expulsion needs Potence 1 and Fortitude 2."
+page = "Vol. 2, p. 90"
+
+[[checks]]
+category = "techniques"
+name = "Savage Provocation"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 2 },
+  { category = "disciplines", name = "Presence", rating = 2 },
+] }
+message = "Savage Provocation needs Animalism 2 and Presence 2."
+page = "Vol. 2 Issue 1, p. 77"
+
+[[checks]]
+category = "techniques"
+name = "Scalpel Tongue"
+requires = { has_all = [
+  { category = "disciplines", name = "Celerity", rating = 1 },
+  { category = "disciplines", name = "Presence", rating = 1 },
+] }
+message = "Scalpel Tongue needs Celerity 1 and Presence 1."
+page = "Vol. 2 Issue 1, p. 77"
+
+[[checks]]
+category = "techniques"
+name = "Setting the Tempo"
+requires = { has_all = [
+  { category = "disciplines", name = "Melpominee", rating = 4 },
+  { category = "disciplines", name = "Dominate", rating = 1 },
+] }
+message = "Setting the Tempo needs Melpominee 4 and Dominate 1."
+page = "Vol. 2 Issue 1, p. 78"
+
+[[checks]]
+category = "techniques"
+name = "Shadowcrafting"
+requires = { has_all = [
+  { category = "disciplines", name = "Obtenebration", rating = 1 },
+  { category = "disciplines", name = "Potence", rating = 1 },
+] }
+message = "Shadowcrafting needs Obtenebration 1 and Potence 1."
+page = "Vol. 2 Issue 1, p. 80"
+
+[[checks]]
+category = "techniques"
+name = "Shedding the Serpent's Skin"
+requires = { has_all = [
+  { category = "disciplines", name = "Serpentis", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Sloughing the Serpent's Skin needs Serpentis 3 and Fortitude 2."
+page = "Vol. 2 Issue 1, p. 78"
+
+[[checks]]
+category = "techniques"
+name = "Smile Through the Pain"
+requires = { has_all = [
+  { category = "disciplines", name = "Dementation", rating = 1 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+  { category = "disciplines", name = "Presence", rating = 3 },
+] }
+message = "Smile Through the Pain needs Dementation 1, Fortitude 1 and Presence 3."
+page = "Vol. 2 Issue 1, p. 78"
+
+[[checks]]
+category = "techniques"
+name = "Snake Den"
+requires = { has_all = [
+  { category = "disciplines", name = "Serpentis", rating = 4 },
+  { category = "disciplines", name = "Obfuscate", rating = 2 },
+] }
+message = "Snake Den needs Serpentis 4 and Obfuscate 2."
+page = "Vol. 2 Issue 1, p. 79"
+
+[[checks]]
+category = "techniques"
+name = "Spawning Pool"
+requires = { has_all = [
+  { category = "disciplines", name = "Animalism", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Spawning Pool needs Animalism 3 and Fortitude 1."
+page = "Vol. 2 Issue 1, p. 80"
+
+[[checks]]
+category = "techniques"
+name = "Stealth Vehicle"
+requires = { has_all = [
+  { category = "disciplines", name = "Auspex", rating = 1 },
+  { category = "disciplines", name = "Obfuscate", rating = 3 },
+] }
+message = "Stealth Vehicle needs Auspex 1 and Obfuscate 3."
+page = "Vol. 2 Issue 1, p. 81"
+
+[[checks]]
+category = "techniques"
+name = "Stony Retribution"
+requires = { has_all = [
+  { category = "disciplines", name = "Visceratika", rating = 2 },
+  { category = "disciplines", name = "Potence", rating = 2 },
+] }
+message = "Stony Retribution needs Visceratika 2 and Potence 2."
+page = "Vol. 2 Issue 1, p. 81"
+
+[[checks]]
+category = "techniques"
+name = "Suck It Up"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 2 },
+  { category = "disciplines", name = "Animalism", rating = 1 },
+] }
+message = "Suck It Up needs Protean 2 and Animalism 1."
+page = "Vol. 2, p. 89"
+
+[[checks]]
+category = "techniques"
+name = "Symbolic Possession"
+requires = { has_all = [
+  { category = "disciplines", name = "Daimoinon", rating = 3 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Symbiotic Possession needs Daimoinon 3 and Dominate 2."
+page = "Vol. 2 Issue 1, p. 82"
+
+[[checks]]
+category = "techniques"
+name = "Tempest Form"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 5 },
+  { category = "disciplines", name = "Potence", rating = 1 },
+] }
+message = "Tempest Form needs Protean 5 and Potence 1."
+page = "Vol. 2 Issue 1, p. 82"
+
+[[checks]]
+category = "techniques"
+name = "Terror of Tentacles"
+requires = { has_all = [
+  { category = "disciplines", name = "Obtenebration", rating = 3 },
+  { category = "disciplines", name = "Potence", rating = 2 },
+] }
+message = "Terror of Tentacles needs Obtenebration 3 and Potence 2."
+page = "Vol. 2 Issue 1, p. 83"
+
+[[checks]]
+category = "techniques"
+name = "The Iron Glare"
+requires = { has_all = [
+  { category = "disciplines", name = "Potence", rating = 3 },
+  { category = "disciplines", name = "Presence", rating = 3 },
+] }
+message = "The Iron Glare needs Potence 3 and Presence 3."
+page = "Vol. 2, p. 88"
+
+[[checks]]
+category = "techniques"
+name = "Translocation"
+requires = { has_all = [
+  { category = "disciplines", name = "Protean", rating = 3 },
+  { category = "disciplines", name = "Celerity", rating = 2 },
+] }
+message = "Translocation needs Protean 3 and Celerity 2."
+page = "Vol. 2 Issue 1, p. 84"
+
+[[checks]]
+category = "techniques"
+name = "Unlock the Hidden Talent"
+requires = { has_all = [
+  { category = "disciplines", name = "Presence", rating = 3 },
+  { category = "disciplines", name = "Auspex", rating = 4 },
+] }
+message = "Unlock the Hidden Talent needs Presence 3 and Auspex 4."
+page = "Vol. 2, p. 89"
+
+[[checks]]
+category = "techniques"
+name = "Vanishing Act"
+requires = { has_all = [
+  { category = "disciplines", name = "Chimerstry", rating = 1 },
+  { category = "disciplines", name = "Obfuscate", rating = 2 },
+] }
+message = "Vanishing Act needs Chimerstry 1 and Obfuscate 2."
+page = "Vol. 2 Issue 1, p. 84"
+
+[[checks]]
+category = "techniques"
+name = "Venomous Beast"
+requires = { has_all = [
+  { category = "disciplines", name = "Quietus", rating = 2 },
+  { category = "disciplines", name = "Animalism", rating = 2 },
+] }
+message = "Venomous Beast needs Quietus 2 and Animalism 2."
+page = "Vol. 2 Issue 1, p. 84"
+
+[[checks]]
+category = "techniques"
+name = "Vexing Hecklers"
+requires = { has_all = [
+  { category = "disciplines", name = "Mytherceria", rating = 3 },
+  { category = "disciplines", name = "Dominate", rating = 2 },
+] }
+message = "Vexing Hecklers needs Mytherceria 3 and Dominate 2."
+page = "Vol. 2 Issue 1, p. 85"
+
+[[checks]]
+category = "techniques"
+name = "Wall of Force"
+requires = { has_all = [
+  { category = "disciplines", name = "Kineticism", rating = 3 },
+  { category = "disciplines", name = "Fortitude", rating = 2 },
+] }
+message = "Wall of Force needs Kineticism 3 and Fortitude 2."
+page = "Vol. 2, p. 76"
+
+[[checks]]
+category = "techniques"
+name = "Warrior's Bond"
+requires = { has_all = [
+  { category = "disciplines", name = "Valeren", rating = 1 },
+  { category = "disciplines", name = "Auspex", rating = 4 },
+  { category = "disciplines", name = "Fortitude", rating = 1 },
+] }
+message = "Warrior's Bond needs Valeren 1, Auspex 4 and Fortitude 1."
+page = "Vol. 2 Issue 1, p. 85"
+
+[[checks]]
+category = "techniques"
+name = "Weakness of Steel"
+requires = { has_all = [
+  { category = "disciplines", name = "Quietus", rating = 2 },
+  { category = "disciplines", name = "Auspex", rating = 3 },
+] }
+message = "Weakness of Steel needs Quietus 2 and Auspex 3."
+page = "Vol. 2 Issue 1, p. 85"
+
+[[checks]]
+category = "techniques"
+name = "Press-Ganged Coven"
+requires = { has = { category = "disciplines", name = "Dominate", rating = 4 }, has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Ash Path", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Bone Path", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Mortis Path", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Path of Grief", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 3 },
+] }
+message = "Press-Ganged Coven needs Thaumaturgy 3 or Necromancy 3, and Dominate 4."
+page = "Vol. 2 Issue 1, p. 75"
+
+[[checks]]
+category = "techniques"
+name = "That Damn Cat"
+requires = { has = { category = "disciplines", name = "Dementation", rating = 2 }, has_any = [
+  { category = "disciplines", name = "Animalism", rating = 4 },
+  { category = "disciplines", name = "Protean", rating = 4 },
+] }
+message = "That Damn Cat needs Dementation 2, and Animalism 4 or Protean 4."
+page = "Vol. 2 Issue 1, p. 83"
 
 # --- rituals (pp. 172, 187) ---------------------------------------------------------
 # A ritual is bought at its level, and needs a path of its magic at that level.
@@ -968,16 +1956,74 @@ page = "172"
 [[checks]]
 category = "rituals"
 name_prefix = "Thaumaturgy: "
-forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " } } }
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " } }, not = { has = { category = "merits", name = "Ritual Master" }, clan_family = ["Tremere"] } }
 message = "A thaumaturge knows no more rituals than their dots of Thaumaturgy."
 page = "187"
 
 [[checks]]
 category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " }, per_dot = 2 } }
+message = "Ritual Master gives two Thaumaturgy rituals per dot of Thaumaturgy, no more."
+page = "Vol. 2 Issue 1, p. 41"
+
+[[checks]]
+category = "rituals"
 name_prefix = "Necromancy: "
-forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " } } }
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " } }, not = { has = { category = "merits", name = "Ritual Master" }, clan_family = ["Giovanni"] } }
 message = "A necromancer knows no more rituals than their dots of Necromancy."
 page = "172"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " }, per_dot = 2 } }
+message = "Ritual Master gives two Necromancy rituals per dot of Necromancy, no more."
+page = "Vol. 2 Issue 1, p. 34"
+
+# Abyss Mysticism (Volume 2, pp. 98-99): rituals need Walk the Abyss and are no
+# higher than the mystic's Obtenebration; there is no limit on how many.
+[[checks]]
+category = "rituals"
+name_prefix = "Abyssal: "
+requires = { has = { category = "merits", name = "Walk the Abyss" } }
+message = "Abyss Mysticism needs the Lasombra merit Walk the Abyss."
+page = "Vol. 2, p. 98"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Abyssal: "
+forbids = { self = { rating = 1 }, not = { has = { category = "disciplines", name = "Obtenebration", rating = 1 } } }
+message = "A level 1 Abyss Mysticism ritual needs Obtenebration 1 or more."
+page = "Vol. 2, p. 99"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Abyssal: "
+forbids = { self = { rating = 2 }, not = { has = { category = "disciplines", name = "Obtenebration", rating = 2 } } }
+message = "A level 2 Abyss Mysticism ritual needs Obtenebration 2 or more."
+page = "Vol. 2, p. 99"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Abyssal: "
+forbids = { self = { rating = 3 }, not = { has = { category = "disciplines", name = "Obtenebration", rating = 3 } } }
+message = "A level 3 Abyss Mysticism ritual needs Obtenebration 3 or more."
+page = "Vol. 2, p. 99"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Abyssal: "
+forbids = { self = { rating = 4 }, not = { has = { category = "disciplines", name = "Obtenebration", rating = 4 } } }
+message = "A level 4 Abyss Mysticism ritual needs Obtenebration 4 or more."
+page = "Vol. 2, p. 99"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Abyssal: "
+forbids = { self = { rating = 5 }, not = { has = { category = "disciplines", name = "Obtenebration", rating = 5 } } }
+message = "A level 5 Abyss Mysticism ritual needs Obtenebration 5 or more."
+page = "Vol. 2, p. 99"
 
 # One Lore specialisation per dot of Lore; Loremaster gives two (pp. 96, 251).
 [[checks]]

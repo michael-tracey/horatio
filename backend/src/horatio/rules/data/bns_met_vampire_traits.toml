@@ -1190,19 +1190,19 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Assamite: Diluted Blood"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Assamite" }
 
 [[traits]]
 category = "flaws"
 name = "Assamite: Dual Caste"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Assamite" }
 
 [[traits]]
 category = "flaws"
 name = "Assamite: Unbroken"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Assamite" }
 
 [[traits]]
 category = "flaws"
@@ -1268,37 +1268,37 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Brujah: Coldly Logical"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Brujah" }
 
 [[traits]]
 category = "flaws"
 name = "Brujah: Cowardly Beast"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Brujah" }
 
 [[traits]]
 category = "flaws"
 name = "Brujah: Uncontrollable"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Brujah" }
 
 [[traits]]
 category = "flaws"
 name = "Caitiff: Bad Luck"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Caitiff" }
 
 [[traits]]
 category = "flaws"
 name = "Caitiff: Blackened Aura"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Caitiff" }
 
 [[traits]]
 category = "flaws"
 name = "Caitiff: Discipline Illiterate"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Caitiff" }
 
 [[traits]]
 category = "flaws"
@@ -1310,19 +1310,19 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Cappadocian: Falling Apart"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "flaws"
 name = "Cappadocian: Selective Memory"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "flaws"
 name = "Cappadocian: Specters of the Past"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "flaws"
@@ -1376,19 +1376,19 @@ properties = { rating = 1, type = "General" }
 category = "flaws"
 name = "Daughters of Cacophany: No Encore"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Daughters of Cacophony" }
 
 [[traits]]
 category = "flaws"
 name = "Daughters of Cacophany: Stage Fright"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Daughters of Cacophony" }
 
 [[traits]]
 category = "flaws"
 name = "Daughters of Cacophany: Tone Deaf"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Daughters of Cacophony" }
 
 [[traits]]
 category = "flaws"
@@ -1447,19 +1447,19 @@ properties = { rating = 5, type = "General" }
 category = "flaws"
 name = "Followers of Set: Low Down and Dirty"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "flaws"
 name = "Followers of Set: Serpentine Physiology"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "flaws"
 name = "Followers of Set: Temperment of Storms"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "flaws"
@@ -1477,37 +1477,37 @@ properties = { rating = 4, type = "General" }
 category = "flaws"
 name = "Gangrel: Rat in a Cage"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "flaws"
 name = "Gangrel: Roadkill"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "flaws"
 name = "Gangrel: Species Speech"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "flaws"
 name = "Gargoyle: Clay Pigeon"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Gargoyles" }
 
 [[traits]]
 category = "flaws"
 name = "Gargoyle: Lead Foot"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Gargoyles" }
 
 [[traits]]
 category = "flaws"
 name = "Gargoyle: Stone Scarecrow"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Gargoyles" }
 
 [[traits]]
 category = "flaws"
@@ -1519,19 +1519,19 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Giovanni: All My Friends Are Dead"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Giovanni" }
 
 [[traits]]
 category = "flaws"
 name = "Giovanni: Shadow Walker"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Giovanni" }
 
 [[traits]]
 category = "flaws"
 name = "Giovanni: Shroud Inept"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Giovanni" }
 
 [[traits]]
 category = "flaws"
@@ -1597,19 +1597,19 @@ properties = { rating = 1, type = "General" }
 category = "flaws"
 name = "Lasombra: Death's Reflection"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Lasombra" }
 
 [[traits]]
 category = "flaws"
 name = "Lasombra: Insubordinate"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Lasombra" }
 
 [[traits]]
 category = "flaws"
 name = "Lasombra: Mancha's Disdain"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Lasombra" }
 
 [[traits]]
 category = "flaws"
@@ -1627,19 +1627,19 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Lhiannan: Deer in the Headlights"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Lhiannan" }
 
 [[traits]]
 category = "flaws"
 name = "Lhiannan: Essence of Connaught"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Lhiannan" }
 
 [[traits]]
 category = "flaws"
 name = "Lhiannan: Technophobe"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Lhiannan" }
 
 [[traits]]
 category = "flaws"
@@ -1657,19 +1657,19 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Malkavian: Feeding Fetish"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "flaws"
 name = "Malkavian: Number One Fan"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "flaws"
 name = "Malkavian: Overstimulated"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "flaws"
@@ -1687,19 +1687,19 @@ properties = { rating = 1, type = "Sabbat" }
 category = "flaws"
 name = "Nagaraja: Offal Appetite"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Nagaraja" }
 
 [[traits]]
 category = "flaws"
 name = "Nagaraja: Ritually Inept"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Nagaraja" }
 
 [[traits]]
 category = "flaws"
 name = "Nagaraja: Snake Charmed"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Nagaraja" }
 
 [[traits]]
 category = "flaws"
@@ -1717,19 +1717,19 @@ properties = { rating = 1, type = "General" }
 category = "flaws"
 name = "Nosferatu: Anosmia"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Nosferatu" }
 
 [[traits]]
 category = "flaws"
 name = "Nosferatu: Foul Blood"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Nosferatu" }
 
 [[traits]]
 category = "flaws"
 name = "Nosferatu: Parasitic Infestation"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Nosferatu" }
 
 [[traits]]
 category = "flaws"
@@ -1789,19 +1789,19 @@ properties = { rating = 1, type = "General" }
 category = "flaws"
 name = "Ravnos: Confusing Realities"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Ravnos" }
 
 [[traits]]
 category = "flaws"
 name = "Ravnos: Dead Giveaway"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Ravnos" }
 
 [[traits]]
 category = "flaws"
 name = "Ravnos: Lost Svadharma"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Ravnos" }
 
 [[traits]]
 category = "flaws"
@@ -1813,19 +1813,19 @@ properties = { rating = 3, type = "General" }
 category = "flaws"
 name = "Salubri: Fusion"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Salubri" }
 
 [[traits]]
 category = "flaws"
 name = "Salubri: Unblinking Eyes"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Salubri" }
 
 [[traits]]
 category = "flaws"
 name = "Salubri: Vow of Peace"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Salubri" }
 
 [[traits]]
 category = "flaws"
@@ -1897,37 +1897,37 @@ properties = { rating = 1, type = "General" }
 category = "flaws"
 name = "Toreador: Artless"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "flaws"
 name = "Toreador: Living Art"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "flaws"
 name = "Toreador: Obsession"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "flaws"
 name = "Tremere: Pedantic"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Tremere" }
 
 [[traits]]
 category = "flaws"
 name = "Tremere: Spell Components"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Tremere" }
 
 [[traits]]
 category = "flaws"
 name = "Tremere: Twice Bound to the Council"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Tremere" }
 
 [[traits]]
 category = "flaws"
@@ -1939,19 +1939,19 @@ properties = { rating = 1, type = "General" }
 category = "flaws"
 name = "Tzimisce: Humble Gardener"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "flaws"
 name = "Tzimisce: Revenant Family Weakness"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "flaws"
 name = "Tzimisce: Scar Tissue"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "flaws"
@@ -1963,19 +1963,19 @@ properties = { rating = 3, type = "Camarilla" }
 category = "flaws"
 name = "Ventrue: Cowardly Blood"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Ventrue" }
 
 [[traits]]
 category = "flaws"
 name = "Ventrue: Non-Serviam"
 description = "Clan flaw for a second caste"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Ventrue" }
 
 [[traits]]
 category = "flaws"
 name = "Ventrue: Stuffed Shirt"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Ventrue" }
 
 [[traits]]
 category = "flaws"
@@ -2511,12 +2511,12 @@ properties = { rating = 3, type = "Clan", requirement = "Toreador" }
 category = "merits"
 name = "Abstract Awareness"
 page_reference = "50-51"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Ravnos: Brahman" }
 
 [[traits]]
 category = "merits"
 name = "Abyssal Horror"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Lasombra: Corsairs" }
 
 [[traits]]
 category = "merits"
@@ -2528,7 +2528,7 @@ properties = { rating = 1, type = "General" }
 category = "merits"
 name = "Adaptive"
 page_reference = "46"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Caitiff" }
 
 [[traits]]
 category = "merits"
@@ -2551,7 +2551,7 @@ properties = { rating = 5, type = "General" }
 [[traits]]
 category = "merits"
 name = "All the Best Toys"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel: Anda" }
 
 [[traits]]
 category = "merits"
@@ -2575,7 +2575,7 @@ properties = { rating = 1, type = "Camarilla" }
 category = "merits"
 name = "Aquatic Predator"
 page_reference = "32"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Gangrel: Noiad" }
 
 [[traits]]
 category = "merits"
@@ -2587,7 +2587,7 @@ properties = { rating = 1, type = "General" }
 category = "merits"
 name = "Arcane Branding"
 page_reference = "54"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Gargoyles" }
 
 [[traits]]
 category = "merits"
@@ -2599,13 +2599,13 @@ properties = { rating = 2, type = "Camarilla" }
 category = "merits"
 name = "Ardent Companion"
 page_reference = "39"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Nosferatu" }
 
 [[traits]]
 category = "merits"
 name = "Art Imitates Life"
 page_reference = "54-55"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Gargoyles" }
 
 [[traits]]
 category = "merits"
@@ -2641,30 +2641,30 @@ properties = { rating = 1 }
 category = "merits"
 name = "Bane of the Aeons"
 page_reference = "27"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "merits"
 name = "Bane's Blessing"
 page_reference = "23"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Assamite" }
 
 [[traits]]
 category = "merits"
 name = "Beauty of the Beholder"
 page_reference = "48"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Cappadocians: Lamia" }
 
 [[traits]]
 category = "merits"
 name = "Become the Slasher"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Tzimisce: Bratovitch" }
 
 [[traits]]
 category = "merits"
 name = "Beneath Notice"
 page_reference = "38"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Nosferatu" }
 
 [[traits]]
 category = "merits"
@@ -2682,31 +2682,31 @@ properties = { rating = 3, type = "General" }
 category = "merits"
 name = "Blessing of the Gorgons"
 page_reference = "48"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Cappadocians: Lamia" }
 
 [[traits]]
 category = "merits"
 name = "Blood Deceit"
 page_reference = "47"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "merits"
 name = "Blood Knows the Way"
 page_reference = "27-28"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Followers of Set: Tlacique" }
 
 [[traits]]
 category = "merits"
 name = "Blood Secrets"
 page_reference = "31 & 24"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Assamite: Vizier" }
 
 [[traits]]
 category = "merits"
 name = "Blood in the Water"
 page_reference = "32-33"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel: Noiad" }
 
 [[traits]]
 category = "merits"
@@ -2718,7 +2718,7 @@ properties = { rating = 1, type = "Clan", requirement = "Tzimisce" }
 category = "merits"
 name = "Blood of the Ancients"
 page_reference = "34"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Giovanni: Premascine" }
 
 [[traits]]
 category = "merits"
@@ -2733,7 +2733,7 @@ properties = { rating = 2, type = "Clan", requirement = "Malkavian" }
 [[traits]]
 category = "merits"
 name = "Bloodline: Anda"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "merits"
@@ -2748,7 +2748,7 @@ properties = { rating = 2, type = "Clan", requirement = "Ravnos" }
 [[traits]]
 category = "merits"
 name = "Bloodline: Bratovitch"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "merits"
@@ -2758,7 +2758,7 @@ properties = { rating = 3, type = "Clan", requirement = "Tzimisce" }
 [[traits]]
 category = "merits"
 name = "Bloodline: Corsairs"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Lasombra" }
 
 [[traits]]
 category = "merits"
@@ -2768,7 +2768,7 @@ properties = { rating = 2, type = "Clan", requirement = "Gangrel" }
 [[traits]]
 category = "merits"
 name = "Bloodline: Creeps"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Nosferatu" }
 
 [[traits]]
 category = "merits"
@@ -2859,7 +2859,7 @@ properties = { rating = 2, type = "Clan", requirement = "Toreador" }
 category = "merits"
 name = "Bonds of Stolen Vitae"
 page_reference = "54"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Gargoyles" }
 
 [[traits]]
 category = "merits"
@@ -2871,13 +2871,13 @@ properties = { rating = 2, type = "Clan", requirement = "Lasombra" }
 category = "merits"
 name = "Borrowed Time"
 page_reference = "26"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Brujah: True Brujah" }
 
 [[traits]]
 category = "merits"
 name = "Breaking Point"
 page_reference = "25"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Brujah" }
 
 [[traits]]
 category = "merits"
@@ -2901,13 +2901,13 @@ properties = { rating = 1, type = "General" }
 category = "merits"
 name = "Chimerical Templar"
 page_reference = "51"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Ravnos: Brahman" }
 
 [[traits]]
 category = "merits"
 name = "Chosen of Cappadocius"
 page_reference = "47"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "merits"
@@ -2965,19 +2965,19 @@ properties = { rating = 2, type = "Anarch" }
 category = "merits"
 name = "Death Becomes You"
 page_reference = "37-38"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Malkavian: Ananke" }
 
 [[traits]]
 category = "merits"
 name = "Death's Virtuoso"
 page_reference = "34"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Giovanni: Premascine" }
 
 [[traits]]
 category = "merits"
 name = "Demon Slayer"
 page_reference = "52"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Salubri" }
 
 [[traits]]
 category = "merits"
@@ -2989,12 +2989,12 @@ properties = { rating = 4, type = "Anarch", requirement = "No Generation" }
 category = "merits"
 name = "Diva"
 page_reference = "53-54"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Daughters of Cacophony" }
 
 [[traits]]
 category = "merits"
 name = "Dust in the Wind"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Gangrel: Anda" }
 
 [[traits]]
 category = "merits"
@@ -3036,13 +3036,13 @@ properties = { rating = 1, type = "Camarilla" }
 category = "merits"
 name = "Emptiness of Faith"
 page_reference = "42-43"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "merits"
 name = "Ephemeral Rhapsody"
 page_reference = "39-40"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "merits"
@@ -3065,13 +3065,13 @@ properties = { rating = 1, type = "Clan", requirement = "Malkavian" }
 [[traits]]
 category = "merits"
 name = "Extrasensory Perceptions"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Nosferatu: Creeps" }
 
 [[traits]]
 category = "merits"
 name = "Fae Blood"
 page_reference = "35"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Lasombra: Kiasyd" }
 
 [[traits]]
 category = "merits"
@@ -3087,19 +3087,19 @@ properties = { rating = 3, type = "Clan", requirement = "Nagaraja" }
 [[traits]]
 category = "merits"
 name = "Fear Factor"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Nosferatu: Creeps" }
 
 [[traits]]
 category = "merits"
 name = "Fervent Iconoclast"
 page_reference = "25-26"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Brujah" }
 
 [[traits]]
 category = "merits"
 name = "Flexible Morals"
 page_reference = "35"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Lasombra" }
 
 [[traits]]
 category = "merits"
@@ -3111,13 +3111,13 @@ properties = { rating = 1, type = "Clan", requirement = "Gargoyles" }
 category = "merits"
 name = "Flower of Kupala"
 page_reference = "43"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Tzimisce: Carpathian" }
 
 [[traits]]
 category = "merits"
 name = "Forge of the Soul"
 page_reference = "42"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Tremere: Telyav" }
 
 [[traits]]
 category = "merits"
@@ -3135,13 +3135,13 @@ properties = { rating = 5, type = "General" }
 category = "merits"
 name = "Greater Colors"
 page_reference = "39"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "merits"
 name = "Hard as Steel"
 page_reference = "45-46"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Ventrue: Crusader" }
 
 [[traits]]
 category = "merits"
@@ -3153,19 +3153,19 @@ properties = { rating = 2, type = "Clan", requirement = "Nosferatu" }
 category = "merits"
 name = "Humble Abode"
 page_reference = "35"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Lasombra: Kiasyd" }
 
 [[traits]]
 category = "merits"
 name = "Immortal Beauty"
 page_reference = "39"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Toreador" }
 
 [[traits]]
 category = "merits"
 name = "Inceptor"
 page_reference = "46"
-properties = { rating = 2 }
+properties = { rating = 3, type = "Clan", requirement = "Caitiff" }
 
 [[traits]]
 category = "merits"
@@ -3201,13 +3201,13 @@ properties = { rating = 3, type = "General" }
 category = "merits"
 name = "Iron Heart"
 page_reference = "25"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Brujah" }
 
 [[traits]]
 category = "merits"
 name = "Iron Scales"
 page_reference = "28"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Followers of Set: Vipers" }
 
 [[traits]]
 category = "merits"
@@ -3219,19 +3219,19 @@ properties = { rating = 3, type = "General" }
 category = "merits"
 name = "Itty Bitty Living Space"
 page_reference = "40"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Toreador: Ishtarri" }
 
 [[traits]]
 category = "merits"
 name = "Jack Be Nimble"
 page_reference = "40"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Toreador: Ishtarri" }
 
 [[traits]]
 category = "merits"
 name = "Jaded Existence"
 page_reference = "50"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Ravnos" }
 
 [[traits]]
 category = "merits"
@@ -3243,13 +3243,13 @@ properties = { rating = 1, type = "Sabbat", requirement = "requires_specializati
 category = "merits"
 name = "Knowledge is a Sword"
 page_reference = "43"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Tzimisce: Carpathian" }
 
 [[traits]]
 category = "merits"
 name = "Kupala's Bounty"
 page_reference = "44"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Tzimisce: Koldun" }
 
 [[traits]]
 category = "merits"
@@ -3266,7 +3266,7 @@ properties = { rating = 1, type = "Clan", requirement = "Nagaraja" }
 category = "merits"
 name = "Lifegiver"
 page_reference = "52-53"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Salubri: Healer" }
 
 [[traits]]
 category = "merits"
@@ -3284,12 +3284,12 @@ properties = { rating = 3, type = "Anarch" }
 category = "merits"
 name = "Loa's Rebirth"
 page_reference = "49"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Cappadocians: Samedi" }
 
 [[traits]]
 category = "merits"
 name = "Local Legends"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Tzimisce: Bratovitch" }
 
 [[traits]]
 category = "merits"
@@ -3301,7 +3301,7 @@ properties = { rating = 1, type = "General" }
 category = "merits"
 name = "Luck of the Damned"
 page_reference = "32"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel: Coyote" }
 
 [[traits]]
 category = "merits"
@@ -3325,7 +3325,7 @@ properties = { rating = 1, type = "Independent Alliance", requirement = "require
 category = "merits"
 name = "Madness Hunter"
 page_reference = "38"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Malkavian: Knights of the Moon" }
 
 [[traits]]
 category = "merits"
@@ -3337,7 +3337,7 @@ properties = { rating = 3, type = "General" }
 category = "merits"
 name = "Malkavian Time"
 page_reference = "36"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "merits"
@@ -3349,12 +3349,12 @@ properties = { rating = 2, type = "Camarilla" }
 category = "merits"
 name = "Master of Vice"
 page_reference = "40"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Toreador: Ishtarri" }
 
 [[traits]]
 category = "merits"
 name = "Master of the Hounds"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Tzimisce: Bratovitch" }
 
 [[traits]]
 category = "merits"
@@ -3366,25 +3366,25 @@ properties = { rating = 1, type = "General" }
 category = "merits"
 name = "Memento Mori"
 page_reference = "37"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Malkavian: Ananke" }
 
 [[traits]]
 category = "merits"
 name = "Method to the Madness"
 page_reference = "36-37"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "merits"
 name = "Mind Games"
 page_reference = "50"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Ravnos" }
 
 [[traits]]
 category = "merits"
 name = "Moloch's Heir"
 page_reference = "47"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Baali" }
 
 [[traits]]
 category = "merits"
@@ -3463,31 +3463,31 @@ properties = { rating = 2, type = "Clan", requirement = "Nagaraja" }
 category = "merits"
 name = "No Place Like.Home"
 page_reference = "44"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Tzimisce: Koldun" }
 
 [[traits]]
 category = "merits"
 name = "Not My Time"
 page_reference = "48"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Cappadocians" }
 
 [[traits]]
 category = "merits"
 name = "Not On My Watch"
 page_reference = "48"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Cappadocians: Lamia" }
 
 [[traits]]
 category = "merits"
 name = "Obsessive Study"
 page_reference = "31"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Assamite: Vizier" }
 
 [[traits]]
 category = "merits"
 name = "Obsidian Claws"
 page_reference = "28"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Followers of Set: Tlacique" }
 
 [[traits]]
 category = "merits"
@@ -3499,7 +3499,7 @@ properties = { rating = 1, type = "Anarch" }
 category = "merits"
 name = "Old Habits"
 page_reference = "41"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Toreador: Volgirre" }
 
 [[traits]]
 category = "merits"
@@ -3516,7 +3516,7 @@ properties = { rating = 3, type = "Sabbat" }
 category = "merits"
 name = "Painfully Shy"
 page_reference = "39"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Nosferatu" }
 
 [[traits]]
 category = "merits"
@@ -3527,7 +3527,7 @@ properties = { rating = 3, type = "Clan", requirement = "Ventrue" }
 [[traits]]
 category = "merits"
 name = "Parley"
-properties = { rating = 2, type = "Clan" }
+properties = { rating = 2, type = "Clan", requirement = "Lasombra: Corsairs" }
 
 [[traits]]
 category = "merits"
@@ -3655,13 +3655,13 @@ properties = { rating = 1, type = "General" }
 category = "merits"
 name = "Piece That Remains"
 page_reference = "46"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Caitiff" }
 
 [[traits]]
 category = "merits"
 name = "Pierce the Veil"
 page_reference = "51"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Ravnos: Brahman" }
 
 [[traits]]
 category = "merits"
@@ -3679,19 +3679,19 @@ properties = { rating = 3, type = "Clan", requirement = "Nosferatu" }
 category = "merits"
 name = "Polymorphic Demeanor"
 page_reference = "42"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "merits"
 name = "Power Broker"
 page_reference = "33"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Giovanni" }
 
 [[traits]]
 category = "merits"
 name = "Power Object"
 page_reference = "37"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Malkavian: Ananke" }
 
 [[traits]]
 category = "merits"
@@ -3703,19 +3703,19 @@ properties = { rating = 1, type = "Camarilla" }
 category = "merits"
 name = "Preternatural Awareness"
 page_reference = "38"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Malkavian: Knights of the Moon" }
 
 [[traits]]
 category = "merits"
 name = "Primacy of the Blood"
 page_reference = "45"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Ventrue" }
 
 [[traits]]
 category = "merits"
 name = "Prodigy of the Flesh"
 page_reference = "40-41"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Toreador: Volgirre" }
 
 [[traits]]
 category = "merits"
@@ -3727,13 +3727,13 @@ properties = { rating = 1, type = "Clan", requirement = "Gangrel" }
 category = "merits"
 name = "Quick Caster"
 page_reference = "41-42"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Tremere" }
 
 [[traits]]
 category = "merits"
 name = "Quixotic"
 page_reference = "38"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Malkavian: Knights of the Moon" }
 
 [[traits]]
 category = "merits"
@@ -3750,13 +3750,13 @@ properties = { rating = 4, type = "Clan", requirement = "Ventrue" }
 category = "merits"
 name = "Renaissance Mindset"
 page_reference = "26"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Brujah: True Brujah" }
 
 [[traits]]
 category = "merits"
 name = "Rending"
 page_reference = "29"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "merits"
@@ -3779,7 +3779,7 @@ properties = { rating = 3, type = "Sabbat" }
 category = "merits"
 name = "Rhythm of Battle"
 page_reference = "53"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Daughters of Cacophony" }
 
 [[traits]]
 category = "merits"
@@ -3791,7 +3791,7 @@ properties = { rating = 1, type = "Clan", requirement = "Salubri" }
 category = "merits"
 name = "Ritual Fluency"
 page_reference = "42"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Tremere: Telyav" }
 
 [[traits]]
 category = "merits"
@@ -3803,7 +3803,7 @@ properties = { rating = 1 }
 category = "merits"
 name = "Ritual Supremacy"
 page_reference = "42"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Tremere: Telyav" }
 
 [[traits]]
 category = "merits"
@@ -3819,13 +3819,13 @@ properties = { rating = 1, type = "Clan", requirement = "Lhiannan" }
 [[traits]]
 category = "merits"
 name = "Rush of Battle"
-properties = { rating = 1, type = "Clan" }
+properties = { rating = 1, type = "Clan", requirement = "Lasombra: Corsairs" }
 
 [[traits]]
 category = "merits"
 name = "Sage of the Spirits"
 page_reference = "30-31"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel: Ahrimanes" }
 
 [[traits]]
 category = "merits"
@@ -3837,13 +3837,13 @@ properties = { rating = 1, type = "Sabbat" }
 category = "merits"
 name = "Sanguine Anointing"
 page_reference = "52"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Salubri" }
 
 [[traits]]
 category = "merits"
 name = "Sanguine Indulgence"
 page_reference = "29-30"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "merits"
@@ -3855,13 +3855,13 @@ properties = { rating = 1, type = "Sabbat" }
 category = "merits"
 name = "Scholomonariue"
 page_reference = "44"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Tzimisce: Carpathian" }
 
 [[traits]]
 category = "merits"
 name = "Scion of Death"
 page_reference = "34"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Giovanni: Premascine" }
 
 [[traits]]
 category = "merits"
@@ -3873,25 +3873,25 @@ properties = { rating = 3, type = "Clan", requirement = "Brujah" }
 category = "merits"
 name = "Sea Witch"
 page_reference = "33"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel: Noiad" }
 
 [[traits]]
 category = "merits"
 name = "Seasoned Traveler"
 page_reference = "29"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Gangrel" }
 
 [[traits]]
 category = "merits"
 name = "Seekers of the Hidden"
 page_reference = "30"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Gangrel: Ahrimanes" }
 
 [[traits]]
 category = "merits"
 name = "Serpentine Embrace"
 page_reference = "28"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Followers of Set: Vipers" }
 
 [[traits]]
 category = "merits"
@@ -3903,7 +3903,7 @@ properties = { rating = 4, type = "Clan", requirement = "Followers of Set" }
 category = "merits"
 name = "Shady Dealings"
 page_reference = "50"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Ravnos" }
 
 [[traits]]
 category = "merits"
@@ -3915,18 +3915,18 @@ properties = { rating = 3, type = "Clan", requirement = "Gangrel" }
 category = "merits"
 name = "Shedding the Snake's Skin"
 page_reference = "27"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "merits"
 name = "Shrinking Violet"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Nosferatu: Creeps" }
 
 [[traits]]
 category = "merits"
 name = "Sight Beyond Sight"
 page_reference = "52"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Salubri" }
 
 [[traits]]
 category = "merits"
@@ -3938,7 +3938,7 @@ properties = { rating = 2, type = "General" }
 category = "merits"
 name = "Skullduggery"
 page_reference = "32"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel: Coyote" }
 
 [[traits]]
 category = "merits"
@@ -3956,7 +3956,7 @@ properties = { rating = 3, type = "Clan", requirement = "Daughters of Cacophony"
 category = "merits"
 name = "Social Elite"
 page_reference = "34"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Lasombra" }
 
 [[traits]]
 category = "merits"
@@ -3968,7 +3968,7 @@ properties = { rating = 3, type = "Camarilla" }
 category = "merits"
 name = "Songs Beyond Mortal Ken"
 page_reference = "54"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Daughters of Cacophony" }
 
 [[traits]]
 category = "merits"
@@ -3986,7 +3986,7 @@ properties = { rating = 2, type = "Anarch" }
 category = "merits"
 name = "Soul Economy"
 page_reference = "33"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Giovanni" }
 
 [[traits]]
 category = "merits"
@@ -3997,19 +3997,19 @@ properties = { rating = 3, type = "Clan", requirement = "Lhiannan" }
 category = "merits"
 name = "Spellslinger"
 page_reference = "42"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Tremere" }
 
 [[traits]]
 category = "merits"
 name = "Spirit Guide"
 page_reference = "30"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Gangrel: Ahrimanes" }
 
 [[traits]]
 category = "merits"
 name = "Spiritual Animist"
 page_reference = "44"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Tzimisce: Koldun" }
 
 [[traits]]
 category = "merits"
@@ -4021,19 +4021,19 @@ properties = { rating = 2, type = "Clan", requirement = "Salubri" }
 category = "merits"
 name = "Strength of Honor"
 page_reference = "45"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Ventrue: Crusader" }
 
 [[traits]]
 category = "merits"
 name = "Strength of Madness"
 page_reference = "36"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Malkavian" }
 
 [[traits]]
 category = "merits"
 name = "Subtle as Hell"
 page_reference = "47"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Baali" }
 
 [[traits]]
 category = "merits"
@@ -4063,7 +4063,7 @@ properties = { rating = 3, type = "Clan", requirement = "Tremere" }
 category = "merits"
 name = "Talismonger"
 page_reference = "25"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Assamite: Sorcerer" }
 
 [[traits]]
 category = "merits"
@@ -4089,60 +4089,60 @@ properties = { rating = 1, type = "Clan", requirement = "requires_specialization
 category = "merits"
 name = "Thaumaturgically Gifted"
 page_reference = "24"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Assamite: Sorcerer" }
 
 [[traits]]
 category = "merits"
 name = "The Beast Within"
-properties = { rating = 3, type = "Clan" }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel: Anda" }
 
 [[traits]]
 category = "merits"
 name = "The Blade Whisper"
 page_reference = "23"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Assamite" }
 
 [[traits]]
 category = "merits"
 name = "The Duty of Kings"
 page_reference = "44"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Ventrue" }
 
 [[traits]]
 category = "merits"
 name = "The Friendly Folk"
 page_reference = "36"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Lasombra: Kiasyd" }
 
 [[traits]]
 category = "merits"
 name = "The Heart of the Matter"
 page_reference = "27"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Followers of Set: Tlacique" }
 
 [[traits]]
 category = "merits"
 name = "The Judge's Resilience"
 page_reference = "24"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Assamite: Sorcerer" }
 
 [[traits]]
 category = "merits"
 name = "The Man in Black"
 page_reference = "32"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Gangrel: Coyote" }
 
 [[traits]]
 category = "merits"
 name = "The Master's Path"
 page_reference = "53"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Salubri: Healer" }
 
 [[traits]]
 category = "merits"
 name = "Timely Intervention"
 page_reference = "26"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Brujah: True Brujah" }
 
 [[traits]]
 category = "merits"
@@ -4153,31 +4153,31 @@ properties = { rating = 2, type = "Clan", requirement = "Nagaraja" }
 category = "merits"
 name = "To the Manor Born"
 page_reference = "45"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Ventrue: Crusader" }
 
 [[traits]]
 category = "merits"
 name = "Touched by an Angel"
 page_reference = "53"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Salubri: Healer" }
 
 [[traits]]
 category = "merits"
 name = "Trials of Blood"
 page_reference = "24"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Assamite: Vizier" }
 
 [[traits]]
 category = "merits"
 name = "Trusted Confessor"
 page_reference = "34-35"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Lasombra" }
 
 [[traits]]
 category = "merits"
 name = "Typhonic Beast"
 page_reference = "28-29"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Followers of Set: Vipers" }
 
 [[traits]]
 category = "merits"
@@ -4213,7 +4213,7 @@ properties = { rating = 4, type = "General" }
 category = "merits"
 name = "Ventrue Royalty"
 page_reference = "45"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Ventrue" }
 
 [[traits]]
 category = "merits"
@@ -4231,7 +4231,7 @@ properties = { rating = 3, type = "Clan", requirement = "Caitiff" }
 category = "merits"
 name = "Visceral Artisan"
 page_reference = "41"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Toreador: Volgirre" }
 
 [[traits]]
 category = "merits"
@@ -4243,13 +4243,13 @@ properties = { rating = 1, type = "Sabbat" }
 category = "merits"
 name = "Voudoun Master"
 page_reference = "27"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Followers of Set" }
 
 [[traits]]
 category = "merits"
 name = "Vozhd"
 page_reference = "43"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Tzimisce" }
 
 [[traits]]
 category = "merits"
@@ -4267,13 +4267,13 @@ properties = { rating = 3, type = "Clan", requirement = "Lasombra" }
 category = "merits"
 name = "Walking Dead"
 page_reference = "49"
-properties = { rating = 2 }
+properties = { rating = 2, type = "Clan", requirement = "Cappadocians: Samedi" }
 
 [[traits]]
 category = "merits"
 name = "Web of Knives"
 page_reference = "31"
-properties = { rating = 3 }
+properties = { rating = 3, type = "Clan", requirement = "Assamite" }
 
 [[traits]]
 category = "merits"
@@ -4285,7 +4285,7 @@ properties = { rating = 1, type = "General" }
 category = "merits"
 name = "Whispers from Beyond"
 page_reference = "48-49"
-properties = { rating = 1 }
+properties = { rating = 1, type = "Clan", requirement = "Cappadocians: Samedi" }
 
 [[traits]]
 category = "merits"
@@ -4378,130 +4378,162 @@ name = "Typhon-Set"
 [[traits]]
 category = "rituals"
 name = "Abyssal: Abyssal Ichor"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Adornment of Ashes"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Affliction of the Void"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Avatar of Screams"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Bend the Shadow"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Cassandra's Folly"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Clasp of Shadow"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Coagulated Darkness"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Dark Hands that Feeds"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Echoes in Darkness"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Ensnared Mind"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Feasts of Famine"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Filaments of Catharsis"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Gloom Sentinel"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Helping Hands"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Incarnation of Madness"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Maeljin Urge"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Mapping the Abyssal Pathway"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Memories Lost"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Oubliette"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Palace of Tenebrae"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Psychic Void"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Shadow Tempering"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Shadow Transgressor"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Shadowy Sanctum"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Sin Collector"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Smothering Darkness"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Void's Vesicle"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: What Once Was Lost"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Abyssal: Whispers in the Dark"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Ancestral Ties"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Baleful Doll"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
@@ -4511,10 +4543,12 @@ properties = { rating = 4 }
 [[traits]]
 category = "rituals"
 name = "Necromancy: Bathory's Blessing"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Bind Death's Sickle"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -4524,18 +4558,22 @@ properties = { rating = 2 }
 [[traits]]
 category = "rituals"
 name = "Necromancy: Body and Soul"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Broken Heart"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Call of the Hungry Dead"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Charon's Obol"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4545,87 +4583,107 @@ properties = { rating = 5 }
 [[traits]]
 category = "rituals"
 name = "Necromancy: Circle of Cerberus"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Dark Absolution"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Dark Assistant"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Day of Remembrance"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Demense Macabre"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Din of the Damned"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Eternal Vigilance"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Exploitation of Weakness"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Eyes of the Grave"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Fell Familiar"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Funeral Feast"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Ghost in the System"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Ghostly Enforcer"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Grave Robber's Boon"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Grave Ward"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Greater Exploitation of Weakness"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Guiding Spirits"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Hand of Glory"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Honored Epitaph"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Lethe's Waters"
 properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
+name = "Necromancy: Dark Assistant"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Day of Remembrance"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Demense Macabre"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Din of the Damned"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Eternal Vigilance"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Exploitation of Weakness"
+properties = { rating = 3 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Eyes of the Grave"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Fell Familiar"
+properties = { rating = 4 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Funeral Feast"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Ghost in the System"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Ghostly Enforcer"
+properties = { rating = 3 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Grave Robber's Boon"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Grave Ward"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Greater Exploitation of Weakness"
+properties = { rating = 5 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Guiding Spirits"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Hand of Glory"
+properties = { rating = 4 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Honored Epitaph"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Lethe's Waters"
+properties = { rating = 4 }
+
+[[traits]]
+category = "rituals"
 name = "Necromancy: Letter from Beyond"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -4635,7 +4693,7 @@ properties = { rating = 3 }
 [[traits]]
 category = "rituals"
 name = "Necromancy: Rise, Cerberus"
-properties = { rating = 2 }
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -4650,27 +4708,32 @@ properties = { rating = 2 }
 [[traits]]
 category = "rituals"
 name = "Necromancy: Sepulchral Beacon"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Silver Thread"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Sip of Death"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Smoking Mirror"
-
-[[traits]]
-category = "rituals"
-name = "Necromancy: Spirit Beacon"
 properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
+name = "Necromancy: Silver Thread"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Sip of Death"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Smoking Mirror"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Necromancy: Spirit Beacon"
+properties = { rating = 3 }
+
+[[traits]]
+category = "rituals"
 name = "Necromancy: Stained Night"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4680,6 +4743,7 @@ properties = { rating = 4 }
 [[traits]]
 category = "rituals"
 name = "Necromancy: Stygian Fortress"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
@@ -4689,22 +4753,27 @@ properties = { rating = 3 }
 [[traits]]
 category = "rituals"
 name = "Necromancy: Theft of Identity"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Thorn of the Undead Heart"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Wail of the Departed"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: Warping the Morbid Visage"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Necromancy: We Are Legion"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -4719,14 +4788,17 @@ properties = { rating = 2 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Battle Ward"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Bind the Accusing Tongue"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Blade of the Eternal Thirst"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -4741,14 +4813,17 @@ properties = { rating = 1 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Blood Walk"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Blood Wine"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Broken Eye of Anubis (Setite)"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
@@ -4758,10 +4833,12 @@ properties = { rating = 2 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Canopic Jar (Setite)"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Certamen (Tremere)"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -4771,14 +4848,17 @@ properties = { rating = 5 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Communicate with Kindred Sire"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Conduit of Fate"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Conjoined Psyche"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
@@ -4788,6 +4868,7 @@ properties = { rating = 2 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Dead Zone"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
@@ -4807,10 +4888,12 @@ properties = { rating = 3 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Digital Sentry"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Encrypt Missive"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
@@ -4825,42 +4908,52 @@ properties = { rating = 2 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Fell Incantation"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Firewalker"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Flesh of the Fiery Touch"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Fool the Future"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Greater Bond of Servitude"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Hand of Path (Setite)"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Humanity's Folly"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Illuminate the Trail of Prey"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Illusion of Peaceful Death"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Imbued Offering"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4870,39 +4963,47 @@ properties = { rating = 3 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Indelible Mark"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Induce Bloodthirst"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Innocence of the Child's Heart"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Jinun's Bane (Assamite)"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Kiss of the Asp (Assamite)"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Lightning Rod"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Machine Blitz"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Milk of Set (Setite)"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Mirror Walk"
-properties = { rating = 3 }
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
@@ -4912,6 +5013,7 @@ properties = { rating = 3 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Mnemosyne Crystal (Tremere)"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -4926,34 +5028,42 @@ properties = { rating = 3 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Perfect Forgery"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Plausible Deniability"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Power of the Pyramid (Tremere)"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Preservation of the Perfect Form"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Principal Focus of Vitae Infusion"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Proximity Ward"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Purity of Flesh"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Reawaken the Dead Water (Koldun)"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
@@ -4963,36 +5073,42 @@ properties = { rating = 2 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Reverse Protocol"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Rite of Chantry Dedication (Tremere)"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Rite of Introduction (Tremere)"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Rite of Marduk Slain and Risen (Assamite)"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Scent of Deception (Assamite)"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Scry"
-properties = { rating = 3 }
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Severed Hand"
-properties = { rating = 3 }
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Severing Sands (Setite)"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
@@ -5002,6 +5118,7 @@ properties = { rating = 3 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Shakari's Shroud (Assamite)"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
@@ -5016,18 +5133,22 @@ properties = { rating = 5 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Telekinetic Attunement"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Thaumaturgical Metabolism"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Traitor's Deception"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Unerring Combustion"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
@@ -5037,22 +5158,27 @@ properties = { rating = 1 }
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Way of Flame (Koldun)"
+properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Way of the Earth (Koldun)"
+properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Way of the Supreme (Koldun)"
+properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Way of the Wind (Koldun)"
+properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
 name = "Thaumaturgy: Whispers of the Ghost"
+properties = { rating = 1 }
 
 [[traits]]
 category = "sabbat_rituals"
@@ -6570,3 +6696,66 @@ category = "merits"
 name = "Thaumaturgic Expertise"
 page_reference = "243"
 properties = { rating = 1, type = "Clan", requirement = "Tremere" }
+
+[[traits]]
+category = "merits"
+name = "Dark Magics"
+description = "A demonic pact teaches one path of Thaumaturgy, bought at out-of-clan costs; using it briefly taints your aura."
+page_reference = "Vol. 2, p. 259"
+properties = { rating = 3, type = "Clan", requirement = "Baali" }
+
+[[traits]]
+category = "merits"
+name = "Favored of the Decani"
+description = "Once per game session, automatically succeed at a Daimoinon challenge, or turn a win into an exceptional success; your aura is stained for an hour."
+page_reference = "Vol. 2, p. 260"
+properties = { rating = 1, type = "Clan", requirement = "Baali: Angelis Ater" }
+
+[[traits]]
+category = "merits"
+name = "Song of the Fifth Trumpet"
+description = "Mortals who see your Daimoinon powers are terrified into silence. You sense those who have made, or would make, infernal pacts."
+page_reference = "Vol. 2, p. 260"
+properties = { rating = 2, type = "Clan", requirement = "Baali: Angelis Ater" }
+
+[[traits]]
+category = "merits"
+name = "Shadows of the Past"
+description = "Descended from the first Black Angels: in-clan disciplines are Daimoinon, Obtenebration and Dominate, plus up to 3 points of Lasombra merits free. Creation only."
+page_reference = "Vol. 2, p. 260"
+properties = { rating = 3, type = "Clan", requirement = "Baali: Angelis Ater" }
+
+[[traits]]
+category = "merits"
+name = "Blight of the Ever-Hungry"
+description = "In-clan disciplines become Auspex, Potence and Necromancy: Path of the Graveborne; a serrated maw bites without a grapple. Creation only."
+page_reference = "Vol. 2, p. 62"
+properties = { rating = 3, type = "Clan", requirement = "Nagaraja" }
+
+[[traits]]
+category = "flaws"
+name = "Followers of Set: Temperament of Storms"
+description = "Unless a storm is brewing or it is nearly dark, your difficulty to resist frenzy is increased by 2."
+page_reference = "Vol. 2, p. 271"
+properties = { rating = 2, type = "Clan", requirement = "Followers of Set" }
+
+[[traits]]
+category = "flaws"
+name = "Baali: Devil's Mark"
+description = "A visible infernal deformity. Obfuscate can hide it but Vicissitude cannot remove it."
+page_reference = "Vol. 2, p. 281"
+properties = { rating = 1, type = "Clan", requirement = "Baali" }
+
+[[traits]]
+category = "flaws"
+name = "Baali: Carrion Comfort"
+description = "You can feed only on the dead or carrion-eaters: no Herd, and an extra downtime action to feed or you start the game at half Blood."
+page_reference = "Vol. 2, p. 281"
+properties = { rating = 2, type = "Clan", requirement = "Baali" }
+
+[[traits]]
+category = "flaws"
+name = "Baali: Infernal Thrall"
+description = "Indebted to a demon master as if you had Infernal Power, with none of its benefits; disobeying costs 5 aggravated damage."
+page_reference = "Vol. 2, p. 281"
+properties = { rating = 3, type = "Clan", requirement = "Baali" }

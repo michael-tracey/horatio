@@ -633,6 +633,12 @@ category = "clan"
 name = "Gangrel: Ahrimanes"
 properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Path of Elemental Mastery"] }
 
+# Volume 2, p. 31.
+[[traits]]
+category = "clan"
+name = "Gangrel: Anda"
+properties = { in_clan = ["Animalism", "Potence", "Protean"] }
+
 [[traits]]
 category = "clan"
 name = "Gangrel: Coyote"
@@ -663,10 +669,22 @@ category = "clan"
 name = "Lasombra"
 properties = { in_clan = ["Dominate", "Potence", "Obtenebration"] }
 
+# Volume 2, p. 40.
+[[traits]]
+category = "clan"
+name = "Lasombra: Corsairs"
+properties = { in_clan = ["Celerity", "Obtenebration", "Presence"] }
+
 [[traits]]
 category = "clan"
 name = "Lasombra: Kiasyd"
 properties = { in_clan = ["Dominate", "Mytherceria", "Obtenebration"] }
+
+# An independent bloodline, rare (4 merit points); Volume 2, p. 50.
+[[traits]]
+category = "clan"
+name = "Lhiannan"
+properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Green Path"] }
 
 [[traits]]
 category = "clan"
@@ -683,10 +701,22 @@ category = "clan"
 name = "Malkavian: Knights of the Moon"
 properties = { in_clan = ["Auspex", "Dominate", "Obfuscate"] }
 
+# An independent bloodline, uncommon (2 merit points); Volume 2, p. 57.
+[[traits]]
+category = "clan"
+name = "Nagaraja"
+properties = { in_clan = ["Auspex", "Dominate", "Necromancy: Ash Path"] }
+
 [[traits]]
 category = "clan"
 name = "Nosferatu"
 properties = { in_clan = ["Animalism", "Obfuscate", "Potence"] }
+
+# Volume 2, p. 45.
+[[traits]]
+category = "clan"
+name = "Nosferatu: Creeps"
+properties = { in_clan = ["Animalism", "Auspex", "Obfuscate"] }
 
 [[traits]]
 category = "clan"
@@ -737,6 +767,12 @@ properties = { in_clan = ["Auspex", "Presence", "Thaumaturgy: Path of Blood"] }
 category = "clan"
 name = "Tzimisce"
 properties = { in_clan = ["Animalism", "Auspex", "Vicissitude"] }
+
+# Volume 2, p. 36.
+[[traits]]
+category = "clan"
+name = "Tzimisce: Bratovitch"
+properties = { in_clan = ["Animalism", "Potence", "Vicissitude"] }
 
 [[traits]]
 category = "clan"

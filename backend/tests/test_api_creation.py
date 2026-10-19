@@ -162,7 +162,7 @@ def test_merits_and_flaws_come_from_a_points_budget(troupe: Troupe) -> None:
     character_id = creating(troupe)
 
     state = pick(troupe.player, character_id, "merits", "Rugged").json()  # 3 points
-    pick(troupe.player, character_id, "merits", "Abyssal Horror")  # 3 points
+    pick(troupe.player, character_id, "merits", "Iron Will")  # 3 points
     over = pick(troupe.player, character_id, "merits", "Additional Common Discipline")  # 4 points
 
     assert pool(state, "merits", 0)["used"] == 3
@@ -454,7 +454,7 @@ def test_a_step_must_fit_the_pools(troupe: Troupe) -> None:
         troupe.player,
         character_id,
         "merits",
-        [("Abyssal Horror", 1), ("Additional Uncommon Discipline", 1)],
+        [("Iron Will", 1), ("Additional Uncommon Discipline", 1)],
     )
 
     assert two_sevens.status_code == 409
