@@ -13,7 +13,7 @@ from horatio.models import Session as SignInSession
 from horatio.models import User
 
 
-def _hash_token(token: str) -> str:
+def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
@@ -23,7 +23,7 @@ def start_session(db: Session, user: User) -> str:
     db.add(
         SignInSession(
             user_id=user.id,
-            token_hash=_hash_token(token),
+            token_hash=hash_token(token),
             expires_at=datetime.now(UTC) + timedelta(days=get_settings().session_days),
         )
     )
@@ -37,7 +37,7 @@ def user_for_token(db: Session, token: str) -> User | None:
         select(User)
         .join(SignInSession, SignInSession.user_id == User.id)
         .where(
-            SignInSession.token_hash == _hash_token(token),
+            SignInSession.token_hash == hash_token(token),
             SignInSession.revoked_at.is_(None),
             SignInSession.expires_at > datetime.now(UTC),
         )
@@ -45,7 +45,7 @@ def user_for_token(db: Session, token: str) -> User | None:
 
 
 def end_session(db: Session, token: str) -> None:
-    session = db.scalar(select(SignInSession).where(SignInSession.token_hash == _hash_token(token)))
+    session = db.scalar(select(SignInSession).where(SignInSession.token_hash == hash_token(token)))
     if session is not None and session.revoked_at is None:
         session.revoked_at = datetime.now(UTC)
         db.flush()

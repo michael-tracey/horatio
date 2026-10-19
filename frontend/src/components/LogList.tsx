@@ -15,7 +15,13 @@ export function LogList({ entries, linkTo }: { entries: LogEntry[]; linkTo?: (en
                 {at.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })},{" "}
                 {at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
               </time>
-              <span className="truncate">{entry.actor_name ?? "Horatio"}</span>
+              {entry.actor_id && entry.actor_name ? (
+                <Link className="truncate hover:text-gold" to={`/players/${entry.actor_id}`}>
+                  {entry.actor_name}
+                </Link>
+              ) : (
+                <span className="truncate">{entry.actor_name ?? "Horatio"}</span>
+              )}
             </span>
             <span>
               {link ? (

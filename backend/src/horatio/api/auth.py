@@ -4,8 +4,10 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 
+from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
+from horatio.auth.resets import use_reset, user_for_reset
 from horatio.auth.sessions import end_session, start_session
 from horatio.config import get_settings
 from horatio.models import User
@@ -22,6 +24,16 @@ class SignUp(BaseModel):
 class SignIn(BaseModel):
     email: EmailStr
     password: str
+
+
+class NewPassword(BaseModel):
+    token: str
+    password: str = Field(min_length=MIN_PASSWORD_LENGTH)
+
+
+class ResetFor(BaseModel):
+    display_name: str
+    email: str
 
 
 class Me(BaseModel):
@@ -99,4 +111,34 @@ def sign_out(request: Request, db: DbSession, response: Response) -> None:
 
 @router.get("/me")
 def who_am_i(user: CurrentUser) -> Me:
+    return me(user)
+
+
+def reset_user(db: DbSession, token: str) -> User:
+    user = user_for_reset(db, token)
+    if user is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "This reset link has expired or been used. Ask the custodian for a new one.",
+        )
+    return user
+
+
+@router.get("/reset/{token}")
+def reset_for(token: str, db: DbSession) -> ResetFor:
+    """Whose password a reset link sets, so the page can say."""
+    user = reset_user(db, token)
+    return ResetFor(display_name=user.display_name, email=user.email)
+
+
+@router.post("/reset")
+def reset_password(body: NewPassword, db: DbSession, response: Response) -> Me:
+    """Set a new password from the custodian's link. Ends every other session the
+    person had, and signs them in here."""
+    user = reset_user(db, body.token)
+    user.password_hash = hash_password(body.password)
+    use_reset(db, user)
+    record(db, user, "account.password_reset")
+    set_session_cookie(response, start_session(db, user))
+    db.commit()
     return me(user)

@@ -195,7 +195,7 @@ def test_titles_are_given_in_one_troupe_and_mean_nothing_elsewhere(troupe: Troup
     printed = troupe.player.client.get(f"/characters/{character_id}/print").json()
     assert printed["titles"] == ["Harpy", "Primogen"]
     messages = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
-    assert "assistant gave Agnes the title Primogen." in messages
+    assert "assistant gave Agnes (player) the title Primogen." in messages
 
 
 def test_titles_must_exist_and_go_to_members(troupe: Troupe) -> None:

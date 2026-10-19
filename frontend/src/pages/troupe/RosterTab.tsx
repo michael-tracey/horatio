@@ -33,7 +33,13 @@ function RosterRow({ troupeId, entry }: { troupeId: string; entry: RosterEntry }
         <Link to={`/characters/${entry.character_id}`} className="hover:text-gold">
           {entry.character_name}
         </Link>
-        <span className="text-sm text-mist">{entry.player_name}</span>
+        {entry.player_id ? (
+          <Link to={`/players/${entry.player_id}`} className="text-sm text-mist hover:text-gold">
+            {entry.player_name}
+          </Link>
+        ) : (
+          <span className="text-sm text-mist">{entry.player_name}</span>
+        )}
         {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
         {entry.waiting && <Badge tone="blood">asking to make this home</Badge>}
         {entry.disciplines_waiting > 0 && (

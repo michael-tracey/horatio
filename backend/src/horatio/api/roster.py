@@ -21,6 +21,8 @@ class RosterEntry(BaseModel):
     character_id: uuid.UUID
     character_name: str
     player_name: str
+    # None for an NPC, whose player_name is "NPC".
+    player_id: uuid.UUID | None
     kind: str  # pc | npc
     titles: list[str]
     # The troupe holds the character's sheet; otherwise the character visits.
@@ -37,9 +39,13 @@ class LogEntry(BaseModel):
     at: datetime
     action: str
     message: str
+    actor_id: uuid.UUID | None
     actor_name: str | None
     character_id: uuid.UUID | None
     character_name: str | None
+    # A PC's player, named in the message unless they are the one who did it.
+    player_id: uuid.UUID | None
+    player_name: str | None
     data: dict[str, Any]
 
 
@@ -48,7 +54,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
     """Every character in the troupe now: those whose home it is first, then visitors."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     rows = db.execute(
-        select(TroupeMembership, Character, User.display_name)
+        select(TroupeMembership, Character, User)
         .join(Character, TroupeMembership.character_id == Character.id)
         .join(User, Character.player_id == User.id)
         .where(TroupeMembership.troupe_id == troupe_id, TroupeMembership.left_at.is_(None))
@@ -64,7 +70,8 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         RosterEntry(
             character_id=c.id,
             character_name=c.name,
-            player_name=player if c.kind == "pc" else "NPC",
+            player_name=player.display_name if c.kind == "pc" else "NPC",
+            player_id=player.id if c.kind == "pc" else None,
             kind=c.kind,
             titles=titles.held(db, troupe_id, c.id),
             home=c.home_troupe_id == troupe_id,
@@ -161,7 +168,17 @@ def purchase_message(data: dict[str, Any]) -> str:
     return f"{{actor}} {change}{price}."
 
 
-def message(action: str, actor: str | None, character: str | None, data: dict[str, Any]) -> str:
+def message(
+    action: str,
+    actor: str | None,
+    character: str | None,
+    data: dict[str, Any],
+    *,
+    player: str | None = None,
+    by_player: bool = False,
+) -> str:
+    """The event as a sentence. A PC is followed by its player, "Agnes (Jane)", unless
+    the player is named already as the one who did it."""
     values = {**data, "actor": actor or "Someone", "character": character or "A character"}
     if isinstance(values.get("category"), str):
         values["category"] = values["category"].replace("_", " ")
@@ -176,6 +193,8 @@ def message(action: str, actor: str | None, character: str | None, data: dict[st
                 f"{action}.{data.get('kind')}",
                 MESSAGES.get(action, action.replace("_", " ").replace(".", ": ")),
             )
+        if player is not None and not (by_player and "{actor}" in template):
+            values["character"] = f"{values['character']} ({player})"
         return template.format(**values)
     except (KeyError, IndexError, TypeError):
         return action.replace("_", " ").replace(".", ": ")
@@ -205,18 +224,40 @@ def log(
 
 def log_entries(db: DbSession, query: Select[AuditEvent, str]) -> list[LogEntry]:
     """Read the events `query` selects, with their actors' names, as log entries."""
+    events = list(db.execute(query).tuples())
+    character_ids = {e.character_id for e, _ in events} - {None}
+    # Each PC's player as they are named now, not when the event happened.
+    players: dict[uuid.UUID | None, tuple[uuid.UUID, str]] = {
+        c: (p, name)
+        for c, p, name in db.execute(
+            select(Character.id, User.id, User.display_name)
+            .join(User, Character.player_id == User.id)
+            .where(Character.id.in_(character_ids), Character.kind == "pc")
+        ).tuples()
+    }
     entries: list[LogEntry] = []
-    for event, actor in db.execute(query):
+    for event, actor in events:
         name = event.data.get("character_name")
+        player_id, player = players.get(event.character_id, (None, None))
         entries.append(
             LogEntry(
                 id=event.id,
                 at=event.created_at,
                 action=event.action,
-                message=message(event.action, actor, name, event.data),
+                message=message(
+                    event.action,
+                    actor,
+                    name,
+                    event.data,
+                    player=player,
+                    by_player=player_id is not None and event.actor_id == player_id,
+                ),
+                actor_id=event.actor_id,
                 actor_name=actor,
                 character_id=event.character_id,
                 character_name=name,
+                player_id=player_id,
+                player_name=player,
                 data=event.data,
             )
         )

@@ -92,7 +92,7 @@ def test_joining_a_troupe_is_a_visit_until_it_accepts_the_character_as_home(
     assert [(t["troupe_name"], t["home"]) for t in home["troupes"]] == [
         ("Lords of the Night", True)
     ]
-    assert "lead accepted Agnes; this is its home." in log(troupe.lead, troupe.id)
+    assert "lead accepted Agnes (player); this is its home." in log(troupe.lead, troupe.id)
 
 
 def test_there_is_no_asking_for_a_sheet_to_be_approved(troupe: Troupe) -> None:
@@ -178,7 +178,7 @@ def test_discipline_dots_wait_on_the_home_troupe_with_the_xp_held(troupe: Troupe
     assert (celerity["pending_from"], celerity["min_rating"]) == (None, 1)
     assert approved["pending_disciplines"] == []
     assert balance(troupe.player, character_id) == before - cost
-    assert "assistant approved Agnes's Celerity 1." in log(troupe.lead, troupe.id)
+    assert "assistant approved Agnes (player)'s Celerity 1." in log(troupe.lead, troupe.id)
 
 
 def test_declining_a_discipline_takes_the_dots_back_and_refunds(troupe: Troupe) -> None:
@@ -193,7 +193,7 @@ def test_declining_a_discipline_takes_the_dots_back_and_refunds(troupe: Troupe) 
     after = sheet(troupe.player, character_id)
     assert "Celerity" not in [t["name"] for t in after["traits"]]
     assert after["xp"]["balance"] == before
-    assert "lead declined Agnes's Celerity 1; refunded." in log(troupe.lead, troupe.id)
+    assert "lead declined Agnes (player)'s Celerity 1; refunded." in log(troupe.lead, troupe.id)
 
 
 def test_the_player_can_withdraw_a_waiting_discipline(troupe: Troupe) -> None:
@@ -346,7 +346,7 @@ def test_the_log_reads_newest_first(troupe: Troupe) -> None:
 
     assert messages[:2] == [
         "player asked to make this Agnes's home.",
-        "Agnes joined the troupe.",
+        "Agnes (player) joined the troupe.",
     ]
     # Staff changes from setting the troupe up are there too.
     assert "lead made narrator narrator." in messages

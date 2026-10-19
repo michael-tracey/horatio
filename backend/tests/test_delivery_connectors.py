@@ -264,7 +264,7 @@ def test_marking_a_delivery_sent_by_hand(
     log = [
         e["message"] for e in scene.troupe.lead.client.get(f"/troupes/{scene.troupe.id}/log").json()
     ]
-    assert "assistant marked Agnes's discord delivery as sent by hand." in log
+    assert "assistant marked Agnes (player)'s discord delivery as sent by hand." in log
 
 
 def test_test_mode_sends_to_the_test_target_only(

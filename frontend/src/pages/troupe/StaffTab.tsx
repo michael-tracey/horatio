@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { Role, TroupeOut } from "../../api/types";
 import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
@@ -31,7 +32,10 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
             {staff.data?.map((m) => (
               <li key={m.user_id} className="flex items-center justify-between gap-2 py-2">
                 <span>
-                  {m.display_name} <span className="text-sm text-mist">· {roleLabel(m.role)}</span>
+                  <Link to={`/players/${m.user_id}`} className="hover:text-gold">
+                    {m.display_name}
+                  </Link>{" "}
+                  <span className="text-sm text-mist">· {roleLabel(m.role)}</span>
                 </span>
                 {canManage && m.role !== "lead_storyteller" && (
                   <Button variant="ghost" onClick={() => remove.mutate(m.user_id)}>
