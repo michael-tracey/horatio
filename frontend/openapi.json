@@ -650,6 +650,94 @@
         "title": "ChoiceChange",
         "type": "object"
       },
+      "ConnectorChange": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "mode": {
+            "default": "alert",
+            "enum": [
+              "full",
+              "alert"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Settings",
+            "type": "object"
+          },
+          "test_mode": {
+            "default": false,
+            "title": "Test Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "ConnectorChange",
+        "type": "object"
+      },
+      "ConnectorOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "full",
+              "alert"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          },
+          "unavailable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "unavailable",
+          "enabled",
+          "mode",
+          "test_mode",
+          "settings"
+        ],
+        "title": "ConnectorOut",
+        "type": "object"
+      },
       "CreationOut": {
         "properties": {
           "complete": {
@@ -771,12 +859,130 @@
           "delivered": {
             "title": "Delivered",
             "type": "integer"
+          },
+          "queued": {
+            "default": 0,
+            "title": "Queued",
+            "type": "integer"
           }
         },
         "required": [
           "delivered"
         ],
         "title": "Delivered",
+        "type": "object"
+      },
+      "DeliveryOut": {
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "marked_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marked By"
+          },
+          "next_attempt_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Attempt At"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "sent",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "test_mode": {
+            "title": "Test Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "status",
+          "test_mode",
+          "attempts",
+          "last_error",
+          "sent_at",
+          "next_attempt_at",
+          "marked_by"
+        ],
+        "title": "DeliveryOut",
+        "type": "object"
+      },
+      "DeliveryStatus": {
+        "properties": {
+          "channels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipantDeliveries"
+            },
+            "title": "Participants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "channels",
+          "participants"
+        ],
+        "title": "DeliveryStatus",
         "type": "object"
       },
       "DetailChange": {
@@ -1529,6 +1735,33 @@
           "names"
         ],
         "title": "OptionList",
+        "type": "object"
+      },
+      "ParticipantDeliveries": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "deliveries": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DeliveryOut"
+            },
+            "title": "Deliveries",
+            "type": "object"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "deliveries"
+        ],
+        "title": "ParticipantDeliveries",
         "type": "object"
       },
       "ParticipantOut": {
@@ -5950,6 +6183,50 @@
         ]
       }
     },
+    "/api/cycles/{cycle_id}/deliveries": {
+      "get": {
+        "description": "Each submission against each channel: how its delivery went.",
+        "operationId": "cycle_deliveries_api_cycles__cycle_id__deliveries_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cycle Deliveries",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
     "/api/cycles/{cycle_id}/open": {
       "post": {
         "operationId": "open_cycle_api_cycles__cycle_id__open_post",
@@ -6446,6 +6723,92 @@
         "summary": "My Responses",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/deliveries/{delivery_id}/mark-sent": {
+      "post": {
+        "operationId": "mark_delivery_sent_api_deliveries__delivery_id__mark_sent_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "delivery_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Delivery Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Delivery Sent",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
+    "/api/deliveries/{delivery_id}/retry": {
+      "post": {
+        "operationId": "retry_delivery_api_deliveries__delivery_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "delivery_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Delivery Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Delivery",
+        "tags": [
+          "connectors"
         ]
       }
     },
@@ -7311,6 +7674,116 @@
         "summary": "Change Check",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/connectors": {
+      "get": {
+        "description": "The connectors this server offers, as the troupe has set them up. In-app\ndelivery is always on and is not listed.",
+        "operationId": "list_connectors_api_troupes__troupe_id__connectors_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConnectorOut"
+                  },
+                  "title": "Response List Connectors Api Troupes  Troupe Id  Connectors Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Connectors",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/connectors/{kind}": {
+      "put": {
+        "operationId": "change_connector_api_troupes__troupe_id__connectors__kind__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectorChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectorOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Connector",
+        "tags": [
+          "connectors"
         ]
       }
     },

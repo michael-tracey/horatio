@@ -38,3 +38,6 @@ export type Tally = Schemas["Tally"];
 export type TitlesOut = Schemas["TitlesOut"];
 export type NotificationOut = Schemas["NotificationOut"];
 export type CheckOut = Schemas["CheckOut"];
+export type ConnectorOut = Schemas["ConnectorOut"];
+export type DeliveryStatus = Schemas["DeliveryStatus"];
+export type DeliveryOut = Schemas["DeliveryOut"];

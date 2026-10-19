@@ -752,6 +752,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cycle Deliveries
+         * @description Each submission against each channel: how its delivery went.
+         */
+        get: operations["cycle_deliveries_api_cycles__cycle_id__deliveries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}/open": {
         parameters: {
             query?: never;
@@ -906,6 +926,40 @@ export interface paths {
         get: operations["my_responses_api_cycles__cycle_id__responses_mine_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliveries/{delivery_id}/mark-sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Delivery Sent */
+        post: operations["mark_delivery_sent_api_deliveries__delivery_id__mark_sent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliveries/{delivery_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Delivery */
+        post: operations["retry_delivery_api_deliveries__delivery_id__retry_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1182,6 +1236,44 @@ export interface paths {
         get?: never;
         /** Change Check */
         put: operations["change_check_api_troupes__troupe_id__checks__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Connectors
+         * @description The connectors this server offers, as the troupe has set them up. In-app
+         *     delivery is always on and is not listed.
+         */
+        get: operations["list_connectors_api_troupes__troupe_id__connectors_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/connectors/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Connector */
+        put: operations["change_connector_api_troupes__troupe_id__connectors__kind__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1689,6 +1781,51 @@ export interface components {
             /** To Name */
             to_name: string;
         };
+        /** ConnectorChange */
+        ConnectorChange: {
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Mode
+             * @default alert
+             * @enum {string}
+             */
+            mode: "full" | "alert";
+            /**
+             * Settings
+             * @default {}
+             */
+            settings: {
+                [key: string]: unknown;
+            };
+            /**
+             * Test Mode
+             * @default false
+             */
+            test_mode: boolean;
+        };
+        /** ConnectorOut */
+        ConnectorOut: {
+            /** Enabled */
+            enabled: boolean;
+            /** Kind */
+            kind: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "full" | "alert";
+            /** Name */
+            name: string;
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** Test Mode */
+            test_mode: boolean;
+            /** Unavailable */
+            unavailable: string | null;
+        };
         /** CreationOut */
         CreationOut: {
             /** Complete */
@@ -1746,6 +1883,45 @@ export interface components {
         Delivered: {
             /** Delivered */
             delivered: number;
+            /**
+             * Queued
+             * @default 0
+             */
+            queued: number;
+        };
+        /** DeliveryOut */
+        DeliveryOut: {
+            /** Attempts */
+            attempts: number;
+            /** Channel */
+            channel: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Error */
+            last_error: string | null;
+            /** Marked By */
+            marked_by: string | null;
+            /** Next Attempt At */
+            next_attempt_at: string | null;
+            /** Sent At */
+            sent_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "sent" | "failed";
+            /** Test Mode */
+            test_mode: boolean;
+        };
+        /** DeliveryStatus */
+        DeliveryStatus: {
+            /** Channels */
+            channels: string[];
+            /** Participants */
+            participants: components["schemas"]["ParticipantDeliveries"][];
         };
         /** DetailChange */
         DetailChange: {
@@ -2052,6 +2228,20 @@ export interface components {
         OptionList: {
             /** Names */
             names: string[];
+        };
+        /** ParticipantDeliveries */
+        ParticipantDeliveries: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Deliveries */
+            deliveries: {
+                [key: string]: components["schemas"]["DeliveryOut"];
+            };
         };
         /** ParticipantOut */
         ParticipantOut: {
@@ -4376,6 +4566,37 @@ export interface operations {
             };
         };
     };
+    cycle_deliveries_api_cycles__cycle_id__deliveries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     open_cycle_api_cycles__cycle_id__open_post: {
         parameters: {
             query?: never;
@@ -4686,6 +4907,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_delivery_sent_api_deliveries__delivery_id__mark_sent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                delivery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_delivery_api_deliveries__delivery_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                delivery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryOut"];
                 };
             };
             /** @description Validation Error */
@@ -5271,6 +5554,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_connectors_api_troupes__troupe_id__connectors_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_connector_api_troupes__troupe_id__connectors__kind__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectorChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorOut"];
                 };
             };
             /** @description Validation Error */

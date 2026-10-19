@@ -192,6 +192,32 @@ class Delivery(Record):
     attempts: Mapped[int] = mapped_column(default=0, server_default="0")
     last_error: Mapped[str | None]
     external_ids: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # A pending delivery is not tried again before this (backing off after a failure).
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set when someone marked it sent by hand, having sent it themselves.
+    marked_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+
+
+class TroupeConnector(Record):
+    """A way out of Horatio a troupe has set up, such as its Discord server
+    (CONTEXT.md: Connector). In-app delivery is always on and has no row."""
+
+    __tablename__ = "troupe_connectors"
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "kind"),
+        CheckConstraint("kind in ('discord', 'email')", name="kind"),
+        CheckConstraint("mode in ('full', 'alert')", name="mode"),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    kind: Mapped[str]
+    enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The whole result, or only a note that it is ready with a link to Horatio.
+    mode: Mapped[str] = mapped_column(default="alert", server_default="alert")
+    # Send everything to the connector's test target instead of to players.
+    test_mode: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The connector's own settings (a server, channels, a test target). No secrets.
+    settings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class RandomTable(Record):

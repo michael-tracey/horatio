@@ -227,7 +227,10 @@ def test_delivering_results_to_the_player(scene: Scene) -> None:
     assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").status_code == 409
     troupe.assistant.client.post(f"/cycles/{cycle_id}/close")
     assert troupe.narrator.client.post(f"/cycles/{cycle_id}/deliver").status_code == 403
-    assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").json() == {"delivered": 1}
+    assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").json() == {
+        "delivered": 1,
+        "queued": 0,
+    }
 
     results = troupe.player.client.get(f"/characters/{scene.agnes}/downtime/results").json()
     assert len(results) == 1
@@ -236,7 +239,10 @@ def test_delivering_results_to_the_player(scene: Scene) -> None:
         "**Downtime action**\n*Your action:* Feed at the docks\n*Result:* You feed well."
     )
     # Never twice, and nothing changes after delivery.
-    assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").json() == {"delivered": 0}
+    assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").json() == {
+        "delivered": 0,
+        "queued": 0,
+    }
     assert (
         troupe.assistant.client.put(f"/responses/{feed}", json={"body": "Changed"}).status_code
         == 409

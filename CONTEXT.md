@@ -36,7 +36,7 @@ A staff member who runs a troupe; storytellers and the lead storyteller are the 
 _Avoid_: ST (in names), GM, admin
 
 **Assistant Storyteller**:
-A staff member who can do everything a storyteller can except manage staff and house rules.
+A staff member who can do everything a storyteller can except manage staff, house rules and connectors.
 _Avoid_: AST (in names), sub-ST
 
 **Narrator**:
@@ -262,3 +262,11 @@ _Avoid_: Reject, unassign, give back
 **Delivery**:
 Sending a submission's responses to its player.
 _Avoid_: Send, publish
+
+**Connector**:
+A way out of Horatio that a troupe has set up and switched on, such as its Discord server or email. Each sends the whole result, or only an alert that it is ready, and has a test mode that sends everything to a test target instead. In-app delivery is always on and is not a connector.
+_Avoid_: Integration, plugin, webhook
+
+**Channel**:
+The route one delivery took: `horatio` (in-app), `discord` or `email`. A troupe's connectors decide which channels a delivery goes out on.
+_Avoid_: Medium, transport

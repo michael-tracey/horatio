@@ -20,6 +20,7 @@ from horatio.models.downtimes import (
     RandomTable,
     Response,
     Submission,
+    TroupeConnector,
 )
 from horatio.models.notifications import Notification
 from horatio.models.people import AuthIdentity, Session, User
@@ -58,6 +59,7 @@ __all__ = [
     "OwedAction",
     "Question",
     "Submission",
+    "TroupeConnector",
     "Approval",
     "AuditEvent",
     "AuthIdentity",
