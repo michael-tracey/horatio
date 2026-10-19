@@ -419,6 +419,10 @@ def blocking(violation: Violation, character: Character) -> bool:
     )
 
 
+# Stands in for the detail a player will give, when asking whether a trait can be taken.
+FIELD_TO_BE_CHOSEN = "(to be chosen)"
+
+
 def unavailable(
     db: Session,
     character: Character,
@@ -467,13 +471,21 @@ def unavailable(
         if category != category_key or name in held:
             continue
         rating = (fixed_rating(rules, sheet, category, name) or 1) if rated else None
-        candidate = SheetTrait(category=category, name=name, rating=rating, free_rating=0)
-        trial = [t for t in sheet if rated or t.category != category] + [candidate]
-        new = [
-            v
-            for v in violations(checks, trial, check_context(db, character, trial))
-            if blocking(v, character) and v.key not in before
-        ]
+        # The detail is chosen when the trait is added, so a trait refused only for
+        # lacking one (Performance needs a field, p. 92) is tried again with one.
+        new: list[Violation] = []
+        for detail in ("", FIELD_TO_BE_CHOSEN):
+            candidate = SheetTrait(
+                category=category, name=name, detail=detail, rating=rating, free_rating=0
+            )
+            trial = [t for t in sheet if rated or t.category != category] + [candidate]
+            new = [
+                v
+                for v in violations(checks, trial, check_context(db, character, trial))
+                if blocking(v, character) and v.key not in before
+            ]
+            if not new:
+                break
         if new:
             # The trait's own problem first: "Talisman is already…" when trying Spellslinger.
             own = [v for v in new if v.subject.name == name]
