@@ -100,7 +100,16 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByRole("list", { name: "Skills picks left" })).toBeInViewport();
   await p.screenshot(shots("creation"));
   await next("Backgrounds");
-  await tap("Fame 3", "Herd 2", "Generation 1");
+  // What each background is, a tap away.
+  await p.getByRole("button", { name: "About Generation" }).click();
+  await expect(p.getByText(/Every vampire needs at least 1 dot/)).toBeVisible();
+  // A vampire cannot move on without Generation, nor skip ahead.
+  await tap("Fame 3", "Herd 2");
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByText(/Before moving on: A vampire needs at least 1 dot of Generation/)).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible();
+  await expect(p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Disciplines/ })).toHaveCount(0);
+  await tap("Generation 1");
   await next("Disciplines");
   await expect(p.getByText("in-clan").first()).toBeVisible();
   await tap("Celerity 2", "Potence 1", "Presence 1");
@@ -340,6 +349,8 @@ test("a troupe changes what new characters start with and their downtime actions
   await p.getByLabel("Clan").selectOption("Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
   for (const heading of ["Attributes", "Focuses", "Skills", "Backgrounds", "Disciplines", "Merits & flaws"]) {
+    // A vampire needs Generation before leaving Backgrounds.
+    if (heading === "Disciplines") await p.getByRole("button", { name: "Generation 1", exact: true }).click();
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
   }

@@ -46,6 +46,10 @@ creation cannot be finished until it holds; "review" lets it through once the
 character has a home troupe, waiting on that troupe's approval (and freely
 before, as acceptance reviews the whole sheet); "note" only shows on the sheet.
 A troupe can change any check's strength, or switch it off.
+
+A "complete" check can also name a creation `step`, the category whose picks
+must meet it: the wizard does not move on from that step until it holds (a
+vampire's Generation, on Backgrounds).
 """
 
 from collections.abc import Mapping, Sequence
@@ -98,6 +102,8 @@ class CheckData:
     strength: Strength = "refuse"
     message: str = ""
     page: str | None = None
+    # The creation step (a category's picks) that must meet a "complete" check.
+    step: str | None = None
 
     def about(self, trait: SheetTrait) -> bool:
         if trait.category != self.category or (trait.rating == 0):
@@ -318,6 +324,7 @@ def check_from_dict(raw: Mapping[str, Any]) -> CheckData:
         strength=raw.get("strength", "refuse"),
         message=raw.get("message", ""),
         page=raw.get("page"),
+        step=raw.get("step"),
     )
 
 

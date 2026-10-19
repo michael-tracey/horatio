@@ -69,8 +69,11 @@ def catalogue(
     category: str | None = None,
     troupe_id: uuid.UUID | None = None,
 ) -> CatalogueOut:
-    """The rule set's categories and traits, with any house-rule text from `troupe_id`."""
-    if troupe_id is not None and db.get(Troupe, troupe_id) is None:
+    """The rule set's categories and traits, with any house-rule text from `troupe_id`.
+    A troupe that takes only some sects does not see traits for the others (the
+    Sabbat's Rituals), nor a category left empty without them."""
+    troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
+    if troupe_id is not None and troupe is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     try:
         rules = read_troupe_rules(db, splat, troupe_id)
@@ -83,6 +86,13 @@ def catalogue(
         if options:
             source = (grant.source["category"], grant.source["name"])
             chooses[source] = sorted(set(chooses.get(source, [])) | set(options))
+    sects = set(troupe.allowed_sects) if troupe is not None else set()
+    traits = [
+        t
+        for t in sorted(rules.rule_set.traits.values(), key=lambda t: (t.category, t.name))
+        if not (sects and "sect" in t.properties and t.properties["sect"] not in sects)
+    ]
+    emptied = {c for c, _ in rules.rule_set.traits} - {t.category for t in traits}
     return CatalogueOut(
         splat=rules.splat,
         name=rules.rule_set.name,
@@ -100,6 +110,7 @@ def catalogue(
                 specializes=dict(c.specializes) if c.specializes else None,
             )
             for c in rules.rule_set.categories.values()
+            if c.key not in emptied
         ],
         traits=[
             TraitOut(
@@ -117,7 +128,7 @@ def catalogue(
                 if t.properties.get("requirement") != "requires_specialization"
                 else None,
             )
-            for t in sorted(rules.rule_set.traits.values(), key=lambda t: (t.category, t.name))
+            for t in traits
             if category is None or t.category == category
         ],
     )

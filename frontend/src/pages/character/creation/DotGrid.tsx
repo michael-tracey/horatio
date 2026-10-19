@@ -37,6 +37,7 @@ export function DotGrid({
   sections,
   details = {},
   onDetail,
+  unavailable = {},
 }: {
   title: string;
   showTitle?: boolean;
@@ -51,7 +52,15 @@ export function DotGrid({
   /** The field each picked Crafts, Performance or Science is for. */
   details?: Record<string, string>;
   onDetail?: (name: string, detail: string) => void;
+  /** Traits the rules do not allow this character, and why. */
+  unavailable?: Record<string, string>;
 }) {
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const toggle = (name: string) => {
+    const next = new Set(open);
+    if (!next.delete(name)) next.add(name);
+    setOpen(next);
+  };
   const ratings = Object.keys(allowed)
     .map(Number)
     .sort((a, b) => b - a);
@@ -68,56 +77,81 @@ export function DotGrid({
   const row = (trait: TraitOut) => {
     const rating = picks[trait.name] ?? 0;
     const label = tag?.(trait);
+    const barred = rating ? undefined : unavailable[trait.name];
+    const about = trait.description ? `about-${title}-${trait.name}`.replace(/\W+/g, "-") : undefined;
+    const shown = open.has(trait.name);
     return (
-      <li key={trait.name} className="flex items-center justify-between gap-3 py-1.5">
-        <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-          <span className={rating ? "text-parchment" : "text-mist"}>{trait.name}</span>
-          {label && <span className="text-xs text-gold">{label}</span>}
-          {rating > 0 && NEEDS_FIELD.has(trait.name) && onDetail && (
-            <Input
-              aria-label={`${trait.name} field`}
-              placeholder="Field, such as Singing"
-              value={details[trait.name] ?? ""}
-              onChange={(e) => onDetail(trait.name, e.target.value)}
-              className="h-8 w-40 py-0"
-            />
-          )}
-        </span>
-        <span className="flex shrink-0 items-center gap-0.5">
-          {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
-            const pickable = dot in allowed;
-            const enabled = pickable && canTap(picks, allowed, trait.name, dot);
-            const filled = dot <= rating;
-            return (
+      <li key={trait.name} className="py-1.5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            {about ? (
               <button
-                key={dot}
                 type="button"
-                aria-label={`${trait.name} ${dot}`}
-                aria-pressed={rating === dot}
-                disabled={!enabled}
-                onClick={() => onChange(tap(picks, allowed, trait.name, dot))}
-                className={[
-                  "grid h-8 w-7 place-items-center rounded text-lg leading-none",
-                  pickable ? "hover:bg-ash" : "cursor-default",
-                  filled ? "text-blood-bright" : pickable ? "text-mist" : "text-ash",
-                  !enabled && pickable && !filled ? "opacity-30" : "",
-                ].join(" ")}
+                aria-expanded={shown}
+                aria-controls={about}
+                aria-label={`About ${trait.name}`}
+                onClick={() => toggle(trait.name)}
+                className="-ml-1 grid h-7 w-6 place-items-center rounded text-mist hover:bg-ash hover:text-parchment"
               >
-                {filled ? "●" : pickable ? "○" : "·"}
+                <Chevron open={shown} />
               </button>
-            );
-          })}
-          {/* Kept in place when hidden, so every row's dots line up. */}
-          <button
-            type="button"
-            aria-label={`Clear ${trait.name}`}
-            disabled={!rating}
-            onClick={() => onChange(clear(picks, trait.name))}
-            className={`ml-1 h-8 rounded px-2 text-xs text-mist hover:bg-ash hover:text-parchment ${rating ? "" : "invisible"}`}
-          >
-            Clear
-          </button>
-        </span>
+            ) : (
+              <span className="w-5" aria-hidden />
+            )}
+            <span className={rating ? "text-parchment" : barred ? "text-ash" : "text-mist"}>{trait.name}</span>
+            {label && <span className="text-xs text-gold">{label}</span>}
+            {rating > 0 && NEEDS_FIELD.has(trait.name) && onDetail && (
+              <Input
+                aria-label={`${trait.name} field`}
+                placeholder="Field, such as Singing"
+                value={details[trait.name] ?? ""}
+                onChange={(e) => onDetail(trait.name, e.target.value)}
+                className="h-8 w-40 py-0"
+              />
+            )}
+          </span>
+          <span className="flex shrink-0 items-center gap-0.5">
+            {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
+              const pickable = dot in allowed;
+              const enabled = pickable && !barred && canTap(picks, allowed, trait.name, dot);
+              const filled = dot <= rating;
+              return (
+                <button
+                  key={dot}
+                  type="button"
+                  aria-label={`${trait.name} ${dot}`}
+                  aria-pressed={rating === dot}
+                  disabled={!enabled}
+                  onClick={() => onChange(tap(picks, allowed, trait.name, dot))}
+                  className={[
+                    "grid h-8 w-7 place-items-center rounded text-lg leading-none",
+                    pickable ? "hover:bg-ash" : "cursor-default",
+                    filled ? "text-blood-bright" : pickable ? "text-mist" : "text-ash",
+                    !enabled && pickable && !filled ? "opacity-30" : "",
+                  ].join(" ")}
+                >
+                  {filled ? "●" : pickable ? "○" : "·"}
+                </button>
+              );
+            })}
+            {/* Kept in place when hidden, so every row's dots line up. */}
+            <button
+              type="button"
+              aria-label={`Clear ${trait.name}`}
+              disabled={!rating}
+              onClick={() => onChange(clear(picks, trait.name))}
+              className={`ml-1 h-8 rounded px-2 text-xs text-mist hover:bg-ash hover:text-parchment ${rating ? "" : "invisible"}`}
+            >
+              Clear
+            </button>
+          </span>
+        </div>
+        {barred && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{barred}</p>}
+        {about && (
+          <p id={about} hidden={!shown} className="mt-1 pl-6 text-xs leading-relaxed text-mist">
+            {trait.description}
+          </p>
+        )}
       </li>
     );
   };
@@ -258,5 +292,14 @@ export function PointsList({
         <p className="text-xs text-mist">Search to see all {listed.length}.</p>
       )}
     </section>
+  );
+}
+
+/** Points right when closed, down when open. */
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}>
+      <path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
