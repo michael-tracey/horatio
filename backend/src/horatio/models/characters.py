@@ -92,12 +92,15 @@ class SheetVersion(Record):
 
 
 class XpEntry(Record):
-    """One line of a character's XP history. Never updated once written."""
+    """One line of a character's XP history. Never updated once written: a mistaken
+    award is put right by a correction, a later entry naming it."""
 
     __tablename__ = "xp_entries"
     __table_args__ = (
         # A fee is XP spent on something other than dots, such as changing a focus.
-        CheckConstraint("kind in ('award', 'purchase', 'settlement', 'fee')", name="kind"),
+        CheckConstraint(
+            "kind in ('award', 'purchase', 'settlement', 'fee', 'correction')", name="kind"
+        ),
         CheckConstraint(
             "kind <> 'purchase' or (trait_definition_id is not null"
             " and from_rating is not null and to_rating is not null"
@@ -107,6 +110,9 @@ class XpEntry(Record):
         CheckConstraint(
             "kind <> 'settlement' or reconciliation_item_id is not null",
             name="settlement_names_its_difference",
+        ),
+        CheckConstraint(
+            "kind <> 'correction' or corrects_id is not null", name="correction_names_its_award"
         ),
     )
 
@@ -129,3 +135,5 @@ class XpEntry(Record):
     reconciliation_item_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("reconciliation_items.id")
     )
+    # For a correction: the award it corrects, by `amount` (the difference).
+    corrects_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("xp_entries.id"), index=True)

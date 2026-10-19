@@ -5451,11 +5451,60 @@
         "title": "XpAward",
         "type": "object"
       },
+      "XpCorrection": {
+        "properties": {
+          "amount": {
+            "minimum": 0.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "reason"
+        ],
+        "title": "XpCorrection",
+        "type": "object"
+      },
       "XpEntryOut": {
         "properties": {
           "amount": {
             "title": "Amount",
             "type": "integer"
+          },
+          "correctable": {
+            "default": false,
+            "title": "Correctable",
+            "type": "boolean"
+          },
+          "corrected_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected To"
+          },
+          "corrects_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrects Id"
           },
           "detail": {
             "anyOf": [
@@ -7804,6 +7853,70 @@
           }
         },
         "summary": "Award Xp",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/xp/{entry_id}/correction": {
+      "post": {
+        "description": "Correct a mistaken award with a new entry; the award itself is left as written.\nWhoever may award the character XP may correct it.",
+        "operationId": "correct_xp_api_characters__character_id__xp__entry_id__correction_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/XpCorrection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Correct Xp",
         "tags": [
           "sheets"
         ]

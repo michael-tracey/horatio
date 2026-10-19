@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 from horatio import titles
 from horatio.models import Approval, Character, XpEntry
 from horatio.rules.model import RuleSetData
-from horatio.sheets import sheet_rows
+from horatio.sheets import earned_and_spent, sheet_rows
 
 STATUSES = {
     "active": "Active",
@@ -103,14 +103,20 @@ def facts(db: Session, troupe_id: uuid.UUID, character: Character) -> Facts:
             continue
         key = (row.category.key, row.definition.name, row.trait.detail)
         traits[key] = row.trait.rating if row.trait.rating is not None else 1
-    amounts = list(db.scalars(select(XpEntry.amount).where(XpEntry.character_id == character.id)))
+    entries = [
+        (kind, amount)
+        for kind, amount in db.execute(
+            select(XpEntry.kind, XpEntry.amount).where(XpEntry.character_id == character.id)
+        )
+    ]
+    earned, spent = earned_and_spent(entries)
     return Facts(
         character_id=character.id,
         player_id=character.player_id if character.kind == "pc" else None,
         statuses=statuses,
         traits=traits,
         titles=set(titles.held(db, troupe_id, character.id)),
-        xp={"earned": sum(a for a in amounts if a > 0), "unspent": sum(amounts)},
+        xp={"earned": earned, "unspent": earned - spent},
     )
 
 
