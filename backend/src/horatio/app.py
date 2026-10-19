@@ -31,6 +31,7 @@ from horatio.api import (
     titles,
     troupe_requests,
     troupes,
+    xp_awards,
 )
 from horatio.config import get_settings
 
@@ -93,6 +94,7 @@ for module in (
     players,
     backups,
     troupe_requests,
+    xp_awards,
 ):
     api.include_router(module.router)
 
