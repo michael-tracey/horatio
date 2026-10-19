@@ -53,3 +53,4 @@ export type PlayerSummary = Schemas["PlayerSummary"];
 export type ProfileIn = Schemas["ProfileIn"];
 export type ProfileLink = Schemas["Link"];
 export type ResetLink = Schemas["ResetLink"];
+export type TroupeRequestOut = Schemas["TroupeRequestOut"];

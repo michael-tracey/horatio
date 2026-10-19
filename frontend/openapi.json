@@ -1544,6 +1544,18 @@
         "title": "Decision",
         "type": "object"
       },
+      "Decline": {
+        "properties": {
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "Decline",
+        "type": "object"
+      },
       "Delivered": {
         "properties": {
           "delivered": {
@@ -2561,6 +2573,33 @@
           "lead_email"
         ],
         "title": "NewTroupe",
+        "type": "object"
+      },
+      "NewTroupeRequest": {
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "NewTroupeRequest",
         "type": "object"
       },
       "NotificationOut": {
@@ -5107,6 +5146,100 @@
           "my_role"
         ],
         "title": "TroupeOut",
+        "type": "object"
+      },
+      "TroupeRequestOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By Name"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "requester_id": {
+            "format": "uuid",
+            "title": "Requester Id",
+            "type": "string"
+          },
+          "requester_name": {
+            "title": "Requester Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "note",
+          "status",
+          "requester_id",
+          "requester_name",
+          "created_at",
+          "decided_at",
+          "decided_by_name",
+          "reason",
+          "troupe_id"
+        ],
+        "title": "TroupeRequestOut",
         "type": "object"
       },
       "Unpick": {
@@ -9038,6 +9171,230 @@
         "summary": "Catalogue",
         "tags": [
           "rules"
+        ]
+      }
+    },
+    "/api/troupe-requests": {
+      "get": {
+        "description": "For the custodian: what is waiting, longest waiting first, then the latest\ndecided.",
+        "operationId": "all_requests_api_troupe_requests_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TroupeRequestOut"
+                  },
+                  "title": "Response All Requests Api Troupe Requests Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "All Requests",
+        "tags": [
+          "troupe requests"
+        ]
+      },
+      "post": {
+        "operationId": "ask_api_troupe_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTroupeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ask",
+        "tags": [
+          "troupe requests"
+        ]
+      }
+    },
+    "/api/troupe-requests/mine": {
+      "get": {
+        "operationId": "my_requests_api_troupe_requests_mine_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TroupeRequestOut"
+                  },
+                  "title": "Response My Requests Api Troupe Requests Mine Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Requests",
+        "tags": [
+          "troupe requests"
+        ]
+      }
+    },
+    "/api/troupe-requests/{request_id}": {
+      "delete": {
+        "description": "The requester takes back a request still waiting.",
+        "operationId": "withdraw_api_troupe_requests__request_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw",
+        "tags": [
+          "troupe requests"
+        ]
+      }
+    },
+    "/api/troupe-requests/{request_id}/approve": {
+      "post": {
+        "description": "Make the troupe as asked, led by the requester.",
+        "operationId": "approve_api_troupe_requests__request_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve",
+        "tags": [
+          "troupe requests"
+        ]
+      }
+    },
+    "/api/troupe-requests/{request_id}/decline": {
+      "post": {
+        "operationId": "decline_api_troupe_requests__request_id__decline_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decline"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decline",
+        "tags": [
+          "troupe requests"
         ]
       }
     },

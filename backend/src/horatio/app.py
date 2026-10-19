@@ -29,6 +29,7 @@ from horatio.api import (
     sheets,
     specializations,
     titles,
+    troupe_requests,
     troupes,
 )
 from horatio.config import get_settings
@@ -91,6 +92,7 @@ for module in (
     discord,
     players,
     backups,
+    troupe_requests,
 ):
     api.include_router(module.router)
 

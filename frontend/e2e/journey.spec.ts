@@ -592,3 +592,35 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await expect(printed.getByText("2 sheets", { exact: true })).toBeVisible();
   await printed.close();
 });
+
+test("someone asks for a troupe of their own, and the custodian approves it", async ({ browser }) => {
+  const custodian = await person(browser, "requests-custodian");
+  makeCustodian(custodian.email);
+  const asker = await person(browser, "requests-asker");
+  const troupeName = `Court of Cinders ${run}`;
+
+  const a = asker.page;
+  await a.getByRole("link", { name: "Troupes" }).click();
+  await a.getByLabel("Troupe name").fill(troupeName);
+  await a.getByLabel("Note to the custodian").fill("Eight players ready.");
+  await a.getByRole("button", { name: "Send request" }).click();
+  const mine = a.getByRole("listitem").filter({ hasText: troupeName });
+  await expect(mine.getByText("Waiting", { exact: true })).toBeVisible();
+
+  // It waits on the custodian's bell and under Custodian → Troupe requests.
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: /Troupe requests/ }).click();
+  const request = c.getByRole("listitem").filter({ hasText: troupeName });
+  await expect(request.getByText("Eight players ready.")).toBeVisible();
+  await c.screenshot(shots("troupe-request"));
+  await request.getByRole("button", { name: "Approve and make the troupe" }).click();
+  await expect(c.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // The asker now leads it.
+  await a.reload();
+  await expect(mine.getByText("Approved", { exact: true })).toBeVisible();
+  await a.locator("main").getByRole("link", { name: troupeName }).first().click();
+  await expect(a.getByText("Lead Storyteller").first()).toBeVisible();
+});
