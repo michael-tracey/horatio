@@ -49,7 +49,8 @@ OUTSIDE_SERVICES = (
 def no_outside_services(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = get_settings()
     for name in OUTSIDE_SERVICES:
-        monkeypatch.setattr(settings, name, None)
+        if name in type(settings).model_fields:
+            monkeypatch.setattr(settings, name, None)
     monkeypatch.setattr(settings, "public_url", "http://localhost:5173")
 
 
