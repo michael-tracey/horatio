@@ -302,6 +302,18 @@ locked (`SKIP LOCKED`) while it is sent.
 herd, patrol, discipline), owned by a troupe. Placeholders such as
 `[Location]` refer to other tables by name.
 
+**Finding and printing a troupe's characters (issues #35, #36)**
+
+- `POST /troupes/{id}/characters/search` takes a filter tree: groups that match
+  `all` or `any` of their items, each a group or a condition on status, a trait's
+  rating, a choice (clan and its bloodlines, sect, focus…), a title, the player,
+  experience, or how many traits a category holds. A missing trait counts as 0.
+  It is evaluated on each member's sheet as it stands (`horatio/character_filter.py`)
+  and returns the matches with the numbers their conditions compared. Nothing is
+  stored; the Characters list keeps the filter in its URL.
+- `GET /troupes/{id}/print?characters=…` returns printed sheets for the troupe's
+  characters named, or for all of them.
+
 ## 6. Cross-cutting
 
 **`audit_events`**: `actor_id`, `troupe_id` (nullable), `entity_type`,

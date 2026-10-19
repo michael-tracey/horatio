@@ -1370,6 +1370,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/characters/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search Characters
+         * @description The troupe's characters whose sheets match the filter, in the roster's order.
+         */
+        post: operations["search_characters_api_troupes__troupe_id__characters_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/characters/{character_id}/titles": {
         parameters: {
             query?: never;
@@ -2504,6 +2524,46 @@ export interface components {
             guild_id: string | null;
             /** Guild Name */
             guild_name: string | null;
+        };
+        /**
+         * FilterCondition
+         * @description One condition of a character filter; see horatio.character_filter.
+         */
+        FilterCondition: {
+            /** Op */
+            op: string;
+            /** Value */
+            value?: number | string | string[] | null;
+            /** What */
+            what: string;
+            /** Which */
+            which?: string | null;
+        };
+        /**
+         * FilterGroup
+         * @description Conditions and groups, all or any of which must hold.
+         */
+        FilterGroup: {
+            /** Items */
+            items: (components["schemas"]["FilterGroup"] | components["schemas"]["FilterCondition"])[];
+            /**
+             * Match
+             * @default all
+             * @enum {string}
+             */
+            match: "all" | "any";
+        };
+        /** FilterMatch */
+        FilterMatch: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Values */
+            values: {
+                [key: string]: number;
+            };
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -6531,6 +6591,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RosterEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_characters_api_troupes__troupe_id__characters_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FilterGroup"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilterMatch"][];
                 };
             };
             /** @description Validation Error */
