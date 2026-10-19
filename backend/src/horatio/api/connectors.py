@@ -89,13 +89,13 @@ def change_connector(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such connector.")
     if body.enabled and (reason := connector.unavailable()) is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, reason)
+    row = connector_row(db, troupe.id, kind)
     try:
-        settings = connector.check_settings(body.settings)
+        settings = connector.check_settings(body.settings, row.settings if row else {})
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    row = connector_row(db, troupe.id, kind)
     if row is None:
-        row = TroupeConnector(troupe_id=troupe.id, kind=kind)
+        row = TroupeConnector(troupe_id=troupe.id, kind=kind, settings={})
         db.add(row)
     row.enabled = body.enabled
     row.mode = body.mode

@@ -74,6 +74,27 @@ npx playwright test
 In production the backend serves the built frontend itself
 (`HORATIO_FRONTEND_DIST`), so the app and API share one origin.
 
+### Delivering downtime results
+
+Results always appear in Horatio. Troupes can also switch on connectors that
+send a copy; a worker inside the API sends them every
+`HORATIO_DELIVERY_INTERVAL` seconds (default 15; `0` turns it off). Links in
+messages use `HORATIO_PUBLIC_URL` (default `http://localhost:5173`).
+
+**Discord.** Horatio posts through one bot that each troupe adds to its own
+server. To set it up once for the whole site:
+
+1. Create an application at <https://discord.com/developers/applications>.
+2. Under *Bot*, reset and copy the token. No privileged intents are needed.
+3. Under *OAuth2*, copy the client id and secret, and add the redirect
+   `{HORATIO_PUBLIC_URL}/api/discord/callback`.
+4. Set `HORATIO_DISCORD_CLIENT_ID`, `HORATIO_DISCORD_CLIENT_SECRET` and
+   `HORATIO_DISCORD_BOT_TOKEN`.
+
+Storytellers then use *Add Horatio to your Discord* on their troupe's
+Connectors tab and pick each character's private channel. The bot asks only
+to view channels and send messages.
+
 Model changes need a migration: `uv run alembic revision --autogenerate -m "..."`,
 then read what it generated. `tests/test_migrations.py` fails if the models and
 migrations disagree.

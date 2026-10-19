@@ -246,6 +246,13 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));
 
+  // Results always go out in Horatio; Discord needs the server set up first.
+  await lead.page.getByRole("link", { name: "Troupes" }).click();
+  await lead.page.getByRole("link", { name: troupeName }).click();
+  await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();
+  await expect(lead.page.getByText("always on")).toBeVisible();
+  await expect(lead.page.getByText(/Discord is not set up on this server/)).toBeVisible();
+
   // The printable sheet, in the paper sheet's order.
   await p.getByRole("link", { name: "Sheet", exact: true }).click();
   await p.getByRole("link", { name: "Print the sheet" }).click();

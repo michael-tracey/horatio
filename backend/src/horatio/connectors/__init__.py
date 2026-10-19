@@ -57,8 +57,12 @@ class Connector(ABC):
         return None
 
     @abstractmethod
-    def check_settings(self, settings: Mapping[str, Any]) -> dict[str, Any]:
-        """A troupe's settings, tidied; raises ValueError when they cannot work."""
+    def check_settings(
+        self, settings: Mapping[str, Any], current: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        """A troupe's new settings, tidied, given what is stored now (some settings
+        only Horatio sets, such as a connected Discord server); raises ValueError
+        when they cannot work."""
 
     @abstractmethod
     def target(self, settings: Mapping[str, Any], recipient: Recipient, test_mode: bool) -> str:

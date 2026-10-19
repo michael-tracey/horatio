@@ -430,6 +430,41 @@
         "title": "ChangeOut",
         "type": "object"
       },
+      "ChannelOut": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "private": {
+            "title": "Private",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "private"
+        ],
+        "title": "ChannelOut",
+        "type": "object"
+      },
       "CharacterChanges": {
         "properties": {
           "name": {
@@ -541,6 +576,25 @@
           "owner_troupe_id"
         ],
         "title": "CharacterOut",
+        "type": "object"
+      },
+      "CharacterRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CharacterRef",
         "type": "object"
       },
       "CheckChange": {
@@ -1137,6 +1191,54 @@
         "title": "DisciplineOut",
         "type": "object"
       },
+      "DiscordSetup": {
+        "properties": {
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/ChannelOut"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterRef"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "guild_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Id"
+          },
+          "guild_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Name"
+          }
+        },
+        "required": [
+          "guild_id",
+          "guild_name",
+          "channels",
+          "characters"
+        ],
+        "title": "DiscordSetup",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1191,6 +1293,19 @@
           "troupe_id"
         ],
         "title": "HomeTroupeRequest",
+        "type": "object"
+      },
+      "Invite": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "Invite",
         "type": "object"
       },
       "KindOut": {
@@ -7882,6 +7997,129 @@
         "summary": "Create Cycle",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/discord": {
+      "delete": {
+        "description": "Forget the troupe's server and its channels, and stop sending to Discord.\nThe bot stays in the server until someone there removes it.",
+        "operationId": "discord_disconnect_api_troupes__troupe_id__discord_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discord Disconnect",
+        "tags": [
+          "connectors"
+        ]
+      },
+      "get": {
+        "description": "The connected server, its text channels, and the troupe's characters.",
+        "operationId": "discord_setup_api_troupes__troupe_id__discord_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordSetup"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discord Setup",
+        "tags": [
+          "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/discord/invite": {
+      "post": {
+        "description": "Discord's page for adding the Horatio bot to the troupe's server. Discord\nsends the storyteller back to `/api/discord/callback`.",
+        "operationId": "discord_invite_api_troupes__troupe_id__discord_invite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invite"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discord Invite",
+        "tags": [
+          "connectors"
         ]
       }
     },
