@@ -184,6 +184,29 @@ export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolea
   );
 }
 
+/** Smaller tabs inside a tab, for its parts. */
+export function SubTabs({ label, tabs }: { label: string; tabs: { to: string; label: string; end?: boolean }[] }) {
+  return (
+    <nav aria-label={label} className="mb-5 flex flex-wrap gap-2">
+      {tabs.map((t) => (
+        <NavLink
+          key={t.to}
+          to={t.to}
+          end={t.end}
+          className={({ isActive }) =>
+            cx(
+              "rounded-full border px-3 py-1 text-sm whitespace-nowrap",
+              isActive ? "border-gold/60 bg-gold/10 text-parchment" : "border-ash text-mist hover:text-parchment",
+            )
+          }
+        >
+          {t.label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
 /** Dots for a rating, filled to `value`, e.g. ●●●○○. */
 /** A rating as dots. Dots from `pendingFrom` up are still waiting for approval, in gold. */
 export function Dots({ value, pendingFrom }: { value: number; pendingFrom?: number | null }) {

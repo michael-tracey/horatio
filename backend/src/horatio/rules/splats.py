@@ -1,7 +1,7 @@
 """What each splat's cost-rule conditions can test, and how those facts are worked out."""
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from horatio.rules.model import SheetTrait, TroupeRules
@@ -16,6 +16,8 @@ class Splat:
     facts: FactsFn
     # The character's in-clan (native) powers, for checks.
     in_clan: Callable[[TroupeRules, Sequence[SheetTrait]], list[str]] = lambda _r, _s: []
+    # How each fact reads in plain words (horatio.rules.conditions.describe).
+    fact_words: Mapping[str, Any] = field(default_factory=dict)
 
 
 # --- Vampire ---------------------------------------------------------------
@@ -75,5 +77,11 @@ SPLATS: dict[str, Splat] = {
         fact_names=frozenset({"generation", "in_clan", "clan", "clan_family"}),
         facts=vampire_facts,
         in_clan=vampire_in_clan_disciplines,
+        fact_words={
+            "generation": "Generation {}",
+            "in_clan": ("in-clan", "out-of-clan"),
+            "clan": "{}",
+            "clan_family": "{} clan",
+        },
     ),
 }

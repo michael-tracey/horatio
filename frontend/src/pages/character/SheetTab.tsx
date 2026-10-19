@@ -22,6 +22,7 @@ import {
 } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AddTraitPanel } from "./AddTraitPanel";
+import { rulesTroupe } from "./rules";
 import {
   NEEDS_FIELD,
   SetField,
@@ -51,13 +52,13 @@ function useSheet(characterId: string) {
 
 function useCatalogue(character: CharacterOut) {
   return useQuery({
-    queryKey: ["catalogue", character.splat, character.home_troupe_id],
+    queryKey: ["catalogue", character.splat, rulesTroupe(character)],
     queryFn: () =>
       unwrap(
         api.GET("/api/rules/{splat}", {
           params: {
             path: { splat: character.splat },
-            query: { troupe_id: character.home_troupe_id ?? undefined },
+            query: { troupe_id: rulesTroupe(character) },
           },
         }),
       ),

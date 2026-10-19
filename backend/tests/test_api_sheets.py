@@ -179,7 +179,10 @@ def test_purchases_use_the_home_troupes_house_rules(troupe: Troupe, session: Ses
     character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
     add_house_rule(
-        session, uuid.UUID(troupe.id), "vampire", CostRuleData("skills", "per_dot", rate=1)
+        session,
+        uuid.UUID(troupe.id),
+        "vampire",
+        CostRuleData("skills", "per_dot", rate=1, condition={"generation": 1}),
     )
 
     assert buy(troupe.player, character_id, "skills", "Brawl", 3).json()["cost"] == 3

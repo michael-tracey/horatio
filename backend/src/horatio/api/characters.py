@@ -9,7 +9,7 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
 from horatio.models import Character, RuleSet, Troupe
 from horatio.permissions import can_edit_character, visible_character
-from horatio.sheets import lock_character, rules_for, start_character
+from horatio.sheets import lock_character, rules_for, start_character, sync_fixed_ratings
 
 router = APIRouter(prefix="/characters", tags=["characters"])
 
@@ -134,6 +134,7 @@ def set_building_troupe(
             status.HTTP_409_CONFLICT, "The character has a home troupe; its rules apply."
         )
     character.building_troupe_id = running_troupe_id(db, body.troupe_id)
+    sync_fixed_ratings(db, character)
     db.commit()
     return character_out(character)
 

@@ -1,6 +1,24 @@
 {
   "components": {
     "schemas": {
+      "ActionKindOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "ActionKindOut",
+        "type": "object"
+      },
       "AdjustmentIn": {
         "properties": {
           "action_kind": {
@@ -48,6 +66,89 @@
         "title": "AdjustmentOut",
         "type": "object"
       },
+      "AllowanceChange": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "min_rating": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Min Rating",
+            "type": "integer"
+          },
+          "scheme": {
+            "default": "fixed",
+            "enum": [
+              "fixed",
+              "per_dot"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "AllowanceChange",
+        "type": "object"
+      },
+      "AllowanceIn": {
+        "properties": {
+          "action_kind": {
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "min_rating": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Min Rating",
+            "type": "integer"
+          },
+          "scheme": {
+            "default": "fixed",
+            "enum": [
+              "fixed",
+              "per_dot"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          }
+        },
+        "required": [
+          "amount",
+          "action_kind"
+        ],
+        "title": "AllowanceIn",
+        "type": "object"
+      },
       "AllowanceLineOut": {
         "properties": {
           "action_kind": {
@@ -69,6 +170,119 @@
           "amount"
         ],
         "title": "AllowanceLineOut",
+        "type": "object"
+      },
+      "AllowanceOut": {
+        "properties": {
+          "action_kind": {
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "amount_text": {
+            "title": "Amount Text",
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "min_rating": {
+            "title": "Min Rating",
+            "type": "integer"
+          },
+          "replaced": {
+            "default": false,
+            "title": "Replaced",
+            "type": "boolean"
+          },
+          "scheme": {
+            "enum": [
+              "fixed",
+              "per_dot"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          },
+          "who": {
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "action_kind",
+          "category",
+          "trait",
+          "min_rating",
+          "scheme",
+          "amount",
+          "who",
+          "amount_text",
+          "house"
+        ],
+        "title": "AllowanceOut",
+        "type": "object"
+      },
+      "AllowancesOut": {
+        "properties": {
+          "action_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/ActionKindOut"
+            },
+            "title": "Action Kinds",
+            "type": "array"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/AllowanceOut"
+            },
+            "title": "Rules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "action_kinds",
+          "rules"
+        ],
+        "title": "AllowancesOut",
         "type": "object"
       },
       "AnswerIn": {
@@ -790,6 +1004,370 @@
           "settings"
         ],
         "title": "ConnectorOut",
+        "type": "object"
+      },
+      "CostCategoryOut": {
+        "properties": {
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "max_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rating"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "per_trait": {
+            "title": "Per Trait",
+            "type": "boolean"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "group",
+          "max_rating",
+          "per_trait",
+          "unit"
+        ],
+        "title": "CostCategoryOut",
+        "type": "object"
+      },
+      "CostChange": {
+        "properties": {
+          "rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "scheme": {
+            "enum": [
+              "per_dot",
+              "progressive",
+              "table",
+              "fixed",
+              "free",
+              "not_allowed"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "table": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "scheme"
+        ],
+        "title": "CostChange",
+        "type": "object"
+      },
+      "CostIn": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "scheme": {
+            "enum": [
+              "per_dot",
+              "progressive",
+              "table",
+              "fixed",
+              "free",
+              "not_allowed"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "table": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          }
+        },
+        "required": [
+          "scheme",
+          "category"
+        ],
+        "title": "CostIn",
+        "type": "object"
+      },
+      "CostOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "condition_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition Text"
+          },
+          "fixed_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed Rating"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "price_text": {
+            "title": "Price Text",
+            "type": "string"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "replaced": {
+            "default": false,
+            "title": "Replaced",
+            "type": "boolean"
+          },
+          "scheme": {
+            "enum": [
+              "per_dot",
+              "progressive",
+              "table",
+              "fixed",
+              "free",
+              "not_allowed"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "table": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "trait",
+          "condition",
+          "condition_text",
+          "price_text",
+          "scheme",
+          "rate",
+          "table",
+          "text",
+          "page",
+          "house"
+        ],
+        "title": "CostOut",
+        "type": "object"
+      },
+      "CostsOut": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/CostCategoryOut"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "costs": {
+            "items": {
+              "$ref": "#/components/schemas/CostOut"
+            },
+            "title": "Costs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "categories",
+          "costs"
+        ],
+        "title": "CostsOut",
         "type": "object"
       },
       "CreationOut": {
@@ -3324,6 +3902,157 @@
           "role"
         ],
         "title": "StaffMember",
+        "type": "object"
+      },
+      "StartingCategoryOut": {
+        "properties": {
+          "book": {
+            "items": {
+              "$ref": "#/components/schemas/StartingRule"
+            },
+            "title": "Book",
+            "type": "array"
+          },
+          "book_text": {
+            "title": "Book Text",
+            "type": "string"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "max_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rating"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/StartingRule"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "max_rating",
+          "rules",
+          "book",
+          "text",
+          "book_text",
+          "house"
+        ],
+        "title": "StartingCategoryOut",
+        "type": "object"
+      },
+      "StartingChange": {
+        "properties": {
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/StartingRule"
+            },
+            "title": "Rules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rules"
+        ],
+        "title": "StartingChange",
+        "type": "object"
+      },
+      "StartingRule": {
+        "description": "Picks at a rating (`picks` and `rating`), or a budget of `points`.",
+        "properties": {
+          "picks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picks"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "restriction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restriction"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When"
+          },
+          "when_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When Text"
+          }
+        },
+        "title": "StartingRule",
         "type": "object"
       },
       "TableIn": {
@@ -7508,6 +8237,207 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/allowances": {
+      "get": {
+        "operationId": "list_allowances_api_troupes__troupe_id__allowances_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Allowances",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "post": {
+        "operationId": "add_allowance_api_troupes__troupe_id__allowances_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllowanceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Allowance",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/allowances/{rule_id}": {
+      "delete": {
+        "operationId": "remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Allowance",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "operationId": "change_allowance_api_troupes__troupe_id__allowances__rule_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllowanceChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Allowance",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/approvals": {
       "get": {
         "operationId": "troupe_approvals_api_troupes__troupe_id__approvals_get",
@@ -7899,6 +8829,366 @@
         "summary": "Change Connector",
         "tags": [
           "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/costs": {
+      "get": {
+        "operationId": "list_costs_api_troupes__troupe_id__costs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Costs",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "post": {
+        "operationId": "add_cost_api_troupes__troupe_id__costs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CostIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Cost",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/costs/{cost_id}": {
+      "delete": {
+        "operationId": "remove_cost_api_troupes__troupe_id__costs__cost_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "cost_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cost Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Cost",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "operationId": "change_cost_api_troupes__troupe_id__costs__cost_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "cost_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cost Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CostChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Cost",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/creation": {
+      "get": {
+        "operationId": "list_starting_api_troupes__troupe_id__creation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StartingCategoryOut"
+                  },
+                  "title": "Response List Starting Api Troupes  Troupe Id  Creation Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Starting",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/creation/{category}": {
+      "delete": {
+        "operationId": "reset_starting_api_troupes__troupe_id__creation__category__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartingCategoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Starting",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "operationId": "change_starting_api_troupes__troupe_id__creation__category__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartingChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartingCategoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Starting",
+        "tags": [
+          "house rules"
         ]
       }
     },
