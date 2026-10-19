@@ -1152,6 +1152,42 @@ export interface paths {
         patch: operations["change_troupe_api_troupes__troupe_id__patch"];
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/allowances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Allowances */
+        get: operations["list_allowances_api_troupes__troupe_id__allowances_get"];
+        put?: never;
+        /** Add Allowance */
+        post: operations["add_allowance_api_troupes__troupe_id__allowances_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/allowances/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Allowance */
+        put: operations["change_allowance_api_troupes__troupe_id__allowances__rule_id__put"];
+        post?: never;
+        /** Remove Allowance */
+        delete: operations["remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/approvals": {
         parameters: {
             query?: never;
@@ -1276,6 +1312,77 @@ export interface paths {
         put: operations["change_connector_api_troupes__troupe_id__connectors__kind__put"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Costs */
+        get: operations["list_costs_api_troupes__troupe_id__costs_get"];
+        put?: never;
+        /** Add Cost */
+        post: operations["add_cost_api_troupes__troupe_id__costs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/costs/{cost_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Cost */
+        put: operations["change_cost_api_troupes__troupe_id__costs__cost_id__put"];
+        post?: never;
+        /** Remove Cost */
+        delete: operations["remove_cost_api_troupes__troupe_id__costs__cost_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/creation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Starting */
+        get: operations["list_starting_api_troupes__troupe_id__creation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/creation/{category}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Starting */
+        put: operations["change_starting_api_troupes__troupe_id__creation__category__put"];
+        post?: never;
+        /** Reset Starting */
+        delete: operations["reset_starting_api_troupes__troupe_id__creation__category__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1530,6 +1637,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionKindOut */
+        ActionKindOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+        };
         /** AdjustmentIn */
         AdjustmentIn: {
             /** Action Kind */
@@ -1548,6 +1662,44 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** AllowanceChange */
+        AllowanceChange: {
+            /** Amount */
+            amount: number;
+            /**
+             * Min Rating
+             * @default 1
+             */
+            min_rating: number;
+            /**
+             * Scheme
+             * @default fixed
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+        };
+        /** AllowanceIn */
+        AllowanceIn: {
+            /** Action Kind */
+            action_kind: string;
+            /** Amount */
+            amount: number;
+            /** Category */
+            category?: string | null;
+            /**
+             * Min Rating
+             * @default 1
+             */
+            min_rating: number;
+            /**
+             * Scheme
+             * @default fixed
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+            /** Trait */
+            trait?: string | null;
+        };
         /** AllowanceLineOut */
         AllowanceLineOut: {
             /** Action Kind */
@@ -1556,6 +1708,44 @@ export interface components {
             amount: number;
             /** Source */
             source: string;
+        };
+        /** AllowanceOut */
+        AllowanceOut: {
+            /** Action Kind */
+            action_kind: string;
+            /** Amount */
+            amount: number;
+            /** Amount Text */
+            amount_text: string;
+            /** Category */
+            category: string | null;
+            /** House */
+            house: boolean;
+            /** Id */
+            id: string | null;
+            /** Min Rating */
+            min_rating: number;
+            /**
+             * Replaced
+             * @default false
+             */
+            replaced: boolean;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot";
+            /** Trait */
+            trait: string | null;
+            /** Who */
+            who: string;
+        };
+        /** AllowancesOut */
+        AllowancesOut: {
+            /** Action Kinds */
+            action_kinds: components["schemas"]["ActionKindOut"][];
+            /** Rules */
+            rules: components["schemas"]["AllowanceOut"][];
         };
         /** AnswerIn */
         AnswerIn: {
@@ -1825,6 +2015,103 @@ export interface components {
             test_mode: boolean;
             /** Unavailable */
             unavailable: string | null;
+        };
+        /** CostCategoryOut */
+        CostCategoryOut: {
+            /** Group */
+            group: string;
+            /** Key */
+            key: string;
+            /** Max Rating */
+            max_rating: number | null;
+            /** Name */
+            name: string;
+            /** Per Trait */
+            per_trait: boolean;
+            /** Unit */
+            unit: string;
+        };
+        /** CostChange */
+        CostChange: {
+            /** Rate */
+            rate?: number | null;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table?: number[] | null;
+            /** Text */
+            text?: string | null;
+        };
+        /** CostIn */
+        CostIn: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Rate */
+            rate?: number | null;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table?: number[] | null;
+            /** Text */
+            text?: string | null;
+            /** Trait */
+            trait?: string | null;
+        };
+        /** CostOut */
+        CostOut: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            } | null;
+            /** Condition Text */
+            condition_text: string | null;
+            /** Fixed Rating */
+            fixed_rating?: number | null;
+            /** House */
+            house: boolean;
+            /** Id */
+            id: string | null;
+            /** Page */
+            page: string | null;
+            /** Price Text */
+            price_text: string;
+            /** Rate */
+            rate: number | null;
+            /**
+             * Replaced
+             * @default false
+             */
+            replaced: boolean;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /** Table */
+            table: number[] | null;
+            /** Text */
+            text: string | null;
+            /** Trait */
+            trait: string | null;
+        };
+        /** CostsOut */
+        CostsOut: {
+            /** Categories */
+            categories: components["schemas"]["CostCategoryOut"][];
+            /** Costs */
+            costs: components["schemas"]["CostOut"][];
         };
         /** CreationOut */
         CreationOut: {
@@ -2809,6 +3096,50 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** StartingCategoryOut */
+        StartingCategoryOut: {
+            /** Book */
+            book: components["schemas"]["StartingRule"][];
+            /** Book Text */
+            book_text: string;
+            /** House */
+            house: boolean;
+            /** Key */
+            key: string;
+            /** Max Rating */
+            max_rating: number | null;
+            /** Name */
+            name: string;
+            /** Rules */
+            rules: components["schemas"]["StartingRule"][];
+            /** Text */
+            text: string;
+        };
+        /** StartingChange */
+        StartingChange: {
+            /** Rules */
+            rules: components["schemas"]["StartingRule"][];
+        };
+        /**
+         * StartingRule
+         * @description Picks at a rating (`picks` and `rating`), or a budget of `points`.
+         */
+        StartingRule: {
+            /** Picks */
+            picks?: number | null;
+            /** Points */
+            points?: number | null;
+            /** Rating */
+            rating?: number | null;
+            /** Restriction */
+            restriction?: string | null;
+            /** When */
+            when?: {
+                [key: string]: unknown;
+            } | null;
+            /** When Text */
+            when_text?: string | null;
         };
         /** TableIn */
         TableIn: {
@@ -5400,6 +5731,138 @@ export interface operations {
             };
         };
     };
+    list_allowances_api_troupes__troupe_id__allowances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowancesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_allowance_api_troupes__troupe_id__allowances_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllowanceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_allowance_api_troupes__troupe_id__allowances__rule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AllowanceChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     troupe_approvals_api_troupes__troupe_id__approvals_get: {
         parameters: {
             query?: {
@@ -5621,6 +6084,237 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_costs_api_troupes__troupe_id__costs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_cost_api_troupes__troupe_id__costs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_cost_api_troupes__troupe_id__costs__cost_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                cost_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_cost_api_troupes__troupe_id__costs__cost_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                cost_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_starting_api_troupes__troupe_id__creation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_starting_api_troupes__troupe_id__creation__category__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartingChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_starting_api_troupes__troupe_id__creation__category__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"];
                 };
             };
             /** @description Validation Error */

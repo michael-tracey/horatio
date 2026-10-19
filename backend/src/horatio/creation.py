@@ -29,6 +29,7 @@ from horatio.sheets import (
     conflict,
     ensure_unlocked,
     find_definition,
+    held_at,
     rules_for,
     sheet_rows,
     sheet_violations,
@@ -158,7 +159,7 @@ def place_pick(
     all_pools = pools(db, character)
     points_pool = all_pools.get((category, 0))
     if points_pool is not None and points_pool.kind == "points":
-        fixed = definition.properties.get("rating")
+        fixed = held_at(db, character, category, definition.name)
         rating = fixed if fixed is not None else rating
         pool = points_pool
         if rating > pool.remaining:
@@ -256,7 +257,7 @@ def set_category_picks(
         key = (definition.name, spec.detail)
         if key in wanted:
             raise unprocessable(f"{spec.name} is picked twice.")
-        fixed = definition.properties.get("rating")
+        fixed = held_at(db, character, category, definition.name)
         wanted[key] = fixed if is_points and fixed is not None else spec.rating
         definitions[key] = definition
 

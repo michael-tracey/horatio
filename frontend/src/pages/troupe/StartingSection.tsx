@@ -1,0 +1,176 @@
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { api, unwrap } from "../../api/client";
+import type { StartingCategoryOut, StartingRule } from "../../api/types";
+import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
+import { useAction } from "../../hooks";
+
+/**
+ * What new characters get free in each category: picks at a rating, or a budget
+ * of points. A troupe's rules for a category replace all the rule set's for it,
+ * for characters built for this troupe or homed in it while still being built.
+ */
+export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+  const starting = useQuery({
+    queryKey: ["starting", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/creation", { params: { path: { troupe_id: troupeId } } })),
+  });
+  if (starting.isPending) return <Loading />;
+  if (starting.error) return <ErrorText error={starting.error} />;
+  return (
+    <div className="flex flex-col gap-6">
+      <Card title="How starting points work">
+        <p className="text-sm">
+          A new character places these in the creation wizard: picks give a trait that many free dots, and a budget of points
+          buys merits (or is paid back by flaws) at their value.{" "}
+          {canEdit ? "Change a category to play it differently here; going back uses the rule set's again." : ""}
+        </p>
+        <p className="mt-2 text-sm text-mist">
+          Changes apply to characters being built for this troupe straight away. Characters already finished are not affected.
+        </p>
+      </Card>
+      <Card title="Starting points">
+        <ul className="divide-y divide-ash">
+          {starting.data.map((c) => (
+            <CategoryRow key={c.key} troupeId={troupeId} category={c} canEdit={canEdit} />
+          ))}
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+function CategoryRow({ troupeId, category, canEdit }: { troupeId: string; category: StartingCategoryOut; canEdit: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const path = { params: { path: { troupe_id: troupeId, category: category.key } } };
+  const reset = useAction(() => unwrap(api.DELETE("/api/troupes/{troupe_id}/creation/{category}", path)));
+  return (
+    <li className="py-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="min-w-48 flex-1 text-sm">
+          <span className="text-parchment">{category.name}</span>: {category.text}
+          {category.house && <span className="block text-xs text-mist">The rule set's: {category.book_text}</span>}
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {category.house && <Badge tone="gold">this troupe</Badge>}
+          {canEdit && !editing && (
+            <Button variant="ghost" className="min-h-8 px-2" aria-label={`Change starting ${category.name}`} onClick={() => setEditing(true)}>
+              Change
+            </Button>
+          )}
+          {canEdit && category.house && !editing && (
+            <Button variant="ghost" className="min-h-8 px-2" aria-label={`Use the rule set's starting ${category.name}`} onClick={() => reset.mutate(undefined)}>
+              Use the rule set's
+            </Button>
+          )}
+        </span>
+      </div>
+      <ErrorText error={reset.error} />
+      {editing && <StartingEditor troupeId={troupeId} category={category} onClose={() => setEditing(false)} />}
+    </li>
+  );
+}
+
+type Row = { rating: string; picks: string; points: string; restriction: string | null; when: StartingRule["when"]; when_text: string | null };
+
+function StartingEditor({ troupeId, category, onClose }: { troupeId: string; category: StartingCategoryOut; onClose: () => void }) {
+  const points = category.book.some((r) => r.points !== null);
+  // Start from the rules as played, so the book's restrictions and conditions carry over.
+  const [rows, setRows] = useState<Row[]>(
+    category.rules.map((r) => ({
+      rating: r.rating?.toString() ?? "",
+      picks: r.picks?.toString() ?? "",
+      points: r.points?.toString() ?? "",
+      restriction: r.restriction ?? null,
+      when: r.when ?? null,
+      when_text: r.when_text ?? null,
+    })),
+  );
+  const update = (i: number, change: Partial<Row>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...change } : r)));
+  const save = useAction(async () => {
+    await unwrap(
+      api.PUT("/api/troupes/{troupe_id}/creation/{category}", {
+        params: { path: { troupe_id: troupeId, category: category.key } },
+        body: {
+          rules: rows.map((r) =>
+            points
+              ? { points: Number(r.points) }
+              : { rating: Number(r.rating), picks: Number(r.picks), restriction: r.restriction, when: r.when },
+          ),
+        },
+      }),
+    );
+    onClose();
+  });
+  const name = category.name.toLowerCase();
+
+  return (
+    <form
+      className="mt-3 flex flex-col gap-3 rounded-md border border-ash bg-night/40 p-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate(undefined);
+      }}
+    >
+      {points ? (
+        <label className="flex items-center gap-2 text-sm">
+          <Input
+            type="number"
+            min={1}
+            aria-label={`Points for ${name}`}
+            value={rows[0]?.points ?? ""}
+            onChange={(e) => setRows([{ ...(rows[0] ?? { rating: "", picks: "", restriction: null, when: null, when_text: null }), points: e.target.value }])}
+            className="w-20"
+          />
+          points
+        </label>
+      ) : (
+        <>
+          {rows.map((r, i) => (
+            <div key={i} className="flex flex-wrap items-center gap-2 text-sm">
+              <Input type="number" min={1} aria-label={`Picks, row ${i + 1}`} value={r.picks} onChange={(e) => update(i, { picks: e.target.value })} className="w-16" />
+              at
+              <Input
+                type="number"
+                min={1}
+                max={category.max_rating ?? undefined}
+                aria-label={`Dots, row ${i + 1}`}
+                value={r.rating}
+                onChange={(e) => update(i, { rating: e.target.value })}
+                className="w-16"
+              />
+              dots
+              <label className="flex items-center gap-1.5 text-mist">
+                <input type="checkbox" checked={r.restriction === "in_clan"} onChange={(e) => update(i, { restriction: e.target.checked ? "in_clan" : null })} />
+                in-clan only
+              </label>
+              {r.when_text && <Badge>{r.when_text}</Badge>}
+              <Button type="button" variant="ghost" className="min-h-8 px-2" aria-label={`Remove row ${i + 1}`} onClick={() => setRows(rows.filter((_, j) => j !== i))}>
+                Remove
+              </Button>
+            </div>
+          ))}
+          <div>
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-8"
+              onClick={() => setRows([...rows, { rating: "1", picks: "1", points: "", restriction: null, when: null, when_text: null }])}
+            >
+              Add picks
+            </Button>
+          </div>
+        </>
+      )}
+      <ErrorText error={save.error} />
+      <div className="flex gap-2">
+        <Button type="submit" disabled={save.isPending || rows.length === 0}>
+          Save
+        </Button>
+        <Button type="button" variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}

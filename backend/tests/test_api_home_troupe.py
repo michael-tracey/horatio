@@ -54,6 +54,11 @@ def queue(person: Person, troupe_id: str) -> list[dict[str, Any]]:
     return response.json()
 
 
+# Without a Generation background a character counts as Generation 1, whose skills
+# the rule set prices on their own; a troupe re-prices them by that same condition.
+GEN_1_SKILLS_AT_3 = CostRuleData("skills", "per_dot", rate=3, condition={"generation": 1})
+
+
 def house_rule(session: Session, troupe: Troupe, rule: CostRuleData) -> None:
     add_house_rule(session, uuid.UUID(troupe.id), "vampire", rule)
 
@@ -138,7 +143,7 @@ def test_a_first_home_troupe_with_nothing_to_reconcile(troupe: Troupe) -> None:
 def test_every_difference_needs_a_settlement(troupe: Troupe, session: Session) -> None:
     character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 2)  # 1 + 2 = 3 XP under the plain rules
-    house_rule(session, troupe, CostRuleData("skills", "per_dot", rate=3))
+    house_rule(session, troupe, GEN_1_SKILLS_AT_3)
 
     preview = troupe.player.client.post(
         f"/characters/{character_id}/home-troupe/preview", json={"troupe_id": troupe.id}
@@ -168,7 +173,7 @@ def test_every_difference_needs_a_settlement(troupe: Troupe, session: Session) -
 def test_paying_the_difference(troupe: Troupe, session: Session) -> None:
     character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
-    house_rule(session, troupe, CostRuleData("skills", "per_dot", rate=3))
+    house_rule(session, troupe, GEN_1_SKILLS_AT_3)
 
     response = request_home(
         troupe.player,
@@ -191,7 +196,7 @@ def test_paying_the_difference(troupe: Troupe, session: Session) -> None:
 def test_staff_can_settle_differently_from_the_player(troupe: Troupe, session: Session) -> None:
     character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 2)
-    house_rule(session, troupe, CostRuleData("skills", "per_dot", rate=3))
+    house_rule(session, troupe, GEN_1_SKILLS_AT_3)
     request_home(
         troupe.player,
         character_id,
@@ -327,7 +332,7 @@ def test_moving_home_troupes_reconciles_against_what_was_actually_paid(
 ) -> None:
     character_id = new_character(troupe, troupe.player)
     buy(troupe.player, character_id, "skills", "Brawl", 2)  # 3 XP
-    house_rule(session, troupe, CostRuleData("skills", "per_dot", rate=3))
+    house_rule(session, troupe, GEN_1_SKILLS_AT_3)
     make_home(
         troupe,
         troupe.lead,

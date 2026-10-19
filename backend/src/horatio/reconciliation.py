@@ -51,6 +51,7 @@ from horatio.sheets import (
     pending_disciplines,
     rules_troupe,
     sheet_rows,
+    sync_fixed_ratings,
     undo_discipline,
     unprocessable,
     xp_balance,
@@ -177,6 +178,7 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
     titles.drop_all(db, troupe.id, character.id)
     if character.home_troupe_id == troupe.id:
         character.home_troupe_id = None
+        sync_fixed_ratings(db, character)
     # Requests waiting in a troupe the character has left are moot.
     for approval in db.scalars(
         select(Approval).where(
@@ -618,6 +620,7 @@ def approve_change(
     if old_troupe is None:
         bank_creation_xp(db, staff, character)
     character.home_troupe_id = change.to_troupe_id
+    sync_fixed_ratings(db, character)
     # The sheet as the new home troupe accepted it: the floor for lowering ratings.
     freeze_sheet(db, staff, character, change.to_troupe_id)
     if reopen:
