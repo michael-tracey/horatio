@@ -32,6 +32,26 @@ passwords._hasher = PasswordHash(  # pyright: ignore[reportPrivateUsage]
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
+# Whatever backend/.env sets up for development, tests reach no outside service:
+# a test that wants Discord or email sets it up against a fake.
+OUTSIDE_SERVICES = (
+    "discord_client_id",
+    "discord_client_secret",
+    "discord_bot_token",
+    "smtp_host",
+    "smtp_username",
+    "smtp_password",
+    "mail_from",
+)
+
+
+@pytest.fixture(autouse=True)
+def no_outside_services(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = get_settings()
+    for name in OUTSIDE_SERVICES:
+        monkeypatch.setattr(settings, name, None)
+    monkeypatch.setattr(settings, "public_url", "http://localhost:5173")
+
 
 @pytest.fixture(scope="session")
 def database_url() -> Iterator[str]:

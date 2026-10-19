@@ -59,7 +59,10 @@ fi
 
 say "Starting the API on :$PORT"
 cd "$ROOT/backend"
+# No connectors, whatever backend/.env sets up for development: the suite
+# expects Discord and email to be unavailable, and sends nothing outside.
 HORATIO_COOKIE_SECURE=false HORATIO_FRONTEND_DIST="$ROOT/frontend/dist" \
+  HORATIO_DISCORD_BOT_TOKEN= HORATIO_SMTP_HOST= \
   setsid uv run uvicorn horatio.app:app --port "$PORT" >"$LOG" 2>&1 < /dev/null &
 api=$!
 stop_api() {
