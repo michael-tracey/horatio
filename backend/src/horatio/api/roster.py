@@ -2,14 +2,15 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import Select, select
 
 from horatio import titles
 from horatio.api.downtimes import staff_troupe
+from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Approval, AuditEvent, Character, TroupeMembership, User
 from horatio.permissions import TroupeAction
@@ -82,6 +83,25 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         for m, c, player in rows
     ]
     return sorted(entries, key=lambda e: (not e.home, e.character_name.lower()))
+
+
+@router.get("/print")
+def print_characters(
+    troupe_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+    characters: Annotated[list[uuid.UUID] | None, Query()] = None,
+) -> list[PrintedSheet]:
+    """Printed sheets, headed for this troupe: the characters named, in that order, or
+    every character in the troupe now, in the roster's order."""
+    staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    members = [e.character_id for e in roster(troupe_id, db, user)]
+    wanted = characters or members
+    if not set(wanted) <= set(members):
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Not all of those characters are in this troupe."
+        )
+    return [print_sheet(db, db.get_one(Character, c), troupe_id) for c in wanted]
 
 
 # What each logged action reads as. `{character}` and `{actor}` are filled in.

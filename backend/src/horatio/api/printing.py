@@ -7,10 +7,11 @@ from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from horatio import sheets, titles
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import SheetVersion, TraitCategory, TraitDefinition, Troupe, User
+from horatio.models import Character, SheetVersion, TraitCategory, TraitDefinition, Troupe, User
 from horatio.permissions import visible_character
 from horatio.rules.store import read_troupe_rules
 
@@ -54,7 +55,11 @@ def printed_sheet(
 ) -> PrintedSheet:
     """The sheet as it stands, headed for `troupe_id` (by default the home troupe, else
     the first troupe joined), whose titles it shows."""
-    character = visible_character(db, user, character_id)
+    return print_sheet(db, visible_character(db, user, character_id), troupe_id)
+
+
+def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) -> PrintedSheet:
+    """`character`'s printed sheet, headed for `troupe_id` if it belongs there."""
     joined = [m.troupe_id for m in sheets.memberships(db, character)]
     troupe = next((t for t in (troupe_id, character.home_troupe_id, *joined) if t in joined), None)
     found = (

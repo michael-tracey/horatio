@@ -12,24 +12,78 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
     queryKey: ["roster", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", { params: { path: { troupe_id: troupeId } } })),
   });
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   if (roster.isPending) return <Loading />;
   if (roster.error) return <ErrorText error={roster.error} />;
   if (!roster.data.length) return <Empty>No characters have joined this troupe yet.</Empty>;
+
+  const shown = roster.data;
+  const ticked = shown.filter((e) => selected.has(e.character_id));
+  const allTicked = ticked.length === shown.length;
+  const toggle = (id: string) => {
+    const next = new Set(selected);
+    if (!next.delete(id)) next.add(id);
+    setSelected(next);
+  };
+  // Opened in a new tab, so the list (and what is ticked) stays as it was.
+  const print = (ids?: string[]) =>
+    window.open(`/print/troupes/${troupeId}${ids ? `?characters=${ids.join(",")}` : ""}`, "_blank", "noopener");
+
   return (
-    <Card title="Characters">
+    <Card
+      title="Characters"
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" disabled={!ticked.length} onClick={() => print(ticked.map((e) => e.character_id))}>
+            Print selected ({ticked.length})
+          </Button>
+          <Button variant="secondary" onClick={() => print()}>
+            Print all {shown.length}
+          </Button>
+        </div>
+      }
+    >
+      <label className="flex items-center gap-2 border-b border-ash pb-2 text-sm text-mist">
+        <input
+          type="checkbox"
+          checked={allTicked}
+          ref={(box) => {
+            if (box) box.indeterminate = ticked.length > 0 && !allTicked;
+          }}
+          onChange={() => setSelected(allTicked ? new Set() : new Set(shown.map((e) => e.character_id)))}
+        />
+        Select all
+      </label>
       <ul className="divide-y divide-ash">
-        {roster.data.map((entry) => (
-          <RosterRow key={entry.character_id} troupeId={troupeId} entry={entry} />
+        {shown.map((entry) => (
+          <RosterRow
+            key={entry.character_id}
+            troupeId={troupeId}
+            entry={entry}
+            selected={selected.has(entry.character_id)}
+            onSelect={() => toggle(entry.character_id)}
+          />
         ))}
       </ul>
     </Card>
   );
 }
 
-function RosterRow({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
+function RosterRow({
+  troupeId,
+  entry,
+  selected,
+  onSelect,
+}: {
+  troupeId: string;
+  entry: RosterEntry;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
     <li className="flex flex-col gap-2 py-3">
       <span className="flex flex-wrap items-center gap-2">
+        <input type="checkbox" aria-label={`Select ${entry.character_name}`} checked={selected} onChange={onSelect} />
         <Link to={`/characters/${entry.character_id}`} className="hover:text-gold">
           {entry.character_name}
         </Link>

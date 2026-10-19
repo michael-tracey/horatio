@@ -10372,6 +10372,74 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/print": {
+      "get": {
+        "description": "Printed sheets, headed for this troupe: the characters named, in that order, or\nevery character in the troupe now, in the roster's order.",
+        "operationId": "print_characters_api_troupes__troupe_id__print_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "characters",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Characters"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PrintedSheet"
+                  },
+                  "title": "Response Print Characters Api Troupes  Troupe Id  Print Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Print Characters",
+        "tags": [
+          "roster"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/random-tables": {
       "get": {
         "operationId": "list_tables_api_troupes__troupe_id__random_tables_get",

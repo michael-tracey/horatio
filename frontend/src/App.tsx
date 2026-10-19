@@ -7,7 +7,7 @@ import { AccountPage } from "./pages/AccountPage";
 import { CharactersPage } from "./pages/CharactersPage";
 import { PeoplePage } from "./pages/PeoplePage";
 import { PlayerPage } from "./pages/PlayerPage";
-import { PrintPage } from "./pages/PrintPage";
+import { PrintPage, TroupePrintPage } from "./pages/PrintPage";
 import { CyclePage } from "./pages/troupe/CyclePage";
 import { ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupePage } from "./pages/troupe/TroupePage";
@@ -26,6 +26,7 @@ export function App() {
       {/* The printed sheet stands alone: no header, black on white. */}
       <Route element={<RequireSignIn />}>
         <Route path="/print/characters/:characterId" element={<PrintPage />} />
+        <Route path="/print/troupes/:troupeId" element={<TroupePrintPage />} />
       </Route>
       <Route element={<Layout />}>
         <Route path="/sign-in" element={<SignInPage />} />
