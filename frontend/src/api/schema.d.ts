@@ -89,6 +89,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Password
+         * @description Set a new password from the custodian's link. Ends every other session the
+         *     person had, and signs them in here.
+         */
+        post: operations["reset_password_api_auth_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/reset/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reset For
+         * @description Whose password a reset link sets, so the page can say.
+         */
+        get: operations["reset_for_api_auth_reset__token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/signup": {
         parameters: {
             query?: never;
@@ -1031,6 +1072,88 @@ export interface paths {
         put?: never;
         /** Mark Read */
         post: operations["mark_read_api_notifications_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find Players
+         * @description Every account whose name or email has `q` in it, for the custodian.
+         */
+        get: operations["find_players_api_players_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * View Player
+         * @description A player's profile. Anyone signed in may see it; it never shows their email
+         *     to anyone but themself and the custodian.
+         */
+        get: operations["view_player_api_players__user_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{user_id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Password
+         * @description A one-time link, good for a day, that lets the player set a new password.
+         *     The custodian passes it on; it replaces any earlier link.
+         */
+        post: operations["reset_password_api_players__user_id__password_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Edit Profile
+         * @description The signed-in player's own profile.
+         */
+        put: operations["edit_profile_api_profile_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2431,10 +2554,19 @@ export interface components {
             /** Used */
             used: number;
         };
+        /** Link */
+        Link: {
+            /** Label */
+            label: string;
+            /** Url */
+            url: string;
+        };
         /** LogEntry */
         LogEntry: {
             /** Action */
             action: string;
+            /** Actor Id */
+            actor_id: string | null;
             /** Actor Name */
             actor_name: string | null;
             /**
@@ -2457,6 +2589,10 @@ export interface components {
             id: string;
             /** Message */
             message: string;
+            /** Player Id */
+            player_id: string | null;
+            /** Player Name */
+            player_name: string | null;
         };
         /** Me */
         Me: {
@@ -2566,6 +2702,13 @@ export interface components {
              * @default false
              */
             wizard: boolean;
+        };
+        /** NewPassword */
+        NewPassword: {
+            /** Password */
+            password: string;
+            /** Token */
+            token: string;
         };
         /** NewTitle */
         NewTitle: {
@@ -2712,6 +2855,64 @@ export interface components {
             /** Pick */
             pick: number;
         };
+        /** PlayerCharacter */
+        PlayerCharacter: {
+            /** Home Troupe */
+            home_troupe: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Retired */
+            retired: boolean;
+        };
+        /** PlayerOut */
+        PlayerOut: {
+            /** Bio */
+            bio: string | null;
+            /** Characters */
+            characters: components["schemas"]["PlayerCharacter"][];
+            /** Discord Handle */
+            discord_handle: string | null;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Custodian */
+            is_custodian: boolean;
+            /** Links */
+            links: components["schemas"]["Link"][];
+            /**
+             * Member Since
+             * Format: date-time
+             */
+            member_since: string;
+        };
+        /** PlayerSummary */
+        PlayerSummary: {
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Since
+             * Format: date-time
+             */
+            member_since: string;
+        };
         /** PoolOut */
         PoolOut: {
             /** Allowed */
@@ -2806,6 +3007,20 @@ export interface components {
             name: string;
             /** Strength */
             strength: string;
+        };
+        /** ProfileIn */
+        ProfileIn: {
+            /** Bio */
+            bio?: string | null;
+            /** Discord Handle */
+            discord_handle?: string | null;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Links
+             * @default []
+             */
+            links: components["schemas"]["Link"][];
         };
         /** Progress */
         Progress: {
@@ -3014,6 +3229,23 @@ export interface components {
             /** Trait */
             trait: string;
         };
+        /** ResetFor */
+        ResetFor: {
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+        };
+        /** ResetLink */
+        ResetLink: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Url */
+            url: string;
+        };
         /** ResultOut */
         ResultOut: {
             /**
@@ -3058,6 +3290,8 @@ export interface components {
             joined_at: string;
             /** Kind */
             kind: string;
+            /** Player Id */
+            player_id: string | null;
             /** Player Name */
             player_name: string;
             /** Titles */
@@ -3702,6 +3936,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    reset_password_api_auth_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewPassword"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_for_api_auth_reset__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetFor"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -5546,6 +5844,132 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    find_players_api_players_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    view_player_api_players__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_password_api_players__user_id__password_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetLink"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_profile_api_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerOut"];
+                };
             };
             /** @description Validation Error */
             422: {

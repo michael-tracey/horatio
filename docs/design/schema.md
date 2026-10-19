@@ -43,7 +43,11 @@ erDiagram
 `email` (unique), `display_name`, `password_hash` (nullable: social-login-only
 users have none), `is_custodian` (bool), `discord_user_id` (nullable).
 Imported Parse bcrypt hashes go straight into `password_hash` and are upgraded
-to argon2 on the user's next sign-in.
+to argon2 on the user's next sign-in. The profile: `bio` (nullable), `links`
+(JSONB list of `{label, url}`, http or https only, at most 6) and
+`discord_handle` (nullable; the username the player gives, not checked against
+Discord). "Member since" is `created_at`, which the Yorick importer should set
+from Parse's `createdAt`.
 
 **`auth_identities`**: linked sign-in providers.
 `user_id`, `provider` (`discord` | `google`), `subject`; unique on
@@ -51,6 +55,11 @@ to argon2 on the user's next sign-in.
 
 **`sessions`**: server-side sessions behind an HTTP-only cookie.
 `user_id`, `token_hash`, `expires_at`, `revoked_at`.
+
+**`password_resets`**: one-time links the custodian makes for someone locked out.
+`user_id`, `token_hash` (unique), `expires_at` (a day on), `created_by_id` →
+users. At most one per user: a new link deletes the old, and using it deletes
+it and revokes every session the user had.
 
 **`troupes`**
 `name`, `description`, `lead_user_id` (**not null**), `archived_at` (nullable),

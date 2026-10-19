@@ -11,6 +11,10 @@ runs the downtimes those characters take between games.
 A person who plays one or more characters. A player sees only their own characters' sheets, never other players'.
 _Avoid_: User (for the person in the game), member
 
+**Profile**:
+What anyone signed in can see about a player: their display name, when they joined, a bio, social media links and their Discord username. Never their email, which only they and the custodian see.
+_Avoid_: Bio page, user page
+
 **Troupe**:
 The top-level group: it runs games, has its own staff and house rules, and characters join it. No group sits above a troupe.
 _Avoid_: Game, chapter, chronicle, organisation

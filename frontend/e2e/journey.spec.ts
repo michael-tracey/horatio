@@ -194,9 +194,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
   await expect(lead.page.getByText("home", { exact: true })).toBeVisible();
   await lead.page.getByRole("link", { name: "Log", exact: true }).click();
-  await expect(lead.page.getByText("lead accepted Agnes; this is its home.")).toBeVisible();
-  await expect(lead.page.getByText("Agnes joined the troupe.")).toBeVisible();
-  await expect(lead.page.getByText(/lead approved Agnes's Celerity/)).toBeVisible();
+  await expect(lead.page.getByText("lead accepted Agnes (player); this is its home.")).toBeVisible();
+  await expect(lead.page.getByText("Agnes (player) joined the troupe.")).toBeVisible();
+  await expect(lead.page.getByText(/lead approved Agnes \(player\)'s Celerity/)).toBeVisible();
   await lead.page.screenshot(shots("log"));
   // The troupe's rules: the lead can play a check differently.
   await lead.page.getByRole("link", { name: "Rules", exact: true }).click();
@@ -436,4 +436,52 @@ test("a Caitiff chooses their in-clan disciplines while creating", async ({ brow
   // Uncommon disciplines are never offered; once three are chosen, nothing else is.
   await expect(page.getByRole("checkbox", { name: "Protean" })).toHaveCount(0);
   await expect(page.getByRole("checkbox", { name: "Dominate" })).toHaveCount(0);
+});
+
+test("a player fills in their profile, and the custodian resets their password", async ({ browser }) => {
+  const custodian = await person(browser, "people-custodian");
+  makeCustodian(custodian.email);
+  const player = await person(browser, "people-player");
+
+  // The player fills in their profile from their name in the header.
+  const p = player.page;
+  await p.getByRole("link", { name: "people-player" }).click();
+  await expect(p.getByRole("heading", { name: "Your account" })).toBeVisible();
+  await p.getByLabel("Bio").fill("Playing since the Masquerade was young.");
+  await p.getByLabel("Discord username").fill("@Carbuncle_Fan");
+  await p.getByRole("button", { name: "Add a link" }).click();
+  await p.getByLabel("Label").fill("Bluesky");
+  await p.getByLabel("Address").fill("https://bsky.app/profile/carbuncle.example");
+  await p.getByRole("button", { name: "Save profile" }).click();
+  await expect(p.getByText("Saved.")).toBeVisible();
+
+  // The custodian finds them and sees the profile.
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(player.email);
+  await c.locator("main").getByRole("link", { name: new RegExp(player.email) }).click();
+  await expect(c.getByRole("heading", { name: "people-player" })).toBeVisible();
+  await expect(c.getByText(/^Member since .+\(new this month\)$/)).toBeVisible();
+  await expect(c.getByText("Playing since the Masquerade was young.")).toBeVisible();
+  await expect(c.getByText("@carbuncle_fan")).toBeVisible();
+  await expect(c.getByRole("link", { name: "bsky.app/profile/carbuncle.example" })).toBeVisible();
+  await c.screenshot(shots("profile"));
+
+  // …and makes a reset link, which the player uses from a fresh browser.
+  await c.getByRole("button", { name: "Reset password" }).click();
+  const url = await c.getByLabel("Reset link").inputValue();
+  expect(url).toContain("/reset-password/");
+  const fresh = await (await browser.newContext()).newPage();
+  await fresh.goto(new URL(url).pathname);
+  await expect(fresh.getByText(`For people-player (${player.email})`)).toBeVisible();
+  await fresh.getByLabel("New password").fill("a brand new password");
+  await fresh.getByRole("button", { name: "Set password and sign in" }).click();
+  await expect(fresh.getByRole("heading", { name: "Your characters" })).toBeVisible();
+
+  // The old session has ended, and the link is spent.
+  await p.goto("/characters");
+  await expect(p.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await p.goto(new URL(url).pathname);
+  await expect(p.getByText("This reset link has expired or been used.")).toBeVisible();
 });

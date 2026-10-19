@@ -29,12 +29,17 @@ export function Layout() {
               <NavLink to="/troupes" className={link}>
                 Troupes
               </NavLink>
+              {me.data.is_custodian && (
+                <NavLink to="/people" className={link}>
+                  People
+                </NavLink>
+              )}
               <NotificationBell />
               <span className="hidden text-mist sm:inline">·</span>
-              <span className="hidden text-mist sm:inline">
+              <NavLink to="/account" className={link} title="Your account">
                 {me.data.display_name}
-                {me.data.is_custodian && " (custodian)"}
-              </span>
+                <span className="hidden sm:inline">{me.data.is_custodian && " (custodian)"}</span>
+              </NavLink>
               <button className="text-mist hover:text-parchment" onClick={() => signOut.mutate(undefined)}>
                 Sign out
               </button>

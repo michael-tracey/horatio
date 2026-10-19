@@ -1985,11 +1985,41 @@
         "title": "LimitOut",
         "type": "object"
       },
+      "Link": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "url"
+        ],
+        "title": "Link",
+        "type": "object"
+      },
       "LogEntry": {
         "properties": {
           "action": {
             "title": "Action",
             "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
           },
           "actor_name": {
             "anyOf": [
@@ -2043,6 +2073,29 @@
           "message": {
             "title": "Message",
             "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
           }
         },
         "required": [
@@ -2050,9 +2103,12 @@
           "at",
           "action",
           "message",
+          "actor_id",
           "actor_name",
           "character_id",
           "character_name",
+          "player_id",
+          "player_name",
           "data"
         ],
         "title": "LogEntry",
@@ -2288,6 +2344,25 @@
           "name"
         ],
         "title": "NewNpc",
+        "type": "object"
+      },
+      "NewPassword": {
+        "properties": {
+          "password": {
+            "minLength": 10,
+            "title": "Password",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ],
+        "title": "NewPassword",
         "type": "object"
       },
       "NewTitle": {
@@ -2633,6 +2708,154 @@
         "title": "PickedTrait",
         "type": "object"
       },
+      "PlayerCharacter": {
+        "properties": {
+          "home_troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home Troupe"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "home_troupe",
+          "retired"
+        ],
+        "title": "PlayerCharacter",
+        "type": "object"
+      },
+      "PlayerOut": {
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "discord_handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Handle"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_custodian": {
+            "title": "Is Custodian",
+            "type": "boolean"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "member_since": {
+            "format": "date-time",
+            "title": "Member Since",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "member_since",
+          "bio",
+          "links",
+          "discord_handle",
+          "is_custodian",
+          "email",
+          "characters"
+        ],
+        "title": "PlayerOut",
+        "type": "object"
+      },
+      "PlayerSummary": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "member_since": {
+            "format": "date-time",
+            "title": "Member Since",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "email",
+          "member_since"
+        ],
+        "title": "PlayerSummary",
+        "type": "object"
+      },
       "PoolOut": {
         "properties": {
           "allowed": {
@@ -2941,6 +3164,51 @@
           "message"
         ],
         "title": "ProblemOut",
+        "type": "object"
+      },
+      "ProfileIn": {
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "discord_handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Handle"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "links": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "title": "Links",
+            "type": "array"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "ProfileIn",
         "type": "object"
       },
       "Progress": {
@@ -3477,6 +3745,43 @@
         "title": "ReconciliationOut",
         "type": "object"
       },
+      "ResetFor": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name",
+          "email"
+        ],
+        "title": "ResetFor",
+        "type": "object"
+      },
+      "ResetLink": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "ResetLink",
+        "type": "object"
+      },
       "ResultOut": {
         "properties": {
           "cycle_id": {
@@ -3565,6 +3870,18 @@
             "title": "Kind",
             "type": "string"
           },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
           "player_name": {
             "title": "Player Name",
             "type": "string"
@@ -3585,6 +3902,7 @@
           "character_id",
           "character_name",
           "player_name",
+          "player_id",
           "kind",
           "titles",
           "home",
@@ -5139,6 +5457,91 @@
           }
         },
         "summary": "Who Am I",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/reset": {
+      "post": {
+        "description": "Set a new password from the custodian's link. Ends every other session the\nperson had, and signs them in here.",
+        "operationId": "reset_password_api_auth_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPassword"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/reset/{token}": {
+      "get": {
+        "description": "Whose password a reset link sets, so the page can say.",
+        "operationId": "reset_for_api_auth_reset__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetFor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset For",
         "tags": [
           "auth"
         ]
@@ -7881,6 +8284,184 @@
         "summary": "Mark Read",
         "tags": [
           "notifications"
+        ]
+      }
+    },
+    "/api/players": {
+      "get": {
+        "description": "Every account whose name or email has `q` in it, for the custodian.",
+        "operationId": "find_players_api_players_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlayerSummary"
+                  },
+                  "title": "Response Find Players Api Players Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Find Players",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/players/{user_id}": {
+      "get": {
+        "description": "A player's profile. Anyone signed in may see it; it never shows their email\nto anyone but themself and the custodian.",
+        "operationId": "view_player_api_players__user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "View Player",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/players/{user_id}/password-reset": {
+      "post": {
+        "description": "A one-time link, good for a day, that lets the player set a new password.\nThe custodian passes it on; it replaces any earlier link.",
+        "operationId": "reset_password_api_players__user_id__password_reset_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Password",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/profile": {
+      "put": {
+        "description": "The signed-in player's own profile.",
+        "operationId": "edit_profile_api_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Profile",
+        "tags": [
+          "players"
         ]
       }
     },

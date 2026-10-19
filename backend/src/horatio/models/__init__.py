@@ -23,7 +23,7 @@ from horatio.models.downtimes import (
     TroupeConnector,
 )
 from horatio.models.notifications import Notification
-from horatio.models.people import AuthIdentity, Session, User
+from horatio.models.people import AuthIdentity, PasswordReset, Session, User
 from horatio.models.rules import (
     ActionKind,
     AllowanceRule,
@@ -57,6 +57,7 @@ __all__ = [
     "Response",
     "Notification",
     "OwedAction",
+    "PasswordReset",
     "Question",
     "Submission",
     "TroupeConnector",

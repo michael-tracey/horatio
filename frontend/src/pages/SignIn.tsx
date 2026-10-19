@@ -1,7 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
-import { Button, Card, ErrorText, Field, Input } from "../components/ui";
+import { Button, Card, ErrorText, Field, Input, Loading } from "../components/ui";
 import { useAction, useMe } from "../hooks";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
@@ -90,6 +91,58 @@ export function SignUpPage() {
           </Link>
         </p>
       </form>
+    </Shell>
+  );
+}
+
+/** Where the custodian's reset link lands: set a new password and be signed in. */
+export function ResetPasswordPage() {
+  const { token = "" } = useParams();
+  const navigate = useNavigate();
+  const [password, setPassword] = useState("");
+  const reset = useQuery({
+    queryKey: ["reset", token],
+    queryFn: () => unwrap(api.GET("/api/auth/reset/{token}", { params: { path: { token } } })),
+    retry: false,
+  });
+  const save = useAction(async () => {
+    await unwrap(api.POST("/api/auth/reset", { body: { token, password } }));
+    navigate("/characters");
+  });
+
+  return (
+    <Shell title="Set a new password">
+      {reset.isPending ? (
+        <Loading />
+      ) : reset.error ? (
+        <div className="flex flex-col gap-4">
+          <ErrorText error={reset.error} />
+          <Link to="/sign-in" className="text-center text-sm text-gold underline">
+            Back to sign in
+          </Link>
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            save.mutate(undefined);
+          }}
+          className="flex flex-col gap-4"
+        >
+          <p className="text-sm text-mist">
+            For {reset.data.display_name} ({reset.data.email}). This signs you out everywhere else.
+          </p>
+          {/* Lets a password manager save the new password against the right account. */}
+          <input type="hidden" autoComplete="username" value={reset.data.email} readOnly />
+          <Field label="New password" hint="At least 10 characters.">
+            <Input type="password" required minLength={10} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </Field>
+          <ErrorText error={save.error} />
+          <Button type="submit" disabled={save.isPending}>
+            Set password and sign in
+          </Button>
+        </form>
+      )}
     </Shell>
   );
 }

@@ -20,6 +20,7 @@ from horatio.api import (
     membership,
     notifications,
     npcs,
+    players,
     printing,
     responses,
     roster,
@@ -87,6 +88,7 @@ for module in (
     specializations,
     connectors,
     discord,
+    players,
 ):
     api.include_router(module.router)
 
