@@ -86,6 +86,20 @@ def test_setting_npc_ratings_directly_keeps_a_running_tally(
     assert rate(troupe.storyteller, npc, "skills", "Brawl", 0).json()["total"] == 18 + 9
 
 
+def test_an_npc_chooses_one_focus_per_attribute(troupe: Troupe) -> None:
+    npc = make_npc(troupe)["id"]
+    rate(troupe.storyteller, npc, "focus_physicals", "Dexterity", 1)
+    rate(troupe.storyteller, npc, "focus_mentals", "Intelligence", 1)
+
+    assert rate(troupe.storyteller, npc, "focus_mentals", "Wits", 1).status_code == 200
+
+    traits = troupe.storyteller.client.get(f"/characters/{npc}/sheet").json()["traits"]
+    focuses = sorted(
+        (t["category"], t["name"]) for t in traits if t["category"].startswith("focus_")
+    )
+    assert focuses == [("focus_mentals", "Wits"), ("focus_physicals", "Dexterity")]
+
+
 def test_npc_ratings_are_still_checked_against_the_catalogue(troupe: Troupe) -> None:
     npc = make_npc(troupe)["id"]
 
