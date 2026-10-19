@@ -386,6 +386,26 @@ name = "Lesser Generation 2"
 category = "flaws"
 name = "Thin Blooded"
 
+# --- one clan merit of each value ------------------------------------------------
+
+# "Unless otherwise stated, you can only purchase a single merit of each price point
+# per clan" (Volume 2 Issue 1, Alternative Clan Merits; Volume 2 repeats it for the
+# Lhiannan and Nagaraja). Bloodline merits never count. Ritual Master is a clan
+# merit of both Giovanni and Tremere. The pairs are the merits that say they may be
+# bought alongside an Expertise (Vol. 2 Issue 1, pp. 34, 41, 42, 47, 48).
+[[checks]]
+category = "merits"
+forbids = { same_value = { kind = "Clan", also = ["Ritual Master"], except_prefix = "Bloodline:", together = [
+  ["Ritual Master", "Thaumaturgic Expertise"],
+  ["Ritual Master", "Necromantic Expertise"],
+  ["Ritual Supremacy", "Thaumaturgic Expertise"],
+  ["Chosen of Cappadocius", "Necromantic Expertise"],
+  ["Beauty of the Beholder", "Necromantic Expertise"],
+  ["Death's Virtuoso", "Necromantic Expertise"],
+] } }
+message = "{other} is already a clan merit of this value; a character takes only one clan merit of each value."
+page = "Vol. 2 Issue 1, p. 25"
+
 # --- sects ------------------------------------------------------------------------
 
 # Only an initiated Sabbat can buy Rituals, and the ritae it teaches (p. 452). A

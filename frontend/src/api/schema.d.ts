@@ -713,7 +713,9 @@ export interface paths {
         };
         /**
          * Unavailable
-         * @description Traits in `category` the character cannot take, and why.
+         * @description Traits in `category` the character cannot take, and why: with the sheet as it
+         *     is; as if the category's creation picks were `picks` (a wizard step not yet
+         *     saved); or as if the category held nothing (what is barred whatever is chosen).
          */
         get: operations["unavailable_api_characters__character_id__unavailable_get"];
         put?: never;
@@ -5227,6 +5229,8 @@ export interface operations {
         parameters: {
             query: {
                 category: string;
+                as_if?: "sheet" | "picks" | "empty";
+                picks?: string[] | null;
             };
             header?: never;
             path: {

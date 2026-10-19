@@ -3,7 +3,8 @@ import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { useAction, useUnavailable } from "../../hooks";
-import { applyFilter, filterChoices } from "./traitFilter";
+import { QuickPicks } from "./creation/DotGrid";
+import { applyFilter, filterChoices, quickPicks } from "./traitFilter";
 
 /** Skills bought once per field, such as Performance: Singing (MET: VTM p. 92). */
 const NEEDS_FIELD = new Set(["Crafts", "Performance", "Science"]);
@@ -40,12 +41,15 @@ export function AddTraitPanel({
   const [teacher, setTeacher] = useState("");
   const cat = catalogue.categories.find((c) => c.key === category);
   const unavailable = useUnavailable(character.id, category).data ?? {};
+  // What no choice could allow, for "What this character can take"; a merit refused
+  // only because of one already held stays listed, greyed with the reason.
+  const barred = useUnavailable(character.id, category, true, { asIf: "empty" }).data;
 
   const all = useMemo(() => catalogue.traits.filter((t) => t.category === category), [catalogue, category]);
   const filterable = all.some((t) => t.kind || t.requirement);
   const mine = new Set(held.filter((h) => h.category === category && !h.detail).map((h) => h.name));
   const q = query.trim().toLowerCase();
-  const matching = (filterable ? applyFilter(all, filter, unavailable) : all).filter(
+  const matching = (filterable ? applyFilter(all, filter, barred ?? unavailable) : all).filter(
     (t) => !mine.has(t.name) && (!q || t.name.toLowerCase().includes(q)),
   );
   const trait = all.find((t) => t.name === name);
@@ -92,6 +96,7 @@ export function AddTraitPanel({
             ))}
           </Select>
         )}
+        {filterable && <QuickPicks picks={quickPicks(all, held)} filter={filter} onFilter={setFilter} title={cat?.name ?? ""} />}
         {filterable && (
           <Select aria-label="Show" value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
             {filterChoices(all, true).map((choice) => (

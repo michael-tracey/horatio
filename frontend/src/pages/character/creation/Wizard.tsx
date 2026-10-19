@@ -7,6 +7,7 @@ import { Button, Card, ErrorText, Field, Loading, Notice, Select } from "../../.
 import { useAction, useUnavailable } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
 import { rulesTroupe } from "../rules";
+import { quickPicks } from "../traitFilter";
 import { DotGrid, PointsList } from "./DotGrid";
 import { identityChoices, type Allowed, type Picks } from "./logic";
 
@@ -208,6 +209,7 @@ function StepView({
                 budget={pools[0].allowed}
                 picks={mine}
                 onChange={set}
+                quick={quickPicks(traitsOf(category), sheet.traits)}
                 details={details[category] ?? {}}
                 onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
               />
@@ -392,9 +394,11 @@ function ReviewStep({ character, creation, steps }: { character: CharacterOut; c
 }
 
 /** A points list that greys out what the rules do not allow this character. */
+/** A merits or flaws list whose greying follows the ticks as they change, before the step is saved. */
 function CheckedPointsList({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof PointsList>[0]) {
-  const unavailable = useUnavailable(characterId, category);
-  return <PointsList {...props} unavailable={unavailable.data ?? {}} />;
+  const unavailable = useUnavailable(characterId, category, true, { asIf: "picks", picks: Object.keys(props.picks).sort() });
+  const barred = useUnavailable(characterId, category, true, { asIf: "empty" });
+  return <PointsList {...props} unavailable={unavailable.data ?? {}} barred={barred.data} />;
 }
 
 function CheckedDotGrid({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof DotGrid>[0]) {

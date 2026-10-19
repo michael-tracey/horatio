@@ -37,6 +37,15 @@ Condition vocabulary (every key in one table must hold):
                                     of that kind the sheet holds, or the primary
                                     path the player named (a path of Thaumaturgy
                                     above the primary path)
+    same_value = { kind, also?, except_prefix?, together? }
+                                    the sheet holds another trait of the subject's
+                                    category and `kind` (its catalogue type, or one
+                                    of the names in `also`) at the subject's rating,
+                                    the subject being of that kind too: two clan
+                                    merits of one value. Names starting with
+                                    `except_prefix` never count, nor pairs listed in
+                                    `together` ([[a, b], ...]). A check's message can
+                                    name the other trait as {other}.
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
@@ -53,7 +62,7 @@ vampire's Generation, on Backgrounds).
 """
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from horatio.rules.conditions import OPERATORS
@@ -65,7 +74,8 @@ Condition = Mapping[str, Any]
 
 CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count", "parent",
-     "self", "copies", "in_clan", "accepted", "more_than_dots", "above_in_clan", "any_of", "not"}
+     "self", "copies", "in_clan", "accepted", "more_than_dots", "above_in_clan", "same_value",
+     "any_of", "not"}
 )  # fmt: skip
 
 
@@ -82,6 +92,8 @@ class Context:
     native: frozenset[str] = frozenset()
     # Primary paths the player named, where the clan has no in-clan path.
     primary: frozenset[str] = frozenset()
+    # Each trait's catalogue type, such as "Clan" for a clan merit.
+    kinds: Mapping[tuple[str, str], str] = field(default_factory=dict[tuple[str, str], str])
 
 
 NO_CONTEXT = Context()
@@ -119,11 +131,14 @@ class CheckData:
 class Violation:
     check: CheckData
     subject: SheetTrait
+    # The trait the subject clashes with, where the check names one (same_value).
+    other: str = ""
 
     @property
     def message(self) -> str:
         page = f" ({page_text(self.check.page)})" if self.check.page else ""
-        return (self.check.message or f"{self.subject.full_name} is not allowed here.") + page
+        text = self.check.message or f"{self.subject.full_name} is not allowed here."
+        return text.replace("{other}", self.other) + page
 
     @property
     def key(self) -> tuple[str, str, str, str]:
@@ -246,6 +261,8 @@ def matches(
                 and t.name != subject.name
             ]
             ok = bool(primaries) and (subject.rating or 0) > max(primaries)
+        elif key == "same_value":
+            ok = clashing(test, sheet, subject, context) is not None
         elif key == "any_of":
             ok = any(matches(c, sheet, subject, context) for c in test)
         elif key == "not":
@@ -257,20 +274,56 @@ def matches(
     return True
 
 
+def clashing(
+    test: Mapping[str, Any], sheet: Sequence[SheetTrait], subject: SheetTrait, context: Context
+) -> SheetTrait | None:
+    """For same_value: another held trait of the subject's kind at its rating, if any."""
+
+    def counts(t: SheetTrait) -> bool:
+        kind = context.kinds.get((t.category, t.name))
+        return (kind == test["kind"] or t.name in test.get("also", ())) and not (
+            "except_prefix" in test and t.name.startswith(test["except_prefix"])
+        )
+
+    if not counts(subject):
+        return None
+    allowed = [set(pair) for pair in test.get("together", ())]
+    return next(
+        (
+            t
+            for t in sheet
+            if t.category == subject.category
+            and t.name != subject.name
+            and t.rating == subject.rating
+            and t.rating != 0
+            and counts(t)
+            and {t.name, subject.name} not in allowed
+        ),
+        None,
+    )
+
+
 def violations(
     checks: Sequence[CheckData], sheet: Sequence[SheetTrait], context: Context = NO_CONTEXT
 ) -> list[Violation]:
     """Every check the sheet breaks, once per trait it is about."""
+    # Each check only looks at its own category's traits (the wizard asks this for
+    # every merit in the catalogue).
+    by_category: dict[str, list[SheetTrait]] = {}
+    for trait in sheet:
+        by_category.setdefault(trait.category, []).append(trait)
     found: list[Violation] = []
     for check in checks:
-        for trait in sheet:
+        for trait in by_category.get(check.category, ()):
             if not check.about(trait):
                 continue
             broken = (
                 check.requires is not None and not matches(check.requires, sheet, trait, context)
             ) or (check.forbids is not None and matches(check.forbids, sheet, trait, context))
             if broken:
-                found.append(Violation(check, trait))
+                test = (check.forbids or {}).get("same_value")
+                other = clashing(test, sheet, trait, context) if test else None
+                found.append(Violation(check, trait, other.name if other else ""))
     return found
 
 
@@ -305,6 +358,11 @@ def validate_condition(condition: Condition, known: set[tuple[str, str]]) -> Non
         for t in wanted:
             if (t["category"], t["name"]) not in known:
                 raise ValueError(f"a check names an unknown trait: {t['category']} {t['name']!r}")
+        if key == "same_value":
+            named = [*test.get("also", ()), *(n for pair in test.get("together", ()) for n in pair)]
+            for name in named:
+                if not any(n == name for _, n in known):
+                    raise ValueError(f"a check names an unknown trait: {name!r}")
         if key == "any_of":
             for c in test:
                 validate_condition(c, known)
