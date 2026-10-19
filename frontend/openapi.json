@@ -1825,6 +1825,113 @@
         "title": "DiscordSetup",
         "type": "object"
       },
+      "FilterCondition": {
+        "additionalProperties": false,
+        "description": "One condition of a character filter; see horatio.character_filter.",
+        "properties": {
+          "op": {
+            "title": "Op",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "what": {
+            "title": "What",
+            "type": "string"
+          },
+          "which": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Which"
+          }
+        },
+        "required": [
+          "what",
+          "op"
+        ],
+        "title": "FilterCondition",
+        "type": "object"
+      },
+      "FilterGroup": {
+        "additionalProperties": false,
+        "description": "Conditions and groups, all or any of which must hold.",
+        "properties": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FilterGroup"
+                },
+                {
+                  "$ref": "#/components/schemas/FilterCondition"
+                }
+              ]
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "match": {
+            "default": "all",
+            "enum": [
+              "all",
+              "any"
+            ],
+            "title": "Match",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "FilterGroup",
+        "type": "object"
+      },
+      "FilterMatch": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "character_id",
+          "values"
+        ],
+        "title": "FilterMatch",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -9276,6 +9383,64 @@
           }
         },
         "summary": "Roster",
+        "tags": [
+          "roster"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/characters/search": {
+      "post": {
+        "description": "The troupe's characters whose sheets match the filter, in the roster's order.",
+        "operationId": "search_characters_api_troupes__troupe_id__characters_search_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FilterGroup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FilterMatch"
+                  },
+                  "title": "Response Search Characters Api Troupes  Troupe Id  Characters Search Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Characters",
         "tags": [
           "roster"
         ]

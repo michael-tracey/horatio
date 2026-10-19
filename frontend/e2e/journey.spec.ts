@@ -494,3 +494,78 @@ test("a player fills in their profile, and the custodian resets their password",
   await p.goto(new URL(url).pathname);
   await expect(p.getByText("This reset link has expired or been used.")).toBeVisible();
 });
+
+test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {
+  const custodian = await person(browser, "filter-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "filter-lead");
+  const troupeName = `Court of Mirrors ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // Three NPCs, made straight through the API (the builder has its own test).
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  for (const [name, clan, occult] of [
+    ["Prince", "Ventrue", 4],
+    ["Mara", "Tremere", 1],
+    ["Nell", "Giovanni", 0],
+  ] as const) {
+    const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(made.status(), await made.text()).toBe(201);
+    const id = (await made.json()).id;
+    const rate = (category: string, trait: string, rating: number | null) =>
+      p.request.put(`/api/characters/${id}/npc/ratings`, { headers, data: { category, name: trait, rating, detail: "" } });
+    expect((await rate("clan", clan, null)).status()).toBe(200);
+    if (occult) expect((await rate("skills", "Occult", occult)).status()).toBe(200);
+  }
+
+  await p.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
+  await expect(p.getByText("3 of 3 characters")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Remove “Is active”" })).toBeVisible(); // retired characters are hidden by default
+
+  // Occult below 3, and (Tremere, or the Giovanni family).
+  await p.getByRole("button", { name: "Filter" }).click();
+  await p.getByRole("button", { name: "+ Condition", exact: true }).click();
+  const occult = p.getByRole("group", { name: "Condition" }).nth(1);
+  await occult.getByLabel("Category").selectOption({ label: "Skills" });
+  await occult.getByLabel("Trait").selectOption("Occult");
+  await occult.getByLabel("How").selectOption({ label: "below" });
+  await occult.getByLabel("Number").fill("3");
+  await expect(p.getByText("2 of 3 characters")).toBeVisible();
+  await p.getByRole("button", { name: "+ Group" }).click();
+  await p.getByLabel("Group match").selectOption({ label: "any of these (or)" });
+  const tremere = p.getByRole("group", { name: "Condition" }).nth(2);
+  await tremere.getByLabel("Value").selectOption("Tremere");
+  await p.getByRole("button", { name: "Add a condition to this group" }).click();
+  const giovanni = p.getByRole("group", { name: "Condition" }).nth(3);
+  await giovanni.getByLabel("What").selectOption({ label: "Clan, sect, focus…" });
+  await giovanni.getByLabel("How").selectOption({ label: "is in the family of" });
+  await giovanni.getByLabel("Value").selectOption("Giovanni");
+  await expect(p.getByText("2 of 3 characters")).toBeVisible();
+  await expect(p.getByText("(Clan is Tremere, or Clan is in the Giovanni family)")).toBeVisible();
+  const list = p.locator("main ul.divide-y");
+  await expect(list.getByRole("link", { name: "Prince" })).toHaveCount(0);
+  await expect(list.getByText("Occult 1")).toBeVisible(); // the number the filter compares
+  await expect(list.getByText("Occult 0")).toBeVisible();
+  await p.screenshot(shots("filter"));
+
+  // The filter is in the URL, so it survives a reload.
+  await p.reload();
+  await expect(p.getByText("2 of 3 characters")).toBeVisible();
+
+  // Print all prints what the filter shows.
+  const printTab = p.context().waitForEvent("page");
+  await p.getByRole("button", { name: "Print all 2" }).click();
+  const printed = await printTab;
+  await expect(printed.getByText("2 sheets", { exact: true })).toBeVisible();
+  await printed.close();
+});

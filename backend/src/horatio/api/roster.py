@@ -2,18 +2,19 @@
 
 import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Select, select
 
-from horatio import titles
+from horatio import character_filter, titles
 from horatio.api.downtimes import staff_troupe
 from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Approval, AuditEvent, Character, TroupeMembership, User
 from horatio.permissions import TroupeAction
+from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["roster"])
 
@@ -83,6 +84,47 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         for m, c, player in rows
     ]
     return sorted(entries, key=lambda e: (not e.home, e.character_name.lower()))
+
+
+class FilterCondition(BaseModel):
+    """One condition of a character filter; see horatio.character_filter."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    what: str
+    which: str | None = None
+    op: str
+    value: int | str | list[str] | None = None
+
+
+class FilterGroup(BaseModel):
+    """Conditions and groups, all or any of which must hold."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    match: Literal["all", "any"] = "all"
+    items: list["FilterGroup | FilterCondition"]
+
+
+class FilterMatch(BaseModel):
+    character_id: uuid.UUID
+    # The number each condition compared, keyed "trait:skills/Occult", "xp:earned"…
+    values: dict[str, int]
+
+
+@router.post("/characters/search")
+def search_characters(
+    troupe_id: uuid.UUID, body: FilterGroup, db: DbSession, user: CurrentUser
+) -> list[FilterMatch]:
+    """The troupe's characters whose sheets match the filter, in the roster's order."""
+    staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    characters = [db.get_one(Character, e.character_id) for e in roster(troupe_id, db, user)]
+    rules = read_troupe_rules(db, "vampire", troupe_id).rule_set
+    try:
+        found = character_filter.search(db, troupe_id, characters, body.model_dump(), rules)
+    except character_filter.FilterError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
+    return [FilterMatch(character_id=c, values=v) for c, v in found]
 
 
 @router.get("/print")
