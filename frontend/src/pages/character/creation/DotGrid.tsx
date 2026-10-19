@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
-import { canTap, left, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
+import { canTap, clear, left, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
 
 const SEARCH_FROM = 12;
 /** Skills bought once per field, such as Performance: Singing (MET: VTM p. 92). */
@@ -17,10 +17,14 @@ function useFiltered(traits: TraitOut[], picks: Picks) {
   return { query, setQuery, shown };
 }
 
+/** Holds the counters in view while a long list scrolls under them (on a phone, the page). */
+const STICKY = "sticky top-0 z-10 -mx-2 bg-dusk/95 px-2 py-2 backdrop-blur";
+
 /**
  * Every trait in a category, each with a row of dots. Tap a dot to set that
- * rating; tap it again to clear. Only ratings with picks can be tapped, and a
- * rating with none left greys out (a single pick swaps instead).
+ * rating; tap it again, or Clear, to take it back. Only ratings with picks can
+ * be tapped, and a rating with none left greys out (in a ranking, such as
+ * attributes, tapping a taken rating swaps instead).
  */
 export function DotGrid({
   title,
@@ -79,7 +83,7 @@ export function DotGrid({
             />
           )}
         </span>
-        <span className="flex shrink-0 gap-0.5">
+        <span className="flex shrink-0 items-center gap-0.5">
           {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
             const pickable = dot in allowed;
             const enabled = pickable && canTap(picks, allowed, trait.name, dot);
@@ -103,6 +107,16 @@ export function DotGrid({
               </button>
             );
           })}
+          {/* Kept in place when hidden, so every row's dots line up. */}
+          <button
+            type="button"
+            aria-label={`Clear ${trait.name}`}
+            disabled={!rating}
+            onClick={() => onChange(clear(picks, trait.name))}
+            className={`ml-1 h-8 rounded px-2 text-xs text-mist hover:bg-ash hover:text-parchment ${rating ? "" : "invisible"}`}
+          >
+            Clear
+          </button>
         </span>
       </li>
     );
@@ -110,7 +124,7 @@ export function DotGrid({
 
   return (
     <section aria-label={title} className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className={`flex flex-wrap items-center justify-between gap-2 ${STICKY}`}>
         {showTitle ? <h3 className="text-base text-gold">{title}</h3> : <span />}
         <ul className="flex flex-wrap gap-1.5" aria-label={`${title} picks left`}>
           {ratings.map((r) => {
@@ -171,14 +185,16 @@ export function PointsList({
 
   return (
     <section aria-label={title} className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-base text-gold">{title}</h3>
-        <Badge tone={used < budget ? "gold" : "mist"}>
-          {used} of {budget} points
-        </Badge>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded bg-ash">
-        <div className="h-full bg-gold" style={{ width: `${(100 * used) / budget}%` }} />
+      <div className={`flex flex-col gap-2 ${STICKY}`}>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-base text-gold">{title}</h3>
+          <Badge tone={used < budget ? "gold" : "mist"}>
+            {used} of {budget} points
+          </Badge>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded bg-ash">
+          <div className="h-full bg-gold" style={{ width: `${(100 * used) / budget}%` }} />
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {filterable && (

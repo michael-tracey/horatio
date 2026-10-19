@@ -90,6 +90,14 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await tap("Brawl 4", "Dodge 3", "Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2");
   await tap("Investigation 1", "Leadership 1", "Medicine 1", "Melee 1");
   await expect(p.getByRole("button", { name: "Stealth 3", exact: true })).toBeDisabled();
+  // The one 4 greys out once used (only attributes swap), and Clear frees it again.
+  await expect(p.getByRole("button", { name: "Stealth 4", exact: true })).toBeDisabled();
+  await p.getByRole("button", { name: "Clear Brawl" }).click();
+  await expect(p.getByRole("button", { name: "Stealth 4", exact: true })).toBeEnabled();
+  await tap("Brawl 4");
+  // At the foot of the list, what is left is still in view.
+  await p.getByRole("button", { name: "Save and continue" }).scrollIntoViewIfNeeded();
+  await expect(p.getByRole("list", { name: "Skills picks left" })).toBeInViewport();
   await p.screenshot(shots("creation"));
   await next("Backgrounds");
   await tap("Fame 3", "Herd 2", "Generation 1");

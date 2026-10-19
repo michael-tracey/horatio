@@ -156,10 +156,8 @@ function StepView({
       );
     }
   });
-  const move = async (to?: () => void) => {
-    await save.mutateAsync(undefined);
-    to?.();
-  };
+  // Stay on the step if saving fails: save.error shows why.
+  const move = (to?: () => void) => save.mutate(undefined, { onSuccess: () => to?.() });
 
   const traitsOf = (category: string) => catalogue.traits.filter((t) => t.category === category);
   const nameOf = (category: string) => catalogue.categories.find((c) => c.key === category)?.name ?? category;

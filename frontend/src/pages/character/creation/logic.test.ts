@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
-import { canTap, identityChoices, left, tap, togglePoints } from "./logic";
+import { canTap, clear, identityChoices, isRanking, left, tap, togglePoints } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
@@ -37,8 +37,39 @@ describe("tap", () => {
     expect(tap({ Physical: 7 }, ATTRIBUTES, "Social", 7)).toEqual({ Social: 7 });
   });
 
+  it("does not swap a single pick that is not a ranking", () => {
+    // Skills have one 4 among many ratings: once used, it greys out like the rest.
+    const picks = { Brawl: 4 };
+    expect(canTap(picks, SKILLS, "Dodge", 4)).toBe(false);
+    expect(tap(picks, SKILLS, "Dodge", 4)).toBe(picks);
+    expect(canTap(picks, SKILLS, "Brawl", 4)).toBe(true);
+  });
+
+  it("swaps a single focus, since one pick is a ranking", () => {
+    expect(tap({ Dexterity: 1 }, { 1: 1 }, "Strength", 1)).toEqual({ Strength: 1 });
+  });
+
   it("counts what is left", () => {
     expect(left({ Athletics: 3 }, SKILLS, 3)).toBe(1);
+  });
+});
+
+describe("isRanking", () => {
+  it("is a ranking when every rating has one pick", () => {
+    expect(isRanking(ATTRIBUTES)).toBe(true);
+    expect(isRanking(SKILLS)).toBe(false);
+    expect(isRanking({ 2: 1, 1: 2 })).toBe(false);
+  });
+});
+
+describe("clear", () => {
+  it("takes a row's pick back", () => {
+    expect(clear({ Brawl: 4, Dodge: 3 }, "Brawl")).toEqual({ Dodge: 3 });
+  });
+
+  it("leaves picks alone for a row with none", () => {
+    const picks = { Dodge: 3 };
+    expect(clear(picks, "Brawl")).toBe(picks);
   });
 });
 
