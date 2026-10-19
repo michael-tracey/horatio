@@ -386,14 +386,32 @@ name = "Lesser Generation 2"
 category = "flaws"
 name = "Thin Blooded"
 
+# --- sects ------------------------------------------------------------------------
+
+# Only an initiated Sabbat can buy Rituals, and the ritae it teaches (p. 452). A
+# troupe that does not take the Sabbat does not see them at all (property `sect`).
+[[checks]]
+category = "backgrounds"
+name = "Rituals"
+requires = { has = { category = "sect", name = "Sabbat" } }
+message = "Only members of the Sabbat can take the Rituals background."
+page = "452"
+
+[[checks]]
+category = "sabbat_rituals"
+requires = { has = { category = "sect", name = "Sabbat" } }
+message = "Only members of the Sabbat know the ritae."
+page = "452"
+
 # --- creation ---------------------------------------------------------------------
 
 # Without a dot of Generation the character is a mortal (p. 98). Checked when
-# creation is finished.
+# creation is finished, and the wizard does not move on from Backgrounds without it.
 [[checks]]
 category = "clan"
 requires = { has = { category = "backgrounds", name = "Generation" } }
 strength = "complete"
+step = "backgrounds"
 message = "A vampire needs at least 1 dot of Generation; without one the character is mortal."
 page = "98"
 

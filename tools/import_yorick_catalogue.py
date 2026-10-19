@@ -10,9 +10,12 @@ had.
 import csv
 import json
 import sys
+import tomllib
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "backend/src/horatio/rules/data/bns_met_vampire_traits.toml"
+# Our own short descriptions for traits Yorick describes nowhere (skills, disciplines…).
+DESCRIPTIONS = Path(__file__).resolve().parent / "vampire_descriptions.toml"
 
 # Yorick category -> Horatio category, for the Vampire categories.
 CATEGORIES = {
@@ -69,6 +72,14 @@ EXTRA = [
 # Where Yorick's values were one troupe's home rules rather than the book's, the
 # catalogue follows the book (MET: Vampire The Masquerade core). A troupe that
 # plays the home rules prices them with house rules instead.
+# Traits for one sect only: a troupe that does not take that sect never sees them.
+# The Rituals background is for initiated Sabbat (MET: VTM p. 452), and so are
+# the ritae it teaches. (category, None) covers every trait in the category.
+SECT_ONLY: dict[tuple[str, str | None], str] = {
+    ("backgrounds", "Rituals"): "Sabbat",
+    ("sabbat_rituals", None): "Sabbat",
+}
+
 BOOK_RATINGS = {
     ("merits", "Absent Sway"): 3,
     ("merits", "Addictive Blood"): 3,
@@ -432,10 +443,19 @@ def main(csv_path: str) -> None:
         "]",
         "",
     ]
+    written = {
+        (category, name): text
+        for category, texts in tomllib.loads(DESCRIPTIONS.read_text(encoding="utf-8")).items()
+        for name, text in texts.items()
+    }
+    unknown = set(written) - {(category, name) for category, name, _ in entries}
+    if unknown:
+        sys.exit(f"{DESCRIPTIONS.name} describes traits the catalogue lacks: {sorted(unknown)}")
     for category, name, row in entries:
         lines += ["[[traits]]", f"category = {toml_string(category)}", f"name = {toml_string(name)}"]
-        if row.get("note", "").strip():
-            lines.append(f"description = {toml_string(row['note'].strip())}")
+        note = row.get("note", "").strip() or written.get((category, name), "")
+        if note:
+            lines.append(f"description = {toml_string(note)}")
         if row.get("page_number", "").strip():
             lines.append(f"page_reference = {toml_string(row['page_number'].strip())}")
         properties: list[str] = []
@@ -468,6 +488,9 @@ def main(csv_path: str) -> None:
                     value = "Clan"
             if value:
                 properties.append(f"{key} = {toml_string(value)}")
+        sect = SECT_ONLY.get((category, name), SECT_ONLY.get((category, None)))
+        if sect:
+            properties.append(f"sect = {toml_string(sect)}")
         if properties:
             lines.append("properties = { " + ", ".join(properties) + " }")
         lines.append("")

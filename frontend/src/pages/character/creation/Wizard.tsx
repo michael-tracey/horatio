@@ -78,6 +78,9 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
 
   const steps = buildSteps(creation.data);
   const index = Math.max(0, steps.findIndex((s) => s.key === stepKey));
+  // The first step that still needs something (a vampire's Generation): no going past it.
+  const needs = creation.data.needs;
+  const stuck = steps.findIndex((s) => needs.some((n) => s.categories.includes(n.step)));
   const go = (i: number) => navigate(`/characters/${character.id}/create/${steps[i]!.key}`);
 
   return (
@@ -87,6 +90,15 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
         <ol className="flex gap-1 overflow-x-auto lg:flex-col">
           {steps.map((s, i) => (
             <li key={s.key}>
+              {stuck !== -1 && i > stuck ? (
+                <span
+                  aria-disabled="true"
+                  title={`Finish ${steps[stuck]!.title} first`}
+                  className="block cursor-not-allowed rounded px-3 py-1.5 text-sm whitespace-nowrap text-ash"
+                >
+                  {i + 1}. {s.title}
+                </span>
+              ) : (
               <Link
                 to={`/characters/${character.id}/create/${s.key}`}
                 aria-current={i === index ? "step" : undefined}
@@ -94,6 +106,7 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
               >
                 {i + 1}. {s.title}
               </Link>
+              )}
             </li>
           ))}
         </ol>
@@ -155,9 +168,15 @@ function StepView({
         }),
       );
     }
+    // What this step still needs, now that it is saved.
+    const now = await unwrap(api.GET("/api/characters/{character_id}/creation", { params: { path: { character_id: character.id } } }));
+    return now.needs.filter((n) => step.categories.includes(n.step));
   });
-  // Stay on the step if saving fails: save.error shows why.
-  const move = (to?: () => void) => save.mutate(undefined, { onSuccess: () => to?.() });
+  const needs = creation.needs.filter((n) => step.categories.includes(n.step));
+  // Stay on the step if saving fails (save.error shows why), and going forward
+  // while the step still needs something (the notice says what).
+  const move = (to: (() => void) | undefined, forward: boolean) =>
+    save.mutate(undefined, { onSuccess: (left) => (forward && left.length ? undefined : to?.()) });
 
   const traitsOf = (category: string) => catalogue.traits.filter((t) => t.category === category);
   const nameOf = (category: string) => catalogue.categories.find((c) => c.key === category)?.name ?? category;
@@ -172,7 +191,8 @@ function StepView({
       {step.intro && <p className="mb-4 text-sm text-mist">{step.intro}</p>}
       {step.key === "concept" && <ConceptStep character={character} sheet={sheet} catalogue={catalogue} />}
       {step.key === "review" && <ReviewStep character={character} creation={creation} steps={steps} />}
-      <div className="flex flex-col gap-8">
+      {/* Held while saving: the save reloads the picks, which would drop a tap made meanwhile. */}
+      <fieldset disabled={save.isPending} className="flex min-w-0 flex-col gap-8">
         {step.categories.map((category) => {
           const pools = creation.pools.filter((p) => p.category === category);
           const mine = picks[category] ?? {};
@@ -204,8 +224,10 @@ function StepView({
             );
           }
           return (
-            <DotGrid
+            <CheckedDotGrid
               key={category}
+              characterId={character.id}
+              category={category}
               title={nameOf(category)}
               showTitle={step.categories.length > 1}
               traits={traits}
@@ -222,14 +244,19 @@ function StepView({
             />
           );
         })}
-      </div>
+      </fieldset>
+      {needs.length > 0 && (
+        <div className="mt-6">
+          <Notice>Before moving on: {needs.map((n) => n.message).join(" ")}</Notice>
+        </div>
+      )}
       <ErrorText error={save.error} />
       <div className="mt-6 flex justify-between gap-2 border-t border-ash pt-4">
-        <Button variant="secondary" disabled={!onBack || save.isPending} onClick={() => move(onBack)}>
+        <Button variant="secondary" disabled={!onBack || save.isPending} onClick={() => move(onBack, false)}>
           Back
         </Button>
         {onNext && (
-          <Button disabled={save.isPending} onClick={() => move(onNext)}>
+          <Button disabled={save.isPending} onClick={() => move(onNext, true)}>
             Save and continue
           </Button>
         )}
@@ -368,6 +395,11 @@ function ReviewStep({ character, creation, steps }: { character: CharacterOut; c
 function CheckedPointsList({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof PointsList>[0]) {
   const unavailable = useUnavailable(characterId, category);
   return <PointsList {...props} unavailable={unavailable.data ?? {}} />;
+}
+
+function CheckedDotGrid({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof DotGrid>[0]) {
+  const unavailable = useUnavailable(characterId, category);
+  return <DotGrid {...props} unavailable={unavailable.data ?? {}} />;
 }
 
 /** Change which troupe's rules the character is built by, until a troupe accepts it. */
