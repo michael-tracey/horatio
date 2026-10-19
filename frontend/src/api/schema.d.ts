@@ -786,6 +786,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/xp/{entry_id}/correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Correct Xp
+         * @description Correct a mistaken award with a new entry; the award itself is left as written.
+         *     Whoever may award the character XP may correct it.
+         */
+        post: operations["correct_xp_api_characters__character_id__xp__entry_id__correction_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}": {
         parameters: {
             query?: never;
@@ -4047,10 +4068,26 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** XpCorrection */
+        XpCorrection: {
+            /** Amount */
+            amount: number;
+            /** Reason */
+            reason: string;
+        };
         /** XpEntryOut */
         XpEntryOut: {
             /** Amount */
             amount: number;
+            /**
+             * Correctable
+             * @default false
+             */
+            correctable: boolean;
+            /** Corrected To */
+            corrected_to?: number | null;
+            /** Corrects Id */
+            corrects_id?: string | null;
             /** Detail */
             detail: string | null;
             /**
@@ -5589,6 +5626,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["XpAward"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_xp_api_characters__character_id__xp__entry_id__correction_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["XpCorrection"];
             };
         };
         responses: {

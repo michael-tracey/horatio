@@ -14,7 +14,7 @@ the differences there are.
 """
 
 import uuid
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -1336,6 +1336,18 @@ def withdraw(db: Session, player: User, approval: Approval) -> Approval:
     return approval
 
 
+def earned_and_spent(entries: Iterable[tuple[str, int]]) -> tuple[int, int]:
+    """XP earned and spent from (kind, amount) pairs. A correction changes what an
+    award gave, so it counts toward earned whichever way it goes."""
+    earned = spent = 0
+    for kind, amount in entries:
+        if kind == "correction" or amount > 0:
+            earned += amount
+        else:
+            spent -= amount
+    return earned, spent
+
+
 def award_xp(db: Session, staff: User, character: Character, amount: int, reason: str) -> XpEntry:
     entry = XpEntry(
         character_id=character.id, kind="award", amount=amount, reason=reason, entered_by=staff.id
@@ -1349,6 +1361,55 @@ def award_xp(db: Session, staff: User, character: Character, amount: int, reason
         troupe_id=character.home_troupe_id,
         character_id=character.id,
         amount=amount,
+        reason=reason,
+    )
+    return entry
+
+
+def awarded(db: Session, award: XpEntry) -> int:
+    """What an award gives now: its amount with every correction to it."""
+    corrections = db.scalar(
+        select(func.coalesce(func.sum(XpEntry.amount), 0)).where(XpEntry.corrects_id == award.id)
+    )
+    return award.amount + (corrections or 0)
+
+
+def correct_xp(
+    db: Session, staff: User, character: Character, award: XpEntry, amount: int, reason: str
+) -> XpEntry:
+    """Put right a mistaken award: the award is left as written, and a correction
+    entry adds the difference between what it gives now and `amount`."""
+    if award.character_id != character.id or award.kind != "award":
+        raise unprocessable("Only an award can be corrected.")
+    was = awarded(db, award)
+    difference = amount - was
+    if difference == 0:
+        raise unprocessable(f"That award already gives {was} XP.")
+    balance = xp_balance(db, character)
+    if balance + difference < 0:
+        raise conflict(
+            f"{character.name} has only {balance} XP unspent, so this award can come down"
+            f" by at most {balance}."
+        )
+    entry = XpEntry(
+        character_id=character.id,
+        kind="correction",
+        amount=difference,
+        reason=reason,
+        entered_by=staff.id,
+        corrects_id=award.id,
+    )
+    db.add(entry)
+    db.flush()
+    audit.record(
+        db,
+        staff,
+        "xp.corrected",
+        troupe_id=character.home_troupe_id,
+        character_id=character.id,
+        award=award.reason,
+        was=was,
+        now=amount,
         reason=reason,
     )
     return entry

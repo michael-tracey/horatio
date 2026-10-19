@@ -22,8 +22,10 @@ from horatio.models import (
 )
 from horatio.permissions import (
     TroupeAction,
+    allows,
     can_edit_character,
     require_troupe_action,
+    troupe_role,
     visible_character,
 )
 from horatio.reconciliation import unbanked_xp
@@ -178,10 +180,22 @@ class XpEntryOut(BaseModel):
     detail: str | None
     from_rating: int | None
     to_rating: int | None
+    # A correction: the award it corrects.
+    corrects_id: uuid.UUID | None = None
+    # An award that has been corrected: what it gives now.
+    corrected_to: int | None = None
+    # An award the viewer may correct.
+    correctable: bool = False
 
 
 class XpAward(BaseModel):
     amount: int = Field(ge=1)
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class XpCorrection(BaseModel):
+    # What the award should give: 0 cancels it.
+    amount: int = Field(ge=0)
     reason: str = Field(min_length=1, max_length=500)
 
 
@@ -201,7 +215,13 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
     floor = sheets.accepted_ratings(db, character)
     granting = sheets.sheet_effects(db, character).sources
     rows = sheets.sheet_rows(db, character)
-    entries = list(db.scalars(select(XpEntry.amount).where(XpEntry.character_id == character.id)))
+    entries = [
+        (kind, amount)
+        for kind, amount in db.execute(
+            select(XpEntry.kind, XpEntry.amount).where(XpEntry.character_id == character.id)
+        )
+    ]
+    earned, spent = sheets.earned_and_spent(entries)
     pending = sheets.pending_approvals(db, character)
     held = sheets.pending_disciplines(db, character)
     held_from = {(d.trait_definition_id, d.detail): d.from_rating for _, d in held}
@@ -264,9 +284,9 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             for r in rows
         ],
         xp=XpSummary(
-            balance=sum(entries),
-            earned=sum(a for a in entries if a > 0),
-            spent=-sum(a for a in entries if a < 0),
+            balance=earned - spent,
+            earned=earned,
+            spent=spent,
             unbanked=unbanked_xp(db, character) if character.kind == "pc" else 0,
         ),
         pending_approvals=[approval_out(a) for a in pending],
@@ -415,15 +435,33 @@ def unavailable(
     return sheets.unavailable(db, character, category, as_if, picks or [])
 
 
+def home_troupe_awarding(db: DbSession, user: User, character: Character) -> Troupe | None:
+    """The character's home troupe, if `user` may award (and correct) its XP there."""
+    if character.home_troupe_id is None:
+        return None
+    troupe = db.get_one(Troupe, character.home_troupe_id)
+    if troupe.archived_at is not None and not user.is_custodian:
+        return None
+    role = troupe_role(db, user, troupe)
+    return troupe if allows(role, TroupeAction.AWARD_XP, is_custodian=user.is_custodian) else None
+
+
 @router.get("/xp")
 def xp_history(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[XpEntryOut]:
     character = visible_character(db, user, character_id)
-    rows = db.execute(
-        select(XpEntry, TraitDefinition.name)
-        .outerjoin(TraitDefinition, XpEntry.trait_definition_id == TraitDefinition.id)
-        .where(XpEntry.character_id == character.id)
-        .order_by(XpEntry.id)
+    rows = list(
+        db.execute(
+            select(XpEntry, TraitDefinition.name)
+            .outerjoin(TraitDefinition, XpEntry.trait_definition_id == TraitDefinition.id)
+            .where(XpEntry.character_id == character.id)
+            .order_by(XpEntry.id)
+        )
     )
+    corrected: dict[uuid.UUID, int] = {}
+    for e, _ in rows:
+        if e.corrects_id is not None:
+            corrected[e.corrects_id] = corrected.get(e.corrects_id, 0) + e.amount
+    may_correct = home_troupe_awarding(db, user, character) is not None
     return [
         XpEntryOut(
             id=e.id,
@@ -435,9 +473,46 @@ def xp_history(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> lis
             detail=e.detail,
             from_rating=e.from_rating,
             to_rating=e.to_rating,
+            corrects_id=e.corrects_id,
+            corrected_to=e.amount + corrected[e.id] if e.id in corrected else None,
+            correctable=may_correct and e.kind == "award",
         )
         for e, trait_name in rows
     ]
+
+
+@router.post("/xp/{entry_id}/correction", status_code=status.HTTP_201_CREATED)
+def correct_xp(
+    character_id: uuid.UUID,
+    entry_id: uuid.UUID,
+    body: XpCorrection,
+    db: DbSession,
+    user: CurrentUser,
+) -> XpEntryOut:
+    """Correct a mistaken award with a new entry; the award itself is left as written.
+    Whoever may award the character XP may correct it."""
+    character = visible_character(db, user, character_id)
+    if home_troupe_awarding(db, user, character) is None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the home troupe's staff correct its experience."
+        )
+    award = db.get(XpEntry, entry_id)
+    if award is None or award.character_id != character.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such entry.")
+    entry = sheets.correct_xp(db, user, character, award, body.amount, body.reason)
+    db.commit()
+    return XpEntryOut(
+        id=entry.id,
+        kind=entry.kind,
+        amount=entry.amount,
+        reason=entry.reason,
+        entered_on=date.today(),
+        trait=None,
+        detail=None,
+        from_rating=None,
+        to_rating=None,
+        corrects_id=award.id,
+    )
 
 
 @router.post("/xp", status_code=status.HTTP_201_CREATED)
