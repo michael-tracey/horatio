@@ -72,7 +72,9 @@ npx playwright test
 ```
 
 In production the backend serves the built frontend itself
-(`HORATIO_FRONTEND_DIST`), so the app and API share one origin.
+(`HORATIO_FRONTEND_DIST`), so the app and API share one origin. The live site,
+https://horatio.lotslarp.org, is deployed with `deploy/deploy.sh`; see
+[deploy/README.md](deploy/README.md).
 
 ### Delivering downtime results
 

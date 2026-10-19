@@ -7,3 +7,7 @@ __pycache__/
 .local/
 # Reference images from published rulebooks: not ours to redistribute.
 example-sheet.png
+# Rulebook PDFs we read from, never committed (or uploaded to a build).
+sources/
+# Production settings: secrets, kept on the deployer's machine.
+deploy/production.env
