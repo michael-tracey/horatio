@@ -17,31 +17,45 @@ export function left(picks: Picks, allowed: Allowed, rating: number): number {
   return (allowed[rating] ?? 0) - used(picks, rating);
 }
 
+/**
+ * Whether the picks rank the traits: every rating has exactly one pick, as
+ * attributes' 7 / 5 / 3 or a single focus. Only a ranking swaps; elsewhere
+ * (skills' one 4, two 3s…) a used-up rating is simply used up.
+ */
+export function isRanking(allowed: Allowed): boolean {
+  return Object.values(allowed).every((n) => n === 1);
+}
+
 /** Whether tapping `rating` on `name` would do anything. */
 export function canTap(picks: Picks, allowed: Allowed, name: string, rating: number): boolean {
   if (!(rating in allowed)) return false;
   if (picks[name] === rating) return true;
-  return left(picks, allowed, rating) > 0 || allowed[rating] === 1;
+  return left(picks, allowed, rating) > 0 || isRanking(allowed);
+}
+
+/** Take `name`'s pick back, whatever its rating. */
+export function clear(picks: Picks, name: string): Picks {
+  if (!(name in picks)) return picks;
+  const next = { ...picks };
+  delete next[name];
+  return next;
 }
 
 /**
  * Tap a dot. Tapping a trait's current rating clears it. Tapping a rating with
- * picks left sets it. Tapping a rating whose only pick another trait holds
- * swaps the two (so Physical 7 / Mental 3 becomes Mental 7 / Physical 3).
- * Anything else leaves the picks as they were.
+ * picks left sets it. In a ranking, tapping a rating another trait holds swaps
+ * the two (so Physical 7 / Mental 3 becomes Mental 7 / Physical 3). Anything
+ * else leaves the picks as they were.
  */
 export function tap(picks: Picks, allowed: Allowed, name: string, rating: number): Picks {
   if (!(rating in allowed)) return picks;
   const next = { ...picks };
-  if (picks[name] === rating) {
-    delete next[name];
-    return next;
-  }
+  if (picks[name] === rating) return clear(picks, name);
   if (left(picks, allowed, rating) > 0) {
     next[name] = rating;
     return next;
   }
-  if (allowed[rating] === 1) {
+  if (isRanking(allowed)) {
     const holder = Object.keys(picks).find((n) => picks[n] === rating)!;
     const mine = picks[name];
     if (mine === undefined) delete next[holder];
