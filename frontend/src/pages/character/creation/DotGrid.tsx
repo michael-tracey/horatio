@@ -194,6 +194,8 @@ export function PointsList({
   picks,
   onChange,
   unavailable = {},
+  barred,
+  quick = [],
   details = {},
   onDetail,
 }: {
@@ -202,8 +204,12 @@ export function PointsList({
   budget: number;
   picks: Picks;
   onChange: (picks: Picks) => void;
-  /** Traits the rules do not allow this character, and why. */
+  /** Traits the rules do not allow this character with these picks, and why. */
   unavailable?: Record<string, string>;
+  /** What no choice here could allow: left out of "What this character can take". */
+  barred?: Record<string, string>;
+  /** One-tap filters: the character's clan and sect. */
+  quick?: { value: string; label: string }[];
   /** The choice made for picks that grant something chosen (Personal Cult: which background). */
   details?: Record<string, string>;
   onDetail?: (name: string, detail: string) => void;
@@ -211,7 +217,7 @@ export function PointsList({
   const filterable = traits.some((t) => t.kind || t.requirement);
   const [filter, setFilter] = useState("can");
   // Picks stay listed whatever the filter, so they can be unticked.
-  const filtered = filterable ? applyFilter(traits, filter, unavailable) : traits;
+  const filtered = filterable ? applyFilter(traits, filter, barred ?? unavailable) : traits;
   const listed = filtered.concat(traits.filter((t) => t.name in picks && !filtered.includes(t)));
   const { query, setQuery, shown } = useFiltered(listed, picks);
   const used = spent(picks);
@@ -231,6 +237,7 @@ export function PointsList({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
+        {filterable && <QuickPicks picks={quick} filter={filter} onFilter={setFilter} title={title} />}
         {filterable && (
           <Select aria-label={`Show ${title}`} value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
             {filterChoices(traits, true).map((choice) => (
@@ -301,5 +308,38 @@ function Chevron({ open }: { open: boolean }) {
     <svg viewBox="0 0 20 20" aria-hidden className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}>
       <path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+/** Buttons for the character's own clan and sect; tapping the one in use goes back to "can take". */
+export function QuickPicks({
+  picks,
+  filter,
+  onFilter,
+  title,
+}: {
+  picks: { value: string; label: string }[];
+  filter: string;
+  onFilter: (filter: string) => void;
+  title: string;
+}) {
+  if (!picks.length) return null;
+  return (
+    <div role="group" aria-label={`Quick picks for ${title}`} className="flex flex-wrap items-center gap-1.5">
+      {picks.map((p) => {
+        const on = filter === p.value;
+        return (
+          <button
+            key={p.value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onFilter(on ? "can" : p.value)}
+            className={`h-10 rounded-full border px-3 text-sm ${on ? "border-gold bg-gold/15 text-gold" : "border-ash text-mist hover:border-mist hover:text-parchment"}`}
+          >
+            {p.label} {title.toLowerCase()}
+          </button>
+        );
+      })}
+    </div>
   );
 }

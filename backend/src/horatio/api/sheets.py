@@ -2,9 +2,9 @@
 
 import uuid
 from datetime import date
-from typing import Any
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -398,14 +398,21 @@ def change_choice(
 
 @router.get("/unavailable")
 def unavailable(
-    character_id: uuid.UUID, category: str, db: DbSession, user: CurrentUser
+    character_id: uuid.UUID,
+    category: str,
+    db: DbSession,
+    user: CurrentUser,
+    as_if: Literal["sheet", "picks", "empty"] = "sheet",
+    picks: Annotated[list[str] | None, Query()] = None,
 ) -> dict[str, str]:
-    """Traits in `category` the character cannot take, and why."""
+    """Traits in `category` the character cannot take, and why: with the sheet as it
+    is; as if the category's creation picks were `picks` (a wizard step not yet
+    saved); or as if the category held nothing (what is barred whatever is chosen)."""
     character = visible_character(db, user, character_id)
     rules = sheets.rules_for(db, character)
     if category not in rules.rule_set.categories:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No category {category!r}.")
-    return sheets.unavailable(db, character, category)
+    return sheets.unavailable(db, character, category, as_if, picks or [])
 
 
 @router.get("/xp")

@@ -114,6 +114,15 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("in-clan").first()).toBeVisible();
   await tap("Celerity 2", "Potence 1", "Presence 1");
   await next("Merits & flaws");
+  // A quick pick shows the clan's merits. Only one clan merit of each value: ticking
+  // Burning Wrath (2) greys out Iron Heart (2), with why; unticking frees it again.
+  await p.getByRole("button", { name: "Brujah merits" }).click();
+  await expect(p.getByRole("button", { name: "Brujah merits" })).toHaveAttribute("aria-pressed", "true");
+  await p.getByRole("checkbox", { name: /^Burning Wrath/ }).check();
+  await expect(p.getByRole("checkbox", { name: /^Iron Heart/ })).toBeDisabled();
+  await expect(p.getByText(/Burning Wrath is already a clan merit of this value/)).toBeVisible();
+  await p.getByRole("checkbox", { name: /^Burning Wrath/ }).uncheck();
+  await expect(p.getByRole("checkbox", { name: /^Iron Heart/ })).toBeEnabled();
   // Clan merits are only for their clan: a Brujah sees Absent Sway barred, with the reason.
   await p.getByLabel("Show Merits").selectOption({ label: "For Toreador" });
   await p.getByLabel("Search Merits").fill("Absent Sway");

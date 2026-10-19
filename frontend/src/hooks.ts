@@ -52,11 +52,19 @@ export function useNotifications(enabled: boolean) {
 }
 
 /** Traits in a category the character cannot take, and why (the rule set's checks). */
-export function useUnavailable(characterId: string, category: string, enabled = true) {
+export function useUnavailable(characterId: string, category: string, enabled = true, as?: UnavailableAs) {
+  const query = { category, as_if: as?.asIf, picks: as?.picks };
   return useQuery({
-    queryKey: ["unavailable", characterId, category],
-    queryFn: () =>
-      unwrap(api.GET("/api/characters/{character_id}/unavailable", { params: { path: { character_id: characterId }, query: { category } } })),
+    queryKey: ["unavailable", characterId, category, as?.asIf ?? "sheet", as?.picks ?? []],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/unavailable", { params: { path: { character_id: characterId }, query } })),
     enabled: enabled && !!category,
+    // Keep showing the last answer while ticks change, rather than flashing everything open.
+    placeholderData: (previous) => previous,
   });
 }
+
+/**
+ * Work the list out as if the category held only `picks` (a wizard step's ticks
+ * before they are saved), or nothing at all (what no choice there could allow).
+ */
+export type UnavailableAs = { asIf: "picks"; picks: string[] } | { asIf: "empty"; picks?: undefined };

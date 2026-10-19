@@ -307,6 +307,7 @@ def check_context(db: Session, character: Character, sheet: Sequence[SheetTrait]
         in_clan=native | {f"{name}: {detail}" if detail else name for _, name, detail in priced},
         native=native,
         primary=frozenset(character.primary_paths.values()),
+        kinds=rules.rule_set.kinds,
     )
 
 
@@ -418,17 +419,48 @@ def blocking(violation: Violation, character: Character) -> bool:
     )
 
 
-def unavailable(db: Session, character: Character, category_key: str) -> dict[str, str]:
+def unavailable(
+    db: Session,
+    character: Character,
+    category_key: str,
+    as_if: str = "sheet",
+    picks: Sequence[str] = (),
+) -> dict[str, str]:
     """For each trait in a category the character does not hold, why a check would
     refuse it, if one would. A merit or flaw is tried at its point value, anything
-    else at 1 dot."""
+    else at 1 dot.
+
+    `as_if` "picks" first puts `picks` in place of the category's creation picks (the
+    wizard's ticks before they are saved); "empty" first takes everything in the
+    category away, leaving what no choice there could make allowed."""
     rules = rules_for(db, character)
     rule_set = rules.rule_set
     rows = sheet_rows(db, character)
     sheet = [r.as_rules_trait() for r in rows]
-    held = {r.definition.name for r in rows if r.category.key == category_key}
+    if as_if == "empty":
+        sheet = [t for t in sheet if t.category != category_key]
+    elif as_if == "picks":
+        picked = {
+            r.definition.name
+            for r in rows
+            if r.category.key == category_key and r.trait.creation_pick is not None
+        }
+        sheet = [t for t in sheet if not (t.category == category_key and t.name in picked)]
+        held_now = {t.name for t in sheet if t.category == category_key}
+        sheet += [
+            SheetTrait(
+                category=category_key,
+                name=name,
+                rating=fixed_rating(rules, sheet, category_key, name) or 1,
+                free_rating=0,
+            )
+            for name in dict.fromkeys(picks)
+            if (category_key, name) in rule_set.traits and name not in held_now
+        ]
+    held = {t.name for t in sheet if t.category == category_key}
+    checks = rules.checks()
     context = check_context(db, character, sheet)
-    before = {v.key for v in violations(rules.checks(), sheet, context)}
+    before = {v.key for v in violations(checks, sheet, context)}
     rated = rule_set.categories[category_key].rated
     reasons: dict[str, str] = {}
     for category, name in rule_set.traits:
@@ -439,11 +471,13 @@ def unavailable(db: Session, character: Character, category_key: str) -> dict[st
         trial = [t for t in sheet if rated or t.category != category] + [candidate]
         new = [
             v
-            for v in violations(rules.checks(), trial, check_context(db, character, trial))
+            for v in violations(checks, trial, check_context(db, character, trial))
             if blocking(v, character) and v.key not in before
         ]
         if new:
-            reasons[name] = new[0].message
+            # The trait's own problem first: "Talisman is already…" when trying Spellslinger.
+            own = [v for v in new if v.subject.name == name]
+            reasons[name] = (own or new)[0].message
     return reasons
 
 

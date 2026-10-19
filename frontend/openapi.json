@@ -7362,7 +7362,7 @@
     },
     "/api/characters/{character_id}/unavailable": {
       "get": {
-        "description": "Traits in `category` the character cannot take, and why.",
+        "description": "Traits in `category` the character cannot take, and why: with the sheet as it\nis; as if the category's creation picks were `picks` (a wizard step not yet\nsaved); or as if the category held nothing (what is barred whatever is chosen).",
         "operationId": "unavailable_api_characters__character_id__unavailable_get",
         "parameters": [
           {
@@ -7382,6 +7382,40 @@
             "schema": {
               "title": "Category",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "as_if",
+            "required": false,
+            "schema": {
+              "default": "sheet",
+              "enum": [
+                "sheet",
+                "picks",
+                "empty"
+              ],
+              "title": "As If",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "picks",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Picks"
             }
           }
         ],

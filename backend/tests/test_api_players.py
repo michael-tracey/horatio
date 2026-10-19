@@ -210,8 +210,15 @@ def test_a_reset_link_sets_a_new_password_and_ends_other_sessions(
     # A link works once.
     again = client_for().post("/auth/reset", json={"token": token, "password": "another one!!"})
     assert again.status_code == 404
-    actions = list(session.scalars(select(AuditEvent.action).order_by(AuditEvent.created_at)))
-    assert actions[-2:] == ["account.reset_link", "account.password_reset"]
+    # One transaction gives every event the same created_at; ids (UUID v7) keep their order.
+    actions = list(
+        session.scalars(
+            select(AuditEvent.action)
+            .where(AuditEvent.action.startswith("account."))
+            .order_by(AuditEvent.id)
+        )
+    )
+    assert actions == ["account.reset_link", "account.password_reset"]
 
 
 def test_only_the_custodian_makes_reset_links(troupe: Troupe) -> None:

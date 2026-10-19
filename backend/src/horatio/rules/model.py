@@ -7,6 +7,7 @@ with no home troupe plays by a `TroupeRules` with no house rules.
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal, get_args
 
 if TYPE_CHECKING:
@@ -178,6 +179,11 @@ class RuleSetData:
     # Unspent creation XP kept when a first home troupe accepts the character;
     # None keeps it all.
     banked_xp: int | None = None
+
+    @cached_property
+    def kinds(self) -> Mapping[tuple[str, str], str]:
+        """Each trait's catalogue type ("Clan", "General"…), for checks that ask."""
+        return {k: t.properties["type"] for k, t in self.traits.items() if "type" in t.properties}
 
     def trait_properties(self, category: str, name: str) -> Mapping[str, Any]:
         trait = self.traits.get((category, name))
