@@ -1786,6 +1786,8 @@ export interface components {
             } | null;
             /** Condition Text */
             condition_text: string | null;
+            /** Fixed Rating */
+            fixed_rating?: number | null;
             /** House */
             house: boolean;
             /** Id */

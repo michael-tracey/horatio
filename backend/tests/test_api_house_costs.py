@@ -111,7 +111,8 @@ def test_a_merit_price_beats_the_category_but_not_a_clan_price(
     brujah = homed(troupe, session, clan="Brujah", name="Bram")
 
     assert buy(troupe.player, assamite, "merits", "Path of Blood", 3).json()["cost"] == 2
-    assert buy(troupe.player, brujah, "merits", "Path of Blood", 3).json()["cost"] == 4
+    # A fixed price is the merit's value where it applies: a 4-point merit for the Brujah.
+    assert buy(troupe.player, brujah, "merits", "Path of Blood", 4).json()["cost"] == 4
 
 
 def test_prices_that_could_not_apply_are_refused(troupe: Troupe) -> None:

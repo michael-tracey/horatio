@@ -26,6 +26,7 @@ from horatio.rules.store import (
     same_subject,
     set_check_override,
 )
+from horatio.sheets import sync_troupe_fixed_ratings
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["house rules"])
 
@@ -121,6 +122,9 @@ class CostOut(BaseModel):
     # A house rule's own wording, shown to players.
     text: str | None
     page: str | None
+    # For a merit or flaw always held at one rating: that rating, by the book. A
+    # troupe's fixed price for it is its value instead.
+    fixed_rating: int | None = None
     house: bool
     # A rule set price this troupe has its own price for, under the same condition.
     replaced: bool = False
@@ -166,6 +170,7 @@ def cost_out(
         table=list(rule.table) if rule.table is not None else None,
         text=rule.text,
         page=trait.page_reference if trait else None,
+        fixed_rating=trait.properties.get("rating") if trait else None,
         house=rule.house,
         replaced=replaced,
     )
@@ -199,6 +204,14 @@ def costs_out(db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire") -> Co
         costs=sorted(generic, key=order)
         + sorted((cost_out(rules.rule_set, r, i) for i, r in house), key=order),
     )
+
+
+def sync_values(db: DbSession, troupe_id: uuid.UUID, rule: CostRuleData) -> None:
+    """A troupe's fixed price for a fixed-rating merit or flaw is its value: hold
+    the troupe's characters' copies at it."""
+    rule_set = read_troupe_rules(db, "vampire", troupe_id).rule_set
+    if rule.trait and rule_set.trait_properties(rule.category, rule.trait).get("rating"):
+        sync_troupe_fixed_ratings(db, troupe_id)
 
 
 def log_price(
@@ -270,6 +283,7 @@ def add_cost(troupe_id: uuid.UUID, body: CostIn, db: DbSession, user: CurrentUse
         ) from None
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
+    sync_values(db, troupe.id, rule)
     log_price(db, user, "house.cost_added", troupe.id, rule)
     db.commit()
     return next(c for c in costs_out(db, troupe.id).costs if c.id == row.id)
@@ -286,6 +300,7 @@ def change_cost(
         change_house_rule(db, troupe.id, "vampire", cost_id, rule)
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
+    sync_values(db, troupe.id, rule)
     log_price(db, user, "house.cost_changed", troupe.id, rule)
     db.commit()
     return next(c for c in costs_out(db, troupe.id).costs if c.id == cost_id)
@@ -298,6 +313,7 @@ def remove_cost(
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     old = house_cost(troupe.id, db, cost_id)
     remove_house_rule(db, troupe.id, cost_id)
+    sync_values(db, troupe.id, old)
     log_price(db, user, "house.cost_removed", troupe.id, old)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
