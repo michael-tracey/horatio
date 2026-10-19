@@ -276,7 +276,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 });
 
 
-test("a troupe changes what new characters start with", async ({ browser }) => {
+test("a troupe changes what new characters start with and their downtime actions", async ({ browser }) => {
   const custodian = await person(browser, "start-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "start-lead");
@@ -301,6 +301,14 @@ test("a troupe changes what new characters start with", async ({ browser }) => {
   await l.getByRole("button", { name: "Save", exact: true }).click();
   await expect(l.getByText("The rule set's: 7 points")).toBeVisible();
   await l.screenshot(shots("starting"));
+  // …and four downtime actions a cycle instead of three.
+  await l.getByRole("link", { name: "Downtime actions", exact: true }).click();
+  await l.getByRole("button", { name: "Change actions for Everyone" }).click();
+  await l.getByLabel("Downtime actions each cycle").fill("4");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(l.getByText("replaced here")).toBeVisible();
+  await expect(l.getByText("4 downtime actions")).toBeVisible();
+  await l.screenshot(shots("actions"));
 
   // A character built for the troupe has that budget in the wizard.
   const p = player.page;

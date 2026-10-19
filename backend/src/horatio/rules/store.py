@@ -284,6 +284,8 @@ def add_house_allowance_rule(
     check_allowance_rule(
         rule, rules.rule_set, extra_kinds=[k.key for k in rules.house_action_kinds]
     )
+    if any(r.key == rule.key for r in rules.house_allowance_rules):
+        raise DuplicateHouseRule("the troupe already has a rule for that")
     rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
     definitions = {
         (key, d.name): d
@@ -297,6 +299,46 @@ def add_house_allowance_rule(
     session.add(row)
     session.flush()
     return row
+
+
+def house_allowance_rules(
+    session: Session, splat: str, troupe_id: uuid.UUID
+) -> list[tuple[uuid.UUID, AllowanceRuleData]]:
+    """A troupe's own allowance rules, each with its id, oldest first."""
+    rules = read_troupe_rules(session, splat, troupe_id)
+    ids = session.scalars(
+        select(AllowanceRule.id)
+        .join(RuleSet, AllowanceRule.rule_set_id == RuleSet.id)
+        .where(RuleSet.splat == splat, AllowanceRule.troupe_id == troupe_id)
+        .order_by(AllowanceRule.id)
+    ).all()
+    # read_troupe_rules reads them in the same order.
+    return list(zip(ids, rules.house_allowance_rules, strict=True))
+
+
+@changes_rules
+def change_house_allowance_rule(
+    session: Session, troupe_id: uuid.UUID, rule_id: uuid.UUID, rule: AllowanceRuleData
+) -> None:
+    """Change how much a troupe's allowance rule gives; what it is about stays."""
+    row = session.get(AllowanceRule, rule_id)
+    if row is None or row.troupe_id != troupe_id:
+        raise LookupError("no such house rule")
+    if rule.scheme not in ("fixed", "per_dot"):
+        raise ValueError(f"unknown scheme {rule.scheme!r}")
+    row.scheme = rule.scheme
+    row.amount = rule.amount
+    row.min_rating = rule.min_rating
+    session.flush()
+
+
+@changes_rules
+def remove_house_allowance_rule(session: Session, troupe_id: uuid.UUID, rule_id: uuid.UUID) -> None:
+    row = session.get(AllowanceRule, rule_id)
+    if row is None or row.troupe_id != troupe_id:
+        raise LookupError("no such house rule")
+    session.delete(row)
+    session.flush()
 
 
 @changes_rules

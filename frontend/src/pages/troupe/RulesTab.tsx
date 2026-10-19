@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { CheckOut } from "../../api/types";
 import { Badge, Card, ErrorText, Input, Loading, Select, SubTabs } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { AllowancesSection } from "./AllowancesSection";
 import { CostsSection } from "./CostsSection";
 import { StartingSection } from "./StartingSection";
 
@@ -62,7 +63,8 @@ const ABOUT: Record<string, string> = {
 
 /**
  * The troupe's house rules, part by part: how it plays the rule set's checks,
- * what traits cost here, and what new characters start with.
+ * what traits cost here, what new characters start with, and how many downtime
+ * actions characters get.
  */
 export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const base = `/troupes/${troupeId}/rules`;
@@ -74,12 +76,14 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: base, label: "Checks", end: true },
           { to: `${base}/costs`, label: "Costs" },
           { to: `${base}/starting`, label: "Starting points" },
+          { to: `${base}/actions`, label: "Downtime actions" },
         ]}
       />
       <Routes>
         <Route index element={<ChecksSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="costs" element={<CostsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="actions" element={<AllowancesSection troupeId={troupeId} canEdit={canEdit} />} />
       </Routes>
     </>
   );

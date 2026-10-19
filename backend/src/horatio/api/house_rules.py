@@ -1,12 +1,14 @@
 """A troupe's house rules: its settings for checks (switching one off, or changing
-how strict it is), its own prices for traits, and what new characters start with."""
+how strict it is), its own prices for traits, what new characters start with,
+and how many downtime actions characters get."""
 
 import uuid
 from collections.abc import Mapping
+from dataclasses import replace
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Response, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from horatio import audit
 from horatio.api.downtimes import staff_troupe
@@ -15,14 +17,25 @@ from horatio.creation import RESTRICTION_TEXT
 from horatio.models import User
 from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, pricing
-from horatio.rules.model import CostRuleData, CreationRuleData, RuleSetData, Scheme
+from horatio.rules.model import (
+    ActionKindData,
+    AllowanceRuleData,
+    CostRuleData,
+    CreationRuleData,
+    RuleSetData,
+    Scheme,
+)
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import (
     DuplicateHouseRule,
+    add_house_allowance_rule,
     add_house_rule,
+    change_house_allowance_rule,
     change_house_rule,
+    house_allowance_rules,
     house_cost_rules,
     read_troupe_rules,
+    remove_house_allowance_rule,
     remove_house_rule,
     same_subject,
     set_check_override,
@@ -134,7 +147,7 @@ class CostOut(BaseModel):
 
 class CostsOut(BaseModel):
     categories: list[CostCategoryOut]
-    # The rule set's prices, then the troupe's, by category.
+    # By category, each troupe price after the rule set price it replaces.
     costs: list[CostOut]
 
 
@@ -183,8 +196,10 @@ def costs_out(db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire") -> Co
     house = house_cost_rules(db, splat, troupe_id)
     position = {key: n for n, key in enumerate(rules.rule_set.categories)}
 
-    def order(cost: CostOut) -> tuple[int, bool, str]:
-        return (position[cost.category], cost.trait is not None, cost.trait or "")
+    def order(cost: CostOut) -> tuple[int, bool, str, str, bool]:
+        # A troupe price right after the rule set price it replaces.
+        when = cost.condition_text or ""
+        return (position[cost.category], cost.trait is not None, cost.trait or "", when, cost.house)
 
     generic = [
         cost_out(rules.rule_set, r, None, replaced=any(same_subject(h, r) for _, h in house))
@@ -203,8 +218,7 @@ def costs_out(db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire") -> Co
             for c in rules.rule_set.categories.values()
             if c.rated and not c.derived
         ],
-        costs=sorted(generic, key=order)
-        + sorted((cost_out(rules.rule_set, r, i) for i, r in house), key=order),
+        costs=sorted([*generic, *(cost_out(rules.rule_set, r, i) for i, r in house)], key=order),
     )
 
 
@@ -485,3 +499,176 @@ def reset_starting(
     )
     db.commit()
     return changed
+
+
+# --- Downtime actions ----------------------------------------------------------
+
+
+class ActionKindOut(BaseModel):
+    key: str
+    name: str
+
+
+class AllowanceOut(BaseModel):
+    # Set for the troupe's own rules; None for the rule set's.
+    id: uuid.UUID | None
+    action_kind: str
+    # None for the base allowance everyone gets.
+    category: str | None
+    trait: str | None
+    min_rating: int
+    scheme: Literal["fixed", "per_dot"]
+    amount: int
+    # Who gets it and how much, in plain words: "Hunted", "−2 downtime actions".
+    who: str
+    amount_text: str
+    house: bool
+    # A rule set rule this troupe has its own rule for.
+    replaced: bool = False
+
+
+class AllowancesOut(BaseModel):
+    action_kinds: list[ActionKindOut]
+    rules: list[AllowanceOut]
+
+
+class AllowanceChange(BaseModel):
+    scheme: Literal["fixed", "per_dot"] = "fixed"
+    amount: int
+    min_rating: int = Field(default=1, ge=1)
+
+
+class AllowanceIn(AllowanceChange):
+    action_kind: str
+    category: str | None = None
+    trait: str | None = None
+
+
+def allowance_out(
+    kinds: Mapping[str, ActionKindData],
+    rule: AllowanceRuleData,
+    rule_id: uuid.UUID | None,
+    *,
+    replaced: bool = False,
+) -> AllowanceOut:
+    kind = kinds[rule.action_kind].name if rule.action_kind in kinds else rule.action_kind
+    plural = kind if abs(rule.amount) == 1 else f"{kind}s"
+    sign = "−" if rule.amount < 0 else "+" if rule.trait else ""
+    amount_text = f"{sign}{abs(rule.amount)} {plural[0].lower()}{plural[1:]}"
+    if rule.scheme == "per_dot":
+        amount_text += " per dot"
+    who = rule.trait or "Everyone"
+    if rule.trait and rule.min_rating > 1:
+        who += f" at {rule.min_rating} or more"
+    return AllowanceOut(
+        id=rule_id,
+        action_kind=rule.action_kind,
+        category=rule.category,
+        trait=rule.trait,
+        min_rating=rule.min_rating,
+        scheme=rule.scheme,
+        amount=rule.amount,
+        who=who,
+        amount_text=amount_text,
+        house=rule.house,
+        replaced=replaced,
+    )
+
+
+def allowances_out(db: DbSession, troupe_id: uuid.UUID) -> AllowancesOut:
+    rules = read_troupe_rules(db, "vampire", troupe_id)
+    kinds = rules.action_kinds()
+    house = house_allowance_rules(db, "vampire", troupe_id)
+    house_keys = {r.key for _, r in house}
+    order = {key: n for n, key in enumerate(kinds)}
+
+    def by_kind(rule: AllowanceOut) -> tuple[int, bool, str, bool]:
+        # A troupe rule right after the rule set rule it replaces.
+        kind = order.get(rule.action_kind, len(order))
+        return (kind, rule.trait is not None, rule.trait or "", rule.house)
+
+    generic = [
+        allowance_out(kinds, r, None, replaced=r.key in house_keys)
+        for r in rules.rule_set.allowance_rules
+    ]
+    return AllowancesOut(
+        action_kinds=[ActionKindOut(key=k.key, name=k.name) for k in kinds.values()],
+        rules=sorted([*generic, *(allowance_out(kinds, r, i) for i, r in house)], key=by_kind),
+    )
+
+
+def house_allowance(db: DbSession, troupe_id: uuid.UUID, rule_id: uuid.UUID) -> AllowanceRuleData:
+    found = dict(house_allowance_rules(db, "vampire", troupe_id)).get(rule_id)
+    if found is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such rule.")
+    return found
+
+
+def log_allowance(
+    db: DbSession, user: User, action: str, troupe_id: uuid.UUID, rule: AllowanceRuleData
+) -> None:
+    kinds = read_troupe_rules(db, "vampire", troupe_id).action_kinds()
+    shown = allowance_out(kinds, rule, None)
+    audit.record(db, user, action, troupe_id=troupe_id, who=shown.who, amount=shown.amount_text)
+
+
+@router.get("/allowances")
+def list_allowances(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> AllowancesOut:
+    staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    return allowances_out(db, troupe_id)
+
+
+@router.post("/allowances", status_code=status.HTTP_201_CREATED)
+def add_allowance(
+    troupe_id: uuid.UUID, body: AllowanceIn, db: DbSession, user: CurrentUser
+) -> AllowanceOut:
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    rule = AllowanceRuleData(
+        action_kind=body.action_kind,
+        scheme=body.scheme,
+        amount=body.amount,
+        category=body.category or None,
+        trait=body.trait or None,
+        min_rating=body.min_rating,
+        house=True,
+    )
+    try:
+        row = add_house_allowance_rule(db, troupe.id, "vampire", rule)
+    except DuplicateHouseRule:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "The troupe already has a rule for that; change it instead."
+        ) from None
+    except ValueError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
+    log_allowance(db, user, "house.allowance_added", troupe.id, rule)
+    db.commit()
+    return next(r for r in allowances_out(db, troupe.id).rules if r.id == row.id)
+
+
+@router.put("/allowances/{rule_id}")
+def change_allowance(
+    troupe_id: uuid.UUID,
+    rule_id: uuid.UUID,
+    body: AllowanceChange,
+    db: DbSession,
+    user: CurrentUser,
+) -> AllowanceOut:
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    old = house_allowance(db, troupe.id, rule_id)
+    rule = replace(old, scheme=body.scheme, amount=body.amount, min_rating=body.min_rating)
+    change_house_allowance_rule(db, troupe.id, rule_id, rule)
+    log_allowance(db, user, "house.allowance_changed", troupe.id, rule)
+    db.commit()
+    return next(r for r in allowances_out(db, troupe.id).rules if r.id == rule_id)
+
+
+@router.delete("/allowances/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_allowance(
+    troupe_id: uuid.UUID, rule_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> Response:
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    old = house_allowance(db, troupe.id, rule_id)
+    remove_house_allowance_rule(db, troupe.id, rule_id)
+    log_allowance(db, user, "house.allowance_removed", troupe.id, old)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
