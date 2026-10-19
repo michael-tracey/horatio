@@ -1225,6 +1225,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/creation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Starting */
+        get: operations["list_starting_api_troupes__troupe_id__creation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/creation/{category}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Starting */
+        put: operations["change_starting_api_troupes__troupe_id__creation__category__put"];
+        post?: never;
+        /** Reset Starting */
+        delete: operations["reset_starting_api_troupes__troupe_id__creation__category__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/cycles": {
         parameters: {
             query?: never;
@@ -2752,6 +2787,50 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** StartingCategoryOut */
+        StartingCategoryOut: {
+            /** Book */
+            book: components["schemas"]["StartingRule"][];
+            /** Book Text */
+            book_text: string;
+            /** House */
+            house: boolean;
+            /** Key */
+            key: string;
+            /** Max Rating */
+            max_rating: number | null;
+            /** Name */
+            name: string;
+            /** Rules */
+            rules: components["schemas"]["StartingRule"][];
+            /** Text */
+            text: string;
+        };
+        /** StartingChange */
+        StartingChange: {
+            /** Rules */
+            rules: components["schemas"]["StartingRule"][];
+        };
+        /**
+         * StartingRule
+         * @description Picks at a rating (`picks` and `rating`), or a budget of `points`.
+         */
+        StartingRule: {
+            /** Picks */
+            picks?: number | null;
+            /** Points */
+            points?: number | null;
+            /** Rating */
+            rating?: number | null;
+            /** Restriction */
+            restriction?: string | null;
+            /** When */
+            when?: {
+                [key: string]: unknown;
+            } | null;
+            /** When Text */
+            when_text?: string | null;
         };
         /** TableIn */
         TableIn: {
@@ -5537,6 +5616,105 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_starting_api_troupes__troupe_id__creation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_starting_api_troupes__troupe_id__creation__category__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartingChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_starting_api_troupes__troupe_id__creation__category__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartingCategoryOut"];
+                };
             };
             /** @description Validation Error */
             422: {
