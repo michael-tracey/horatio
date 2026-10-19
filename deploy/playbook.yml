@@ -18,6 +18,7 @@
     api_port: 8100
     network: horatio
     postgres_image: postgres:18
+    postgres_uid: 999  # the postgres user in the official image
     backup_bucket: lotslarp-horatio-backups
     acme_root: /var/www/letsencrypt
     env_lines: "{{ lookup('file', env_file_src).splitlines() }}"
@@ -45,10 +46,14 @@
         - "{{ app_dir }}"
         - "{{ app_dir }}/backups"
 
+    # Owned by the image's postgres user: its entrypoint chowns only PGDATA
+    # (./postgres/18/docker), then runs as postgres, which must pass through here.
     - name: Create the database's directory
       file:
         path: "{{ app_dir }}/postgres"
         state: directory
+        owner: "{{ postgres_uid }}"
+        group: "{{ postgres_uid }}"
         mode: '0700'
 
     # --- the app's settings ---------------------------------------------------------
@@ -117,7 +122,7 @@
       command: docker exec horatio-db pg_isready -U horatio -d horatio
       register: ready
       until: ready.rc == 0
-      retries: 30
+      retries: 60  # Docker spaces a crash-looping container's restarts up to a minute apart
       delay: 2
       changed_when: false
 
