@@ -392,7 +392,8 @@ name = "Thin Blooded"
 # per clan" (Volume 2 Issue 1, Alternative Clan Merits; Volume 2 repeats it for the
 # Lhiannan and Nagaraja). Bloodline merits never count. Ritual Master is a clan
 # merit of both Giovanni and Tremere. The pairs are the merits that say they may be
-# bought alongside an Expertise (Vol. 2 Issue 1, pp. 34, 41, 42, 47, 48).
+# bought alongside an Expertise (Vol. 2 Issue 1, pp. 34, 41, 42, 47, 48) or, for the
+# Nagaraja, Necromantic Prowess (Volume 2, p. 61).
 [[checks]]
 category = "merits"
 forbids = { same_value = { kind = "Clan", also = ["Ritual Master"], except_prefix = "Bloodline:", together = [
@@ -402,6 +403,7 @@ forbids = { same_value = { kind = "Clan", also = ["Ritual Master"], except_prefi
   ["Chosen of Cappadocius", "Necromantic Expertise"],
   ["Beauty of the Beholder", "Necromantic Expertise"],
   ["Death's Virtuoso", "Necromantic Expertise"],
+  ["Lichborne", "Necromantic Prowess"],
 ] } }
 message = "{other} is already a clan merit of this value; a character takes only one clan merit of each value."
 page = "Vol. 2 Issue 1, p. 25"
