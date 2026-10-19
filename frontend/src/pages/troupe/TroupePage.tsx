@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
+import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
@@ -46,21 +46,42 @@ export function TroupePage() {
       <PageTitle actions={t.my_role && <Badge tone="gold">{roleLabel(t.my_role)}</Badge>} subtitle={t.archived ? "Archived" : undefined}>
         {t.name}
       </PageTitle>
-      <Tabs
-        tabs={[
-          { to: base, label: "About", end: true },
-          ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
-          ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
-          ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
-          ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
-          ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
-          ...(can.running ? [{ to: `${base}/downtimes`, label: "Downtimes" }] : []),
-          ...(can.running ? [{ to: `${base}/connectors`, label: "Connectors" }] : []),
-          ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
-          ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
-          ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
-          ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
-          ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
+      <GroupedTabs
+        label="Troupe sections"
+        groups={[
+          {
+            label: "Troupe",
+            tabs: [
+              { to: base, label: "About", end: true },
+              ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
+              ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
+            ],
+          },
+          {
+            label: "People",
+            tabs: [
+              ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
+              ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
+              ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
+              ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
+            ],
+          },
+          {
+            label: "Downtimes",
+            tabs: [
+              ...(can.running ? [{ to: `${base}/downtimes`, label: "Cycles" }] : []),
+              ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
+              ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
+            ],
+          },
+          {
+            label: "Customize",
+            tabs: [
+              ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
+              ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
+              ...(can.running ? [{ to: `${base}/connectors`, label: "Connectors" }] : []),
+            ],
+          },
         ]}
       />
       <Routes>

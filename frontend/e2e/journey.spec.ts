@@ -50,6 +50,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: troupeName }).click();
   await lead.page.getByRole("link", { name: "Staff" }).click();
   await expect(lead.page.getByRole("heading", { name: "Add or change staff" })).toBeVisible();
+  await lead.page.screenshot(shots("troupe-nav"));
   await lead.page.getByLabel("Email").fill(narrator.email);
   await lead.page.getByRole("button", { name: "Save" }).click();
   await expect(lead.page.getByText("narrator · Narrator")).toBeVisible();
@@ -181,6 +182,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
 
   // Accepted, Agnes keeps only 5 of her unspent creation XP. Her storytellers award her some.
+  await lead.page.getByRole("link", { name: "People", exact: true }).click();
   await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
   await lead.page.getByRole("button", { name: "Award XP" }).click();
   await lead.page.getByLabel("XP for Agnes").fill("10");
@@ -200,6 +202,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("awaiting approval")).toHaveCount(0);
 
   // The troupe's characters and log show what happened.
+  await lead.page.getByRole("link", { name: "People", exact: true }).click();
   await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
   await expect(lead.page.getByText("home", { exact: true })).toBeVisible();
   // Ticked characters print together, in a new tab.
@@ -211,12 +214,14 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(printed.getByText("1 sheet", { exact: true })).toBeVisible();
   await expect(printed.getByText("Agnes", { exact: true }).first()).toBeVisible();
   await printed.close();
+  await lead.page.getByRole("link", { name: "Troupe", exact: true }).click();
   await lead.page.getByRole("link", { name: "Log", exact: true }).click();
   await expect(lead.page.getByText("lead accepted Agnes (player); this is its home.")).toBeVisible();
   await expect(lead.page.getByText("Agnes (player) joined the troupe.")).toBeVisible();
   await expect(lead.page.getByText(/lead approved Agnes \(player\)'s Celerity/)).toBeVisible();
   await lead.page.screenshot(shots("log"));
   // The troupe's rules: the lead can play a check differently.
+  await lead.page.getByRole("link", { name: "Customize", exact: true }).click();
   await lead.page.getByRole("link", { name: "Rules", exact: true }).click();
   await lead.page.getByLabel("Search rules").fill("Calm Heart");
   await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
@@ -246,6 +251,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("raised Agnes's Investigation from 1 to 2 (1 XP).", { exact: false })).toBeVisible();
 
   // The troupe lists the areas its Elite influence covers; Agnes picks one.
+  await lead.page.getByRole("link", { name: "Customize", exact: true }).click();
   await lead.page.getByRole("link", { name: "Specialisations", exact: true }).click();
   const elite = lead.page.locator("section").filter({ has: lead.page.getByRole("heading", { name: "Influence: Elite", exact: true }) });
   await elite.getByRole("button", { name: "Make our own list" }).click();
@@ -260,7 +266,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.screenshot(shots("specializations"));
 
   // The lead runs a cycle.
-  await lead.page.getByRole("link", { name: "Downtimes" }).click();
+  await lead.page.getByRole("link", { name: "Downtimes", exact: true }).click();
   await expect(lead.page.getByRole("heading", { name: "New cycle" })).toBeVisible();
   await lead.page.getByLabel("Name").fill("November");
   await lead.page.getByRole("button", { name: "Create draft" }).click();
@@ -282,6 +288,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByLabel("Assign to").first()).toHaveValue(/.+/);
   await narrator.page.getByRole("link", { name: "Troupes" }).click();
   await narrator.page.getByRole("link", { name: troupeName }).click();
+  await narrator.page.getByRole("link", { name: "Downtimes", exact: true }).click();
   await narrator.page.getByRole("link", { name: "My work" }).click();
   await narrator.page.getByRole("link", { name: "November" }).click();
   await narrator.page.getByLabel("Response to Agnes").fill("The docks are crowded tonight; you feed well and unseen.");
@@ -306,6 +313,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Results always go out in Horatio; Discord needs the server set up first.
   await lead.page.getByRole("link", { name: "Troupes" }).click();
   await lead.page.getByRole("link", { name: troupeName }).click();
+  await lead.page.getByRole("link", { name: "Customize", exact: true }).click();
   await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();
   await expect(lead.page.getByText("always on")).toBeVisible();
   await expect(lead.page.getByText(/Discord is not set up on this server/)).toBeVisible();
@@ -342,6 +350,7 @@ test("a troupe changes what new characters start with and their downtime actions
   const l = lead.page;
   await l.getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
+  await l.getByRole("link", { name: "Customize", exact: true }).click();
   await l.getByRole("link", { name: "Rules", exact: true }).click();
   await l.getByRole("link", { name: "Starting points", exact: true }).click();
   await l.getByRole("button", { name: "Change starting Merits" }).click();
@@ -408,6 +417,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   const p = lead.page;
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
+  await p.getByRole("link", { name: "People", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "NPCs", exact: true }).click();
   await expect(p.getByRole("heading", { name: "New NPC" })).toBeVisible();
   await p.getByLabel("Name").fill("Prince Vasquez");
@@ -432,10 +442,12 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   // Titles are given on the troupe's Characters tab.
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
+  await p.getByRole("link", { name: "People", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
   await p.getByLabel("Give Prince Vasquez a title").fill("Prince");
   await p.getByLabel("Give Prince Vasquez a title").press("Enter");
   await expect(p.locator("main").getByText("Prince", { exact: true })).toBeVisible();
+  await p.getByRole("link", { name: "Troupe", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
   await expect(p.getByText("npc-lead gave Prince Vasquez the title Prince.")).toBeVisible();
 });
@@ -537,6 +549,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
     if (occult) expect((await rate("skills", "Occult", occult)).status()).toBe(200);
   }
 
+  await p.getByRole("link", { name: "People", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
   await expect(p.getByText("3 of 3 characters")).toBeVisible();
   await expect(p.getByRole("button", { name: "Remove “Is active”" })).toBeVisible(); // retired characters are hidden by default

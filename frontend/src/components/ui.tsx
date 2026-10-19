@@ -1,6 +1,6 @@
 import { cloneElement, useId } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactElement, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
-import { NavLink } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -184,10 +184,54 @@ export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolea
   );
 }
 
-/** Smaller tabs inside a tab, for its parts. */
-export function SubTabs({ label, tabs }: { label: string; tabs: { to: string; label: string; end?: boolean }[] }) {
+type Tab = { to: string; label: string; end?: boolean; count?: number };
+
+/**
+ * Tabs in groups, for a page with too many to fit one row: the groups in a row,
+ * and under it the open group's own tabs, wrapping rather than scrolling. A
+ * group opens its first tab; a group of one is a plain tab. Counts add up on
+ * their group, so what waits is seen from anywhere.
+ */
+export function GroupedTabs({ label, groups }: { label: string; groups: { label: string; tabs: Tab[] }[] }) {
+  const { pathname } = useLocation();
+  const here = pathname.replace(/\/$/, "");
+  const opens = (t: Tab) => (t.end ? here === t.to : here === t.to || here.startsWith(`${t.to}/`));
+  const shown = groups.filter((g) => g.tabs.length > 0);
+  const open = shown.find((g) => g.tabs.some(opens));
   return (
-    <nav aria-label={label} className="mb-5 flex flex-wrap gap-2">
+    <div className="mb-6">
+      <nav aria-label={label} className="flex flex-wrap gap-x-1 border-b border-ash">
+        {shown.map((g) => {
+          const active = g === open;
+          const counts = g.tabs.filter((t) => t.count !== undefined);
+          const total = counts.reduce((sum, t) => sum + (t.count ?? 0), 0);
+          return (
+            <Link
+              key={g.label}
+              to={g.tabs[0]!.to}
+              aria-current={active ? "true" : undefined}
+              className={cx(
+                "-mb-px border-b-2 px-3 py-2 text-sm whitespace-nowrap",
+                active ? "border-gold text-parchment" : "border-transparent text-mist hover:text-parchment",
+              )}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                {g.label}
+                {counts.length > 0 && <CountBubble count={total} label="waiting" />}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+      {open && open.tabs.length > 1 && <SubTabs label={open.label} tabs={open.tabs} className="mt-3 mb-0" />}
+    </div>
+  );
+}
+
+/** Smaller tabs inside a tab, for its parts. */
+export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]; className?: string }) {
+  return (
+    <nav aria-label={label} className={cx("mb-5 flex flex-wrap gap-2", className)}>
       {tabs.map((t) => (
         <NavLink
           key={t.to}
@@ -200,7 +244,10 @@ export function SubTabs({ label, tabs }: { label: string; tabs: { to: string; la
             )
           }
         >
-          {t.label}
+          <span className="inline-flex items-center gap-1.5">
+            {t.label}
+            {t.count !== undefined && <CountBubble count={t.count} label="waiting" />}
+          </span>
         </NavLink>
       ))}
     </nav>
