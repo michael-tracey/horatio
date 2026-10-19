@@ -86,8 +86,13 @@ Every night at 03:17 (host time), `/opt/docker-apps/horatio/backup.sh`:
 - uploads it to `gs://lotslarp-horatio-backups`, which deletes copies after 30 days
 - keeps the last week in `/opt/docker-apps/horatio/backups`
 
-Its log is `/var/log/horatio-backup.log`. To take a backup now, run
-`sudo /opt/docker-apps/horatio/backup.sh`.
+Its log is `/var/log/horatio-backup.log`.
+
+The custodian can also make a backup and download any kept one in the app, under
+**Custodian → Backups**. Those are named `horatio-<time>-manual.sql.gz`, kept beside the
+nightly ones (the app container mounts the directory as `HORATIO_BACKUP_DIR`) and
+pruned after a week the same way. Only the nightly ones go to the bucket. From the
+host, `sudo /opt/docker-apps/horatio/backup.sh` takes a nightly-style backup now.
 
 To restore one, stop the app, recreate the database and load the dump:
 

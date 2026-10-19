@@ -10,6 +10,7 @@ from horatio import delivery
 from horatio.api import (
     approvals,
     auth,
+    backups,
     character_log,
     characters,
     connectors,
@@ -89,6 +90,7 @@ for module in (
     connectors,
     discord,
     players,
+    backups,
 ):
     api.include_router(module.router)
 

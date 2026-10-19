@@ -22,6 +22,9 @@ class Settings(BaseSettings):
 
     # Where people reach the app, for links in messages sent outside it.
     public_url: str = "http://localhost:5173"
+    # Where database backups are kept (horatio.backups): the nightly ones and those
+    # the custodian makes. Unset, the custodian's Backups page says they are not set up.
+    backup_dir: str | None = None
     # How often the API sends deliveries waiting on connectors, in seconds; 0 stops it.
     delivery_interval: float = 15
 

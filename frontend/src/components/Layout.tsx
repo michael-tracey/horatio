@@ -30,8 +30,8 @@ export function Layout() {
                 Troupes
               </NavLink>
               {me.data.is_custodian && (
-                <NavLink to="/people" className={link}>
-                  People
+                <NavLink to="/custodian" className={link}>
+                  Custodian
                 </NavLink>
               )}
               <NotificationBell />
