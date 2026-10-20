@@ -124,6 +124,17 @@ Model changes need a migration: `uv run alembic revision --autogenerate -m "..."
 then read what it generated. `tests/test_migrations.py` fails if the models and
 migrations disagree.
 
+## Logo and icons
+
+`branding/logo.png` is Horatio's logo with a transparent background, at full
+size. `branding/make_graphics.py` makes it, and everything in `frontend/public`
+(the loading screen and sign-in logo, favicons, app icons and the link preview
+image), from the original 1024px logo on white:
+
+```bash
+python3 branding/make_graphics.py path/to/logo.jpeg   # needs Pillow and NumPy
+```
+
 ## License
 
 AGPL-3.0. See `LICENSE`.

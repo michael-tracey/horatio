@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import { useAction, useMe } from "../hooks";
 import { NotificationBell } from "./NotificationBell";
+import { Splash } from "./Splash";
 
 export function Layout() {
   const me = useMe();
@@ -14,11 +15,15 @@ export function Layout() {
   const link = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-parchment" : "text-mist hover:text-parchment";
 
+  // Until we know who is signed in, carry on the loading screen from index.html.
+  if (me.isPending) return <Splash />;
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-ash bg-dusk/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <Link to="/" className="font-display text-xl tracking-wider text-parchment">
+          <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-wider text-parchment">
+            <img src="/mark-64.png" alt="" width={32} height={32} className="h-8 w-8" />
             Horatio
           </Link>
           {me.data && (

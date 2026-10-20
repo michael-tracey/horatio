@@ -4,16 +4,73 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#141016" />
+    <meta name="description" content="Characters, troupes and downtimes for Mind's Eye Theatre LARP." />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <!-- Link previews. The API fills in the site's address (HORATIO_PUBLIC_URL). -->
+    <meta property="og:title" content="Horatio" />
+    <meta property="og:description" content="Characters, troupes and downtimes for Mind's Eye Theatre LARP." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="__HORATIO_PUBLIC_URL__/preview.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <link rel="preload" href="/logo.webp" as="image" type="image/webp" />
     <title>Horatio</title>
+    <!-- The loading screen, styled here so it shows before the app's CSS and
+         script arrive. components/Splash.tsx shows the same while the app
+         checks who is signed in. -->
+    <style>
+      .splash {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        background: #141016;
+        color: #9b8fa3;
+        font: 14px "Inter", system-ui, sans-serif;
+      }
+      .splash img {
+        width: min(224px, 55vw);
+        height: auto;
+        filter: drop-shadow(0 0 28px rgba(163, 37, 58, 0.35));
+        animation: splash-breathe 2.4s ease-in-out infinite;
+      }
+      @keyframes splash-breathe {
+        0%,
+        100% {
+          opacity: 0.8;
+          transform: scale(0.98);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .splash img {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="splash" role="status">
+        <img src="/logo.webp" alt="Horatio" width="224" height="224" />
+        <p>Loading…</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

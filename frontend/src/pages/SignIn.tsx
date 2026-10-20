@@ -7,7 +7,8 @@ import { useAction, useMe } from "../hooks";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mx-auto mt-6 max-w-sm sm:mt-16">
+    <div className="mx-auto mt-2 max-w-sm sm:mt-8">
+      <img src="/logo.webp" alt="Horatio: MET legacy LARP tools" width={224} height={224} className="mx-auto mb-2 h-auto w-44 sm:w-56" />
       <p className="mb-6 text-center text-sm text-mist italic">"Alas, poor Yorick! I knew him, Horatio."</p>
       <Card title={title}>{children}</Card>
     </div>
