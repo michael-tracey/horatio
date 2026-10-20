@@ -286,7 +286,7 @@ def log(
 
 def log_entries(db: DbSession, query: Select[AuditEvent, str]) -> list[LogEntry]:
     """Read the events `query` selects, with their actors' names, as log entries."""
-    events = list(db.execute(query).tuples())
+    events = [(event, actor) for event, actor in db.execute(query)]
     character_ids = {e.character_id for e, _ in events} - {None}
     # Each PC's player as they are named now, not when the event happened.
     players: dict[uuid.UUID | None, tuple[uuid.UUID, str]] = {
@@ -295,7 +295,7 @@ def log_entries(db: DbSession, query: Select[AuditEvent, str]) -> list[LogEntry]
             select(Character.id, User.id, User.display_name)
             .join(User, Character.player_id == User.id)
             .where(Character.id.in_(character_ids), Character.kind == "pc")
-        ).tuples()
+        )
     }
     entries: list[LogEntry] = []
     for event, actor in events:

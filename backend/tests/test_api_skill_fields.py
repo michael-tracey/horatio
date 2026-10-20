@@ -18,7 +18,7 @@ def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
     return Troupe(client_for, session)
 
 
-def unavailable(troupe: Troupe, character_id: str, **params: object) -> dict[str, str]:
+def unavailable(troupe: Troupe, character_id: str, **params: str) -> dict[str, str]:
     response = troupe.player.client.get(
         f"/characters/{character_id}/unavailable", params={"category": "skills", **params}
     )
