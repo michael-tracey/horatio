@@ -166,3 +166,19 @@ def test_influences_offer_the_standard_areas(troupe: Troupe) -> None:
         options = next(k for k in kinds if k["category"] == kind)["options"]
         assert len(options) == 20
         assert {"Finance", "Law Enforcement", "Religious Groups/Organizations"} <= set(options)
+
+
+def test_the_printed_sheet_says_what_each_specialisation_belongs_to(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    take(troupe.player, character_id, "backgrounds", "Contacts", 1)
+    take(troupe.player, character_id, "contacts_specializations", "Custom", 1, "Bethany")
+
+    traits = troupe.player.client.get(f"/characters/{character_id}/print").json()["traits"]
+
+    bethany = next(t for t in traits if t["category"] == "contacts_specializations")
+    assert (bethany["detail"], bethany["specializes"]) == (
+        "Bethany",
+        {"category": "backgrounds", "name": "Contacts"},
+    )
+    contacts = next(t for t in traits if t["name"] == "Contacts")
+    assert contacts["specializes"] is None

@@ -282,6 +282,16 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Add to Influence: Elite" }).click();
   await p.getByRole("button", { name: "Police", exact: true }).click();
   await expect(p.getByRole("button", { name: "Remove Police" })).toBeVisible();
+  // Contacts, named freely: one per dot.
+  await part("Backgrounds").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Backgrounds").fill("Contacts");
+  await p.getByRole("button", { name: /^Contacts/ }).click();
+  await p.getByRole("button", { name: "Buy" }).click();
+  await p.getByRole("button", { name: "Add to Contacts Specializations" }).click();
+  const contact = p.getByRole("listitem").filter({ has: p.getByLabel("Name a Contacts Specializations") });
+  await contact.getByLabel("Name a Contacts Specializations").fill("Reyes");
+  await contact.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(p.getByRole("button", { name: "Remove Reyes" })).toBeVisible();
   await p.screenshot(shots("specializations"));
 
   // The lead runs a cycle.
@@ -347,11 +357,26 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("Incapacitated characters lose their simple action.")).toBeVisible();
   for (const level of ["Healthy", "Injured", "Incapacitated"])
     await expect(p.getByRole("img", { name: `${level}: 4 boxes` })).toBeVisible();
+  // Specialisations in brackets after their trait, without dots or sections of their
+  // own: a short list on the trait's line, a long one on a line under it.
+  const specialised = async (page: Page) => {
+    await expect(page.getByText("Contacts (Reyes)", { exact: true })).toBeVisible();
+    await expect(page.getByText("Influences: The Elite", { exact: true })).toBeVisible();
+    await expect(page.getByText("(Police)", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Specializations|Influence: Elite/ })).toHaveCount(0);
+  };
+  await specialised(p);
   await p.screenshot(shots("print"));
   if (test.info().project.name === "desktop") {
     await p.emulateMedia({ media: "print" });
     await p.pdf({ path: "test-results/screens/sheet.pdf", format: "Letter" });
   }
+  // The troupe's print view prints them the same way.
+  const troupeSheets = await lead.page.context().newPage();
+  await troupeSheets.goto(`/print/troupes/${lead.page.url().match(/\/troupes\/([^/]+)/)![1]}`);
+  await expect(troupeSheets.getByText("1 sheet", { exact: true })).toBeVisible();
+  await specialised(troupeSheets);
+  await troupeSheets.close();
 });
 
 
