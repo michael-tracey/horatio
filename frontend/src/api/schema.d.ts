@@ -3659,6 +3659,8 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Clan */
+            clan: string | null;
             /** Disciplines Waiting */
             disciplines_waiting: number;
             /** Home */
@@ -3674,6 +3676,8 @@ export interface components {
             player_id: string | null;
             /** Player Name */
             player_name: string;
+            /** Social Age */
+            social_age: string;
             /** Titles */
             titles: string[];
             /** Waiting */
