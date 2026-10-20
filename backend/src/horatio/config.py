@@ -1,5 +1,7 @@
+from datetime import datetime
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +27,12 @@ class Settings(BaseSettings):
     # Where database backups are kept (horatio.backups): the nightly ones and those
     # the custodian makes. Unset, the custodian's Backups page says they are not set up.
     backup_dir: str | None = None
+    # The build running, baked into the image by deploy/deploy.sh: the git commit
+    # (with "-dirty" if uncommitted changes went in) and when it was built.
+    commit: str | None = None
+    built_at: datetime | None = None
+    # Horatio's code, for linking a build to its commit.
+    source_url: str = "https://github.com/michael-tracey/horatio"
     # How often the API sends deliveries waiting on connectors, in seconds; 0 stops it.
     delivery_interval: float = 15
 
@@ -45,6 +53,12 @@ class Settings(BaseSettings):
     smtp_starttls: bool = True
     smtp_ssl: bool = False
     mail_from: str | None = None
+
+    @field_validator("commit", "built_at", mode="before")
+    @classmethod
+    def unset_when_blank(cls, value: object) -> object:
+        """A local image build leaves the build arguments empty: not set."""
+        return None if value == "" else value
 
 
 @lru_cache

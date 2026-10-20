@@ -4,6 +4,10 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '--build-arg'
+      - 'HORATIO_COMMIT=$_COMMIT'
+      - '--build-arg'
+      - 'HORATIO_BUILT_AT=$_BUILT_AT'
       - '-t'
       - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_SERVICE_NAME:$_TAG'
       - '-t'
@@ -19,6 +23,9 @@ substitutions:
   _REGION: 'us-east1'
   _ARTIFACT_REGISTRY_REPO: 'horatio'
   _TAG: 'manual'
+  # The git commit and build time, shown on the custodian's System tab.
+  _COMMIT: ''
+  _BUILT_AT: ''
 
 options:
   machineType: 'E2_HIGHCPU_8'

@@ -36,6 +36,12 @@ ENV PATH="/app/.venv/bin:$PATH" \
     HORATIO_FRONTEND_DIST=/app/frontend
 # A fixed uid, which owns the backups directory mounted from the host.
 RUN useradd --system --uid 10001 --no-create-home horatio
+# What was built and when, for the custodian's System tab (horatio.api.system).
+# Last, so a new commit does not rebuild the layers above.
+ARG HORATIO_COMMIT=""
+ARG HORATIO_BUILT_AT=""
+ENV HORATIO_COMMIT=$HORATIO_COMMIT \
+    HORATIO_BUILT_AT=$HORATIO_BUILT_AT
 USER horatio
 EXPOSE 8000
 # Behind the host's nginx, which terminates TLS and says so in X-Forwarded-*.
