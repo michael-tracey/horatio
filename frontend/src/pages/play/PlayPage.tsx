@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { ExpendableOut, GameOut, PlayView } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { incapacitated, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
@@ -505,17 +506,15 @@ function Notes({ add }: { add: (note: string) => void }) {
   );
 }
 
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-const day = (iso: string) => new Date(iso).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
-
 function LogEntries({ log }: { log: ShownEntry[] }) {
+  const dates = useDates();
   if (log.length === 0) return <p className="text-sm text-mist">Nothing yet. Every tap shows here, newest first.</p>;
   return (
     <ol className="divide-y divide-ash text-sm">
       {log.map((e) => (
         <li key={e.id} className="flex gap-3 py-1.5">
           <time className="w-16 shrink-0 text-xs text-mist" dateTime={e.happened_at}>
-            {time(e.happened_at)}
+            {dates.time(e.happened_at)}
           </time>
           <div className="min-w-0 flex-1">
             <p className={cx(e.undone && "text-mist line-through")}>
@@ -605,6 +604,7 @@ function PastGames({ characterId, current }: { characterId: string; current: str
 
 function PastGame({ characterId, game }: { characterId: string; game: GameOut }) {
   const [open, setOpen] = useState(false);
+  const dates = useDates();
   const log = useQuery({
     queryKey: ["play-game", game.id],
     queryFn: () =>
@@ -617,7 +617,7 @@ function PastGame({ characterId, game }: { characterId: string; game: GameOut })
     <li className="py-1">
       <button type="button" className="flex min-h-10 w-full items-center justify-between gap-2 text-left text-sm" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span>
-          Game {game.number} · {day(game.started_at)}
+          Game {game.number} · {dates.date(game.started_at)}
         </span>
         <span className="text-xs text-mist">
           {taps}, {notes} {open ? "▴" : "▾"}

@@ -4,8 +4,9 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { TroupeRequestOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Textarea } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { requestStatus, when } from "../troupeRequests";
+import { requestStatus } from "../troupeRequests";
 
 export function useTroupeRequests(enabled = true) {
   return useQuery({ queryKey: ["troupe-requests"], queryFn: () => unwrap(api.GET("/api/troupe-requests")), enabled });
@@ -14,6 +15,7 @@ export function useTroupeRequests(enabled = true) {
 /** New troupes people have asked for: approve one to make it, led by whoever asked. */
 export function TroupeRequestsTab() {
   const requests = useTroupeRequests();
+  const dates = useDates();
   if (requests.isPending) return <Loading />;
   const waiting = requests.data?.filter((r) => r.status === "pending") ?? [];
   const done = requests.data?.filter((r) => r.status !== "pending") ?? [];
@@ -49,7 +51,7 @@ export function TroupeRequestsTab() {
                   {r.reason && <span className="block text-xs text-mist">{r.reason}</span>}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-mist">
-                  {r.decided_at && when(r.decided_at)}
+                  {r.decided_at && dates.date(r.decided_at)}
                   <Badge tone={r.status === "approved" ? "gold" : "mist"}>{requestStatus(r.status)}</Badge>
                 </span>
               </li>
@@ -63,6 +65,7 @@ export function TroupeRequestsTab() {
 
 function Waiting({ request: r }: { request: TroupeRequestOut }) {
   const [declining, setDeclining] = useState(false);
+  const dates = useDates();
   const [reason, setReason] = useState("");
   const approve = useAction(() => unwrap(api.POST("/api/troupe-requests/{request_id}/approve", { params: { path: { request_id: r.id } } })));
   const decline = useAction(() =>
@@ -79,7 +82,7 @@ function Waiting({ request: r }: { request: TroupeRequestOut }) {
           <Link to={`/players/${r.requester_id}`} className="text-gold hover:underline">
             {r.requester_name}
           </Link>
-          , {when(r.created_at)}
+          , {dates.date(r.created_at)}
         </span>
       </div>
       {r.description && <p className="text-sm whitespace-pre-line">{r.description}</p>}

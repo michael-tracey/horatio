@@ -362,8 +362,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Open for submissions" }).click();
   await expect(lead.page.getByText("0 of 1 submitted")).toBeVisible();
 
-  // The player answers and submits.
+  // The player answers and submits. The deadline shows with its zone, so everyone agrees on it.
   await p.getByRole("link", { name: "Downtime", exact: true }).click();
+  await expect(p.getByText(/^Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \S+$/)).toBeVisible();
   await p.getByRole("button", { name: /Add an action/ }).first().click();
   await p.getByLabel("Downtime action").fill("Hunt along the river docks.");
   await p.screenshot(shots("downtime"));
@@ -1017,4 +1018,54 @@ test("settings are kept on the account, and the dark is not optional", async ({ 
   await expect(mode.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
   await expect(page.getByText("The World of Darkness is always dark.")).toBeVisible();
   await page.screenshot(shots("settings"));
+});
+
+test("dates and times show in each person's zone and format", async ({ browser }) => {
+  const { page } = await person(browser, "dates-player");
+  // A rename puts a line in the character's log, on the default 12-hour clock in this device's zone.
+  await page.goto("/characters");
+  await page.getByLabel("Name").fill("Odile Marchand");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  await page.getByRole("button", { name: "More for Odile Marchand" }).click();
+  await page.getByRole("menuitem", { name: "Rename…" }).click();
+  await page.getByLabel("New name").fill("Odile Brun");
+  await page.getByRole("button", { name: "Rename", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Odile Brun");
+  await page.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  const renamed = page.locator("main time").first();
+  await expect(renamed).toHaveText(/^\d{1,2} [A-Z][a-z]{2} \d{4}, \d{1,2}:\d{2} [ap]m$/);
+  const log = page.url();
+
+  // In Tokyo, as ISO dates on a 24-hour clock: the page says at once how a deadline will show.
+  // Each change is waited for, to be sure it is saved before the next page.
+  const saved = () => page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.request().method() === "PATCH" && r.ok());
+  await page.goto("/account/settings");
+  await Promise.all([saved(), page.getByLabel("Time zone").fill("Asia/Tokyo")]);
+  await Promise.all([saved(), page.getByRole("radiogroup", { name: "Dates" }).getByRole("radio", { name: "2026-10-20" }).click()]);
+  await Promise.all([saved(), page.getByRole("radiogroup", { name: "Clock" }).getByRole("radio", { name: "21:30" }).click()]);
+  await expect(page.getByText(/^[A-Z][a-z]{2} \d{4}-\d{2}-\d{2}, \d{2}:\d{2} GMT\+9$/)).toBeVisible();
+  await page.screenshot(shots("settings-dates"));
+  await page.goto(log);
+  const at = new Date((await renamed.getAttribute("datetime")) ?? "");
+  const part = (type: string, parts: Intl.DateTimeFormatPart[]) => parts.find((p) => p.type === type)?.value;
+  const tokyo = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(at);
+  await expect(renamed).toHaveText(`${part("year", tokyo)}-${part("month", tokyo)}-${part("day", tokyo)}, ${part("hour", tokyo)}:${part("minute", tokyo)}`);
+  await page.screenshot(shots("log-dates"));
+
+  // Back to this device's zone: the zone is cleared, and kept that way after a reload.
+  await page.goto("/account/settings");
+  await Promise.all([saved(), page.getByRole("button", { name: "Use this device's" }).click()]);
+  await expect(page.getByLabel("Time zone")).toHaveValue("");
+  await page.reload();
+  await expect(page.getByLabel("Time zone")).toHaveValue("");
+  await expect(page.getByText(/^[A-Z][a-z]{2} \d{4}-\d{2}-\d{2}, \d{2}:\d{2} \S+$/)).toBeVisible();
 });

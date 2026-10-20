@@ -11,8 +11,3 @@ const STATUSES: Record<string, string> = {
 export function requestStatus(status: string): string {
   return STATUSES[status] ?? status;
 }
-
-/** "19 Oct 2026": when a request was made or decided. */
-export function when(at: string): string {
-  return new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-}
