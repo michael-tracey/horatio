@@ -9,6 +9,7 @@ import { CreationWizard } from "./creation/Wizard";
 import { DowntimeTab } from "./DowntimeTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
+import { BadgeButton } from "./Badge";
 import { longDate } from "./longDate";
 import { RenameCharacter } from "./Rename";
 import { CharacterPicture } from "./Picture";
@@ -48,6 +49,7 @@ export function CharacterPage() {
             actions={
               <div className="flex flex-wrap items-center gap-3">
                 <Badge tone="gold">NPC</Badge>
+                <BadgeButton character={c} />
                 {!renaming && renameButton}
               </div>
             }
@@ -87,6 +89,8 @@ export function CharacterPage() {
           actions={
             <div className="flex flex-wrap items-center gap-3">
               {c.status === "retired" && <Badge>retired</Badge>}
+              {/* Badges are the staff's to print; whoever else sees the page is staff. */}
+              {(!mine || me.data?.is_custodian) && <BadgeButton character={c} />}
               {renameOn ? (
                 <span className="text-sm text-mist">You can rename {c.name} again on {longDate(renameOn)}.</span>
               ) : (

@@ -260,6 +260,27 @@ export interface paths {
         patch: operations["change_character_api_characters__character_id__patch"];
         trace?: never;
     };
+    "/api/characters/{character_id}/badge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Badge
+         * @description One character's badge, with its titles in `troupe_id` (by default its home
+         *     troupe, else the first troupe it joined).
+         */
+        get: operations["character_badge_api_characters__character_id__badge_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/building-troupe": {
         parameters: {
             query?: never;
@@ -862,6 +883,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/visible-note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Visible Note */
+        get: operations["read_visible_note_api_characters__character_id__visible_note_get"];
+        /**
+         * Set Visible Note
+         * @description What others can see or sense about the character that the rules data does
+         *     not cover, for its badge. Written by staff, not the player.
+         */
+        put: operations["set_visible_note_api_characters__character_id__visible_note_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/xp": {
         parameters: {
             query?: never;
@@ -899,6 +942,64 @@ export interface paths {
          */
         post: operations["correct_xp_api_characters__character_id__xp__entry_id__correction_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clan-logos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Logos */
+        get: operations["list_logos_api_clan_logos_get"];
+        put?: never;
+        /**
+         * Upload Logo
+         * @description A clan's logo, replacing any it has.
+         */
+        post: operations["upload_logo_api_clan_logos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clan-logos/{image_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Logo File
+         * @description A logo's file, for anyone signed in. Like pictures' files, they never change.
+         */
+        get: operations["logo_file_api_clan_logos__image_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clan-logos/{logo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Logo */
+        delete: operations["remove_logo_api_clan_logos__logo_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1649,6 +1750,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Badges
+         * @description Badges for the characters named, in that order, or every character in the
+         *     troupe now, in the roster's order.
+         */
+        get: operations["troupe_badges_api_troupes__troupe_id__badges_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/characters": {
         parameters: {
             query?: never;
@@ -2092,6 +2214,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/staff-badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Staff Badges
+         * @description Badges for the troupe's staff: each person's name and role, lead first.
+         */
+        get: operations["staff_badges_api_troupes__troupe_id__staff_badges_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/staff/{user_id}": {
         parameters: {
             query?: never;
@@ -2418,6 +2560,52 @@ export interface components {
             /** Backups */
             backups: components["schemas"]["BackupOut"][];
         };
+        /** BadgeOut */
+        BadgeOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Logo */
+            logo: string | null;
+            /** Name */
+            name: string;
+            /** Picture */
+            picture: string | null;
+            /** Social Age */
+            social_age: string;
+            /** Status */
+            status: string[];
+            /** Titles */
+            titles: string[];
+            /** Visible */
+            visible: string[];
+        };
+        /** BadgesOut */
+        BadgesOut: {
+            /** Badges */
+            badges: components["schemas"]["BadgeOut"][];
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
+        /** Body_upload_logo_api_clan_logos_post */
+        Body_upload_logo_api_clan_logos_post: {
+            /** Clan */
+            clan: string;
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+        };
         /** Body_upload_picture_api_characters__character_id__picture_post */
         Body_upload_picture_api_characters__character_id__picture_post: {
             /** Crop Size */
@@ -2627,6 +2815,24 @@ export interface components {
             from_name: string;
             /** To Name */
             to_name: string;
+        };
+        /** ClanLogoOut */
+        ClanLogoOut: {
+            /** Clan */
+            clan: string;
+            /** Logo */
+            logo: string | null;
+            /** Logo Id */
+            logo_id: string | null;
+            /** Splat */
+            splat: string;
+        };
+        /** ClanLogosOut */
+        ClanLogosOut: {
+            /** Available */
+            available: boolean;
+            /** Clans */
+            clans: components["schemas"]["ClanLogoOut"][];
         };
         /** ConnectorChange */
         ConnectorChange: {
@@ -4082,6 +4288,13 @@ export interface components {
             email: string;
             role: components["schemas"]["Role"];
         };
+        /** StaffBadgeOut */
+        StaffBadgeOut: {
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+        };
         /** StaffMember */
         StaffMember: {
             /** Display Name */
@@ -4378,6 +4591,11 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** VisibleNote */
+        VisibleNote: {
+            /** Note */
+            note: string;
         };
         /** WorkCycle */
         WorkCycle: {
@@ -5006,6 +5224,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_badge_api_characters__character_id__badge_get: {
+        parameters: {
+            query?: {
+                troupe_id?: string | null;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadgesOut"];
                 };
             };
             /** @description Validation Error */
@@ -6174,6 +6425,72 @@ export interface operations {
             };
         };
     };
+    read_visible_note_api_characters__character_id__visible_note_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibleNote"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_visible_note_api_characters__character_id__visible_note_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisibleNote"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibleNote"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     xp_history_api_characters__character_id__xp_get: {
         parameters: {
             query?: never;
@@ -6264,6 +6581,118 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["XpEntryOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_logos_api_clan_logos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanLogosOut"];
+                };
+            };
+        };
+    };
+    upload_logo_api_clan_logos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_logo_api_clan_logos_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanLogoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logo_file_api_clan_logos__image_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                image_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_logo_api_clan_logos__logo_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                logo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -7812,6 +8241,39 @@ export interface operations {
             };
         };
     };
+    troupe_badges_api_troupes__troupe_id__badges_get: {
+        parameters: {
+            query?: {
+                characters?: string[] | null;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadgesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     roster_api_troupes__troupe_id__characters_get: {
         parameters: {
             query?: never;
@@ -8822,6 +9284,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staff_badges_api_troupes__troupe_id__staff_badges_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffBadgeOut"][];
                 };
             };
             /** @description Validation Error */

@@ -76,6 +76,8 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
   const print = (ids?: string[]) =>
     window.open(`/print/troupes/${troupeId}${ids ? `?characters=${ids.join(",")}` : ""}`, "_blank", "noopener");
   const narrowed = shown.length !== everyone.length;
+  const badges = (ids?: string[]) =>
+    window.open(`/print/troupes/${troupeId}/badges${ids ? `?characters=${ids.join(",")}` : ""}`, "_blank", "noopener");
 
   return (
     <Card
@@ -91,6 +93,18 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
         </div>
       }
     >
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-mist">Game badges:</span>
+        <Button variant="secondary" disabled={!ticked.length} onClick={() => badges(ticked.map((e) => e.character_id))}>
+          Badges for selected ({ticked.length})
+        </Button>
+        <Button variant="secondary" disabled={!shown.length} onClick={() => badges(narrowed ? shown.map((e) => e.character_id) : undefined)}>
+          Badges for all {shown.length}
+        </Button>
+        <Button variant="ghost" onClick={() => window.open(`/print/troupes/${troupeId}/staff-badges`, "_blank", "noopener")}>
+          Storyteller badges
+        </Button>
+      </div>
       <div className="mb-3 flex flex-col gap-2">
         <div className="flex flex-wrap gap-2">
           <Input

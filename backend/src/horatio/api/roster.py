@@ -238,6 +238,9 @@ MESSAGES: dict[str, str] = {
     "picture.replaced": "{actor} gave {character} a new picture.",
     "picture.cropped": "{actor} moved the crop of {character}'s picture.",
     "picture.removed": "{actor} removed {character}'s picture.",
+    "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
+    "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
+    "clan_logo.removed": "{actor} removed the logo for {clan}.",
 }
 
 
