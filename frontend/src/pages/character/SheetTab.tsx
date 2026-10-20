@@ -20,6 +20,7 @@ import {
   Notice,
   Select,
 } from "../../components/ui";
+import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
 import { AddTraitPanel } from "./AddTraitPanel";
 import { rulesTroupe } from "./rules";
@@ -171,13 +172,17 @@ export function SheetTab({
   );
   const locked = !mine || movingHome || s.status === "retired";
   // Identity (clan, sect...) is shown with the name, in the page title.
-  // Specialisations show under their skill or background, not as traits of their own.
+  // Specialisations show under their skill or background, not as traits of their own,
+  // and health levels as boxes in a part of their own.
   const specCategories = new Set(
     catalogue.data?.categories.filter((c) => c.specializes).map((c) => c.key),
   );
   const groups = groupTraits(
     s.traits.filter(
-      (t) => t.rating !== null && !specCategories.has(t.category),
+      (t) =>
+        t.rating !== null &&
+        !specCategories.has(t.category) &&
+        t.category !== "health_levels",
     ),
     catalogue.data,
   );
@@ -225,6 +230,13 @@ export function SheetTab({
   const derived = new Set(
     catalogue.data?.categories.filter((c) => c.derived).map((c) => c.key),
   );
+  // Health sits after the part its category belongs to (with willpower), or last.
+  const health = s.traits.some((t) => t.category === "health_levels") ? (
+    <HealthLevels key="health_levels" traits={s.traits} />
+  ) : null;
+  const healthAfter = catalogue.data?.categories.find(
+    (c) => c.key === "health_levels",
+  )?.group;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
@@ -261,7 +273,7 @@ export function SheetTab({
           </Empty>
         )}
         <div className="grid gap-3 md:grid-cols-2">
-          {parts.map((group) => (
+          {parts.map((group) => [
             <Card
               key={group}
               dense
@@ -359,8 +371,10 @@ export function SheetTab({
                   </div>
                 ))}
               </div>
-            </Card>
-          ))}
+            </Card>,
+            group === healthAfter && health,
+          ])}
+          {!parts.includes(healthAfter ?? "") && health}
         </div>
         <ErrorText error={change.error ?? swap.error} />
         {message && !change.error && !swap.error && <Notice>{message}</Notice>}
@@ -567,6 +581,37 @@ function TraitRow({
         </span>
       )}
     </li>
+  );
+}
+
+/**
+ * Health levels as boxes, laid out like the example BNS sheet: a row of boxes
+ * per level, for ticking damage in play. Health is worked out from the rest of
+ * the sheet, so nothing here is saved.
+ */
+function HealthLevels({ traits }: { traits: SheetTraitOut[] }) {
+  return (
+    <Card dense title="Health Levels">
+      <p className="mb-2 text-xs text-mist">{HEALTH_RULE}</p>
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {healthRows(traits).map(({ name, boxes, trait }) => (
+          <li key={name} className="flex min-h-6 flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="w-24 shrink-0">{name}</span>
+            <span role="img" aria-label={`${name}: ${boxes} boxes`} className="flex flex-wrap gap-1">
+              {Array.from({ length: boxes }, (_, i) => (
+                <span key={i} className="h-4 w-4 rounded-sm border border-parchment/70" />
+              ))}
+            </span>
+            {trait && trait.granted_rating !== 0 && trait.granted_by.length > 0 && (
+              <span className="ml-auto text-xs text-mist">
+                {trait.granted_rating > 0 ? `+${trait.granted_rating}` : trait.granted_rating} from{" "}
+                {trait.granted_by.join(", ")}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

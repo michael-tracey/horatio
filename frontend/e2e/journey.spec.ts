@@ -136,6 +136,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  // Health is boxes to tick, like the paper sheet: three of each to start, and no dots.
+  await expect(part("Health Levels").getByText("Incapacitated characters lose their simple action.")).toBeVisible();
+  for (const level of ["Healthy", "Injured", "Incapacitated"])
+    await expect(part("Health Levels").getByRole("img", { name: `${level}: 3 boxes` })).toBeVisible();
+  await expect(part("Expended").getByText("Healthy")).toHaveCount(0);
   await part("Backgrounds").getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Search Backgrounds").fill("Elite");
   await p.getByRole("button", { name: "Influences: The Elite" }).click();
@@ -157,6 +162,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Buy" }).click();
   await expect(p.getByText("+1 from Rugged").first()).toBeVisible();
   await expect(p.getByText("16", { exact: true })).toBeVisible();
+  for (const level of ["Healthy", "Injured", "Incapacitated"])
+    await expect(part("Health Levels").getByRole("img", { name: `${level}: 4 boxes` })).toBeVisible();
   await p.screenshot(shots("sheet"));
   // The character's own log says when, who and what.
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
@@ -334,6 +341,10 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("link", { name: "Print the sheet" }).click();
   await expect(p.getByText(/Home troupe: Court of Ash/)).toBeVisible();
   await expect(p.getByText("Brawl")).toBeVisible();
+  // Health as on the paper sheet, with Rugged's extra box in each row.
+  await expect(p.getByText("Incapacitated characters lose their simple action.")).toBeVisible();
+  for (const level of ["Healthy", "Injured", "Incapacitated"])
+    await expect(p.getByRole("img", { name: `${level}: 4 boxes` })).toBeVisible();
   await p.screenshot(shots("print"));
   if (test.info().project.name === "desktop") {
     await p.emulateMedia({ media: "print" });
