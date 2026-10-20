@@ -28,8 +28,6 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     expendables: [{ key: "trait:backgrounds/Herd/", name: "Herd", detail: "", group: "Backgrounds", uses: 2, left: 2, counter_id: null }],
     game: null,
     log: [],
-    traits: [],
-    pools: [],
     ...overrides,
   };
 }

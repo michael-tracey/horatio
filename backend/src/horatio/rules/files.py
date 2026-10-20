@@ -366,9 +366,9 @@ def load_rule_set(path: Path) -> RuleSetData:
 
 def all_rule_set_files() -> Iterable[Path]:
     """Rule set files; `*_traits.toml`, `*_checks.toml` and `*_grants.toml` are parts
-    they include."""
+    they include, and `*_powers.toml` is horatio.reference's quick notes."""
     return sorted(
         p
         for p in DATA_DIR.glob("*.toml")
-        if not p.name.endswith(("_traits.toml", "_checks.toml", "_grants.toml"))
+        if not p.name.endswith(("_traits.toml", "_checks.toml", "_grants.toml", "_powers.toml"))
     )
