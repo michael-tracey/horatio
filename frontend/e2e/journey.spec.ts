@@ -727,3 +727,67 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await a.locator("main").getByRole("link", { name: troupeName }).first().click();
   await expect(a.getByText("Lead Storyteller").first()).toBeVisible();
 });
+
+test("a player renames their character once in three months, and the custodian any time", async ({ browser }) => {
+  const custodian = await person(browser, "rename-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "rename-lead");
+  const player = await person(browser, "rename-player");
+  const troupeName = `Court of Lanterns ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // Before any troupe has the character, renaming it is the player's own business.
+  const p = player.page;
+  await p.getByLabel("Name").fill("Agnes Moreau");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const rename = async (page: Page, from: string, to: string) => {
+    await page.getByRole("button", { name: "Rename", exact: true }).click();
+    await page.getByLabel("New name").fill(to);
+    await page.getByRole("button", { name: "Rename", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(to);
+    await expect(page.getByRole("heading", { name: `Rename ${from}` })).toHaveCount(0);
+  };
+  await rename(p, "Agnes Moreau", "Agnes Bisset");
+  await rename(p, "Agnes Bisset", "Agnes Moreau");
+
+  // In a troupe, once every three months, and the troupe's storytellers are told.
+  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Visit" }).click();
+  await expect(p.getByText("visiting")).toBeVisible();
+  await p.getByRole("button", { name: "Rename", exact: true }).click();
+  await p.getByLabel("New name").fill("Agnes Duval");
+  await p.screenshot(shots("rename"));
+  await p.getByRole("button", { name: "Rename", exact: true }).click();
+  await expect(p.getByRole("heading", { level: 1 })).toHaveText("Agnes Duval");
+  await expect(p.getByText(/You can rename Agnes Duval again on/)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Rename", exact: true })).toHaveCount(0);
+  await p.screenshot(shots("rename-wait"));
+
+  await lead.page.reload();
+  await lead.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(lead.page.getByText("Agnes Moreau is now called Agnes Duval")).toBeVisible();
+
+  // The custodian can still rename it, which leaves the player's wait as it was.
+  const c = custodian.page;
+  await c.goto(new URL(p.url()).pathname.replace(/\/troupes$/, ""));
+  await rename(c, "Agnes Duval", "Agnes Lemaire");
+  await p.reload();
+  await expect(p.getByText(/You can rename Agnes Lemaire again on/)).toBeVisible();
+  await p.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(p.getByText("The custodian renamed Agnes Duval to Agnes Lemaire")).toBeVisible();
+  await p.keyboard.press("Escape");
+
+  // The character's history keeps the old names.
+  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText("rename-custodian renamed Agnes Duval to Agnes Lemaire (rename-player).")).toBeVisible();
+  await expect(p.getByText("rename-player renamed Agnes Moreau to Agnes Duval.")).toBeVisible();
+  await p.screenshot(shots("rename-log"));
+});

@@ -230,6 +230,7 @@ MESSAGES: dict[str, str] = {
     "no account uses it.",
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
+    "character.renamed": "{actor} renamed {from_name} to {character}.",
 }
 
 

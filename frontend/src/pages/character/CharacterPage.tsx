@@ -1,13 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
-import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
+import { Badge, Button, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { CreationWizard } from "./creation/Wizard";
 import { DowntimeTab } from "./DowntimeTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
+import { longDate } from "./longDate";
+import { RenameCharacter } from "./Rename";
 import { ResultsTab } from "./ResultsTab";
 import { SheetTab } from "./SheetTab";
 import { TroupesTab } from "./TroupesTab";
@@ -20,19 +23,36 @@ export function CharacterPage() {
     queryKey: ["character", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}", { params: { path: { character_id: characterId } } })),
   });
+  const [renaming, setRenaming] = useState(false);
 
   if (character.isPending) return <Loading />;
   if (character.error) return <ErrorText error={character.error} />;
   const c = character.data;
   const base = `/characters/${c.id}`;
+  const custodian = !!me.data?.is_custodian;
+  const renameButton = (
+    <Button variant="secondary" onClick={() => setRenaming(true)}>
+      Rename
+    </Button>
+  );
+  const rename = renaming && <RenameCharacter key={c.id} character={c} asCustodian={custodian} onDone={() => setRenaming(false)} />;
 
   if (c.kind === "npc") {
     // Only the troupe's running staff can see an NPC at all, and they can all edit it.
     return (
       <>
-        <PageTitle subtitle={<Identity character={c} lead="NPC" />} actions={<Badge tone="gold">NPC</Badge>}>
+        <PageTitle
+          subtitle={<Identity character={c} lead="NPC" />}
+          actions={
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge tone="gold">NPC</Badge>
+              {!renaming && renameButton}
+            </div>
+          }
+        >
           {c.name}
         </PageTitle>
+        {rename}
         <Tabs
           tabs={[
             ...(!c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
@@ -52,12 +72,28 @@ export function CharacterPage() {
   }
 
   const mine = c.player_id === me.data?.id;
+  // The custodian renames at any time; the player once every 3 months in a troupe.
+  const canRename = custodian || (mine && c.status === "active");
+  const renameOn = !custodian && mine && c.status === "active" ? c.next_rename_on : null;
 
   return (
     <>
-      <PageTitle subtitle={<Identity character={c} lead={c.splat} />} actions={c.status === "retired" ? <Badge>retired</Badge> : undefined}>
+      <PageTitle
+        subtitle={<Identity character={c} lead={c.splat} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-3">
+            {c.status === "retired" && <Badge>retired</Badge>}
+            {renameOn ? (
+              <span className="text-sm text-mist">You can rename {c.name} again on {longDate(renameOn)}.</span>
+            ) : (
+              canRename && !renaming && renameButton
+            )}
+          </div>
+        }
+      >
         {c.name}
       </PageTitle>
+      {rename}
       <Tabs
         tabs={[
           ...(mine && !c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),

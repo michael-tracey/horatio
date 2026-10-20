@@ -252,7 +252,11 @@ export interface paths {
         delete: operations["delete_character_api_characters__character_id__delete"];
         options?: never;
         head?: never;
-        /** Change Character */
+        /**
+         * Change Character
+         * @description Rename the character: its player, at most once every three months while it is
+         *     in a troupe, or the custodian at any time (see horatio/renames.py).
+         */
         patch: operations["change_character_api_characters__character_id__patch"];
         trace?: never;
     };
@@ -2484,6 +2488,8 @@ export interface components {
             kind: string;
             /** Name */
             name: string;
+            /** Next Rename On */
+            next_rename_on: string | null;
             /** Owner Troupe Id */
             owner_troupe_id: string | null;
             /**

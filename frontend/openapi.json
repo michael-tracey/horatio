@@ -908,6 +908,18 @@
             "title": "Name",
             "type": "string"
           },
+          "next_rename_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Rename On"
+          },
           "owner_troupe_id": {
             "anyOf": [
               {
@@ -944,7 +956,8 @@
           "building_troupe_id",
           "creation_complete",
           "kind",
-          "owner_troupe_id"
+          "owner_troupe_id",
+          "next_rename_on"
         ],
         "title": "CharacterOut",
         "type": "object"
@@ -6688,6 +6701,7 @@
         ]
       },
       "patch": {
+        "description": "Rename the character: its player, at most once every three months while it is\nin a troupe, or the custodian at any time (see horatio/renames.py).",
         "operationId": "change_character_api_characters__character_id__patch",
         "parameters": [
           {

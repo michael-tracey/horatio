@@ -54,7 +54,7 @@ def list_npcs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Ch
         .where(Character.kind == "npc", Character.owner_troupe_id == troupe_id)
         .order_by(Character.name)
     )
-    return [character_out(c) for c in found]
+    return [character_out(db, c) for c in found]
 
 
 @router.post("/troupes/{troupe_id}/npcs", status_code=status.HTTP_201_CREATED)
@@ -66,7 +66,7 @@ def create_npc(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No rules for {body.splat!r}.")
     npc = npcs.create_npc(db, user, troupe, body.splat, body.name, body.wizard)
     db.commit()
-    return character_out(npc)
+    return character_out(db, npc)
 
 
 @router.put("/characters/{character_id}/npc/ratings")
