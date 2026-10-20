@@ -531,6 +531,143 @@
         "title": "BackupsOut",
         "type": "object"
       },
+      "BadgeOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "social_age": {
+            "title": "Social Age",
+            "type": "string"
+          },
+          "status": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
+          "visible": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Visible",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan",
+          "social_age",
+          "titles",
+          "status",
+          "visible",
+          "picture",
+          "logo"
+        ],
+        "title": "BadgeOut",
+        "type": "object"
+      },
+      "BadgesOut": {
+        "properties": {
+          "badges": {
+            "items": {
+              "$ref": "#/components/schemas/BadgeOut"
+            },
+            "title": "Badges",
+            "type": "array"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "troupe_name",
+          "badges"
+        ],
+        "title": "BadgesOut",
+        "type": "object"
+      },
+      "Body_upload_logo_api_clan_logos_post": {
+        "properties": {
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clan",
+          "file"
+        ],
+        "title": "Body_upload_logo_api_clan_logos_post",
+        "type": "object"
+      },
       "Body_upload_picture_api_characters__character_id__picture_post": {
         "properties": {
           "crop_size": {
@@ -1151,6 +1288,70 @@
           "to_name"
         ],
         "title": "ChoiceChange",
+        "type": "object"
+      },
+      "ClanLogoOut": {
+        "properties": {
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo"
+          },
+          "logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Id"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "splat",
+          "clan",
+          "logo",
+          "logo_id"
+        ],
+        "title": "ClanLogoOut",
+        "type": "object"
+      },
+      "ClanLogosOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanLogoOut"
+            },
+            "title": "Clans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "available",
+          "clans"
+        ],
+        "title": "ClanLogosOut",
         "type": "object"
       },
       "ConnectorChange": {
@@ -4913,6 +5114,24 @@
         "title": "StaffAssignment",
         "type": "object"
       },
+      "StaffBadgeOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "title": "StaffBadgeOut",
+        "type": "object"
+      },
       "StaffMember": {
         "properties": {
           "display_name": {
@@ -5860,6 +6079,20 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VisibleNote": {
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "VisibleNote",
+        "type": "object"
+      },
       "WorkCycle": {
         "properties": {
           "id": {
@@ -6749,6 +6982,67 @@
         "summary": "Change Character",
         "tags": [
           "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/badge": {
+      "get": {
+        "description": "One character's badge, with its titles in `troupe_id` (by default its home\ntroupe, else the first troupe it joined).",
+        "operationId": "character_badge_api_characters__character_id__badge_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Badge",
+        "tags": [
+          "badges"
         ]
       }
     },
@@ -8554,6 +8848,101 @@
         ]
       }
     },
+    "/api/characters/{character_id}/visible-note": {
+      "get": {
+        "operationId": "read_visible_note_api_characters__character_id__visible_note_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisibleNote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Visible Note",
+        "tags": [
+          "badges"
+        ]
+      },
+      "put": {
+        "description": "What others can see or sense about the character that the rules data does\nnot cover, for its badge. Written by staff, not the player.",
+        "operationId": "set_visible_note_api_characters__character_id__visible_note_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisibleNote"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisibleNote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Visible Note",
+        "tags": [
+          "badges"
+        ]
+      }
+    },
     "/api/characters/{character_id}/xp": {
       "get": {
         "operationId": "xp_history_api_characters__character_id__xp_get",
@@ -8714,6 +9103,149 @@
         "summary": "Correct Xp",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/clan-logos": {
+      "get": {
+        "operationId": "list_logos_api_clan_logos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanLogosOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Logos",
+        "tags": [
+          "clan logos"
+        ]
+      },
+      "post": {
+        "description": "A clan's logo, replacing any it has.",
+        "operationId": "upload_logo_api_clan_logos_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_logo_api_clan_logos_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanLogoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Logo",
+        "tags": [
+          "clan logos"
+        ]
+      }
+    },
+    "/api/clan-logos/{image_id}/{name}": {
+      "get": {
+        "description": "A logo's file, for anyone signed in. Like pictures' files, they never change.",
+        "operationId": "logo_file_api_clan_logos__image_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "image_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Image Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logo File",
+        "tags": [
+          "clan logos"
+        ]
+      }
+    },
+    "/api/clan-logos/{logo_id}": {
+      "delete": {
+        "operationId": "remove_logo_api_clan_logos__logo_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "logo_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Logo Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Logo",
+        "tags": [
+          "clan logos"
         ]
       }
     },
@@ -10837,6 +11369,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/badges": {
+      "get": {
+        "description": "Badges for the characters named, in that order, or every character in the\ntroupe now, in the roster's order.",
+        "operationId": "troupe_badges_api_troupes__troupe_id__badges_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "characters",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Characters"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Badges",
+        "tags": [
+          "badges"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/characters": {
       "get": {
         "description": "Every character in the troupe now: those whose home it is first, then visitors.",
@@ -12463,6 +13059,54 @@
         "summary": "Assign Staff",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/staff-badges": {
+      "get": {
+        "description": "Badges for the troupe's staff: each person's name and role, lead first.",
+        "operationId": "staff_badges_api_troupes__troupe_id__staff_badges_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StaffBadgeOut"
+                  },
+                  "title": "Response Staff Badges Api Troupes  Troupe Id  Staff Badges Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Staff Badges",
+        "tags": [
+          "badges"
         ]
       }
     },

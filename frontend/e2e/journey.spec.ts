@@ -243,6 +243,45 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(printed.getByText("1 sheet", { exact: true })).toBeVisible();
   await expect(printed.getByText("Agnes", { exact: true }).first()).toBeVisible();
   await printed.close();
+
+  // Game badges. The custodian adds a logo for Agnes's clan (Horatio ships none)…
+  await custodian.page.getByRole("link", { name: "Custodian", exact: true }).click();
+  await custodian.page.getByRole("link", { name: "Clan logos" }).click();
+  await custodian.page.getByLabel("Search clans").fill("Brujah");
+  await custodian.page.getByLabel("Logo for Brujah", { exact: true }).setInputFiles("e2e/clan-logo.png");
+  await expect(custodian.page.getByRole("img", { name: "Brujah logo" })).toBeVisible();
+  await custodian.page.screenshot(shots("clan-logos"));
+  // …the lead notes what others notice about her, and prints the badges of everyone ticked.
+  await lead.page.getByRole("link", { name: "Agnes", exact: true }).click();
+  await lead.page.getByRole("button", { name: "Badge", exact: true }).click();
+  await lead.page.getByLabel("Also shown on the badge").fill("Smells faintly of brine");
+  await lead.page.getByRole("button", { name: "Save note" }).click();
+  await expect(lead.page.getByRole("dialog")).toBeHidden();
+  await lead.page.goBack();
+  await lead.page.getByLabel("Select Agnes").check();
+  const badgeTab = lead.page.context().waitForEvent("page");
+  await lead.page.getByRole("button", { name: "Badges for selected (1)" }).click();
+  const badges = await badgeTab;
+  const badge = badges.getByRole("article", { name: "Badge for Agnes" });
+  await expect(badge.getByText("Brujah · Neonate")).toBeVisible();
+  await expect(badge.getByRole("list", { name: "What others can see" })).toHaveText("Smells faintly of brine");
+  await expect(badge.getByRole("img", { name: "Brujah logo" })).toBeVisible();
+  await expect(badge.locator('img[src$="/portrait.jpg"]')).toBeVisible();
+  await badges.screenshot(shots("badges"));
+  await badges.getByLabel("Printer-friendly").check();
+  await badges.screenshot(shots("badges-plain"));
+  if (test.info().project.name === "desktop") {
+    await badges.emulateMedia({ media: "print" });
+    await badges.pdf({ path: "test-results/screens/badges.pdf", format: "Letter", printBackground: true });
+  }
+  await badges.close();
+  const staffTab = lead.page.context().waitForEvent("page");
+  await lead.page.getByRole("button", { name: "Storyteller badges" }).click();
+  const staffBadges = await staffTab;
+  await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText("Lead Storyteller")).toBeVisible();
+  await expect(staffBadges.getByRole("article", { name: "Badge for narrator" }).getByText("Narrator", { exact: true })).toBeVisible();
+  await staffBadges.screenshot(shots("staff-badges"));
+  await staffBadges.close();
   await lead.page.getByRole("link", { name: "Troupe", exact: true }).click();
   await lead.page.getByRole("link", { name: "Log", exact: true }).click();
   await expect(lead.page.getByText("lead accepted Agnes (player); this is its home.")).toBeVisible();

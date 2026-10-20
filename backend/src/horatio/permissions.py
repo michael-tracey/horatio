@@ -133,6 +133,29 @@ def can_view_character(db: Session, user: User, character: Character) -> bool:
     return bool(db.scalar(select(is_lead | is_staff)))
 
 
+def is_staff_for(db: Session, user: User, character: Character) -> bool:
+    """The custodian, and the running staff of a troupe the character belongs to
+    now: those who see its sheet without being its player."""
+    if user.is_custodian:
+        return True
+    if character.kind == "pc" and character.player_id == user.id:
+        # Its player may also be staff where it plays; check as if they were not.
+        return _running_staff_of(db, user, character)
+    return can_view_character(db, user, character)
+
+
+def _running_staff_of(db: Session, user: User, character: Character) -> bool:
+    troupe_ids = select(TroupeMembership.troupe_id).where(
+        TroupeMembership.character_id == character.id, TroupeMembership.left_at.is_(None)
+    )
+    for troupe in db.scalars(select(Troupe).where(Troupe.id.in_(troupe_ids))):
+        if troupe.archived_at is None and allows(
+            troupe_role(db, user, troupe), TroupeAction.VIEW_MEMBER_CHARACTERS
+        ):
+            return True
+    return False
+
+
 def can_edit_character(db: Session, user: User, character: Character) -> bool:
     """A PC is edited only by its player; staff approve, they do not edit. An NPC is
     edited by the running staff of the troupe it belongs to (CONTEXT.md: NPC)."""

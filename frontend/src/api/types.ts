@@ -54,3 +54,6 @@ export type ProfileIn = Schemas["ProfileIn"];
 export type ProfileLink = Schemas["Link"];
 export type ResetLink = Schemas["ResetLink"];
 export type TroupeRequestOut = Schemas["TroupeRequestOut"];
+export type BadgeOut = Schemas["BadgeOut"];
+export type StaffBadgeOut = Schemas["StaffBadgeOut"];
+export type ClanLogoOut = Schemas["ClanLogoOut"];

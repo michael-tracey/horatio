@@ -9,6 +9,7 @@ import { CreationWizard } from "./creation/Wizard";
 import { DowntimeTab } from "./DowntimeTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
+import { BadgeButton } from "./Badge";
 import { CharacterPicture } from "./Picture";
 import { ResultsTab } from "./ResultsTab";
 import { SheetTab } from "./SheetTab";
@@ -33,7 +34,15 @@ export function CharacterPage() {
     return (
       <>
         <Header character={c}>
-          <PageTitle subtitle={<Identity character={c} lead="NPC" />} actions={<Badge tone="gold">NPC</Badge>}>
+          <PageTitle
+            subtitle={<Identity character={c} lead="NPC" />}
+            actions={
+              <span className="flex items-center gap-2">
+                <Badge tone="gold">NPC</Badge>
+                <BadgeButton character={c} />
+              </span>
+            }
+          >
             {c.name}
           </PageTitle>
         </Header>
@@ -60,7 +69,16 @@ export function CharacterPage() {
   return (
     <>
       <Header character={c}>
-        <PageTitle subtitle={<Identity character={c} lead={c.splat} />} actions={c.status === "retired" ? <Badge>retired</Badge> : undefined}>
+        <PageTitle
+          subtitle={<Identity character={c} lead={c.splat} />}
+          actions={
+            <span className="flex items-center gap-2">
+              {c.status === "retired" && <Badge>retired</Badge>}
+              {/* Badges are the staff's to print; whoever else sees the page is staff. */}
+              {(!mine || me.data?.is_custodian) && <BadgeButton character={c} />}
+            </span>
+          }
+        >
           {c.name}
         </PageTitle>
       </Header>
