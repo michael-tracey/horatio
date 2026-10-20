@@ -495,12 +495,32 @@ test("a player fills in their profile, and the custodian resets their password",
   await p.getByRole("button", { name: "Save profile" }).click();
   await expect(p.getByText("Saved.")).toBeVisible();
 
-  // The custodian finds them and sees the profile.
+  // The custodian finds them in Custodian → People and makes a reset link without
+  // leaving the list. Email is off in this suite, so the link is there to copy.
   const c = custodian.page;
   await c.reload();
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
+  const row = c.locator("main li").filter({ hasText: player.email });
+  await row.getByRole("button", { name: "Reset password for people-player" }).click();
+  await expect(row.getByText("Send it to them yourself.")).toBeVisible();
+  await row.getByRole("button", { name: "Make a reset link" }).click();
+  const cancelled = await c.getByLabel("Reset link").inputValue();
+  expect(cancelled).toContain("/reset-password/");
+  await expect(row.getByText(/^people-player has a reset link, unused, until /)).toBeVisible();
+  await expect(row.getByText("reset link out")).toBeVisible();
+  const resets = c.locator("section", { has: c.getByRole("heading", { name: "Password resets" }) });
+  await expect(resets.getByRole("button", { name: "Cancel people-player's reset link" }).first()).toBeVisible();
+  await expect(resets.getByText("people-custodian made a password reset link for people-player.").first()).toBeVisible();
+  await c.screenshot(shots("people-reset"));
+
+  // They think better of it and cancel it.
+  await row.getByRole("button", { name: "Cancel link" }).click();
+  await expect(row.getByText("Make a link that lets people-player set a new password", { exact: false })).toBeVisible();
+  await expect(row.getByText("reset link out")).toHaveCount(0);
+
+  // They open the profile.
   await c.locator("main").getByRole("link", { name: new RegExp(player.email) }).click();
   await expect(c.getByRole("heading", { name: "people-player" })).toBeVisible();
   await expect(c.getByText(/^Member since .+\(new this month\)$/)).toBeVisible();
@@ -509,11 +529,14 @@ test("a player fills in their profile, and the custodian resets their password",
   await expect(c.getByRole("link", { name: "bsky.app/profile/carbuncle.example" })).toBeVisible();
   await c.screenshot(shots("profile"));
 
-  // …and makes a reset link, which the player uses from a fresh browser.
-  await c.getByRole("button", { name: "Reset password" }).click();
+  // …and makes a new link there, which the player uses from a fresh browser. The
+  // cancelled one no longer works.
+  await c.getByRole("button", { name: "Make a reset link" }).click();
   const url = await c.getByLabel("Reset link").inputValue();
   expect(url).toContain("/reset-password/");
   const fresh = await (await browser.newContext()).newPage();
+  await fresh.goto(new URL(cancelled).pathname);
+  await expect(fresh.getByText("This reset link has expired or been used.")).toBeVisible();
   await fresh.goto(new URL(url).pathname);
   await expect(fresh.getByText(`For people-player (${player.email})`)).toBeVisible();
   await fresh.getByLabel("New password").fill("a brand new password");
@@ -525,6 +548,19 @@ test("a player fills in their profile, and the custodian resets their password",
   await expect(p.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await p.goto(new URL(url).pathname);
   await expect(p.getByText("This reset link has expired or been used.")).toBeVisible();
+  await p.screenshot(shots("reset-spent"));
+
+  // "Forgot your password?" needs email; without it, the page says to ask the custodian.
+  await p.getByRole("link", { name: "Back to sign in" }).click();
+  await p.getByRole("link", { name: "Forgot your password?" }).click();
+  await expect(p.getByText("Horatio can't send email here, so ask the custodian to make you a reset link.")).toBeVisible();
+  await p.screenshot(shots("forgot"));
+
+  // The custodian sees who reset their password, and when.
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await expect(c.getByText("people-player set a new password with a reset link.").first()).toBeVisible();
+  await expect(c.getByText("people-custodian cancelled people-player's reset link.").first()).toBeVisible();
+  await c.screenshot(shots("password-resets"));
 });
 
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {
