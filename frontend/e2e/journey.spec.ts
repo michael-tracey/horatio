@@ -450,6 +450,14 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByText("21 XP")).toBeVisible(); // focuses are free
   await p.getByRole("button", { name: "Leadership 3", exact: true }).click(); // 1 + 2 + 3
   await expect(p.getByText("27 XP")).toBeVisible();
+  // Morality is one path at one rating: moving to a Path keeps the rating, free.
+  await expect(p.getByLabel("Morality", { exact: true })).toHaveValue("Humanity");
+  await p.getByRole("button", { name: "Humanity 4", exact: true }).click();
+  await expect(p.getByRole("button", { name: "Humanity 4", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Morality", { exact: true }).selectOption("Caine");
+  await expect(p.getByRole("button", { name: "Caine 4", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByRole("button", { name: /^Humanity \d+$/ })).toHaveCount(0);
+  await expect(p.getByText("27 XP")).toBeVisible();
   await p.screenshot(shots("npc"));
 
   // Titles are given on the troupe's Characters tab.
