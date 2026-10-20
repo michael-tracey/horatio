@@ -628,6 +628,11 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await request.getByRole("button", { name: "Approve and make the troupe" }).click();
   await expect(c.getByRole("link", { name: troupeName })).toBeVisible();
 
+  // What is running, and that the database is on its latest migration.
+  await c.getByRole("link", { name: "System", exact: true }).click();
+  await expect(c.getByText("Up to date", { exact: true })).toBeVisible();
+  await c.screenshot(shots("custodian-system"));
+
   // The asker now leads it.
   await a.reload();
   await expect(mine.getByText("Approved", { exact: true })).toBeVisible();

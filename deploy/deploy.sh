@@ -34,14 +34,17 @@ HOST_IP=$(gcloud storage cat gs://mtracey-tofu-state/infra/default.tfstate | jq 
 
 cd "$ROOT"
 if [[ "${1:-}" != "--no-build" ]]; then
-  [[ -z "$(git status --porcelain -- backend frontend Dockerfile)" ]] \
-    || echo "Warning: backend/, frontend/ or the Dockerfile have uncommitted changes; they will be deployed."
+  COMMIT="$(git rev-parse HEAD)"
+  if [[ -n "$(git status --porcelain -- backend frontend Dockerfile)" ]]; then
+    echo "Warning: backend/, frontend/ or the Dockerfile have uncommitted changes; they will be deployed."
+    COMMIT="$COMMIT-dirty"
+  fi
   TAG="$(git rev-parse --short HEAD)-$(date -u +%Y%m%d%H%M)"
   echo "--- Building $IMAGE:$TAG with Cloud Build ---"
   gcloud builds submit \
     --project="$GCP_PROJECT_ID" --region="$GCP_REGION" \
     --config=deploy/cloudbuild.yaml \
-    --substitutions="_SERVICE_NAME=$SERVICE_NAME,_REGION=$GCP_REGION,_ARTIFACT_REGISTRY_REPO=$ARTIFACT_REGISTRY_REPO,_TAG=$TAG" \
+    --substitutions="_SERVICE_NAME=$SERVICE_NAME,_REGION=$GCP_REGION,_ARTIFACT_REGISTRY_REPO=$ARTIFACT_REGISTRY_REPO,_TAG=$TAG,_COMMIT=$COMMIT,_BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     .
   DEPLOY_IMAGE="$IMAGE:$TAG"
 else

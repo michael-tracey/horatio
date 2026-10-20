@@ -28,6 +28,7 @@ from horatio.api import (
     rules,
     sheets,
     specializations,
+    system,
     titles,
     troupe_requests,
     troupes,
@@ -95,6 +96,7 @@ for module in (
     backups,
     troupe_requests,
     xp_awards,
+    system,
 ):
     api.include_router(module.router)
 

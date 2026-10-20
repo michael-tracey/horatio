@@ -1314,6 +1314,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/system": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** System */
+        get: operations["system_api_system_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupe-requests": {
         parameters: {
             query?: never;
@@ -3874,6 +3891,26 @@ export interface components {
             message: string;
             /** Step */
             step: string;
+        };
+        /** SystemOut */
+        SystemOut: {
+            /** Built At */
+            built_at: string | null;
+            /** Code Revision */
+            code_revision: string | null;
+            /** Commit */
+            commit: string | null;
+            /** Commit Url */
+            commit_url: string | null;
+            /** Database Revision */
+            database_revision: string | null;
+            /** Database Version */
+            database_version: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
         };
         /** TableIn */
         TableIn: {
@@ -6740,6 +6777,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    system_api_system_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemOut"];
                 };
             };
         };

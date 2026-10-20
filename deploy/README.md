@@ -78,6 +78,14 @@ docker logs --tail 100 horatio-api                   # also in Cloud Logging (gc
 docker exec -it horatio-db psql -U horatio horatio
 ```
 
+## What is live
+
+**Custodian → System** shows the commit the running image was built from (linked to
+GitHub, and marked if uncommitted changes went in), when it was built, when the app
+last started, and whether the database is on the newest migration that build has.
+`deploy.sh` bakes the commit and build time into the image; a `--no-build` redeploy
+keeps the image's own.
+
 ## Backups
 
 Every night at 03:17 (host time), `/opt/docker-apps/horatio/backup.sh`:
