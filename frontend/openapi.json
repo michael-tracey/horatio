@@ -6199,6 +6199,27 @@
         "title": "StaffBadgeOut",
         "type": "object"
       },
+      "StaffBadgesOut": {
+        "properties": {
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/StaffBadgeOut"
+            },
+            "title": "Staff",
+            "type": "array"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_name",
+          "staff"
+        ],
+        "title": "StaffBadgesOut",
+        "type": "object"
+      },
       "StaffMember": {
         "properties": {
           "display_name": {
@@ -15370,11 +15391,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/StaffBadgeOut"
-                  },
-                  "title": "Response Staff Badges Api Troupes  Troupe Id  Staff Badges Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/StaffBadgesOut"
                 }
               }
             },
