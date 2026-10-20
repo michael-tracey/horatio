@@ -6,6 +6,7 @@ import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/t
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { identityChoices } from "./creation/logic";
+import { MORALITY, heldMorality, moralityLabel, moralityOptions, moveMorality, willpowerAndHealth } from "./morality";
 
 type Change = { category: string; name: string; rating: number | null };
 
@@ -22,7 +23,6 @@ const SECTIONS: { title: string; categories: string[]; split?: boolean }[] = [
   { title: "Backgrounds", categories: ["backgrounds"] },
   { title: "Disciplines", categories: ["disciplines"] },
   { title: "Merits & flaws", categories: ["merits", "flaws"] },
-  { title: "Morality & willpower", categories: ["paths", "willpower_sources", "health_levels"] },
 ];
 
 /**
@@ -54,6 +54,7 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
         {SECTIONS.map((section) => (
           <Section key={section.title} {...section} sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         ))}
+        <Morality sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         <ErrorText error={set.error} />
       </div>
       <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
@@ -151,6 +152,65 @@ function Attributes({ sheet, catalogue, onChange }: { sheet: SheetOut; catalogue
   );
 }
 
+/**
+ * Morality is one choice, Humanity or a single Path, at one rating: choosing
+ * another moves the NPC to it, keeping the rating. Willpower and health levels
+ * follow as dots.
+ */
+function Morality({ sheet, catalogue, onChange }: { sheet: SheetOut; catalogue: CatalogueOut; onChange: (c: Change) => void }) {
+  // With no Morality held, the choice waits here for its first dot.
+  const [chosen, setChosen] = useState<string | null>(null);
+  const options = moralityOptions(catalogue);
+  const held = heldMorality(sheet, options);
+  const name = held.rating ? held.name : (chosen ?? held.name);
+  const trait = options.find((t) => t.name === name);
+  const rest = willpowerAndHealth(catalogue);
+  const maxOf = (category: string) => catalogue.categories.find((c) => c.key === category)?.max_rating ?? 5;
+  if (!trait && !rest.length) return null;
+  return (
+    <Card title="Morality & willpower">
+      <ul>
+        {trait && (
+          <Row
+            trait={trait}
+            label="Morality"
+            rating={held.rating}
+            max={maxOf(MORALITY)}
+            onChange={onChange}
+            aside={
+              <Select
+                aria-label="Morality"
+                value={name}
+                onChange={(e) => {
+                  const move = moveMorality(held, e.target.value);
+                  if (move) onChange(move);
+                  else setChosen(e.target.value);
+                }}
+                className="h-8 w-56 py-0 text-sm"
+              >
+                {options.map((o) => (
+                  <option key={o.name} value={o.name}>
+                    {moralityLabel(o.name)}
+                  </option>
+                ))}
+              </Select>
+            }
+          />
+        )}
+        {rest.map((t) => (
+          <Row
+            key={`${t.category}/${t.name}`}
+            trait={t}
+            rating={sheet.traits.find((s) => s.category === t.category && s.name === t.name)?.rating ?? 0}
+            max={maxOf(t.category)}
+            onChange={onChange}
+          />
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 function Section({
   title,
   categories,
@@ -208,12 +268,15 @@ function Section({
 
 function Row({
   trait,
+  label,
   rating,
   max,
   onChange,
   aside,
 }: {
   trait: TraitOut;
+  /** Shown in place of the trait's name, such as Morality before its picker. */
+  label?: string;
   rating: number;
   max: number;
   onChange: (c: Change) => void;
@@ -238,7 +301,7 @@ function Row({
   return (
     <li className={`flex flex-wrap items-center justify-between gap-2 text-sm ${aside ? "py-1.5" : "py-0.5"}`}>
       <span className="flex flex-wrap items-center gap-3">
-        <span className={`${aside ? "w-16" : ""} ${rating ? "text-parchment" : "text-mist"}`}>{trait.name}</span>
+        <span className={`${aside ? "w-16" : ""} ${rating ? "text-parchment" : "text-mist"}`}>{label ?? trait.name}</span>
         {aside}
       </span>
       <span className="flex">
