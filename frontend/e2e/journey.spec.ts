@@ -639,3 +639,102 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await a.locator("main").getByRole("link", { name: troupeName }).first().click();
   await expect(a.getByText("Lead Storyteller").first()).toBeVisible();
 });
+
+test("at a game, the Play View tracks blood and uses, offline too, and the storytellers reset the troupe", async ({ browser }) => {
+  const custodian = await person(browser, "play-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "play-lead");
+  const troupeName = `Court of Candles ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // An NPC the lead runs at game, made straight through the API: Generation 2 (12
+  // blood, 2 a turn) and Herd 2.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Lucien", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  for (const [category, name, rating] of [
+    ["clan", "Toreador", null],
+    ["backgrounds", "Generation", 2],
+    ["backgrounds", "Herd", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+
+  // A house rule: characters start a game with 8 blood.
+  await p.goto(`/troupes/${troupeId}/rules/starting`);
+  await p.getByRole("button", { name: "Change starting blood" }).click();
+  await p.getByLabel("This much:").check();
+  await p.getByLabel("Starting blood").fill("8");
+  await p.getByRole("button", { name: "Save" }).click();
+  await expect(p.getByText("8 blood, or the generation's most if that is less")).toBeVisible();
+
+  // Play, from the sheet.
+  await p.goto(`/characters/${npc}/sheet`);
+  await p.getByRole("link", { name: "Play", exact: true }).click();
+  await expect(p.getByRole("heading", { name: "Lucien" })).toBeVisible();
+  await expect(p.getByLabel("Blood: 8 of 12")).toBeVisible();
+  await expect(p.getByText("2 blood a turn")).toBeVisible();
+  await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
+  await expect(p.getByLabel("Blood: 7 of 12")).toBeVisible();
+  await expect(p.getByText("Blood 8 → 7")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // No signal: the tap waits on the phone, and goes when the signal returns.
+  await p.context().setOffline(true);
+  await p.getByRole("button", { name: "Spend Willpower", exact: true }).last().click();
+  await expect(p.getByLabel("Willpower: 5 of 6")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Offline · 1 tap waiting");
+  await p.screenshot(shots("play-offline"));
+  await p.context().setOffline(false);
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  // Undo takes it back.
+  await p.getByRole("button", { name: "Undo Willpower 6 → 5" }).click();
+  await expect(p.getByText("Undid: Willpower 6 → 5")).toBeVisible();
+  await expect(p.getByLabel("Willpower: 6 of 6")).toBeVisible();
+
+  // Quick notes: what a Herd point was for. Then aggravated damage.
+  await p.getByLabel("Quick notes").check();
+  await p.getByRole("button", { name: "Use Herd" }).click();
+  await p.getByLabel(/What was Herd for/).fill("fed at the club");
+  await p.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+  await expect(p.getByText("Herd 2 → 1")).toBeVisible();
+  await expect(p.getByText("“fed at the club”")).toBeVisible();
+  await p.getByLabel("Quick notes").uncheck();
+  await p.getByRole("button", { name: "+ Aggravated" }).click();
+  await expect(p.getByText("Health: took 1 aggravated (0 → 1 marked)")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  // The server has it all: a reload shows the same.
+  await p.reload();
+  await expect(p.getByLabel("Blood: 7 of 12")).toBeVisible();
+  await expect(p.getByText("Backgrounds · 1 of 2 left")).toBeVisible();
+  await p.screenshot(shots("play"));
+
+  // After the game the lead resets the whole troupe, from People → At game.
+  await p.goto(`/troupes/${troupeId}/play`);
+  await expect(p.getByText("Blood 7/12")).toBeVisible();
+  await p.getByRole("button", { name: "Reset everyone…" }).click();
+  await p.getByRole("button", { name: "Reset everyone for the next game" }).click();
+  await expect(p.getByText("1 character was reset.")).toBeVisible();
+  await expect(p.getByText("Blood 8/12")).toBeVisible();
+  await p.screenshot(shots("play-troupe"));
+
+  // A fresh game, with the last one's log kept.
+  await p.getByRole("link", { name: "Lucien" }).click();
+  await expect(p.getByLabel("Blood: 8 of 12")).toBeVisible();
+  await expect(p.getByText("Game 2")).toBeVisible();
+  await p.getByRole("button", { name: /Game 1 ·/ }).click();
+  await expect(p.getByText("“fed at the club”")).toBeVisible();
+});

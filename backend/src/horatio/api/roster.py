@@ -212,6 +212,11 @@ MESSAGES: dict[str, str] = {
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
     "creation.set_category": "{actor} set {character}'s starting {category}: {picks}.",
     "creation.complete": "{actor} finished creating {character}.",
+    "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
+    "play.troupe_reset": "{actor} reset {count} characters for the next game.",
+    "play.counter_added": "{actor} added a counter to {character}'s Play View: {name} ({uses}).",
+    "play.counter_removed": "{actor} removed the counter {name} from {character}'s Play View.",
+    "house.starting_blood": "{actor} set the blood characters start a game with: {blood}.",
 }
 
 

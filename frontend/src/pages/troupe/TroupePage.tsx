@@ -10,6 +10,7 @@ import { LogTab } from "./LogTab";
 import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
+import { PlayTab } from "./PlayTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { RulesTab } from "./RulesTab";
@@ -62,6 +63,7 @@ export function TroupePage() {
             label: "People",
             tabs: [
               ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
+              ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
@@ -90,6 +92,7 @@ export function TroupePage() {
         <Route index element={<OverviewTab troupe={t} can={can} />} />
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
+        {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}

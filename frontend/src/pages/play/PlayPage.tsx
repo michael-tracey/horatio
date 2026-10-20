@@ -1,0 +1,632 @@
+import { useQuery } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
+import { Link, useParams } from "react-router";
+import { api, unwrap } from "../../api/client";
+import type { ExpendableOut, GameOut, PlayView } from "../../api/types";
+import { Button, ErrorText, Input } from "../../components/ui";
+import { useAction } from "../../hooks";
+import { incapacitated, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
+import { usePlay, type Sync } from "./usePlay";
+
+type Change = { tracker: string; amount: number; damage?: Damage; label: string };
+type RecordTap = (change: Change) => void;
+
+const QUICK_NOTES = "horatio.play.quickNotes";
+
+function cx(...classes: (string | false | null | undefined)[]): string {
+  return classes.filter(Boolean).join(" ");
+}
+
+function remembered(): boolean {
+  try {
+    return localStorage.getItem(QUICK_NOTES) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A living sheet for a game, laid out for a phone in one hand: blood, Willpower,
+ * health, Morality and Beast traits as big boxes to tap, then the character's
+ * limited uses, the game's log with Undo, and the rest of the sheet. Taps are
+ * kept on the phone when there is no signal and sent when it returns.
+ */
+export function PlayPage() {
+  const { characterId = "" } = useParams();
+  const { view, shown, tap, sync, accept } = usePlay(characterId);
+  const [quickNotes, setQuickNotes] = useState(remembered);
+  const [asking, setAsking] = useState<Change | null>(null);
+
+  if (view.isPending) return <PlayShell characterId={characterId} sync={sync}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} sync={sync}><ErrorText error={view.error} /></PlayShell>;
+
+  const record: RecordTap = (change) => {
+    // Quick notes ask what a spend was for; restoring needs no reason.
+    if (quickNotes && change.amount < 0) setAsking(change);
+    else tap({ kind: "change", tracker: change.tracker, amount: change.amount, damage: change.damage ?? null });
+  };
+  const toggleNotes = (on: boolean) => {
+    setQuickNotes(on);
+    try {
+      localStorage.setItem(QUICK_NOTES, on ? "1" : "0");
+    } catch {
+      // Not remembered in a private window; it still works for now.
+    }
+  };
+
+  return (
+    <PlayShell characterId={characterId} sync={sync} name={shown.character_name}>
+      <Identity view={shown} />
+      <div className="grid gap-3 md:grid-cols-2">
+        <BoxTracker
+          title="Blood"
+          tracker="blood"
+          value={shown.blood.value}
+          most={shown.blood.most}
+          hint={`${shown.blood_per_turn} a turn`}
+          record={record}
+        />
+        <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} />
+        <HealthTracker view={shown} record={record} />
+        <div className="grid gap-3">
+          {shown.morality && (
+            <BoxTracker
+              title={shown.morality.name}
+              tracker="morality"
+              value={shown.morality.value}
+              most={shown.morality.rating}
+              hint={shown.morality.value < shown.morality.rating ? "A lost dot goes on the sheet through your storytellers." : undefined}
+              record={record}
+              small
+            />
+          )}
+          <BoxTracker
+            title="Beast traits"
+            tracker="beast"
+            value={shown.beast.value}
+            most={shown.beast.most}
+            spendIsUp
+            hint={shown.beast.value >= shown.beast.most ? `Five Beast traits: a dot of ${shown.morality?.name ?? "Morality"} is lost.` : undefined}
+            record={record}
+            small
+          />
+        </div>
+      </div>
+      <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={toggleNotes} online={sync.online} onChange={accept} />
+      <Notes add={(note) => tap({ kind: "note", note })} />
+      <GameLog view={shown} undo={(entry) => tap({ kind: "undo", undoes: entry.id })} />
+      <ResetGame view={shown} sync={sync} onReset={accept} />
+      <PastGames characterId={characterId} current={shown.game?.id} />
+      <RestOfSheet view={shown} />
+      {asking && (
+        <NoteSheet
+          change={asking}
+          onCancel={() => setAsking(null)}
+          onSave={(note) => {
+            tap({ kind: "change", tracker: asking.tracker, amount: asking.amount, damage: asking.damage ?? null, note });
+            setAsking(null);
+          }}
+        />
+      )}
+    </PlayShell>
+  );
+}
+
+/** The page around the sheet: back to the character, and whether taps are saved. */
+function PlayShell({ characterId, sync, name, children }: { characterId: string; sync: Sync; name?: string; children: ReactNode }) {
+  return (
+    <div className="min-h-screen bg-night pb-16 text-parchment">
+      <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2">
+          <Link to={`/characters/${characterId}`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
+            ← {name ?? "Back"}
+          </Link>
+          <SyncStatus sync={sync} />
+        </div>
+      </header>
+      <main className="mx-auto flex max-w-3xl flex-col gap-3 px-4 pt-3">{children}</main>
+    </div>
+  );
+}
+
+function SyncStatus({ sync }: { sync: Sync }) {
+  const waiting = sync.waiting === 1 ? "1 tap waiting" : `${sync.waiting} taps waiting`;
+  const text = !sync.online ? (sync.waiting ? `Offline · ${waiting}` : "Offline") : sync.waiting ? `Saving · ${waiting}` : "Saved";
+  return (
+    <span role="status" className="flex flex-col items-end gap-1 text-right">
+      <span
+        className={cx(
+          "rounded-full border px-2.5 py-0.5 text-xs whitespace-nowrap",
+          !sync.online ? "border-blood text-blood-bright" : sync.waiting ? "border-gold/50 text-gold" : "border-ash text-mist",
+        )}
+      >
+        {text}
+      </span>
+      {sync.error && <span className="text-xs text-blood-bright">{sync.error}</span>}
+    </span>
+  );
+}
+
+function Identity({ view }: { view: PlayView }) {
+  const facts = [view.clan, view.sect, view.generation ? `Generation ${view.generation}` : null, `${view.blood_per_turn} blood a turn`].filter(Boolean);
+  return (
+    <section className="flex items-end justify-between gap-3">
+      <div>
+        <h1 className="text-2xl leading-tight">{view.character_name}</h1>
+        <p className="text-sm text-mist">{facts.join(" · ")}</p>
+      </div>
+      <p className="text-right text-xs text-mist">
+        {view.kind === "npc" ? "NPC" : view.player_name}
+        <br />
+        {view.game ? `Game ${view.game.number}` : "First game"}
+      </p>
+    </section>
+  );
+}
+
+function Panel({ title, actions, children }: { title: ReactNode; actions?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="rounded-lg border border-ash bg-dusk p-3">
+      <header className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="text-base text-gold">{title}</h2>
+        {actions}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+/** A big round button for one thumb. */
+function TapButton({ label, children, onClick, disabled, tone = "plain" }: { label: string; children: ReactNode; onClick: () => void; disabled?: boolean; tone?: "plain" | "blood" }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className={cx(
+        "grid h-12 min-w-12 place-items-center rounded-full border px-3 text-lg font-semibold transition-colors active:scale-95 disabled:opacity-35",
+        tone === "blood" ? "border-blood bg-blood text-parchment hover:bg-blood-bright" : "border-ash bg-night text-parchment hover:border-mist",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Boxes to the tracker's most, filled up to its value. Tapping a filled box
+ * spends one, an empty box restores one; the buttons do the same.
+ */
+function BoxTracker({
+  title,
+  tracker,
+  value,
+  most,
+  hint,
+  record,
+  small,
+  spendIsUp,
+}: {
+  title: string;
+  tracker: string;
+  value: number;
+  most: number;
+  hint?: string;
+  record: RecordTap;
+  small?: boolean;
+  /** Beast traits are gained rather than spent: "+" adds one. */
+  spendIsUp?: boolean;
+}) {
+  const down = () => record({ tracker, amount: -1, label: title });
+  const up = () => record({ tracker, amount: 1, label: title });
+  return (
+    <Panel
+      title={title}
+      actions={
+        <span className="font-display text-2xl text-parchment" aria-label={`${title}: ${value} of ${most}`}>
+          {value}
+          <span className="text-base text-mist"> / {most}</span>
+        </span>
+      }
+    >
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${title} boxes`}>
+        {Array.from({ length: most }, (_, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-label={i < value ? `Spend ${title}` : `Restore ${title}`}
+            tabIndex={-1}
+            onClick={i < value ? down : up}
+            className={cx(
+              "rounded-md border transition-colors",
+              small ? "h-9 w-9" : "h-10 w-10",
+              i < value ? (tracker === "blood" ? "border-blood bg-blood" : "border-gold/70 bg-gold/70") : "border-ash bg-night",
+            )}
+          />
+        ))}
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <span className="text-xs text-mist">{hint}</span>
+        <span className="flex gap-2">
+          <TapButton label={spendIsUp ? `Remove a ${title} point` : `Spend ${title}`} onClick={down} disabled={value <= 0} tone={spendIsUp ? "plain" : "blood"}>
+            −
+          </TapButton>
+          <TapButton label={spendIsUp ? `Gain a ${title} point` : `Restore ${title}`} onClick={up} disabled={value >= most} tone={spendIsUp ? "blood" : "plain"}>
+            +
+          </TapButton>
+        </span>
+      </div>
+    </Panel>
+  );
+}
+
+/** Healthy, Injured and Incapacitated boxes, filled in the order damage came. */
+function HealthTracker({ view, record }: { view: PlayView; record: RecordTap }) {
+  const marks = view.health.marks;
+  const total = view.health.levels.reduce((sum, l) => sum + l.boxes, 0);
+  let offset = 0;
+  const has = (kind: Damage) => marks.includes(kind);
+  const damage = (kind: Damage, amount: number) =>
+    record({ tracker: "health", amount, damage: kind, label: amount > 0 ? `${kind} damage` : `heal ${kind}` });
+  return (
+    <Panel title="Health">
+      <ul className="flex flex-col gap-2">
+        {view.health.levels.map((level) => {
+          const start = offset;
+          offset += level.boxes;
+          return (
+            <li key={level.name} className="flex items-center justify-between gap-2">
+              <span className="w-28 text-sm">{level.name}</span>
+              <span className="flex flex-1 flex-wrap justify-end gap-1.5">
+                {Array.from({ length: level.boxes }, (_, i) => {
+                  const mark = marks[start + i];
+                  return (
+                    <span
+                      key={i}
+                      aria-label={mark ? `${mark} damage` : "unmarked"}
+                      className={cx(
+                        "grid h-9 w-9 place-items-center rounded-md border text-lg leading-none",
+                        mark === "aggravated" ? "border-blood bg-blood text-parchment" : mark === "normal" ? "border-mist bg-ash text-parchment" : "border-ash bg-night",
+                      )}
+                    >
+                      {mark === "aggravated" ? "✕" : mark === "normal" ? "/" : ""}
+                    </span>
+                  );
+                })}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {incapacitated(view) && (
+        <p className="mt-2 rounded-md border border-blood/60 bg-blood/15 px-3 py-2 text-sm">
+          {view.health.stamina_focus ? "Incapacitated, but a Stamina focus spares you the penalty." : "Incapacitated characters lose their simple action."}
+        </p>
+      )}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Button variant="danger" className="min-h-12" disabled={marks.length >= total} onClick={() => damage("normal", 1)}>
+          + Normal
+        </Button>
+        <Button variant="danger" className="min-h-12" disabled={marks.length >= total} onClick={() => damage("aggravated", 1)}>
+          + Aggravated
+        </Button>
+        <Button variant="secondary" className="min-h-12" disabled={!has("normal")} onClick={() => damage("normal", -1)}>
+          Heal normal
+        </Button>
+        <Button variant="secondary" className="min-h-12" disabled={!has("aggravated")} onClick={() => damage("aggravated", -1)}>
+          Heal aggravated
+        </Button>
+      </div>
+    </Panel>
+  );
+}
+
+/** Uses a game: backgrounds, merits and powers the rules limit, and the player's own counters. */
+function Expendables({
+  view,
+  record,
+  quickNotes,
+  setQuickNotes,
+  online,
+  onChange,
+}: {
+  view: PlayView;
+  record: RecordTap;
+  quickNotes: boolean;
+  setQuickNotes: (on: boolean) => void;
+  online: boolean;
+  onChange: (view: PlayView) => Promise<void>;
+}) {
+  const path = { params: { path: { character_id: view.character_id } } };
+  const [form, setForm] = useState({ name: "", uses: 3 });
+  const add = useAction(async () => {
+    await onChange(await unwrap(api.POST("/api/characters/{character_id}/play/counters", { ...path, body: form })));
+    setForm({ name: "", uses: 3 });
+  });
+  const remove = useAction(async (counterId: string) =>
+    onChange(
+      await unwrap(
+        api.DELETE("/api/characters/{character_id}/play/counters/{counter_id}", {
+          params: { path: { character_id: view.character_id, counter_id: counterId } },
+        }),
+      ),
+    ),
+  );
+  return (
+    <Panel
+      title="Uses this game"
+      actions={
+        <label className="flex min-h-10 items-center gap-2 text-sm text-mist">
+          <input type="checkbox" className="h-5 w-5 accent-[var(--color-gold)]" checked={quickNotes} onChange={(e) => setQuickNotes(e.target.checked)} />
+          Quick notes
+        </label>
+      }
+    >
+      {view.expendables.length === 0 && <p className="text-sm text-mist">Nothing on this sheet is limited to so many uses a game.</p>}
+      <ul className="divide-y divide-ash">
+        {view.expendables.map((e) => (
+          <ExpendableRow key={e.key} item={e} record={record} onRemove={e.counter_id && online ? () => remove.mutate(e.counter_id!) : undefined} />
+        ))}
+      </ul>
+      <form
+        className="mt-3 flex flex-wrap items-end gap-2 border-t border-ash pt-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          add.mutate(undefined);
+        }}
+      >
+        <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-mist">
+          Your own counter
+          <Input placeholder="Fetish charges" value={form.name} required maxLength={80} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-mist">
+          Uses
+          <Input type="number" min={1} max={99} required value={form.uses} onChange={(e) => setForm({ ...form, uses: Number(e.target.value) })} className="w-20" />
+        </label>
+        <Button type="submit" variant="secondary" disabled={!online || add.isPending}>
+          Add counter
+        </Button>
+        {!online && <span className="w-full text-xs text-mist">Adding a counter needs a connection.</span>}
+      </form>
+      <ErrorText error={add.error ?? remove.error} />
+    </Panel>
+  );
+}
+
+function ExpendableRow({ item, record, onRemove }: { item: ExpendableOut; record: RecordTap; onRemove?: () => void }) {
+  const label = item.detail ? `${item.name}: ${item.detail}` : item.name;
+  return (
+    <li className="flex items-center gap-3 py-2">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-parchment">{label}</p>
+        <p className="text-xs text-mist">
+          {item.group} · {item.left} of {item.uses} left
+          {onRemove && (
+            <button type="button" onClick={onRemove} className="ml-2 underline hover:text-parchment" aria-label={`Remove the counter ${label}`}>
+              remove
+            </button>
+          )}
+        </p>
+      </div>
+      <TapButton label={`Restore ${label}`} onClick={() => record({ tracker: item.key, amount: 1, label })} disabled={item.left >= item.uses}>
+        +
+      </TapButton>
+      <Button className="min-h-12 min-w-20" onClick={() => record({ tracker: item.key, amount: -1, label })} disabled={item.left <= 0} aria-label={`Use ${label}`}>
+        Use
+      </Button>
+    </li>
+  );
+}
+
+/** A one-line note for a spend, in quick note mode. */
+function NoteSheet({ change, onSave, onCancel }: { change: Change; onSave: (note: string) => void; onCancel: () => void }) {
+  const [note, setNote] = useState("");
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gold/50 bg-dusk p-4 shadow-2xl" role="dialog" aria-label="Note for this spend">
+      <form
+        className="mx-auto flex max-w-3xl flex-col gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave(note);
+        }}
+      >
+        <label className="flex flex-col gap-1 text-sm">
+          What was {change.label} for? (optional)
+          <Input autoFocus maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="got the Prince's itinerary" />
+        </label>
+        <div className="flex gap-2">
+          <Button type="submit" className="min-h-12 flex-1">
+            Save
+          </Button>
+          <Button type="button" variant="ghost" className="min-h-12" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function Notes({ add }: { add: (note: string) => void }) {
+  const [note, setNote] = useState("");
+  return (
+    <form
+      className="flex gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!note.trim()) return;
+        add(note);
+        setNote("");
+      }}
+    >
+      <Input aria-label="A note for this game" placeholder="A note for this game…" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} className="flex-1" />
+      <Button type="submit" variant="secondary" disabled={!note.trim()}>
+        Add note
+      </Button>
+    </form>
+  );
+}
+
+const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const day = (iso: string) => new Date(iso).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
+
+function LogEntries({ log }: { log: ShownEntry[] }) {
+  if (log.length === 0) return <p className="text-sm text-mist">Nothing yet. Every tap shows here, newest first.</p>;
+  return (
+    <ol className="divide-y divide-ash text-sm">
+      {log.map((e) => (
+        <li key={e.id} className="flex gap-3 py-1.5">
+          <time className="w-16 shrink-0 text-xs text-mist" dateTime={e.happened_at}>
+            {time(e.happened_at)}
+          </time>
+          <div className="min-w-0 flex-1">
+            <p className={cx(e.undone && "text-mist line-through")}>
+              {e.text}
+              {e.pending && <span className="ml-2 text-xs text-gold">waiting</span>}
+            </p>
+            {e.note && <p className={cx("text-mist", e.undone && "line-through")}>“{e.note}”</p>}
+            {e.by_staff && <p className="text-xs text-mist">by {e.actor_name}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function GameLog({ view, undo }: { view: Shown; undo: (entry: ShownEntry) => void }) {
+  const last = latestUndoable(view.log);
+  return (
+    <Panel
+      title="This game"
+      actions={
+        <Button variant="secondary" disabled={!last} onClick={() => last && undo(last)} aria-label={last ? `Undo ${last.text}` : "Undo"}>
+          Undo
+        </Button>
+      }
+    >
+      <LogEntries log={view.log} />
+    </Panel>
+  );
+}
+
+function ResetGame({ view, sync, onReset }: { view: PlayView; sync: Sync; onReset: (view: PlayView) => Promise<void> }) {
+  const [asking, setAsking] = useState(false);
+  const reset = useAction(async () => {
+    const data = await unwrap(
+      api.POST("/api/characters/{character_id}/play/reset", { params: { path: { character_id: view.character_id } }, body: { game_id: view.game?.id ?? null } }),
+    );
+    await onReset(data);
+    setAsking(false);
+  });
+  const ready = sync.online && sync.waiting === 0;
+  return (
+    <section className="rounded-lg border border-ash p-3">
+      {asking ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm">
+            Put every tracker back for the next game? Blood to {view.blood.start}, Willpower to {view.willpower.start}, health clear and every use back. This
+            game's log is kept.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="danger" className="min-h-12 flex-1" disabled={reset.isPending || !ready} onClick={() => reset.mutate(undefined)}>
+              Reset for next game
+            </Button>
+            <Button variant="ghost" className="min-h-12" onClick={() => setAsking(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" className="min-h-12 w-full" onClick={() => setAsking(true)} disabled={!ready}>
+          Reset for next game…
+        </Button>
+      )}
+      {!ready && <p className="mt-2 text-xs text-mist">Resetting waits until every tap is saved.</p>}
+      <ErrorText error={reset.error} />
+    </section>
+  );
+}
+
+/** Games already over, each with its log, kept for the next downtime. */
+function PastGames({ characterId, current }: { characterId: string; current: string | undefined }) {
+  const games = useQuery({
+    queryKey: ["play-games", characterId, current],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/play/games", { params: { path: { character_id: characterId } } })),
+  });
+  if (!games.data?.length) return null;
+  return (
+    <Panel title="Past games">
+      <ul className="divide-y divide-ash">
+        {games.data.map((g) => (
+          <PastGame key={g.id} characterId={characterId} game={g} />
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
+function PastGame({ characterId, game }: { characterId: string; game: GameOut }) {
+  const [open, setOpen] = useState(false);
+  const log = useQuery({
+    queryKey: ["play-game", game.id],
+    queryFn: () =>
+      unwrap(api.GET("/api/characters/{character_id}/play/games/{game_id}", { params: { path: { character_id: characterId, game_id: game.id } } })),
+    enabled: open,
+  });
+  const taps = game.taps === 1 ? "1 tap" : `${game.taps} taps`;
+  const notes = game.notes === 1 ? "1 note" : `${game.notes} notes`;
+  return (
+    <li className="py-1">
+      <button type="button" className="flex min-h-10 w-full items-center justify-between gap-2 text-left text-sm" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span>
+          Game {game.number} · {day(game.started_at)}
+        </span>
+        <span className="text-xs text-mist">
+          {taps}, {notes} {open ? "▴" : "▾"}
+        </span>
+      </button>
+      {open && (log.data ? <LogEntries log={log.data.log} /> : <p className="text-sm text-mist">Loading…</p>)}
+    </li>
+  );
+}
+
+type Trait = PlayView["traits"][number];
+
+/** The rest of the sheet, to read: each part folded away until wanted. */
+function RestOfSheet({ view }: { view: PlayView }) {
+  const groups = new Map<string, Trait[]>();
+  for (const t of view.traits) groups.set(t.category_name, [...(groups.get(t.category_name) ?? []), t]);
+  return (
+    <Panel title="The sheet">
+      <dl className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        {view.pools.map((p) => (
+          <div key={p.name} className="flex gap-1.5">
+            <dt className="text-mist">{p.name}</dt>
+            <dd>
+              <strong className="text-parchment">{p.pool}</strong> <span className="text-xs text-mist">({p.detail})</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <div className="divide-y divide-ash">
+        {[...groups].map(([name, traits]) => (
+          <details key={name} className="py-1">
+            <summary className="flex min-h-10 cursor-pointer items-center text-sm text-parchment">{name}</summary>
+            <ul className="pb-2 text-sm">
+              {traits.map((t) => (
+                <li key={`${t.category}/${t.name}/${t.detail}`} className="flex justify-between gap-2 py-0.5">
+                  <span>
+                    {t.detail ? `${t.name}: ${t.detail}` : t.name}
+                    {t.specialties.length > 0 && <span className="text-mist"> ({t.specialties.join(", ")})</span>}
+                  </span>
+                  {t.rating !== null && <span className="text-mist">{t.rating}</span>}
+                </li>
+              ))}
+            </ul>
+          </details>
+        ))}
+      </div>
+    </Panel>
+  );
+}

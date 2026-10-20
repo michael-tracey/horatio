@@ -37,6 +37,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
         </ul>
       </Card>
       <ExperienceDefaults troupeId={troupeId} canEdit={canEdit} />
+      <StartingBlood troupeId={troupeId} canEdit={canEdit} />
     </div>
   );
 }
@@ -107,6 +108,83 @@ function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: 
           <dt className="text-mist">For completing a downtime</dt>
           <dd>{t.downtime_xp} XP</dd>
         </dl>
+      )}
+    </Card>
+  );
+}
+
+/** House rule: the blood a reset for the next game gives each character. */
+function StartingBlood({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+  const path = { params: { path: { troupe_id: troupeId } } };
+  const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
+  const [editing, setEditing] = useState(false);
+  const [full, setFull] = useState(true);
+  const [blood, setBlood] = useState(5);
+  const save = useAction(async () => {
+    await unwrap(api.PUT("/api/troupes/{troupe_id}/starting-blood", { ...path, body: { blood: full ? null : blood } }));
+    setEditing(false);
+  });
+  if (!troupe.data) return null;
+  const t = troupe.data;
+  const text = t.starting_blood === null ? "Full: the generation's most" : `${t.starting_blood} blood, or the generation's most if that is less`;
+  return (
+    <Card
+      title="Blood at the start of a game"
+      actions={
+        canEdit &&
+        !editing && (
+          <Button
+            variant="ghost"
+            className="min-h-8 px-2"
+            aria-label="Change starting blood"
+            onClick={() => {
+              setFull(t.starting_blood === null);
+              setBlood(t.starting_blood ?? 5);
+              setEditing(true);
+            }}
+          >
+            Change
+          </Button>
+        )
+      }
+    >
+      <p className="mb-3 text-sm text-mist">What resetting a character's Play View for the next game puts their blood back to.</p>
+      {editing ? (
+        <form
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save.mutate(undefined);
+          }}
+        >
+          <label className="flex min-h-10 items-center gap-2 text-sm">
+            <input type="radio" name="starting-blood" checked={full} onChange={() => setFull(true)} />
+            Full
+          </label>
+          <label className="flex min-h-10 items-center gap-2 text-sm">
+            <input type="radio" name="starting-blood" checked={!full} onChange={() => setFull(false)} />
+            This much:
+            <Input
+              type="number"
+              min={0}
+              max={30}
+              aria-label="Starting blood"
+              value={blood}
+              disabled={full}
+              onChange={(e) => setBlood(Number(e.target.value))}
+              className="w-20"
+            />
+          </label>
+          <Button type="submit" disabled={save.isPending}>
+            Save
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+          <ErrorText error={save.error} />
+        </form>
+      ) : (
+        <p className="text-sm">{text}</p>
       )}
     </Card>
   );

@@ -13,6 +13,7 @@ const AccountPage = lazy(() => import("./pages/AccountPage").then((m) => ({ defa
 const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then((m) => ({ default: m.CharacterPage })));
 const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then((m) => ({ default: m.CustodianPage })));
 const CyclePage = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.CyclePage })));
+const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ default: m.PlayPage })));
 const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })));
 const PrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.PrintPage })));
 const TroupePage = lazy(() => import("./pages/troupe/TroupePage").then((m) => ({ default: m.TroupePage })));
@@ -32,10 +33,12 @@ function RequireSignIn() {
 export function App() {
   return (
     <Routes>
-      {/* The printed sheet stands alone: no header, black on white. */}
+      {/* The printed sheet stands alone: no header, black on white. So does the
+          Play View, which needs every bit of a phone's screen at a game. */}
       <Route element={<RequireSignIn />}>
         <Route path="/print/characters/:characterId" element={<PrintPage />} />
         <Route path="/print/troupes/:troupeId" element={<TroupePrintPage />} />
+        <Route path="/play/characters/:characterId" element={<PlayPage />} />
       </Route>
       <Route element={<Layout />}>
         <Route path="/sign-in" element={<SignInPage />} />

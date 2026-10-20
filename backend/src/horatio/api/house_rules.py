@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from horatio import audit
 from horatio.api.downtimes import staff_troupe
+from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import RESTRICTION_TEXT
 from horatio.models import User
@@ -672,3 +673,30 @@ def remove_allowance(
     log_allowance(db, user, "house.allowance_removed", troupe.id, old)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- Starting blood ----------------------------------------------------------
+
+
+class StartingBlood(BaseModel):
+    # The blood characters start a game with, no more than their generation's
+    # most; None starts them full.
+    blood: int | None = Field(default=None, ge=0, le=30)
+
+
+@router.put("/starting-blood")
+def set_starting_blood(
+    troupe_id: uuid.UUID, body: StartingBlood, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """What a reset for the next game puts each character's blood back to."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    troupe.starting_blood = body.blood
+    audit.record(
+        db,
+        user,
+        "house.starting_blood",
+        troupe_id=troupe.id,
+        blood="full" if body.blood is None else str(body.blood),
+    )
+    db.commit()
+    return troupe_out(db, user, troupe)

@@ -24,6 +24,7 @@ from horatio.models.downtimes import (
 )
 from horatio.models.notifications import Notification
 from horatio.models.people import AuthIdentity, PasswordReset, Session, User
+from horatio.models.play import PlayCounter, PlayEvent, PlayGame
 from horatio.models.rules import (
     ActionKind,
     AllowanceRule,
@@ -59,6 +60,9 @@ __all__ = [
     "Notification",
     "OwedAction",
     "PasswordReset",
+    "PlayCounter",
+    "PlayEvent",
+    "PlayGame",
     "Question",
     "Submission",
     "TroupeConnector",

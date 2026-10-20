@@ -53,6 +53,7 @@ class TroupeAction(StrEnum):
     VIEW_LOG = "view_log"
     MANAGE_NPCS = "manage_npcs"
     MANAGE_TITLES = "manage_titles"
+    RESET_GAMES = "reset_games"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -80,6 +81,8 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.VIEW_LOG: frozenset(_RUNNING),
     TroupeAction.MANAGE_NPCS: frozenset(_RUNNING),
     TroupeAction.MANAGE_TITLES: frozenset(_RUNNING),
+    # Resetting every character's Play View after a game.
+    TroupeAction.RESET_GAMES: frozenset(_RUNNING),
 }
 
 

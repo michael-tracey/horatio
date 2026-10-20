@@ -1527,6 +1527,28 @@
         "title": "CostsOut",
         "type": "object"
       },
+      "CounterIn": {
+        "properties": {
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "uses": {
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Uses",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "uses"
+        ],
+        "title": "CounterIn",
+        "type": "object"
+      },
       "CreationOut": {
         "properties": {
           "complete": {
@@ -2014,6 +2036,57 @@
         "title": "DiscordSetup",
         "type": "object"
       },
+      "ExpendableOut": {
+        "properties": {
+          "counter_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counter Id"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "left": {
+            "title": "Left",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "uses": {
+            "title": "Uses",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "detail",
+          "group",
+          "uses",
+          "left",
+          "counter_id"
+        ],
+        "title": "ExpendableOut",
+        "type": "object"
+      },
       "FilterCondition": {
         "additionalProperties": false,
         "description": "One condition of a character filter; see horatio.character_filter.",
@@ -2121,6 +2194,86 @@
         "title": "FilterMatch",
         "type": "object"
       },
+      "GameLog": {
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/GameOut"
+          },
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntryOut"
+            },
+            "title": "Log",
+            "type": "array"
+          }
+        },
+        "required": [
+          "game",
+          "log"
+        ],
+        "title": "GameLog",
+        "type": "object"
+      },
+      "GameOut": {
+        "properties": {
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "ended_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended By"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "taps": {
+            "title": "Taps",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "started_at",
+          "ended_at",
+          "ended_by",
+          "taps",
+          "notes"
+        ],
+        "title": "GameOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2132,6 +2285,53 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/HealthLevel"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "marks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Marks",
+            "type": "array"
+          },
+          "stamina_focus": {
+            "title": "Stamina Focus",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "levels",
+          "marks",
+          "stamina_focus"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "HealthLevel": {
+        "properties": {
+          "boxes": {
+            "title": "Boxes",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "boxes"
+        ],
+        "title": "HealthLevel",
         "type": "object"
       },
       "HeldTitles": {
@@ -2410,6 +2610,115 @@
         "title": "LogEntry",
         "type": "object"
       },
+      "LogEntryOut": {
+        "properties": {
+          "actor_name": {
+            "title": "Actor Name",
+            "type": "string"
+          },
+          "after": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "by_staff": {
+            "title": "By Staff",
+            "type": "boolean"
+          },
+          "damage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Damage"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "tracker": {
+            "title": "Tracker",
+            "type": "string"
+          },
+          "undoes": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Undoes"
+          },
+          "undone": {
+            "title": "Undone",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "tracker",
+          "amount",
+          "damage",
+          "before",
+          "after",
+          "text",
+          "note",
+          "happened_at",
+          "actor_name",
+          "by_staff",
+          "undone",
+          "undoes"
+        ],
+        "title": "LogEntryOut",
+        "type": "object"
+      },
       "Me": {
         "properties": {
           "display_name": {
@@ -2461,6 +2770,29 @@
           "home"
         ],
         "title": "MembershipOut",
+        "type": "object"
+      },
+      "Morality": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "value",
+          "rating"
+        ],
+        "title": "Morality",
         "type": "object"
       },
       "MyDowntime": {
@@ -3073,6 +3405,192 @@
         "title": "PickedTrait",
         "type": "object"
       },
+      "PlayTrait": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "specialties": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Specialties",
+            "type": "array"
+          }
+        },
+        "required": [
+          "category",
+          "category_name",
+          "group",
+          "name",
+          "detail",
+          "rating",
+          "specialties"
+        ],
+        "title": "PlayTrait",
+        "type": "object"
+      },
+      "PlayView": {
+        "properties": {
+          "beast": {
+            "$ref": "#/components/schemas/Tracker"
+          },
+          "blood": {
+            "$ref": "#/components/schemas/Tracker"
+          },
+          "blood_per_turn": {
+            "title": "Blood Per Turn",
+            "type": "integer"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "expendables": {
+            "items": {
+              "$ref": "#/components/schemas/ExpendableOut"
+            },
+            "title": "Expendables",
+            "type": "array"
+          },
+          "game": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GameOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation": {
+            "title": "Generation",
+            "type": "integer"
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntryOut"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "morality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Morality"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "pools": {
+            "items": {
+              "$ref": "#/components/schemas/Pool"
+            },
+            "title": "Pools",
+            "type": "array"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "traits": {
+            "items": {
+              "$ref": "#/components/schemas/PlayTrait"
+            },
+            "title": "Traits",
+            "type": "array"
+          },
+          "willpower": {
+            "$ref": "#/components/schemas/Tracker"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player_name",
+          "kind",
+          "clan",
+          "sect",
+          "generation",
+          "blood_per_turn",
+          "blood",
+          "willpower",
+          "health",
+          "morality",
+          "beast",
+          "expendables",
+          "game",
+          "log",
+          "traits",
+          "pools"
+        ],
+        "title": "PlayView",
+        "type": "object"
+      },
       "PlayerCharacter": {
         "properties": {
           "home_troupe": {
@@ -3219,6 +3737,29 @@
           "member_since"
         ],
         "title": "PlayerSummary",
+        "type": "object"
+      },
+      "Pool": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pool": {
+            "title": "Pool",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "pool"
+        ],
+        "title": "Pool",
         "type": "object"
       },
       "PoolOut": {
@@ -4128,6 +4669,24 @@
         "title": "ResetFor",
         "type": "object"
       },
+      "ResetIn": {
+        "properties": {
+          "game_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Id"
+          }
+        },
+        "title": "ResetIn",
+        "type": "object"
+      },
       "ResetLink": {
         "properties": {
           "expires_at": {
@@ -4666,6 +5225,25 @@
         "title": "StaffMember",
         "type": "object"
       },
+      "StartingBlood": {
+        "properties": {
+          "blood": {
+            "anyOf": [
+              {
+                "maximum": 30.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blood"
+          }
+        },
+        "title": "StartingBlood",
+        "type": "object"
+      },
       "StartingCategoryOut": {
         "properties": {
           "book": {
@@ -5033,6 +5611,112 @@
         "title": "TallyLineOut",
         "type": "object"
       },
+      "TapIn": {
+        "description": "One tap, as the device made it.",
+        "properties": {
+          "amount": {
+            "default": 0,
+            "maximum": 50.0,
+            "minimum": -50.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "damage": {
+            "anyOf": [
+              {
+                "enum": [
+                  "normal",
+                  "aggravated"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Damage"
+          },
+          "game_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Id"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "change",
+              "note",
+              "undo"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "tracker": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Tracker",
+            "type": "string"
+          },
+          "undoes": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Undoes"
+          }
+        },
+        "required": [
+          "id",
+          "happened_at",
+          "kind"
+        ],
+        "title": "TapIn",
+        "type": "object"
+      },
+      "Taps": {
+        "properties": {
+          "taps": {
+            "items": {
+              "$ref": "#/components/schemas/TapIn"
+            },
+            "maxItems": 500,
+            "title": "Taps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "taps"
+        ],
+        "title": "Taps",
+        "type": "object"
+      },
       "TitlesOut": {
         "properties": {
           "catalogue": {
@@ -5055,6 +5739,29 @@
           "troupe"
         ],
         "title": "TitlesOut",
+        "type": "object"
+      },
+      "Tracker": {
+        "properties": {
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value",
+          "most",
+          "start"
+        ],
+        "title": "Tracker",
         "type": "object"
       },
       "TraitChange": {
@@ -5417,6 +6124,17 @@
           "session_xp": {
             "title": "Session Xp",
             "type": "integer"
+          },
+          "starting_blood": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starting Blood"
           }
         },
         "required": [
@@ -5428,9 +6146,92 @@
           "allowed_sects",
           "session_xp",
           "downtime_xp",
+          "starting_blood",
           "my_role"
         ],
         "title": "TroupeOut",
+        "type": "object"
+      },
+      "TroupePlayEntry": {
+        "properties": {
+          "blood": {
+            "$ref": "#/components/schemas/Tracker"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "game_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Number"
+          },
+          "health_boxes": {
+            "title": "Health Boxes",
+            "type": "integer"
+          },
+          "health_marked": {
+            "title": "Health Marked",
+            "type": "integer"
+          },
+          "home": {
+            "title": "Home",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_tap_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tap At"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "taps": {
+            "title": "Taps",
+            "type": "integer"
+          },
+          "willpower": {
+            "$ref": "#/components/schemas/Tracker"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player_name",
+          "kind",
+          "home",
+          "game_number",
+          "taps",
+          "last_tap_at",
+          "blood",
+          "willpower",
+          "health_marked",
+          "health_boxes"
+        ],
+        "title": "TroupePlayEntry",
         "type": "object"
       },
       "TroupeRequestOut": {
@@ -5525,6 +6326,19 @@
           "troupe_id"
         ],
         "title": "TroupeRequestOut",
+        "type": "object"
+      },
+      "TroupeReset": {
+        "properties": {
+          "reset": {
+            "title": "Reset",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reset"
+        ],
+        "title": "TroupeReset",
         "type": "object"
       },
       "Unpick": {
@@ -7340,6 +8154,368 @@
         "summary": "Tally",
         "tags": [
           "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play": {
+      "get": {
+        "description": "The character's trackers and limited uses at the game now, and its log.",
+        "operationId": "read_play_api_characters__character_id__play_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Play",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/counters": {
+      "post": {
+        "description": "A counter of the player's own, such as \"Fetish charges: 3\".",
+        "operationId": "add_counter_api_characters__character_id__play_counters_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CounterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Counter",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/counters/{counter_id}": {
+      "delete": {
+        "description": "Take a counter off the Play View; old logs still name it.",
+        "operationId": "remove_counter_api_characters__character_id__play_counters__counter_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "counter_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Counter Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Counter",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/games": {
+      "get": {
+        "description": "Games already over, newest first.",
+        "operationId": "list_games_api_characters__character_id__play_games_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GameOut"
+                  },
+                  "title": "Response List Games Api Characters  Character Id  Play Games Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Games",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/games/{game_id}": {
+      "get": {
+        "description": "One game's log, newest first, such as a past game's for the next downtime.",
+        "operationId": "read_game_api_characters__character_id__play_games__game_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameLog"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Game",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/reset": {
+      "post": {
+        "description": "Reset for the next game: the game ends, kept with its log, and every tracker\ngoes back where the sheet starts it.",
+        "operationId": "reset_play_api_characters__character_id__play_reset_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Play",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/taps": {
+      "post": {
+        "description": "Record taps, perhaps made offline a while ago, in the order they happened.",
+        "operationId": "record_taps_api_characters__character_id__play_taps_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Taps"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Taps",
+        "tags": [
+          "play"
         ]
       }
     },
@@ -11524,6 +12700,98 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/play": {
+      "get": {
+        "description": "Every character in the troupe at the game now, in the roster's order.",
+        "operationId": "troupe_play_api_troupes__troupe_id__play_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TroupePlayEntry"
+                  },
+                  "title": "Response Troupe Play Api Troupes  Troupe Id  Play Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Play",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/play/reset": {
+      "post": {
+        "description": "Reset every character in the troupe for the next game, after one.",
+        "operationId": "reset_troupe_api_troupes__troupe_id__play_reset_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeReset"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Troupe",
+        "tags": [
+          "play"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/print": {
       "get": {
         "description": "Printed sheets, headed for this troupe: the characters named, in that order, or\nevery character in the troupe now, in the roster's order.",
@@ -11999,6 +13267,60 @@
         "summary": "Remove Staff",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/starting-blood": {
+      "put": {
+        "description": "What a reset for the next game puts each character's blood back to.",
+        "operationId": "set_starting_blood_api_troupes__troupe_id__starting_blood_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartingBlood"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Starting Blood",
+        "tags": [
+          "house rules"
         ]
       }
     },
