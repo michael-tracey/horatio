@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useParams, useSearchParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet } from "../api/types";
 import { HEALTH_RULE, healthRows } from "../health";
@@ -33,7 +33,7 @@ export function PrintPage() {
   if (sheet.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
   return (
-    <PrintShell>
+    <PrintShell back={`/characters/${characterId}`}>
       <Sheet sheet={sheet.data} />
     </PrintShell>
   );
@@ -55,7 +55,7 @@ export function TroupePrintPage() {
   if (sheets.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (sheets.error) return <p className="p-8 text-black">{sheets.error.message}</p>;
   return (
-    <PrintShell count={sheets.data.length}>
+    <PrintShell back={`/troupes/${troupeId}/characters`} count={sheets.data.length}>
       {sheets.data.map((sheet, i) => (
         <div key={i} className={i > 0 ? "mt-6 break-before-page print:mt-0" : ""}>
           <Sheet sheet={sheet} />
@@ -65,14 +65,16 @@ export function TroupePrintPage() {
   );
 }
 
-/** The grey desk the paper sits on, with Back and Print above it; only the paper prints. */
-function PrintShell({ count, children }: { count?: number; children: ReactNode }) {
+/** The grey desk the paper sits on, with Back and Print above it; only the paper
+ * prints. Back is a link to where the sheets came from, since they often open in
+ * a tab of their own, with no history to go back through. */
+function PrintShell({ back, count, children }: { back: string; count?: number; children: ReactNode }) {
   return (
     <div className="min-h-screen bg-neutral-200 py-6 text-black print:min-h-0 print:bg-white print:py-0">
       <div className="mx-auto mb-4 flex max-w-[8.5in] items-center justify-between gap-4 px-4 print:hidden">
-        <button onClick={() => window.history.back()} className="text-sm underline">
+        <Link to={back} className="text-sm underline">
           ← Back
-        </button>
+        </Link>
         {count !== undefined && <span className="text-sm">{count === 1 ? "1 sheet" : `${count} sheets`}</span>}
         <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
           Print

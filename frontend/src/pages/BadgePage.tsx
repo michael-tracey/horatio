@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { useParams, useSearchParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { BadgeOut, StaffBadgeOut } from "../api/types";
 import { clanColour, initials } from "../components/avatar";
@@ -20,7 +20,7 @@ export function TroupeBadgesPage() {
   });
   if (badges.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (badges.error) return <p className="p-8 text-black">{badges.error.message}</p>;
-  return <Sheets items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))} />;
+  return <Sheets back={`/troupes/${troupeId}/characters`} items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))} />;
 }
 
 /** One character's badge, from its page. */
@@ -38,7 +38,7 @@ export function CharacterBadgePage() {
   });
   if (badges.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (badges.error) return <p className="p-8 text-black">{badges.error.message}</p>;
-  return <Sheets items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))} />;
+  return <Sheets back={`/characters/${characterId}`} items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))} />;
 }
 
 /** The troupe's storytellers' badges: name and role. */
@@ -50,7 +50,7 @@ export function StaffBadgesPage() {
   });
   if (staff.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (staff.error) return <p className="p-8 text-black">{staff.error.message}</p>;
-  return <Sheets items={staff.data.map((s, i) => ({ key: `${i}`, staff: s }))} />;
+  return <Sheets back={`/troupes/${troupeId}/characters`} items={staff.data.map((s, i) => ({ key: `${i}`, staff: s }))} />;
 }
 
 type Item = { key: string; badge?: BadgeOut; staff?: StaffBadgeOut };
@@ -59,16 +59,17 @@ type Item = { key: string; badge?: BadgeOut; staff?: StaffBadgeOut };
  * The badges on paper: on screen, side by side with Back, Print and the choice
  * of look above; printed, two to a US Letter page with cut marks at the corners.
  */
-function Sheets({ items }: { items: Item[] }) {
+function Sheets({ items, back }: { items: Item[]; back: string }) {
   const [look, setLook] = useState<Look>("horatio");
   return (
     <div className="min-h-screen bg-neutral-200 py-6 text-black print:min-h-0 print:bg-white print:py-0">
       {/* Badges fill the paper themselves: no page margin, no browser header. */}
       <style>{"@page { size: letter; margin: 0; }"}</style>
       <div className="mx-auto mb-4 flex max-w-[8.5in] flex-wrap items-center justify-between gap-3 px-4 print:hidden">
-        <button onClick={() => window.history.back()} className="text-sm underline">
+        {/* A link, not history: badges open in a tab of their own. */}
+        <Link to={back} className="text-sm underline">
           ← Back
-        </button>
+        </Link>
         <span className="text-sm">
           {items.length === 1 ? "1 badge" : `${items.length} badges`} · 3 × 5 in, two to a page
         </span>
