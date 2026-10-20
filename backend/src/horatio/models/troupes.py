@@ -25,6 +25,9 @@ class Troupe(Imported, Record):
     # downtime. Defaults for awarding and for new cycles; each can be changed there.
     session_xp: Mapped[int] = mapped_column(default=8, server_default="8")
     downtime_xp: Mapped[int] = mapped_column(default=2, server_default="2")
+    # House rule: the blood characters start a game with (no more than their
+    # generation's most). None starts them full.
+    starting_blood: Mapped[int | None]
 
 
 class TroupeRequest(Record):

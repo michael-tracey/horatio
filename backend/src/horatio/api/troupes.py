@@ -32,6 +32,8 @@ class TroupeOut(BaseModel):
     # The usual XP for a game session and for completing a downtime.
     session_xp: int
     downtime_xp: int
+    # House rule: the blood characters start a game with; None for full.
+    starting_blood: int | None
     # The caller's own role here, if any.
     my_role: Role | None
 
@@ -75,6 +77,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         allowed_sects=troupe.allowed_sects,
         session_xp=troupe.session_xp,
         downtime_xp=troupe.downtime_xp,
+        starting_blood=troupe.starting_blood,
         my_role=troupe_role(db, user, troupe),
     )
 

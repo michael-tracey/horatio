@@ -24,6 +24,7 @@ from horatio.api import (
     notifications,
     npcs,
     pictures,
+    play,
     players,
     printing,
     responses,
@@ -103,6 +104,7 @@ for module in (
     troupe_requests,
     xp_awards,
     system,
+    play,
 ):
     api.include_router(module.router)
 

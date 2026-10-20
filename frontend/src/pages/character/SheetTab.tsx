@@ -380,12 +380,20 @@ export function SheetTab({
         {message && !change.error && !swap.error && <Notice>{message}</Notice>}
       </div>
       <aside className="flex flex-col gap-3">
-        <Link
-          to={`/print/characters/${character.id}`}
-          className="inline-flex min-h-10 items-center justify-center rounded-md border border-ash bg-dusk px-4 text-sm hover:border-mist"
-        >
-          Print the sheet
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            to={`/play/characters/${character.id}`}
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-blood px-4 text-sm font-medium text-parchment hover:bg-blood-bright"
+          >
+            Play
+          </Link>
+          <Link
+            to={`/print/characters/${character.id}`}
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-ash bg-dusk px-4 text-sm hover:border-mist"
+          >
+            Print the sheet
+          </Link>
+        </div>
         <Card dense title="Experience">
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>

@@ -648,6 +648,147 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Play
+         * @description The character's trackers and limited uses at the game now, and its log.
+         */
+        get: operations["read_play_api_characters__character_id__play_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/counters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Counter
+         * @description A counter of the player's own, such as "Fetish charges: 3".
+         */
+        post: operations["add_counter_api_characters__character_id__play_counters_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/counters/{counter_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Counter
+         * @description Take a counter off the Play View; old logs still name it.
+         */
+        delete: operations["remove_counter_api_characters__character_id__play_counters__counter_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Games
+         * @description Games already over, newest first.
+         */
+        get: operations["list_games_api_characters__character_id__play_games_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/games/{game_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Game
+         * @description One game's log, newest first, such as a past game's for the next downtime.
+         */
+        get: operations["read_game_api_characters__character_id__play_games__game_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Play
+         * @description Reset for the next game: the game ends, kept with its log, and every tracker
+         *     goes back where the sheet starts it.
+         */
+        post: operations["reset_play_api_characters__character_id__play_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/taps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Taps
+         * @description Record taps, perhaps made offline a while ago, in the order they happened.
+         */
+        post: operations["record_taps_api_characters__character_id__play_taps_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/primary-path": {
         parameters: {
             query?: never;
@@ -2096,6 +2237,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/play": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Play
+         * @description Every character in the troupe at the game now, in the roster's order.
+         */
+        get: operations["troupe_play_api_troupes__troupe_id__play_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/play/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Troupe
+         * @description Reset every character in the troupe for the next game, after one.
+         */
+        post: operations["reset_troupe_api_troupes__troupe_id__play_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/print": {
         parameters: {
             query?: never;
@@ -2246,6 +2427,26 @@ export interface paths {
         post?: never;
         /** Remove Staff */
         delete: operations["remove_staff_api_troupes__troupe_id__staff__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/starting-blood": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Starting Blood
+         * @description What a reset for the next game puts each character's blood back to.
+         */
+        put: operations["set_starting_blood_api_troupes__troupe_id__starting_blood_put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2976,6 +3177,13 @@ export interface components {
             /** Costs */
             costs: components["schemas"]["CostOut"][];
         };
+        /** CounterIn */
+        CounterIn: {
+            /** Name */
+            name: string;
+            /** Uses */
+            uses: number;
+        };
         /** CreationOut */
         CreationOut: {
             /** Complete */
@@ -3163,6 +3371,23 @@ export interface components {
             /** Guild Name */
             guild_name: string | null;
         };
+        /** ExpendableOut */
+        ExpendableOut: {
+            /** Counter Id */
+            counter_id: string | null;
+            /** Detail */
+            detail: string;
+            /** Group */
+            group: string;
+            /** Key */
+            key: string;
+            /** Left */
+            left: number;
+            /** Name */
+            name: string;
+            /** Uses */
+            uses: number;
+        };
         /**
          * FilterCondition
          * @description One condition of a character filter; see horatio.character_filter.
@@ -3221,10 +3446,55 @@ export interface components {
             /** Can Email */
             can_email: boolean;
         };
+        /** GameLog */
+        GameLog: {
+            game: components["schemas"]["GameOut"];
+            /** Log */
+            log: components["schemas"]["LogEntryOut"][];
+        };
+        /** GameOut */
+        GameOut: {
+            /** Ended At */
+            ended_at: string | null;
+            /** Ended By */
+            ended_by: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Notes */
+            notes: number;
+            /** Number */
+            number: number;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Taps */
+            taps: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** Health */
+        Health: {
+            /** Levels */
+            levels: components["schemas"]["HealthLevel"][];
+            /** Marks */
+            marks: string[];
+            /** Stamina Focus */
+            stamina_focus: boolean;
+        };
+        /** HealthLevel */
+        HealthLevel: {
+            /** Boxes */
+            boxes: number;
+            /** Name */
+            name: string;
         };
         /** HeldTitles */
         HeldTitles: {
@@ -3352,6 +3622,43 @@ export interface components {
             /** Player Name */
             player_name: string | null;
         };
+        /** LogEntryOut */
+        LogEntryOut: {
+            /** Actor Name */
+            actor_name: string;
+            /** After */
+            after: number | null;
+            /** Amount */
+            amount: number;
+            /** Before */
+            before: number | null;
+            /** By Staff */
+            by_staff: boolean;
+            /** Damage */
+            damage: string | null;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Note */
+            note: string;
+            /** Text */
+            text: string;
+            /** Tracker */
+            tracker: string;
+            /** Undoes */
+            undoes: string | null;
+            /** Undone */
+            undone: boolean;
+        };
         /** Me */
         Me: {
             /** Display Name */
@@ -3377,6 +3684,15 @@ export interface components {
             troupe_id: string;
             /** Troupe Name */
             troupe_name: string;
+        };
+        /** Morality */
+        Morality: {
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Value */
+            value: number;
         };
         /** MyDowntime */
         MyDowntime: {
@@ -3661,6 +3977,59 @@ export interface components {
             /** Uploaded By */
             uploaded_by: string | null;
         };
+        /** PlayTrait */
+        PlayTrait: {
+            /** Category */
+            category: string;
+            /** Category Name */
+            category_name: string;
+            /** Detail */
+            detail: string;
+            /** Group */
+            group: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number | null;
+            /** Specialties */
+            specialties: string[];
+        };
+        /** PlayView */
+        PlayView: {
+            beast: components["schemas"]["Tracker"];
+            blood: components["schemas"]["Tracker"];
+            /** Blood Per Turn */
+            blood_per_turn: number;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Clan */
+            clan: string | null;
+            /** Expendables */
+            expendables: components["schemas"]["ExpendableOut"][];
+            game: components["schemas"]["GameOut"] | null;
+            /** Generation */
+            generation: number;
+            health: components["schemas"]["Health"];
+            /** Kind */
+            kind: string;
+            /** Log */
+            log: components["schemas"]["LogEntryOut"][];
+            morality: components["schemas"]["Morality"] | null;
+            /** Player Name */
+            player_name: string;
+            /** Pools */
+            pools: components["schemas"]["Pool"][];
+            /** Sect */
+            sect: string | null;
+            /** Traits */
+            traits: components["schemas"]["PlayTrait"][];
+            willpower: components["schemas"]["Tracker"];
+        };
         /** PlayerCharacter */
         PlayerCharacter: {
             /** Home Troupe */
@@ -3722,6 +4091,15 @@ export interface components {
             member_since: string;
             /** Reset Expires At */
             reset_expires_at: string | null;
+        };
+        /** Pool */
+        Pool: {
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Pool */
+            pool: number;
         };
         /** PoolOut */
         PoolOut: {
@@ -4056,14 +4434,6 @@ export interface components {
             /** Email */
             email: string;
         };
-        /** ResetIn */
-        ResetIn: {
-            /**
-             * Email
-             * @default false
-             */
-            email: boolean;
-        };
         /** ResetLink */
         ResetLink: {
             /** Email Error */
@@ -4306,6 +4676,11 @@ export interface components {
              */
             user_id: string;
         };
+        /** StartingBlood */
+        StartingBlood: {
+            /** Blood */
+            blood?: number | null;
+        };
         /** StartingCategoryOut */
         StartingCategoryOut: {
             /** Book */
@@ -4418,12 +4793,68 @@ export interface components {
             /** Rating */
             rating: number;
         };
+        /**
+         * TapIn
+         * @description One tap, as the device made it.
+         */
+        TapIn: {
+            /**
+             * Amount
+             * @default 0
+             */
+            amount: number;
+            /** Damage */
+            damage?: ("normal" | "aggravated") | null;
+            /** Game Id */
+            game_id?: string | null;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "change" | "note" | "undo";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Tracker
+             * @default
+             */
+            tracker: string;
+            /** Undoes */
+            undoes?: string | null;
+        };
+        /** Taps */
+        Taps: {
+            /** Taps */
+            taps: components["schemas"]["TapIn"][];
+        };
         /** TitlesOut */
         TitlesOut: {
             /** Catalogue */
             catalogue: string[];
             /** Troupe */
             troupe: string[];
+        };
+        /** Tracker */
+        Tracker: {
+            /** Most */
+            most: number;
+            /** Start */
+            start: number;
+            /** Value */
+            value: number;
         };
         /** TraitChange */
         TraitChange: {
@@ -4530,6 +4961,36 @@ export interface components {
             name: string;
             /** Session Xp */
             session_xp: number;
+            /** Starting Blood */
+            starting_blood: number | null;
+        };
+        /** TroupePlayEntry */
+        TroupePlayEntry: {
+            blood: components["schemas"]["Tracker"];
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Game Number */
+            game_number: number | null;
+            /** Health Boxes */
+            health_boxes: number;
+            /** Health Marked */
+            health_marked: number;
+            /** Home */
+            home: boolean;
+            /** Kind */
+            kind: string;
+            /** Last Tap At */
+            last_tap_at: string | null;
+            /** Player Name */
+            player_name: string;
+            /** Taps */
+            taps: number;
+            willpower: components["schemas"]["Tracker"];
         };
         /** TroupeRequestOut */
         TroupeRequestOut: {
@@ -4566,6 +5027,11 @@ export interface components {
             status: string;
             /** Troupe Id */
             troupe_id: string | null;
+        };
+        /** TroupeReset */
+        TroupeReset: {
+            /** Reset */
+            reset: number;
         };
         /** Unpick */
         Unpick: {
@@ -4719,6 +5185,19 @@ export interface components {
              * @default 0
              */
             unbanked: number;
+        };
+        /** ResetIn */
+        horatio__api__play__ResetIn: {
+            /** Game Id */
+            game_id?: string | null;
+        };
+        /** ResetIn */
+        horatio__api__players__ResetIn: {
+            /**
+             * Email
+             * @default false
+             */
+            email: boolean;
         };
     };
     responses: never;
@@ -5979,6 +6458,237 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_play_api_characters__character_id__play_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_counter_api_characters__character_id__play_counters_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CounterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_counter_api_characters__character_id__play_counters__counter_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                counter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_games_api_characters__character_id__play_games_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_game_api_characters__character_id__play_games__game_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameLog"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_play_api_characters__character_id__play_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__play__ResetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_taps_api_characters__character_id__play_taps_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Taps"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -7457,7 +8167,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["ResetIn"] | null;
+                "application/json": components["schemas"]["horatio__api__players__ResetIn"] | null;
             };
         };
         responses: {
@@ -9033,6 +9743,68 @@ export interface operations {
             };
         };
     };
+    troupe_play_api_troupes__troupe_id__play_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupePlayEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_troupe_api_troupes__troupe_id__play_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeReset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     print_characters_api_troupes__troupe_id__print_get: {
         parameters: {
             query?: {
@@ -9346,6 +10118,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_starting_blood_api_troupes__troupe_id__starting_blood_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartingBlood"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
             };
             /** @description Validation Error */
             422: {

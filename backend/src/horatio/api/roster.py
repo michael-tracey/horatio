@@ -241,6 +241,11 @@ MESSAGES: dict[str, str] = {
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
+    "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
+    "play.troupe_reset": "{actor} reset {count} characters for the next game.",
+    "play.counter_added": "{actor} added a counter to {character}'s Play View: {name} ({uses}).",
+    "play.counter_removed": "{actor} removed the counter {name} from {character}'s Play View.",
+    "house.starting_blood": "{actor} set the blood characters start a game with: {blood}.",
 }
 
 
