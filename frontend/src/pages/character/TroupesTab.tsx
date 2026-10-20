@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
@@ -109,7 +108,6 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
           </Card>
         )
       )}
-      {memberships.data?.length === 0 && <DeleteCharacter character={character} />}
     </div>
   );
 }
@@ -218,32 +216,6 @@ function HomeTroupe({
           <ErrorText error={request.error} />
         </div>
       )}
-    </Card>
-  );
-}
-
-function DeleteCharacter({ character }: { character: CharacterOut }) {
-  const navigate = useNavigate();
-  const remove = useAction(async () => {
-    await unwrap(api.DELETE("/api/characters/{character_id}", { params: { path: { character_id: character.id } } }));
-    navigate("/characters");
-  });
-  return (
-    <Card title="Delete this character" className="md:col-span-2">
-      <p className="text-sm text-mist">
-        Deleting removes {character.name} and all of its history for good. It is only possible once the character has
-        left every troupe.
-      </p>
-      <ErrorText error={remove.error} />
-      <Button
-        variant="danger"
-        className="mt-3"
-        onClick={() => {
-          if (window.confirm(`Delete ${character.name} for good? This cannot be undone.`)) remove.mutate(undefined);
-        }}
-      >
-        Delete {character.name}
-      </Button>
     </Card>
   );
 }

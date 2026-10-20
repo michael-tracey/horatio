@@ -23,6 +23,7 @@ import {
 import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
 import { AddTraitPanel } from "./AddTraitPanel";
+import { BadgeButton } from "./Badge";
 import { rulesTroupe } from "./rules";
 import {
   NEEDS_FIELD,
@@ -123,9 +124,12 @@ function useCreation(character: CharacterOut) {
 export function SheetTab({
   character,
   mine,
+  badge = false,
 }: {
   character: CharacterOut;
   mine: boolean;
+  /** Whether this viewer prints badges: the troupe's staff and the custodian. */
+  badge?: boolean;
 }) {
   const sheet = useSheet(character.id);
   const catalogue = useCatalogue(character);
@@ -380,19 +384,14 @@ export function SheetTab({
         {message && !change.error && !swap.error && <Notice>{message}</Notice>}
       </div>
       <aside className="flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            to={`/play/characters/${character.id}`}
-            className="inline-flex min-h-10 items-center justify-center rounded-md bg-blood px-4 text-sm font-medium text-parchment hover:bg-blood-bright"
-          >
-            Play
-          </Link>
+        <div className={badge ? "grid grid-cols-2 gap-2 [&>button]:w-full" : "grid"}>
           <Link
             to={`/print/characters/${character.id}`}
             className="inline-flex min-h-10 items-center justify-center rounded-md border border-ash bg-dusk px-4 text-sm hover:border-mist"
           >
-            Print the sheet
+            Print
           </Link>
+          {badge && <BadgeButton character={character} />}
         </div>
         <Card dense title="Experience">
           <dl className="grid grid-cols-3 gap-2 text-center">
