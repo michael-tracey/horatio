@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Select, select
 
-from horatio import character_filter, titles
+from horatio import character_filter, pictures, social_age, titles
 from horatio.api.downtimes import staff_troupe
 from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
@@ -27,6 +27,12 @@ class RosterEntry(BaseModel):
     player_id: uuid.UUID | None
     kind: str  # pc | npc
     titles: list[str]
+    # Where its picture is (horatio.pictures), or None.
+    picture: str | None
+    # From the sheet as it stands (horatio.social_age).
+    clan: str | None
+    # Neonate, Ancilla or Elder.
+    social_age: str
     # The troupe holds the character's sheet; otherwise the character visits.
     home: bool
     # Waiting for this troupe to accept it as home.
@@ -55,12 +61,15 @@ class LogEntry(BaseModel):
 def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[RosterEntry]:
     """Every character in the troupe now: those whose home it is first, then visitors."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
-    rows = db.execute(
-        select(TroupeMembership, Character, User)
-        .join(Character, TroupeMembership.character_id == Character.id)
-        .join(User, Character.player_id == User.id)
-        .where(TroupeMembership.troupe_id == troupe_id, TroupeMembership.left_at.is_(None))
+    rows = list(
+        db.execute(
+            select(TroupeMembership, Character, User)
+            .join(Character, TroupeMembership.character_id == Character.id)
+            .join(User, Character.player_id == User.id)
+            .where(TroupeMembership.troupe_id == troupe_id, TroupeMembership.left_at.is_(None))
+        )
     )
+    standing = social_age.standings(db, [c.id for _, c, _ in rows])
     pending = list(
         db.execute(
             select(Approval.character_id, Approval.kind).where(
@@ -76,6 +85,9 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_id=player.id if c.kind == "pc" else None,
             kind=c.kind,
             titles=titles.held(db, troupe_id, c.id),
+            picture=pictures.picture_url(c.id, c.picture_id),
+            clan=standing[c.id].clan,
+            social_age=standing[c.id].age,
             home=c.home_troupe_id == troupe_id,
             waiting=(c.id, "home_troupe_change") in pending,
             disciplines_waiting=sum(1 for p in pending if p == (c.id, "discipline")),
@@ -212,6 +224,23 @@ MESSAGES: dict[str, str] = {
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
     "creation.set_category": "{actor} set {character}'s starting {category}: {picks}.",
     "creation.complete": "{actor} finished creating {character}.",
+    "account.reset_link": "{actor} made a password reset link for {member}.",
+    "account.reset_sent": "{actor} emailed {member} their reset link.",
+    "account.reset_sent.self": "Horatio emailed {member} the reset link they asked for.",
+    "account.reset_email_failed": "Horatio could not email {member} a reset link: {error}",
+    "account.reset_requested": "{actor} asked for a password reset link.",
+    "account.reset_requested.unknown": "Someone asked for a reset link for {email}; "
+    "no account uses it.",
+    "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
+    "account.password_reset": "{actor} set a new password with a reset link.",
+    "character.renamed": "{actor} renamed {from_name} to {character}.",
+    "picture.uploaded": "{actor} gave {character} a picture.",
+    "picture.replaced": "{actor} gave {character} a new picture.",
+    "picture.cropped": "{actor} moved the crop of {character}'s picture.",
+    "picture.removed": "{actor} removed {character}'s picture.",
+    "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
+    "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
+    "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
     "play.troupe_reset": "{actor} reset {count} characters for the next game.",
     "play.counter_added": "{actor} added a counter to {character}'s Play View: {name} ({uses}).",

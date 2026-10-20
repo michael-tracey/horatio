@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
+import { Avatar } from "../../components/Avatar";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 
@@ -25,8 +26,11 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
           <ul className="divide-y divide-ash">
             {npcs.data.map((n) => (
               <li key={n.id}>
-                <Link to={`/characters/${n.id}`} className="flex justify-between py-3 hover:text-gold">
-                  <span>{n.name}</span>
+                <Link to={`/characters/${n.id}`} className="flex items-center justify-between gap-3 py-3 hover:text-gold">
+                  <span className="flex items-center gap-3">
+                    <Avatar name={n.name} picture={n.picture} clan={n.clan} />
+                    {n.name}
+                  </span>
                   <span className="text-sm text-mist capitalize">{n.splat}</span>
                 </Link>
               </li>

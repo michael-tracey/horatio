@@ -4,7 +4,7 @@ import { Layout } from "./components/Layout";
 import { Loading } from "./components/ui";
 import { useMe } from "./hooks";
 import { CharactersPage } from "./pages/CharactersPage";
-import { ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
+import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 
 // The bigger pages load when first opened, so the first visit (signing in, the
@@ -17,6 +17,9 @@ const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ defau
 const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })));
 const PrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.PrintPage })));
 const TroupePage = lazy(() => import("./pages/troupe/TroupePage").then((m) => ({ default: m.TroupePage })));
+const TroupeBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.TroupeBadgesPage })));
+const StaffBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.StaffBadgesPage })));
+const CharacterBadgePage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.CharacterBadgePage })));
 const TroupePrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.TroupePrintPage })));
 
 function RequireSignIn() {
@@ -38,11 +41,15 @@ export function App() {
       <Route element={<RequireSignIn />}>
         <Route path="/print/characters/:characterId" element={<PrintPage />} />
         <Route path="/print/troupes/:troupeId" element={<TroupePrintPage />} />
+        <Route path="/print/troupes/:troupeId/badges" element={<TroupeBadgesPage />} />
+        <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
+        <Route path="/print/characters/:characterId/badge" element={<CharacterBadgePage />} />
         <Route path="/play/characters/:characterId" element={<PlayPage />} />
       </Route>
       <Route element={<Layout />}>
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route element={<RequireSignIn />}>
           <Route index element={<Navigate to="/characters" replace />} />

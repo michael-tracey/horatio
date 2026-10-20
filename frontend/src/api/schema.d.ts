@@ -38,6 +38,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Forgot Help
+         * @description Whether someone who forgot their password can ask Horatio for a link.
+         */
+        get: operations["forgot_help_api_auth_forgot_get"];
+        put?: never;
+        /**
+         * Forgot Password
+         * @description Email a reset link to an account's own address, if an account uses it. The
+         *     answer is the same either way, so it never says who has an account; so is
+         *     being turned away for asking too often.
+         */
+        post: operations["forgot_password_api_auth_forgot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -100,8 +126,8 @@ export interface paths {
         put?: never;
         /**
          * Reset Password
-         * @description Set a new password from the custodian's link. Ends every other session the
-         *     person had, and signs them in here.
+         * @description Set a new password from a reset link. Ends every other session the person had,
+         *     and signs them in here.
          */
         post: operations["reset_password_api_auth_reset_post"];
         delete?: never;
@@ -226,8 +252,33 @@ export interface paths {
         delete: operations["delete_character_api_characters__character_id__delete"];
         options?: never;
         head?: never;
-        /** Change Character */
+        /**
+         * Change Character
+         * @description Rename the character: its player, at most once every three months while it is
+         *     in a troupe, or the custodian at any time (see horatio/renames.py).
+         */
         patch: operations["change_character_api_characters__character_id__patch"];
+        trace?: never;
+    };
+    "/api/characters/{character_id}/badge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Badge
+         * @description One character's badge, with its titles in `troupe_id` (by default its home
+         *     troupe, else the first troupe it joined).
+         */
+        get: operations["character_badge_api_characters__character_id__badge_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/characters/{character_id}/building-troupe": {
@@ -522,6 +573,73 @@ export interface paths {
          * @description What the NPC's sheet would be worth in experience under its troupe's rules.
          */
         get: operations["tally_api_characters__character_id__npc_tally_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Picture */
+        get: operations["read_picture_api_characters__character_id__picture_get"];
+        put?: never;
+        /**
+         * Upload Picture
+         * @description A new picture, replacing any the character has. Without a crop, the
+         *     portrait is the biggest square in the middle.
+         */
+        post: operations["upload_picture_api_characters__character_id__picture_post"];
+        /**
+         * Remove Picture
+         * @description Take the picture away. Whoever uploaded it is told, unless it was them.
+         */
+        delete: operations["remove_picture_api_characters__character_id__picture_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/picture/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Crop Picture
+         * @description Move the portrait's crop, cutting it again from the picture as kept.
+         */
+        put: operations["crop_picture_api_characters__character_id__picture_crop_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/pictures/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Picture File
+         * @description One of the picture's files. A picture's files never change (a new one has a
+         *     new id), so browsers may keep them; privately, as only some people see them.
+         */
+        get: operations["picture_file_api_characters__character_id__pictures__picture_id___name__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -906,6 +1024,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/visible-note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Visible Note */
+        get: operations["read_visible_note_api_characters__character_id__visible_note_get"];
+        /**
+         * Set Visible Note
+         * @description What others can see or sense about the character that the rules data does
+         *     not cover, for its badge. Written by staff, not the player.
+         */
+        put: operations["set_visible_note_api_characters__character_id__visible_note_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/xp": {
         parameters: {
             query?: never;
@@ -943,6 +1083,64 @@ export interface paths {
          */
         post: operations["correct_xp_api_characters__character_id__xp__entry_id__correction_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clan-logos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Logos */
+        get: operations["list_logos_api_clan_logos_get"];
+        put?: never;
+        /**
+         * Upload Logo
+         * @description A clan's logo, replacing any it has.
+         */
+        post: operations["upload_logo_api_clan_logos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clan-logos/{image_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Logo File
+         * @description A logo's file, for anyone signed in. Like pictures' files, they never change.
+         */
+        get: operations["logo_file_api_clan_logos__image_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clan-logos/{logo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Logo */
+        delete: operations["remove_logo_api_clan_logos__logo_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1282,6 +1480,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/password-resets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Password Resets
+         * @description For the custodian: the reset links live now, and who has made, asked for and
+         *     used them.
+         */
+        get: operations["password_resets_api_password_resets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/players": {
         parameters: {
             query?: never;
@@ -1335,10 +1554,15 @@ export interface paths {
         /**
          * Reset Password
          * @description A one-time link, good for a day, that lets the player set a new password.
-         *     The custodian passes it on; it replaces any earlier link.
+         *     The custodian passes it on, or has Horatio email it to the player's address;
+         *     it replaces any earlier link.
          */
         post: operations["reset_password_api_players__user_id__password_reset_post"];
-        delete?: never;
+        /**
+         * Cancel Password Reset
+         * @description Cancel the player's live reset link, so it no longer works.
+         */
+        delete: operations["cancel_password_reset_api_players__user_id__password_reset_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1659,6 +1883,27 @@ export interface paths {
         };
         /** Troupe Approvals */
         get: operations["troupe_approvals_api_troupes__troupe_id__approvals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Badges
+         * @description Badges for the characters named, in that order, or every character in the
+         *     troupe now, in the roster's order.
+         */
+        get: operations["troupe_badges_api_troupes__troupe_id__badges_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2150,6 +2395,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/staff-badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Staff Badges
+         * @description Badges for the troupe's staff: each person's name and role, lead first.
+         */
+        get: operations["staff_badges_api_troupes__troupe_id__staff_badges_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/staff/{user_id}": {
         parameters: {
             query?: never;
@@ -2496,6 +2761,66 @@ export interface components {
             /** Backups */
             backups: components["schemas"]["BackupOut"][];
         };
+        /** BadgeOut */
+        BadgeOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Logo */
+            logo: string | null;
+            /** Name */
+            name: string;
+            /** Picture */
+            picture: string | null;
+            /** Social Age */
+            social_age: string;
+            /** Status */
+            status: string[];
+            /** Titles */
+            titles: string[];
+            /** Visible */
+            visible: string[];
+        };
+        /** BadgesOut */
+        BadgesOut: {
+            /** Badges */
+            badges: components["schemas"]["BadgeOut"][];
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
+        /** Body_upload_logo_api_clan_logos_post */
+        Body_upload_logo_api_clan_logos_post: {
+            /** Clan */
+            clan: string;
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+        };
+        /** Body_upload_picture_api_characters__character_id__picture_post */
+        Body_upload_picture_api_characters__character_id__picture_post: {
+            /** Crop Size */
+            crop_size?: number | null;
+            /** Crop X */
+            crop_x?: number | null;
+            /** Crop Y */
+            crop_y?: number | null;
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
         /** BuildingTroupe */
         BuildingTroupe: {
             /** Troupe Id */
@@ -2620,6 +2945,8 @@ export interface components {
         CharacterOut: {
             /** Building Troupe Id */
             building_troupe_id: string | null;
+            /** Clan */
+            clan: string | null;
             /** Creation Complete */
             creation_complete: boolean;
             /** Home Troupe Id */
@@ -2633,8 +2960,12 @@ export interface components {
             kind: string;
             /** Name */
             name: string;
+            /** Next Rename On */
+            next_rename_on: string | null;
             /** Owner Troupe Id */
             owner_troupe_id: string | null;
+            /** Picture */
+            picture: string | null;
             /**
              * Player Id
              * Format: uuid
@@ -2685,6 +3016,24 @@ export interface components {
             from_name: string;
             /** To Name */
             to_name: string;
+        };
+        /** ClanLogoOut */
+        ClanLogoOut: {
+            /** Clan */
+            clan: string;
+            /** Logo */
+            logo: string | null;
+            /** Logo Id */
+            logo_id: string | null;
+            /** Splat */
+            splat: string;
+        };
+        /** ClanLogosOut */
+        ClanLogosOut: {
+            /** Available */
+            available: boolean;
+            /** Clans */
+            clans: components["schemas"]["ClanLogoOut"][];
         };
         /** ConnectorChange */
         ConnectorChange: {
@@ -2843,6 +3192,19 @@ export interface components {
             needs: components["schemas"]["StepNeed"][];
             /** Pools */
             pools: components["schemas"]["PoolOut"][];
+        };
+        /**
+         * CropIn
+         * @description The square portrait's place in the picture, as fractions: its left and top
+         *     edges of the picture's width and height, and its side of the width.
+         */
+        CropIn: {
+            /** Size */
+            size: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /** CycleChanges */
         CycleChanges: {
@@ -3066,6 +3428,24 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** Forgot */
+        Forgot: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /** ForgotAnswer */
+        ForgotAnswer: {
+            /** Message */
+            message: string;
+        };
+        /** ForgotHelp */
+        ForgotHelp: {
+            /** Can Email */
+            can_email: boolean;
+        };
         /** GameLog */
         GameLog: {
             game: components["schemas"]["GameOut"];
@@ -3187,6 +3567,27 @@ export interface components {
             label: string;
             /** Url */
             url: string;
+        };
+        /** LiveReset */
+        LiveReset: {
+            /** Asked Themselves */
+            asked_themselves: boolean;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Made By */
+            made_by: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
         };
         /** LogEntry */
         LogEntry: {
@@ -3437,6 +3838,8 @@ export interface components {
             kind: string;
             /** Link */
             link: string;
+            /** Picture */
+            picture: string | null;
             /** Read */
             read: boolean;
             /** Summary */
@@ -3491,6 +3894,8 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Clan */
+            clan: string | null;
             /** Completion Xp Awarded */
             completion_xp_awarded: number | null;
             /**
@@ -3500,12 +3905,21 @@ export interface components {
             id: string;
             /** Late Accepted */
             late_accepted: boolean;
+            /** Picture */
+            picture: string | null;
             /** Removed */
             removed: boolean;
             /** Submission Status */
             submission_status: string | null;
             /** Submitted Late */
             submitted_late: boolean;
+        };
+        /** PasswordResets */
+        PasswordResets: {
+            /** Live */
+            live: components["schemas"]["LiveReset"][];
+            /** Log */
+            log: components["schemas"]["LogEntry"][];
         };
         /** PendingDisciplineOut */
         PendingDisciplineOut: {
@@ -3550,6 +3964,18 @@ export interface components {
             name: string;
             /** Pick */
             pick: number;
+        };
+        /** PictureOut */
+        PictureOut: {
+            /** Available */
+            available: boolean;
+            crop: components["schemas"]["CropIn"] | null;
+            /** Picture */
+            picture: string | null;
+            /** Uploaded At */
+            uploaded_at: string | null;
+            /** Uploaded By */
+            uploaded_by: string | null;
         };
         /** PlayTrait */
         PlayTrait: {
@@ -3644,6 +4070,8 @@ export interface components {
              * Format: date-time
              */
             member_since: string;
+            /** Reset Expires At */
+            reset_expires_at: string | null;
         };
         /** PlayerSummary */
         PlayerSummary: {
@@ -3661,6 +4089,8 @@ export interface components {
              * Format: date-time
              */
             member_since: string;
+            /** Reset Expires At */
+            reset_expires_at: string | null;
         };
         /** Pool */
         Pool: {
@@ -3722,6 +4152,8 @@ export interface components {
             home: boolean;
             /** Kind */
             kind: string;
+            /** Picture */
+            picture: string | null;
             /** Player Name */
             player_name: string;
             /** Splat */
@@ -3751,6 +4183,10 @@ export interface components {
             pending_from: number | null;
             /** Rating */
             rating: number | null;
+            /** Specializes */
+            specializes: {
+                [key: string]: string;
+            } | null;
         };
         /**
          * ProblemOut
@@ -3901,6 +4337,8 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Clan */
+            clan: string | null;
             discipline: components["schemas"]["DisciplineOut"] | null;
             /**
              * Id
@@ -3909,6 +4347,8 @@ export interface components {
             id: string;
             /** Kind */
             kind: string;
+            /** Picture */
+            picture: string | null;
             /** Player Note */
             player_note: string;
             /** Reconciliation */
@@ -3994,13 +4434,12 @@ export interface components {
             /** Email */
             email: string;
         };
-        /** ResetIn */
-        ResetIn: {
-            /** Game Id */
-            game_id?: string | null;
-        };
         /** ResetLink */
         ResetLink: {
+            /** Email Error */
+            email_error?: string | null;
+            /** Emailed To */
+            emailed_to?: string | null;
             /**
              * Expires At
              * Format: date-time
@@ -4042,6 +4481,8 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Clan */
+            clan: string | null;
             /** Disciplines Waiting */
             disciplines_waiting: number;
             /** Home */
@@ -4053,10 +4494,14 @@ export interface components {
             joined_at: string;
             /** Kind */
             kind: string;
+            /** Picture */
+            picture: string | null;
             /** Player Id */
             player_id: string | null;
             /** Player Name */
             player_name: string;
+            /** Social Age */
+            social_age: string;
             /** Titles */
             titles: string[];
             /** Waiting */
@@ -4212,6 +4657,13 @@ export interface components {
              */
             email: string;
             role: components["schemas"]["Role"];
+        };
+        /** StaffBadgeOut */
+        StaffBadgeOut: {
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
         };
         /** StaffMember */
         StaffMember: {
@@ -4606,6 +5058,11 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** VisibleNote */
+        VisibleNote: {
+            /** Note */
+            note: string;
+        };
         /** WorkCycle */
         WorkCycle: {
             /**
@@ -4729,6 +5186,19 @@ export interface components {
              */
             unbanked: number;
         };
+        /** ResetIn */
+        horatio__api__play__ResetIn: {
+            /** Game Id */
+            game_id?: string | null;
+        };
+        /** ResetIn */
+        horatio__api__players__ResetIn: {
+            /**
+             * Email
+             * @default false
+             */
+            email: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -4795,6 +5265,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApprovalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forgot_help_api_auth_forgot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForgotHelp"];
+                };
+            };
+        };
+    };
+    forgot_password_api_auth_forgot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Forgot"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForgotAnswer"];
                 };
             };
             /** @description Validation Error */
@@ -5180,6 +5703,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_badge_api_characters__character_id__badge_get: {
+        parameters: {
+            query?: {
+                troupe_id?: string | null;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadgesOut"];
                 };
             };
             /** @description Validation Error */
@@ -5753,6 +6309,167 @@ export interface operations {
             };
         };
     };
+    read_picture_api_characters__character_id__picture_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_picture_api_characters__character_id__picture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_picture_api_characters__character_id__picture_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_picture_api_characters__character_id__picture_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    crop_picture_api_characters__character_id__picture_crop_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CropIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    picture_file_api_characters__character_id__pictures__picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_play_api_characters__character_id__play_get: {
         parameters: {
             query?: never;
@@ -5925,7 +6642,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ResetIn"];
+                "application/json": components["schemas"]["horatio__api__play__ResetIn"];
             };
         };
         responses: {
@@ -6418,6 +7135,72 @@ export interface operations {
             };
         };
     };
+    read_visible_note_api_characters__character_id__visible_note_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibleNote"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_visible_note_api_characters__character_id__visible_note_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisibleNote"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibleNote"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     xp_history_api_characters__character_id__xp_get: {
         parameters: {
             query?: never;
@@ -6508,6 +7291,118 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["XpEntryOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_logos_api_clan_logos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanLogosOut"];
+                };
+            };
+        };
+    };
+    upload_logo_api_clan_logos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_logo_api_clan_logos_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanLogoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logo_file_api_clan_logos__image_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                image_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_logo_api_clan_logos__logo_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                logo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -7168,6 +8063,37 @@ export interface operations {
             };
         };
     };
+    password_resets_api_password_resets_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResets"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     find_players_api_players_get: {
         parameters: {
             query?: {
@@ -7239,7 +8165,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__players__ResetIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             201: {
@@ -7249,6 +8179,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ResetLink"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_password_reset_api_players__user_id__password_reset_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -7979,6 +8938,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueuedApproval"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_badges_api_troupes__troupe_id__badges_get: {
+        parameters: {
+            query?: {
+                characters?: string[] | null;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadgesOut"];
                 };
             };
             /** @description Validation Error */
@@ -9064,6 +10056,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staff_badges_api_troupes__troupe_id__staff_badges_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffBadgeOut"][];
                 };
             };
             /** @description Validation Error */

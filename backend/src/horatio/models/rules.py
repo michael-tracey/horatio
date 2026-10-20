@@ -200,3 +200,18 @@ class StartingTrait(Record):
     troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
     trait_definition_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_definitions.id"))
     rating: Mapped[int | None]
+
+
+class ClanLogo(Record):
+    """A clan's or bloodline's logo, which the custodian uploads (horatio.pictures):
+    the official symbols are the publisher's and cannot ship with Horatio."""
+
+    __tablename__ = "clan_logos"
+    __table_args__ = (UniqueConstraint("splat", "clan"),)
+
+    splat: Mapped[str]
+    # The clan trait's name, such as "Toreador" or "Brujah: True Brujah".
+    clan: Mapped[str]
+    # The id its files are kept under, new with each upload.
+    image_id: Mapped[uuid.UUID]
+    uploaded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))

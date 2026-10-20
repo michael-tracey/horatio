@@ -23,6 +23,8 @@ class NotificationOut(BaseModel):
     link: str
     at: datetime
     read: bool
+    # The picture of the character it is about, if any (horatio.pictures).
+    picture: str | None
 
 
 class NotificationsOut(BaseModel):

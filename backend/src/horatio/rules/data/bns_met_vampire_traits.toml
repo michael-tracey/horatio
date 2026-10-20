@@ -1222,7 +1222,7 @@ name = "Ultra-Conservative"
 category = "flaws"
 name = "Accused of Heresy"
 description = "Treated as one social class lower. Neonates gain the Greater Status Ban applied to Caitiff. (Max Fleeting 1)"
-properties = { rating = 2, type = "Camarilla" }
+properties = { rating = 2, type = "Camarilla", social_class = -1 }
 
 [[traits]]
 category = "flaws"
@@ -1294,13 +1294,13 @@ properties = { rating = 2, type = "Anarch" }
 category = "flaws"
 name = "Beacon of the Unholy"
 description = "Radiate conspicuous evil. Devout mortals and hunters with True Faith recognize as a vampire. Any time character uses the 4th dot or higher of a Discipline, aura shows infernal taint. Cannot enter sacred sites. Powers of Faith (True Faith, Salubri) deal +1 point of damage."
-properties = { rating = 3, type = "General" }
+properties = { rating = 3, type = "General", visible = "Radiates evil (Beacon of the Unholy)" }
 
 [[traits]]
 category = "flaws"
 name = "Beast in the Mirror"
 description = "Everyone sees character's Beast in mirrors. Character gains a Beast trait each time they look in a mirror. Does not count towards Morality loss, but does count towards frenzy."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", visible = "Beast shows in mirrors" }
 
 [[traits]]
 category = "flaws"
@@ -1378,7 +1378,7 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Cappadocian: Falling Apart"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan", requirement = "Cappadocians" }
+properties = { rating = 3, type = "Clan", requirement = "Cappadocians", visible = "Sheds flakes of ash (Falling Apart)" }
 
 [[traits]]
 category = "flaws"
@@ -1498,7 +1498,7 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Eerie Presence"
 description = "Radiate an otherworldly air, making people nervous. Can be taken up to 3 times for different aspects of character's strange nature, but each must be distinctive and unconnected from the rest."
-properties = { rating = 1, type = "General", requirement = "requires_specialization" }
+properties = { rating = 1, type = "General", requirement = "requires_specialization", visible = "Eerie Presence: {detail}" }
 
 [[traits]]
 category = "flaws"
@@ -1510,19 +1510,19 @@ properties = { rating = 2, type = "Anarch" }
 category = "flaws"
 name = "Flesh of the Corpse"
 description = "Skin retains signs of damage even after it is healed. Each time the character suffers a Physical attack that does 2+ damage, suffers -1 penalty to Physical. Penalty cannot be healed, only goes away after full day of rest."
-properties = { rating = 5, type = "General" }
+properties = { rating = 5, type = "General", visible = "Wounds never close (Flesh of the Corpse)" }
 
 [[traits]]
 category = "flaws"
 name = "Followers of Set: Low Down and Dirty"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan", requirement = "Followers of Set" }
+properties = { rating = 1, type = "Clan", requirement = "Followers of Set", visible = "A vile air (Low Down and Dirty)" }
 
 [[traits]]
 category = "flaws"
 name = "Followers of Set: Serpentine Physiology"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan", requirement = "Followers of Set" }
+properties = { rating = 3, type = "Clan", requirement = "Followers of Set", visible = "Serpentine: forked tongue, snake's eyes" }
 
 [[traits]]
 category = "flaws"
@@ -1552,7 +1552,7 @@ properties = { rating = 3, type = "Clan", requirement = "Gangrel" }
 category = "flaws"
 name = "Gangrel: Roadkill"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan", requirement = "Gangrel" }
+properties = { rating = 1, type = "Clan", requirement = "Gangrel", visible = "Animal form looks dead (Roadkill)" }
 
 [[traits]]
 category = "flaws"
@@ -1576,7 +1576,7 @@ properties = { rating = 2, type = "Clan", requirement = "Gargoyles" }
 category = "flaws"
 name = "Gargoyle: Stone Scarecrow"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan", requirement = "Gargoyles" }
+properties = { rating = 1, type = "Clan", requirement = "Gargoyles", visible = "Palpable dread: mortals keep away" }
 
 [[traits]]
 category = "flaws"
@@ -1666,7 +1666,7 @@ properties = { rating = 1, type = "General" }
 category = "flaws"
 name = "Lasombra: Death's Reflection"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan", requirement = "Lasombra" }
+properties = { rating = 1, type = "Clan", requirement = "Lasombra", visible = "Reflection shows a corpse" }
 
 [[traits]]
 category = "flaws"
@@ -1798,7 +1798,7 @@ properties = { rating = 2, type = "Clan", requirement = "Nosferatu" }
 category = "flaws"
 name = "Nosferatu: Parasitic Infestation"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan", requirement = "Nosferatu" }
+properties = { rating = 3, type = "Clan", requirement = "Nosferatu", visible = "Crawling with parasites" }
 
 [[traits]]
 category = "flaws"
@@ -1810,7 +1810,7 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Obvious Predator"
 description = "Suffer -2 to all interactions with mortals unaware of the supernatural. Cannot purchase the Contacts, Allies, or Influence backgrounds."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", visible = "Obvious Predator: mortals sense menace" }
 
 [[traits]]
 category = "flaws"
@@ -1822,7 +1822,7 @@ properties = { rating = 2, type = "Anarch" }
 category = "flaws"
 name = "One Eye"
 description = "Suffer -5 to all Physical ranged attacks, including guns and thrown."
-properties = { rating = 3, type = "General" }
+properties = { rating = 3, type = "General", visible = "One eye" }
 
 [[traits]]
 category = "flaws"
@@ -1834,13 +1834,13 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Permanent Wound"
 description = "Unhealable wound, lose two Healthy wound levels."
-properties = { rating = 3, type = "General" }
+properties = { rating = 3, type = "General", visible = "Permanent wound" }
 
 [[traits]]
 category = "flaws"
 name = "Pied Piper"
 description = "Animals (specific type chosen when flaw is taken) flock to character, seeing through supernatural concealment."
-properties = { rating = 1, type = "General" }
+properties = { rating = 1, type = "General", visible = "Animals flock to them (Pied Piper)" }
 
 [[traits]]
 category = "flaws"
@@ -1888,7 +1888,7 @@ properties = { rating = 2, type = "Clan", requirement = "Salubri" }
 category = "flaws"
 name = "Salubri: Unblinking Eyes"
 description = "Clan flaw for a second caste"
-properties = { rating = 1, type = "Clan", requirement = "Salubri" }
+properties = { rating = 1, type = "Clan", requirement = "Salubri", visible = "Never blinks; third eye always open" }
 
 [[traits]]
 category = "flaws"
@@ -2020,7 +2020,7 @@ properties = { rating = 2, type = "Clan", requirement = "Tzimisce" }
 category = "flaws"
 name = "Tzimisce: Scar Tissue"
 description = "Clan flaw for a second caste"
-properties = { rating = 3, type = "Clan", requirement = "Tzimisce" }
+properties = { rating = 3, type = "Clan", requirement = "Tzimisce", visible = "Covered in scars" }
 
 [[traits]]
 category = "flaws"
@@ -3474,7 +3474,7 @@ properties = { rating = 2, type = "General" }
 category = "merits"
 name = "Machiavellian Prodigy"
 description = "Treated as one social class higher."
-properties = { rating = 1, type = "Camarilla", requirement = "Neonate or Ancilla" }
+properties = { rating = 1, type = "Camarilla", requirement = "Neonate or Ancilla", social_class = 1 }
 
 [[traits]]
 category = "merits"
@@ -3852,7 +3852,7 @@ properties = { rating = 1, type = "Clan", requirement = "Followers of Set" }
 category = "merits"
 name = "Personal Masquerade"
 description = "Appear alive and healthy. Can consume food and drink. Cannot be on a Path of Enlightenment."
-properties = { rating = 1, type = "General" }
+properties = { rating = 1, type = "General", visible = "Appears alive" }
 
 [[traits]]
 category = "merits"
@@ -4574,42 +4574,52 @@ properties = { rating = 1, type = "Sabbat" }
 [[traits]]
 category = "paths"
 name = "Blood"
+properties = { visible = "Path of Blood" }
 
 [[traits]]
 category = "paths"
 name = "Caine"
+properties = { visible = "Path of Caine" }
 
 [[traits]]
 category = "paths"
 name = "Cathari"
+properties = { visible = "Path of the Cathari" }
 
 [[traits]]
 category = "paths"
 name = "Chivalry"
+properties = { visible = "Path of Chivalry" }
 
 [[traits]]
 category = "paths"
 name = "Death and the Soul"
+properties = { visible = "Path of Death and the Soul" }
 
 [[traits]]
 category = "paths"
 name = "Ecstasy"
+properties = { visible = "Path of Ecstasy" }
 
 [[traits]]
 category = "paths"
 name = "Evil Revelations"
+properties = { visible = "Path of Evil Revelations" }
 
 [[traits]]
 category = "paths"
 name = "Feral Heart"
+properties = { visible = "Path of the Feral Heart" }
 
 [[traits]]
 category = "paths"
 name = "Heaven"
+properties = { visible = "Path of Heaven" }
 
 [[traits]]
 category = "paths"
 name = "Honorable Accord"
+properties = { visible = "Path of Honorable Accord" }
 
 [[traits]]
 category = "paths"
@@ -4618,34 +4628,42 @@ name = "Humanity"
 [[traits]]
 category = "paths"
 name = "Lilith"
+properties = { visible = "Path of Lilith" }
 
 [[traits]]
 category = "paths"
 name = "Metamorphosis"
+properties = { visible = "Path of Metamorphosis" }
 
 [[traits]]
 category = "paths"
 name = "Night"
+properties = { visible = "Path of Night" }
 
 [[traits]]
 category = "paths"
 name = "Orion"
+properties = { visible = "Path of Orion" }
 
 [[traits]]
 category = "paths"
 name = "Paradox"
+properties = { visible = "Path of Paradox" }
 
 [[traits]]
 category = "paths"
 name = "Power and the Inner Voice"
+properties = { visible = "Path of Power and the Inner Voice" }
 
 [[traits]]
 category = "paths"
 name = "Scorched Heart"
+properties = { visible = "Path of the Scorched Heart" }
 
 [[traits]]
 category = "paths"
 name = "Typhon-Set"
+properties = { visible = "Path of Typhon" }
 
 [[traits]]
 category = "rituals"
@@ -6997,6 +7015,7 @@ properties = { rating = 3, type = "Morality" }
 category = "paths"
 name = "Harmony"
 page_reference = "256"
+properties = { visible = "Path of Harmony" }
 
 [[traits]]
 category = "merits"
@@ -7052,7 +7071,7 @@ category = "flaws"
 name = "Baali: Devil's Mark"
 description = "A visible infernal deformity. Obfuscate can hide it but Vicissitude cannot remove it."
 page_reference = "Vol. 2, p. 281"
-properties = { rating = 1, type = "Clan", requirement = "Baali" }
+properties = { rating = 1, type = "Clan", requirement = "Baali", visible = "Devil's Mark: an infernal deformity" }
 
 [[traits]]
 category = "flaws"

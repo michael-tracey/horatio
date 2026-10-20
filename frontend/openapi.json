@@ -531,6 +531,197 @@
         "title": "BackupsOut",
         "type": "object"
       },
+      "BadgeOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "social_age": {
+            "title": "Social Age",
+            "type": "string"
+          },
+          "status": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
+          "visible": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Visible",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan",
+          "social_age",
+          "titles",
+          "status",
+          "visible",
+          "picture",
+          "logo"
+        ],
+        "title": "BadgeOut",
+        "type": "object"
+      },
+      "BadgesOut": {
+        "properties": {
+          "badges": {
+            "items": {
+              "$ref": "#/components/schemas/BadgeOut"
+            },
+            "title": "Badges",
+            "type": "array"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "troupe_name",
+          "badges"
+        ],
+        "title": "BadgesOut",
+        "type": "object"
+      },
+      "Body_upload_logo_api_clan_logos_post": {
+        "properties": {
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clan",
+          "file"
+        ],
+        "title": "Body_upload_logo_api_clan_logos_post",
+        "type": "object"
+      },
+      "Body_upload_picture_api_characters__character_id__picture_post": {
+        "properties": {
+          "crop_size": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Size"
+          },
+          "crop_x": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop X"
+          },
+          "crop_y": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Y"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_picture_api_characters__character_id__picture_post",
+        "type": "object"
+      },
       "BuildingTroupe": {
         "properties": {
           "troupe_id": {
@@ -879,6 +1070,17 @@
             ],
             "title": "Building Troupe Id"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "creation_complete": {
             "title": "Creation Complete",
             "type": "boolean"
@@ -908,6 +1110,18 @@
             "title": "Name",
             "type": "string"
           },
+          "next_rename_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Rename On"
+          },
           "owner_troupe_id": {
             "anyOf": [
               {
@@ -919,6 +1133,17 @@
               }
             ],
             "title": "Owner Troupe Id"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
           },
           "player_id": {
             "format": "uuid",
@@ -944,7 +1169,10 @@
           "building_troupe_id",
           "creation_complete",
           "kind",
-          "owner_troupe_id"
+          "owner_troupe_id",
+          "next_rename_on",
+          "picture",
+          "clan"
         ],
         "title": "CharacterOut",
         "type": "object"
@@ -1073,6 +1301,70 @@
           "to_name"
         ],
         "title": "ChoiceChange",
+        "type": "object"
+      },
+      "ClanLogoOut": {
+        "properties": {
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo"
+          },
+          "logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Id"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "splat",
+          "clan",
+          "logo",
+          "logo_id"
+        ],
+        "title": "ClanLogoOut",
+        "type": "object"
+      },
+      "ClanLogosOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanLogoOut"
+            },
+            "title": "Clans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "available",
+          "clans"
+        ],
+        "title": "ClanLogosOut",
         "type": "object"
       },
       "ConnectorChange": {
@@ -1576,6 +1868,36 @@
           "needs"
         ],
         "title": "CreationOut",
+        "type": "object"
+      },
+      "CropIn": {
+        "description": "The square portrait's place in the picture, as fractions: its left and top\nedges of the picture's width and height, and its side of the width.",
+        "properties": {
+          "size": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Size",
+            "type": "number"
+          },
+          "x": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "size"
+        ],
+        "title": "CropIn",
         "type": "object"
       },
       "CycleChanges": {
@@ -2194,6 +2516,46 @@
         "title": "FilterMatch",
         "type": "object"
       },
+      "Forgot": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "Forgot",
+        "type": "object"
+      },
+      "ForgotAnswer": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ForgotAnswer",
+        "type": "object"
+      },
+      "ForgotHelp": {
+        "properties": {
+          "can_email": {
+            "title": "Can Email",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_email"
+        ],
+        "title": "ForgotHelp",
+        "type": "object"
+      },
       "GameLog": {
         "properties": {
           "game": {
@@ -2497,6 +2859,46 @@
           "url"
         ],
         "title": "Link",
+        "type": "object"
+      },
+      "LiveReset": {
+        "properties": {
+          "asked_themselves": {
+            "title": "Asked Themselves",
+            "type": "boolean"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name",
+          "email",
+          "expires_at",
+          "made_by",
+          "asked_themselves"
+        ],
+        "title": "LiveReset",
         "type": "object"
       },
       "LogEntry": {
@@ -3110,6 +3512,17 @@
             "title": "Link",
             "type": "string"
           },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "read": {
             "title": "Read",
             "type": "boolean"
@@ -3155,7 +3568,8 @@
           "summary",
           "link",
           "at",
-          "read"
+          "read",
+          "picture"
         ],
         "title": "NotificationOut",
         "type": "object"
@@ -3257,6 +3671,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "completion_xp_awarded": {
             "anyOf": [
               {
@@ -3276,6 +3701,17 @@
           "late_accepted": {
             "title": "Late Accepted",
             "type": "boolean"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
           },
           "removed": {
             "title": "Removed",
@@ -3301,6 +3737,8 @@
           "id",
           "character_id",
           "character_name",
+          "picture",
+          "clan",
           "allowance",
           "breakdown",
           "adjustments",
@@ -3311,6 +3749,30 @@
           "completion_xp_awarded"
         ],
         "title": "ParticipantOut",
+        "type": "object"
+      },
+      "PasswordResets": {
+        "properties": {
+          "live": {
+            "items": {
+              "$ref": "#/components/schemas/LiveReset"
+            },
+            "title": "Live",
+            "type": "array"
+          },
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Log",
+            "type": "array"
+          }
+        },
+        "required": [
+          "live",
+          "log"
+        ],
+        "title": "PasswordResets",
         "type": "object"
       },
       "PendingDisciplineOut": {
@@ -3403,6 +3865,67 @@
           "pick"
         ],
         "title": "PickedTrait",
+        "type": "object"
+      },
+      "PictureOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CropIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "uploaded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded At"
+          },
+          "uploaded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded By"
+          }
+        },
+        "required": [
+          "available",
+          "picture",
+          "crop",
+          "uploaded_by",
+          "uploaded_at"
+        ],
+        "title": "PictureOut",
         "type": "object"
       },
       "PlayTrait": {
@@ -3693,6 +4216,18 @@
             "format": "date-time",
             "title": "Member Since",
             "type": "string"
+          },
+          "reset_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reset Expires At"
           }
         },
         "required": [
@@ -3704,7 +4239,8 @@
           "discord_handle",
           "is_custodian",
           "email",
-          "characters"
+          "characters",
+          "reset_expires_at"
         ],
         "title": "PlayerOut",
         "type": "object"
@@ -3728,13 +4264,26 @@
             "format": "date-time",
             "title": "Member Since",
             "type": "string"
+          },
+          "reset_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reset Expires At"
           }
         },
         "required": [
           "id",
           "display_name",
           "email",
-          "member_since"
+          "member_since",
+          "reset_expires_at"
         ],
         "title": "PlayerSummary",
         "type": "object"
@@ -3925,6 +4474,17 @@
             "title": "Kind",
             "type": "string"
           },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "player_name": {
             "title": "Player Name",
             "type": "string"
@@ -3965,6 +4525,7 @@
           "splat",
           "troupe_name",
           "titles",
+          "picture",
           "kind",
           "home",
           "accepted_at",
@@ -4028,6 +4589,20 @@
               }
             ],
             "title": "Rating"
+          },
+          "specializes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specializes"
           }
         },
         "required": [
@@ -4038,7 +4613,8 @@
           "detail",
           "rating",
           "attribute",
-          "pending_from"
+          "pending_from",
+          "specializes"
         ],
         "title": "PrintedTrait",
         "type": "object"
@@ -4380,6 +4956,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "discipline": {
             "anyOf": [
               {
@@ -4398,6 +4985,17 @@
           "kind": {
             "title": "Kind",
             "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
           },
           "player_note": {
             "title": "Player Note",
@@ -4433,6 +5031,8 @@
           "player_note",
           "staff_note",
           "character_name",
+          "picture",
+          "clan",
           "discipline",
           "reconciliation"
         ],
@@ -4669,26 +5269,30 @@
         "title": "ResetFor",
         "type": "object"
       },
-      "ResetIn": {
+      "ResetLink": {
         "properties": {
-          "game_id": {
+          "email_error": {
             "anyOf": [
               {
-                "format": "uuid",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Game Id"
-          }
-        },
-        "title": "ResetIn",
-        "type": "object"
-      },
-      "ResetLink": {
-        "properties": {
+            "title": "Email Error"
+          },
+          "emailed_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emailed To"
+          },
           "expires_at": {
             "format": "date-time",
             "title": "Expires At",
@@ -4777,6 +5381,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "disciplines_waiting": {
             "title": "Disciplines Waiting",
             "type": "integer"
@@ -4794,6 +5409,17 @@
             "title": "Kind",
             "type": "string"
           },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "player_id": {
             "anyOf": [
               {
@@ -4808,6 +5434,10 @@
           },
           "player_name": {
             "title": "Player Name",
+            "type": "string"
+          },
+          "social_age": {
+            "title": "Social Age",
             "type": "string"
           },
           "titles": {
@@ -4829,6 +5459,9 @@
           "player_id",
           "kind",
           "titles",
+          "picture",
+          "clan",
+          "social_age",
           "home",
           "waiting",
           "disciplines_waiting",
@@ -5200,6 +5833,24 @@
           "role"
         ],
         "title": "StaffAssignment",
+        "type": "object"
+      },
+      "StaffBadgeOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "title": "StaffBadgeOut",
         "type": "object"
       },
       "StaffMember": {
@@ -6404,6 +7055,20 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VisibleNote": {
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "VisibleNote",
+        "type": "object"
+      },
       "WorkCycle": {
         "properties": {
           "id": {
@@ -6709,6 +7374,35 @@
         ],
         "title": "XpSummary",
         "type": "object"
+      },
+      "horatio__api__play__ResetIn": {
+        "properties": {
+          "game_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Id"
+          }
+        },
+        "title": "ResetIn",
+        "type": "object"
+      },
+      "horatio__api__players__ResetIn": {
+        "properties": {
+          "email": {
+            "default": false,
+            "title": "Email",
+            "type": "boolean"
+          }
+        },
+        "title": "ResetIn",
+        "type": "object"
       }
     }
   },
@@ -6824,6 +7518,68 @@
         ]
       }
     },
+    "/api/auth/forgot": {
+      "get": {
+        "description": "Whether someone who forgot their password can ask Horatio for a link.",
+        "operationId": "forgot_help_api_auth_forgot_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgotHelp"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Forgot Help",
+        "tags": [
+          "auth"
+        ]
+      },
+      "post": {
+        "description": "Email a reset link to an account's own address, if an account uses it. The\nanswer is the same either way, so it never says who has an account; so is\nbeing turned away for asking too often.",
+        "operationId": "forgot_password_api_auth_forgot_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Forgot"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgotAnswer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forgot Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/auth/login": {
       "post": {
         "operationId": "sign_in_api_auth_login_post",
@@ -6902,7 +7658,7 @@
     },
     "/api/auth/reset": {
       "post": {
-        "description": "Set a new password from the custodian's link. Ends every other session the\nperson had, and signs them in here.",
+        "description": "Set a new password from a reset link. Ends every other session the person had,\nand signs them in here.",
         "operationId": "reset_password_api_auth_reset_post",
         "requestBody": {
           "content": {
@@ -7245,6 +8001,7 @@
         ]
       },
       "patch": {
+        "description": "Rename the character: its player, at most once every three months while it is\nin a troupe, or the custodian at any time (see horatio/renames.py).",
         "operationId": "change_character_api_characters__character_id__patch",
         "parameters": [
           {
@@ -7293,6 +8050,67 @@
         "summary": "Change Character",
         "tags": [
           "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/badge": {
+      "get": {
+        "description": "One character's badge, with its titles in `troupe_id` (by default its home\ntroupe, else the first troupe it joined).",
+        "operationId": "character_badge_api_characters__character_id__badge_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Badge",
+        "tags": [
+          "badges"
         ]
       }
     },
@@ -8157,6 +8975,246 @@
         ]
       }
     },
+    "/api/characters/{character_id}/picture": {
+      "delete": {
+        "description": "Take the picture away. Whoever uploaded it is told, unless it was them.",
+        "operationId": "remove_picture_api_characters__character_id__picture_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Picture",
+        "tags": [
+          "pictures"
+        ]
+      },
+      "get": {
+        "operationId": "read_picture_api_characters__character_id__picture_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PictureOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Picture",
+        "tags": [
+          "pictures"
+        ]
+      },
+      "post": {
+        "description": "A new picture, replacing any the character has. Without a crop, the\nportrait is the biggest square in the middle.",
+        "operationId": "upload_picture_api_characters__character_id__picture_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_picture_api_characters__character_id__picture_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PictureOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Picture",
+        "tags": [
+          "pictures"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/picture/crop": {
+      "put": {
+        "description": "Move the portrait's crop, cutting it again from the picture as kept.",
+        "operationId": "crop_picture_api_characters__character_id__picture_crop_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CropIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PictureOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Crop Picture",
+        "tags": [
+          "pictures"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/pictures/{picture_id}/{name}": {
+      "get": {
+        "description": "One of the picture's files. A picture's files never change (a new one has a\nnew id), so browsers may keep them; privately, as only some people see them.",
+        "operationId": "picture_file_api_characters__character_id__pictures__picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Picture File",
+        "tags": [
+          "pictures"
+        ]
+      }
+    },
     "/api/characters/{character_id}/play": {
       "get": {
         "description": "The character's trackers and limited uses at the game now, and its log.",
@@ -8431,7 +9489,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResetIn"
+                "$ref": "#/components/schemas/horatio__api__play__ResetIn"
               }
             }
           },
@@ -9220,6 +10278,101 @@
         ]
       }
     },
+    "/api/characters/{character_id}/visible-note": {
+      "get": {
+        "operationId": "read_visible_note_api_characters__character_id__visible_note_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisibleNote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Visible Note",
+        "tags": [
+          "badges"
+        ]
+      },
+      "put": {
+        "description": "What others can see or sense about the character that the rules data does\nnot cover, for its badge. Written by staff, not the player.",
+        "operationId": "set_visible_note_api_characters__character_id__visible_note_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisibleNote"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisibleNote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Visible Note",
+        "tags": [
+          "badges"
+        ]
+      }
+    },
     "/api/characters/{character_id}/xp": {
       "get": {
         "operationId": "xp_history_api_characters__character_id__xp_get",
@@ -9380,6 +10533,149 @@
         "summary": "Correct Xp",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/clan-logos": {
+      "get": {
+        "operationId": "list_logos_api_clan_logos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanLogosOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Logos",
+        "tags": [
+          "clan logos"
+        ]
+      },
+      "post": {
+        "description": "A clan's logo, replacing any it has.",
+        "operationId": "upload_logo_api_clan_logos_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_logo_api_clan_logos_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanLogoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Logo",
+        "tags": [
+          "clan logos"
+        ]
+      }
+    },
+    "/api/clan-logos/{image_id}/{name}": {
+      "get": {
+        "description": "A logo's file, for anyone signed in. Like pictures' files, they never change.",
+        "operationId": "logo_file_api_clan_logos__image_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "image_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Image Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logo File",
+        "tags": [
+          "clan logos"
+        ]
+      }
+    },
+    "/api/clan-logos/{logo_id}": {
+      "delete": {
+        "operationId": "remove_logo_api_clan_logos__logo_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "logo_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Logo Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Logo",
+        "tags": [
+          "clan logos"
         ]
       }
     },
@@ -10312,6 +11608,50 @@
         ]
       }
     },
+    "/api/password-resets": {
+      "get": {
+        "description": "For the custodian: the reset links live now, and who has made, asked for and\nused them.",
+        "operationId": "password_resets_api_password_resets_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResets"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Password Resets",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/api/players": {
       "get": {
         "description": "Every account whose name or email has `q` in it, for the custodian.",
@@ -10405,8 +11745,43 @@
       }
     },
     "/api/players/{user_id}/password-reset": {
+      "delete": {
+        "description": "Cancel the player's live reset link, so it no longer works.",
+        "operationId": "cancel_password_reset_api_players__user_id__password_reset_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Password Reset",
+        "tags": [
+          "players"
+        ]
+      },
       "post": {
-        "description": "A one-time link, good for a day, that lets the player set a new password.\nThe custodian passes it on; it replaces any earlier link.",
+        "description": "A one-time link, good for a day, that lets the player set a new password.\nThe custodian passes it on, or has Horatio email it to the player's address;\nit replaces any earlier link.",
         "operationId": "reset_password_api_players__user_id__password_reset_post",
         "parameters": [
           {
@@ -10420,6 +11795,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/horatio__api__players__ResetIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "content": {
@@ -11500,6 +12892,70 @@
         "summary": "Troupe Approvals",
         "tags": [
           "approvals"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/badges": {
+      "get": {
+        "description": "Badges for the characters named, in that order, or every character in the\ntroupe now, in the roster's order.",
+        "operationId": "troupe_badges_api_troupes__troupe_id__badges_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "characters",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Characters"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadgesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Badges",
+        "tags": [
+          "badges"
         ]
       }
     },
@@ -13221,6 +14677,54 @@
         "summary": "Assign Staff",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/staff-badges": {
+      "get": {
+        "description": "Badges for the troupe's staff: each person's name and role, lead first.",
+        "operationId": "staff_badges_api_troupes__troupe_id__staff_badges_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StaffBadgeOut"
+                  },
+                  "title": "Response Staff Badges Api Troupes  Troupe Id  Staff Badges Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Staff Badges",
+        "tags": [
+          "badges"
         ]
       }
     },

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { QueuedApproval } from "../../api/types";
+import { Avatar } from "../../components/Avatar";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { describeDifference, settlementLabel } from "../../settlements";
@@ -65,7 +66,8 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   return (
     <Card
       title={
-        <Link to={`/characters/${approval.character_id}`} className="hover:underline">
+        <Link to={`/characters/${approval.character_id}`} className="inline-flex items-center gap-2 hover:underline">
+          <Avatar name={approval.character_name} picture={approval.picture} clan={approval.clan} size="xs" />
           {approval.character_name}
         </Link>
       }

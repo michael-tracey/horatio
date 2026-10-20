@@ -59,7 +59,8 @@ jobs:
       - name: Start Horatio
         working-directory: backend
         run: |
-          HORATIO_FRONTEND_DIST=$GITHUB_WORKSPACE/frontend/dist uv run uvicorn horatio.app:app --port 8766 &
+          mkdir -p "$RUNNER_TEMP/uploads"
+          HORATIO_FRONTEND_DIST=$GITHUB_WORKSPACE/frontend/dist HORATIO_UPLOAD_DIR=$RUNNER_TEMP/uploads uv run uvicorn horatio.app:app --port 8766 &
           for i in $(seq 1 30); do curl -sf localhost:8766/api/health && break; sleep 1; done
       - run: npx playwright test
         working-directory: frontend

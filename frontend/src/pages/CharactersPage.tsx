@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
+import { Avatar } from "../components/Avatar";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Select } from "../components/ui";
 import { useAction } from "../hooks";
 import { BuildFor } from "./character/BuildFor";
@@ -29,9 +30,15 @@ export function CharactersPage() {
               {characters.data.map((c) => (
                 <li key={c.id}>
                   <Link to={`/characters/${c.id}`} className="flex items-center justify-between gap-3 py-3 hover:text-gold">
-                    <span>
-                      <span className="text-base">{c.name}</span>
-                      <span className="ml-2 text-sm text-mist capitalize">{c.splat}</span>
+                    <span className="flex min-w-0 items-center gap-3">
+                      <Avatar name={c.name} picture={c.picture} clan={c.clan} />
+                      <span className="min-w-0">
+                        <span className="text-base">{c.name}</span>
+                        <span className="ml-2 text-sm text-mist capitalize">
+                          {c.splat}
+                          {c.clan && ` · ${c.clan}`}
+                        </span>
+                      </span>
                     </span>
                     <Badge tone={c.status === "active" ? "gold" : c.status === "retired" ? "mist" : "blood"}>{c.status}</Badge>
                   </Link>

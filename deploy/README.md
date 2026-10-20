@@ -91,7 +91,9 @@ keeps the image's own.
 Every night at 03:17 (host time), `/opt/docker-apps/horatio/backup.sh`:
 
 - dumps the database
-- uploads it to `gs://lotslarp-horatio-backups`, which deletes copies after 30 days
+- packs up the uploaded pictures (`/opt/docker-apps/horatio/uploads`, mounted in the
+  app as `HORATIO_UPLOAD_DIR`) as `horatio-uploads-<time>.tar.gz`
+- uploads both to `gs://lotslarp-horatio-backups`, which deletes copies after 30 days
 - keeps the last week in `/opt/docker-apps/horatio/backups`
 
 Its log is `/var/log/horatio-backup.log`.
@@ -110,6 +112,13 @@ docker exec horatio-db dropdb -U horatio horatio
 docker exec horatio-db createdb -U horatio horatio
 gunzip -c horatio-YYYYMMDDTHHMMSSZ.sql.gz | docker exec -i horatio-db psql -U horatio horatio
 docker start horatio-api
+```
+
+Pictures are restored from the night's `horatio-uploads-<time>.tar.gz` beside it:
+
+```bash
+sudo tar -xzf horatio-uploads-YYYYMMDDTHHMMSSZ.tar.gz -C /opt/docker-apps/horatio
+sudo chown -R 10001 /opt/docker-apps/horatio/uploads
 ```
 
 A backup from the bucket: `gcloud storage cp gs://lotslarp-horatio-backups/<name> .`.

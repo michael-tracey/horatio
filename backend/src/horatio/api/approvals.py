@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from horatio import sheets
+from horatio import pictures, sheets, social_age
 from horatio.api.sheets import ApprovalOut, approval_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Approval, Character, DisciplinePurchase, TraitDefinition, Troupe
@@ -45,6 +45,9 @@ class DisciplineOut(BaseModel):
 
 class QueuedApproval(ApprovalOut):
     character_name: str
+    # The character's picture (horatio.pictures) and clan, for its placeholder.
+    picture: str | None
+    clan: str | None
     # For a discipline: the dots bought and what they cost.
     discipline: DisciplineOut | None
     # For a home troupe change: each difference and how it is to be settled.
@@ -130,16 +133,21 @@ def troupe_approvals(
     if troupe is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     require_troupe_action(db, user, troupe, TroupeAction.APPROVE_CHANGES)
-    rows = db.execute(
-        select(Approval, Character)
-        .join(Character, Approval.character_id == Character.id)
-        .where(Approval.troupe_id == troupe.id, Approval.status == state)
-        .order_by(Approval.id)
+    rows = list(
+        db.execute(
+            select(Approval, Character)
+            .join(Character, Approval.character_id == Character.id)
+            .where(Approval.troupe_id == troupe.id, Approval.status == state)
+            .order_by(Approval.id)
+        )
     )
+    standing = social_age.standings(db, list({c.id for _, c in rows}))
     return [
         QueuedApproval(
             **approval_out(a).model_dump(),
             character_name=c.name,
+            picture=pictures.picture_url(c.id, c.picture_id),
+            clan=standing[c.id].clan,
             discipline=discipline_out(db, a),
             reconciliation=reconciliation_out(db, a),
         )

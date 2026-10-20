@@ -1,17 +1,24 @@
 #!/bin/bash
-# Written by Horatio's deploy/playbook.yml. Nightly: dump the horatio database,
-# upload it to gs://{{ backup_bucket }} (which deletes copies after 30 days) and
-# keep the last week here too. Restore: see deploy/README.md.
+# Written by Horatio's deploy/playbook.yml. Nightly: dump the horatio database and
+# pack up the uploaded pictures, upload both to gs://{{ backup_bucket }} (which
+# deletes copies after 30 days) and keep the last week here too. Restore: see
+# deploy/README.md.
 set -euo pipefail
 dir={{ app_dir }}/backups
-name="horatio-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
+at=$(date -u +%Y%m%dT%H%M%SZ)
+name="horatio-$at.sql.gz"
+pictures="horatio-uploads-$at.tar.gz"
 
 docker exec horatio-db pg_dump -U horatio --no-owner horatio | gzip > "$dir/$name"
+# Pictures are not in the database: characters' pictures and clan logos.
+tar -czf "$dir/$pictures" -C {{ app_dir }} uploads
 token=$(curl -sf -H "Metadata-Flavor: Google" \
   "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
   | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
-curl -sf -X POST --data-binary "@$dir/$name" \
-  -H "Authorization: Bearer $token" -H "Content-Type: application/gzip" \
-  "https://storage.googleapis.com/upload/storage/v1/b/{{ backup_bucket }}/o?uploadType=media&name=$name" >/dev/null
-find "$dir" -name 'horatio-*.sql.gz' -mtime +7 -delete
-echo "$(date -u +%FT%TZ) backed up $name"
+for file in "$name" "$pictures"; do
+  curl -sf -X POST --data-binary "@$dir/$file" \
+    -H "Authorization: Bearer $token" -H "Content-Type: application/gzip" \
+    "https://storage.googleapis.com/upload/storage/v1/b/{{ backup_bucket }}/o?uploadType=media&name=$file" >/dev/null
+done
+find "$dir" \( -name 'horatio-*.sql.gz' -o -name 'horatio-uploads-*.tar.gz' \) -mtime +7 -delete
+echo "$(date -u +%FT%TZ) backed up $name and $pictures"
