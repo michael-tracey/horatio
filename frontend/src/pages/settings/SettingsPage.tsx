@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Preferences } from "../../api/types";
 import { Card, ErrorText, Select } from "../../components/ui";
 import { usePreferences, useSetPreferences } from "../../hooks";
+import { HandleCard } from "./HandleCard";
 
 type Key = keyof Preferences;
 
@@ -186,7 +187,7 @@ export function SettingsPage() {
         </Setting>
       </Card>
 
-      {/* #103: your handle goes here. */}
+      <HandleCard />
 
       {/* #106: notifications by email go here. */}
 

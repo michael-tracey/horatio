@@ -91,7 +91,7 @@ def an_hour_later(session: Session) -> None:
 
 
 def sign_in(client: TestClient, address: str, password: str) -> int:
-    return client.post("/auth/login", json={"email": address, "password": password}).status_code
+    return client.post("/auth/login", json={"login": address, "password": password}).status_code
 
 
 # --- forgot your password ----------------------------------------------------------------------

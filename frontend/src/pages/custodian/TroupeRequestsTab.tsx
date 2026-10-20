@@ -45,7 +45,9 @@ export function TroupeRequestsTab() {
                   ) : (
                     r.name
                   )}{" "}
-                  <span className="text-mist">for {r.requester_name}</span>
+                  <span className="text-mist">
+                    for {r.requester_name} (@{r.requester_handle})
+                  </span>
                   {r.reason && <span className="block text-xs text-mist">{r.reason}</span>}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-mist">
@@ -78,7 +80,8 @@ function Waiting({ request: r }: { request: TroupeRequestOut }) {
           asked by{" "}
           <Link to={`/players/${r.requester_id}`} className="text-gold hover:underline">
             {r.requester_name}
-          </Link>
+          </Link>{" "}
+          (@{r.requester_handle})
           , {when(r.created_at)}
         </span>
       </div>

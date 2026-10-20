@@ -1,11 +1,12 @@
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import preferences
+from horatio import handles, preferences
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
@@ -24,10 +25,13 @@ class SignUp(BaseModel):
     email: EmailStr
     password: str = Field(min_length=MIN_PASSWORD_LENGTH)
     display_name: str = Field(min_length=1, max_length=100)
+    # How others will find them (horatio.handles); made from their name if not given.
+    handle: str | None = None
 
 
 class SignIn(BaseModel):
-    email: EmailStr
+    # Their email or their handle.
+    login: str = Field(min_length=1)
     password: str
 
 
@@ -58,6 +62,9 @@ class Me(BaseModel):
     id: uuid.UUID
     email: str
     display_name: str
+    handle: str
+    # When they can next change their handle; None if they can now.
+    next_handle_change: datetime | None
     is_custodian: bool
     # Their settings, so the app has them from the start (horatio.preferences).
     preferences: Preferences
@@ -68,6 +75,8 @@ def me(user: User) -> Me:
         id=user.id,
         email=user.email,
         display_name=user.display_name,
+        handle=user.handle,
+        next_handle_change=handles.next_change(user),
         is_custodian=user.is_custodian,
         preferences=preferences.read(user),
     )
@@ -91,6 +100,15 @@ def user_by_email(db: DbSession, email: str) -> User | None:
     return db.scalar(select(User).where(func.lower(User.email) == email.lower()))
 
 
+def user_by_login(db: DbSession, login: str) -> User | None:
+    """The account an email or a handle (with or without its @) signs in to."""
+    login = login.strip()
+    if "@" in login.removeprefix("@"):
+        return user_by_email(db, login)
+    handle = login.removeprefix("@").lower()
+    return db.scalar(select(User).where(func.lower(User.handle) == handle))
+
+
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def sign_up(body: SignUp, db: DbSession, response: Response) -> Me:
     if user_by_email(db, body.email) is not None:
@@ -98,6 +116,11 @@ def sign_up(body: SignUp, db: DbSession, response: Response) -> Me:
     user = User(
         email=body.email,
         display_name=body.display_name,
+        handle=(
+            handles.choose(db, body.handle)
+            if body.handle and body.handle.strip()
+            else handles.suggest(db, body.display_name)
+        ),
         password_hash=hash_password(body.password),
     )
     db.add(user)
@@ -109,10 +132,10 @@ def sign_up(body: SignUp, db: DbSession, response: Response) -> Me:
 
 @router.post("/login")
 def sign_in(body: SignIn, db: DbSession, response: Response) -> Me:
-    user = user_by_email(db, body.email)
+    user = user_by_login(db, body.login)
     ok, new_hash = verify_password(body.password, user.password_hash if user else None)
     if user is None or not ok:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email or password.")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email, handle or password.")
     if new_hash is not None:
         user.password_hash = new_hash
     set_session_cookie(response, start_session(db, user))

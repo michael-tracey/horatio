@@ -12,16 +12,19 @@ const run = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 const PASSWORD = "a long enough password";
 const shots = (name: string) => ({ path: `test-results/screens/${test.info().project.name}-${name}.png`, fullPage: true });
 
-async function person(browser: Browser, name: string): Promise<{ page: Page; email: string }> {
+async function person(browser: Browser, name: string): Promise<{ page: Page; email: string; handle: string }> {
   const page = await (await browser.newContext()).newPage();
   const email = `${name}-${run}@example.com`;
+  // Unique to the run, and within a handle's 30 characters.
+  const handle = `${name.slice(0, 14)}_${run.slice(-10)}`;
   await page.goto("/sign-up");
   await page.getByLabel("Your name").fill(name);
+  await page.getByLabel("Handle").fill(handle);
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
-  return { page, email };
+  return { page, email, handle };
 }
 
 function makeCustodian(email: string) {
@@ -43,7 +46,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
-  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
@@ -53,9 +56,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: "Staff" }).click();
   await expect(lead.page.getByRole("heading", { name: "Add or change staff" })).toBeVisible();
   await lead.page.screenshot(shots("troupe-nav"));
-  await lead.page.getByLabel("Email").fill(narrator.email);
+  // Found by typing part of their handle, and picked from what comes up.
+  await lead.page.getByLabel("Handle").fill(narrator.handle.slice(0, -3));
+  await lead.page.getByRole("option", { name: `@${narrator.handle}` }).click();
+  await expect(lead.page.getByLabel("Handle")).toHaveValue(narrator.handle);
   await lead.page.getByRole("button", { name: "Save" }).click();
-  await expect(lead.page.getByText("narrator · Narrator")).toBeVisible();
+  await expect(lead.page.getByText(`@${narrator.handle} · Narrator`)).toBeVisible();
 
   // The player builds a character in the creation wizard, then buys Influence with XP.
   const p = player.page;
@@ -460,7 +466,7 @@ test("a troupe changes what new characters start with and their downtime actions
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
-  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
@@ -525,7 +531,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
-  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   const created = custodian.page.waitForResponse((r) => r.url().endsWith("/api/troupes") && r.request().method() === "POST");
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   const response = await created;
@@ -622,6 +628,7 @@ test("a player fills in their profile, and the custodian resets their password",
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
   const row = c.locator("main li").filter({ hasText: player.email });
+  await expect(row.getByText(`@${player.handle} · ${player.email}`, { exact: false })).toBeVisible();
   await row.getByRole("button", { name: "Reset password for people-player" }).click();
   await expect(row.getByText("Send it to them yourself.")).toBeVisible();
   await row.getByRole("button", { name: "Make a reset link" }).click();
@@ -642,7 +649,7 @@ test("a player fills in their profile, and the custodian resets their password",
   // They open the profile.
   await c.locator("main").getByRole("link", { name: new RegExp(player.email) }).click();
   await expect(c.getByRole("heading", { name: "people-player" })).toBeVisible();
-  await expect(c.getByText(/^Member since .+\(new this month\)$/)).toBeVisible();
+  await expect(c.getByText(new RegExp(`^@${player.handle} · Member since .+\\(new this month\\)$`))).toBeVisible();
   await expect(c.getByText("Playing since the Masquerade was young.")).toBeVisible();
   await expect(c.getByText("@carbuncle_fan")).toBeVisible();
   await expect(c.getByRole("link", { name: "bsky.app/profile/carbuncle.example" })).toBeVisible();
@@ -691,7 +698,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
-  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
@@ -805,7 +812,7 @@ test("a player renames their character once in three months, and the custodian a
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
-  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
@@ -875,7 +882,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
-  await custodian.page.getByLabel("Lead storyteller's email").fill(lead.email);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
@@ -1017,4 +1024,25 @@ test("settings are kept on the account, and the dark is not optional", async ({ 
   await expect(mode.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
   await expect(page.getByText("The World of Darkness is always dark.")).toBeVisible();
   await page.screenshot(shots("settings"));
+});
+
+test("a handle to be found by, and to sign in with", async ({ browser }) => {
+  const { page } = await person(browser, "handle-player");
+  await page.getByRole("link", { name: "handle-player" }).click();
+  await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
+  await expect(page.getByLabel("Your handle")).toHaveValue(`handle-player_${run.slice(-10)}`);
+  const handle = `Owl_${run.slice(-10)}`;
+  await page.getByLabel("Your handle").fill(handle);
+  await page.getByRole("button", { name: "Change handle" }).click();
+  await expect(page.getByText(`Your handle is now @${handle}.`)).toBeVisible();
+  await expect(page.getByText(/^You can change it again on /)).toBeVisible();
+  await page.screenshot(shots("settings-handle"));
+
+  // Signing in with it, in any case, from another browser.
+  const other = await (await browser.newContext()).newPage();
+  await other.goto("/sign-in");
+  await other.getByLabel("Email or handle").fill(handle.toLowerCase());
+  await other.getByLabel("Password").fill(PASSWORD);
+  await other.getByRole("button", { name: "Sign in" }).click();
+  await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
 });
