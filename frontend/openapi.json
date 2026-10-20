@@ -3617,6 +3617,20 @@
               }
             ],
             "title": "Rating"
+          },
+          "specializes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specializes"
           }
         },
         "required": [
@@ -3627,7 +3641,8 @@
           "detail",
           "rating",
           "attribute",
-          "pending_from"
+          "pending_from",
+          "specializes"
         ],
         "title": "PrintedTrait",
         "type": "object"

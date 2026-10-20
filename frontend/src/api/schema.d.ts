@@ -3475,6 +3475,10 @@ export interface components {
             pending_from: number | null;
             /** Rating */
             rating: number | null;
+            /** Specializes */
+            specializes: {
+                [key: string]: string;
+            } | null;
         };
         /**
          * ProblemOut
