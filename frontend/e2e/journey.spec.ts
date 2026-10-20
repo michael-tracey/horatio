@@ -565,6 +565,16 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByText("27 XP")).toBeVisible();
   await p.screenshot(shots("npc"));
 
+  // Its badge, from the Build tab: the same dialog as a player character's, then printing.
+  await p.getByRole("button", { name: "Badge", exact: true }).click();
+  await expect(p.getByRole("dialog").getByText("Path of Caine")).toBeVisible();
+  const npcBadgeTab = p.context().waitForEvent("page");
+  await p.getByRole("dialog").getByRole("button", { name: "Print badge" }).click();
+  const npcBadge = await npcBadgeTab;
+  await expect(npcBadge.getByRole("article", { name: "Badge for Prince Vasquez" }).getByText("Ventrue · Neonate")).toBeVisible();
+  await npcBadge.close();
+  await p.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+
   // Titles are given on the troupe's Characters tab.
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
@@ -579,6 +589,29 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("link", { name: "Troupe", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
   await expect(p.getByText("npc-lead gave Prince Vasquez the title Prince.")).toBeVisible();
+
+  // The NPC list: badges for those ticked or for every NPC, and each one's Play View.
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const another = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers: { "X-Horatio": "1" }, data: { name: "Sheriff Ilse", wizard: false } });
+  expect(another.status(), await another.text()).toBe(201);
+  await p.goto(`/troupes/${troupeId}/npcs`);
+  await p.getByLabel("Select Prince Vasquez").check();
+  let badgesTab = p.context().waitForEvent("page");
+  await p.getByRole("button", { name: "Badges for selected (1)" }).click();
+  let badges = await badgesTab;
+  await expect(badges.getByRole("article")).toHaveCount(1);
+  await expect(badges.getByRole("article", { name: "Badge for Prince Vasquez" }).getByText("Prince", { exact: true })).toBeVisible();
+  await badges.close();
+  badgesTab = p.context().waitForEvent("page");
+  await p.getByRole("button", { name: "Badges for all NPCs" }).click();
+  badges = await badgesTab;
+  await expect(badges.getByRole("article")).toHaveCount(2);
+  await expect(badges.getByRole("article", { name: "Badge for Sheriff Ilse" })).toBeVisible();
+  await badges.close();
+  await p.screenshot(shots("npcs"));
+  await p.getByRole("link", { name: "Play Sheriff Ilse" }).click();
+  await expect(p.getByRole("heading", { name: "Sheriff Ilse" })).toBeVisible();
+  await expect(p.getByRole("tab", { name: "Tracker" })).toBeVisible();
 });
 
 test("a Caitiff chooses their in-clan disciplines while creating", async ({ browser }) => {

@@ -3,8 +3,30 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
+import { SplitLink } from "../../components/SplitLink";
 import { Button, ErrorText, Field, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
+
+/**
+ * [Print] [Badge], side by side at the top of a side panel: the Sheet tab's, and
+ * an NPC's Build tab's. Without `badge`, Print fills the width.
+ */
+export function PrintAndBadge({ character, badge = true }: { character: CharacterOut; badge?: boolean }) {
+  return (
+    <div className={badge ? "grid grid-cols-2 gap-2 [&>button]:w-full" : "grid"}>
+      <SplitLink
+        to={`/print/characters/${character.id}`}
+        label="Print"
+        menuLabel="Print with numbers or pips"
+        choices={[
+          { to: `/print/characters/${character.id}`, label: "Numbers" },
+          { to: `/print/characters/${character.id}?ratings=pips`, label: "Pips" },
+        ]}
+      />
+      {badge && <BadgeButton character={character} />}
+    </div>
+  );
+}
 
 /**
  * For staff: the character's game badge. What others can see or sense comes
