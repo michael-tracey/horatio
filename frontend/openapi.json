@@ -4218,6 +4218,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "disciplines_waiting": {
             "title": "Disciplines Waiting",
             "type": "integer"
@@ -4251,6 +4262,10 @@
             "title": "Player Name",
             "type": "string"
           },
+          "social_age": {
+            "title": "Social Age",
+            "type": "string"
+          },
           "titles": {
             "items": {
               "type": "string"
@@ -4270,6 +4285,8 @@
           "player_id",
           "kind",
           "titles",
+          "clan",
+          "social_age",
           "home",
           "waiting",
           "disciplines_waiting",
