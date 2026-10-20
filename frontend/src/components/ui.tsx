@@ -254,17 +254,14 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
   );
 }
 
-/** Dots for a rating, filled to `value`, e.g. ●●●○○. */
-/** A rating as dots. Dots from `pendingFrom` up are still waiting for approval, in gold. */
-export function Dots({ value, pendingFrom }: { value: number; pendingFrom?: number | null }) {
-  const shown = Math.max(value, 5);
+/** A rating as a number. Dots from `pendingFrom` up are still waiting for
+ * approval, shown in gold after it: "2 +1". */
+export function Rating({ value, pendingFrom }: { value: number; pendingFrom?: number | null }) {
+  const waiting = pendingFrom != null && pendingFrom < value ? value - pendingFrom : 0;
   return (
-    <span aria-label={`${value} dots`} className="font-mono tracking-tight">
-      {Array.from({ length: shown }, (_, i) => (
-        <span key={i} className={i < value ? (pendingFrom != null && i >= pendingFrom ? "text-gold" : "text-blood-bright") : "text-ash"}>
-          ●
-        </span>
-      ))}
+    <span aria-label={`${value} dots`} className="inline-block min-w-[1.5rem] text-right font-display text-base tabular-nums">
+      <span className="text-parchment">{value - waiting}</span>
+      {waiting > 0 && <span className="text-gold"> +{waiting}</span>}
     </span>
   );
 }

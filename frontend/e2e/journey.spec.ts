@@ -426,7 +426,18 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   if (test.info().project.name === "desktop") {
     await p.emulateMedia({ media: "print" });
     await p.pdf({ path: "test-results/screens/sheet.pdf", format: "Letter" });
+    await p.emulateMedia({ media: "screen" });
   }
+  // Ratings print as numbers, and each attribute's focus sits beside it in brackets…
+  await expect(p.getByText("Mental (Wits)")).toBeVisible();
+  await expect(p.getByText("●")).toHaveCount(0);
+  // …or as pips, from the chevron beside Print.
+  await p.goBack();
+  await p.getByRole("button", { name: "Print with numbers or pips" }).click();
+  await p.getByRole("menuitem", { name: "Pips" }).click();
+  await expect(p.getByText("Mental (Wits)")).toBeVisible();
+  await expect(p.getByLabel("7 dots").first()).toContainText("●");
+  await p.screenshot(shots("print-pips"));
   // The troupe's print view prints them the same way.
   const troupeSheets = await lead.page.context().newPage();
   await troupeSheets.goto(`/print/troupes/${lead.page.url().match(/\/troupes\/([^/]+)/)![1]}`);
