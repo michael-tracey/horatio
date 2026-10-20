@@ -406,7 +406,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 
   // The printable sheet, in the paper sheet's order.
   await p.getByRole("link", { name: "Sheet", exact: true }).click();
-  await p.getByRole("link", { name: "Print the sheet" }).click();
+  await p.getByRole("link", { name: "Print", exact: true }).click();
   await expect(p.getByText(/Home troupe: Court of Ash/)).toBeVisible();
   await expect(p.getByText("Brawl")).toBeVisible();
   // Health as on the paper sheet, with Rugged's extra box in each row.
@@ -493,10 +493,10 @@ test("a character in no troupe can be deleted from the vault", async ({ browser 
   await page.getByLabel("Name").fill("Short-lived");
   await page.getByRole("button", { name: "Create" }).click();
   await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
-  await page.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
-
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Delete Short-lived" }).click();
+  // Delete waits behind the ⋯ menu beside Play, and asks first.
+  await page.getByRole("button", { name: "More for Short-lived" }).click();
+  await page.getByRole("menuitem", { name: "Delete…" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Delete Short-lived for good" }).click();
 
   await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
   await expect(page.getByText("No characters yet.")).toBeVisible();
@@ -611,7 +611,7 @@ test("a player fills in their profile, and the custodian resets their password",
   await row.getByRole("button", { name: "Reset password for people-player" }).click();
   await expect(row.getByText("Send it to them yourself.")).toBeVisible();
   await row.getByRole("button", { name: "Make a reset link" }).click();
-  const cancelled = await c.getByLabel("Reset link").inputValue();
+  const cancelled = await row.getByLabel("Reset link", { exact: true }).inputValue();
   expect(cancelled).toContain("/reset-password/");
   await expect(row.getByText(/^people-player has a reset link, unused, until /)).toBeVisible();
   await expect(row.getByText("reset link out")).toBeVisible();
@@ -637,7 +637,7 @@ test("a player fills in their profile, and the custodian resets their password",
   // …and makes a new link there, which the player uses from a fresh browser. The
   // cancelled one no longer works.
   await c.getByRole("button", { name: "Make a reset link" }).click();
-  const url = await c.getByLabel("Reset link").inputValue();
+  const url = await c.getByLabel("Reset link", { exact: true }).inputValue();
   expect(url).toContain("/reset-password/");
   const fresh = await (await browser.newContext()).newPage();
   await fresh.goto(new URL(cancelled).pathname);
@@ -801,7 +801,8 @@ test("a player renames their character once in three months, and the custodian a
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
   const rename = async (page: Page, from: string, to: string) => {
-    await page.getByRole("button", { name: "Rename", exact: true }).click();
+    await page.getByRole("button", { name: `More for ${from}` }).click();
+    await page.getByRole("menuitem", { name: "Rename…" }).click();
     await page.getByLabel("New name").fill(to);
     await page.getByRole("button", { name: "Rename", exact: true }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(to);
@@ -815,14 +816,18 @@ test("a player renames their character once in three months, and the custodian a
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
   await expect(p.getByText("visiting")).toBeVisible();
-  await p.getByRole("button", { name: "Rename", exact: true }).click();
+  await p.getByRole("button", { name: "More for Agnes Moreau" }).click();
+  await p.getByRole("menuitem", { name: "Rename…" }).click();
   await p.getByLabel("New name").fill("Agnes Duval");
   await p.screenshot(shots("rename"));
   await p.getByRole("button", { name: "Rename", exact: true }).click();
   await expect(p.getByRole("heading", { level: 1 })).toHaveText("Agnes Duval");
+  // The menu says when the next rename is allowed instead of offering one.
+  await p.getByRole("button", { name: "More for Agnes Duval" }).click();
   await expect(p.getByText(/You can rename Agnes Duval again on/)).toBeVisible();
-  await expect(p.getByRole("button", { name: "Rename", exact: true })).toHaveCount(0);
+  await expect(p.getByRole("menuitem", { name: /^Rename/ })).toBeDisabled();
   await p.screenshot(shots("rename-wait"));
+  await p.keyboard.press("Escape");
 
   await lead.page.reload();
   await lead.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
@@ -833,7 +838,9 @@ test("a player renames their character once in three months, and the custodian a
   await c.goto(new URL(p.url()).pathname.replace(/\/troupes$/, ""));
   await rename(c, "Agnes Duval", "Agnes Lemaire");
   await p.reload();
+  await p.getByRole("button", { name: "More for Agnes Lemaire" }).click();
   await expect(p.getByText(/You can rename Agnes Lemaire again on/)).toBeVisible();
+  await p.keyboard.press("Escape");
   await p.getByRole("button", { name: "Notifications, 1 waiting" }).click();
   await expect(p.getByText("The custodian renamed Agnes Duval to Agnes Lemaire")).toBeVisible();
   await p.keyboard.press("Escape");

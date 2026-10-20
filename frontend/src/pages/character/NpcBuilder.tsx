@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
-import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
+import { Badge, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { identityChoices } from "./creation/logic";
 import { MORALITY, heldMorality, moralityLabel, moralityOptions, moveMorality, willpowerAndHealth } from "./morality";
@@ -73,7 +72,6 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
             </ul>
           )}
         </Card>
-        <DeleteNpc character={character} />
       </aside>
     </div>
   );
@@ -319,26 +317,5 @@ function Row({
         ))}
       </span>
     </li>
-  );
-}
-
-function DeleteNpc({ character }: { character: CharacterOut }) {
-  const navigate = useNavigate();
-  const remove = useAction(async () => {
-    await unwrap(api.DELETE("/api/characters/{character_id}", { params: { path: { character_id: character.id } } }));
-    navigate(`/troupes/${character.owner_troupe_id}/npcs`);
-  });
-  return (
-    <>
-      <Button
-        variant="danger"
-        onClick={() => {
-          if (window.confirm(`Delete the NPC ${character.name}? This cannot be undone.`)) remove.mutate(undefined);
-        }}
-      >
-        Delete this NPC
-      </Button>
-      <ErrorText error={remove.error} />
-    </>
   );
 }

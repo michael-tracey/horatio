@@ -1,16 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { Route, Routes, useParams } from "react-router";
+import { Link, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
-import { Badge, Button, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
+import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { CreationWizard } from "./creation/Wizard";
 import { DowntimeTab } from "./DowntimeTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
-import { BadgeButton } from "./Badge";
-import { longDate } from "./longDate";
+import { CharacterMenu } from "./Actions";
 import { RenameCharacter } from "./Rename";
 import { CharacterPicture } from "./Picture";
 import { ResultsTab } from "./ResultsTab";
@@ -32,10 +31,13 @@ export function CharacterPage() {
   const c = character.data;
   const base = `/characters/${c.id}`;
   const custodian = !!me.data?.is_custodian;
-  const renameButton = (
-    <Button variant="secondary" onClick={() => setRenaming(true)}>
-      Rename
-    </Button>
+  const play = (
+    <Link
+      to={`/play/characters/${c.id}`}
+      className="inline-flex min-h-10 items-center justify-center rounded-md bg-blood px-5 text-sm font-medium text-parchment hover:bg-blood-bright"
+    >
+      Play
+    </Link>
   );
   const rename = renaming && <RenameCharacter key={c.id} character={c} asCustodian={custodian} onDone={() => setRenaming(false)} />;
 
@@ -49,8 +51,8 @@ export function CharacterPage() {
             actions={
               <div className="flex flex-wrap items-center gap-3">
                 <Badge tone="gold">NPC</Badge>
-                <BadgeButton character={c} />
-                {!renaming && renameButton}
+                {play}
+                <CharacterMenu character={c} canRename={!renaming} renameOn={null} onRename={() => setRenaming(true)} canDelete />
               </div>
             }
           >
@@ -68,7 +70,7 @@ export function CharacterPage() {
         />
         <Routes>
           <Route index element={<NpcBuilder character={c} />} />
-          <Route path="sheet" element={<SheetTab character={c} mine={false} />} />
+          <Route path="sheet" element={<SheetTab character={c} mine={false} badge />} />
           <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
           {!c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         </Routes>
@@ -89,13 +91,14 @@ export function CharacterPage() {
           actions={
             <div className="flex flex-wrap items-center gap-3">
               {c.status === "retired" && <Badge>retired</Badge>}
-              {/* Badges are the staff's to print; whoever else sees the page is staff. */}
-              {(!mine || me.data?.is_custodian) && <BadgeButton character={c} />}
-              {renameOn ? (
-                <span className="text-sm text-mist">You can rename {c.name} again on {longDate(renameOn)}.</span>
-              ) : (
-                canRename && !renaming && renameButton
-              )}
+              {play}
+              <CharacterMenu
+                character={c}
+                canRename={canRename && !renaming && !renameOn}
+                renameOn={renameOn}
+                onRename={() => setRenaming(true)}
+                canDelete={mine || custodian}
+              />
             </div>
           }
         >
@@ -119,7 +122,8 @@ export function CharacterPage() {
         ]}
       />
       <Routes>
-        <Route index element={<SheetTab character={c} mine={mine} />} />
+        {/* Badges are the staff's to print; whoever else sees the page is staff. */}
+        <Route index element={<SheetTab character={c} mine={mine} badge={!mine || custodian} />} />
         <Route path="xp" element={<XpTab characterId={c.id} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {mine && !c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
