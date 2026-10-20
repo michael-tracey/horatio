@@ -322,6 +322,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Cancel" }).click();
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
   await p.getByRole("button", { name: "Raise Investigation" }).click();
+  // What came of it shows right under the trait, where the player is looking.
+  const investigation = p.locator("li", { has: p.getByRole("button", { name: "Raise Investigation" }) });
+  await expect(investigation.locator("xpath=following-sibling::li[1]")).toHaveText("Spent 1 XP.");
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
   await expect(p.getByText("raised Agnes's Investigation from 1 to 2 (1 XP).", { exact: false })).toBeVisible();
 
