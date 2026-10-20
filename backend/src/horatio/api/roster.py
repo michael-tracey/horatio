@@ -221,6 +221,15 @@ MESSAGES: dict[str, str] = {
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
     "creation.set_category": "{actor} set {character}'s starting {category}: {picks}.",
     "creation.complete": "{actor} finished creating {character}.",
+    "account.reset_link": "{actor} made a password reset link for {member}.",
+    "account.reset_sent": "{actor} emailed {member} their reset link.",
+    "account.reset_sent.self": "Horatio emailed {member} the reset link they asked for.",
+    "account.reset_email_failed": "Horatio could not email {member} a reset link: {error}",
+    "account.reset_requested": "{actor} asked for a password reset link.",
+    "account.reset_requested.unknown": "Someone asked for a reset link for {email}; "
+    "no account uses it.",
+    "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
+    "account.password_reset": "{actor} set a new password with a reset link.",
 }
 
 
