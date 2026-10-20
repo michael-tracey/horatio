@@ -1,7 +1,7 @@
 """character pictures, visible notes and clan logos
 
 Revision ID: 0036
-Revises: 0033
+Revises: 0035
 Create Date: 2026-10-19 23:00:00.000000
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0036"
-down_revision: str | None = "0033"
+down_revision: str | None = "0035"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -198,6 +198,8 @@ group = "Disciplines"
 key = "paths"
 name = "Path of Enlightenment/Humanity"
 group = "Morality"
+# One Morality: Humanity or a single Path (p. 253); a Path merit converts it.
+max_held = 1
 
 [[categories]]
 key = "backgrounds"

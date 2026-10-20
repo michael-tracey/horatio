@@ -1,5 +1,6 @@
 """A character's own log: what was done to it, when and by whom."""
 
+import json
 import uuid
 from datetime import datetime
 
@@ -12,6 +13,10 @@ from horatio.models import AuditEvent, Troupe, User
 from horatio.permissions import TroupeAction, allows, troupe_role, visible_character
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["log"])
+
+# Recorded once in each of the character's troupes, so that every troupe's log
+# has it; here, where the copies would repeat, they read once.
+IN_EVERY_TROUPE = {"character.renamed"}
 
 
 @router.get("/log")
@@ -45,4 +50,12 @@ def character_log(
         query = query.where(or_(AuditEvent.troupe_id.is_(None), AuditEvent.troupe_id.in_(mine)))
     if before is not None:
         query = query.where(AuditEvent.created_at < before)
-    return log_entries(db, query)
+    seen: set[tuple[str, datetime, uuid.UUID | None, str]] = set()
+    entries: list[LogEntry] = []
+    for entry in log_entries(db, query):
+        key = (entry.action, entry.at, entry.actor_id, json.dumps(entry.data, sort_keys=True))
+        if entry.action in IN_EVERY_TROUPE and key in seen:
+            continue
+        seen.add(key)
+        entries.append(entry)
+    return entries

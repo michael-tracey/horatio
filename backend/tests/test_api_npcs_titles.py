@@ -100,6 +100,53 @@ def test_an_npc_chooses_one_focus_per_attribute(troupe: Troupe) -> None:
     assert focuses == [("focus_mentals", "Wits"), ("focus_physicals", "Dexterity")]
 
 
+def morality(troupe: Troupe, npc_id: str) -> dict[str, int]:
+    traits = troupe.storyteller.client.get(f"/characters/{npc_id}/sheet").json()["traits"]
+    return {t["name"]: t["rating"] for t in traits if t["category"] == "paths"}
+
+
+def test_an_npc_follows_one_morality_at_one_rating(troupe: Troupe) -> None:
+    npc = make_npc(troupe)["id"]
+    assert morality(troupe, npc) == {"Humanity": 5}
+    rate(troupe.storyteller, npc, "paths", "Humanity", 4)
+
+    moved = rate(troupe.storyteller, npc, "paths", "Caine", 4)
+
+    assert moved.status_code == 200, moved.text
+    assert morality(troupe, npc) == {"Caine": 4}
+    # Its starting dots came along, so the move is free.
+    assert moved.json()["total"] == 0
+    # Without the Path merit it stays on the Path its storyteller chose.
+    rate(troupe.storyteller, npc, "skills", "Brawl", 1)
+    assert morality(troupe, npc) == {"Caine": 4}
+    # Another Path, or Humanity, replaces it in turn.
+    rate(troupe.storyteller, npc, "paths", "Night", 3)
+    assert morality(troupe, npc) == {"Night": 3}
+    rate(troupe.storyteller, npc, "paths", "Humanity", 3)
+    assert morality(troupe, npc) == {"Humanity": 3}
+
+
+def test_an_npcs_path_merit_still_converts_its_morality(troupe: Troupe) -> None:
+    npc = make_npc(troupe)["id"]
+    rate(troupe.storyteller, npc, "clan", "Lasombra", None)
+    rate(troupe.storyteller, npc, "paths", "Humanity", 4)
+
+    took = rate(troupe.storyteller, npc, "merits", "Path of Night", 3)
+
+    assert took.status_code == 200, took.text
+    assert morality(troupe, npc) == {"Night": 4}
+    # The dots came along free; only the merit counts.
+    assert {(line["name"], line["cost"]) for line in took.json()["lines"]} >= {("Night", 0)}
+    rate(troupe.storyteller, npc, "merits", "Path of Night", 0)
+    assert morality(troupe, npc) == {"Humanity": 4}
+
+    # Losing the merit turns back only the Path it gave, not one chosen since.
+    rate(troupe.storyteller, npc, "merits", "Path of Night", 3)
+    rate(troupe.storyteller, npc, "paths", "Caine", 4)
+    rate(troupe.storyteller, npc, "merits", "Path of Night", 0)
+    assert morality(troupe, npc) == {"Caine": 4}
+
+
 def test_npc_ratings_are_still_checked_against_the_catalogue(troupe: Troupe) -> None:
     npc = make_npc(troupe)["id"]
 

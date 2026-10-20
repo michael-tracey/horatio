@@ -4,7 +4,7 @@ import { Layout } from "./components/Layout";
 import { Loading } from "./components/ui";
 import { useMe } from "./hooks";
 import { CharactersPage } from "./pages/CharactersPage";
-import { ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
+import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 
 // The bigger pages load when first opened, so the first visit (signing in, the
@@ -46,6 +46,7 @@ export function App() {
       <Route element={<Layout />}>
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route element={<RequireSignIn />}>
           <Route index element={<Navigate to="/characters" replace />} />

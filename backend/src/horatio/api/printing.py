@@ -29,6 +29,9 @@ class PrintedTrait(BaseModel):
     attribute: str | None
     # Dots waiting on the home troupe: the rating they were bought from.
     pending_from: int | None
+    # For a specialisation: the skill or background it belongs to, as its
+    # category and name (from the rule set's `specializes`).
+    specializes: dict[str, str] | None
 
 
 class PrintedSheet(BaseModel):
@@ -110,6 +113,7 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
             pending_from=held.get((t["name"], t["detail"]))
             if t["category"] == "disciplines"
             else None,
+            specializes=dict(rule_set.categories[t["category"]].specializes or {}) or None,
         )
         for t in sorted(snapshot, key=lambda t: (order.get(t["category"], 999), t["name"]))
         if t["category"] in rule_set.categories
