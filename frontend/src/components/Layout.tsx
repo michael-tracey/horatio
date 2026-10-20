@@ -55,6 +55,13 @@ export function Layout() {
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         <Outlet />
       </main>
+      {/* The Dark Pack Agreement's notices, on every page (in full on About). */}
+      <footer className="mx-auto max-w-5xl px-4 pt-2 pb-8 text-center text-xs text-mist">
+        Unofficial fan-made material under Paradox Interactive's Dark Pack Agreement. Portions © Paradox Interactive AB, used with permission. ·{" "}
+        <Link to="/about" className="underline hover:text-parchment">
+          About Horatio
+        </Link>
+      </footer>
     </div>
   );
 }

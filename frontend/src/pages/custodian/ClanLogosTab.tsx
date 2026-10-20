@@ -24,14 +24,17 @@ export function ClanLogosTab() {
   }
   const q = query.trim().toLowerCase();
   const shown = logos.data.clans.filter((c) => !q || c.clan.toLowerCase().includes(q));
-  const count = logos.data.clans.filter((c) => c.logo).length;
+  const count = logos.data.clans.filter((c) => c.logo || c.dark_pack).length;
 
   return (
     <Card title="Clan logos">
       <p className="mb-3 text-sm text-mist">
         Badges show the clan's logo beside the character's picture, or in its place when there is none. The official clan symbols belong to the game's publisher and
-        cannot come with Horatio, so upload images your troupes have the right to use. A bloodline without its own logo uses its clan's; a clan without one shows its
-        name only. A PNG with a transparent background prints best.
+        cannot come with Horatio.{" "}
+        {logos.data.dark_pack
+          ? "This server has Paradox's Dark Pack resources, so a clan you upload nothing for uses its Dark Pack symbol; an upload replaces it."
+          : "Import Paradox's Dark Pack resources (dark-pack/README.md) to use the clans' symbols under the Dark Pack Agreement, or upload images your troupes have the right to use."}{" "}
+        A bloodline without its own logo uses its clan's; a clan without one shows its name only. A PNG with a transparent background prints best.
       </p>
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <Input type="search" aria-label="Search clans" placeholder="Clan or bloodline…" value={query} onChange={(e) => setQuery(e.target.value)} className="min-w-40 flex-1" />
@@ -61,9 +64,17 @@ function ClanRow({ clan }: { clan: ClanLogoOut }) {
   const bloodline = clan.clan.includes(":");
   return (
     <li className="flex items-center gap-3 rounded-md border border-ash p-2">
-      <span className="grid h-14 w-14 shrink-0 place-items-center rounded bg-night">
-        {clan.logo ? <img src={`${clan.logo}/128.webp`} alt={`${clan.clan} logo`} className="h-12 w-12 object-contain" /> : <span className="text-xs text-mist">none</span>}
-      </span>
+      {clan.logo || !clan.dark_pack ? (
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded bg-night">
+          {clan.logo ? <img src={`${clan.logo}/128.webp`} alt={`${clan.clan} logo`} className="h-12 w-12 object-contain" /> : <span className="text-xs text-mist">none</span>}
+        </span>
+      ) : (
+        // The Dark Pack's symbols are black, for paper: shown on parchment.
+        <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded bg-parchment" title="From the Dark Pack">
+          <img src={`${clan.dark_pack}/128.webp`} alt={`${clan.clan} Dark Pack symbol`} className="h-11 w-11 object-contain" />
+          <span className="absolute -bottom-1.5 rounded bg-night px-1 text-[9px] leading-tight text-mist">Dark Pack</span>
+        </span>
+      )}
       <span className="min-w-0 flex-1">
         <span className={`block truncate text-sm ${bloodline ? "text-parchment/80" : ""}`}>{clan.clan}</span>
         <ErrorText error={upload.error ?? remove.error} />
