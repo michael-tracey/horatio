@@ -78,7 +78,8 @@ def test_a_new_game_starts_where_the_sheet_does(troupe: Troupe, agnes: str) -> N
     assert [(e["name"], e["uses"], e["left"]) for e in state["expendables"]] == [("Herd", 2, 2)]
     assert state["game"] is None
     assert state["log"] == []
-    assert any(p["name"] == "Initiative" for p in state["pools"])
+    # The sheet and pools come from /play/reference, loaded once.
+    assert "pools" not in state
 
 
 def test_each_tap_is_logged_with_its_time_and_who_made_it(troupe: Troupe, agnes: str) -> None:

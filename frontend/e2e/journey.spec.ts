@@ -859,7 +859,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
   // An NPC the lead runs at game, made straight through the API: Generation 2 (12
-  // blood, 2 a turn) and Herd 2.
+  // blood, 2 a turn), Herd 2, Physical 5, Mental 3, Dodge 2 and Celerity 2.
   const p = lead.page;
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
@@ -873,6 +873,10 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
     ["clan", "Toreador", null],
     ["backgrounds", "Generation", 2],
     ["backgrounds", "Herd", 2],
+    ["attributes", "Physical", 5],
+    ["attributes", "Mental", 3],
+    ["skills", "Dodge", 2],
+    ["disciplines", "Celerity", 2],
   ] as const) {
     const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
     expect(rated.status(), await rated.text()).toBe(200);
@@ -892,10 +896,31 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByRole("heading", { name: "Lucien" })).toBeVisible();
   await expect(p.getByLabel("Blood: 8 of 12")).toBeVisible();
   await expect(p.getByText("2 blood a turn")).toBeVisible();
+  // Quick notes start on: a spend asks what it was for, and the note is optional.
+  await expect(p.getByLabel("Quick notes")).toBeChecked();
   await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
+  await p.getByRole("dialog").getByRole("button", { name: "Save" }).click();
   await expect(p.getByLabel("Blood: 7 of 12")).toBeVisible();
   await expect(p.getByText("Blood 8 → 7")).toBeVisible();
   await expect(p.getByRole("status")).toHaveText("Saved");
+
+  await p.getByLabel("Quick notes").uncheck();
+
+  // The Pools tab, loaded once with the page: initiative with and without
+  // Celerity, Dodge, and what each power does. The Sheet tab has the stats.
+  await p.getByRole("tab", { name: "Pools" }).click();
+  const initiative = p.getByRole("listitem").filter({ hasText: /^Initiative/ });
+  await expect(initiative.getByText("5", { exact: true })).toBeVisible();
+  await expect(initiative.getByText("With Celerity active")).toBeVisible();
+  await expect(initiative.getByText("7", { exact: true })).toBeVisible();
+  await expect(p.getByRole("listitem").filter({ hasText: /^Dodge/ }).getByText("7", { exact: true }).first()).toBeVisible();
+  await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
+  await p.screenshot(shots("play-pools"));
+  await p.getByRole("tab", { name: "Sheet" }).click();
+  await expect(p.getByRole("heading", { name: "Attributes" })).toBeVisible();
+  await expect(p.getByRole("tab", { name: "Sheet" })).toHaveAttribute("aria-selected", "true");
+  await p.screenshot(shots("play-sheet"));
+  await p.getByRole("tab", { name: "Tracker" }).click();
 
   // No signal: the tap waits on the phone, and goes when the signal returns.
   await p.context().setOffline(true);

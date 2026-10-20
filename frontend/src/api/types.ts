@@ -64,3 +64,6 @@ export type PlayLogEntry = Schemas["LogEntryOut"];
 export type GameOut = Schemas["GameOut"];
 export type ExpendableOut = Schemas["ExpendableOut"];
 export type TroupePlayEntry = Schemas["TroupePlayEntry"];
+export type PlayReference = Schemas["PlayReference"];
+export type TestPool = Schemas["TestPool"];
+export type DisciplinePowers = Schemas["DisciplinePowers"];

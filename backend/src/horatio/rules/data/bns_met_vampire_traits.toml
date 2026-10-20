@@ -1330,7 +1330,7 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Bound to the Earth"
 description = "Each day spent w/o contact with 2 handfuls of home soil = -1 to all attack test pools (max -5). Cannot be taken by Tzimisce or any Tzimisce Bloodline."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", pools = [{ pool = "attack", amount = -1, when = "for each day without your home soil (to -5)" }] }
 
 [[traits]]
 category = "flaws"
@@ -1504,7 +1504,7 @@ properties = { rating = 1, type = "General", requirement = "requires_specializat
 category = "flaws"
 name = "Escaped Shovelhead"
 description = "Reduce mental test pools by 2 (including defensive) when in a challenge against a known Sabbat member."
-properties = { rating = 2, type = "Anarch" }
+properties = { rating = 2, type = "Anarch", pools = [{ pool = "defense:Mental", amount = -2, when = "against a known Sabbat member" }] }
 
 [[traits]]
 category = "flaws"
@@ -1774,7 +1774,7 @@ properties = { rating = 3, type = "Clan", requirement = "Nagaraja" }
 category = "flaws"
 name = "Necrophile"
 description = "Must spend at least 10 minutes in the company of true corpses each night. If not, suffer a -1 penalty to all test pools until this is done. Penalty is not cumulative."
-properties = { rating = 1, type = "General" }
+properties = { rating = 1, type = "General", pools = [{ pool = "all", amount = -1, when = "until you have spent 10 minutes among corpses tonight" }] }
 
 [[traits]]
 category = "flaws"
@@ -1924,7 +1924,7 @@ properties = { rating = 3, type = "General" }
 category = "flaws"
 name = "Slow Reactions"
 description = "Initiative is reduced by 5."
-properties = { rating = 3, type = "General" }
+properties = { rating = 3, type = "General", pools = [{ pool = "initiative", amount = -5 }] }
 
 [[traits]]
 category = "flaws"
@@ -2759,7 +2759,7 @@ properties = { rating = 1, type = "Clan", requirement = "Nosferatu" }
 category = "merits"
 name = "Black Hand Membership"
 description = "Gain the innate status Branded and +3 to resist Telepathy and other powers to directly pull information from your mind."
-properties = { rating = 2, type = "Sabbat" }
+properties = { rating = 2, type = "Sabbat", pools = [{ pool = "defense:Mental", amount = 3, when = "against Telepathy and mind reading" }] }
 
 [[traits]]
 category = "merits"
@@ -2779,14 +2779,14 @@ category = "merits"
 name = "Blood Deceit"
 description = "Forged family records make you pass as a Giovanni: Alternate Identity 4, and +2 wild card to resist any attempt, mundane or supernatural, to learn your true nature."
 page_reference = "47"
-properties = { rating = 2, type = "Clan", requirement = "Cappadocians" }
+properties = { rating = 2, type = "Clan", requirement = "Cappadocians", pools = [{ pool = "defense", amount = 2, when = "against learning your true nature" }] }
 
 [[traits]]
 category = "merits"
 name = "Blood Knows the Way"
 description = "A simple action smearing 1 point of a target's Blood on your face and hands gives +2 wild card to all your attacks against them for the game session, while the blood stays visible."
 page_reference = "27-28"
-properties = { rating = 2, type = "Clan", requirement = "Followers of Set: Tlacique" }
+properties = { rating = 2, type = "Clan", requirement = "Followers of Set: Tlacique", pools = [{ pool = "attack", amount = 2, when = "against the one whose blood you wear" }] }
 
 [[traits]]
 category = "merits"
@@ -2813,7 +2813,7 @@ category = "merits"
 name = "Blood of the Ancients"
 description = "+2 wild card to defend against all Necromancy, and your Willpower retest against it costs no Willpower. No help against Thaumaturgy."
 page_reference = "34"
-properties = { rating = 2, type = "Clan", requirement = "Giovanni: Premascine" }
+properties = { rating = 2, type = "Clan", requirement = "Giovanni: Premascine", pools = [{ pool = "defense", amount = 2, when = "against Necromancy" }] }
 
 [[traits]]
 category = "merits"
@@ -3014,13 +3014,13 @@ properties = { rating = 1, type = "Clan", requirement = "Brujah" }
 category = "merits"
 name = "Burning Wrath"
 description = "Simple action to gain +2 wild card bonus to attack and if successful do aggravated damage with fists."
-properties = { rating = 2, type = "Clan", requirement = "Brujah" }
+properties = { rating = 2, type = "Clan", requirement = "Brujah", pools = [{ pool = "attack", amount = 2, when = "with Burning Wrath (a simple action)" }] }
 
 [[traits]]
 category = "merits"
 name = "Calm Heart"
 description = "Considered as having -2 Beast Traits when resisting frenzy. Gain +3 to test pool to resist frenzy. Brujah cannot take this merit. Restriction does not apply to True Brujah."
-properties = { rating = 1, type = "General" }
+properties = { rating = 1, type = "General", pools = [{ pool = "frenzy", amount = 3, note = "+3 to resist frenzy, counting 2 fewer Beast traits" }] }
 
 [[traits]]
 category = "merits"
@@ -3052,25 +3052,25 @@ properties = { rating = 3, type = "General" }
 category = "merits"
 name = "Code of Honor"
 description = "Once per hour, gain a +2 wild card bonus to resist Social or Mental power use with the intent to force character to violate Personal Code of Ethics."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", pools = [{ pool = "defense", amount = 2, when = "against powers forcing you to break your code (once an hour)" }] }
 
 [[traits]]
 category = "merits"
 name = "Consecrated Grove"
 description = "Gain Haven 5 for a remote grove away from any city. There, a simple action calls its spirits to defend you: +5 wild card to your Physical defense."
-properties = { rating = 2, type = "Clan", requirement = "Lhiannan" }
+properties = { rating = 2, type = "Clan", requirement = "Lhiannan", pools = [{ pool = "dodge", amount = 5, when = "in your grove, once its spirits defend you" }] }
 
 [[traits]]
 category = "merits"
 name = "Countermagic"
 description = "Gain +3 to test pools resisting Thaumaturgy. Use standard action and 1 blood to dispel magic on a person (Mental+Occult vs. target's Mental+Willpower). If successful all Thaum powers on the target end and items go defunct for an hour. Same action and Blood for an area (Mental+Occult vs. 12) to dispel all ritual within 5 steps."
-properties = { rating = 4, type = "Clan", requirement = "Tremere" }
+properties = { rating = 4, type = "Clan", requirement = "Tremere", pools = [{ pool = "defense", amount = 3, when = "resisting Thaumaturgy" }] }
 
 [[traits]]
 category = "merits"
 name = "Dancer's Grace"
 description = "Once per turn, gain free retest on Physical + Dodge pools. Can be used before or after the normal Willpower retest. Exception to rules limiting retests. Can be used in Celerity rounds, but only once per turn."
-properties = { rating = 4, type = "Clan", requirement = "Toreador" }
+properties = { rating = 4, type = "Clan", requirement = "Toreador", pools = [{ pool = "dodge", note = "a free retest on Dodge once a turn" }] }
 
 [[traits]]
 category = "merits"
@@ -3109,7 +3109,7 @@ category = "merits"
 name = "Demon Slayer"
 description = "+2 wild card to Valeren challenges against demons, Baali and other infernalists, and Armor of Caine's Fury also gives the Rugged quality, its levels returning one an hour."
 page_reference = "52"
-properties = { rating = 2, type = "Clan", requirement = "Salubri" }
+properties = { rating = 2, type = "Clan", requirement = "Salubri", pools = [{ pool = "discipline:Valeren", amount = 2, when = "against demons, Baali and infernalists" }] }
 
 [[traits]]
 category = "merits"
@@ -3215,13 +3215,13 @@ properties = { rating = 1, type = "Clan", requirement = "Lasombra: Kiasyd" }
 category = "merits"
 name = "Fanatic"
 description = "When Injured, gain a +3 to Initiative. When Incapacitated, gain +3 more (cumulative +6) to Initiative."
-properties = { rating = 2, type = "Sabbat" }
+properties = { rating = 2, type = "Sabbat", pools = [{ pool = "initiative", amount = 3, when = "while Injured" }, { pool = "initiative", amount = 6, when = "while Incapacitated" }] }
 
 [[traits]]
 category = "merits"
 name = "Favored of Inauhaten"
 description = "Path of Corruption and ordinary Serpentis powers (and techniques needing Serpentis) fail against you unless you allow them; +3 wild card to defend against elder and luminary Serpentis."
-properties = { rating = 3, type = "Clan", requirement = "Nagaraja" }
+properties = { rating = 3, type = "Clan", requirement = "Nagaraja", pools = [{ pool = "defense", amount = 3, when = "against elder and luminary Serpentis" }] }
 
 [[traits]]
 category = "merits"
@@ -3332,7 +3332,7 @@ properties = { rating = 3, type = "General" }
 category = "merits"
 name = "Inquisition Membership"
 description = "Gain the innate status Purified, +3 to  resist all infernal powers and infernal merits, and +3 to Dodge based defensive pools against demons and character who possess infernal powers or merits."
-properties = { rating = 2, type = "Sabbat" }
+properties = { rating = 2, type = "Sabbat", pools = [{ pool = "defense", amount = 3, when = "against infernal powers and merits" }, { pool = "dodge", amount = 3, when = "against demons and infernalists" }] }
 
 [[traits]]
 category = "merits"
@@ -3385,7 +3385,7 @@ category = "merits"
 name = "Jaded Existence"
 description = "Chimerstry powers of 1 to 5 dots (and techniques needing it) fail against you; +3 wild card against elder and luminary Chimerstry. You still see illusions, but know them for what they are."
 page_reference = "50"
-properties = { rating = 3, type = "Clan", requirement = "Ravnos" }
+properties = { rating = 3, type = "Clan", requirement = "Ravnos", pools = [{ pool = "defense", amount = 3, when = "against elder and luminary Chimerstry" }] }
 
 [[traits]]
 category = "merits"
@@ -3411,7 +3411,7 @@ properties = { rating = 1, type = "Clan", requirement = "Tzimisce: Koldun" }
 category = "merits"
 name = "Labyrinthine Mind"
 description = "Gain +3 to test pools resisting Dementation, Dominate, and Thaumaturgy: Path of Corruption. Anyone attempting to pull information from your mind gains 1 of your derangements for an hour."
-properties = { rating = 3, type = "Clan", requirement = "Malkavian" }
+properties = { rating = 3, type = "Clan", requirement = "Malkavian", pools = [{ pool = "defense:Mental", amount = 3, when = "resisting Dementation, Dominate or the Path of Corruption" }] }
 
 [[traits]]
 category = "merits"
@@ -3487,7 +3487,7 @@ category = "merits"
 name = "Madness Hunter"
 description = "Dementation powers of 1 to 5 dots (and techniques needing it) fail against you; +3 wild card against elder and luminary Dementation."
 page_reference = "38"
-properties = { rating = 3, type = "Clan", requirement = "Malkavian: Knights of the Moon" }
+properties = { rating = 3, type = "Clan", requirement = "Malkavian: Knights of the Moon", pools = [{ pool = "defense", amount = 3, when = "against elder and luminary Dementation" }] }
 
 [[traits]]
 category = "merits"
@@ -3696,7 +3696,7 @@ category = "merits"
 name = "Painfully Shy"
 description = "Anyone who sees through your Obfuscate takes 1 aggravated damage that cannot be reduced, and if you fight them straight away you gain +3 initiative."
 page_reference = "39"
-properties = { rating = 2, type = "Clan", requirement = "Nosferatu" }
+properties = { rating = 2, type = "Clan", requirement = "Nosferatu", pools = [{ pool = "initiative", amount = 3, when = "fighting someone who saw through your Obfuscate" }] }
 
 [[traits]]
 category = "merits"
@@ -3912,7 +3912,7 @@ category = "merits"
 name = "Preternatural Awareness"
 description = "Use your Awareness in place of Investigation, Stealth or Dodge, though not to gain those skills' own special rules."
 page_reference = "38"
-properties = { rating = 2, type = "Clan", requirement = "Malkavian: Knights of the Moon" }
+properties = { rating = 2, type = "Clan", requirement = "Malkavian: Knights of the Moon", pools = [{ pool = "skill:Awareness", instead_of = ["Dodge", "Investigation", "Stealth"] }] }
 
 [[traits]]
 category = "merits"
@@ -3939,14 +3939,14 @@ category = "merits"
 name = "Quick Caster"
 description = "When you declare a Thaumaturgy power in combat, add your Occult dots to your initiative."
 page_reference = "41-42"
-properties = { rating = 2, type = "Clan", requirement = "Tremere" }
+properties = { rating = 2, type = "Clan", requirement = "Tremere", pools = [{ pool = "initiative", amount = "rating:skills/Occult", when = "declaring Thaumaturgy" }] }
 
 [[traits]]
 category = "merits"
 name = "Quixotic"
 description = "No penalty at 0 Willpower, and with fewer than 3 Willpower you count as 3 for your defense test pools."
 page_reference = "38"
-properties = { rating = 1, type = "Clan", requirement = "Malkavian: Knights of the Moon" }
+properties = { rating = 1, type = "Clan", requirement = "Malkavian: Knights of the Moon", pools = [{ pool = "defense", willpower_floor = 3 }] }
 
 [[traits]]
 category = "merits"
@@ -3997,7 +3997,7 @@ category = "merits"
 name = "Rhythm of Battle"
 description = "Use your Social attribute for initiative instead of the higher of Physical or Mental; ties with equal Physical or Mental go after them."
 page_reference = "53"
-properties = { rating = 1, type = "Clan", requirement = "Daughters of Cacophony" }
+properties = { rating = 1, type = "Clan", requirement = "Daughters of Cacophony", pools = [{ pool = "initiative", attribute = "Social" }] }
 
 [[traits]]
 category = "merits"
@@ -4142,7 +4142,7 @@ properties = { rating = 2, type = "Clan", requirement = "Ravnos" }
 category = "merits"
 name = "Shape of the Beast's Wrath"
 description = "Can opt to turn into half-wolf/half-man monster in Fight Form. Gain +5 to Brawl test pool and do aggravated damage with Brawl attacks. All defensive pools (Physical, Social and Mental) suffer -2 penalty."
-properties = { rating = 3, type = "Clan", requirement = "Gangrel" }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel", pools = [{ pool = "attack:Brawl", amount = 5, when = "in Fight Form" }, { pool = "dodge", amount = -2, when = "in Fight Form" }, { pool = "defense", amount = -2, when = "in Fight Form" }] }
 
 [[traits]]
 category = "merits"
@@ -4175,13 +4175,13 @@ category = "merits"
 name = "Skullduggery"
 description = "+2 wild card to attacks on targets with lower initiative than you, and your Streetwise dots count toward an exceptional success against them."
 page_reference = "32"
-properties = { rating = 3, type = "Clan", requirement = "Gangrel: Coyote" }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel: Coyote", pools = [{ pool = "attack", amount = 2, when = "against someone with lower initiative" }] }
 
 [[traits]]
 category = "merits"
 name = "Slippery Customer"
 description = "Gain +3 to Dodge based test pools."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", pools = [{ pool = "dodge", amount = 3 }] }
 
 [[traits]]
 category = "merits"
@@ -4239,7 +4239,7 @@ category = "merits"
 name = "Spellslinger"
 description = "Choose one Thaumaturgy path: +4 wild card to your attack test pools when using its powers directly in combat."
 page_reference = "42"
-properties = { rating = 3, type = "Clan", requirement = "Tremere" }
+properties = { rating = 3, type = "Clan", requirement = "Tremere", pools = [{ pool = "discipline:Thaumaturgy", amount = 4, when = "attacking with your chosen path" }] }
 
 [[traits]]
 category = "merits"
@@ -4273,7 +4273,7 @@ category = "merits"
 name = "Strength of Madness"
 description = "Anyone who tastes your blood shares your derangements for 24 hours, or for good after three nights in a row. +2 wild card to attacks against anyone with a derangement."
 page_reference = "36"
-properties = { rating = 1, type = "Clan", requirement = "Malkavian" }
+properties = { rating = 1, type = "Clan", requirement = "Malkavian", pools = [{ pool = "attack", amount = 2, when = "against someone with a derangement" }] }
 
 [[traits]]
 category = "merits"
@@ -4292,7 +4292,7 @@ properties = { rating = 1, type = "Clan", requirement = "Daughters of Cacophony"
 category = "merits"
 name = "Surprise Attack"
 description = "Gain +3 to Physical test pools when attacking from surprise."
-properties = { rating = 1, type = "Clan", requirement = "Assamite" }
+properties = { rating = 1, type = "Clan", requirement = "Assamite", pools = [{ pool = "attack", amount = 3, when = "attacking from surprise" }] }
 
 [[traits]]
 category = "merits"
@@ -4317,7 +4317,7 @@ properties = { rating = 3, type = "Clan", requirement = "Assamite: Sorcerer" }
 category = "merits"
 name = "Tech Junkie"
 description = "Gain +2 bonus on Computers and Science test pools."
-properties = { rating = 2, type = "Anarch" }
+properties = { rating = 2, type = "Anarch", pools = [{ pool = "skill:Computers", amount = 2 }, { pool = "skill:Science", amount = 2 }] }
 
 [[traits]]
 category = "merits"
@@ -4379,7 +4379,7 @@ category = "merits"
 name = "The Judge's Resilience"
 description = "+2 wild card to defend against all Thaumaturgy, and your Willpower retest against it costs no Willpower. No help against Necromancy."
 page_reference = "24"
-properties = { rating = 2, type = "Clan", requirement = "Assamite: Sorcerer" }
+properties = { rating = 2, type = "Clan", requirement = "Assamite: Sorcerer", pools = [{ pool = "defense", amount = 2, when = "against Thaumaturgy" }] }
 
 [[traits]]
 category = "merits"
@@ -4400,7 +4400,7 @@ category = "merits"
 name = "Timely Intervention"
 description = "+1 wild card to initiative for each Temporis power you have."
 page_reference = "26"
-properties = { rating = 1, type = "Clan", requirement = "Brujah: True Brujah" }
+properties = { rating = 1, type = "Clan", requirement = "Brujah: True Brujah", pools = [{ pool = "initiative", amount = "powers:Temporis" }] }
 
 [[traits]]
 category = "merits"
@@ -4563,7 +4563,7 @@ properties = { rating = 1, type = "Clan", requirement = "Cappadocians: Samedi", 
 category = "merits"
 name = "Wild One"
 description = "Gain a +1 bonus to Brawl and Drive test pools and a +2 to defense test pools against formal title holders of the Camarilla and Sabbat."
-properties = { rating = 1, type = "Anarch" }
+properties = { rating = 1, type = "Anarch", pools = [{ pool = "attack:Brawl", amount = 1 }, { pool = "skill:Drive", amount = 1 }, { pool = "defense", amount = 2, when = "against Camarilla and Sabbat title holders" }] }
 
 [[traits]]
 category = "merits"
@@ -7002,7 +7002,7 @@ category = "merits"
 name = "Blood of the Tzimisce"
 description = "The spirits of your land guard you: +3 to all attack test pools while in your haven. Gain 2 free dots of Lore, and your Lore can go 2 higher."
 page_reference = "244"
-properties = { rating = 1, type = "Clan", requirement = "Tzimisce" }
+properties = { rating = 1, type = "Clan", requirement = "Tzimisce", pools = [{ pool = "attack", amount = 3, when = "in your haven" }] }
 
 [[traits]]
 category = "merits"

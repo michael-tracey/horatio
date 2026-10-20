@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, play, sheets
+from horatio import audit, play, reference, sheets
 from horatio.api.downtimes import staff_troupe
 from horatio.api.roster import roster
 from horatio.auth.deps import CurrentUser, DbSession
@@ -23,7 +23,6 @@ router = APIRouter(tags=["play"])
 # Shown in the rest of the sheet; identity is at the top, health and Willpower
 # are trackers, and specialties go in brackets after their trait.
 NOT_LISTED = frozenset({"clan", "health_levels", "willpower_sources"})
-ATTACK_SKILLS = ("Brawl", "Melee", "Firearms")
 
 
 class Tracker(BaseModel):
@@ -104,13 +103,6 @@ class PlayTrait(BaseModel):
     specialties: list[str]
 
 
-class Pool(BaseModel):
-    name: str
-    # How it is made up: "Physical + Brawl".
-    detail: str
-    pool: int
-
-
 class PlayView(BaseModel):
     character_id: uuid.UUID
     character_name: str
@@ -130,8 +122,6 @@ class PlayView(BaseModel):
     game: GameOut | None
     # The game's log, newest first.
     log: list[LogEntryOut]
-    traits: list[PlayTrait]
-    pools: list[Pool]
 
 
 class TapIn(BaseModel):
@@ -277,46 +267,11 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
     ]
 
 
-def pools(traits: list[PlayTrait]) -> list[Pool]:
-    """Initiative and the attack pools, worked out as the sheet stands (pp. 271, 285)."""
-
-    def rating(category: str, name: str) -> int:
-        return max(
-            (t.rating or 0 for t in traits if (t.category, t.name) == (category, name)), default=0
-        )
-
-    physical, mental = rating("attributes", "Physical"), rating("attributes", "Mental")
-    found = [
-        Pool(
-            name="Initiative",
-            detail="Mental" if mental > physical else "Physical",
-            pool=max(physical, mental),
-        )
-    ]
-    attacks = sorted(
-        ((physical + rating("skills", s), s) for s in ATTACK_SKILLS if rating("skills", s)),
-        key=lambda a: -a[0],
-    ) or [(physical, "Brawl")]
-    for i, (pool, skill) in enumerate(attacks):
-        found.append(
-            Pool(
-                name="Primary attack" if i == 0 else f"{skill} attack",
-                detail=f"Physical + {skill}",
-                pool=pool,
-            )
-        )
-    found.append(
-        Pool(name="Dodge", detail="Physical + Dodge", pool=physical + rating("skills", "Dodge"))
-    )
-    return found
-
-
 def play_view(db: Session, character: Character) -> PlayView:
     limits = play.limits(db, character)
     game = play.current_game(db, character)
     events = play.game_events(db, game) if game else []
     state = play.replay(limits, events).state
-    traits = sheet_traits(db, character)
     rows = sheets.sheet_rows(db, character)
 
     def one(category: str) -> str | None:
@@ -362,8 +317,6 @@ def play_view(db: Session, character: Character) -> PlayView:
         ],
         game=game_out(db, game, events) if game else None,
         log=log_out(db, character, limits, events),
-        traits=traits,
-        pools=pools(traits),
     )
 
 
@@ -371,6 +324,24 @@ def play_view(db: Session, character: Character) -> PlayView:
 def read_play(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> PlayView:
     """The character's trackers and limited uses at the game now, and its log."""
     return play_view(db, visible_character(db, user, character_id))
+
+
+class PlayReference(reference.Reference):
+    """The Play View's Sheet and Pools tabs: everything there is to look up at a
+    game, which changes only between games, so the page loads it once."""
+
+    traits: list[PlayTrait]
+
+
+@router.get("/characters/{character_id}/play/reference")
+def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> PlayReference:
+    character = visible_character(db, user, character_id)
+    found = reference.reference(
+        sheets.sheet_rows(db, character),
+        sheets.rules_for(db, character).rule_set,
+        play.limits(db, character).blood_per_turn,
+    )
+    return PlayReference(**found.model_dump(), traits=sheet_traits(db, character))
 
 
 @router.post("/characters/{character_id}/play/taps")

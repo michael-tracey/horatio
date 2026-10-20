@@ -1,0 +1,1718 @@
+# Discipline powers by dot, with each discipline's test pool: quick notes, in our
+# own words, summarised from MET: VTM, Volume 2 and Volume 2 Issue 1. Read by
+# horatio.reference for the Play View's Pools tab; not part of the rule set, so
+# nothing here changes what a character can buy.
+#
+# [[disciplines]]: `pool` and `versus` name an attribute and a skill (or
+#   Willpower); leave `pool` out where the book has no standard test pool.
+#   `focus` notes what an attribute focus adds to the whole discipline.
+# [[powers]]: one per dot of a discipline or path. `focus` notes what a focus
+#   adds to that power.
+# `pools` (on either) changes a pool on the Pools tab while the character has
+#   it: { pool, amount, when?, focus? }. `pool` is initiative, dodge, attack,
+#   attack:<Skill>, defense, defense:<Attribute> or discipline:<Name>; `amount`
+#   is a number, or "powers:<Discipline>" for how many powers of it the
+#   character has; `when` makes it a variant ("Celerity" is Celerity active);
+#   `focus` limits it to characters with that focus, `unless_focus` to those
+#   without it (for a bonus a focus replaces).
+
+[[disciplines]]
+name = "Animalism"
+pool = "Social + Animal Ken"
+versus = "Social + Willpower"
+
+[[powers]]
+discipline = "Animalism"
+level = 1
+name = "Feral Whispers"
+note = "Talk with animals, or question all the local wildlife within earshot. The Storyteller answers as the animals would."
+focus = { Charisma = "Speak mind to mind with animals that can see you; no growling needed." }
+
+[[powers]]
+discipline = "Animalism"
+level = 2
+name = "Beckoning"
+note = "1 Blood, standard action: call up to five small, three medium or one large animal, arriving over about 10 minutes."
+focus = { Charisma = "Give the summoned animals one extra trait, such as flight or cunning." }
+
+[[powers]]
+discipline = "Animalism"
+level = 3
+name = "Quell the Beast"
+note = "1 Blood, standard action, Animalism test against someone focused on you: ends their frenzy, or stops them frenzying for an hour."
+focus = { Manipulation = "The victim cannot retest with Willpower at all while it lasts." }
+
+[[powers]]
+discipline = "Animalism"
+level = 4
+name = "Subsume the Spirit"
+note = "1 Blood, standard action, meeting an animal's eyes: win and your mind moves into its body."
+focus = { Manipulation = "Use the first 2 dots of your Mental and Social in-clan disciplines while inside it." }
+
+[[powers]]
+discipline = "Animalism"
+level = 5
+name = "Drawing Out the Beast"
+note = "1 Blood, simple action: drop out of frenzy at once, or throw yourself into a rage frenzy."
+focus = { Manipulation = "Enter frenzy even when something (like Quell the Beast) would stop you." }
+
+[[disciplines]]
+name = "Auspex"
+pool = "Mental + Investigation"
+versus = "Mental + Willpower"
+
+[[powers]]
+discipline = "Auspex"
+level = 1
+name = "Heightened Senses"
+note = "Always on: see in total darkness and hear the faintest sounds. Within two steps you sense someone hidden by supernatural concealment, and can try to see through it."
+focus = { Perception = "Sharpen your senses with a simple action instead of a standard one." }
+
+[[powers]]
+discipline = "Auspex"
+level = 2
+name = "Aura Perception"
+note = "1 Blood, standard action, Auspex test: read a target's aura: mood, nature (vampire, ghoul, mortal…) and recent diablerie."
+focus = { Perception = "Free, with no Blood, against a target within three steps." }
+
+[[powers]]
+discipline = "Auspex"
+level = 3
+name = "Spirit's Touch"
+note = "1 Blood, standard action, touching an object: ask the Storyteller one question about its past, plus one for every five minutes more."
+focus = { Perception = "Ask three questions instead of one." }
+
+[[powers]]
+discipline = "Auspex"
+level = 4
+name = "Telepathy"
+note = "1 Blood: speak mind to mind with a willing target anywhere in the city; against the unwilling, an Auspex test to read surface thoughts."
+focus = { Wits = "Hold a conversation with up to three willing minds at once." }
+
+[[powers]]
+discipline = "Auspex"
+level = 5
+name = "Psychic Projection"
+note = "1 Blood, standard action: leave your body in a torpor-like state and travel as an invisible, intangible mind."
+focus = { Wits = "Use the first 2 dots of your Mental and Social in-clan disciplines while projecting." }
+
+[[disciplines]]
+name = "Celerity"
+note = "No standard test pool. 1 Blood activates it for the turn."
+focus = { Dexterity = "+2 to Dodge pools while Celerity is active." }
+pools = [{ pool = "dodge", amount = 2, when = "Celerity", focus = "Dexterity" }]
+
+[[powers]]
+discipline = "Celerity"
+level = 1
+name = "Alacrity"
+note = "While Celerity is active, add your number of Celerity powers (techniques and elder powers too) to your initiative."
+pools = [{ pool = "initiative", amount = "powers:Celerity", when = "Celerity" }]
+
+[[powers]]
+discipline = "Celerity"
+level = 2
+name = "Swiftness"
+note = "+5 when checking for an exceptional success with ranged attacks, and when dodging to stop an attacker's exceptional success."
+
+[[powers]]
+discipline = "Celerity"
+level = 3
+name = "Rapidity"
+note = "Activating Celerity gives an extra simple and standard action, in the first Celerity round."
+
+[[powers]]
+discipline = "Celerity"
+level = 4
+name = "Legerity"
+note = "+2 wild card to Dodge pools while Celerity is active, and mundane ranged exceptional successes do 2 extra damage instead of 1."
+pools = [{ pool = "dodge", amount = 2, when = "Celerity" }]
+
+[[powers]]
+discipline = "Celerity"
+level = 5
+name = "Fleetness"
+note = "Another extra simple and standard action when Celerity is active, in the second Celerity round."
+
+[[disciplines]]
+name = "Chimerstry"
+pool = "Social + Subterfuge"
+versus = "Social + Willpower"
+note = "Illusions add to the world but can never take anything away."
+
+[[powers]]
+discipline = "Chimerstry"
+level = 1
+name = "Ignis Fatuus"
+note = "1 Blood, standard action: an illusion for one sense only (sight, sound, smell or taste)."
+focus = { Charisma = "Those affected can't use combat maneuvers for the rest of the turn." }
+
+[[powers]]
+discipline = "Chimerstry"
+level = 2
+name = "Mirage"
+note = "Standard action: change how an inanimate object looks."
+focus = { Manipulation = "Anyone trying to disbelieve it takes -3." }
+
+[[powers]]
+discipline = "Chimerstry"
+level = 3
+name = "Apparition"
+note = "1 Blood, standard action: an illusion real to every sense, looping or steered while you concentrate."
+focus = { Manipulation = "A simple action sets it to react to a trigger." }
+
+[[powers]]
+discipline = "Chimerstry"
+level = 4
+name = "Permanency"
+note = "1 Blood, simple action: make a Mirage or Apparition last until you dispel it or sunlight touches it."
+focus = { Charisma = "Concentrate three turns to skip the Blood, or pay 1 more Blood to skip the action." }
+
+[[powers]]
+discipline = "Chimerstry"
+level = 5
+name = "Horrid Reality"
+note = "1 Blood, standard action: for five minutes an Apparition can't be disbelieved and can physically strike people."
+focus = { Charisma = "Spend simple and standard actions to add a combat maneuver to its attack." }
+
+[[disciplines]]
+name = "Daimoinon"
+pool = "Mental + Academics"
+versus = "Mental + Willpower"
+
+[[powers]]
+discipline = "Daimoinon"
+level = 1
+name = "Sense the Sin"
+note = "1 Blood, standard action, Daimoinon test: learn a target's Beast traits and Morality rating."
+focus = { Perception = "With no Beast traits, learn roughly when and why they last gained some." }
+
+[[powers]]
+discipline = "Daimoinon"
+level = 2
+name = "Fear the Void Below"
+note = "1 Blood, standard action: bind a promise made to you; breaking it brings Hell's retribution."
+focus = { Intelligence = "A promise-breaker loses 1 Willpower before resisting." }
+
+[[powers]]
+discipline = "Daimoinon"
+level = 3
+name = "Conflagration"
+note = "1 Blood, standard action: hurl infernal green fire, Mental + Academics against Physical + Dodge."
+focus = { Intelligence = "Usable in Celerity rounds." }
+
+[[powers]]
+discipline = "Daimoinon"
+level = 4
+name = "Psychomachia"
+note = "1 Blood, standard action, Daimoinon test: conjure the target's own sin as a tormenting manifestation beside them."
+focus = { Perception = "The manifestation gets Willpower to spend." }
+
+[[powers]]
+discipline = "Daimoinon"
+level = 5
+name = "Condemnation"
+note = "1 Blood, standard action, Daimoinon test: curse the target, e.g. no Blood to boost Physical, or a heavy penalty to some pools."
+focus = { Perception = "Apply two curses instead of one." }
+
+[[disciplines]]
+name = "Dementation"
+pool = "Social + Empathy"
+versus = "Social + Willpower"
+
+[[powers]]
+discipline = "Dementation"
+level = 1
+name = "Passion"
+note = "1 Blood, standard action, Dementation test: heighten or dampen the target's emotions for an hour."
+focus = { Charisma = "Can also end a fear power on someone, or stoke one." }
+
+[[powers]]
+discipline = "Dementation"
+level = 2
+name = "Haunting"
+note = "1 Blood, standard action, Dementation test: visions only the target sees give -3 to their attack pools for the next while."
+focus = { Charisma = "The target also loses their Mental focus while haunted." }
+
+[[powers]]
+discipline = "Dementation"
+level = 3
+name = "Eyes of Chaos"
+note = "Always on: +5 wild card to mundane Investigation, and to Academics for codes and missing clues."
+focus = { Manipulation = "Use it with a simple action instead of a standard one." }
+
+[[powers]]
+discipline = "Dementation"
+level = 4
+name = "Voice of Madness"
+note = "Describe a derangement to the target for five turns, then 1 Blood and an opposed test to inflict it."
+focus = { Manipulation = "One phrase and a standard action instead of five turns." }
+
+[[powers]]
+discipline = "Dementation"
+level = 5
+name = "Total Insanity"
+note = "1 Blood, standard action, opposed test against someone focused on you: drive them insane for an hour."
+focus = { Charisma = "They also lose all their Mental and Social focuses." }
+
+[[disciplines]]
+name = "Dominate"
+pool = "Mental + Intimidation"
+versus = "Mental + Willpower"
+note = "Needs eye contact and a voice the target understands."
+
+[[powers]]
+discipline = "Dominate"
+level = 1
+name = "Command"
+note = "Standard action, one-word order, Dominate test: the target obeys at once on their next action."
+focus = { Intelligence = "They follow the Command for three turns instead of one." }
+
+[[powers]]
+discipline = "Dominate"
+level = 2
+name = "Mesmerism"
+note = "Standard action, Dominate test on a focused target: implant instructions, with a trigger if you like, lasting up to a month."
+focus = { Intelligence = "Lies dormant up to three months and lasts two hours once triggered." }
+
+[[powers]]
+discipline = "Dominate"
+level = 3
+name = "Forgetful Mind"
+note = "Standard action, Dominate test: put the target in a trance and alter, erase or rewrite up to 10 minutes of memory."
+focus = { Wits = "Alter up to an hour of memory." }
+
+[[powers]]
+discipline = "Dominate"
+level = 4
+name = "Conditioning"
+note = "Three uninterrupted hours with a conscious subject: implant a lasting Mesmerism."
+
+[[powers]]
+discipline = "Dominate"
+level = 5
+name = "Possession"
+note = "Standard action, meeting the target's eyes, opposed test: your mind moves into a mortal's body."
+focus = { Wits = "Use the first 2 dots of your Mental and Social in-clan disciplines while possessing." }
+
+[[disciplines]]
+name = "Fortitude"
+note = "No standard test pool. Its powers always work."
+focus = { Stamina = "One more health level in each wound category when you first buy Fortitude." }
+
+[[powers]]
+discipline = "Fortitude"
+level = 1
+name = "Endurance"
+note = "Immune to torture; no wound penalties."
+
+[[powers]]
+discipline = "Fortitude"
+level = 2
+name = "Mettle"
+note = "Turn 1 aggravated damage from each attack into normal damage."
+
+[[powers]]
+discipline = "Fortitude"
+level = 3
+name = "Resilience"
+note = "Ignore 1 normal damage from each attack (after Mettle's downgrade, if you like)."
+
+[[powers]]
+discipline = "Fortitude"
+level = 4
+name = "Resistance"
+note = "Turn another aggravated damage from each attack into normal: 2 with Mettle."
+
+[[powers]]
+discipline = "Fortitude"
+level = 5
+name = "Aegis"
+note = "Ignore another normal damage from each attack: 2 with Resilience."
+
+[[disciplines]]
+name = "Melpominee"
+pool = "Social + Subterfuge"
+versus = "Social + Willpower"
+
+[[powers]]
+discipline = "Melpominee"
+level = 1
+name = "The Missing Voice"
+note = "1 Blood, simple action: make any sound a voice can, in any range, louder than any human."
+focus = { Appearance = "It can be recorded and carried by phones and speakers." }
+
+[[powers]]
+discipline = "Melpominee"
+level = 2
+name = "Phantom Speaker"
+note = "1 Blood, simple action: throw your voice to anywhere you can see or know well."
+focus = { Charisma = "Speak from just behind anyone you know, at any range." }
+
+[[powers]]
+discipline = "Melpominee"
+level = 3
+name = "Madrigal"
+note = "1 Blood, sing three turns: everyone who hears feels the emotion you choose, and gets +2 to resist other emotion powers."
+focus = { Appearance = "+3 instead of +2 to resist other emotion powers." }
+
+[[powers]]
+discipline = "Melpominee"
+level = 4
+name = "Siren's Beckoning"
+note = "1 Blood, standard action: as many listeners as your Performance: Singing dots stop everything to listen while you sing."
+focus = { Charisma = "Mortals don't count towards the number." }
+
+[[powers]]
+discipline = "Melpominee"
+level = 5
+name = "Death of the Drum"
+note = "1 Blood, standard action, Melpominee test: your voice does 3 aggravated damage."
+focus = { Charisma = "Shatter objects with it too." }
+
+[[disciplines]]
+name = "Mytherceria"
+pool = "Mental + Academics"
+versus = "Mental + Willpower"
+
+[[powers]]
+discipline = "Mytherceria"
+level = 1
+name = "Fae Sight"
+note = "Always on: read an object's purpose, age, materials and maker at a glance; spot forgeries."
+focus = { Perception = "Find hidden latches and compartments; work out a lock's code in three turns." }
+
+[[powers]]
+discipline = "Mytherceria"
+level = 2
+name = "Darkling Trickery"
+note = "1 Blood, standard action, Mytherceria test: fae pranks plague the target for an hour."
+focus = { Perception = "Their attacks with combat maneuvers simply fail." }
+
+[[powers]]
+discipline = "Mytherceria"
+level = 3
+name = "Ay Befriend"
+note = "1 Blood, standard action: summon invisible piskies to run an errand or act for you."
+focus = { Intelligence = "Use it once at game and once in downtime each week." }
+
+[[powers]]
+discipline = "Mytherceria"
+level = 4
+name = "Changeling Ward"
+note = "1 Blood, three turns drawing sigils: a ward that bewilders whoever crosses it."
+focus = { Perception = "Supernatural creatures suffer the after-effects too." }
+
+[[powers]]
+discipline = "Mytherceria"
+level = 5
+name = "Riddle Phantastique"
+note = "1 Blood, standard action, Mytherceria test: the target is spellbound by your riddle until they solve it."
+focus = { Intelligence = "They take -3 trying to solve it." }
+
+[[disciplines]]
+name = "Obeah"
+pool = "Mental + Medicine"
+versus = "Mental + Willpower"
+
+[[powers]]
+discipline = "Obeah"
+level = 1
+name = "Sense Vitality"
+note = "1 Blood, simple action: for an hour, sense the health, nature and ailments of anyone within 10 steps."
+focus = { Perception = "1 Blood, simple action: +5 to a Medicine challenge." }
+
+[[powers]]
+discipline = "Obeah"
+level = 2
+name = "Anesthetic Touch"
+note = "1 Blood, standard action, a willing target within a step: no pain or wound penalties for an hour (mortals sleep peacefully)."
+focus = { Wits = "A simple action, at anyone willing in sight." }
+
+[[powers]]
+discipline = "Obeah"
+level = 3
+name = "Corpore Sano"
+note = "1 Blood, standard action, a willing target within a step (you too): heal 1 normal damage, once a turn."
+focus = { Wits = "Spend 1 more Blood to heal aggravated damage instead." }
+
+[[powers]]
+discipline = "Obeah"
+level = 4
+name = "Shepherd's Watch"
+note = "1 Blood, standard action: no one with hostile intent can come within five steps of you and those you protect."
+focus = { Wits = "Those protected also get +3 to Dodge and Survival defence pools." }
+
+[[powers]]
+discipline = "Obeah"
+level = 5
+name = "King's Blessing"
+note = "3 Blood, a minute's touch: cure any physical malady, regrow limbs, heal wounds."
+focus = { Perception = "Can also heal the mind, even curing derangements." }
+
+[[disciplines]]
+name = "Obfuscate"
+pool = "Mental + Stealth"
+versus = "Mental + Willpower"
+note = "Ends if you attack or draw attention to yourself."
+
+[[powers]]
+discipline = "Obfuscate"
+level = 1
+name = "Conceal"
+note = "Simple action: hide an object up to three feet long that you carry."
+focus = { Intelligence = "Up to 10 objects, up to six feet long." }
+
+[[powers]]
+discipline = "Obfuscate"
+level = 2
+name = "Unseen Presence"
+note = "Standard action: become invisible, with what you carry, until you act openly."
+focus = { Wits = "Whisper, or quietly handle unattended objects, without breaking it." }
+
+[[powers]]
+discipline = "Obfuscate"
+level = 3
+name = "Mask of a Thousand Faces"
+note = "Simple action: look, sound and smell like a forgettable stranger, or someone you've studied."
+focus = { Wits = "Disguise your clothes and gear too: a phone looks like a shotgun." }
+
+[[powers]]
+discipline = "Obfuscate"
+level = 4
+name = "Vanish From the Mind's Eye"
+note = "Use Conceal or Unseen Presence while watched: an Obfuscate test against each observer and you vanish anyway."
+focus = { Intelligence = "A free retest when you lose." }
+
+[[powers]]
+discipline = "Obfuscate"
+level = 5
+name = "Cloak the Gathering"
+note = "Extend Unseen Presence, Mask or Vanish to as many willing allies as your Stealth dots."
+focus = { Intelligence = "Twice your Stealth dots in allies." }
+
+[[disciplines]]
+name = "Obtenebration"
+note = "No standard test pool."
+
+[[powers]]
+discipline = "Obtenebration"
+level = 1
+name = "Shadow Play"
+note = "1 Blood, simple action: animate nearby shadows for five minutes to obey simple orders."
+focus = { Appearance = "Shadows cling to you: terrifying, and immune to excess fear effects." }
+
+[[powers]]
+discipline = "Obtenebration"
+level = 2
+name = "Shroud of Night"
+note = "1 Blood, simple action: a six-step cloud of utter darkness anywhere in sight."
+focus = { Manipulation = "Living creatures inside take damage." }
+
+[[powers]]
+discipline = "Obtenebration"
+level = 3
+name = "Arms of the Abyss"
+note = "1 Blood, simple action: shadow tentacles rise, one per Obtenebration power you have, to grapple and strike."
+focus = { Manipulation = "The Arms attack with a pool of 10, and hit harder with Potence." }
+
+[[powers]]
+discipline = "Obtenebration"
+level = 4
+name = "Black Metamorphosis"
+note = "1 Blood, simple action: become a shadow-wreathed horror with four tentacle limbs."
+focus = { Appearance = "Sense your surroundings perfectly, even in magical darkness." }
+
+[[powers]]
+discipline = "Obtenebration"
+level = 5
+name = "Tenebrous Form"
+note = "1 Blood, simple and standard actions: become living shadow, immune to Physical attacks but fire and sunlight; no powers or attacks."
+focus = { Manipulation = "1 Blood for glowing eyes: use the first 3 dots of Dominate and Presence." }
+
+[[disciplines]]
+name = "Potence"
+note = "No standard test pool. Its powers are always on."
+focus = { Strength = "+2 to every Brawl and Melee attack." }
+pools = [
+  { pool = "attack:Brawl", amount = 2, focus = "Strength" },
+  { pool = "attack:Melee", amount = 2, focus = "Strength" },
+]
+
+[[powers]]
+discipline = "Potence"
+level = 1
+name = "Prowess"
+note = "Brawl and Melee attacks ignore armour."
+
+[[powers]]
+discipline = "Potence"
+level = 2
+name = "Might"
+note = "Brawl and Melee hits do 2 damage (3 on an exceptional success)."
+
+[[powers]]
+discipline = "Potence"
+level = 3
+name = "Vigor"
+note = "+5 when checking for an exceptional success with Brawl and Melee."
+
+[[powers]]
+discipline = "Potence"
+level = 4
+name = "Intensity"
+note = "Brawl and Melee exceptional successes add 2 damage instead of 1."
+
+[[powers]]
+discipline = "Potence"
+level = 5
+name = "Puissance"
+note = "Brawl and Melee hits do 3 damage (more on an exceptional success)."
+
+[[disciplines]]
+name = "Presence"
+pool = "Social + Leadership"
+versus = "Social + Willpower"
+
+[[powers]]
+discipline = "Presence"
+level = 1
+name = "Awe"
+note = "1 Blood, standard action: for the scene, everyone nearby pays you attention and wants to be near you; ignoring it costs 1 Willpower."
+focus = { Appearance = "Ignoring your Awe costs 2 Willpower." }
+
+[[powers]]
+discipline = "Presence"
+level = 2
+name = "Dread Gaze"
+note = "Standard action, bare your fangs, Presence test: the target won't come within five steps of you for five minutes."
+focus = { Manipulation = "A glare does it, without showing what you are." }
+
+[[powers]]
+discipline = "Presence"
+level = 3
+name = "Entrancement"
+note = "1 Blood, standard action, Presence test: the target becomes devoted and receptive to you for an hour."
+focus = { Appearance = "Lasts three hours." }
+
+[[powers]]
+discipline = "Presence"
+level = 4
+name = "Summon"
+note = "1 Blood, standard action, Presence test against someone you know: they come to you; you must stay where you are."
+focus = { Manipulation = "Summon your retainers, ghouls and the blood bound free, with no action." }
+
+[[powers]]
+discipline = "Presence"
+level = 5
+name = "Majesty"
+note = "1 Blood, standard action: for an hour, no one can act against you without spending Willpower and winning a test."
+focus = { Appearance = "You ignore other people's Majesty while yours is up." }
+
+[[disciplines]]
+name = "Protean"
+note = "No standard test pool. Transformations can't be combined."
+
+[[powers]]
+discipline = "Protean"
+level = 1
+name = "Eyes of the Beast"
+note = "1 Blood, simple action: for an hour your eyes glow red and you see, and fight, perfectly in the dark."
+focus = { Perception = "Always on and free, and your eyes glow only if you want." }
+
+[[powers]]
+discipline = "Protean"
+level = 2
+name = "Feral Claws"
+note = "1 Blood, simple action: claws that do aggravated damage with Brawl."
+focus = { Wits = "Grow or sheathe them with no action." }
+
+[[powers]]
+discipline = "Protean"
+level = 3
+name = "Earth Meld"
+note = "1 Blood, simple action, touching soft earth: sink into the ground, safe to sleep, unable to act."
+focus = { Perception = "Perceive the surroundings while melded and awake." }
+
+[[powers]]
+discipline = "Protean"
+level = 4
+name = "Shape of the Beast"
+note = "1 Blood, standard action: become a bat (fly, +3 Dodge, Physical 3 for attacks) or a wolf (+2 Brawl, aggravated bites and claws)."
+focus = { Wits = "Choose other predators for your two forms." }
+pools = [
+  { pool = "dodge", amount = 3, when = "in flight form" },
+  { pool = "attack:Brawl", amount = 2, when = "in fight form" },
+]
+
+[[powers]]
+discipline = "Protean"
+level = 5
+name = "Form of Mist"
+note = "1 Blood, standard action: become mist, immune to Physical attacks but fire and sunlight; no Blood, speech, powers or attacks."
+focus = { Wits = "Move three steps per simple action whatever the wind, even upwards." }
+
+[[disciplines]]
+name = "Quietus"
+pool = "Mental + Athletics"
+versus = "Mental + Willpower"
+
+[[powers]]
+discipline = "Quietus"
+level = 1
+name = "Silence of Death"
+note = "1 Blood, simple action: absolute silence in up to three steps around you."
+focus = { Wits = "Up to five steps, and you can fix it on a place instead of yourself." }
+
+[[powers]]
+discipline = "Quietus"
+level = 2
+name = "Scorpion's Touch"
+note = "1 Blood, simple action: coat a blade with your blood; for three turns a hit poisons, -2 to the victim's Physical attacks."
+focus = { Intelligence = "Stays toxic for five turns." }
+
+[[powers]]
+discipline = "Quietus"
+level = 3
+name = "Dagon's Call"
+note = "1 Blood, standard action, Quietus test: the target's organs rupture, 2 normal damage each turn they act."
+focus = { Wits = "No line of sight needed if they carry or recently drank your blood." }
+
+[[powers]]
+discipline = "Quietus"
+level = 4
+name = "Baal's Caress"
+note = "1 Blood, simple action: coat a blade with your blood; for three turns its hits do aggravated damage."
+focus = { Intelligence = "Stays toxic for five turns." }
+
+[[powers]]
+discipline = "Quietus"
+level = 5
+name = "Taste of Death"
+note = "1 Blood: spit toxic blood for the turn, Physical + Athletics against Physical + Dodge, carrying your other Quietus poisons."
+focus = { Intelligence = "Scorpion's Touch carried this way gives -3 instead of -2." }
+
+[[disciplines]]
+name = "Serpentis"
+pool = "Social + Subterfuge"
+versus = "Social + Willpower"
+
+[[powers]]
+discipline = "Serpentis"
+level = 1
+name = "Eyes of the Serpent"
+note = "1 Blood, simple action, Serpentis test on someone focused on you: they're paralysed while you hold their gaze."
+focus = { Appearance = "Use other powers while holding them; an injury still breaks it." }
+
+[[powers]]
+discipline = "Serpentis"
+level = 2
+name = "Tongue of the Asp"
+note = "1 Blood, simple action: for an hour, a forked tongue: talk to snakes, and whisper unheard."
+focus = { Charisma = "+1 to tests that rely on your voice, Entrancement included." }
+
+[[powers]]
+discipline = "Serpentis"
+level = 3
+name = "Skin of the Adder"
+note = "1 Blood, standard action: scales give +2 to Dodge pools, and you can bite without grappling first."
+focus = { Charisma = "+3 to Dodge instead, and +1 to Brawl when biting." }
+pools = [{ pool = "dodge", amount = 2, when = "with Skin of the Adder" }]
+
+[[powers]]
+discipline = "Serpentis"
+level = 4
+name = "Form of the Cobra"
+note = "1 Blood, standard action: become a human-sized cobra that can't be grappled, with a venomous bite."
+focus = { Appearance = "Grow as large as a python or as small as a viper." }
+
+[[powers]]
+discipline = "Serpentis"
+level = 5
+name = "Heart of Darkness"
+note = "1 Blood and an hour's ritual on a new moon: remove a willing vampire's heart (your own too), safe from staking."
+focus = { Charisma = "Any night, and on an unwilling vampire in torpor." }
+
+[[disciplines]]
+name = "Temporis"
+pool = "Physical + Survival"
+versus = "Physical + Willpower"
+note = "Can't be held alongside Celerity."
+
+[[powers]]
+discipline = "Temporis"
+level = 1
+name = "Hourglass of the Mind"
+note = "Always on: a perfect sense of time, and you notice time being disturbed within a mile, and who has Temporis or Celerity."
+focus = { Stamina = "Learn the exact Temporis and Celerity powers they have." }
+
+[[powers]]
+discipline = "Temporis"
+level = 2
+name = "Nick of Time"
+note = "1 Blood, simple action: pull a common, lost object to you from another time."
+focus = { Stamina = "Choose the qualities of a weapon or combat item you pull." }
+
+[[powers]]
+discipline = "Temporis"
+level = 3
+name = "Split Second"
+note = "1 Blood, once a turn: an extra simple action on your initiative, not against others or for powers."
+focus = { Stamina = "Two extra simple actions instead of one." }
+
+[[powers]]
+discipline = "Temporis"
+level = 4
+name = "Patience of the Norns"
+note = "1 Blood, standard action: freeze an object in perfect stasis."
+focus = { Stamina = "Turn or slightly move the object while it's frozen." }
+
+[[powers]]
+discipline = "Temporis"
+level = 5
+name = "Clotho's Gift"
+note = "1 Blood: two extra rounds of actions this turn, in the Celerity rounds."
+focus = { Stamina = "One of those standard actions can be a Mental or Social power." }
+
+[[disciplines]]
+name = "Thanatosis"
+pool = "Mental + Medicine"
+versus = "Mental + Willpower"
+
+[[powers]]
+discipline = "Thanatosis"
+level = 1
+name = "Hag's Wrinkles"
+note = "Standard action: open pouches in your skin to hide items up to a large handgun; a simple action to draw one."
+focus = { Wits = "Loose folds of skin turn blows: +1 to defence pools." }
+
+[[powers]]
+discipline = "Thanatosis"
+level = 2
+name = "Putrefaction"
+note = "1 Blood, standard action: rot an organic object you touch to uselessness (metal, glass and stone take two)."
+focus = { Wits = "1 Blood, standard action: rot a stake through your own heart." }
+
+[[powers]]
+discipline = "Thanatosis"
+level = 3
+name = "Ashes to Ashes"
+note = "1 Blood, standard action: become a pile of ash, immune to Physical damage, fire and sunlight, unable to act."
+focus = { Wits = "Spend Blood while ash to gather yourself back together." }
+
+[[powers]]
+discipline = "Thanatosis"
+level = 4
+name = "Withering"
+note = "Grapple, then 1 Blood: the victim takes a lasting -1 to Physical; at -5 a limb withers."
+focus = { Intelligence = "A limb withers at -3." }
+
+[[powers]]
+discipline = "Thanatosis"
+level = 5
+name = "Necrosis"
+note = "1 Blood, simple action: for an hour, a grapple can rot the victim for 3 aggravated damage, once a turn."
+focus = { Intelligence = "4 aggravated damage instead of 3." }
+
+[[disciplines]]
+name = "Valeren"
+pool = "Mental + Medicine"
+versus = "Mental + Willpower"
+
+[[powers]]
+discipline = "Valeren"
+level = 1
+name = "Sense Vitality"
+note = "1 Blood, simple action: for an hour, sense the health, nature and ailments of anyone within 10 steps."
+focus = { Perception = "While it's on, Pierce the Heart costs no Willpower." }
+
+[[powers]]
+discipline = "Valeren"
+level = 2
+name = "Burning Touch"
+note = "Grapple, then 1 Blood: searing agony, -3 to all the victim's actions until your next initiative."
+focus = { Wits = "The memory of it makes threats of torture tell." }
+
+[[powers]]
+discipline = "Valeren"
+level = 3
+name = "Mens Sana"
+note = "Once a turn, 1 Blood heals you 1 normal damage, beyond your usual Blood a turn."
+focus = { Wits = "Twice a turn." }
+
+[[powers]]
+discipline = "Valeren"
+level = 4
+name = "Armor of Caine's Fury"
+note = "1 Blood, simple action: +3 to Dodge and Survival defence pools, while you only fight or close on a foe."
+focus = { Wits = "The benefits of a rage frenzy with none of the drawbacks; immune to fear and hunger frenzy." }
+pools = [{ pool = "dodge", amount = 3, when = "with Armor of Caine's Fury" }]
+
+[[powers]]
+discipline = "Valeren"
+level = 5
+name = "Vengeance of Samiel"
+note = "1 Blood, standard action, once a turn: a Brawl or Melee attack that hits automatically."
+focus = { Perception = "It's an exceptional success (they can spend Willpower to make it normal)." }
+
+[[disciplines]]
+name = "Vicissitude"
+note = "No standard test pool."
+
+[[powers]]
+discipline = "Vicissitude"
+level = 1
+name = "Malleable Visage"
+note = "1 Blood, five standard actions sculpting: reshape your own face and body within human range."
+focus = { Charisma = "One standard action, no hands needed." }
+
+[[powers]]
+discipline = "Vicissitude"
+level = 2
+name = "Fleshcraft"
+note = "1 Blood: reshape a willing person over five actions, or in combat a Brawl attack that twists the victim's flesh."
+focus = { Manipulation = "Three actions on the willing; harder-hitting attacks." }
+
+[[powers]]
+discipline = "Vicissitude"
+level = 3
+name = "Bonecraft"
+note = "1 Blood, five standard actions: radically remake a body's bones and organs, such as bone spurs or armour."
+focus = { Manipulation = "Two modifications at once." }
+
+[[powers]]
+discipline = "Vicissitude"
+level = 4
+name = "Horrid Form"
+note = "1 Blood, standard action: become a monster: -3 Mental and Social, the Strength focus, +3 Physical for Brawl attacks."
+focus = { Charisma = "+5 to Brawl attacks instead, and terrifying to behold." }
+pools = [
+  { pool = "attack:Brawl", amount = 3, when = "in Horrid Form", unless_focus = "Charisma" },
+  { pool = "attack:Brawl", amount = 5, when = "in Horrid Form", focus = "Charisma" },
+]
+
+[[powers]]
+discipline = "Vicissitude"
+level = 5
+name = "Blood Form"
+note = "1 Blood, standard action: become a pool of blood, immune to Physical attacks but fire and sunlight; no Blood, speech or powers."
+focus = { Manipulation = "A walking, man-shaped mass of blood instead." }
+
+[[disciplines]]
+name = "Visceratika"
+pool = "Mental + Athletics"
+versus = "Mental + Willpower"
+
+[[powers]]
+discipline = "Visceratika"
+level = 1
+name = "Skin of the Chameleon"
+note = "1 Blood, simple action, unobserved: for an hour mortals take you for an expected part of the scene."
+focus = { Perception = "Works on vampires and other supernatural creatures too." }
+
+[[powers]]
+discipline = "Visceratika"
+level = 2
+name = "Scry the Hearthstone"
+note = "1 Blood, a turn's concentration: know a building's layout, hidden rooms and who's inside."
+focus = { Perception = "A simple action instead." }
+
+[[powers]]
+discipline = "Visceratika"
+level = 3
+name = "Bond With the Mountain"
+note = "1 Blood, standard action: mould stone, brick or concrete like clay."
+focus = { Wits = "Metal too." }
+
+[[powers]]
+discipline = "Visceratika"
+level = 4
+name = "Armor of Terra"
+note = "1 Blood, simple action: stone skin for an hour, Hardened and Ballistic armour."
+focus = { Wits = "Full Body armour as well, hidden under clothes." }
+
+[[powers]]
+discipline = "Visceratika"
+level = 5
+name = "Stone Strength"
+note = "1 Blood, simple action: become stone-hard: no fire damage beyond normal, and you can't be staked."
+focus = { Wits = "Half damage from sunlight." }
+
+[[disciplines]]
+name = "Necromancy: Sepulchre Path"
+pool = "Social + Occult"
+versus = "Social + Willpower"
+note = "The study of ghosts: see, summon and bind wraiths."
+
+[[powers]]
+discipline = "Necromancy: Sepulchre Path"
+level = 1
+name = "Witness of Death"
+note = "Always on: see, hear and talk with wraiths, whatever their language."
+focus = { Appearance = "Recognise wraith powers, Necromancy and necromantic items." }
+
+[[powers]]
+discipline = "Necromancy: Sepulchre Path"
+level = 2
+name = "Torment"
+note = "1 Blood, standard action, Necromancy test: 3 normal damage to a wraith (4 on an exceptional success)."
+focus = { Manipulation = "It also loses 1 Pathos." }
+
+[[powers]]
+discipline = "Necromancy: Sepulchre Path"
+level = 3
+name = "Summon Soul"
+note = "1 Blood, standard action: summon a wraith you can name, or the nearest one."
+focus = { Appearance = "Your summoned wraiths are 3-point NPCs." }
+
+[[powers]]
+discipline = "Necromancy: Sepulchre Path"
+level = 4
+name = "Bind Soul"
+note = "1 Blood, three turns' concentration: bind a wraith to a place as a 3-point Retainer, within 10 steps of it."
+focus = { Manipulation = "Bind as many wraiths as your Occult dots." }
+
+[[powers]]
+discipline = "Necromancy: Sepulchre Path"
+level = 5
+name = "Soul Stealing"
+note = "1 Blood, standard action, Necromancy test: the target spends a Willpower or has their soul torn out of their body."
+focus = { Appearance = "It also does 1 normal damage." }
+
+[[disciplines]]
+name = "Necromancy: Bone Path"
+pool = "Social + Occult"
+versus = "Social + Willpower"
+note = "Mastery of corpses: raise, read and possess the dead."
+
+[[powers]]
+discipline = "Necromancy: Bone Path"
+level = 1
+name = "Eyes of the Dead"
+note = "Simple action at a corpse in sight: learn how and when it died, and whether it's been moved."
+focus = { Appearance = "1 Blood: disguise how a corpse died." }
+
+[[powers]]
+discipline = "Necromancy: Bone Path"
+level = 2
+name = "Destroy Husk"
+note = "1 Blood, standard action: utterly destroy a corpse or zombie in sight."
+focus = { Charisma = "A simple action instead." }
+
+[[powers]]
+discipline = "Necromancy: Bone Path"
+level = 3
+name = "Shambling Hordes"
+note = "1 Blood, standard action: raise a corpse you have as an obedient zombie; control as many as your dots in the path."
+focus = { Charisma = "Your zombies are 3-point NPCs with Potence and Fortitude." }
+
+[[powers]]
+discipline = "Necromancy: Bone Path"
+level = 4
+name = "Morbidity"
+note = "1 Blood, standard action: heal or repair a zombie, or otherwise work on undead servants."
+focus = { Appearance = "Make a vampire look briefly more human." }
+
+[[powers]]
+discipline = "Necromancy: Bone Path"
+level = 5
+name = "Death's Puppetry"
+note = "Standard action: move your mind into a corpse or zombie in sight; your body lies torpid."
+focus = { Charisma = "Possess any zombie you control within a mile, unseen." }
+
+[[disciplines]]
+name = "Necromancy: Ash Path"
+pool = "Social + Occult"
+versus = "Social + Willpower"
+note = "Reaching into the Shadowlands, the world of the dead."
+
+[[powers]]
+discipline = "Necromancy: Ash Path"
+level = 1
+name = "Shroud Sight"
+note = "Always on: see the Shadowlands and the wraiths in them (but not talk to them)."
+focus = { Manipulation = "Standard action: judge whether a living person will become a wraith." }
+
+[[powers]]
+discipline = "Necromancy: Ash Path"
+level = 2
+name = "Shroud Mastery"
+note = "1 Blood, three turns: strengthen or thin the Shroud by one in a room-sized area for the night."
+focus = { Manipulation = "Lasts a lunar month, over a larger area." }
+
+[[powers]]
+discipline = "Necromancy: Ash Path"
+level = 3
+name = "Dead Hand"
+note = "1 Blood, standard action: pull a small object out of the Shadowlands for an hour."
+focus = { Charisma = "It stays for the night." }
+
+[[powers]]
+discipline = "Necromancy: Ash Path"
+level = 4
+name = "Stygian Lance"
+note = "1 Blood, standard action: a bolt of plasm, Social + Occult against Physical + Dodge, 3 normal damage; hits wraiths too."
+focus = { Charisma = "Its damage can't be reduced or negated." }
+
+[[powers]]
+discipline = "Necromancy: Ash Path"
+level = 5
+name = "Ex Nihilo"
+note = "1 Blood, five turns chanting: travel through the Shadowlands to a familiar place, with up to three zombies."
+focus = { Manipulation = "1 Blood, standard action: flicker through the Shadowlands for a turn." }
+
+[[disciplines]]
+name = "Necromancy: Mortis Path"
+pool = "Social + Occult"
+versus = "Social + Willpower"
+note = "Power over death itself: decay, torpor and dying."
+
+[[powers]]
+discipline = "Necromancy: Mortis Path"
+level = 1
+name = "Masque of Death"
+note = "1 Blood, standard action: become, to every test, an ordinary corpse; no powers or movement."
+focus = { Appearance = "1 Blood a turn for a simple action while in it." }
+
+[[powers]]
+discipline = "Necromancy: Mortis Path"
+level = 2
+name = "Resume the Coil"
+note = "1 Blood, standard action, touch: wake a vampire from torpor (yourself too)."
+focus = { Manipulation = "Raise someone who died in the last 24 hours." }
+
+[[powers]]
+discipline = "Necromancy: Mortis Path"
+level = 3
+name = "Blight"
+note = "1 Blood, standard action, Necromancy test: a wasting sickness, 1 aggravated damage, and more each hour unless resisted."
+focus = { Manipulation = "Resisted every 10 minutes instead of every hour." }
+
+[[powers]]
+discipline = "Necromancy: Mortis Path"
+level = 4
+name = "Reaper's Passing"
+note = "1 Blood, standard action, Necromancy test: a glimpse of death stuns the target, losing their next standard action."
+focus = { Manipulation = "They lose their next simple action too." }
+
+[[powers]]
+discipline = "Necromancy: Mortis Path"
+level = 5
+name = "The Fourth Horseman"
+note = "1 Blood, simple action: become an avatar of death that feeds on life around you."
+focus = { Appearance = "Your Brawl and Melee attacks do aggravated damage." }
+
+[[disciplines]]
+name = "Thaumaturgy: Path of Blood"
+pool = "Mental + Occult"
+versus = "Mental + Willpower"
+note = "Thaumaturgy's primary path for most: mastery of vitae."
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Blood"
+level = 1
+name = "A Taste for Blood"
+note = "Simple action, tasting a drop of someone's blood: learn their nature, generation and how much Blood they have."
+focus = { Perception = "Gauge their blood bonds too." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Blood"
+level = 2
+name = "Blood Rage"
+note = "1 Blood, standard action, Thaumaturgy test within a step: force the target to spend their Blood as you choose."
+focus = { Perception = "Within 10 steps instead of one." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Blood"
+level = 3
+name = "Blood of Potency"
+note = "1 Blood, simple action: for an hour your Blood pool grows by half, and you can spend more a turn."
+focus = { Intelligence = "Twice a night." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Blood"
+level = 4
+name = "Theft of Vitae"
+note = "1 Blood, standard action, Thaumaturgy test within 25 steps: draw the target's Blood out to you."
+focus = { Intelligence = "Stolen vampire blood can't bind you." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Blood"
+level = 5
+name = "Cauldron of Blood"
+note = "Grapple, then 1 Blood: boil 2 of the victim's Blood, 2 aggravated damage."
+focus = { Intelligence = "Boil 3 Blood, 3 aggravated damage." }
+
+[[disciplines]]
+name = "Thaumaturgy: Path of Conjuring"
+pool = "Mental + Occult"
+versus = "Mental + Willpower"
+note = "Creating objects, and life, from nothing."
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Conjuring"
+level = 1
+name = "Summon the Simple Form"
+note = "1 Blood, standard action: conjure a simple one-handed object with no moving parts."
+focus = { Intelligence = "A simple action instead." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Conjuring"
+level = 2
+name = "Magic of the Smith"
+note = "1 Blood, five turns' concentration: conjure a complex object you know well."
+focus = { Intelligence = "Objects up to 10 cubic feet." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Conjuring"
+level = 3
+name = "Permanency"
+note = "1 Blood, simple action: make a conjured object last."
+focus = { Perception = "Make them permanent as you conjure, free." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Conjuring"
+level = 4
+name = "Reverse Conjuration"
+note = "1 Blood, standard action: banish a conjured object (another's needs a challenge)."
+focus = { Perception = "Simple action: tell conjured from natural." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Conjuring"
+level = 5
+name = "Power Over Life"
+note = "Five turns, 1 Blood a turn: conjure a living simulacrum that obeys your thoughts."
+focus = { Intelligence = "Duplicates of specific creatures." }
+
+[[disciplines]]
+name = "Thaumaturgy: Path of Corruption"
+pool = "Mental + Occult"
+versus = "Mental + Willpower"
+note = "Twisting desires and morals."
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Corruption"
+level = 1
+name = "Contradict"
+note = "1 Blood, standard action, Thaumaturgy test: the target's next decision becomes its darker opposite."
+focus = { Wits = "-5 to Awareness to notice you did it." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Corruption"
+level = 2
+name = "Subvert"
+note = "1 Blood, standard action, when someone indulges or resists a desire: they must follow their darker urges."
+focus = { Wits = "-2 to resist your other Corruption powers." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Corruption"
+level = 3
+name = "Dissociate"
+note = "1 Blood, standard action, Thaumaturgy test: for an hour the target is withdrawn and distrustful of everyone."
+focus = { Intelligence = "Their blood bonds count for nothing for the hour." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Corruption"
+level = 4
+name = "Addiction"
+note = "1 Blood, standard action, opposed test: addict someone to a sensation, substance or act they've met."
+focus = { Intelligence = "They gain a derangement too." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Corruption"
+level = 5
+name = "Dependence"
+note = "Talk a minute, then 1 Blood, standard action, opposed test: the target comes to rely on you utterly."
+focus = { Wits = "They can't try to harm you while it lasts." }
+
+[[disciplines]]
+name = "Thaumaturgy: Path of Elemental Mastery"
+pool = "Mental + Occult"
+versus = "Mental + Willpower"
+note = "Command of the spirits in objects and elements."
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Elemental Mastery"
+level = 1
+name = "Elemental Strength"
+note = "1 Blood, simple action: the Strength or Stamina focus for five minutes."
+focus = { Intelligence = "+2 to grappling while it's on." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Elemental Mastery"
+level = 2
+name = "Wooden Tongues"
+note = "1 Blood, standard action: for five minutes, talk with the spirits of everyday objects."
+focus = { Perception = "Lasts an hour, and you overhear objects' chatter." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Elemental Mastery"
+level = 3
+name = "Animate the Unmoving"
+note = "1 Blood, standard action: an object in sight moves and obeys simple orders for an hour."
+focus = { Perception = "Lasts the night, and you sense what it's doing." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Elemental Mastery"
+level = 4
+name = "Elemental Form"
+note = "1 Blood, standard action: become an object about your size, keeping your senses."
+focus = { Intelligence = "Anything from half to twice your size." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Elemental Mastery"
+level = 5
+name = "Summon Elemental"
+note = "1 Blood, standard action: summon an elemental that obeys you for three turns."
+focus = { Intelligence = "It stays five minutes." }
+
+[[disciplines]]
+name = "Thaumaturgy: Lure of Flames"
+pool = "Mental + Occult"
+versus = "Physical + Dodge"
+note = "Mystic fire. Fire bolts are dodged with Physical + Dodge."
+
+[[powers]]
+discipline = "Thaumaturgy: Lure of Flames"
+level = 1
+name = "Hand of Flame"
+note = "1 Blood, standard action: your hands burn; Brawl strikes do aggravated fire damage."
+focus = { Wits = "Call it up with no action." }
+
+[[powers]]
+discipline = "Thaumaturgy: Lure of Flames"
+level = 2
+name = "Flame Bolt"
+note = "1 Blood, standard action, opposed test within 20 steps: 2 aggravated fire damage."
+focus = { Wits = "No Blood needed." }
+
+[[powers]]
+discipline = "Thaumaturgy: Lure of Flames"
+level = 3
+name = "Pillar of Fire"
+note = "1 Blood, standard action: a six-foot column of fire within 20 steps burns anyone in it."
+focus = { Intelligence = "3 aggravated damage a turn to those in it." }
+
+[[powers]]
+discipline = "Thaumaturgy: Lure of Flames"
+level = 4
+name = "Engulf"
+note = "1 Blood, standard action, opposed test within 20 steps: the target bursts into flames, 2 aggravated and burning on."
+focus = { Wits = "Three actions to put the flames out." }
+
+[[powers]]
+discipline = "Thaumaturgy: Lure of Flames"
+level = 5
+name = "Firestorm"
+note = "1 Blood, standard action: fire across 20 steps, up to 40 steps away."
+focus = { Intelligence = "3 aggravated damage a turn." }
+
+[[disciplines]]
+name = "Thaumaturgy: Movement of the Mind"
+pool = "Mental + Occult"
+versus = "Mental + Willpower"
+note = "Telekinesis."
+
+[[powers]]
+discipline = "Thaumaturgy: Movement of the Mind"
+level = 1
+name = "Force Bolt"
+note = "1 Blood, standard action, opposed test within 20 steps: knock the target back up to five steps."
+focus = { Wits = "2 normal damage, and six steps." }
+
+[[powers]]
+discipline = "Thaumaturgy: Movement of the Mind"
+level = 2
+name = "Manipulate"
+note = "1 Blood, standard action: move an object up to 50 pounds at walking speed."
+focus = { Perception = "Up to 100 pounds, without the -3 for using it remotely." }
+
+[[powers]]
+discipline = "Thaumaturgy: Movement of the Mind"
+level = 3
+name = "Flight"
+note = "1 Blood, standard action: fly for five minutes."
+focus = { Perception = "Nine steps when you spend both actions moving." }
+
+[[powers]]
+discipline = "Thaumaturgy: Movement of the Mind"
+level = 4
+name = "Repulse"
+note = "1 Blood, standard action: knock back everything within five steps whose Physical is below your Mental."
+focus = { Wits = "Six steps, whatever their Physical." }
+
+[[powers]]
+discipline = "Thaumaturgy: Movement of the Mind"
+level = 5
+name = "Control"
+note = "Manipulate up to a ton, and people too with a Thaumaturgy test."
+focus = { Perception = "Up to 10 tons." }
+
+[[disciplines]]
+name = "Thaumaturgy: Path of Technomancy"
+pool = "Mental + Computers"
+versus = "Mental + Computers"
+note = "Blood magic over machines; its pool uses Computers."
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Technomancy"
+level = 1
+name = "Analyze"
+note = "1 Blood, standard action, touching a device: understand completely what it does and how."
+focus = { Intelligence = "Read its software and files." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Technomancy"
+level = 2
+name = "Burnout"
+note = "1 Blood, standard action: destroy an electronic device in sight."
+focus = { Wits = "Wipe its data without a trace." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Technomancy"
+level = 3
+name = "Encrypt/Decrypt"
+note = "A touch: lock a device or file so only you can use it, or unlock another's."
+focus = { Intelligence = "Only another technomancer can break yours." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Technomancy"
+level = 4
+name = "Remote Access"
+note = "1 Blood, standard action: use a device in sight from afar for an hour."
+focus = { Wits = "Bypass mundane security automatically." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Technomancy"
+level = 5
+name = "Telecommute"
+note = "1 Blood, simple action: for five minutes, sense nearby devices and use your Technomancy through networks."
+focus = { Intelligence = "Lasts an hour." }
+
+[[disciplines]]
+name = "Thaumaturgy: Path of Weather Mastery"
+pool = "Mental + Occult"
+versus = "Mental + Willpower"
+note = "Command of the weather."
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Weather Mastery"
+level = 1
+name = "Fog"
+note = "1 Blood, standard action: fog over a mile per Occult dot within the hour."
+focus = { Perception = "Fill a ballroom-sized space with fog at once." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Weather Mastery"
+level = 2
+name = "Fluctuation"
+note = "1 Blood, standard action: shift the temperature 5°F per Occult dot over a mile."
+focus = { Intelligence = "Change a room's temperature at once." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Weather Mastery"
+level = 3
+name = "Gale"
+note = "1 Blood, standard action: high winds over a mile per Occult dot."
+focus = { Intelligence = "A Thaumaturgy test to blast someone with air." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Weather Mastery"
+level = 4
+name = "Storm"
+note = "1 Blood, standard action: a storm of wind and rain or snow."
+focus = { Perception = "Wrap yourself in a small storm for a turn." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Weather Mastery"
+level = 5
+name = "Lightning"
+note = "1 Blood, standard action, opposed test: a lightning bolt, 4 normal damage."
+focus = { Perception = "Also blind them a turn, or take their next simple action." }
+
+[[disciplines]]
+name = "Kineticism"
+pool = "Physical + Athletics"
+versus = "Physical + Dodge"
+note = "Storing kinetic energy as charges and releasing it."
+
+[[powers]]
+discipline = "Kineticism"
+level = 1
+name = "Accumulate"
+note = "Simple action: store 1 charge. Spend a charge when moving for 3 extra steps."
+focus = { Wits = "Run up and along walls with a charge, ending on level ground." }
+
+[[powers]]
+discipline = "Kineticism"
+level = 2
+name = "Kinetic Discharge"
+note = "On a touch or a Brawl or Melee hit, spend a charge to throw the target up to 4 steps; a collision does 1 damage."
+focus = { Intelligence = "Up to 6 steps, 2 damage on collision, and knock them down." }
+
+[[powers]]
+discipline = "Kineticism"
+level = 3
+name = "Kinetic Dampening"
+note = "Spend 2 charges to turn an attacker's exceptional success against you into a normal success."
+focus = { Intelligence = "Gain a charge whenever something would do you 2 or more damage." }
+
+[[powers]]
+discipline = "Kineticism"
+level = 4
+name = "Redirection"
+note = "After defending against a gun, thrown weapon or projectile power, spend 2 charges to redirect it at a new target."
+focus = { Wits = "Redirect projectiles that miss other people too." }
+
+[[powers]]
+discipline = "Kineticism"
+level = 5
+name = "Vengeful Strike"
+note = "When a Brawl or Melee attack hits, spend charges to make that many points of its damage unsoakable."
+focus = { Intelligence = "Gain 2 charges on an unarmed or melee exceptional success." }
+
+[[disciplines]]
+name = "Spiritus"
+pool = "Social + Occult"
+versus = "Social + Willpower"
+note = "Ahrimane spirit magic: the Umbra and Beast Spirits."
+
+[[powers]]
+discipline = "Spiritus"
+level = 1
+name = "Wyld Eyes"
+note = "1 Blood, simple action: see and talk with spirits near you in the Penumbra."
+focus = { Manipulation = "Simple action and an opposed test: learn a spirit's name, rating and home." }
+
+[[powers]]
+discipline = "Spiritus"
+level = 2
+name = "Tame Spirit"
+note = "A downtime action: bond a Beast Spirit as your companion."
+focus = { Charisma = "A destroyed Beast Spirit reforms in an hour, not a month." }
+
+[[powers]]
+discipline = "Spiritus"
+level = 3
+name = "Umbral Huntress"
+note = "Always on: your Brawl and Melee can hurt unmanifested spirits you can see, and you can feed on their Gnosis for Blood."
+focus = { Manipulation = "Thrown, Firearms and Melee attacks do aggravated damage, more to spirits." }
+
+[[powers]]
+discipline = "Spiritus"
+level = 4
+name = "Mantle of Atira"
+note = "1 Blood, simple action: take two Beast Spirit qualities, such as Bear Strength (+1 Brawl attacks) or Stride of the Gazelle."
+focus = { Manipulation = "Double the qualities' bonuses." }
+
+[[powers]]
+discipline = "Spiritus"
+level = 5
+name = "Spiritwalker"
+note = "1 Blood, standard action: merge with your Beast Spirit and cross into the Umbra for a time."
+focus = { Charisma = "Spend its Gnosis instead of Blood on your disciplines." }
+
+[[disciplines]]
+name = "Necromancy: Path of Grief"
+pool = "Social + Occult"
+versus = "Social + Willpower"
+note = "The five stages of grief, turned on others."
+
+[[powers]]
+discipline = "Necromancy: Path of Grief"
+level = 1
+name = "Deny Death's Imminence"
+note = "1 Blood, simple action: for 15 steps around you, ordinary mortals (rating 3 or lower) ignore threats to themselves."
+focus = { Manipulation = "Works on NPCs up to rating 5." }
+
+[[powers]]
+discipline = "Necromancy: Path of Grief"
+level = 2
+name = "Lash Out"
+note = "1 Blood, standard action, opposed test on someone focused on you: for an hour they frenzy as if they had 3 more Beast traits."
+focus = { Charisma = "Up to three targets at once." }
+
+[[powers]]
+discipline = "Necromancy: Path of Grief"
+level = 3
+name = "Compelling Offer"
+note = "1 Blood, three standard actions: an offer that nags at the target's mind until they decide."
+focus = { Charisma = "Keep more offers open, and make one to several people." }
+
+[[powers]]
+discipline = "Necromancy: Path of Grief"
+level = 4
+name = "Harvest Despair"
+note = "1 Blood, simple action: for 10 minutes, take a penalty in a challenge to drain Blood from a visible opponent."
+focus = { Manipulation = "-3 instead of -5." }
+
+[[powers]]
+discipline = "Necromancy: Path of Grief"
+level = 5
+name = "Accept Death's Embrace"
+note = "1 Blood, standard action, opposed test: for 10 minutes the target believes they're about to die and must choose how."
+focus = { Manipulation = "The Storyteller tells you what they chose." }
+
+[[disciplines]]
+name = "Necromancy: Path of Soul Bonding"
+pool = "Social + Occult"
+versus = "Social + Willpower"
+note = "Binding wraiths into objects."
+
+[[powers]]
+discipline = "Necromancy: Path of Soul Bonding"
+level = 1
+name = "Dark Vessel"
+note = "1 Blood, standard action, opposed test: bind a wraith (rating 4 or lower) into a fist-sized trinket."
+focus = { Manipulation = "Keep up to twice your dots in vessels." }
+
+[[powers]]
+discipline = "Necromancy: Path of Soul Bonding"
+level = 2
+name = "Deathly Device"
+note = "1 Blood, standard action: bind a wraith into a piece of equipment to make it work for you."
+focus = { Charisma = "Keep up to twice your dots in devices." }
+
+[[powers]]
+discipline = "Necromancy: Path of Soul Bonding"
+level = 3
+name = "Twisted Metal"
+note = "1 more Blood, simple action: give a Deathly Device an extra item quality."
+focus = { Charisma = "Any quality, even one the item couldn't normally have." }
+
+[[powers]]
+discipline = "Necromancy: Path of Soul Bonding"
+level = 4
+name = "Soul Detonation"
+note = "Standard action: throw a Dark Vessel, Physical + Athletics against Physical + Dodge: 3 normal damage and 1 Willpower lost."
+focus = { Manipulation = "A near miss still costs them 1 Willpower." }
+
+[[powers]]
+discipline = "Necromancy: Path of Soul Bonding"
+level = 5
+name = "Assimilate"
+note = "1 Blood, standard action: let a wraith possess you and use one of its disciplines for an hour."
+focus = { Manipulation = "Twice a night, one at a time." }
+
+[[disciplines]]
+name = "Thaumaturgy: Green Path"
+pool = "Mental + Occult"
+versus = "Physical + Dodge"
+note = "Mastery of plants."
+
+[[powers]]
+discipline = "Thaumaturgy: Green Path"
+level = 1
+name = "Sanguine Harvest"
+note = "1 Blood, standard action: ghoul a plant, healthy and strong, and harvest from it."
+focus = { Intelligence = "2 more items per harvest." }
+
+[[powers]]
+discipline = "Thaumaturgy: Green Path"
+level = 2
+name = "Boughs Below"
+note = "1 Blood, simple action: for 30 minutes, a standard action and opposed test has roots grapple a foe."
+focus = { Wits = "They're disarmed too, and the vines can hand you the item." }
+
+[[powers]]
+discipline = "Thaumaturgy: Green Path"
+level = 3
+name = "Nightshade's Repose"
+note = "1 Blood, simple action: a plume around you for 5 steps leaves everyone in it more vulnerable to blood magic."
+focus = { Wits = "Spare as many allies as your Occult dots." }
+
+[[powers]]
+discipline = "Thaumaturgy: Green Path"
+level = 4
+name = "Chlorokinesis"
+note = "1 Blood, standard action: shape and grow plants, or another of the power's effects."
+focus = { Intelligence = "Works indoors and in the city as if outdoors." }
+
+[[powers]]
+discipline = "Thaumaturgy: Green Path"
+level = 5
+name = "Carnivorous Roots"
+note = "Always on: Boughs Below takes up to three targets, and drains 1 Blood from one it holds each turn."
+focus = { Intelligence = "Those it holds count as grappled for Cauldron of Blood, Withering and the like." }
+
+[[disciplines]]
+name = "Thaumaturgy: Path of Caelestikinesis"
+pool = "Mental + Occult"
+versus = "Mental + Willpower"
+note = "The power of the heavens and fate."
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Caelestikinesis"
+level = 1
+name = "Perfect Center"
+note = "Always on: you can't get lost, and +3 to challenges about finding or tracking."
+focus = { Perception = "A free retest when you lose such a test." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Caelestikinesis"
+level = 2
+name = "Gravity Well"
+note = "1 Blood, simple action: each round, everyone within 10 steps is pulled a step towards you."
+focus = { Wits = "5 more steps, and you can fix it on a place." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Caelestikinesis"
+level = 3
+name = "Circadian Disruption"
+note = "1 Blood, simple action: for 10 minutes, those you beat with Mental or Social are Disrupted, their skills capped at 3."
+focus = { Wits = "Disrupted until the end of the next turn." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Caelestikinesis"
+level = 4
+name = "Syzygy"
+note = "1 Blood, standard action, opposed test: bind fates; your harmful supernatural effects affect them too."
+focus = { Perception = "Borrow one helpful power they have." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Caelestikinesis"
+level = 5
+name = "Echoes of Anthelios"
+note = "1 Blood, standard action, opposed test: the target can't spend Willpower to retest or score exceptional successes."
+focus = { Wits = "They can't retest at all." }
+
+[[disciplines]]
+name = "Thaumaturgy: Path of Neptune's Might"
+pool = "Mental + Occult"
+versus = "Physical + Dodge"
+note = "Command of water."
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Neptune's Might"
+level = 1
+name = "Water Mastery"
+note = "1 Blood, standard action: a pool of water obeys you, more with each use in turn."
+focus = { Perception = "Use any of its three effects, in any order." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Neptune's Might"
+level = 2
+name = "Prison of Water"
+note = "1 Blood, standard action, Mental + Occult against Physical + Dodge: watery chains slow the target, freezing solid if repeated."
+focus = { Perception = "+3 wild card with three gallons of open water nearby." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Neptune's Might"
+level = 3
+name = "Moment of Reflection"
+note = "1 Blood, simple action: a moment's calm that heals you quickly."
+focus = { Intelligence = "The third use also recovers 2 Willpower." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Neptune's Might"
+level = 4
+name = "Flowing Wall"
+note = "1 Blood, simple action: a vortex of water around you deflects blows, then freezes into a shell."
+focus = { Intelligence = "Shield up to two more people." }
+
+[[powers]]
+discipline = "Thaumaturgy: Path of Neptune's Might"
+level = 5
+name = "Dehydrate"
+note = "1 Blood, standard action, Mental + Occult against Physical + Dodge: the target loses 4 Blood, more if repeated."
+focus = { Perception = "Choose to make them defend with Physical + Willpower." }

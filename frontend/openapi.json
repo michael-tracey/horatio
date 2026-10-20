@@ -2310,6 +2310,80 @@
         "title": "DisciplineOut",
         "type": "object"
       },
+      "DisciplinePowers": {
+        "properties": {
+          "focus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Focus"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "pool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pool"
+          },
+          "powers": {
+            "items": {
+              "$ref": "#/components/schemas/PowerNote"
+            },
+            "title": "Powers",
+            "type": "array"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "versus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versus"
+          }
+        },
+        "required": [
+          "name",
+          "rating",
+          "pool",
+          "versus",
+          "note",
+          "focus",
+          "powers"
+        ],
+        "title": "DisciplinePowers",
+        "type": "object"
+      },
       "DiscordSetup": {
         "properties": {
           "channels": {
@@ -3612,6 +3686,37 @@
         "title": "OptionList",
         "type": "object"
       },
+      "OtherPower": {
+        "description": "A technique, elder or luminary power: named, rated as held.",
+        "properties": {
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "category_name",
+          "name",
+          "note"
+        ],
+        "title": "OtherPower",
+        "type": "object"
+      },
       "ParticipantDeliveries": {
         "properties": {
           "character_id": {
@@ -3928,6 +4033,60 @@
         "title": "PictureOut",
         "type": "object"
       },
+      "PlayReference": {
+        "description": "The Play View's Sheet and Pools tabs: everything there is to look up at a\ngame, which changes only between games, so the page loads it once.",
+        "properties": {
+          "blood_per_turn": {
+            "title": "Blood Per Turn",
+            "type": "integer"
+          },
+          "disciplines": {
+            "items": {
+              "$ref": "#/components/schemas/DisciplinePowers"
+            },
+            "title": "Disciplines",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "other_powers": {
+            "items": {
+              "$ref": "#/components/schemas/OtherPower"
+            },
+            "title": "Other Powers",
+            "type": "array"
+          },
+          "pools": {
+            "items": {
+              "$ref": "#/components/schemas/TestPool"
+            },
+            "title": "Pools",
+            "type": "array"
+          },
+          "traits": {
+            "items": {
+              "$ref": "#/components/schemas/PlayTrait"
+            },
+            "title": "Traits",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pools",
+          "disciplines",
+          "other_powers",
+          "notes",
+          "blood_per_turn",
+          "traits"
+        ],
+        "title": "PlayReference",
+        "type": "object"
+      },
       "PlayTrait": {
         "properties": {
           "category": {
@@ -4062,13 +4221,6 @@
             "title": "Player Name",
             "type": "string"
           },
-          "pools": {
-            "items": {
-              "$ref": "#/components/schemas/Pool"
-            },
-            "title": "Pools",
-            "type": "array"
-          },
           "sect": {
             "anyOf": [
               {
@@ -4079,13 +4231,6 @@
               }
             ],
             "title": "Sect"
-          },
-          "traits": {
-            "items": {
-              "$ref": "#/components/schemas/PlayTrait"
-            },
-            "title": "Traits",
-            "type": "array"
           },
           "willpower": {
             "$ref": "#/components/schemas/Tracker"
@@ -4107,9 +4252,7 @@
           "beast",
           "expendables",
           "game",
-          "log",
-          "traits",
-          "pools"
+          "log"
         ],
         "title": "PlayView",
         "type": "object"
@@ -4288,29 +4431,6 @@
         "title": "PlayerSummary",
         "type": "object"
       },
-      "Pool": {
-        "properties": {
-          "detail": {
-            "title": "Detail",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "pool": {
-            "title": "Pool",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "name",
-          "detail",
-          "pool"
-        ],
-        "title": "Pool",
-        "type": "object"
-      },
       "PoolOut": {
         "properties": {
           "allowed": {
@@ -4372,6 +4492,84 @@
           "traits"
         ],
         "title": "PoolOut",
+        "type": "object"
+      },
+      "PoolPart": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "PoolPart",
+        "type": "object"
+      },
+      "PoolVariant": {
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PoolPart"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "when": {
+            "title": "When",
+            "type": "string"
+          }
+        },
+        "required": [
+          "when",
+          "total",
+          "parts"
+        ],
+        "title": "PoolVariant",
+        "type": "object"
+      },
+      "PowerNote": {
+        "properties": {
+          "focus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Focus"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "name",
+          "note"
+        ],
+        "title": "PowerNote",
         "type": "object"
       },
       "PrimaryPathChange": {
@@ -6366,6 +6564,79 @@
           "taps"
         ],
         "title": "Taps",
+        "type": "object"
+      },
+      "TestPool": {
+        "properties": {
+          "adds_willpower": {
+            "default": false,
+            "title": "Adds Willpower",
+            "type": "boolean"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PoolPart"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "variants": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PoolVariant"
+            },
+            "title": "Variants",
+            "type": "array"
+          },
+          "versus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versus"
+          },
+          "willpower_floor": {
+            "default": 0,
+            "title": "Willpower Floor",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "group",
+          "parts",
+          "total"
+        ],
+        "title": "TestPool",
         "type": "object"
       },
       "TitlesOut": {
@@ -9464,6 +9735,49 @@
           }
         },
         "summary": "Read Game",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/reference": {
+      "get": {
+        "operationId": "read_reference_api_characters__character_id__play_reference_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayReference"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Reference",
         "tags": [
           "play"
         ]

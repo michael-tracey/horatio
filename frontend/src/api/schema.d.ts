@@ -748,6 +748,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play/reference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Reference */
+        get: operations["read_reference_api_characters__character_id__play_reference_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/play/reset": {
         parameters: {
             query?: never;
@@ -3360,6 +3377,23 @@ export interface components {
             /** To Rating */
             to_rating: number;
         };
+        /** DisciplinePowers */
+        DisciplinePowers: {
+            /** Focus */
+            focus: string | null;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string | null;
+            /** Pool */
+            pool: string | null;
+            /** Powers */
+            powers: components["schemas"]["PowerNote"][];
+            /** Rating */
+            rating: number;
+            /** Versus */
+            versus: string | null;
+        };
         /** DiscordSetup */
         DiscordSetup: {
             /** Channels */
@@ -3863,6 +3897,18 @@ export interface components {
             /** Names */
             names: string[];
         };
+        /**
+         * OtherPower
+         * @description A technique, elder or luminary power: named, rated as held.
+         */
+        OtherPower: {
+            /** Category Name */
+            category_name: string;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string | null;
+        };
         /** ParticipantDeliveries */
         ParticipantDeliveries: {
             /**
@@ -3977,6 +4023,25 @@ export interface components {
             /** Uploaded By */
             uploaded_by: string | null;
         };
+        /**
+         * PlayReference
+         * @description The Play View's Sheet and Pools tabs: everything there is to look up at a
+         *     game, which changes only between games, so the page loads it once.
+         */
+        PlayReference: {
+            /** Blood Per Turn */
+            blood_per_turn: number;
+            /** Disciplines */
+            disciplines: components["schemas"]["DisciplinePowers"][];
+            /** Notes */
+            notes: string[];
+            /** Other Powers */
+            other_powers: components["schemas"]["OtherPower"][];
+            /** Pools */
+            pools: components["schemas"]["TestPool"][];
+            /** Traits */
+            traits: components["schemas"]["PlayTrait"][];
+        };
         /** PlayTrait */
         PlayTrait: {
             /** Category */
@@ -4022,12 +4087,8 @@ export interface components {
             morality: components["schemas"]["Morality"] | null;
             /** Player Name */
             player_name: string;
-            /** Pools */
-            pools: components["schemas"]["Pool"][];
             /** Sect */
             sect: string | null;
-            /** Traits */
-            traits: components["schemas"]["PlayTrait"][];
             willpower: components["schemas"]["Tracker"];
         };
         /** PlayerCharacter */
@@ -4092,15 +4153,6 @@ export interface components {
             /** Reset Expires At */
             reset_expires_at: string | null;
         };
-        /** Pool */
-        Pool: {
-            /** Detail */
-            detail: string;
-            /** Name */
-            name: string;
-            /** Pool */
-            pool: number;
-        };
         /** PoolOut */
         PoolOut: {
             /** Allowed */
@@ -4121,6 +4173,33 @@ export interface components {
             traits: components["schemas"]["PickedTrait"][];
             /** Used */
             used: number;
+        };
+        /** PoolPart */
+        PoolPart: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: number;
+        };
+        /** PoolVariant */
+        PoolVariant: {
+            /** Parts */
+            parts: components["schemas"]["PoolPart"][];
+            /** Total */
+            total: number;
+            /** When */
+            when: string;
+        };
+        /** PowerNote */
+        PowerNote: {
+            /** Focus */
+            focus?: string | null;
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
         };
         /** PrimaryPathChange */
         PrimaryPathChange: {
@@ -4839,6 +4918,41 @@ export interface components {
         Taps: {
             /** Taps */
             taps: components["schemas"]["TapIn"][];
+        };
+        /** TestPool */
+        TestPool: {
+            /**
+             * Adds Willpower
+             * @default false
+             */
+            adds_willpower: boolean;
+            /** Group */
+            group: string;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+            /** Parts */
+            parts: components["schemas"]["PoolPart"][];
+            /** Total */
+            total: number;
+            /**
+             * Variants
+             * @default []
+             */
+            variants: components["schemas"]["PoolVariant"][];
+            /** Versus */
+            versus?: string | null;
+            /**
+             * Willpower Floor
+             * @default 0
+             */
+            willpower_floor: number;
         };
         /** TitlesOut */
         TitlesOut: {
@@ -6618,6 +6732,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameLog"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_reference_api_characters__character_id__play_reference_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayReference"];
                 };
             };
             /** @description Validation Error */

@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { ExpendableOut, GameOut, PlayView } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { incapacitated, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Sync } from "./usePlay";
+import { useReference } from "./useReference";
 
 type Change = { tracker: string; amount: number; damage?: Damage; label: string };
 type RecordTap = (change: Change) => void;
@@ -17,28 +19,50 @@ function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
 }
 
+const TABS = [
+  { key: "sheet", label: "Sheet" },
+  { key: "tracker", label: "Tracker" },
+  { key: "pools", label: "Pools" },
+] as const;
+type Tab = (typeof TABS)[number]["key"];
+
+/** Quick notes are on unless the player turned them off on this phone. */
 function remembered(): boolean {
   try {
-    return localStorage.getItem(QUICK_NOTES) === "1";
+    return localStorage.getItem(QUICK_NOTES) !== "0";
   } catch {
-    return false;
+    return true;
   }
 }
 
 /**
- * A living sheet for a game, laid out for a phone in one hand: blood, Willpower,
- * health, Morality and Beast traits as big boxes to tap, then the character's
- * limited uses, the game's log with Undo, and the rest of the sheet. Taps are
- * kept on the phone when there is no signal and sent when it returns.
+ * A living sheet for a game, laid out for a phone in one hand, in three tabs:
+ * the Sheet to look things up in; the Tracker, with blood, Willpower, health,
+ * Morality and Beast traits as big boxes to tap, the character's limited uses
+ * and the game's log with Undo; and Pools, its test pools and powers. Taps are
+ * kept on the phone when there is no signal and sent when it returns. The
+ * Sheet and Pools load once, when the page opens, so the tabs switch at once.
  */
 export function PlayPage() {
   const { characterId = "" } = useParams();
+  const [params, setParams] = useSearchParams();
+  const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? "tracker";
   const { view, shown, tap, sync, accept } = usePlay(characterId);
+  const { reference, error: referenceError } = useReference(characterId);
   const [quickNotes, setQuickNotes] = useState(remembered);
   const [asking, setAsking] = useState<Change | null>(null);
+  const choose = (next: Tab) =>
+    setParams(
+      (p) => {
+        p.set("tab", next);
+        return p;
+      },
+      { replace: true },
+    );
+  const tabs = <TabBar tab={tab} onChange={choose} />;
 
-  if (view.isPending) return <PlayShell characterId={characterId} sync={sync}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} sync={sync}><ErrorText error={view.error} /></PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} sync={sync} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} sync={sync} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
 
   const record: RecordTap = (change) => {
     // Quick notes ask what a spend was for; restoring needs no reason.
@@ -54,50 +78,58 @@ export function PlayPage() {
     }
   };
 
+  const lookup = (show: (r: NonNullable<typeof reference>) => ReactNode) =>
+    reference ? show(reference) : referenceError ? <ErrorText error={referenceError} /> : <p className="py-8 text-center text-mist">Loading…</p>;
+
   return (
-    <PlayShell characterId={characterId} sync={sync} name={shown.character_name}>
+    <PlayShell characterId={characterId} sync={sync} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
-      <div className="grid gap-3 md:grid-cols-2">
-        <BoxTracker
-          title="Blood"
-          tracker="blood"
-          value={shown.blood.value}
-          most={shown.blood.most}
-          hint={`${shown.blood_per_turn} a turn`}
-          record={record}
-        />
-        <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} />
-        <HealthTracker view={shown} record={record} />
-        <div className="grid gap-3">
-          {shown.morality && (
+      {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
+      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} />)}
+      {tab === "tracker" && (
+        <>
+          <div className="grid gap-3 md:grid-cols-2">
             <BoxTracker
-              title={shown.morality.name}
-              tracker="morality"
-              value={shown.morality.value}
-              most={shown.morality.rating}
-              hint={shown.morality.value < shown.morality.rating ? "A lost dot goes on the sheet through your storytellers." : undefined}
+              title="Blood"
+              tracker="blood"
+              value={shown.blood.value}
+              most={shown.blood.most}
+              hint={`${shown.blood_per_turn} a turn`}
               record={record}
-              small
             />
-          )}
-          <BoxTracker
-            title="Beast traits"
-            tracker="beast"
-            value={shown.beast.value}
-            most={shown.beast.most}
-            spendIsUp
-            hint={shown.beast.value >= shown.beast.most ? `Five Beast traits: a dot of ${shown.morality?.name ?? "Morality"} is lost.` : undefined}
-            record={record}
-            small
-          />
-        </div>
-      </div>
-      <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={toggleNotes} online={sync.online} onChange={accept} />
-      <Notes add={(note) => tap({ kind: "note", note })} />
-      <GameLog view={shown} undo={(entry) => tap({ kind: "undo", undoes: entry.id })} />
-      <ResetGame view={shown} sync={sync} onReset={accept} />
-      <PastGames characterId={characterId} current={shown.game?.id} />
-      <RestOfSheet view={shown} />
+            <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} />
+            <HealthTracker view={shown} record={record} />
+            <div className="grid gap-3">
+              {shown.morality && (
+                <BoxTracker
+                  title={shown.morality.name}
+                  tracker="morality"
+                  value={shown.morality.value}
+                  most={shown.morality.rating}
+                  hint={shown.morality.value < shown.morality.rating ? "A lost dot goes on the sheet through your storytellers." : undefined}
+                  record={record}
+                  small
+                />
+              )}
+              <BoxTracker
+                title="Beast traits"
+                tracker="beast"
+                value={shown.beast.value}
+                most={shown.beast.most}
+                spendIsUp
+                hint={shown.beast.value >= shown.beast.most ? `Five Beast traits: a dot of ${shown.morality?.name ?? "Morality"} is lost.` : undefined}
+                record={record}
+                small
+              />
+            </div>
+          </div>
+          <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={toggleNotes} online={sync.online} onChange={accept} />
+          <Notes add={(note) => tap({ kind: "note", note })} />
+          <GameLog view={shown} undo={(entry) => tap({ kind: "undo", undoes: entry.id })} />
+          <ResetGame view={shown} sync={sync} onReset={accept} />
+          <PastGames characterId={characterId} current={shown.game?.id} />
+        </>
+      )}
       {asking && (
         <NoteSheet
           change={asking}
@@ -112,8 +144,8 @@ export function PlayPage() {
   );
 }
 
-/** The page around the sheet: back to the character, and whether taps are saved. */
-function PlayShell({ characterId, sync, name, children }: { characterId: string; sync: Sync; name?: string; children: ReactNode }) {
+/** The page around the sheet: back to the character, whether taps are saved, and the tabs. */
+function PlayShell({ characterId, sync, name, tabs, children }: { characterId: string; sync: Sync; name?: string; tabs: ReactNode; children: ReactNode }) {
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
@@ -123,9 +155,33 @@ function PlayShell({ characterId, sync, name, children }: { characterId: string;
           </Link>
           <SyncStatus sync={sync} />
         </div>
+        {tabs}
       </header>
       <main className="mx-auto flex max-w-3xl flex-col gap-3 px-4 pt-3">{children}</main>
     </div>
+  );
+}
+
+/** Sheet, Tracker and Pools: three big tabs across the top, for a thumb. */
+function TabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
+  return (
+    <nav className="mx-auto grid max-w-3xl grid-cols-3 px-2" role="tablist" aria-label="Play View">
+      {TABS.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          role="tab"
+          aria-selected={tab === t.key}
+          onClick={() => onChange(t.key)}
+          className={cx(
+            "min-h-11 border-b-2 text-sm font-medium tracking-wide",
+            tab === t.key ? "border-gold text-gold" : "border-transparent text-mist hover:text-parchment",
+          )}
+        >
+          {t.label}
+        </button>
+      ))}
+    </nav>
   );
 }
 
@@ -588,45 +644,5 @@ function PastGame({ characterId, game }: { characterId: string; game: GameOut })
       </button>
       {open && (log.data ? <LogEntries log={log.data.log} /> : <p className="text-sm text-mist">Loading…</p>)}
     </li>
-  );
-}
-
-type Trait = PlayView["traits"][number];
-
-/** The rest of the sheet, to read: each part folded away until wanted. */
-function RestOfSheet({ view }: { view: PlayView }) {
-  const groups = new Map<string, Trait[]>();
-  for (const t of view.traits) groups.set(t.category_name, [...(groups.get(t.category_name) ?? []), t]);
-  return (
-    <Panel title="The sheet">
-      <dl className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        {view.pools.map((p) => (
-          <div key={p.name} className="flex gap-1.5">
-            <dt className="text-mist">{p.name}</dt>
-            <dd>
-              <strong className="text-parchment">{p.pool}</strong> <span className="text-xs text-mist">({p.detail})</span>
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <div className="divide-y divide-ash">
-        {[...groups].map(([name, traits]) => (
-          <details key={name} className="py-1">
-            <summary className="flex min-h-10 cursor-pointer items-center text-sm text-parchment">{name}</summary>
-            <ul className="pb-2 text-sm">
-              {traits.map((t) => (
-                <li key={`${t.category}/${t.name}/${t.detail}`} className="flex justify-between gap-2 py-0.5">
-                  <span>
-                    {t.detail ? `${t.name}: ${t.detail}` : t.name}
-                    {t.specialties.length > 0 && <span className="text-mist"> ({t.specialties.join(", ")})</span>}
-                  </span>
-                  {t.rating !== null && <span className="text-mist">{t.rating}</span>}
-                </li>
-              ))}
-            </ul>
-          </details>
-        ))}
-      </div>
-    </Panel>
   );
 }
