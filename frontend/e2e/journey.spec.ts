@@ -190,6 +190,16 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Award", exact: true }).click();
   await expect(lead.page.getByRole("button", { name: "Award XP" })).toBeVisible();
 
+  // A game's XP for everyone at once, starting at the troupe's usual 8.
+  await lead.page.locator("main").getByRole("link", { name: "Award XP", exact: true }).click();
+  await expect(lead.page.getByLabel("XP for Agnes", { exact: true })).toHaveValue("8");
+  await lead.page.getByRole("button", { name: "More XP for Agnes" }).click();
+  await lead.page.getByLabel("Note everyone gets").fill("Game, 18 October");
+  await lead.page.getByRole("button", { name: "Award…" }).click();
+  await lead.page.screenshot(shots("bulk-xp"));
+  await lead.page.getByRole("button", { name: "Yes, award 9 XP" }).click();
+  await expect(lead.page.getByText("Awarded 9 XP to 1 character for “Game, 18 October”.")).toBeVisible();
+
   // Once accepted, a discipline dot waits on the home troupe, with the XP held.
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
   await p.getByRole("button", { name: "Raise Celerity" }).click();

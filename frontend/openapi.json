@@ -436,6 +436,51 @@
         "title": "Assignment",
         "type": "object"
       },
+      "AwardableCharacter": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player_name"
+        ],
+        "title": "AwardableCharacter",
+        "type": "object"
+      },
+      "AwardsOut": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/AwardableCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "session_xp": {
+            "title": "Session Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_xp",
+          "characters"
+        ],
+        "title": "AwardsOut",
+        "type": "object"
+      },
       "BackupOut": {
         "properties": {
           "made_at": {
@@ -505,6 +550,47 @@
           "troupe_id"
         ],
         "title": "BuildingTroupe",
+        "type": "object"
+      },
+      "BulkAward": {
+        "properties": {
+          "awards": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterAward"
+            },
+            "title": "Awards",
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "awards"
+        ],
+        "title": "BulkAward",
+        "type": "object"
+      },
+      "BulkAwarded": {
+        "properties": {
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "characters",
+          "total"
+        ],
+        "title": "BulkAwarded",
         "type": "object"
       },
       "CatalogueOut": {
@@ -727,6 +813,27 @@
           "private"
         ],
         "title": "ChannelOut",
+        "type": "object"
+      },
+      "CharacterAward": {
+        "properties": {
+          "amount": {
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "amount"
+        ],
+        "title": "CharacterAward",
         "type": "object"
       },
       "CharacterChanges": {
@@ -11985,6 +12092,101 @@
         "summary": "Work Cycles",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/xp-awards": {
+      "get": {
+        "operationId": "characters_to_award_api_troupes__troupe_id__xp_awards_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Characters To Award",
+        "tags": [
+          "xp awards"
+        ]
+      },
+      "post": {
+        "description": "Each character an ordinary award entry, all together or none at all.",
+        "operationId": "award_all_api_troupes__troupe_id__xp_awards_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAward"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkAwarded"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Award All",
+        "tags": [
+          "xp awards"
         ]
       }
     }

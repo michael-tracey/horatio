@@ -2024,6 +2024,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/xp-awards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Characters To Award */
+        get: operations["characters_to_award_api_troupes__troupe_id__xp_awards_get"];
+        put?: never;
+        /**
+         * Award All
+         * @description Each character an ordinary award entry, all together or none at all.
+         */
+        post: operations["award_all_api_troupes__troupe_id__xp_awards_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2217,6 +2238,25 @@ export interface components {
             /** User Id */
             user_id?: string | null;
         };
+        /** AwardableCharacter */
+        AwardableCharacter: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Player Name */
+            player_name: string;
+        };
+        /** AwardsOut */
+        AwardsOut: {
+            /** Characters */
+            characters: components["schemas"]["AwardableCharacter"][];
+            /** Session Xp */
+            session_xp: number;
+        };
         /** BackupOut */
         BackupOut: {
             /**
@@ -2242,6 +2282,20 @@ export interface components {
         BuildingTroupe: {
             /** Troupe Id */
             troupe_id: string | null;
+        };
+        /** BulkAward */
+        BulkAward: {
+            /** Awards */
+            awards: components["schemas"]["CharacterAward"][];
+            /** Reason */
+            reason: string;
+        };
+        /** BulkAwarded */
+        BulkAwarded: {
+            /** Characters */
+            characters: number;
+            /** Total */
+            total: number;
         };
         /** CatalogueOut */
         CatalogueOut: {
@@ -2320,6 +2374,16 @@ export interface components {
             name: string;
             /** Private */
             private: boolean;
+        };
+        /** CharacterAward */
+        CharacterAward: {
+            /** Amount */
+            amount: number;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
         };
         /** CharacterChanges */
         CharacterChanges: {
@@ -8330,6 +8394,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkCycle"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    characters_to_award_api_troupes__troupe_id__xp_awards_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    award_all_api_troupes__troupe_id__xp_awards_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkAward"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkAwarded"];
                 };
             };
             /** @description Validation Error */
