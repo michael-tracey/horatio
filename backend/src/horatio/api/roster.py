@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Select, select
 
-from horatio import character_filter, social_age, titles
+from horatio import character_filter, pictures, social_age, titles
 from horatio.api.downtimes import staff_troupe
 from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
@@ -27,6 +27,8 @@ class RosterEntry(BaseModel):
     player_id: uuid.UUID | None
     kind: str  # pc | npc
     titles: list[str]
+    # Where its picture is (horatio.pictures), or None.
+    picture: str | None
     # From the sheet as it stands (horatio.social_age).
     clan: str | None
     # Neonate, Ancilla or Elder.
@@ -83,6 +85,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_id=player.id if c.kind == "pc" else None,
             kind=c.kind,
             titles=titles.held(db, troupe_id, c.id),
+            picture=pictures.picture_url(c.id, c.picture_id),
             clan=standing[c.id].clan,
             social_age=standing[c.id].age,
             home=c.home_troupe_id == troupe_id,
@@ -231,6 +234,10 @@ MESSAGES: dict[str, str] = {
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
+    "picture.uploaded": "{actor} gave {character} a picture.",
+    "picture.replaced": "{actor} gave {character} a new picture.",
+    "picture.cropped": "{actor} moved the crop of {character}'s picture.",
+    "picture.removed": "{actor} removed {character}'s picture.",
 }
 
 

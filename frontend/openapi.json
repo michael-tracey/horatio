@@ -531,6 +531,60 @@
         "title": "BackupsOut",
         "type": "object"
       },
+      "Body_upload_picture_api_characters__character_id__picture_post": {
+        "properties": {
+          "crop_size": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Size"
+          },
+          "crop_x": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop X"
+          },
+          "crop_y": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Y"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_picture_api_characters__character_id__picture_post",
+        "type": "object"
+      },
       "BuildingTroupe": {
         "properties": {
           "troupe_id": {
@@ -879,6 +933,17 @@
             ],
             "title": "Building Troupe Id"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "creation_complete": {
             "title": "Creation Complete",
             "type": "boolean"
@@ -932,6 +997,17 @@
             ],
             "title": "Owner Troupe Id"
           },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "player_id": {
             "format": "uuid",
             "title": "Player Id",
@@ -957,7 +1033,9 @@
           "creation_complete",
           "kind",
           "owner_troupe_id",
-          "next_rename_on"
+          "next_rename_on",
+          "picture",
+          "clan"
         ],
         "title": "CharacterOut",
         "type": "object"
@@ -1567,6 +1645,36 @@
           "needs"
         ],
         "title": "CreationOut",
+        "type": "object"
+      },
+      "CropIn": {
+        "description": "The square portrait's place in the picture, as fractions: its left and top\nedges of the picture's width and height, and its side of the width.",
+        "properties": {
+          "size": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Size",
+            "type": "number"
+          },
+          "x": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "size"
+        ],
+        "title": "CropIn",
         "type": "object"
       },
       "CycleChanges": {
@@ -2871,6 +2979,17 @@
             "title": "Link",
             "type": "string"
           },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "read": {
             "title": "Read",
             "type": "boolean"
@@ -2916,7 +3035,8 @@
           "summary",
           "link",
           "at",
-          "read"
+          "read",
+          "picture"
         ],
         "title": "NotificationOut",
         "type": "object"
@@ -3018,6 +3138,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "completion_xp_awarded": {
             "anyOf": [
               {
@@ -3037,6 +3168,17 @@
           "late_accepted": {
             "title": "Late Accepted",
             "type": "boolean"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
           },
           "removed": {
             "title": "Removed",
@@ -3062,6 +3204,8 @@
           "id",
           "character_id",
           "character_name",
+          "picture",
+          "clan",
           "allowance",
           "breakdown",
           "adjustments",
@@ -3188,6 +3332,67 @@
           "pick"
         ],
         "title": "PickedTrait",
+        "type": "object"
+      },
+      "PictureOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CropIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "uploaded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded At"
+          },
+          "uploaded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded By"
+          }
+        },
+        "required": [
+          "available",
+          "picture",
+          "crop",
+          "uploaded_by",
+          "uploaded_at"
+        ],
+        "title": "PictureOut",
         "type": "object"
       },
       "PlayerCharacter": {
@@ -3527,6 +3732,17 @@
             "title": "Kind",
             "type": "string"
           },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "player_name": {
             "title": "Player Name",
             "type": "string"
@@ -3567,6 +3783,7 @@
           "splat",
           "troupe_name",
           "titles",
+          "picture",
           "kind",
           "home",
           "accepted_at",
@@ -3997,6 +4214,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "discipline": {
             "anyOf": [
               {
@@ -4015,6 +4243,17 @@
           "kind": {
             "title": "Kind",
             "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
           },
           "player_note": {
             "title": "Player Note",
@@ -4050,6 +4289,8 @@
           "player_note",
           "staff_note",
           "character_name",
+          "picture",
+          "clan",
           "discipline",
           "reconciliation"
         ],
@@ -4437,6 +4678,17 @@
             "title": "Kind",
             "type": "string"
           },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
           "player_id": {
             "anyOf": [
               {
@@ -4476,6 +4728,7 @@
           "player_id",
           "kind",
           "titles",
+          "picture",
           "clan",
           "social_age",
           "home",
@@ -7611,6 +7864,246 @@
         "summary": "Tally",
         "tags": [
           "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/picture": {
+      "delete": {
+        "description": "Take the picture away. Whoever uploaded it is told, unless it was them.",
+        "operationId": "remove_picture_api_characters__character_id__picture_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Picture",
+        "tags": [
+          "pictures"
+        ]
+      },
+      "get": {
+        "operationId": "read_picture_api_characters__character_id__picture_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PictureOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Picture",
+        "tags": [
+          "pictures"
+        ]
+      },
+      "post": {
+        "description": "A new picture, replacing any the character has. Without a crop, the\nportrait is the biggest square in the middle.",
+        "operationId": "upload_picture_api_characters__character_id__picture_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_picture_api_characters__character_id__picture_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PictureOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Picture",
+        "tags": [
+          "pictures"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/picture/crop": {
+      "put": {
+        "description": "Move the portrait's crop, cutting it again from the picture as kept.",
+        "operationId": "crop_picture_api_characters__character_id__picture_crop_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CropIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PictureOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Crop Picture",
+        "tags": [
+          "pictures"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/pictures/{picture_id}/{name}": {
+      "get": {
+        "description": "One of the picture's files. A picture's files never change (a new one has a\nnew id), so browsers may keep them; privately, as only some people see them.",
+        "operationId": "picture_file_api_characters__character_id__pictures__picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Picture File",
+        "tags": [
+          "pictures"
         ]
       }
     },

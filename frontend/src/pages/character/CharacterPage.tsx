@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
@@ -11,6 +11,7 @@ import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
 import { longDate } from "./longDate";
 import { RenameCharacter } from "./Rename";
+import { CharacterPicture } from "./Picture";
 import { ResultsTab } from "./ResultsTab";
 import { SheetTab } from "./SheetTab";
 import { TroupesTab } from "./TroupesTab";
@@ -41,17 +42,19 @@ export function CharacterPage() {
     // Only the troupe's running staff can see an NPC at all, and they can all edit it.
     return (
       <>
-        <PageTitle
-          subtitle={<Identity character={c} lead="NPC" />}
-          actions={
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge tone="gold">NPC</Badge>
-              {!renaming && renameButton}
-            </div>
-          }
-        >
-          {c.name}
-        </PageTitle>
+        <Header character={c}>
+          <PageTitle
+            subtitle={<Identity character={c} lead="NPC" />}
+            actions={
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge tone="gold">NPC</Badge>
+                {!renaming && renameButton}
+              </div>
+            }
+          >
+            {c.name}
+          </PageTitle>
+        </Header>
         {rename}
         <Tabs
           tabs={[
@@ -78,21 +81,23 @@ export function CharacterPage() {
 
   return (
     <>
-      <PageTitle
-        subtitle={<Identity character={c} lead={c.splat} />}
-        actions={
-          <div className="flex flex-wrap items-center gap-3">
-            {c.status === "retired" && <Badge>retired</Badge>}
-            {renameOn ? (
-              <span className="text-sm text-mist">You can rename {c.name} again on {longDate(renameOn)}.</span>
-            ) : (
-              canRename && !renaming && renameButton
-            )}
-          </div>
-        }
-      >
-        {c.name}
-      </PageTitle>
+      <Header character={c}>
+        <PageTitle
+          subtitle={<Identity character={c} lead={c.splat} />}
+          actions={
+            <div className="flex flex-wrap items-center gap-3">
+              {c.status === "retired" && <Badge>retired</Badge>}
+              {renameOn ? (
+                <span className="text-sm text-mist">You can rename {c.name} again on {longDate(renameOn)}.</span>
+              ) : (
+                canRename && !renaming && renameButton
+              )}
+            </div>
+          }
+        >
+          {c.name}
+        </PageTitle>
+      </Header>
       {rename}
       <Tabs
         tabs={[
@@ -123,6 +128,16 @@ export function CharacterPage() {
         )}
       </Routes>
     </>
+  );
+}
+
+/** The character's picture beside its name (the title's own space below moves out here). */
+function Header({ character, children }: { character: CharacterOut; children: ReactNode }) {
+  return (
+    <div className="mb-6 flex items-center gap-4">
+      <CharacterPicture character={character} />
+      <div className="min-w-0 flex-1 [&>div]:mb-0">{children}</div>
+    </div>
   );
 }
 

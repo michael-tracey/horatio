@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { NotificationOut } from "../api/types";
 import { useAction, useNotifications } from "../hooks";
+import { Avatar } from "./Avatar";
 import { CountBubble } from "./ui";
 
 const RELATIVE = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
@@ -115,6 +116,7 @@ function Group({ title, items, onOpen, action }: { title: string; items: Notific
           <li key={item.id}>
             <button onClick={() => onOpen(item)} className="flex w-full gap-3 px-4 py-2.5 text-left hover:bg-ash/40">
               <span aria-hidden="true" className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.task ? "bg-blood-bright" : item.read ? "" : "bg-gold"}`} />
+              {item.picture && <Avatar name="" picture={item.picture} size="sm" />}
               <span className="min-w-0">
                 <span className={`block text-sm ${item.read ? "text-mist" : "text-parchment"}`}>{item.summary}</span>
                 <span className="block text-xs text-mist">

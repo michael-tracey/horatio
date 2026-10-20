@@ -43,6 +43,18 @@ class Character(Imported, Record):
     # The primary path the player named, by discipline, where the clan has no
     # in-clan path: {"Thaumaturgy": "Thaumaturgy: Path of Corruption"}.
     primary_paths: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # The character's picture (horatio.pictures): the id its files are kept under,
+    # new with each upload or crop so no cache shows an old one; null for none.
+    picture_id: Mapped[uuid.UUID | None]
+    # Where the square portrait sits in the picture, as fractions:
+    # {"x": left, "y": top, "size": side, of the picture's width and height}.
+    picture_crop: Mapped[dict[str, float] | None] = mapped_column(JSONB)
+    # Who uploaded the picture and when: they are told if someone else removes it.
+    picture_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    picture_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # What others can see or sense about the character that the rules data does not
+    # cover, written by staff, for the character's game badge.
+    visible_note: Mapped[str] = mapped_column(default="", server_default="")
 
 
 class CharacterTrait(Record):

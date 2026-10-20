@@ -83,6 +83,12 @@ if [[ -z "${HORATIO_PUBLIC_URL:-}" ]] && ! grep -qs '^HORATIO_PUBLIC_URL=' .env;
   export HORATIO_PUBLIC_URL="http://localhost:$APP_PORT"
 fi
 
+# Uploaded pictures are kept under .local/, unless backend/.env says elsewhere.
+if [[ -z "${HORATIO_UPLOAD_DIR:-}" ]] && ! grep -qs '^HORATIO_UPLOAD_DIR=' .env; then
+  export HORATIO_UPLOAD_DIR="$STATE/uploads"
+  mkdir -p "$HORATIO_UPLOAD_DIR"
+fi
+
 say "Starting the API on :$API_PORT"
 # setsid gives each server its own process group, so stop-local.sh can stop it
 # together with its children (uvicorn's reloader, Vite's workers).

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from horatio import npcs, sheets
-from horatio.api.characters import CharacterOut, character_out
+from horatio.api.characters import CharacterOut, character_out, characters_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
@@ -54,7 +54,7 @@ def list_npcs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Ch
         .where(Character.kind == "npc", Character.owner_troupe_id == troupe_id)
         .order_by(Character.name)
     )
-    return [character_out(db, c) for c in found]
+    return characters_out(db, found)
 
 
 @router.post("/troupes/{troupe_id}/npcs", status_code=status.HTTP_201_CREATED)
