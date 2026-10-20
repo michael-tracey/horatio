@@ -60,7 +60,8 @@ function Overview({ cycle }: { cycle: CycleOut }) {
   });
   const [delivered, setDelivered] = useState<{ delivered: number; queued: number } | null>(null);
   const open = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/open", path)));
-  const close = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/close", path)));
+  const [toCeiling, setToCeiling] = useState(true);
+  const close = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/close", { ...path, body: { add_to_ceiling: toCeiling } })));
   const deliver = useAction(async () => setDelivered(await unwrap(api.POST("/api/cycles/{cycle_id}/deliver", path))));
   const complete = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/complete", path)));
   const p = progress.data;
@@ -83,9 +84,17 @@ function Overview({ cycle }: { cycle: CycleOut }) {
             <Button onClick={() => open.mutate(undefined)}>Open for submissions</Button>
           )}
           {cycle.status === "open" && (
-            <Button variant="secondary" onClick={() => close.mutate(undefined)}>
-              Close submissions
-            </Button>
+            <>
+              <Button variant="secondary" onClick={() => close.mutate(undefined)}>
+                Close submissions
+              </Button>
+              {cycle.completion_xp > 0 && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={toCeiling} onChange={(e) => setToCeiling(e.target.checked)} />
+                  Also add {cycle.completion_xp} XP to the troupe's ceiling
+                </label>
+              )}
+            </>
           )}
           {cycle.status === "closed" && (
             <>

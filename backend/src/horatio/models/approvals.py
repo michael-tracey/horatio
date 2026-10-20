@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from horatio.models.base import Record
@@ -70,6 +72,11 @@ class HomeTroupeChange(Record):
     # Null for a character's first home troupe.
     from_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
     to_troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"))
+    # The player's choice: below the new troupe's XP floor, top the character up to it.
+    top_up: Mapped[bool] = mapped_column(default=True, server_default="true")
+    # Once decided, the character's XP against the troupe's floor and ceiling and
+    # what staff did about it (horatio.xp_range.Review), for the record.
+    xp_review: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 SETTLEMENTS = (

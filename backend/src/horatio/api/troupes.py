@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 
-from horatio import audit
+from horatio import audit, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import TraitCategory, TraitDefinition, Troupe, TroupeStaff, User
 from horatio.permissions import (
@@ -32,6 +32,11 @@ class TroupeOut(BaseModel):
     # The usual XP for a game session and for completing a downtime.
     session_xp: int
     downtime_xp: int
+    # The XP a character had when the chronicle began, and the troupe's XP floor
+    # and ceiling now (horatio.xp_range): a new character built for it starts at the floor.
+    starting_xp: int
+    xp_floor: int
+    xp_ceiling: int
     # House rule: the blood characters start a game with; None for full.
     starting_blood: int | None
     # The caller's own role here, if any.
@@ -50,6 +55,7 @@ class TroupeChanges(BaseModel):
     allowed_sects: list[str] | None = None
     session_xp: int | None = Field(default=None, ge=0, le=100)
     downtime_xp: int | None = Field(default=None, ge=0, le=100)
+    starting_xp: int | None = Field(default=None, ge=0, le=10000)
 
 
 class NewLead(BaseModel):
@@ -68,6 +74,7 @@ class StaffAssignment(BaseModel):
 
 
 def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
+    figures = xp_range.figures(db, troupe)
     return TroupeOut(
         id=troupe.id,
         name=troupe.name,
@@ -77,6 +84,9 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         allowed_sects=troupe.allowed_sects,
         session_xp=troupe.session_xp,
         downtime_xp=troupe.downtime_xp,
+        starting_xp=troupe.starting_xp,
+        xp_floor=figures.floor,
+        xp_ceiling=figures.ceiling,
         starting_blood=troupe.starting_blood,
         my_role=troupe_role(db, user, troupe),
     )
@@ -169,6 +179,13 @@ def change_troupe(
             troupe_id=troupe.id,
             session_xp=troupe.session_xp,
             downtime_xp=troupe.downtime_xp,
+        )
+    if body.starting_xp is not None:
+        # The floor and ceiling both start from it, so both move with it.
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        troupe.starting_xp = body.starting_xp
+        audit.record(
+            db, user, "troupe.starting_xp", troupe_id=troupe.id, starting_xp=troupe.starting_xp
         )
     db.commit()
     return troupe_out(db, user, troupe)

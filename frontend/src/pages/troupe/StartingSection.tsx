@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { StartingCategoryOut, StartingRule } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { XpRangeCard } from "./XpRange";
 
 /**
  * What new characters get free in each category: picks at a rating, or a budget
@@ -37,6 +38,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
         </ul>
       </Card>
       <ExperienceDefaults troupeId={troupeId} canEdit={canEdit} />
+      <XpRangeCard troupeId={troupeId} canEdit={canEdit} />
       <StartingBlood troupeId={troupeId} canEdit={canEdit} />
     </div>
   );
@@ -47,7 +49,7 @@ function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: 
   const path = { params: { path: { troupe_id: troupeId } } };
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ session_xp: 8, downtime_xp: 2 });
+  const [form, setForm] = useState({ starting_xp: 30, session_xp: 8, downtime_xp: 2 });
   const save = useAction(async () => {
     await unwrap(api.PATCH("/api/troupes/{troupe_id}", { ...path, body: form }));
     setEditing(false);
@@ -64,7 +66,7 @@ function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: 
             variant="ghost"
             className="min-h-8 px-2"
             onClick={() => {
-              setForm({ session_xp: t.session_xp, downtime_xp: t.downtime_xp });
+              setForm({ starting_xp: t.starting_xp, session_xp: t.session_xp, downtime_xp: t.downtime_xp });
               setEditing(true);
             }}
           >
@@ -75,7 +77,7 @@ function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: 
     >
       <p className="mb-3 text-sm text-mist">
         What this troupe usually gives. Awarding XP starts at the session amount, and each new downtime cycle at the completion amount; either can be changed
-        there.
+        there. The XP floor and ceiling start from the starting XP.
       </p>
       {editing ? (
         <form
@@ -85,6 +87,10 @@ function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: 
             save.mutate(undefined);
           }}
         >
+          <label className="flex flex-col gap-1 text-sm">
+            To start
+            <Input type="number" min={0} max={10000} required value={form.starting_xp} onChange={(e) => setForm({ ...form, starting_xp: Number(e.target.value) })} className="w-24" />
+          </label>
           <label className="flex flex-col gap-1 text-sm">
             For a game session
             <Input type="number" min={0} max={100} required value={form.session_xp} onChange={(e) => setForm({ ...form, session_xp: Number(e.target.value) })} className="w-24" />
@@ -103,6 +109,8 @@ function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: 
         </form>
       ) : (
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt className="text-mist">To start</dt>
+          <dd>{t.starting_xp} XP</dd>
           <dt className="text-mist">For a game session</dt>
           <dd>{t.session_xp} XP</dd>
           <dt className="text-mist">For completing a downtime</dt>

@@ -181,6 +181,15 @@ MESSAGES: dict[str, str] = {
     "standing.draft": "{actor} sent {character} back to draft: {reason}",
     "home_troupe.moved_away": "{character} moved its home troupe elsewhere.",
     "xp.award": "{actor} awarded {character} {amount} XP: {reason}",
+    "xp.self_entered": "{actor} added {amount} XP to {character} themselves: {reason}",
+    "xp.joining": "{actor} settled {character}'s XP on joining: {topped_up} topped up,"
+    " {extra} extra, {self_entered_removed} self-entered and {above_ceiling_removed} above"
+    " the ceiling taken away.",
+    "troupe.starting_xp": "{actor} set the troupe's starting XP to {starting_xp}.",
+    "troupe.xp_range_game": "{actor} added a game's {amount} XP to the floor and ceiling.",
+    "troupe.xp_range_downtime": "{actor} added a downtime's {amount} XP to the ceiling.",
+    "troupe.xp_range_set": "{actor} set the XP floor to {floor} and the ceiling to {ceiling}:"
+    " {reason}",
     "staff.assigned": "{actor} made {member} {role}.",
     "staff.removed": "{actor} removed {member} from the staff.",
     "troupe.lead_appointed": "{actor} appointed {member} lead storyteller.",

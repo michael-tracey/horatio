@@ -124,7 +124,7 @@ export function CharacterPage() {
       <Routes>
         {/* Badges are the staff's to print; whoever else sees the page is staff. */}
         <Route index element={<SheetTab character={c} mine={mine} badge={!mine || custodian} />} />
-        <Route path="xp" element={<XpTab characterId={c.id} />} />
+        <Route path="xp" element={<XpTab characterId={c.id} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {mine && !c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (

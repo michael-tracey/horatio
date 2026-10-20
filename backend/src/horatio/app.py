@@ -38,6 +38,7 @@ from horatio.api import (
     troupe_requests,
     troupes,
     xp_awards,
+    xp_range,
 )
 from horatio.config import get_settings
 
@@ -105,6 +106,7 @@ for module in (
     badges,
     troupe_requests,
     xp_awards,
+    xp_range,
     system,
     play,
 ):
