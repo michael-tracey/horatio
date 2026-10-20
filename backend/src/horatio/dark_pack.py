@@ -160,6 +160,8 @@ def import_kits(paths: Sequence[Path], out: Path) -> dict[str, Any]:
     record: dict[str, Any] = {"sources": [p.name for p in paths], "logos": {}, "clans": {}}
     try:
         out.mkdir(parents=True, exist_ok=True)
+        # A fresh set each time, so importing again (a newer kit) replaces the last.
+        pictures.remove(out / "clans")
         for name, endings in LOGOS.items():
             found = kits.find(endings)
             if found is None:

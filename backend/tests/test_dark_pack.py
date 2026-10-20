@@ -132,3 +132,13 @@ def test_every_clan_in_the_map_is_in_the_rules() -> None:
     rule_set = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
     clans = {name for category, name in rule_set.traits if category == "clan"}
     assert set(dark_pack.CLAN_SYMBOLS) <= clans
+
+
+def test_importing_again_replaces_the_last_import(kit: Path, tmp_path: Path) -> None:
+    out = tmp_path / "dark-pack"
+    dark_pack.import_kits([kit], out)
+    (out / "clans" / "gone").mkdir()
+    record = dark_pack.import_kits([kit], out)
+
+    assert set(record["clans"]) == {"Brujah"}
+    assert sorted(p.name for p in (out / "clans").iterdir()) == ["brujah"]
