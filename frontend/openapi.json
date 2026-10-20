@@ -2134,6 +2134,46 @@
         "title": "FilterMatch",
         "type": "object"
       },
+      "Forgot": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "Forgot",
+        "type": "object"
+      },
+      "ForgotAnswer": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ForgotAnswer",
+        "type": "object"
+      },
+      "ForgotHelp": {
+        "properties": {
+          "can_email": {
+            "title": "Can Email",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_email"
+        ],
+        "title": "ForgotHelp",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2310,6 +2350,46 @@
           "url"
         ],
         "title": "Link",
+        "type": "object"
+      },
+      "LiveReset": {
+        "properties": {
+          "asked_themselves": {
+            "title": "Asked Themselves",
+            "type": "boolean"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name",
+          "email",
+          "expires_at",
+          "made_by",
+          "asked_themselves"
+        ],
+        "title": "LiveReset",
         "type": "object"
       },
       "LogEntry": {
@@ -2994,6 +3074,30 @@
         "title": "ParticipantOut",
         "type": "object"
       },
+      "PasswordResets": {
+        "properties": {
+          "live": {
+            "items": {
+              "$ref": "#/components/schemas/LiveReset"
+            },
+            "title": "Live",
+            "type": "array"
+          },
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Log",
+            "type": "array"
+          }
+        },
+        "required": [
+          "live",
+          "log"
+        ],
+        "title": "PasswordResets",
+        "type": "object"
+      },
       "PendingDisciplineOut": {
         "properties": {
           "approval_id": {
@@ -3188,6 +3292,18 @@
             "format": "date-time",
             "title": "Member Since",
             "type": "string"
+          },
+          "reset_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reset Expires At"
           }
         },
         "required": [
@@ -3199,7 +3315,8 @@
           "discord_handle",
           "is_custodian",
           "email",
-          "characters"
+          "characters",
+          "reset_expires_at"
         ],
         "title": "PlayerOut",
         "type": "object"
@@ -3223,13 +3340,26 @@
             "format": "date-time",
             "title": "Member Since",
             "type": "string"
+          },
+          "reset_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reset Expires At"
           }
         },
         "required": [
           "id",
           "display_name",
           "email",
-          "member_since"
+          "member_since",
+          "reset_expires_at"
         ],
         "title": "PlayerSummary",
         "type": "object"
@@ -3500,6 +3630,20 @@
               }
             ],
             "title": "Rating"
+          },
+          "specializes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specializes"
           }
         },
         "required": [
@@ -3510,7 +3654,8 @@
           "detail",
           "rating",
           "attribute",
-          "pending_from"
+          "pending_from",
+          "specializes"
         ],
         "title": "PrintedTrait",
         "type": "object"
@@ -4141,8 +4286,41 @@
         "title": "ResetFor",
         "type": "object"
       },
+      "ResetIn": {
+        "properties": {
+          "email": {
+            "default": false,
+            "title": "Email",
+            "type": "boolean"
+          }
+        },
+        "title": "ResetIn",
+        "type": "object"
+      },
       "ResetLink": {
         "properties": {
+          "email_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Error"
+          },
+          "emailed_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emailed To"
+          },
           "expires_at": {
             "format": "date-time",
             "title": "Expires At",
@@ -4231,6 +4409,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
           "disciplines_waiting": {
             "title": "Disciplines Waiting",
             "type": "integer"
@@ -4264,6 +4453,10 @@
             "title": "Player Name",
             "type": "string"
           },
+          "social_age": {
+            "title": "Social Age",
+            "type": "string"
+          },
           "titles": {
             "items": {
               "type": "string"
@@ -4283,6 +4476,8 @@
           "player_id",
           "kind",
           "titles",
+          "clan",
+          "social_age",
           "home",
           "waiting",
           "disciplines_waiting",
@@ -6023,6 +6218,68 @@
         ]
       }
     },
+    "/api/auth/forgot": {
+      "get": {
+        "description": "Whether someone who forgot their password can ask Horatio for a link.",
+        "operationId": "forgot_help_api_auth_forgot_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgotHelp"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Forgot Help",
+        "tags": [
+          "auth"
+        ]
+      },
+      "post": {
+        "description": "Email a reset link to an account's own address, if an account uses it. The\nanswer is the same either way, so it never says who has an account; so is\nbeing turned away for asking too often.",
+        "operationId": "forgot_password_api_auth_forgot_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Forgot"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgotAnswer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forgot Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/auth/login": {
       "post": {
         "operationId": "sign_in_api_auth_login_post",
@@ -6101,7 +6358,7 @@
     },
     "/api/auth/reset": {
       "post": {
-        "description": "Set a new password from the custodian's link. Ends every other session the\nperson had, and signs them in here.",
+        "description": "Set a new password from a reset link. Ends every other session the person had,\nand signs them in here.",
         "operationId": "reset_password_api_auth_reset_post",
         "requestBody": {
           "content": {
@@ -9150,6 +9407,50 @@
         ]
       }
     },
+    "/api/password-resets": {
+      "get": {
+        "description": "For the custodian: the reset links live now, and who has made, asked for and\nused them.",
+        "operationId": "password_resets_api_password_resets_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResets"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Password Resets",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/api/players": {
       "get": {
         "description": "Every account whose name or email has `q` in it, for the custodian.",
@@ -9243,8 +9544,43 @@
       }
     },
     "/api/players/{user_id}/password-reset": {
+      "delete": {
+        "description": "Cancel the player's live reset link, so it no longer works.",
+        "operationId": "cancel_password_reset_api_players__user_id__password_reset_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Password Reset",
+        "tags": [
+          "players"
+        ]
+      },
       "post": {
-        "description": "A one-time link, good for a day, that lets the player set a new password.\nThe custodian passes it on; it replaces any earlier link.",
+        "description": "A one-time link, good for a day, that lets the player set a new password.\nThe custodian passes it on, or has Horatio email it to the player's address;\nit replaces any earlier link.",
         "operationId": "reset_password_api_players__user_id__password_reset_post",
         "parameters": [
           {
@@ -9258,6 +9594,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ResetIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "content": {
