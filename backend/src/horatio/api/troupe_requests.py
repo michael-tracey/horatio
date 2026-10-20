@@ -84,9 +84,13 @@ def _one(db: DbSession, request_id: uuid.UUID) -> TroupeRequestOut:
     return _out(*row)
 
 
-def _pending(db: DbSession, request_id: uuid.UUID) -> TroupeRequest:
+def _pending(
+    db: DbSession, request_id: uuid.UUID, requester_id: uuid.UUID | None = None
+) -> TroupeRequest:
+    """The request, locked, if it is still waiting. With `requester_id`, only that
+    person's own request; anyone else's is not found."""
     request = db.get(TroupeRequest, request_id, with_for_update=True)
-    if request is None:
+    if request is None or requester_id not in (None, request.requester_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such request.")
     if request.status != "pending":
         raise HTTPException(status.HTTP_409_CONFLICT, f"This request was already {request.status}.")
@@ -212,10 +216,7 @@ def decline(
 @router.delete("/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
 def withdraw(request_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
     """The requester takes back a request still waiting."""
-    request = db.get(TroupeRequest, request_id, with_for_update=True)
-    if request is None or request.requester_id != user.id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such request.")
-    request = _pending(db, request_id)
+    request = _pending(db, request_id, user.id)
     request.status = "withdrawn"
     audit.record(db, user, "troupe_request.withdrawn", name=request.name)
     db.commit()
