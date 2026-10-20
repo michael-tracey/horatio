@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet } from "../api/types";
@@ -30,12 +30,15 @@ export function PrintPage() {
       ),
   });
 
+  const pips = params.get("ratings") === "pips";
   if (sheet.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
   return (
-    <PrintShell back={`/characters/${characterId}`}>
-      <Sheet sheet={sheet.data} />
-    </PrintShell>
+    <Pips.Provider value={pips}>
+      <PrintShell back={`/characters/${characterId}`}>
+        <Sheet sheet={sheet.data} />
+      </PrintShell>
+    </Pips.Provider>
   );
 }
 
@@ -52,16 +55,19 @@ export function TroupePrintPage() {
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/print", { params: { path: { troupe_id: troupeId }, query: { characters: ids } } })),
   });
 
+  const pips = params.get("ratings") === "pips";
   if (sheets.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (sheets.error) return <p className="p-8 text-black">{sheets.error.message}</p>;
   return (
-    <PrintShell back={`/troupes/${troupeId}/characters`} count={sheets.data.length}>
-      {sheets.data.map((sheet, i) => (
-        <div key={i} className={i > 0 ? "mt-6 break-before-page print:mt-0" : ""}>
-          <Sheet sheet={sheet} />
-        </div>
-      ))}
-    </PrintShell>
+    <Pips.Provider value={pips}>
+      <PrintShell back={`/troupes/${troupeId}/characters`} count={sheets.data.length}>
+        {sheets.data.map((sheet, i) => (
+          <div key={i} className={i > 0 ? "mt-6 break-before-page print:mt-0" : ""}>
+            <Sheet sheet={sheet} />
+          </div>
+        ))}
+      </PrintShell>
+    </Pips.Provider>
   );
 }
 
@@ -102,8 +108,20 @@ function label(t: Trait) {
   return t.detail ? `${t.name}: ${t.detail}` : t.name;
 }
 
-/** Filled and empty dots, five to a group, like the paper sheet. */
+/** Whether ratings print as pips, like the paper sheet (`?ratings=pips`), or as
+ * numbers, which take less room (the default). */
+const Pips = createContext(false);
+
+/** A rating: a number, or filled and empty dots, five to a group, like the paper sheet. */
 function Dots({ value, of = 5 }: { value: number; of?: number }) {
+  const pips = useContext(Pips);
+  if (!pips) {
+    return (
+      <span className="text-[11px] font-semibold whitespace-nowrap tabular-nums" aria-label={`${value} dots`}>
+        {value}
+      </span>
+    );
+  }
   const total = Math.max(of, value);
   return (
     <span className="font-mono text-[11px] tracking-[-0.05em] whitespace-nowrap" aria-label={`${value} dots`}>
@@ -254,11 +272,14 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
               ["Mental", "focus_mentals"],
             ] as const
           ).map(([name, focus]) => (
-            <div key={name}>
-              <div className="flex items-baseline justify-between font-bold">
-                {name} <Dots value={rating(t, "attributes", name)} of={10} />
-              </div>
-              <p className="text-[11px]">Focus: {by(t, focus).map((f) => f.name).join(", ") || "—"}</p>
+            <div key={name} className="flex items-baseline justify-between gap-2">
+              {/* Focuses in brackets, like skills' specialties: "Physical (Dexterity, Stamina)". */}
+              <span>
+                <span className="font-bold">{name}</span> {bracketed(by(t, focus).map((f) => f.name))}
+              </span>
+              <span className="font-bold">
+                <Dots value={rating(t, "attributes", name)} of={10} />
+              </span>
             </div>
           ))}
         </div>

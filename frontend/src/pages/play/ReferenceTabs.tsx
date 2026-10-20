@@ -16,12 +16,22 @@ function Panel({ title, aside, children }: { title: ReactNode; aside?: ReactNode
   );
 }
 
-const dots = (n: number) => "●".repeat(Math.min(n, 10));
+// Each attribute's focuses, shown beside it rather than as parts of their own.
+const FOCUSES: Record<string, string> = { Physical: "focus_physicals", Social: "focus_socials", Mental: "focus_mentals" };
+
+/** The brackets after a trait: an attribute's focuses, a skill's specialties. */
+function brackets(t: Trait, traits: Trait[]): string[] {
+  if (t.category === "attributes" && FOCUSES[t.name]) return traits.filter((f) => f.category === FOCUSES[t.name]).map((f) => f.name);
+  return t.specialties;
+}
 
 /** The sheet to look things up in at a game: every part laid out, nothing folded away. */
 export function SheetTab({ reference }: { reference: PlayReference }) {
   const groups = new Map<string, Trait[]>();
-  for (const t of reference.traits) groups.set(t.category_name, [...(groups.get(t.category_name) ?? []), t]);
+  for (const t of reference.traits) {
+    if (Object.values(FOCUSES).includes(t.category)) continue;
+    groups.set(t.category_name, [...(groups.get(t.category_name) ?? []), t]);
+  }
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {[...groups].map(([name, traits]) => (
@@ -31,13 +41,9 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
               <li key={`${t.category}/${t.name}/${t.detail}`} className="flex items-baseline justify-between gap-3 border-b border-ash/60 py-1 last:border-0">
                 <span>
                   {t.detail ? `${t.name}: ${t.detail}` : t.name}
-                  {t.specialties.length > 0 && <span className="text-mist"> ({t.specialties.join(", ")})</span>}
+                  {brackets(t, reference.traits).length > 0 && <span className="text-mist"> ({brackets(t, reference.traits).join(", ")})</span>}
                 </span>
-                {t.rating !== null && (
-                  <span className="shrink-0 text-gold" aria-label={`${t.rating}`}>
-                    {t.rating > 10 ? t.rating : dots(t.rating)}
-                  </span>
-                )}
+                {t.rating !== null && <span className="shrink-0 font-display text-base text-gold tabular-nums">{t.rating}</span>}
               </li>
             ))}
           </ul>
@@ -82,7 +88,7 @@ function PoolRow({ pool, willpower }: { pool: TestPool; willpower: number }) {
 
 function Discipline({ discipline }: { discipline: DisciplinePowers }) {
   return (
-    <Panel title={discipline.name} aside={<span className="text-gold">{dots(discipline.rating)}</span>}>
+    <Panel title={discipline.name} aside={<span className="font-display text-lg text-gold tabular-nums">{discipline.rating}</span>}>
       <p className="mb-2 text-xs text-mist">
         {discipline.pool ? `${discipline.pool} against ${discipline.versus}.` : null} {discipline.note}
       </p>
@@ -91,7 +97,7 @@ function Discipline({ discipline }: { discipline: DisciplinePowers }) {
         {discipline.powers.map((p) => (
           <li key={p.level}>
             <p>
-              <span className="text-gold">{dots(p.level)}</span> <strong className="font-semibold">{p.name}</strong>
+              <span className="inline-block w-5 text-gold tabular-nums">{p.level}</span> <strong className="font-semibold">{p.name}</strong>
             </p>
             <p className="text-mist">{p.note}</p>
             {p.focus && <p className="text-xs text-gold">Your focus: {p.focus}</p>}

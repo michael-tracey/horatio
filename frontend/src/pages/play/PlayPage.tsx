@@ -13,8 +13,6 @@ import { useReference } from "./useReference";
 type Change = { tracker: string; amount: number; damage?: Damage; label: string };
 type RecordTap = (change: Change) => void;
 
-const QUICK_NOTES = "horatio.play.quickNotes";
-
 function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
 }
@@ -25,15 +23,6 @@ const TABS = [
   { key: "pools", label: "Pools" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
-
-/** Quick notes are on unless the player turned them off on this phone. */
-function remembered(): boolean {
-  try {
-    return localStorage.getItem(QUICK_NOTES) !== "0";
-  } catch {
-    return true;
-  }
-}
 
 /**
  * A living sheet for a game, laid out for a phone in one hand, in three tabs:
@@ -49,7 +38,8 @@ export function PlayPage() {
   const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? "tracker";
   const { view, shown, tap, sync, accept } = usePlay(characterId);
   const { reference, error: referenceError } = useReference(characterId);
-  const [quickNotes, setQuickNotes] = useState(remembered);
+  // Quick notes start on every time the Play View opens.
+  const [quickNotes, setQuickNotes] = useState(true);
   const [asking, setAsking] = useState<Change | null>(null);
   const choose = (next: Tab) =>
     setParams(
@@ -69,15 +59,6 @@ export function PlayPage() {
     if (quickNotes && change.amount < 0) setAsking(change);
     else tap({ kind: "change", tracker: change.tracker, amount: change.amount, damage: change.damage ?? null });
   };
-  const toggleNotes = (on: boolean) => {
-    setQuickNotes(on);
-    try {
-      localStorage.setItem(QUICK_NOTES, on ? "1" : "0");
-    } catch {
-      // Not remembered in a private window; it still works for now.
-    }
-  };
-
   const lookup = (show: (r: NonNullable<typeof reference>) => ReactNode) =>
     reference ? show(reference) : referenceError ? <ErrorText error={referenceError} /> : <p className="py-8 text-center text-mist">Loading…</p>;
 
@@ -123,7 +104,7 @@ export function PlayPage() {
               />
             </div>
           </div>
-          <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={toggleNotes} online={sync.online} onChange={accept} />
+          <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={setQuickNotes} online={sync.online} onChange={accept} />
           <Notes add={(note) => tap({ kind: "note", note })} />
           <GameLog view={shown} undo={(entry) => tap({ kind: "undo", undoes: entry.id })} />
           <ResetGame view={shown} sync={sync} onReset={accept} />
