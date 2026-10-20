@@ -24,9 +24,7 @@ def upgrade() -> None:
         sa.Column("picture_crop", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     )
     op.add_column("characters", sa.Column("picture_by", sa.Uuid(), nullable=True))
-    op.add_column(
-        "characters", sa.Column("picture_at", sa.DateTime(timezone=True), nullable=True)
-    )
+    op.add_column("characters", sa.Column("picture_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column(
         "characters",
         sa.Column("visible_note", sa.String(), server_default="", nullable=False),
