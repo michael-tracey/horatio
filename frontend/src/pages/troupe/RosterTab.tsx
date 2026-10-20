@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
+import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { FilterBuilder } from "./FilterBuilder";
@@ -178,6 +179,8 @@ function titleList(titles: TitlesOut | undefined): string[] {
   return [...new Set([...(titles?.catalogue ?? []), ...(titles?.troupe ?? [])])].sort();
 }
 
+/** One line per character: who it is, its clan and social age, how it stands
+ * here, and its titles, with + to give another. */
 function RosterRow({
   troupeId,
   entry,
@@ -193,39 +196,43 @@ function RosterRow({
   values: [string, number][];
 }) {
   return (
-    <li className="flex flex-col gap-2 py-3">
-      <span className="flex flex-wrap items-center gap-2">
-        <input type="checkbox" aria-label={`Select ${entry.character_name}`} checked={selected} onChange={onSelect} />
-        <Link to={`/characters/${entry.character_id}`} className="hover:text-gold">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+      <input type="checkbox" aria-label={`Select ${entry.character_name}`} checked={selected} onChange={onSelect} />
+      <span className="flex min-w-0 items-baseline gap-2">
+        <Link to={`/characters/${entry.character_id}`} className="truncate font-medium hover:text-gold">
           {entry.character_name}
         </Link>
-        {entry.player_id ? (
-          <Link to={`/players/${entry.player_id}`} className="text-sm text-mist hover:text-gold">
+        {entry.player_id && (
+          <Link to={`/players/${entry.player_id}`} className="truncate text-xs text-mist hover:text-gold">
             {entry.player_name}
           </Link>
-        ) : (
-          <span className="text-sm text-mist">{entry.player_name}</span>
-        )}
-        {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
-        {entry.waiting && <Badge tone="blood">asking to make this home</Badge>}
-        {values.map(([label, value]) => (
-          <span key={label} className="rounded bg-ash px-1.5 py-0.5 text-xs text-parchment">
-            {label} {value}
-          </span>
-        ))}
-        {entry.disciplines_waiting > 0 && (
-          <Badge tone="blood">
-            {entry.disciplines_waiting} discipline{entry.disciplines_waiting > 1 ? "s" : ""} to approve
-          </Badge>
         )}
       </span>
-      <TitleEditor troupeId={troupeId} entry={entry} />
-      {entry.home && entry.kind === "pc" && <AwardXp troupeId={troupeId} entry={entry} />}
+      <span className="text-xs whitespace-nowrap text-parchment/80">
+        {entry.clan ?? "No clan yet"} · {entry.social_age}
+      </span>
+      {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
+      {entry.waiting && <Badge tone="blood">asking to make this home</Badge>}
+      {entry.disciplines_waiting > 0 && (
+        <Badge tone="blood">
+          {entry.disciplines_waiting} discipline{entry.disciplines_waiting > 1 ? "s" : ""} to approve
+        </Badge>
+      )}
+      {values.map(([label, value]) => (
+        <span key={label} className="rounded bg-ash px-1.5 py-0.5 text-xs text-parchment">
+          {label} {value}
+        </span>
+      ))}
+      <span className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+        <Titles troupeId={troupeId} entry={entry} />
+        {entry.home && entry.kind === "pc" && <AwardXp troupeId={troupeId} entry={entry} />}
+      </span>
     </li>
   );
 }
 
-/** Experience for a character whose home troupe this is: amount and reason, as the XP history shows them. */
+/** Experience for a character whose home troupe this is, in a dialog: amount and
+ * reason, as the XP history shows them. */
 function AwardXp({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
   // Starts at the troupe's usual XP for a session (Starting points).
   const troupe = useQuery({
@@ -246,65 +253,66 @@ function AwardXp({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) 
     setOpen(false);
     setReason("");
   });
-  if (!open) {
-    return (
-      <div>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setAmount(sessionXp);
-            setOpen(true);
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={`Award XP to ${entry.character_name}`}
+        title="Award XP"
+        className="h-6 rounded border border-ash px-1.5 text-xs text-mist hover:border-mist hover:text-parchment"
+        onClick={() => {
+          setAmount(sessionXp);
+          setOpen(true);
+        }}
+      >
+        +XP
+      </button>
+      <Dialog title={`Award XP to ${entry.character_name}`} open={open} onClose={() => setOpen(false)}>
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            award.mutate(undefined);
           }}
         >
-          Award XP
-        </Button>
-      </div>
-    );
-  }
-  return (
-    <form
-      className="flex flex-wrap items-end gap-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        award.mutate(undefined);
-      }}
-    >
-      <Input
-        aria-label={`XP for ${entry.character_name}`}
-        type="number"
-        min={1}
-        required
-        value={amount}
-        onChange={(e) => setAmount(Number(e.target.value))}
-        className="w-20"
-      />
-      <Input
-        aria-label={`Reason for ${entry.character_name}'s XP`}
-        placeholder="Reason, such as a game"
-        required
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        className="min-w-40 flex-1"
-      />
-      <Button type="submit" disabled={award.isPending}>
-        Award
-      </Button>
-      <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-        Cancel
-      </Button>
-      <ErrorText error={award.error} />
-    </form>
+          <div className="flex gap-2">
+            <Input
+              aria-label={`XP for ${entry.character_name}`}
+              type="number"
+              min={1}
+              required
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              className="w-20"
+            />
+            <Input
+              aria-label={`Reason for ${entry.character_name}'s XP`}
+              placeholder="Reason, such as a game"
+              required
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="min-w-0 flex-1"
+            />
+          </div>
+          <ErrorText error={award.error} />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={award.isPending}>
+              Award
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </>
   );
 }
 
-/** The character's titles here as chips, with a picker to give another. */
-function TitleEditor({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
-  const [adding, setAdding] = useState("");
-  const titles = useQuery({
-    queryKey: ["titles", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/titles", { params: { path: { troupe_id: troupeId } } })),
-    staleTime: 60_000,
-  });
+/** The character's titles here as pills, each with × to take it away, and a +
+ * square that opens a dialog to give another. */
+function Titles({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
+  const [open, setOpen] = useState(false);
   const save = useAction((names: string[]) =>
     unwrap(
       api.PUT("/api/troupes/{troupe_id}/characters/{character_id}/titles", {
@@ -313,34 +321,84 @@ function TitleEditor({ troupeId, entry }: { troupeId: string; entry: RosterEntry
       }),
     ),
   );
-  const all = [...(titles.data?.troupe ?? []), ...(titles.data?.catalogue ?? [])].filter((t) => !entry.titles.includes(t));
-  const listId = `titles-${entry.character_id}`;
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm">
+    <>
       {entry.titles.map((t) => (
-        <span key={t} className="flex items-center gap-1">
-          <Badge tone="gold">{t}</Badge>
-          <button aria-label={`Take the title ${t} from ${entry.character_name}`} className="text-mist hover:text-blood-bright" onClick={() => save.mutate(entry.titles.filter((x) => x !== t))}>
+        <span key={t} className="inline-flex h-6 items-center gap-1 rounded-full border border-gold/50 bg-gold/10 pr-1 pl-2.5 text-xs text-gold">
+          {t}
+          <button
+            type="button"
+            aria-label={`Take the title ${t} from ${entry.character_name}`}
+            className="grid h-4 w-4 place-items-center rounded-full leading-none text-gold/70 hover:bg-blood hover:text-parchment"
+            onClick={() => save.mutate(entry.titles.filter((x) => x !== t))}
+          >
             ×
           </button>
         </span>
       ))}
-      <form
-        className="flex gap-1"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (adding) save.mutate([...entry.titles, adding]);
-          setAdding("");
-        }}
+      <button
+        type="button"
+        aria-label={`Give ${entry.character_name} a title`}
+        title="Give a title"
+        className="grid h-6 w-6 place-items-center rounded border border-ash text-sm leading-none text-mist hover:border-gold hover:text-gold"
+        onClick={() => setOpen(true)}
       >
-        <Input list={listId} aria-label={`Give ${entry.character_name} a title`} placeholder="Give a title…" value={adding} onChange={(e) => setAdding(e.target.value)} className="h-8 min-h-8 w-44 py-1 text-xs" />
-        <datalist id={listId}>
-          {all.map((t) => (
-            <option key={t} value={t} />
-          ))}
-        </datalist>
-      </form>
+        +
+      </button>
       <ErrorText error={save.error} />
-    </div>
+      <Dialog title={`Give ${entry.character_name} a title`} open={open} onClose={() => setOpen(false)}>
+        <GiveTitle
+          troupeId={troupeId}
+          entry={entry}
+          onGive={(title) => {
+            save.mutate([...entry.titles, title]);
+            setOpen(false);
+          }}
+        />
+      </Dialog>
+    </>
+  );
+}
+
+/** Pick one of the troupe's or the book's titles, or type a new one. */
+function GiveTitle({ troupeId, entry, onGive }: { troupeId: string; entry: RosterEntry; onGive: (title: string) => void }) {
+  const [typed, setTyped] = useState("");
+  const titles = useQuery({
+    queryKey: ["titles", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/titles", { params: { path: { troupe_id: troupeId } } })),
+    staleTime: 60_000,
+  });
+  const q = typed.trim().toLowerCase();
+  const choices = titleList(titles.data).filter((t) => !entry.titles.includes(t) && t.toLowerCase().includes(q));
+  const exact = choices.some((t) => t.toLowerCase() === q);
+  return (
+    <form
+      className="flex flex-col gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (typed.trim()) onGive(choices.find((t) => t.toLowerCase() === q) ?? typed.trim());
+      }}
+    >
+      <Input autoFocus aria-label="Title" placeholder="Search or type a new title…" value={typed} onChange={(e) => setTyped(e.target.value)} />
+      <ul className="flex max-h-64 flex-wrap gap-1.5 overflow-y-auto">
+        {choices.map((t) => (
+          <li key={t}>
+            <button
+              type="button"
+              className="rounded-full border border-ash px-2.5 py-1 text-xs hover:border-gold hover:text-gold"
+              onClick={() => onGive(t)}
+            >
+              {t}
+            </button>
+          </li>
+        ))}
+        {titles.isPending && <li className="text-sm text-mist">Loading…</li>}
+      </ul>
+      {q && !exact && (
+        <Button type="submit" variant="secondary">
+          Give the new title “{typed.trim()}”
+        </Button>
+      )}
+    </form>
   );
 }

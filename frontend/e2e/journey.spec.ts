@@ -184,11 +184,14 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Accepted, Agnes keeps only 5 of her unspent creation XP. Her storytellers award her some.
   await lead.page.getByRole("link", { name: "People", exact: true }).click();
   await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
-  await lead.page.getByRole("button", { name: "Award XP" }).click();
+  const agnesRow = lead.page.getByRole("listitem").filter({ has: lead.page.getByRole("link", { name: "Agnes", exact: true }) });
+  await expect(agnesRow.getByText(/ · (Neonate|Ancilla|Elder)$/)).toBeVisible();
+  await lead.page.screenshot(shots("roster"));
+  await lead.page.getByRole("button", { name: "Award XP to Agnes" }).click();
   await lead.page.getByLabel("XP for Agnes").fill("10");
   await lead.page.getByLabel("Reason for Agnes's XP").fill("First game");
   await lead.page.getByRole("button", { name: "Award", exact: true }).click();
-  await expect(lead.page.getByRole("button", { name: "Award XP" })).toBeVisible();
+  await expect(lead.page.getByRole("dialog")).toBeHidden();
 
   // A game's XP for everyone at once, starting at the troupe's usual 8.
   await lead.page.locator("main").getByRole("link", { name: "Award XP", exact: true }).click();
@@ -447,6 +450,14 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByText("21 XP")).toBeVisible(); // focuses are free
   await p.getByRole("button", { name: "Leadership 3", exact: true }).click(); // 1 + 2 + 3
   await expect(p.getByText("27 XP")).toBeVisible();
+  // Morality is one path at one rating: moving to a Path keeps the rating, free.
+  await expect(p.getByLabel("Morality", { exact: true })).toHaveValue("Humanity");
+  await p.getByRole("button", { name: "Humanity 4", exact: true }).click();
+  await expect(p.getByRole("button", { name: "Humanity 4", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Morality", { exact: true }).selectOption("Caine");
+  await expect(p.getByRole("button", { name: "Caine 4", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByRole("button", { name: /^Humanity \d+$/ })).toHaveCount(0);
+  await expect(p.getByText("27 XP")).toBeVisible();
   await p.screenshot(shots("npc"));
 
   // Titles are given on the troupe's Characters tab.
@@ -454,9 +465,12 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("link", { name: troupeName }).click();
   await p.getByRole("link", { name: "People", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
-  await p.getByLabel("Give Prince Vasquez a title").fill("Prince");
-  await p.getByLabel("Give Prince Vasquez a title").press("Enter");
-  await expect(p.locator("main").getByText("Prince", { exact: true })).toBeVisible();
+  await p.getByRole("button", { name: "Give Prince Vasquez a title" }).click();
+  await p.getByRole("dialog").getByLabel("Title").fill("Prince");
+  await p.screenshot(shots("give-title"));
+  await p.getByRole("dialog").getByLabel("Title").press("Enter");
+  await expect(p.getByRole("button", { name: "Take the title Prince from Prince Vasquez" })).toBeVisible();
+  await p.screenshot(shots("roster-titles"));
   await p.getByRole("link", { name: "Troupe", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
   await expect(p.getByText("npc-lead gave Prince Vasquez the title Prince.")).toBeVisible();

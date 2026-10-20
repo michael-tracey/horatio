@@ -1210,7 +1210,7 @@ name = "Ultra-Conservative"
 category = "flaws"
 name = "Accused of Heresy"
 description = "Treated as one social class lower. Neonates gain the Greater Status Ban applied to Caitiff. (Max Fleeting 1)"
-properties = { rating = 2, type = "Camarilla" }
+properties = { rating = 2, type = "Camarilla", social_class = -1 }
 
 [[traits]]
 category = "flaws"
@@ -3462,7 +3462,7 @@ properties = { rating = 2, type = "General" }
 category = "merits"
 name = "Machiavellian Prodigy"
 description = "Treated as one social class higher."
-properties = { rating = 1, type = "Camarilla", requirement = "Neonate or Ancilla" }
+properties = { rating = 1, type = "Camarilla", requirement = "Neonate or Ancilla", social_class = 1 }
 
 [[traits]]
 category = "merits"
