@@ -1,10 +1,11 @@
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import deletion
+from horatio import deletion, renames
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
 from horatio.models import Character, RuleSet, Troupe
@@ -27,6 +28,8 @@ class CharacterOut(BaseModel):
     kind: str  # pc | npc
     # The troupe an NPC belongs to.
     owner_troupe_id: uuid.UUID | None
+    # The first day its player can rename it again; None if they can now.
+    next_rename_on: date | None
 
 
 class NewCharacter(BaseModel):
@@ -44,7 +47,7 @@ class CharacterChanges(BaseModel):
     name: str = Field(min_length=1, max_length=200)
 
 
-def character_out(character: Character) -> CharacterOut:
+def character_out(db: DbSession, character: Character) -> CharacterOut:
     return CharacterOut(
         id=character.id,
         player_id=character.player_id,
@@ -56,6 +59,7 @@ def character_out(character: Character) -> CharacterOut:
         creation_complete=character.creation_completed_at is not None,
         kind=character.kind,
         owner_troupe_id=character.owner_troupe_id,
+        next_rename_on=renames.next_rename_on(db, character),
     )
 
 
@@ -75,7 +79,7 @@ def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterOut]:
         .where(Character.player_id == user.id, Character.kind == "pc")
         .order_by(Character.name)
     )
-    return [character_out(c) for c in characters]
+    return [character_out(db, c) for c in characters]
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -95,22 +99,26 @@ def create_character(body: NewCharacter, db: DbSession, user: CurrentUser) -> Ch
     grant_starting_traits(db, rules_for(db, character), character)
     db.commit()
     db.refresh(character)
-    return character_out(character)
+    return character_out(db, character)
 
 
 @router.get("/{character_id}")
 def read_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CharacterOut:
-    return character_out(visible_character(db, user, character_id))
+    return character_out(db, visible_character(db, user, character_id))
 
 
 @router.patch("/{character_id}")
 def change_character(
     character_id: uuid.UUID, body: CharacterChanges, db: DbSession, user: CurrentUser
 ) -> CharacterOut:
-    character = editable_character(db, user, character_id)
-    character.name = body.name
+    """Rename the character: its player, at most once every three months while it is
+    in a troupe, or the custodian at any time (see horatio/renames.py)."""
+    character = visible_character(db, user, character_id)
+    if not user.is_custodian:
+        character = editable_character(db, user, character_id)
+    renames.rename(db, user, lock_character(db, character.id), body.name)
     db.commit()
-    return character_out(character)
+    return character_out(db, character)
 
 
 def running_troupe_id(db: DbSession, troupe_id: uuid.UUID | None) -> uuid.UUID | None:
@@ -136,7 +144,7 @@ def set_building_troupe(
     character.building_troupe_id = running_troupe_id(db, body.troupe_id)
     sync_fixed_ratings(db, character)
     db.commit()
-    return character_out(character)
+    return character_out(db, character)
 
 
 @router.delete("/{character_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -156,4 +164,4 @@ def retire_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) 
     character = editable_character(db, user, character_id)
     character.status = "retired"
     db.commit()
-    return character_out(character)
+    return character_out(db, character)

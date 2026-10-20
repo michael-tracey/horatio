@@ -212,6 +212,7 @@ MESSAGES: dict[str, str] = {
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
     "creation.set_category": "{actor} set {character}'s starting {category}: {picks}.",
     "creation.complete": "{actor} finished creating {character}.",
+    "character.renamed": "{actor} renamed {from_name} to {character}.",
 }
 
 
