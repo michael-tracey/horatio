@@ -27,6 +27,7 @@ from horatio.api import (
     pictures,
     play,
     players,
+    preferences,
     printing,
     responses,
     roster,
@@ -105,6 +106,7 @@ for module in (
     badges,
     troupe_requests,
     xp_awards,
+    preferences,
     system,
     play,
 ):

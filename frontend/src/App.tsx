@@ -61,7 +61,7 @@ export function App() {
           <Route path="/troupes/:troupeId/*" element={<TroupePage />} />
           <Route path="/cycles/:cycleId/*" element={<CyclePage />} />
           <Route path="/players/:userId" element={<PlayerPage />} />
-          <Route path="/account" element={<AccountPage />} />
+          <Route path="/account/*" element={<AccountPage />} />
           <Route path="/custodian/*" element={<CustodianPage />} />
           <Route path="/people" element={<Navigate to="/custodian/people" replace />} />
         </Route>

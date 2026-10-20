@@ -1002,3 +1002,19 @@ test("anyone can read About, with the Dark Pack Agreement's notices", async ({ b
   await expect(page.getByRole("link", { name: "Dark Pack Agreement" })).toBeVisible();
   await page.screenshot(shots("about"));
 });
+
+test("settings are kept on the account, and the dark is not optional", async ({ browser }) => {
+  const { page } = await person(browser, "settings-player");
+  await page.getByRole("link", { name: "settings-player" }).click();
+  await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" }).click();
+  await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
+  // Saved on the account: it is still pips after a reload.
+  await page.reload();
+  await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
+  const mode = page.getByRole("radiogroup", { name: "Light mode or dark mode" });
+  await expect(mode.getByRole("radio", { name: "Light" })).toBeDisabled();
+  await expect(mode.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("The World of Darkness is always dark.")).toBeVisible();
+  await page.screenshot(shots("settings"));
+});

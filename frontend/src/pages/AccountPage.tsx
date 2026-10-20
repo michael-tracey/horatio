@@ -1,14 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, Route, Routes } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PlayerOut, ProfileLink } from "../api/types";
-import { Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Textarea } from "../components/ui";
+import { Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Tabs, Textarea } from "../components/ui";
 import { useAction, useMe } from "../hooks";
+import { SettingsPage } from "./settings/SettingsPage";
 
 const MAX_LINKS = 6;
 
-/** The signed-in player's own profile, as others see it on their player page. */
+/** The signed-in player's own profile, as others see it on their player page,
+ * and their settings. */
 export function AccountPage() {
   const me = useMe();
   const id = me.data?.id ?? "";
@@ -32,7 +34,16 @@ export function AccountPage() {
       >
         Your account
       </PageTitle>
-      <ProfileForm key={player.data.id} player={player.data} />
+      <Tabs
+        tabs={[
+          { to: "/account", label: "Profile", end: true },
+          { to: "/account/settings", label: "Settings" },
+        ]}
+      />
+      <Routes>
+        <Route index element={<ProfileForm key={player.data.id} player={player.data} />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Routes>
     </>
   );
 }
