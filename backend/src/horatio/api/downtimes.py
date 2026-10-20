@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import downtimes
+from horatio import downtimes, pictures, social_age
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
@@ -87,6 +87,9 @@ class ParticipantOut(BaseModel):
     id: uuid.UUID
     character_id: uuid.UUID
     character_name: str
+    # The character's picture (horatio.pictures) and clan, for its placeholder.
+    picture: str | None
+    clan: str | None
     allowance: dict[str, int]
     breakdown: list[AllowanceLineOut]
     adjustments: list[AdjustmentOut]
@@ -186,6 +189,8 @@ def participant_out(db: DbSession, p: CycleParticipant) -> ParticipantOut:
         id=p.id,
         character_id=p.character_id,
         character_name=character.name,
+        picture=pictures.picture_url(character.id, character.picture_id),
+        clan=social_age.standings(db, [character.id])[character.id].clan,
         allowance=downtimes.effective_allowance(db, p),
         breakdown=[AllowanceLineOut(**line) for line in p.allowance_breakdown],
         adjustments=[

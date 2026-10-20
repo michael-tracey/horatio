@@ -200,17 +200,20 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
           <dt className="font-bold">Title</dt>
           <dd className="border-b border-black">{sheet.titles.join(", ")}</dd>
         </dl>
-        <div className="text-right">
-          <p className="font-display text-2xl tracking-widest uppercase">{sheet.splat}</p>
-          <p className="text-[10px]">
-            {sheet.kind === "npc"
-              ? `NPC of ${sheet.troupe_name}`
-              : sheet.home
-                ? `Home troupe: ${sheet.troupe_name}`
-                : sheet.troupe_name
-                  ? `Visiting ${sheet.troupe_name}`
-                  : "No home troupe yet"}
-          </p>
+        <div className="flex items-start gap-3 text-right">
+          <div>
+            <p className="font-display text-2xl tracking-widest uppercase">{sheet.splat}</p>
+            <p className="text-[10px]">
+              {sheet.kind === "npc"
+                ? `NPC of ${sheet.troupe_name}`
+                : sheet.home
+                  ? `Home troupe: ${sheet.troupe_name}`
+                  : sheet.troupe_name
+                    ? `Visiting ${sheet.troupe_name}`
+                    : "No home troupe yet"}
+            </p>
+          </div>
+          {sheet.picture && <img src={`${sheet.picture}/128.webp`} alt="" className="h-[0.8in] w-[0.8in] rounded-full border border-black object-cover" />}
         </div>
       </header>
 

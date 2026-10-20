@@ -530,6 +530,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Picture */
+        get: operations["read_picture_api_characters__character_id__picture_get"];
+        put?: never;
+        /**
+         * Upload Picture
+         * @description A new picture, replacing any the character has. Without a crop, the
+         *     portrait is the biggest square in the middle.
+         */
+        post: operations["upload_picture_api_characters__character_id__picture_post"];
+        /**
+         * Remove Picture
+         * @description Take the picture away. Whoever uploaded it is told, unless it was them.
+         */
+        delete: operations["remove_picture_api_characters__character_id__picture_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/picture/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Crop Picture
+         * @description Move the portrait's crop, cutting it again from the picture as kept.
+         */
+        put: operations["crop_picture_api_characters__character_id__picture_crop_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/pictures/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Picture File
+         * @description One of the picture's files. A picture's files never change (a new one has a
+         *     new id), so browsers may keep them; privately, as only some people see them.
+         */
+        get: operations["picture_file_api_characters__character_id__pictures__picture_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/primary-path": {
         parameters: {
             query?: never;
@@ -2295,6 +2362,20 @@ export interface components {
             /** Backups */
             backups: components["schemas"]["BackupOut"][];
         };
+        /** Body_upload_picture_api_characters__character_id__picture_post */
+        Body_upload_picture_api_characters__character_id__picture_post: {
+            /** Crop Size */
+            crop_size?: number | null;
+            /** Crop X */
+            crop_x?: number | null;
+            /** Crop Y */
+            crop_y?: number | null;
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
         /** BuildingTroupe */
         BuildingTroupe: {
             /** Troupe Id */
@@ -2419,6 +2500,8 @@ export interface components {
         CharacterOut: {
             /** Building Troupe Id */
             building_troupe_id: string | null;
+            /** Clan */
+            clan: string | null;
             /** Creation Complete */
             creation_complete: boolean;
             /** Home Troupe Id */
@@ -2434,6 +2517,8 @@ export interface components {
             name: string;
             /** Owner Troupe Id */
             owner_troupe_id: string | null;
+            /** Picture */
+            picture: string | null;
             /**
              * Player Id
              * Format: uuid
@@ -2635,6 +2720,19 @@ export interface components {
             needs: components["schemas"]["StepNeed"][];
             /** Pools */
             pools: components["schemas"]["PoolOut"][];
+        };
+        /**
+         * CropIn
+         * @description The square portrait's place in the picture, as fractions: its left and top
+         *     edges of the picture's width and height, and its side of the width.
+         */
+        CropIn: {
+            /** Size */
+            size: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /** CycleChanges */
         CycleChanges: {
@@ -3121,6 +3219,8 @@ export interface components {
             kind: string;
             /** Link */
             link: string;
+            /** Picture */
+            picture: string | null;
             /** Read */
             read: boolean;
             /** Summary */
@@ -3175,6 +3275,8 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Clan */
+            clan: string | null;
             /** Completion Xp Awarded */
             completion_xp_awarded: number | null;
             /**
@@ -3184,6 +3286,8 @@ export interface components {
             id: string;
             /** Late Accepted */
             late_accepted: boolean;
+            /** Picture */
+            picture: string | null;
             /** Removed */
             removed: boolean;
             /** Submission Status */
@@ -3234,6 +3338,18 @@ export interface components {
             name: string;
             /** Pick */
             pick: number;
+        };
+        /** PictureOut */
+        PictureOut: {
+            /** Available */
+            available: boolean;
+            crop: components["schemas"]["CropIn"] | null;
+            /** Picture */
+            picture: string | null;
+            /** Uploaded At */
+            uploaded_at: string | null;
+            /** Uploaded By */
+            uploaded_by: string | null;
         };
         /** PlayerCharacter */
         PlayerCharacter: {
@@ -3344,6 +3460,8 @@ export interface components {
             home: boolean;
             /** Kind */
             kind: string;
+            /** Picture */
+            picture: string | null;
             /** Player Name */
             player_name: string;
             /** Splat */
@@ -3523,6 +3641,8 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Clan */
+            clan: string | null;
             discipline: components["schemas"]["DisciplineOut"] | null;
             /**
              * Id
@@ -3531,6 +3651,8 @@ export interface components {
             id: string;
             /** Kind */
             kind: string;
+            /** Picture */
+            picture: string | null;
             /** Player Note */
             player_note: string;
             /** Reconciliation */
@@ -3672,6 +3794,8 @@ export interface components {
             joined_at: string;
             /** Kind */
             kind: string;
+            /** Picture */
+            picture: string | null;
             /** Player Id */
             player_id: string | null;
             /** Player Name */
@@ -5266,6 +5390,167 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Tally"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_picture_api_characters__character_id__picture_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_picture_api_characters__character_id__picture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_picture_api_characters__character_id__picture_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_picture_api_characters__character_id__picture_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    crop_picture_api_characters__character_id__picture_crop_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CropIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    picture_file_api_characters__character_id__pictures__picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

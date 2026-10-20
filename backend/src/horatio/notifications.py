@@ -35,6 +35,7 @@ from horatio.models import (
     User,
 )
 from horatio.permissions import TROUPE_POLICY, TroupeAction
+from horatio.pictures import picture_url
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,8 @@ class Item:
     link: str
     at: datetime
     read: bool
+    # The picture of the character it is about, if any (horatio.pictures).
+    picture: str | None = None
 
 
 def troupes_where(db: Session, user: User, action: TroupeAction) -> list[Troupe]:
@@ -74,7 +77,7 @@ def approval_tasks(db: Session, user: User) -> list[Item]:
         return []
     rows = list(
         db.execute(
-            select(Approval, Character.name)
+            select(Approval, Character)
             .join(Character, Approval.character_id == Character.id)
             .where(Approval.troupe_id.in_(troupes), Approval.status == "pending")
         )
@@ -96,7 +99,8 @@ def approval_tasks(db: Session, user: User) -> list[Item]:
         )
     }
     items: list[Item] = []
-    for approval, character in rows:
+    for approval, about in rows:
+        character = about.name
         troupe = troupes[approval.troupe_id]
         if approval.id in disciplines:
             name, bought = disciplines[approval.id]
@@ -121,6 +125,7 @@ def approval_tasks(db: Session, user: User) -> list[Item]:
                 link=f"/troupes/{troupe.id}/approvals",
                 at=approval.created_at,
                 read=False,
+                picture=picture_url(about.id, about.picture_id),
             )
         )
     return items
@@ -158,18 +163,20 @@ READ_MESSAGES_SHOWN = 20
 
 
 def messages(db: Session, user: User) -> list[Item]:
+    query = (
+        select(Notification, Troupe.name, Character.picture_id)
+        .outerjoin(Troupe, Notification.troupe_id == Troupe.id)
+        .outerjoin(Character, Notification.character_id == Character.id)
+    )
     rows = list(
         db.execute(
-            select(Notification, Troupe.name)
-            .outerjoin(Troupe, Notification.troupe_id == Troupe.id)
-            .where(Notification.user_id == user.id, Notification.read_at.is_(None))
-            .order_by(Notification.created_at.desc())
+            query.where(Notification.user_id == user.id, Notification.read_at.is_(None)).order_by(
+                Notification.created_at.desc()
+            )
         )
     ) + list(
         db.execute(
-            select(Notification, Troupe.name)
-            .outerjoin(Troupe, Notification.troupe_id == Troupe.id)
-            .where(Notification.user_id == user.id, Notification.read_at.is_not(None))
+            query.where(Notification.user_id == user.id, Notification.read_at.is_not(None))
             .order_by(Notification.created_at.desc())
             .limit(READ_MESSAGES_SHOWN)
         )
@@ -185,8 +192,9 @@ def messages(db: Session, user: User) -> list[Item]:
             link=n.link,
             at=n.created_at,
             read=n.read_at is not None,
+            picture=picture_url(n.character_id, picture) if n.character_id else None,
         )
-        for n, troupe_name in rows
+        for n, troupe_name, picture in rows
     ]
 
 

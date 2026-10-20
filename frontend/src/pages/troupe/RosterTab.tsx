@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
+import { Avatar } from "../../components/Avatar";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
@@ -198,6 +199,7 @@ function RosterRow({
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
       <input type="checkbox" aria-label={`Select ${entry.character_name}`} checked={selected} onChange={onSelect} />
+      <Avatar name={entry.character_name} picture={entry.picture} clan={entry.clan} />
       <span className="flex min-w-0 items-baseline gap-2">
         <Link to={`/characters/${entry.character_id}`} className="truncate font-medium hover:text-gold">
           {entry.character_name}

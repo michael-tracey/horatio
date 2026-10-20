@@ -29,6 +29,8 @@ function makeCustodian(email: string) {
 }
 
 test("a troupe's month, from new character to downtime results", async ({ browser }) => {
+  // The whole month in one test: longer than the others, above all on a phone.
+  test.setTimeout(150_000);
   const custodian = await person(browser, "custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "lead");
@@ -158,6 +160,19 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("+1 from Rugged").first()).toBeVisible();
   await expect(p.getByText("16", { exact: true })).toBeVisible();
   await p.screenshot(shots("sheet"));
+  // A picture of Agnes, cropped to her face, shows at the top of her page.
+  await p.getByRole("button", { name: "Add a picture of Agnes" }).click();
+  await p.getByLabel("Choose a picture").setInputFiles("e2e/portrait.jpg");
+  const portrait = p.getByRole("slider", { name: /Where the portrait is/ });
+  await expect(portrait).toBeVisible();
+  await p.getByLabel("Size").fill("60");
+  await portrait.focus();
+  for (let i = 0; i < 12; i++) await p.keyboard.press("ArrowUp");
+  await p.screenshot(shots("crop"));
+  await p.getByRole("button", { name: "Save picture" }).click();
+  await expect(p.getByRole("dialog")).toBeHidden();
+  await expect(p.getByRole("button", { name: "Change Agnes's picture" }).locator('img[src*="/pictures/"]')).toBeVisible();
+  await p.screenshot(shots("picture"));
   // The character's own log says when, who and what.
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
   await expect(p.getByText("bought Influences: The Elite 1 for Agnes (1 XP).", { exact: false })).toBeVisible();
@@ -186,6 +201,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
   const agnesRow = lead.page.getByRole("listitem").filter({ has: lead.page.getByRole("link", { name: "Agnes", exact: true }) });
   await expect(agnesRow.getByText(/ · (Neonate|Ancilla|Elder)$/)).toBeVisible();
+  await expect(agnesRow.locator('img[src*="/pictures/"]')).toBeVisible();
   await lead.page.screenshot(shots("roster"));
   await lead.page.getByRole("button", { name: "Award XP to Agnes" }).click();
   await lead.page.getByLabel("XP for Agnes").fill("10");

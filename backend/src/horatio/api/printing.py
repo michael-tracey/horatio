@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import sheets, titles
+from horatio import pictures, sheets, titles
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, SheetVersion, TraitCategory, TraitDefinition, Troupe, User
 from horatio.permissions import visible_character
@@ -38,6 +38,8 @@ class PrintedSheet(BaseModel):
     troupe_name: str | None
     # Titles held in that troupe.
     titles: list[str]
+    # The character's picture (horatio.pictures), small in the header, or None.
+    picture: str | None
     kind: str  # pc | npc
     # Whether `troupe_name` is the home troupe, and when and by whom it accepted the character.
     home: bool
@@ -125,4 +127,5 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         accepted_at=version.approved_at if version else None,
         accepted_by=db.get_one(User, version.approved_by).display_name if version else None,
         traits=traits,
+        picture=pictures.picture_url(character.id, character.picture_id),
     )

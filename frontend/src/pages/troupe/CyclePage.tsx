@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CycleOut, ParticipantOut, QuestionIn, WorkItemOut } from "../../api/types";
+import { Avatar } from "../../components/Avatar";
 import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
@@ -326,7 +327,8 @@ function ParticipantCard({ cycle, participant }: { cycle: CycleOut; participant:
   return (
     <Card
       title={
-        <Link to={`/characters/${participant.character_id}`} className="hover:underline">
+        <Link to={`/characters/${participant.character_id}`} className="inline-flex items-center gap-2 hover:underline">
+          <Avatar name={participant.character_name} picture={participant.picture} clan={participant.clan} size="xs" />
           {participant.character_name}
         </Link>
       }

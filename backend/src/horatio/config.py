@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Where database backups are kept (horatio.backups): the nightly ones and those
     # the custodian makes. Unset, the custodian's Backups page says they are not set up.
     backup_dir: str | None = None
+    # Where uploaded pictures are kept (horatio.pictures): characters' pictures and
+    # clan logos. Unset, nothing can be uploaded and every picture is a placeholder.
+    upload_dir: str | None = None
     # The build running, baked into the image by deploy/deploy.sh: the git commit
     # (with "-dirty" if uncommitted changes went in) and when it was built.
     commit: str | None = None
