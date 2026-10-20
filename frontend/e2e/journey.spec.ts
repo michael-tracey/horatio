@@ -29,6 +29,8 @@ function makeCustodian(email: string) {
 }
 
 test("a troupe's month, from new character to downtime results", async ({ browser }) => {
+  // The longest journey: it runs close to the usual minute.
+  test.slow();
   const custodian = await person(browser, "custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "lead");
