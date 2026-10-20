@@ -271,11 +271,17 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   const badges = await badgeTab;
   const badge = badges.getByRole("article", { name: "Badge for Agnes" });
   await expect(badge.getByText("Brujah · Neonate")).toBeVisible();
-  await expect(badge.getByRole("list", { name: "What others can see" })).toHaveText("Smells faintly of brine");
+  const band = badge.getByRole("list", { name: "What others can see" });
+  await expect(band).toHaveText("Smells faintly of brine");
   await expect(badge.getByRole("img", { name: "Brujah logo" })).toBeVisible();
   await expect(badge.locator('img[src$="/portrait.jpg"]')).toBeVisible();
+  // White, the troupe's name on the bottom line, the visible traits centred in their band.
+  await expect(badge).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(badge.getByText(troupeName)).toBeVisible();
+  await expect(band).toHaveCSS("text-align", "center");
+  await expect(band).toHaveCSS("justify-content", "center");
   await badges.screenshot(shots("badges"));
-  await badges.getByLabel("Printer-friendly").check();
+  await badges.getByLabel("Black and white").check();
   await badges.screenshot(shots("badges-plain"));
   if (test.info().project.name === "desktop") {
     await badges.emulateMedia({ media: "print" });
@@ -287,6 +293,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   const staffBadges = await staffTab;
   await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText("Lead Storyteller")).toBeVisible();
   await expect(staffBadges.getByRole("article", { name: "Badge for narrator" }).getByText("Narrator", { exact: true })).toBeVisible();
+  await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText(troupeName)).toBeVisible();
   await staffBadges.screenshot(shots("staff-badges"));
   await staffBadges.close();
   await lead.page.getByRole("link", { name: "Troupe", exact: true }).click();
