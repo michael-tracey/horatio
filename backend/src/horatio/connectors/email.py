@@ -12,6 +12,9 @@ A temporary refusal (a 4xx reply, a dropped connection) is retried; a
 permanent one (a 5xx reply, such as an unknown address) fails with the
 server's reason for storytellers to follow up. Bounces reported later by the
 receiving server are not tracked yet.
+
+The same service sends password reset links (horatio.auth.resets), straight to
+the account's address.
 """
 
 import contextlib
@@ -110,13 +113,30 @@ def to_text(message: Message) -> str:
     return f"{message.text}\n\nRead it in Horatio: {message.link}\n\n-- \n{footer}\n"
 
 
+def configured() -> bool:
+    """Whether the server has the SMTP settings Horatio needs to send email."""
+    settings = get_settings()
+    return bool(settings.smtp_host and settings.mail_from)
+
+
+def new_message(to: str, subject: str) -> EmailMessage:
+    """A message from Horatio's own address, ready for its content."""
+    sender = get_settings().mail_from or ""
+    mail = EmailMessage()
+    mail["From"] = sender
+    mail["To"] = to
+    mail["Subject"] = subject
+    domain = parseaddr(sender)[1].partition("@")[2] or None
+    mail["Message-ID"] = make_msgid(domain=domain)
+    return mail
+
+
 class EmailConnector(Connector):
     kind = "email"
     name = "Email"
 
     def unavailable(self) -> str | None:
-        settings = get_settings()
-        if settings.smtp_host and settings.mail_from:
+        if configured():
             return None
         return (
             "Email is not set up on this server. It needs HORATIO_SMTP_HOST and HORATIO_MAIL_FROM."
@@ -138,37 +158,36 @@ class EmailConnector(Connector):
         return formataddr((recipient.player_name, recipient.player_email))
 
     def send(self, settings: Mapping[str, Any], target: str, message: Message) -> dict[str, Any]:
-        sender = get_settings().mail_from or ""
-        mail = EmailMessage()
-        mail["From"] = sender
-        mail["To"] = target
+        mail = new_message(target, message.subject)
         if settings.get("reply_to"):
             mail["Reply-To"] = formataddr((f"{message.troupe} storytellers", settings["reply_to"]))
-        mail["Subject"] = message.subject
-        domain = parseaddr(sender)[1].partition("@")[2] or None
-        mail["Message-ID"] = make_msgid(domain=domain)
         mail.set_content(to_text(message))
         mail.add_alternative(to_html(message), subtype="html")
-        try:
-            smtp = smtp_factory()
-            try:
-                refused = smtp.send_message(mail)
-            finally:
-                with contextlib.suppress(smtplib.SMTPException):
-                    smtp.quit()
-        except smtplib.SMTPAuthenticationError as error:
-            raise SendError("The mail server refused Horatio's sign-in.", retry=False) from error
-        except smtplib.SMTPRecipientsRefused as error:
-            code, reason = next(iter(error.recipients.values()))
-            raise refusal(code, reason) from error
-        except smtplib.SMTPResponseException as error:
-            raise refusal(error.smtp_code, error.smtp_error) from error
-        except (smtplib.SMTPException, OSError) as error:
-            raise SendError(f"Could not reach the mail server: {error}", retry=True) from error
-        if refused:
-            code, reason = next(iter(refused.values()))
-            raise refusal(code, reason)
+        deliver(mail)
         return {"message_id": mail["Message-ID"]}
+
+
+def deliver(mail: EmailMessage) -> None:
+    """Hand one message to the mail server, or raise SendError saying why not."""
+    try:
+        smtp = smtp_factory()
+        try:
+            refused = smtp.send_message(mail)
+        finally:
+            with contextlib.suppress(smtplib.SMTPException):
+                smtp.quit()
+    except smtplib.SMTPAuthenticationError as error:
+        raise SendError("The mail server refused Horatio's sign-in.", retry=False) from error
+    except smtplib.SMTPRecipientsRefused as error:
+        code, reason = next(iter(error.recipients.values()))
+        raise refusal(code, reason) from error
+    except smtplib.SMTPResponseException as error:
+        raise refusal(error.smtp_code, error.smtp_error) from error
+    except (smtplib.SMTPException, OSError) as error:
+        raise SendError(f"Could not reach the mail server: {error}", retry=True) from error
+    if refused:
+        code, reason = next(iter(refused.values()))
+        raise refusal(code, reason)
 
 
 def refusal(code: int, reason: bytes | str) -> SendError:

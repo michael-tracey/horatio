@@ -193,11 +193,14 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Accepted, Agnes keeps only 5 of her unspent creation XP. Her storytellers award her some.
   await lead.page.getByRole("link", { name: "People", exact: true }).click();
   await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
-  await lead.page.getByRole("button", { name: "Award XP" }).click();
+  const agnesRow = lead.page.getByRole("listitem").filter({ has: lead.page.getByRole("link", { name: "Agnes", exact: true }) });
+  await expect(agnesRow.getByText(/ · (Neonate|Ancilla|Elder)$/)).toBeVisible();
+  await lead.page.screenshot(shots("roster"));
+  await lead.page.getByRole("button", { name: "Award XP to Agnes" }).click();
   await lead.page.getByLabel("XP for Agnes").fill("10");
   await lead.page.getByLabel("Reason for Agnes's XP").fill("First game");
   await lead.page.getByRole("button", { name: "Award", exact: true }).click();
-  await expect(lead.page.getByRole("button", { name: "Award XP" })).toBeVisible();
+  await expect(lead.page.getByRole("dialog")).toBeHidden();
 
   // A game's XP for everyone at once, starting at the troupe's usual 8.
   await lead.page.locator("main").getByRole("link", { name: "Award XP", exact: true }).click();
@@ -485,6 +488,14 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByText("21 XP")).toBeVisible(); // focuses are free
   await p.getByRole("button", { name: "Leadership 3", exact: true }).click(); // 1 + 2 + 3
   await expect(p.getByText("27 XP")).toBeVisible();
+  // Morality is one path at one rating: moving to a Path keeps the rating, free.
+  await expect(p.getByLabel("Morality", { exact: true })).toHaveValue("Humanity");
+  await p.getByRole("button", { name: "Humanity 4", exact: true }).click();
+  await expect(p.getByRole("button", { name: "Humanity 4", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Morality", { exact: true }).selectOption("Caine");
+  await expect(p.getByRole("button", { name: "Caine 4", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByRole("button", { name: /^Humanity \d+$/ })).toHaveCount(0);
+  await expect(p.getByText("27 XP")).toBeVisible();
   await p.screenshot(shots("npc"));
 
   // Titles are given on the troupe's Characters tab.
@@ -492,9 +503,12 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("link", { name: troupeName }).click();
   await p.getByRole("link", { name: "People", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
-  await p.getByLabel("Give Prince Vasquez a title").fill("Prince");
-  await p.getByLabel("Give Prince Vasquez a title").press("Enter");
-  await expect(p.locator("main").getByText("Prince", { exact: true })).toBeVisible();
+  await p.getByRole("button", { name: "Give Prince Vasquez a title" }).click();
+  await p.getByRole("dialog").getByLabel("Title").fill("Prince");
+  await p.screenshot(shots("give-title"));
+  await p.getByRole("dialog").getByLabel("Title").press("Enter");
+  await expect(p.getByRole("button", { name: "Take the title Prince from Prince Vasquez" })).toBeVisible();
+  await p.screenshot(shots("roster-titles"));
   await p.getByRole("link", { name: "Troupe", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
   await expect(p.getByText("npc-lead gave Prince Vasquez the title Prince.")).toBeVisible();
@@ -533,12 +547,32 @@ test("a player fills in their profile, and the custodian resets their password",
   await p.getByRole("button", { name: "Save profile" }).click();
   await expect(p.getByText("Saved.")).toBeVisible();
 
-  // The custodian finds them and sees the profile.
+  // The custodian finds them in Custodian → People and makes a reset link without
+  // leaving the list. Email is off in this suite, so the link is there to copy.
   const c = custodian.page;
   await c.reload();
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
+  const row = c.locator("main li").filter({ hasText: player.email });
+  await row.getByRole("button", { name: "Reset password for people-player" }).click();
+  await expect(row.getByText("Send it to them yourself.")).toBeVisible();
+  await row.getByRole("button", { name: "Make a reset link" }).click();
+  const cancelled = await c.getByLabel("Reset link").inputValue();
+  expect(cancelled).toContain("/reset-password/");
+  await expect(row.getByText(/^people-player has a reset link, unused, until /)).toBeVisible();
+  await expect(row.getByText("reset link out")).toBeVisible();
+  const resets = c.locator("section", { has: c.getByRole("heading", { name: "Password resets" }) });
+  await expect(resets.getByRole("button", { name: "Cancel people-player's reset link" }).first()).toBeVisible();
+  await expect(resets.getByText("people-custodian made a password reset link for people-player.").first()).toBeVisible();
+  await c.screenshot(shots("people-reset"));
+
+  // They think better of it and cancel it.
+  await row.getByRole("button", { name: "Cancel link" }).click();
+  await expect(row.getByText("Make a link that lets people-player set a new password", { exact: false })).toBeVisible();
+  await expect(row.getByText("reset link out")).toHaveCount(0);
+
+  // They open the profile.
   await c.locator("main").getByRole("link", { name: new RegExp(player.email) }).click();
   await expect(c.getByRole("heading", { name: "people-player" })).toBeVisible();
   await expect(c.getByText(/^Member since .+\(new this month\)$/)).toBeVisible();
@@ -547,11 +581,14 @@ test("a player fills in their profile, and the custodian resets their password",
   await expect(c.getByRole("link", { name: "bsky.app/profile/carbuncle.example" })).toBeVisible();
   await c.screenshot(shots("profile"));
 
-  // …and makes a reset link, which the player uses from a fresh browser.
-  await c.getByRole("button", { name: "Reset password" }).click();
+  // …and makes a new link there, which the player uses from a fresh browser. The
+  // cancelled one no longer works.
+  await c.getByRole("button", { name: "Make a reset link" }).click();
   const url = await c.getByLabel("Reset link").inputValue();
   expect(url).toContain("/reset-password/");
   const fresh = await (await browser.newContext()).newPage();
+  await fresh.goto(new URL(cancelled).pathname);
+  await expect(fresh.getByText("This reset link has expired or been used.")).toBeVisible();
   await fresh.goto(new URL(url).pathname);
   await expect(fresh.getByText(`For people-player (${player.email})`)).toBeVisible();
   await fresh.getByLabel("New password").fill("a brand new password");
@@ -563,6 +600,19 @@ test("a player fills in their profile, and the custodian resets their password",
   await expect(p.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await p.goto(new URL(url).pathname);
   await expect(p.getByText("This reset link has expired or been used.")).toBeVisible();
+  await p.screenshot(shots("reset-spent"));
+
+  // "Forgot your password?" needs email; without it, the page says to ask the custodian.
+  await p.getByRole("link", { name: "Back to sign in" }).click();
+  await p.getByRole("link", { name: "Forgot your password?" }).click();
+  await expect(p.getByText("Horatio can't send email here, so ask the custodian to make you a reset link.")).toBeVisible();
+  await p.screenshot(shots("forgot"));
+
+  // The custodian sees who reset their password, and when.
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await expect(c.getByText("people-player set a new password with a reset link.").first()).toBeVisible();
+  await expect(c.getByText("people-custodian cancelled people-player's reset link.").first()).toBeVisible();
+  await c.screenshot(shots("password-resets"));
 });
 
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
-import { Button, Card, ErrorText, Field, Input, Loading } from "../components/ui";
+import { Button, Card, ErrorText, Field, Input, Loading, Notice } from "../components/ui";
 import { useAction, useMe } from "../hooks";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
@@ -39,6 +39,9 @@ export function SignInPage() {
         <Field label="Password">
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
+        <Link to="/forgot-password" className="-mt-2 self-end text-sm text-gold underline">
+          Forgot your password?
+        </Link>
         <ErrorText error={signIn.error} />
         <Button type="submit" disabled={signIn.isPending}>
           Sign in
@@ -96,7 +99,63 @@ export function SignUpPage() {
   );
 }
 
-/** Where the custodian's reset link lands: set a new password and be signed in. */
+/** Ask for a reset link by email. The answer is the same whether or not an account
+ * uses the address. Without email on the server, it says to ask the custodian. */
+export function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState<string | null>(null);
+  const help = useQuery({ queryKey: ["forgot"], queryFn: () => unwrap(api.GET("/api/auth/forgot")) });
+  const ask = useAction(async () => {
+    setSent((await unwrap(api.POST("/api/auth/forgot", { body: { email } }))).message);
+  });
+  const back = (
+    <Link to="/sign-in" className="text-center text-sm text-gold underline">
+      Back to sign in
+    </Link>
+  );
+
+  return (
+    <Shell title="Forgot your password?">
+      {help.isPending ? (
+        <Loading />
+      ) : help.error ? (
+        <ErrorText error={help.error} />
+      ) : !help.data.can_email ? (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">Horatio can't send email here, so ask the custodian to make you a reset link.</p>
+          {back}
+        </div>
+      ) : sent ? (
+        <div className="flex flex-col gap-4">
+          <Notice>{sent}</Notice>
+          <p className="text-sm text-mist">Nothing after a few minutes? Check your spam folder, or ask the custodian.</p>
+          {back}
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            ask.mutate(undefined);
+          }}
+          className="flex flex-col gap-4"
+        >
+          <p className="text-sm text-mist">Give the address you sign in with, and Horatio will email you a link to set a new password.</p>
+          <Field label="Email">
+            <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          </Field>
+          <ErrorText error={ask.error} />
+          <Button type="submit" disabled={ask.isPending}>
+            Email me a link
+          </Button>
+          {back}
+        </form>
+      )}
+    </Shell>
+  );
+}
+
+/** Where a reset link lands, the custodian's or one asked for by email: set a new
+ * password and be signed in. */
 export function ResetPasswordPage() {
   const { token = "" } = useParams();
   const navigate = useNavigate();
@@ -118,6 +177,9 @@ export function ResetPasswordPage() {
       ) : reset.error ? (
         <div className="flex flex-col gap-4">
           <ErrorText error={reset.error} />
+          <Link to="/forgot-password" className="text-center text-sm text-gold underline">
+            Ask for a new link
+          </Link>
           <Link to="/sign-in" className="text-center text-sm text-gold underline">
             Back to sign in
           </Link>
