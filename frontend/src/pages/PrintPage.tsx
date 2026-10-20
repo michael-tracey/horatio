@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet } from "../api/types";
+import { HEALTH_RULE, healthRows } from "../health";
 
 type Trait = PrintedSheet["traits"][number];
 
@@ -112,9 +113,9 @@ function Dots({ value, of = 5 }: { value: number; of?: number }) {
 }
 
 /** Boxes to tick in play: blood, willpower, health. */
-function Boxes({ count, numbered = false }: { count: number; numbered?: boolean }) {
+function Boxes({ count, numbered = false, label, className = "" }: { count: number; numbered?: boolean; label?: string; className?: string }) {
   return (
-    <span className="inline-flex flex-wrap gap-0.5">
+    <span className={`inline-flex flex-wrap gap-0.5 ${className}`} role={label ? "img" : undefined} aria-label={label}>
       {Array.from({ length: count }, (_, i) => (
         <span key={i} className="grid h-4 w-4 place-items-center border border-black text-[8px] leading-none">
           {numbered ? i + 1 : ""}
@@ -277,14 +278,13 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
 
       <div className="grid grid-cols-3 gap-4">
         <Section title="Health Levels">
+          <p className="mb-1 text-center text-[10px]">{HEALTH_RULE}</p>
           <ul className="text-[12px] leading-6">
-            {by(t, "health_levels")
-              .sort((a, b) => ["Healthy", "Injured", "Incapacitated"].indexOf(a.name) - ["Healthy", "Injured", "Incapacitated"].indexOf(b.name))
-              .map((h) => (
-                <li key={h.name} className="flex items-center justify-between">
-                  {h.name} <Boxes count={h.rating ?? 0} />
-                </li>
-              ))}
+            {healthRows(t).map((h) => (
+              <li key={h.name} className="flex flex-wrap items-center justify-between gap-x-2">
+                {h.name} <Boxes count={h.boxes} className="ml-auto justify-end" label={`${h.name}: ${h.boxes} boxes`} />
+              </li>
+            ))}
           </ul>
         </Section>
         <Section title="Status">
