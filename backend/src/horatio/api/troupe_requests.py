@@ -122,6 +122,7 @@ def ask(body: NewTroupeRequest, db: DbSession, user: CurrentUser) -> TroupeReque
     db.add(request)
     db.flush()
     audit.record(db, user, "troupe_request.made", name=name)
+    notifications.troupe_request_waiting(db, request, user)
     db.commit()
     return _one(db, request.id)
 

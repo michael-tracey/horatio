@@ -1674,6 +1674,26 @@ export interface paths {
         patch: operations["change_preferences_api_preferences_patch"];
         trace?: never;
     };
+    "/api/preferences/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Email Help
+         * @description Whether notifications can come by email here (horatio.notification_emails).
+         */
+        get: operations["email_help_api_preferences_email_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/profile": {
         parameters: {
             query?: never;
@@ -2634,6 +2654,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/unsubscribe/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unsubscribe For
+         * @description What an unsubscribe link stops, so the page can ask first.
+         */
+        get: operations["unsubscribe_for_api_unsubscribe__token__get"];
+        put?: never;
+        /**
+         * Unsubscribe
+         * @description Stop the emails the link is about. The bell still shows them.
+         */
+        post: operations["unsubscribe_api_unsubscribe__token__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3507,6 +3551,11 @@ export interface components {
             /** Guild Name */
             guild_name: string | null;
         };
+        /** EmailHelp */
+        EmailHelp: {
+            /** Available */
+            available: boolean;
+        };
         /** ExpendableOut */
         ExpendableOut: {
             /** Counter Id */
@@ -4324,6 +4373,37 @@ export interface components {
              * @enum {string}
              */
             date_format: "day_month" | "month_day" | "iso";
+            /**
+             * Email Approvals
+             * @default false
+             */
+            email_approvals: boolean;
+            /**
+             * Email Digest
+             * @default at_once
+             * @enum {string}
+             */
+            email_digest: "at_once" | "daily";
+            /**
+             * Email Downtime
+             * @default false
+             */
+            email_downtime: boolean;
+            /**
+             * Email Pictures
+             * @default false
+             */
+            email_pictures: boolean;
+            /**
+             * Email Renames
+             * @default false
+             */
+            email_renames: boolean;
+            /**
+             * Email Troupe Requests
+             * @default false
+             */
+            email_troupe_requests: boolean;
             /**
              * Keep Awake
              * @default false
@@ -5318,6 +5398,17 @@ export interface components {
             detail: string;
             /** Name */
             name: string;
+        };
+        /** Unsubscribe */
+        Unsubscribe: {
+            /** About */
+            about: string;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /** Subscribed */
+            subscribed: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -8689,6 +8780,26 @@ export interface operations {
             };
         };
     };
+    email_help_api_preferences_email_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailHelp"];
+                };
+            };
+        };
+    };
     edit_profile_api_profile_put: {
         parameters: {
             query?: never;
@@ -10816,6 +10927,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkAwarded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_for_api_unsubscribe__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unsubscribe"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_api_unsubscribe__token__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unsubscribe"];
                 };
             };
             /** @description Validation Error */

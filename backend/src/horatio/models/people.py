@@ -34,6 +34,9 @@ class User(Imported, Record):
     # Their settings (horatio.preferences): only those they have changed, so a
     # default can change later for everyone who kept it.
     preferences: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Signs the unsubscribe links in their notification emails
+    # (horatio.notification_emails). A new key cancels every link sent so far.
+    unsubscribe_key: Mapped[uuid.UUID] = mapped_column(server_default=text("gen_random_uuid()"))
 
 
 class AuthIdentity(Record):

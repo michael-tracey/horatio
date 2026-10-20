@@ -5,7 +5,7 @@ them from one device to another.
 settings someone has changed (`users.preferences`), so changing a default here
 changes it for everyone who kept it. The tickets that follow #100 each give a
 setting its effect: #101 ratings, #102 time zone and dates, #104 paper and
-badge size, #105 the Play View, #107 text size.
+badge size, #105 the Play View, #106 notifications by email, #107 text size.
 """
 
 from typing import Any, Literal
@@ -37,6 +37,15 @@ class Preferences(BaseModel):
     play_tab: Literal["tracker", "sheet", "pools"] = "tracker"
     # Normal or larger text, everywhere but on paper (#107).
     text_size: Literal["normal", "large"] = "normal"
+    # Which notifications also come by email, not only to the bell: each is off
+    # until the person turns it on (#106, horatio.notification_emails.TOPICS).
+    email_downtime: bool = False
+    email_approvals: bool = False
+    email_troupe_requests: bool = False
+    email_renames: bool = False
+    email_pictures: bool = False
+    # Each email as it happens, or everything gathered into one a day.
+    email_digest: Literal["at_once", "daily"] = "at_once"
 
     @field_validator("time_zone")
     @classmethod

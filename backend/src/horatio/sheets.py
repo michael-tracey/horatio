@@ -24,7 +24,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, notifications
 from horatio.models import (
     Approval,
     Character,
@@ -692,6 +692,7 @@ def hold_for_review(
         name=subject.name,
         rating=after,
     )
+    notifications.approval_waiting(db, approval)
 
 
 def creation_only_traits(db: Session, character: Character) -> dict[TraitKey, int | None]:
@@ -1124,6 +1125,7 @@ def set_trait(
             name=name,
             rating=rating,
         )
+        notifications.approval_waiting(db, approval)
     return Change(quote=quote, trait=trait)
 
 
