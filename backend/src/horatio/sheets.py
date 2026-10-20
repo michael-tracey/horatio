@@ -500,9 +500,18 @@ def sheet_effects(db: Session, character: Character) -> Effects:
     return effects(rule_set.grants, sheet, rule_set)
 
 
-def convert(db: Session, character: Character, rules: TroupeRules, found: Effects) -> None:
+def convert(
+    db: Session,
+    character: Character,
+    rules: TroupeRules,
+    found: Effects,
+    before: Mapping[tuple[str, str], str] | None = None,
+) -> None:
     """Bring conversions into line: a held Path merit turns Humanity into that
-    Path, keeping its dots; without the merit the Path turns back into Humanity."""
+    Path, keeping its dots; without the merit the Path turns back into Humanity.
+    Given what the grants wanted `before` a change (to an NPC, whose staff can
+    choose its Path directly), only a conversion the change altered is made, and
+    losing a merit turns back only the Path that merit gave."""
     targets = {
         (g.convert_from["category"], g.convert_from["name"]): set()
         for g in rules.rule_set.grants
@@ -524,17 +533,26 @@ def convert(db: Session, character: Character, rules: TroupeRules, found: Effect
         )
         if current is None or current.definition.name == wanted:
             continue
+        if before is not None:
+            was = before.get((category, origin), origin)
+            if wanted == was or (wanted == origin and current.definition.name != was):
+                continue
         definition, _ = find_definition(db, character, category, wanted)
         current.trait.trait_definition_id = definition.id
     db.flush()
 
 
-def apply_grants(db: Session, user: User, character: Character) -> None:
+def apply_grants(
+    db: Session,
+    user: User,
+    character: Character,
+    converts_before: Mapping[tuple[str, str], str] | None = None,
+) -> None:
     """Bring every granted trait into line with the grants the sheet now holds:
     add what new grants give, take back what lost grants gave (nothing refunded,
     MET: VTM p. 236), and refund dots a `free_up_to` grant now makes free."""
     rules = rules_for(db, character)
-    convert(db, character, rules, sheet_effects(db, character))
+    convert(db, character, rules, sheet_effects(db, character), converts_before)
     found = sheet_effects(db, character)
     wanted: dict[TraitKey, tuple[int, int]] = {
         key: (amount, 0) for key, amount in found.added.items()
@@ -702,6 +720,9 @@ def checked(db: Session, character: Character, user: User | None = None) -> Iter
     fixed_before = creation_only_traits(db, character)
     ratings_before = {r.key: r.trait.rating or 0 for r in sheet_rows(db, character)}
     xp_before = set(db.scalars(select(XpEntry.id).where(XpEntry.character_id == character.id)))
+    # An NPC's Path may be chosen directly, so only the conversions a change
+    # alters are made.
+    converts_before = sheet_effects(db, character).converts if character.kind != "pc" else None
     savepoint = db.begin_nested()
     try:
         yield
@@ -710,7 +731,7 @@ def checked(db: Session, character: Character, user: User | None = None) -> Iter
         savepoint.rollback()
         raise
     if user is not None:
-        apply_grants(db, user, character)
+        apply_grants(db, user, character, converts_before)
     if character.kind != "pc":
         savepoint.commit()
         return

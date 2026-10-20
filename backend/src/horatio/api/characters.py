@@ -1,12 +1,13 @@
 import uuid
 from collections.abc import Iterable
+from datetime import date
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import deletion, pictures, social_age
+from horatio import deletion, pictures, renames, social_age
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
 from horatio.models import Character, RuleSet, Troupe
@@ -29,6 +30,8 @@ class CharacterOut(BaseModel):
     kind: str  # pc | npc
     # The troupe an NPC belongs to.
     owner_troupe_id: uuid.UUID | None
+    # The first day its player can rename it again; None if they can now.
+    next_rename_on: date | None
     # Where its picture is (add "/48.webp" and so on; see horatio.pictures), or None.
     picture: str | None
     # For the placeholder shown without a picture: initials on the clan's colour.
@@ -71,6 +74,7 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
             owner_troupe_id=character.owner_troupe_id,
             picture=pictures.picture_url(character.id, character.picture_id),
             clan=standing[character.id].clan,
+            next_rename_on=renames.next_rename_on(db, character),
         )
         for character in found
     ]
@@ -124,8 +128,12 @@ def read_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
 def change_character(
     character_id: uuid.UUID, body: CharacterChanges, db: DbSession, user: CurrentUser
 ) -> CharacterOut:
-    character = editable_character(db, user, character_id)
-    character.name = body.name
+    """Rename the character: its player, at most once every three months while it is
+    in a troupe, or the custodian at any time (see horatio/renames.py)."""
+    character = visible_character(db, user, character_id)
+    if not user.is_custodian:
+        character = editable_character(db, user, character_id)
+    renames.rename(db, user, lock_character(db, character.id), body.name)
     db.commit()
     return character_out(db, character)
 

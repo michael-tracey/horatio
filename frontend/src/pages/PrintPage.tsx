@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet } from "../api/types";
+import { HEALTH_RULE, healthRows } from "../health";
+import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 
 type Trait = PrintedSheet["traits"][number];
 
@@ -94,6 +96,7 @@ function rating(traits: Trait[], category: string, name: string): number {
 }
 
 function label(t: Trait) {
+  if (t.specializes) return specialtyName(t);
   return t.detail ? `${t.name}: ${t.detail}` : t.name;
 }
 
@@ -112,9 +115,9 @@ function Dots({ value, of = 5 }: { value: number; of?: number }) {
 }
 
 /** Boxes to tick in play: blood, willpower, health. */
-function Boxes({ count, numbered = false }: { count: number; numbered?: boolean }) {
+function Boxes({ count, numbered = false, label, className = "" }: { count: number; numbered?: boolean; label?: string; className?: string }) {
   return (
-    <span className="inline-flex flex-wrap gap-0.5">
+    <span className={`inline-flex flex-wrap gap-0.5 ${className}`} role={label ? "img" : undefined} aria-label={label}>
       {Array.from({ length: count }, (_, i) => (
         <span key={i} className="grid h-4 w-4 place-items-center border border-black text-[8px] leading-none">
           {numbered ? i + 1 : ""}
@@ -133,19 +136,39 @@ function Section({ title, children, className = "" }: { title: string; children:
   );
 }
 
-function TraitList({ traits, empty = 3 }: { traits: Trait[]; empty?: number }) {
+/**
+ * Traits with their dots, a skill or background's specialisations in brackets
+ * after it: on its line when they fit, else on a smaller line under it.
+ */
+function TraitList({
+  traits,
+  empty = 3,
+  specialties = () => [],
+}: {
+  traits: Trait[];
+  empty?: number;
+  specialties?: (t: Trait) => string[];
+}) {
   const blanks = Math.max(0, empty - traits.length);
   return (
     <ul className="text-[11px] leading-5">
-      {traits.map((t) => (
-        <li key={`${t.category}/${t.name}/${t.detail}`} className="flex items-baseline justify-between gap-2 border-b border-dotted border-neutral-400">
-          <span>
-            {label(t)}
-            {t.pending_from !== null && <em className="ml-1 text-neutral-500">(awaiting approval from {t.pending_from})</em>}
-          </span>
-          {t.rating !== null && <Dots value={t.rating} />}
-        </li>
-      ))}
+      {traits.map((t) => {
+        const brackets = bracketed(specialties(t));
+        const inline = fitsInline(label(t), brackets);
+        return (
+          <li key={`${t.category}/${t.name}/${t.detail}`} className="border-b border-dotted border-neutral-400">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="min-w-0">
+                {label(t)}
+                {brackets && inline && ` ${brackets}`}
+                {t.pending_from !== null && <em className="ml-1 text-neutral-500">(awaiting approval from {t.pending_from})</em>}
+              </span>
+              {t.rating !== null && t.specializes === null && <Dots value={t.rating} />}
+            </div>
+            {brackets && !inline && <p className="pb-0.5 pl-3 text-[9px] leading-3">{brackets}</p>}
+          </li>
+        );
+      })}
       {Array.from({ length: blanks }, (_, i) => (
         <li key={`blank${i}`} className="h-5 border-b border-dotted border-neutral-400" />
       ))}
@@ -179,7 +202,10 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
   const mental = rating(t, "attributes", "Mental");
   const skills = by(t, "skills").sort((a, b) => a.name.localeCompare(b.name));
   const third = Math.ceil(skills.length / 3);
-  const others = t.filter((x) => !SHOWN_ELSEWHERE.has(x.category));
+  // Specialisations print after their skill or background; only any whose parent
+  // is missing keep a section of their own.
+  const specialties = specialtiesByParent(t);
+  const others = t.filter((x) => !SHOWN_ELSEWHERE.has(x.category) && (x.specializes === null || specialties.orphans.includes(x)));
   const otherGroups = new Map<string, Trait[]>();
   for (const x of others) otherGroups.set(x.category_name, [...(otherGroups.get(x.category_name) ?? []), x]);
 
@@ -239,14 +265,14 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
       <Section title="Skills">
         <div className="grid grid-cols-3 gap-x-4">
           {[0, 1, 2].map((col) => (
-            <TraitList key={col} traits={skills.slice(col * third, (col + 1) * third)} empty={col === 2 ? 2 : 0} />
+            <TraitList key={col} traits={skills.slice(col * third, (col + 1) * third)} empty={col === 2 ? 2 : 0} specialties={specialties.of} />
           ))}
         </div>
       </Section>
 
       <div className="grid grid-cols-3 gap-4">
         <Section title="Backgrounds">
-          <TraitList traits={by(t, "backgrounds")} empty={4} />
+          <TraitList traits={by(t, "backgrounds")} empty={4} specialties={specialties.of} />
         </Section>
         <Section title="Disciplines">
           <TraitList traits={by(t, "disciplines")} empty={4} />
@@ -280,14 +306,13 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
 
       <div className="grid grid-cols-3 gap-4">
         <Section title="Health Levels">
+          <p className="mb-1 text-center text-[10px]">{HEALTH_RULE}</p>
           <ul className="text-[12px] leading-6">
-            {by(t, "health_levels")
-              .sort((a, b) => ["Healthy", "Injured", "Incapacitated"].indexOf(a.name) - ["Healthy", "Injured", "Incapacitated"].indexOf(b.name))
-              .map((h) => (
-                <li key={h.name} className="flex items-center justify-between">
-                  {h.name} <Boxes count={h.rating ?? 0} />
-                </li>
-              ))}
+            {healthRows(t).map((h) => (
+              <li key={h.name} className="flex flex-wrap items-center justify-between gap-x-2">
+                {h.name} <Boxes count={h.boxes} className="ml-auto justify-end" label={`${h.name}: ${h.boxes} boxes`} />
+              </li>
+            ))}
           </ul>
         </Section>
         <Section title="Status">

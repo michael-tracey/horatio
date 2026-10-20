@@ -247,7 +247,7 @@ def test_a_link_expires_after_a_day(
 
     response = client_for().post("/auth/reset", json={"token": token, "password": "too late now"})
     assert response.status_code == 404
-    assert "Ask the custodian for a new one" in response.json()["detail"]
+    assert "Ask for a new one" in response.json()["detail"]
 
 
 def test_a_reset_gives_a_discord_only_account_a_password(
