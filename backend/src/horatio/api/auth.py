@@ -1,15 +1,18 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
-from horatio.auth.resets import use_reset, user_for_reset
+from horatio.auth.resets import email_reset, limited, request_reset, use_reset, user_for_reset
 from horatio.auth.sessions import end_session, start_session
 from horatio.config import get_settings
+from horatio.connectors import email
+from horatio.db import get_sessionmaker
 from horatio.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -29,6 +32,19 @@ class SignIn(BaseModel):
 class NewPassword(BaseModel):
     token: str
     password: str = Field(min_length=MIN_PASSWORD_LENGTH)
+
+
+class Forgot(BaseModel):
+    email: EmailStr
+
+
+class ForgotHelp(BaseModel):
+    # Whether Horatio can email reset links; without email, the custodian makes them.
+    can_email: bool
+
+
+class ForgotAnswer(BaseModel):
+    message: str
 
 
 class ResetFor(BaseModel):
@@ -119,7 +135,7 @@ def reset_user(db: DbSession, token: str) -> User:
     if user is None:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
-            "This reset link has expired or been used. Ask the custodian for a new one.",
+            "This reset link has expired or been used. Ask for a new one.",
         )
     return user
 
@@ -133,12 +149,59 @@ def reset_for(token: str, db: DbSession) -> ResetFor:
 
 @router.post("/reset")
 def reset_password(body: NewPassword, db: DbSession, response: Response) -> Me:
-    """Set a new password from the custodian's link. Ends every other session the
-    person had, and signs them in here."""
+    """Set a new password from a reset link. Ends every other session the person had,
+    and signs them in here."""
     user = reset_user(db, body.token)
     user.password_hash = hash_password(body.password)
     use_reset(db, user)
-    record(db, user, "account.password_reset")
+    record(db, user, "account.password_reset", member=user.display_name, user_id=user.id)
     set_session_cookie(response, start_session(db, user))
     db.commit()
     return me(user)
+
+
+NO_EMAIL = "Horatio can't send email here, so ask the custodian to make you a reset link."
+ON_ITS_WAY = (
+    "If an account uses that address, a reset link is on its way. "
+    "It works once, for the next 24 hours."
+)
+
+
+def background_session() -> Session:
+    """A session of its own, for work done after the response (tests swap it)."""
+    return get_sessionmaker()()
+
+
+def send_requested_reset(user_id: uuid.UUID, url: str) -> None:
+    """Email a link someone asked for. Done after answering them, so how long the
+    mail server takes never shows whether an account uses the address."""
+    with background_session() as db:
+        email_reset(db, db.get_one(User, user_id), url, by=None)
+        db.commit()
+
+
+@router.get("/forgot")
+def forgot_help() -> ForgotHelp:
+    """Whether someone who forgot their password can ask Horatio for a link."""
+    return ForgotHelp(can_email=email.configured())
+
+
+@router.post("/forgot", status_code=status.HTTP_202_ACCEPTED)
+def forgot_password(
+    body: Forgot, request: Request, db: DbSession, background: BackgroundTasks
+) -> ForgotAnswer:
+    """Email a reset link to an account's own address, if an account uses it. The
+    answer is the same either way, so it never says who has an account; so is
+    being turned away for asking too often."""
+    if not email.configured():
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, NO_EMAIL)
+    ip = request.client.host if request.client else None
+    wait = limited(db, body.email, ip)
+    if wait is not None:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, wait)
+    asked = request_reset(db, body.email, ip)
+    db.commit()
+    if asked is not None:
+        user, url = asked
+        background.add_task(send_requested_reset, user.id, url)
+    return ForgotAnswer(message=ON_ITS_WAY)

@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
-import type { PlayerOut, ResetLink } from "../api/types";
-import { Badge, Button, Card, Empty, ErrorText, Input, Loading, PageTitle } from "../components/ui";
-import { useAction, useMe } from "../hooks";
+import type { PlayerOut } from "../api/types";
+import { Badge, Card, Empty, ErrorText, Loading, PageTitle } from "../components/ui";
+import { useMe } from "../hooks";
+import { ResetPassword } from "./custodian/ResetPassword";
 import { memberSince } from "./players";
 
 /** Who a player is: anyone signed in may look. The custodian can also make a reset link here. */
@@ -43,7 +43,11 @@ export function PlayerPage() {
         </div>
         <div className="flex flex-col gap-6">
           <Contact player={p} />
-          {me.data?.is_custodian && !mine && <ResetPassword player={p} />}
+          {me.data?.is_custodian && !mine && (
+            <Card title="Password">
+              <ResetPassword player={p} />
+            </Card>
+          )}
         </div>
       </div>
     </>
@@ -99,46 +103,6 @@ function Characters({ player }: { player: PlayerOut }) {
           </li>
         ))}
       </ul>
-    </Card>
-  );
-}
-
-function ResetPassword({ player }: { player: PlayerOut }) {
-  const [link, setLink] = useState<ResetLink | null>(null);
-  const [copied, setCopied] = useState(false);
-  const make = useAction(async () => {
-    setLink(await unwrap(api.POST("/api/players/{user_id}/password-reset", { params: { path: { user_id: player.id } } })));
-    setCopied(false);
-  });
-  const copy = async () => {
-    if (!link) return;
-    await navigator.clipboard.writeText(link.url);
-    setCopied(true);
-  };
-
-  return (
-    <Card title="Password">
-      <div className="flex flex-col gap-3 text-sm">
-        <p className="text-mist">
-          Make a link that lets {player.display_name} set a new password. It works once, for a day, and replaces any earlier link. Send it to them
-          yourself.
-        </p>
-        {link && (
-          <>
-            <Input readOnly aria-label="Reset link" value={link.url} onFocus={(e) => e.target.select()} />
-            <p className="text-xs text-mist">
-              Expires {new Date(link.expires_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.
-            </p>
-            <Button type="button" variant="secondary" onClick={() => void copy()}>
-              {copied ? "Copied" : "Copy link"}
-            </Button>
-          </>
-        )}
-        <ErrorText error={make.error} />
-        <Button type="button" variant={link ? "ghost" : "secondary"} disabled={make.isPending} onClick={() => make.mutate(undefined)}>
-          {link ? "Make a new link" : "Reset password"}
-        </Button>
-      </div>
     </Card>
   );
 }

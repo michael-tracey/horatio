@@ -38,6 +38,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Forgot Help
+         * @description Whether someone who forgot their password can ask Horatio for a link.
+         */
+        get: operations["forgot_help_api_auth_forgot_get"];
+        put?: never;
+        /**
+         * Forgot Password
+         * @description Email a reset link to an account's own address, if an account uses it. The
+         *     answer is the same either way, so it never says who has an account; so is
+         *     being turned away for asking too often.
+         */
+        post: operations["forgot_password_api_auth_forgot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -100,8 +126,8 @@ export interface paths {
         put?: never;
         /**
          * Reset Password
-         * @description Set a new password from the custodian's link. Ends every other session the
-         *     person had, and signs them in here.
+         * @description Set a new password from a reset link. Ends every other session the person had,
+         *     and signs them in here.
          */
         post: operations["reset_password_api_auth_reset_post"];
         delete?: never;
@@ -1141,6 +1167,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/password-resets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Password Resets
+         * @description For the custodian: the reset links live now, and who has made, asked for and
+         *     used them.
+         */
+        get: operations["password_resets_api_password_resets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/players": {
         parameters: {
             query?: never;
@@ -1194,10 +1241,15 @@ export interface paths {
         /**
          * Reset Password
          * @description A one-time link, good for a day, that lets the player set a new password.
-         *     The custodian passes it on; it replaces any earlier link.
+         *     The custodian passes it on, or has Horatio email it to the player's address;
+         *     it replaces any earlier link.
          */
         post: operations["reset_password_api_players__user_id__password_reset_post"];
-        delete?: never;
+        /**
+         * Cancel Password Reset
+         * @description Cancel the player's live reset link, so it no longer works.
+         */
+        delete: operations["cancel_password_reset_api_players__user_id__password_reset_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2841,6 +2893,24 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** Forgot */
+        Forgot: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /** ForgotAnswer */
+        ForgotAnswer: {
+            /** Message */
+            message: string;
+        };
+        /** ForgotHelp */
+        ForgotHelp: {
+            /** Can Email */
+            can_email: boolean;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -2917,6 +2987,27 @@ export interface components {
             label: string;
             /** Url */
             url: string;
+        };
+        /** LiveReset */
+        LiveReset: {
+            /** Asked Themselves */
+            asked_themselves: boolean;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Made By */
+            made_by: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
         };
         /** LogEntry */
         LogEntry: {
@@ -3191,6 +3282,13 @@ export interface components {
             /** Submitted Late */
             submitted_late: boolean;
         };
+        /** PasswordResets */
+        PasswordResets: {
+            /** Live */
+            live: components["schemas"]["LiveReset"][];
+            /** Log */
+            log: components["schemas"]["LogEntry"][];
+        };
         /** PendingDisciplineOut */
         PendingDisciplineOut: {
             /**
@@ -3275,6 +3373,8 @@ export interface components {
              * Format: date-time
              */
             member_since: string;
+            /** Reset Expires At */
+            reset_expires_at: string | null;
         };
         /** PlayerSummary */
         PlayerSummary: {
@@ -3292,6 +3392,8 @@ export interface components {
              * Format: date-time
              */
             member_since: string;
+            /** Reset Expires At */
+            reset_expires_at: string | null;
         };
         /** PoolOut */
         PoolOut: {
@@ -3616,8 +3718,20 @@ export interface components {
             /** Email */
             email: string;
         };
+        /** ResetIn */
+        ResetIn: {
+            /**
+             * Email
+             * @default false
+             */
+            email: boolean;
+        };
         /** ResetLink */
         ResetLink: {
+            /** Email Error */
+            email_error?: string | null;
+            /** Emailed To */
+            emailed_to?: string | null;
             /**
              * Expires At
              * Format: date-time
@@ -4320,6 +4434,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApprovalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forgot_help_api_auth_forgot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForgotHelp"];
+                };
+            };
+        };
+    };
+    forgot_password_api_auth_forgot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Forgot"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForgotAnswer"];
                 };
             };
             /** @description Validation Error */
@@ -6462,6 +6629,37 @@ export interface operations {
             };
         };
     };
+    password_resets_api_password_resets_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResets"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     find_players_api_players_get: {
         parameters: {
             query?: {
@@ -6533,7 +6731,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ResetIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             201: {
@@ -6543,6 +6745,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ResetLink"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_password_reset_api_players__user_id__password_reset_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

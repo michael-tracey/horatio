@@ -1,20 +1,23 @@
 """Players' profiles: who someone is, for anyone signed in. The player edits their
-own; the custodian finds anyone, and makes a reset link for someone locked out."""
+own; the custodian finds anyone, and makes (or cancels) a reset link for someone
+locked out."""
 
 import re
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
+from sqlalchemy.orm import aliased
 
+from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.auth.resets import issue_reset
-from horatio.config import get_settings
-from horatio.models import Character, Troupe, User
+from horatio.auth.resets import cancel_reset, email_reset, issue_reset, live_reset, reset_url
+from horatio.connectors import email
+from horatio.models import AuditEvent, Character, PasswordReset, Troupe, User
 from horatio.permissions import can_view_character, require_custodian
 
 router = APIRouter(tags=["players"])
@@ -50,6 +53,8 @@ class PlayerOut(BaseModel):
     email: str | None
     # Their characters that the viewer may see.
     characters: list[PlayerCharacter]
+    # When their live reset link expires, if they have one. Only for the custodian.
+    reset_expires_at: datetime | None
 
 
 class PlayerSummary(BaseModel):
@@ -57,6 +62,8 @@ class PlayerSummary(BaseModel):
     display_name: str
     email: str
     member_since: datetime
+    # When their live reset link expires, if they have one.
+    reset_expires_at: datetime | None
 
 
 class ProfileIn(BaseModel):
@@ -66,9 +73,44 @@ class ProfileIn(BaseModel):
     discord_handle: str | None = None
 
 
+class ResetIn(BaseModel):
+    # Email the link to the player's address too.
+    email: bool = False
+
+
 class ResetLink(BaseModel):
     url: str
     expires_at: datetime
+    # Where it was emailed, or why it could not be.
+    emailed_to: str | None = None
+    email_error: str | None = None
+
+
+class LiveReset(BaseModel):
+    user_id: uuid.UUID
+    display_name: str
+    email: str
+    expires_at: datetime
+    # Who made it: the custodian's name, or the player's own if they asked for it.
+    made_by: str
+    asked_themselves: bool
+
+
+class PasswordResets(BaseModel):
+    live: list[LiveReset]
+    # Links made, emailed, asked for, cancelled and used, newest first.
+    log: list[LogEntry]
+
+
+# What the password resets log shows.
+ACCOUNT_ACTIONS = (
+    "account.reset_link",
+    "account.reset_sent",
+    "account.reset_email_failed",
+    "account.reset_requested",
+    "account.reset_cancelled",
+    "account.password_reset",
+)
 
 
 def player(db: DbSession, user_id: uuid.UUID) -> User:
@@ -99,7 +141,13 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
             for c, home in characters
             if can_view_character(db, viewer, c)
         ],
+        reset_expires_at=reset_expiry(db, user) if viewer.is_custodian else None,
     )
+
+
+def reset_expiry(db: DbSession, user: User) -> datetime | None:
+    live = live_reset(db, user)
+    return live.expires_at if live else None
 
 
 def clean_link(link: Link) -> Link:
@@ -132,11 +180,25 @@ def find_players(db: DbSession, user: CurrentUser, q: str = "") -> list[PlayerSu
     if q.strip():
         like = f"%{q.strip()}%"
         query = query.where(or_(User.display_name.ilike(like), User.email.ilike(like)))
+    found = list(db.scalars(query))
+    expiries = {
+        user_id: expires_at
+        for user_id, expires_at in db.execute(
+            select(PasswordReset.user_id, PasswordReset.expires_at).where(
+                PasswordReset.user_id.in_([u.id for u in found]),
+                PasswordReset.expires_at > datetime.now(UTC),
+            )
+        )
+    }
     return [
         PlayerSummary(
-            id=u.id, display_name=u.display_name, email=u.email, member_since=u.created_at
+            id=u.id,
+            display_name=u.display_name,
+            email=u.email,
+            member_since=u.created_at,
+            reset_expires_at=expiries.get(u.id),
         )
-        for u in db.scalars(query)
+        for u in found
     ]
 
 
@@ -172,15 +234,72 @@ def edit_profile(body: ProfileIn, db: DbSession, user: CurrentUser) -> PlayerOut
 
 
 @router.post("/players/{user_id}/password-reset", status_code=status.HTTP_201_CREATED)
-def reset_password(user_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ResetLink:
+def reset_password(
+    user_id: uuid.UUID, db: DbSession, user: CurrentUser, body: ResetIn | None = None
+) -> ResetLink:
     """A one-time link, good for a day, that lets the player set a new password.
-    The custodian passes it on; it replaces any earlier link."""
+    The custodian passes it on, or has Horatio email it to the player's address;
+    it replaces any earlier link."""
     require_custodian(user)
     target = player(db, user_id)
+    send = body is not None and body.email
+    if send and not email.configured():
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Email is not set up on this server, so copy the link and send it yourself.",
+        )
     token, expires_at = issue_reset(db, target, user)
     record(db, user, "account.reset_link", member=target.display_name, user_id=target.id)
+    link = ResetLink(url=reset_url(token), expires_at=expires_at)
+    if send:
+        link.email_error = email_reset(db, target, link.url, by=user)
+        link.emailed_to = None if link.email_error else target.email
     db.commit()
-    return ResetLink(
-        url=f"{get_settings().public_url.rstrip('/')}/reset-password/{token}",
-        expires_at=expires_at,
+    return link
+
+
+@router.delete("/players/{user_id}/password-reset", status_code=status.HTTP_204_NO_CONTENT)
+def cancel_password_reset(user_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
+    """Cancel the player's live reset link, so it no longer works."""
+    require_custodian(user)
+    target = player(db, user_id)
+    if not cancel_reset(db, target):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "There is no live reset link to cancel.")
+    record(db, user, "account.reset_cancelled", member=target.display_name, user_id=target.id)
+    db.commit()
+
+
+@router.get("/password-resets")
+def password_resets(db: DbSession, user: CurrentUser, limit: int = 50) -> PasswordResets:
+    """For the custodian: the reset links live now, and who has made, asked for and
+    used them."""
+    require_custodian(user)
+    maker = aliased(User)
+    live = db.execute(
+        select(PasswordReset, User, maker.display_name)
+        .join(User, PasswordReset.user_id == User.id)
+        .join(maker, PasswordReset.created_by_id == maker.id)
+        .where(PasswordReset.expires_at > datetime.now(UTC))
+        .order_by(PasswordReset.expires_at)
+    )
+    query = (
+        select(AuditEvent, User.display_name)
+        .outerjoin(User, AuditEvent.actor_id == User.id)
+        .where(AuditEvent.action.in_(ACCOUNT_ACTIONS))
+        .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
+        .limit(min(max(limit, 1), 500))
+    )
+    return PasswordResets(
+        live=[
+            LiveReset(
+                user_id=u.id,
+                display_name=u.display_name,
+                email=u.email,
+                expires_at=reset.expires_at,
+                made_by=made_by,
+                asked_themselves=reset.created_by_id == u.id,
+            )
+            for reset, u, made_by in live
+        ],
+        log=log_entries(db, query),
     )
