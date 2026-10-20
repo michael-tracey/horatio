@@ -137,6 +137,8 @@ export function SheetTab({
   const creation = useCreation(character);
   const [message, setMessage] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
+  // The trait last raised, lowered or swapped: what came of it shows under its row.
+  const [lastTrait, setLastTrait] = useState<string | null>(null);
   const kinds = useSpecializations(character.id);
 
   const swap = useAction(
@@ -171,6 +173,8 @@ export function SheetTab({
   if (sheet.isPending) return <Loading />;
   if (sheet.error) return <ErrorText error={sheet.error} />;
   const s = sheet.data;
+  const failed = change.error ?? swap.error;
+  const outcome = failed ? <ErrorText error={failed} /> : message ? <Notice>{message}</Notice> : null;
   // Only a home troupe request locks the sheet: its differences must stay as they are.
   const movingHome = s.pending_approvals.some(
     (a) => a.kind === "home_troupe_change",
@@ -302,7 +306,10 @@ export function SheetTab({
                   catalogue={catalogue.data}
                   categories={addable.get(group) ?? []}
                   held={s.traits}
-                  onDone={setMessage}
+                  onDone={(done) => {
+                    setLastTrait(null);
+                    setMessage(done);
+                  }}
                   onClose={() => setAdding(null)}
                 />
               )}
@@ -331,27 +338,34 @@ export function SheetTab({
                           trait={t}
                           locked={locked || derived.has(t.category)}
                           points={pointsOf(t)}
-                          onChange={(rating) =>
+                          onChange={(rating) => {
+                            setLastTrait(t.id);
                             change.mutate({
                               category: t.category,
                               name: t.name,
                               detail: t.detail,
                               rating,
-                            })
-                          }
+                            });
+                          }}
                           swap={
                             character.creation_complete && catalogue.data
                               ? swapOptions(t, s.traits, catalogue.data)
                               : null
                           }
-                          onSwap={(to) =>
+                          onSwap={(to) => {
+                            setLastTrait(t.id);
                             swap.mutate({
                               category: t.category,
                               from_name: t.name,
                               to_name: to,
-                            })
-                          }
+                            });
+                          }}
                         />,
+                        lastTrait === t.id && (
+                          <li key={`${t.id}/outcome`} className="pb-1">
+                            {outcome}
+                          </li>
+                        ),
                         kindOf(t) && (
                           <SpecializationRow
                             key={`${t.id}/specs`}
@@ -381,8 +395,8 @@ export function SheetTab({
           ])}
           {!parts.includes(healthAfter ?? "") && health}
         </div>
-        <ErrorText error={change.error ?? swap.error} />
-        {message && !change.error && !swap.error && <Notice>{message}</Notice>}
+        {/* Under the trait's row, unless it has gone (taken off the sheet). */}
+        {!s.traits.some((t) => t.id === lastTrait) && outcome}
       </div>
       <aside className="flex flex-col gap-3">
         <div className={badge ? "grid grid-cols-2 gap-2 [&>button]:w-full" : "grid"}>
