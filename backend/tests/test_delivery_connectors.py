@@ -16,7 +16,9 @@ from horatio.models import Delivery
 from tests.api_helpers import Troupe
 from tests.test_api_responses import Scene
 
-START = datetime(2026, 10, 20, 12, tzinfo=UTC)
+# The tests' clock: a day after the real one, since deliveries are queued at the
+# real time and must be due by then. A fixed date stops working once it passes.
+START = (datetime.now(UTC) + timedelta(days=1)).replace(second=0, microsecond=0)
 
 
 class FakeConnector(Connector):
