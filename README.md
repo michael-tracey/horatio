@@ -124,6 +124,14 @@ Model changes need a migration: `uv run alembic revision --autogenerate -m "..."
 then read what it generated. `tests/test_migrations.py` fails if the models and
 migrations disagree.
 
+## Dark Pack
+
+Horatio is unofficial fan-made material under Paradox Interactive's
+[Dark Pack Agreement](https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement):
+free, with the agreement's notices on its About page and every page's footer.
+Paradox's own art (the Dark Pack logo, clan symbols) is licensed to each server's
+operator and never committed. Put it in `dark-pack/`; see `dark-pack/README.md`.
+
 ## Logo and icons
 
 `branding/logo.png` is Horatio's logo with a transparent background, at full

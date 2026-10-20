@@ -38,8 +38,11 @@ class BadgeOut(BaseModel):
     visible: list[str]
     # Where the picture is (horatio.pictures; "/portrait.jpg" prints), or None.
     picture: str | None
-    # Where the clan's logo is (add "/600.webp"), or None.
+    # Where the clan's logo is (add "/600.webp"), or None: the custodian's upload,
+    # or the clan's Dark Pack symbol.
     logo: str | None
+    # The same in white, for a dark badge, where there is one.
+    logo_white: str | None
 
 
 class BadgesOut(BaseModel):

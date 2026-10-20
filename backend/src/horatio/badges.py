@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import pictures, social_age, titles
+from horatio import dark_pack, pictures, social_age, titles
 from horatio.models import Character, CharacterTrait, ClanLogo, TraitCategory, TraitDefinition
 
 
@@ -36,6 +36,8 @@ class Badge:
     visible: list[str]
     picture: str | None
     logo: str | None
+    # The logo in white, for a dark badge; only Dark Pack symbols have one.
+    logo_white: str | None
 
 
 def wording(visible: str, detail: str) -> str:
@@ -45,20 +47,27 @@ def wording(visible: str, detail: str) -> str:
     return visible.replace("{detail}", detail)
 
 
-def logos(db: Session, splat: str) -> dict[str, str]:
-    """Each clan's logo address. A bloodline without its own takes its clan's."""
-    return {
-        clan: pictures.logo_url(image_id)
-        for clan, image_id in db.execute(
-            select(ClanLogo.clan, ClanLogo.image_id).where(ClanLogo.splat == splat)
-        )
-    }
+# A logo's address and its white version's (add "/600.webp"); None for none.
+Logo = tuple[str | None, str | None]
+NO_LOGO: Logo = (None, None)
 
 
-def logo_for(found: dict[str, str], clan: str | None) -> str | None:
+def logos(db: Session, splat: str) -> dict[str, Logo]:
+    """Each clan's logo address, and its white version's if it has one: the
+    custodian's upload, or else the clan's Dark Pack symbol (horatio.dark_pack).
+    A bloodline without its own takes its clan's."""
+    found: dict[str, Logo] = dict(dark_pack.clan_logos()) if splat == "vampire" else {}
+    for clan, image_id in db.execute(
+        select(ClanLogo.clan, ClanLogo.image_id).where(ClanLogo.splat == splat)
+    ):
+        found[clan] = (pictures.logo_url(image_id), None)
+    return found
+
+
+def logo_for(found: dict[str, Logo], clan: str | None) -> Logo:
     if clan is None:
-        return None
-    return found.get(clan) or found.get(clan.split(":")[0].strip())
+        return NO_LOGO
+    return found.get(clan) or found.get(clan.split(":")[0].strip()) or NO_LOGO
 
 
 def badges(
@@ -91,6 +100,7 @@ def badges(
     for c in characters:
         note = [line.strip() for line in c.visible_note.splitlines() if line.strip()]
         clan = standing[c.id].clan
+        logo, logo_white = logo_for(found_logos[c.splat], clan)
         out.append(
             Badge(
                 character_id=c.id,
@@ -101,7 +111,8 @@ def badges(
                 status=status[c.id],
                 visible=visible[c.id] + note,
                 picture=pictures.picture_url(c.id, c.picture_id),
-                logo=logo_for(found_logos[c.splat], clan),
+                logo=logo,
+                logo_white=logo_white,
             )
         )
     return out

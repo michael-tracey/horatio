@@ -1412,6 +1412,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dark-pack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** About Dark Pack */
+        get: operations["about_dark_pack_api_dark_pack_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dark-pack/clans/{clan}/white/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Clan Symbol White */
+        get: operations["clan_symbol_white_api_dark_pack_clans__clan__white__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dark-pack/clans/{clan}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Clan Symbol */
+        get: operations["clan_symbol_api_dark_pack_clans__clan___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dark-pack/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Logo */
+        get: operations["logo_api_dark_pack__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/deliveries/{delivery_id}/mark-sent": {
         parameters: {
             query?: never;
@@ -2789,6 +2857,8 @@ export interface components {
             clan: string | null;
             /** Logo */
             logo: string | null;
+            /** Logo White */
+            logo_white: string | null;
             /** Name */
             name: string;
             /** Picture */
@@ -3038,6 +3108,8 @@ export interface components {
         ClanLogoOut: {
             /** Clan */
             clan: string;
+            /** Dark Pack */
+            dark_pack: string | null;
             /** Logo */
             logo: string | null;
             /** Logo Id */
@@ -3051,6 +3123,8 @@ export interface components {
             available: boolean;
             /** Clans */
             clans: components["schemas"]["ClanLogoOut"][];
+            /** Dark Pack */
+            dark_pack: boolean;
         };
         /** ConnectorChange */
         ConnectorChange: {
@@ -3262,6 +3336,13 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /** DarkPackOut */
+        DarkPackOut: {
+            /** Clans */
+            clans: string[];
+            /** Logo */
+            logo: boolean;
         };
         /** Decision */
         Decision: {
@@ -8061,6 +8142,115 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkItemOut"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    about_dark_pack_api_dark_pack_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DarkPackOut"];
+                };
+            };
+        };
+    };
+    clan_symbol_white_api_dark_pack_clans__clan__white__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clan: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clan_symbol_api_dark_pack_clans__clan___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clan: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logo_api_dark_pack__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

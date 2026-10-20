@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     built_at: datetime | None = None
     # Horatio's code, for linking a build to its commit.
     source_url: str = "https://github.com/michael-tracey/horatio"
+    # Paradox's Dark Pack resources, imported by `python -m horatio.dark_pack`
+    # (horatio.dark_pack). Never shipped with Horatio; unset, there are none.
+    dark_pack_dir: str | None = None
     # How often the API sends deliveries waiting on connectors, in seconds; 0 stops it.
     delivery_interval: float = 15
 

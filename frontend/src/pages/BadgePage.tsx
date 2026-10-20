@@ -194,7 +194,8 @@ function CharacterBadge({ badge, look }: { badge: BadgeOut; look: Look }) {
   const l = LOOKS[look];
   return (
     <Card look={look} label={`Badge for ${badge.name}`}>
-      <Top name={badge.name} picture={badge.picture} logo={badge.logo} clan={badge.clan} look={look} />
+      {/* A Dark Pack symbol comes in white too, for the dark badge. */}
+      <Top name={badge.name} picture={badge.picture} logo={look === "horatio" ? (badge.logo_white ?? badge.logo) : badge.logo} clan={badge.clan} look={look} />
       <h2 className="mt-[0.1in] text-center font-display leading-tight tracking-wide uppercase" style={{ fontSize: `${nameSize(badge.name)}pt` }}>
         {badge.name}
       </h2>

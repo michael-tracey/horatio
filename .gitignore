@@ -11,3 +11,6 @@ example-sheet.png
 sources/
 # Production settings: secrets, kept on the deployer's machine.
 deploy/production.env
+# Paradox's Dark Pack resources: imported per server, never shipped (dark-pack/README.md).
+dark-pack/*
+!dark-pack/README.md

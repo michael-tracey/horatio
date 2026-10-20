@@ -86,6 +86,15 @@ last started, and whether the database is on the newest migration that build has
 `deploy.sh` bakes the commit and build time into the image; a `--no-build` redeploy
 keeps the image's own.
 
+## Dark Pack resources
+
+The Dark Pack logo (About page) and the clans' symbols (game badges) come from
+Paradox's free Dark Pack kit, which Horatio never ships. Import the kit's zips into
+`dark-pack/` on the deploying machine, as `dark-pack/README.md` describes. Each
+`deploy.sh` then copies that folder to `/opt/docker-apps/horatio/dark-pack`, which
+the app container mounts read-only as `HORATIO_DARK_PACK_DIR`. Without it the app
+runs as before, minus the logo and symbols.
+
 ## Backups
 
 Every night at 03:17 (host time), `/opt/docker-apps/horatio/backup.sh`:

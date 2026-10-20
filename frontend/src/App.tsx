@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { Layout } from "./components/Layout";
 import { Loading } from "./components/ui";
+import { AboutPage } from "./pages/AboutPage";
 import { useMe } from "./hooks";
 import { CharactersPage } from "./pages/CharactersPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
@@ -48,6 +49,7 @@ export function App() {
       </Route>
       <Route element={<Layout />}>
         <Route path="/sign-in" element={<SignInPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />

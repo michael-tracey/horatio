@@ -89,6 +89,11 @@ if [[ -z "${HORATIO_UPLOAD_DIR:-}" ]] && ! grep -qs '^HORATIO_UPLOAD_DIR=' .env;
   mkdir -p "$HORATIO_UPLOAD_DIR"
 fi
 
+# Paradox's Dark Pack resources, if imported into dark-pack/ (see its README).
+if [[ -z "${HORATIO_DARK_PACK_DIR:-}" ]] && ! grep -qs '^HORATIO_DARK_PACK_DIR=' .env; then
+  export HORATIO_DARK_PACK_DIR="$ROOT/dark-pack"
+fi
+
 say "Starting the API on :$API_PORT"
 # setsid gives each server its own process group, so stop-local.sh can stop it
 # together with its children (uvicorn's reloader, Vite's workers).

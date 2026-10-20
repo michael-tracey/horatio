@@ -19,3 +19,5 @@ backend/tests/
 deploy/production.env
 docs/
 branding/
+# Copied to the server by the playbook, never built into the image.
+dark-pack/

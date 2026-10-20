@@ -345,6 +345,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
       <footer className="mt-auto border-t border-black pt-1 text-center text-[9px] text-neutral-600">
         Printed from Horatio {new Date().toLocaleDateString()}
         {sheet.home && sheet.accepted_at && ` · accepted ${new Date(sheet.accepted_at).toLocaleDateString()} by ${sheet.accepted_by}`}
+        <br />
+        Unofficial fan-made material under Paradox Interactive's Dark Pack Agreement. Portions © Paradox Interactive AB, used with permission.
       </footer>
     </article>
   );

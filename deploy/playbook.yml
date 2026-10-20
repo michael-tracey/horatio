@@ -66,6 +66,22 @@
         group: ansible
         mode: '0750'
 
+    # Paradox's Dark Pack resources (horatio.dark_pack), imported on the deployer's
+    # machine into dark-pack/ and copied here as they are; never in the image.
+    # Mounted read-only; without them the app just has no Dark Pack logo or symbols.
+    - name: Create the Dark Pack directory
+      file:
+        path: "{{ app_dir }}/dark-pack"
+        state: directory
+        mode: '0755'
+
+    - name: Copy the Dark Pack resources, if they have been imported
+      copy:
+        src: "{{ playbook_dir }}/../dark-pack/"
+        dest: "{{ app_dir }}/dark-pack/"
+        mode: u=rwX,go=rX
+      when: lookup('ansible.builtin.fileglob', playbook_dir ~ '/../dark-pack/manifest.json') | length > 0
+
     # Owned by the image's postgres user: its entrypoint chowns only PGDATA
     # (./postgres/18/docker), then runs as postgres, which must pass through here.
     - name: Create the database's directory
@@ -179,6 +195,7 @@
         volumes:
           - "{{ app_dir }}/backups:/backups"
           - "{{ app_dir }}/uploads:/uploads"
+          - "{{ app_dir }}/dark-pack:/dark-pack:ro"
         ports:
           - "127.0.0.1:{{ api_port }}:8000"
         memory: 512m

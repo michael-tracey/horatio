@@ -1,7 +1,9 @@
 """Clan logos for badges, which the custodian uploads: one per clan or bloodline,
 images the troupe has the right to use. The official symbols belong to the
-game's publisher and cannot ship with Horatio. A clan without one shows its
-name only; a bloodline without one takes its clan's."""
+game's publisher and cannot ship with Horatio, but a server's operator can
+import them from Paradox's Dark Pack (horatio.dark_pack): a clan with no upload
+then uses its Dark Pack symbol. Otherwise a clan without one shows its name
+only; a bloodline without one takes its clan's."""
 
 import uuid
 from typing import Annotated
@@ -11,7 +13,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import select, text
 
-from horatio import pictures
+from horatio import dark_pack, pictures
 from horatio.api.pictures import uploads
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
@@ -27,11 +29,15 @@ class ClanLogoOut(BaseModel):
     # Where its logo is (add "/128.webp" or "/600.webp"), or None for none yet.
     logo: str | None
     logo_id: uuid.UUID | None
+    # Its Dark Pack symbol (add "/128.webp"), used while there is no upload.
+    dark_pack: str | None
 
 
 class ClanLogosOut(BaseModel):
     # False where uploads are not set up (HORATIO_UPLOAD_DIR).
     available: bool
+    # Whether the operator has imported the Dark Pack resources.
+    dark_pack: bool
     clans: list[ClanLogoOut]
 
 
@@ -51,8 +57,10 @@ def clans(db: DbSession) -> list[tuple[str, str]]:
 @router.get("")
 def list_logos(db: DbSession, user: CurrentUser) -> ClanLogosOut:
     kept = {(lg.splat, lg.clan): lg for lg in db.scalars(select(ClanLogo))}
+    symbols = dark_pack.clan_logos()
     return ClanLogosOut(
         available=pictures.upload_dir() is not None,
+        dark_pack=dark_pack.folder() is not None,
         clans=[
             ClanLogoOut(
                 splat=splat,
@@ -61,6 +69,7 @@ def list_logos(db: DbSession, user: CurrentUser) -> ClanLogosOut:
                 if (splat, clan) in kept
                 else None,
                 logo_id=kept[(splat, clan)].id if (splat, clan) in kept else None,
+                dark_pack=symbols[clan][0] if splat == "vampire" and clan in symbols else None,
             )
             for splat, clan in clans(db)
         ],
@@ -104,7 +113,14 @@ def upload_logo(
         db.commit()
     if old is not None:
         pictures.remove(pictures.logo_dir(root, old))
-    return ClanLogoOut(splat=splat, clan=clan, logo=pictures.logo_url(new), logo_id=logo.id)
+    symbol = dark_pack.clan_logos().get(clan) if splat == "vampire" else None
+    return ClanLogoOut(
+        splat=splat,
+        clan=clan,
+        logo=pictures.logo_url(new),
+        logo_id=logo.id,
+        dark_pack=symbol[0] if symbol else None,
+    )
 
 
 @router.delete("/{logo_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -560,6 +560,17 @@
             ],
             "title": "Logo"
           },
+          "logo_white": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo White"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -610,7 +621,8 @@
           "status",
           "visible",
           "picture",
-          "logo"
+          "logo",
+          "logo_white"
         ],
         "title": "BadgeOut",
         "type": "object"
@@ -1309,6 +1321,17 @@
             "title": "Clan",
             "type": "string"
           },
+          "dark_pack": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dark Pack"
+          },
           "logo": {
             "anyOf": [
               {
@@ -1341,7 +1364,8 @@
           "splat",
           "clan",
           "logo",
-          "logo_id"
+          "logo_id",
+          "dark_pack"
         ],
         "title": "ClanLogoOut",
         "type": "object"
@@ -1358,10 +1382,15 @@
             },
             "title": "Clans",
             "type": "array"
+          },
+          "dark_pack": {
+            "title": "Dark Pack",
+            "type": "boolean"
           }
         },
         "required": [
           "available",
+          "dark_pack",
           "clans"
         ],
         "title": "ClanLogosOut",
@@ -1994,6 +2023,27 @@
           "questions"
         ],
         "title": "CycleOut",
+        "type": "object"
+      },
+      "DarkPackOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "logo": {
+            "title": "Logo",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "logo",
+          "clans"
+        ],
+        "title": "DarkPackOut",
         "type": "object"
       },
       "Decision": {
@@ -11756,6 +11806,150 @@
         "summary": "My Responses",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/dark-pack": {
+      "get": {
+        "operationId": "about_dark_pack_api_dark_pack_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DarkPackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "About Dark Pack",
+        "tags": [
+          "dark pack"
+        ]
+      }
+    },
+    "/api/dark-pack/clans/{clan}/white/{name}": {
+      "get": {
+        "operationId": "clan_symbol_white_api_dark_pack_clans__clan__white__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clan",
+            "required": true,
+            "schema": {
+              "title": "Clan",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clan Symbol White",
+        "tags": [
+          "dark pack"
+        ]
+      }
+    },
+    "/api/dark-pack/clans/{clan}/{name}": {
+      "get": {
+        "operationId": "clan_symbol_api_dark_pack_clans__clan___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clan",
+            "required": true,
+            "schema": {
+              "title": "Clan",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clan Symbol",
+        "tags": [
+          "dark pack"
+        ]
+      }
+    },
+    "/api/dark-pack/{name}": {
+      "get": {
+        "operationId": "logo_api_dark_pack__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logo",
+        "tags": [
+          "dark pack"
         ]
       }
     },
