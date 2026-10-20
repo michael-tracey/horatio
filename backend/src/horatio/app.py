@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from horatio import delivery
 from horatio.api import (
@@ -107,19 +107,26 @@ def health() -> dict[str, str]:
 app.include_router(api)
 
 
-def serve_frontend(dist: Path) -> None:
+def serve_frontend(dist: Path, target: FastAPI = app) -> None:
     """Serve the built frontend: its files as they are, and index.html for every
     other path that is not the API, so the app's own routes load on refresh."""
-    index = dist / "index.html"
+    # Link previews need absolute addresses, so index.html names the site's.
+    public_url = get_settings().public_url.rstrip("/")
+    index = (dist / "index.html").read_text().replace("__HORATIO_PUBLIC_URL__", public_url)
 
-    @app.get("/{path:path}", include_in_schema=False)
-    def frontend(path: str) -> FileResponse:
+    @target.get("/{path:path}", include_in_schema=False)
+    def frontend(path: str) -> Response:
         if path.startswith("api/"):
             raise HTTPException(status_code=404)
         candidate = (dist / path).resolve()
-        if path and candidate.is_file() and candidate.is_relative_to(dist.resolve()):
+        if (
+            path
+            and candidate.is_file()
+            and candidate.is_relative_to(dist.resolve())
+            and candidate != (dist / "index.html").resolve()
+        ):
             return FileResponse(candidate)
-        return FileResponse(index)
+        return HTMLResponse(index)
 
 
 _frontend_dist = get_settings().frontend_dist

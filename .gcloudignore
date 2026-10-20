@@ -18,3 +18,4 @@ backend/tests/
 **/.env
 deploy/production.env
 docs/
+branding/
