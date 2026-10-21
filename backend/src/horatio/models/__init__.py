@@ -39,6 +39,7 @@ from horatio.models.rules import (
 )
 from horatio.models.troupes import (
     CharacterTitle,
+    ScheduledGame,
     Troupe,
     TroupeMembership,
     TroupeRequest,
@@ -84,6 +85,7 @@ __all__ = [
     "HomeTroupeChange",
     "ReconciliationItem",
     "RuleSet",
+    "ScheduledGame",
     "Session",
     "SheetVersion",
     "StartingTrait",

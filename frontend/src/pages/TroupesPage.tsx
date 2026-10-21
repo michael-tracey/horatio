@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../api/client";
+import { Avatar } from "../components/Avatar";
 import { PersonPicker } from "../components/PersonPicker";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Textarea } from "../components/ui";
 import { useDates } from "../dates";
@@ -25,7 +26,10 @@ export function TroupesPage() {
               {troupes.data.map((t) => (
                 <li key={t.id}>
                   <Link to={`/troupes/${t.id}`} className="flex items-center justify-between gap-3 py-3 hover:text-gold">
-                    <span>{t.name}</span>
+                    <span className="flex items-center gap-3">
+                      <Avatar name={t.name} picture={t.portrait} size="sm" />
+                      {t.name}
+                    </span>
                     {t.my_role && <Badge tone="gold">{roleLabel(t.my_role)}</Badge>}
                   </Link>
                 </li>
@@ -70,7 +74,7 @@ function NewTroupe() {
         <Field label="Description">
           <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </Field>
-        <Field label="Lead storyteller" hint="Type a handle or a name to find them. They need an account already.">
+        <Field label="Lead storyteller" hint="Pick them from the list, or type a name or handle to find them. They need an account already.">
           <PersonPicker required value={form.lead_handle} onChange={(lead_handle) => setForm({ ...form, lead_handle })} />
         </Field>
         <ErrorText error={create.error} />

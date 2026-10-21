@@ -1,13 +1,15 @@
 """Players' profiles: who someone is, for anyone signed in. The player edits their
-own, and changes their handle; anyone finds people by handle, and the custodian
-finds anyone, and makes (or cancels) a reset link for someone locked out."""
+own, and changes their handle; those who pick people (the custodian, and a
+troupe's storytellers for its staff) list them by handle, and the custodian finds
+anyone, and makes (or cancels) a reset link for someone locked out."""
 
 import re
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 from urllib.parse import urlsplit
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import aliased
@@ -20,7 +22,13 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.resets import cancel_reset, email_reset, issue_reset, live_reset, reset_url
 from horatio.connectors import email
 from horatio.models import AuditEvent, Character, PasswordReset, Troupe, User
-from horatio.permissions import can_view_character, require_custodian
+from horatio.permissions import (
+    Role,
+    TroupeAction,
+    can_view_character,
+    require_custodian,
+    require_troupe_action,
+)
 
 router = APIRouter(tags=["players"])
 
@@ -83,6 +91,16 @@ class Someone(BaseModel):
     id: uuid.UUID
     handle: str
     display_name: str
+    # Picking for a troupe: whether they have a character there, and their role
+    # on its staff if they are on it.
+    plays_here: bool = False
+    staff_role: Role | None = None
+
+
+class People(BaseModel):
+    people: list[Someone]
+    # Where the next page starts; None after the last.
+    next_offset: int | None
 
 
 class HandleIn(BaseModel):
@@ -167,15 +185,22 @@ def reset_expiry(db: DbSession, user: User) -> datetime | None:
     return live.expires_at if live else None
 
 
-def clean_link(link: Link) -> Link:
-    url = link.url.strip()
+def web_address(url: str) -> str:
+    """`url` trimmed, if it is an http or https address; refused otherwise, so a
+    link can never run script (javascript:) or open something else."""
+    url = url.strip()
     parts = urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.netloc or len(url) > 300:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             f"{url or 'A link'} is not a web address: start it with https://.",
         )
-    host = parts.netloc.removeprefix("www.")
+    return url
+
+
+def clean_link(link: Link) -> Link:
+    url = web_address(link.url)
+    host = urlsplit(url).netloc.removeprefix("www.")
     return Link(label=link.label.strip()[:40] or host, url=url)
 
 
@@ -223,12 +248,40 @@ def find_players(db: DbSession, user: CurrentUser, q: str = "") -> list[PlayerSu
 
 
 @router.get("/handles")
-def find_handles(db: DbSession, user: CurrentUser, q: str = "") -> list[Someone]:
-    """People whose handle starts with `q`, then those whose name has it in it,
-    for picking someone as you type."""
-    return [
-        Someone(id=u.id, handle=u.handle, display_name=u.display_name) for u in handles.find(db, q)
-    ]
+def find_handles(
+    db: DbSession,
+    user: CurrentUser,
+    q: str = "",
+    troupe_id: uuid.UUID | None = None,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> People:
+    """People to pick from, a page at a time: everyone, or with `q` those whose
+    handle starts with it, then those whose name has it in it. Only for those who
+    pick people: the custodian, and for a troupe, those who manage its staff, who
+    see its players first and who is on its staff already."""
+    troupe = None
+    if troupe_id is None:
+        require_custodian(user)
+    else:
+        troupe = db.get(Troupe, troupe_id)
+        if troupe is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_STAFF)
+    found = handles.find(db, q, troupe=troupe, offset=offset, limit=limit + 1)
+    return People(
+        people=[
+            Someone(
+                id=f.user.id,
+                handle=f.user.handle,
+                display_name=f.user.display_name,
+                plays_here=f.plays_here,
+                staff_role=Role(f.staff_role) if f.staff_role else None,
+            )
+            for f in found[:limit]
+        ],
+        next_offset=offset + limit if len(found) > limit else None,
+    )
 
 
 @router.put("/handle")

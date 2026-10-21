@@ -267,7 +267,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
         <div className="flex items-start gap-3 text-right">
           <div>
             <p className="font-display text-2xl tracking-widest uppercase">{sheet.splat}</p>
-            <p className="text-[10px]">
+            <p className="flex items-center justify-end gap-1 text-[10px]">
+              {sheet.troupe_portrait && <img src={`${sheet.troupe_portrait}/48.webp`} alt="" className="h-[0.2in] w-[0.2in] rounded-full border border-black object-cover" />}
               {sheet.kind === "npc"
                 ? `NPC of ${sheet.troupe_name}`
                 : sheet.home

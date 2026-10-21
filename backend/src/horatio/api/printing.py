@@ -39,6 +39,8 @@ class PrintedSheet(BaseModel):
     player_name: str
     splat: str
     troupe_name: str | None
+    # That troupe's portrait (horatio.pictures), small beside its name, or None.
+    troupe_portrait: str | None
     # Titles held in that troupe.
     titles: list[str]
     # The character's picture (horatio.pictures), small in the header, or None.
@@ -86,6 +88,7 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         )
     }
 
+    heading = db.get_one(Troupe, troupe) if troupe else None
     rule_set = read_troupe_rules(db, character.splat, troupe).rule_set
     categories = list(
         db.execute(
@@ -124,7 +127,10 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
             db.get_one(User, character.player_id).display_name if character.kind == "pc" else "NPC"
         ),
         splat=character.splat,
-        troupe_name=db.get_one(Troupe, troupe).name if troupe else None,
+        troupe_name=heading.name if heading else None,
+        troupe_portrait=pictures.troupe_portrait_url(heading.id, heading.portrait_id)
+        if heading
+        else None,
         titles=titles.held(db, troupe, character.id) if troupe else [],
         kind=character.kind,
         home=troupe is not None and troupe == character.home_troupe_id,

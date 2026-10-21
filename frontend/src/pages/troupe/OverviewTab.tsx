@@ -6,6 +6,7 @@ import type { TroupeOut } from "../../api/types";
 import { PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, ErrorText, Field, Input, Textarea } from "../../components/ui";
 import { useAction, useMe } from "../../hooks";
+import { TroupeProfileSection } from "./ProfileEditor";
 import type { abilities } from "./roles";
 import { XpRangeCard } from "./XpRange";
 
@@ -26,9 +27,9 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <Card title="About">
-        <p className="text-sm whitespace-pre-line">{troupe.description || "No description yet."}</p>
-      </Card>
+      <div className="md:col-span-2">
+        <TroupeProfileSection troupe={troupe} />
+      </div>
       {can.lead && !troupe.archived && (
         <Card title="Troupe settings">
           <div className="flex flex-col gap-3">
@@ -66,7 +67,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
               appoint.mutate(undefined);
             }}
           >
-            <Field label="Appoint a new lead" hint="Type a handle or a name to find them.">
+            <Field label="Appoint a new lead" hint="Pick them from the list, or type a name or handle to find them.">
               <PersonPicker required value={leadHandle} onChange={setLeadHandle} />
             </Field>
             <ErrorText error={appoint.error} />
