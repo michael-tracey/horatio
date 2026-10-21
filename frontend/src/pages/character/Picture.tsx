@@ -171,14 +171,16 @@ function PictureEditor({ character, onDone }: { character: CharacterOut; onDone:
 
 /**
  * Place the square portrait on the picture: drag it, or use the arrow keys, and
- * size it with the slider. The dashed frame around it is the badge's portrait.
+ * size it with the slider. The dashed frame around it is the badge's portrait
+ * (characters only: troupes have no badges).
  */
-function Cropper({
+export function Cropper({
   src,
   initial,
   saving,
   error,
   unreadable,
+  badge = true,
   onCancel,
   onSave,
 }: {
@@ -188,6 +190,8 @@ function Cropper({
   error: unknown;
   /** What to say if the browser cannot show the picture; without it, that is an error. */
   unreadable?: string;
+  /** Show the badge's portrait frame. */
+  badge?: boolean;
   onCancel: () => void;
   onSave: (crop: Crop | null) => void;
 }) {
@@ -245,7 +249,9 @@ function Cropper({
             <img src={src} alt="The picture to crop" draggable={false} onLoad={(e) => loaded(e.currentTarget)} onError={() => setFailed(true)} className="block w-full" />
             {box && natural && (
               <>
-                <div aria-hidden="true" className="pointer-events-none absolute border border-dashed border-parchment/80" style={pct(portraitFrame(natural.w, natural.h, box), natural)} />
+                {badge && (
+                  <div aria-hidden="true" className="pointer-events-none absolute border border-dashed border-parchment/80" style={pct(portraitFrame(natural.w, natural.h, box), natural)} />
+                )}
                 <div
                   role="slider"
                   tabIndex={0}
@@ -275,7 +281,9 @@ function Cropper({
               />
             </label>
           )}
-          <p className="text-xs text-mist">The circle is the picture everywhere in Horatio; the dashed frame is what a printed badge shows.</p>
+          <p className="text-xs text-mist">
+            The circle is the picture everywhere in Horatio{badge ? "; the dashed frame is what a printed badge shows." : "."}
+          </p>
         </>
       )}
       <ErrorText error={error} />

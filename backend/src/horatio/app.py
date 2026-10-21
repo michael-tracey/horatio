@@ -1,4 +1,7 @@
 import asyncio
+import html
+import re
+import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -36,12 +39,14 @@ from horatio.api import (
     specializations,
     system,
     titles,
+    troupe_profiles,
     troupe_requests,
     troupes,
     unsubscribe,
     xp_awards,
     xp_range,
 )
+from horatio.auth.deps import DbSession
 from horatio.config import get_settings
 
 
@@ -82,6 +87,7 @@ api = APIRouter(prefix="/api")
 for module in (
     auth,
     troupes,
+    troupe_profiles,
     characters,
     clan_logos,
     dark_pack,
@@ -125,6 +131,33 @@ def health() -> dict[str, str]:
 app.include_router(api)
 
 
+# A troupe's public profile (horatio.api.troupe_profiles).
+PUBLIC_PROFILE = re.compile(r"t/([0-9a-fA-F-]{36})/?")
+
+
+def with_preview(index: str, preview: dict[str, str], public_url: str) -> str:
+    """index.html with its link preview made a troupe's: its name, a line about
+    it, and its portrait where it has one (the site's picture where not)."""
+
+    def meta(attribute: str, name: str, value: str, page: str) -> str:
+        tag = re.compile(rf'<meta {attribute}="{re.escape(name)}" content="[^"]*" />')
+        return tag.sub(
+            lambda _: f'<meta {attribute}="{name}" content="{html.escape(value)}" />', page
+        )
+
+    page = meta("property", "og:title", preview["title"], index)
+    page = meta("property", "og:description", preview["description"], page)
+    page = meta("name", "description", preview["description"], page)
+    if preview["image"]:
+        page = meta("property", "og:image", public_url + preview["image"], page)
+        page = meta("property", "og:image:width", "512", page)
+        page = meta("property", "og:image:height", "512", page)
+        page = meta("name", "twitter:card", "summary", page)
+    return page.replace(
+        "<title>Horatio</title>", f"<title>{html.escape(preview['title'])} · Horatio</title>"
+    )
+
+
 def serve_frontend(dist: Path, target: FastAPI = app) -> None:
     """Serve the built frontend: its files as they are, and index.html for every
     other path that is not the API, so the app's own routes load on refresh."""
@@ -133,9 +166,17 @@ def serve_frontend(dist: Path, target: FastAPI = app) -> None:
     index = (dist / "index.html").read_text().replace("__HORATIO_PUBLIC_URL__", public_url)
 
     @target.get("/{path:path}", include_in_schema=False)
-    def frontend(path: str) -> Response:
+    def frontend(path: str, db: DbSession) -> Response:
         if path.startswith("api/"):
             raise HTTPException(status_code=404)
+        public = PUBLIC_PROFILE.fullmatch(path)
+        if public:
+            try:
+                troupe_id = uuid.UUID(public.group(1))
+            except ValueError:
+                return HTMLResponse(index)
+            preview = troupe_profiles.link_preview(db, troupe_id)
+            return HTMLResponse(with_preview(index, preview, public_url) if preview else index)
         candidate = (dist / path).resolve()
         if (
             path

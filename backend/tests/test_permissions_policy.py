@@ -9,6 +9,7 @@ STORYTELLERS_ONLY = {
     TroupeAction.MANAGE_STAFF,
     TroupeAction.MANAGE_HOUSE_RULES,
     TroupeAction.MANAGE_CONNECTORS,
+    TroupeAction.EDIT_PROFILE,
 }
 NARRATOR_CAN = {TroupeAction.VIEW_STAFF, TroupeAction.ANSWER_ASSIGNED_RESPONSES}
 
@@ -30,7 +31,7 @@ def test_storytellers_can_do_everything_but_rename_describe_or_archive(
 
 
 @pytest.mark.parametrize("action", list(TroupeAction))
-def test_assistant_storytellers_cannot_manage_staff_house_rules_or_connectors(
+def test_assistant_storytellers_cannot_manage_staff_house_rules_connectors_or_profile(
     action: TroupeAction,
 ) -> None:
     assert allows(Role.ASSISTANT_STORYTELLER, action) == (

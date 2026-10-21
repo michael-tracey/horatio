@@ -45,6 +45,22 @@ describe("dates", () => {
     });
   });
 
+  it("writes a game's start and end, in each zone", () => {
+    const now = new Date("2026-10-20T12:00:00Z");
+    // 7 pm to 11:30 pm in New York on Saturday 14 November.
+    const start = "2026-11-15T00:00:00Z";
+    const end = "2026-11-15T04:30:00Z";
+    expect(datesFor(newYork).gameStart(start, now)).toBe("Sat 14 Nov, 7 pm EST");
+    expect(datesFor(newYork).game(start, end, now)).toBe("Sat 14 Nov, 7 pm to 11:30 pm EST");
+    expect(datesFor({ ...newYork, clock: "24" }).game(start, end, now)).toBe("Sat 14 Nov, 19:00 to 23:30 EST");
+    // In London it is the small hours of Sunday.
+    expect(datesFor({ ...newYork, time_zone: "Europe/London" }).game(start, end, now)).toBe("Sun 15 Nov, 12 am to 4:30 am GMT");
+    expect(datesFor({ ...newYork, time_zone: "America/Los_Angeles" }).game(start, end, now)).toBe("Sat 14 Nov, 4 pm to 8:30 pm PST");
+    expect(datesFor(newYork).game(start, "2026-11-15T06:00:00Z", now)).toBe("Sat 14 Nov, 7 pm to Sun 15 Nov, 1 am EST");
+    // Next year's shows its year.
+    expect(datesFor(newYork).gameStart("2027-01-10T00:00:00Z", now)).toBe("Sat 9 Jan 2027, 7 pm EST");
+  });
+
   it("writes a deadline with its weekday and zone", () => {
     const now = new Date("2026-10-20T12:00:00Z");
     const due = "2026-10-24T03:59:00Z";

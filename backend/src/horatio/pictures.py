@@ -11,6 +11,9 @@ Horatio shows, all WebP, in `HORATIO_UPLOAD_DIR`:
   4:5 frame around the same crop, at 300 DPI, as WebP and as JPEG for printing;
   and the whole picture up to 2048 px, so the crop can be moved later.
 - a clan logo: fitted into squares of 128 and 600 px, keeping its transparency.
+- a troupe's portrait (issue #119): the same squares as a character's, and the
+  whole picture for moving the crop; its banner, cut 3:1 from the middle, 1500
+  and 750 px wide.
 
 Each upload (and each new crop) is kept in a directory of its own, named by a new
 id, so its address changes and no cache ever shows the one it replaced.
@@ -45,6 +48,8 @@ SQUARES = (48, 128, 512)
 # The badge's portrait (3 × 5 in badge): 1.6 × 2 in at 300 DPI.
 PORTRAIT = (480, 600)
 LOGOS = (128, 600)
+# A troupe's banner: 3 wide by 1 high, at these widths.
+BANNERS = (1500, 750)
 
 # The files a character's picture is kept as, and a clan logo's.
 PICTURE_FILES = {
@@ -54,6 +59,8 @@ PICTURE_FILES = {
     "full.webp",
 }
 LOGO_FILES = {f"{s}.webp" for s in LOGOS}
+TROUPE_PORTRAIT_FILES = {*(f"{s}.webp" for s in SQUARES), "full.webp"}
+BANNER_FILES = {f"{w}.webp" for w in BANNERS}
 
 
 class PictureError(Exception):
@@ -175,8 +182,9 @@ def _shrunk(image: Image.Image, longest: int) -> Image.Image:
     return copy
 
 
-def write_picture(directory: Path, image: Image.Image, crop: Crop | None) -> None:
-    """Write a character's picture's files into `directory`, which must be new."""
+def _squares(directory: Path, image: Image.Image, crop: Crop | None) -> Box:
+    """Write the whole picture, to crop again later, and its squares into
+    `directory`, which must be new. The square's box, in the picture's pixels."""
     directory.mkdir(parents=True)
     full = _shrunk(image, KEPT)
     _webp(full, directory / "full.webp")
@@ -185,10 +193,29 @@ def write_picture(directory: Path, image: Image.Image, crop: Crop | None) -> Non
     face = image.crop(square)
     for size in SQUARES:
         _webp(face.resize((size, size), Image.Resampling.LANCZOS), directory / f"{size}.webp")
+    return square
+
+
+def write_picture(directory: Path, image: Image.Image, crop: Crop | None) -> None:
+    """Write a character's picture's files into `directory`, which must be new."""
+    square = _squares(directory, image, crop)
     portrait = image.crop(portrait_box(image.width, image.height, square))
     portrait = ImageOps.fit(portrait, PORTRAIT, Image.Resampling.LANCZOS)
     _webp(portrait, directory / "portrait.webp")
     _flatten(portrait).save(directory / "portrait.jpg", "JPEG", quality=90, optimize=True)
+
+
+def write_troupe_portrait(directory: Path, image: Image.Image, crop: Crop | None) -> None:
+    """Write a troupe's portrait's files into `directory`, which must be new."""
+    _squares(directory, image, crop)
+
+
+def write_banner(directory: Path, image: Image.Image) -> None:
+    """Write a troupe's banner's files into `directory`, which must be new."""
+    directory.mkdir(parents=True)
+    for width in BANNERS:
+        wide = ImageOps.fit(image, (width, width // 3), Image.Resampling.LANCZOS)
+        _webp(wide, directory / f"{width}.webp")
 
 
 def write_logo(directory: Path, image: Image.Image) -> None:
@@ -222,6 +249,18 @@ def logo_dir(root: Path, image_id: uuid.UUID) -> Path:
     return root / "clan-logos" / str(image_id)
 
 
+def troupe_dir(root: Path, troupe_id: uuid.UUID) -> Path:
+    return root / "troupes" / str(troupe_id)
+
+
+def troupe_portrait_dir(root: Path, troupe_id: uuid.UUID, portrait_id: uuid.UUID) -> Path:
+    return troupe_dir(root, troupe_id) / "portraits" / str(portrait_id)
+
+
+def banner_dir(root: Path, troupe_id: uuid.UUID, banner_id: uuid.UUID) -> Path:
+    return troupe_dir(root, troupe_id) / "banners" / str(banner_id)
+
+
 def picture_file(
     root: Path, character_id: uuid.UUID, picture_id: uuid.UUID, name: str
 ) -> Path | None:
@@ -237,6 +276,22 @@ def logo_file(root: Path, image_id: uuid.UUID, name: str) -> Path | None:
     if name not in LOGO_FILES:
         return None
     path = logo_dir(root, image_id) / name
+    return path if path.is_file() else None
+
+
+def troupe_portrait_file(
+    root: Path, troupe_id: uuid.UUID, portrait_id: uuid.UUID, name: str
+) -> Path | None:
+    if name not in TROUPE_PORTRAIT_FILES:
+        return None
+    path = troupe_portrait_dir(root, troupe_id, portrait_id) / name
+    return path if path.is_file() else None
+
+
+def banner_file(root: Path, troupe_id: uuid.UUID, banner_id: uuid.UUID, name: str) -> Path | None:
+    if name not in BANNER_FILES:
+        return None
+    path = banner_dir(root, troupe_id, banner_id) / name
     return path if path.is_file() else None
 
 
@@ -266,3 +321,17 @@ def picture_url(character_id: uuid.UUID, picture_id: uuid.UUID | None) -> str | 
 
 def logo_url(image_id: uuid.UUID) -> str:
     return f"/api/clan-logos/{image_id}"
+
+
+def troupe_portrait_url(troupe_id: uuid.UUID, portrait_id: uuid.UUID | None) -> str | None:
+    """Where the app finds a troupe's portrait: add "/128.webp" and so on."""
+    if portrait_id is None:
+        return None
+    return f"/api/troupes/{troupe_id}/portraits/{portrait_id}"
+
+
+def banner_url(troupe_id: uuid.UUID, banner_id: uuid.UUID | None) -> str | None:
+    """Where the app finds a troupe's banner: add "/1500.webp" or "/750.webp"."""
+    if banner_id is None:
+        return None
+    return f"/api/troupes/{troupe_id}/banners/{banner_id}"

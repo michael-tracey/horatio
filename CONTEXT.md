@@ -23,6 +23,10 @@ _Avoid_: Username, login
 The top-level group: it runs games, has its own staff and house rules, and characters join it. No group sits above a troupe.
 _Avoid_: Game, chapter, chronicle, organisation
 
+**Troupe Profile**:
+What a troupe tells players and people thinking of joining: its portrait, links, schedule and upcoming games, venue, setting, whether it takes new players, and age and content notes. Its storytellers edit it. Anyone signed in can see it, and anyone at all if the troupe makes it public. It never shows emails, characters or anything only members see, and the venue's street address only to people signed in.
+_Avoid_: Troupe page, listing
+
 **Archived Troupe**:
 A troupe its lead storyteller has deleted: closed to all use, but kept with its full history. Troupes are never truly deleted.
 _Avoid_: Deleted troupe, closed troupe
@@ -40,11 +44,11 @@ The troupe's one owner: a storyteller who can also rename the troupe, edit its d
 _Avoid_: Head ST, LST (in names), co-lead
 
 **Storyteller**:
-A staff member who runs a troupe; storytellers and the lead storyteller are the only roles that manage the troupe's staff and house rules.
+A staff member who runs a troupe; storytellers and the lead storyteller are the only roles that manage the troupe's staff and house rules, and edit its profile.
 _Avoid_: ST (in names), GM, admin
 
 **Assistant Storyteller**:
-A staff member who can do everything a storyteller can except manage staff, house rules and connectors.
+A staff member who can do everything a storyteller can except manage staff, house rules and connectors, and edit the troupe's profile.
 _Avoid_: AST (in names), sub-ST
 
 **Narrator**:

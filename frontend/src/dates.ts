@@ -82,6 +82,12 @@ function timeText({ hour, minute }: Parts, settings: DateSettings): string {
   return `${hour % 12 || 12}:${pad(minute)} ${hour < 12 ? "am" : "pm"}`;
 }
 
+/** "7 pm" on the hour, "7:30 pm" otherwise; "19:00" on a 24-hour clock. */
+function hourText(parts: Parts, settings: DateSettings): string {
+  if (settings.clock === "12" && parts.minute === 0) return `${parts.hour % 12 || 12} ${parts.hour < 12 ? "am" : "pm"}`;
+  return timeText(parts, settings);
+}
+
 function weekday({ year, month, day }: Day): string {
   return WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()]!;
 }
@@ -125,6 +131,26 @@ export function datesFor(settings: DateSettings) {
       const p = partsIn(when, zone);
       const withYear = settings.date_format === "iso" || p.year !== partsIn(now, zone).year;
       return `${weekday(p)} ${dayText(p, settings, withYear)}, ${timeText(p, settings)} ${zoneName(when, zone)}`;
+    },
+    /**
+     * A game, from its start to its end, with the weekday and the zone: "Sat 14
+     * Nov, 7 pm to 11:30 pm EST", or "Sat 14 Nov, 7 pm to Sun 15 Nov, 1 am EST"
+     * when it ends on another day. The year shows when it isn't this one.
+     */
+    game: (start: Date | string, end: Date | string, now: Date = new Date()) => {
+      const from = partsIn(moment(start), zone);
+      const to = partsIn(moment(end), zone);
+      const thisYear = partsIn(now, zone).year;
+      const day = (p: Parts) => `${weekday(p)} ${dayText(p, settings, settings.date_format === "iso" || p.year !== thisYear)}`;
+      const sameDay = from.year === to.year && from.month === to.month && from.day === to.day;
+      const until = sameDay ? hourText(to, settings) : `${day(to)}, ${hourText(to, settings)}`;
+      return `${day(from)}, ${hourText(from, settings)} to ${until} ${zoneName(moment(end), zone)}`;
+    },
+    /** When a game starts, with the weekday and the zone: "Sat 14 Nov, 7 pm EST". */
+    gameStart: (start: Date | string, now: Date = new Date()) => {
+      const p = partsIn(moment(start), zone);
+      const withYear = settings.date_format === "iso" || p.year !== partsIn(now, zone).year;
+      return `${weekday(p)} ${dayText(p, settings, withYear)}, ${hourText(p, settings)} ${zoneName(moment(start), zone)}`;
     },
     /** A day the API sends as "2027-01-19", as "19 Jan 2027". */
     day: (day: string) => dayText(parseDay(day), settings),
