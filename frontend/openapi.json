@@ -5335,6 +5335,31 @@
         "title": "ProfileLinks",
         "type": "object"
       },
+      "ProfilePerson": {
+        "description": "A person a profile names, as anyone may see them: never their email.",
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "handle",
+          "display_name"
+        ],
+        "title": "ProfilePerson",
+        "type": "object"
+      },
       "Progress": {
         "properties": {
           "assigned": {
@@ -7936,7 +7961,7 @@
           "contact": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Someone"
+                "$ref": "#/components/schemas/ProfilePerson"
               },
               {
                 "type": "null"
@@ -7964,7 +7989,7 @@
             "type": "string"
           },
           "lead": {
-            "$ref": "#/components/schemas/Someone"
+            "$ref": "#/components/schemas/ProfilePerson"
           },
           "links": {
             "$ref": "#/components/schemas/ProfileLinks"

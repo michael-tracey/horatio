@@ -76,3 +76,4 @@ export type TroupeProfileIn = Schemas["TroupeProfileIn"];
 export type ScheduledGameOut = Schemas["ScheduledGameOut"];
 export type ProfileLinks = Schemas["ProfileLinks"];
 export type Someone = Schemas["Someone"];
+export type ProfilePerson = Schemas["ProfilePerson"];

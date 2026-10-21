@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import type { Someone, TroupeProfileOut } from "../../api/types";
+import type { ProfilePerson, TroupeProfileOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { AtHandle } from "../../components/PersonPicker";
 import { Badge, Card } from "../../components/ui";
@@ -134,7 +134,7 @@ function Entry({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** A staff member by display name and handle; never their email. */
-function Person({ person, signedIn }: { person: Someone; signedIn: boolean }) {
+function Person({ person, signedIn }: { person: ProfilePerson; signedIn: boolean }) {
   const name = signedIn ? (
     <Link to={`/players/${person.id}`} className="text-gold hover:underline">
       {person.display_name}

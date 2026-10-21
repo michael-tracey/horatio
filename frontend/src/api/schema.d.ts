@@ -4876,6 +4876,21 @@ export interface components {
             /** Website */
             website?: string | null;
         };
+        /**
+         * ProfilePerson
+         * @description A person a profile names, as anyone may see them: never their email.
+         */
+        ProfilePerson: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
         /** Progress */
         Progress: {
             /** Assigned */
@@ -5834,7 +5849,7 @@ export interface components {
             banner: string | null;
             /** Can Edit */
             can_edit: boolean;
-            contact: components["schemas"]["Someone"] | null;
+            contact: components["schemas"]["ProfilePerson"] | null;
             /** Content Notes */
             content_notes: string;
             /** Description */
@@ -5846,7 +5861,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            lead: components["schemas"]["Someone"];
+            lead: components["schemas"]["ProfilePerson"];
             links: components["schemas"]["ProfileLinks"];
             /** Min Age */
             min_age: number | null;

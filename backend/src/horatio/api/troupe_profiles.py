@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from horatio import pictures
 from horatio.api.pictures import CropIn, as_fractions, uploads
-from horatio.api.players import Someone, web_address
+from horatio.api.players import web_address
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
 from horatio.models import ScheduledGame, Troupe, TroupeStaff, User
@@ -109,6 +109,14 @@ class ScheduledGameOut(BaseModel):
     ends_at: datetime
 
 
+class ProfilePerson(BaseModel):
+    """A person a profile names, as anyone may see them: never their email."""
+
+    id: uuid.UUID
+    handle: str
+    display_name: str
+
+
 class TroupeProfileOut(BaseModel):
     id: uuid.UUID
     name: str
@@ -126,8 +134,8 @@ class TroupeProfileOut(BaseModel):
     venue: VenueOut
     setting: Setting
     new_players: Literal["welcoming", "closed"] | None
-    contact: Someone | None
-    lead: Someone
+    contact: ProfilePerson | None
+    lead: ProfilePerson
     min_age: int | None
     content_notes: str
     # Whether the viewer may edit it, and whether pictures can be uploaded here.
@@ -135,8 +143,8 @@ class TroupeProfileOut(BaseModel):
     pictures_available: bool
 
 
-def someone(user: User) -> Someone:
-    return Someone(id=user.id, handle=user.handle, display_name=user.display_name)
+def someone(user: User) -> ProfilePerson:
+    return ProfilePerson(id=user.id, handle=user.handle, display_name=user.display_name)
 
 
 def is_staff(db: Session, troupe: Troupe, user_id: uuid.UUID) -> bool:
