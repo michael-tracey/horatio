@@ -10040,7 +10040,7 @@
     },
     "/api/characters/{character_id}/cart": {
       "post": {
-        "description": "Make a list of sheet changes in one transaction, each checked as if the\nearlier ones had been made. If any is refused, none is made, and each line\nsays what it costs or why it is refused. A dry run says the same, saving nothing.",
+        "description": "Make a list of sheet changes in one transaction, each priced as if the\nearlier ones had been made, and the sheet they end with checked against the\none they started from. If any is refused, none is made, and each line says\nwhat it costs or why it is refused. A dry run says the same, saving nothing.",
         "operationId": "spend_cart_api_characters__character_id__cart_post",
         "parameters": [
           {

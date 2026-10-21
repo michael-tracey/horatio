@@ -640,9 +640,10 @@ def hold_for_review(
     violation: Violation,
     ratings_before: Mapping[TraitKey, int],
     xp_before: set[uuid.UUID],
-) -> None:
+) -> bool:
     """A change that breaks a review check goes ahead but waits on the home troupe,
-    like a discipline dot: declining takes the dots back and refunds the XP."""
+    like a discipline dot: declining takes the dots back and refunds the XP.
+    Whether it now waits: not for a trait lowered, or already waiting."""
     subject = violation.subject
     key = (subject.category, subject.name, subject.detail)
     before, after = ratings_before.get(key, 0), subject.rating or 0
@@ -651,7 +652,7 @@ def hold_for_review(
         d.trait_definition_id == definition.id and d.detail == subject.detail
         for _, d in pending_disciplines(db, character)
     ):
-        return
+        return False
     spent = -sum(
         db.scalars(
             select(XpEntry.amount).where(
@@ -694,6 +695,7 @@ def hold_for_review(
         rating=after,
     )
     notifications.approval_waiting(db, approval)
+    return True
 
 
 def creation_only_traits(db: Session, character: Character) -> dict[TraitKey, int | None]:
@@ -711,17 +713,129 @@ def creation_only_traits(db: Session, character: Character) -> dict[TraitKey, in
     }
 
 
+@dataclass(frozen=True)
+class SheetState:
+    """What a sheet breaks and holds, to judge changes to it against."""
+
+    broken: set[tuple[str, str, str, str]]
+    over: dict[str, int]
+    fixed: dict[TraitKey, int | None]
+    ratings: dict[TraitKey, int]
+    xp: set[uuid.UUID]
+
+
+def sheet_state(db: Session, character: Character) -> SheetState:
+    return SheetState(
+        broken={v.key for v in sheet_violations(db, character)},
+        over=held_beyond_limit(db, character),
+        fixed=creation_only_traits(db, character),
+        ratings={r.key: r.trait.rating or 0 for r in sheet_rows(db, character)},
+        xp=set(db.scalars(select(XpEntry.id).where(XpEntry.character_id == character.id))),
+    )
+
+
+@dataclass(frozen=True)
+class Problem:
+    """Why a sheet is refused or held for review, and what on it that is about:
+    a trait, or (with no name) a category holding too many."""
+
+    message: str
+    category: str
+    name: str | None = None
+    detail: str = ""
+    # The traits the broken check looks at, as (category, name), with no name
+    # for a whole category: a technique's disciplines.
+    looks_at: frozenset[tuple[str, str | None]] = frozenset()
+
+
+def problem(violation: Violation) -> Problem:
+    subject = violation.subject
+    return Problem(
+        violation.message,
+        subject.category,
+        subject.name,
+        subject.detail,
+        violation.check.looks_at(),
+    )
+
+
+def broken_since(
+    db: Session,
+    user: User | None,
+    character: Character,
+    before: SheetState,
+    *,
+    checks: bool = True,
+    creation_only: bool = True,
+) -> tuple[list[Problem], list[Problem]]:
+    """What a player's character's sheet breaks now that it did not `before`: the
+    problems that refuse the change, and the review checks it now waits on, each
+    raised as an approval if nothing else in the checks refuses it. `checks` judges
+    the rule set's checks, how many traits a category holds, and grants left
+    unchosen; `creation_only` judges traits only chosen during creation."""
+    db.expire_all()
+    now_broken = (
+        [v for v in sheet_violations(db, character) if v.key not in before.broken] if checks else []
+    )
+    refused = [problem(v) for v in now_broken if blocking(v, character)]
+    reviewed: list[Problem] = []
+    if user is not None and character.home_troupe_id is not None and not refused:
+        for violation in now_broken:
+            if violation.check.strength == "review" and hold_for_review(
+                db, user, character, violation, before.ratings, before.xp
+            ):
+                reviewed.append(problem(violation))
+    rule_set = rules_for(db, character).rule_set
+    if checks:
+        for key, count in held_beyond_limit(db, character).items():
+            if count > before.over.get(key, 0):
+                category = rule_set.categories[key]
+                refused.append(
+                    Problem(
+                        f"A character holds {category.max_held} {category.name.lower()}; "
+                        "only merits can grant more.",
+                        key,
+                    )
+                )
+    if creation_only and character.creation_completed_at is not None:
+        fixed_after = creation_only_traits(db, character)
+        changed = {
+            key
+            for key in before.fixed.keys() | fixed_after.keys()
+            if before.fixed.get(key, 0) != fixed_after.get(key, 0)
+        }
+        for key in sorted(changed):
+            refused.append(Problem(f"{key[1]} can only be chosen during character creation.", *key))
+    if checks:
+        for trait, grant in sheet_effects(db, character).unchosen:
+            options = choices(grant, rule_set)
+            listed = ", ".join(options) if len(options) <= 8 else "the trait it applies to"
+            refused.append(
+                Problem(
+                    f"Say which for {trait.name}: put {listed} in its detail.",
+                    trait.category,
+                    trait.name,
+                    trait.detail,
+                )
+            )
+    return refused, reviewed
+
+
+def refusal(problems: Sequence[Problem]) -> str:
+    return " ".join(dict.fromkeys(p.message for p in problems))
+
+
 @contextmanager
-def checked(db: Session, character: Character, user: User | None = None) -> Iterator[None]:
+def checked(
+    db: Session, character: Character, user: User | None = None, *, rules: bool = True
+) -> Iterator[None]:
     """Make a change to a sheet, then bring its grants into line and refuse the
     change if it breaks a check the sheet did not already break. The change is
     rolled back (to a savepoint taken before it) with the refusal. NPCs get their grants but are
-    their staff's to build as they like."""
-    before = {v.key for v in sheet_violations(db, character)}
-    over_before = held_beyond_limit(db, character)
-    fixed_before = creation_only_traits(db, character)
-    ratings_before = {r.key: r.trait.rating or 0 for r in sheet_rows(db, character)}
-    xp_before = set(db.scalars(select(XpEntry.id).where(XpEntry.character_id == character.id)))
+    their staff's to build as they like. With `rules` False, the change is judged
+    only on traits chosen during creation: a cart judges the rest once, against
+    the sheet it ends with (`broken_since`)."""
+    before = sheet_state(db, character)
     # An NPC's Path may be chosen directly, so only the conversions a change
     # alters are made.
     converts_before = sheet_effects(db, character).converts if character.kind != "pc" else None
@@ -737,37 +851,10 @@ def checked(db: Session, character: Character, user: User | None = None) -> Iter
     if character.kind != "pc":
         savepoint.commit()
         return
-    db.expire_all()
-    now_broken = [v for v in sheet_violations(db, character) if v.key not in before]
-    problems = [v.message for v in now_broken if blocking(v, character)]
-    if user is not None and character.home_troupe_id is not None and not problems:
-        for violation in now_broken:
-            if violation.check.strength == "review":
-                hold_for_review(db, user, character, violation, ratings_before, xp_before)
-    rule_set = rules_for(db, character).rule_set
-    for key, count in held_beyond_limit(db, character).items():
-        if count > over_before.get(key, 0):
-            category = rule_set.categories[key]
-            problems.append(
-                f"A character holds {category.max_held} {category.name.lower()}; "
-                "only merits can grant more."
-            )
-    if character.creation_completed_at is not None:
-        fixed_after = creation_only_traits(db, character)
-        changed = {
-            key
-            for key in fixed_before.keys() | fixed_after.keys()
-            if fixed_before.get(key, 0) != fixed_after.get(key, 0)
-        }
-        for key in sorted(changed):
-            problems.append(f"{key[1]} can only be chosen during character creation.")
-    for trait, grant in sheet_effects(db, character).unchosen:
-        options = choices(grant, rule_set)
-        listed = ", ".join(options) if len(options) <= 8 else "the trait it applies to"
-        problems.append(f"Say which for {trait.name}: put {listed} in its detail.")
-    if problems:
+    refused, _ = broken_since(db, user, character, before, checks=rules)
+    if refused:
         savepoint.rollback()
-        raise conflict(" ".join(dict.fromkeys(problems)))
+        raise conflict(refusal(refused))
     savepoint.commit()
 
 

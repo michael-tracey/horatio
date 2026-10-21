@@ -105,9 +105,10 @@ def to_change(change: CartChangeIn) -> cart.Change:
 
 @router.post("/cart")
 def spend_cart(character_id: uuid.UUID, body: CartIn, db: DbSession, user: CurrentUser) -> CartOut:
-    """Make a list of sheet changes in one transaction, each checked as if the
-    earlier ones had been made. If any is refused, none is made, and each line
-    says what it costs or why it is refused. A dry run says the same, saving nothing."""
+    """Make a list of sheet changes in one transaction, each priced as if the
+    earlier ones had been made, and the sheet they end with checked against the
+    one they started from. If any is refused, none is made, and each line says
+    what it costs or why it is refused. A dry run says the same, saving nothing."""
     character = players_character(db, user, character_id)
     balance = sheets.xp_balance(db, character)
     savepoint = db.begin_nested()

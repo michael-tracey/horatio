@@ -63,7 +63,7 @@ vampire's Generation, on Backgrounds).
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from horatio.rules.conditions import OPERATORS
 from horatio.rules.conditions import describe as describe_facts
@@ -125,6 +125,38 @@ class CheckData:
         if self.name_prefix is not None and not trait.name.startswith(self.name_prefix):
             return False
         return self.detail is None or trait.detail == self.detail
+
+    def looks_at(self) -> frozenset[tuple[str, str | None]]:
+        """The traits the check's conditions look at, as (category, name), with no
+        name for a whole category: a technique's disciplines, Archaic's skills."""
+        return frozenset(traits_in(self.requires) | traits_in(self.forbids))
+
+
+# Conditions that look at a trait without naming it.
+IMPLIED_TRAIT: dict[str, tuple[str, str | None]] = {
+    "clan": ("clan", None),
+    "clan_family": ("clan", None),
+    "generation": ("backgrounds", "Generation"),
+    "on_path": ("paths", None),
+}
+
+
+def traits_in(condition: Any) -> set[tuple[str, str | None]]:
+    """Every trait named anywhere in a condition, or implied by it."""
+    found: set[tuple[str, str | None]] = set()
+    if isinstance(condition, Mapping):
+        items = cast(Mapping[str, Any], condition)
+        category, name = items.get("category"), items.get("name")
+        if isinstance(category, str):
+            found.add((category, name if isinstance(name, str) else None))
+        for key, value in items.items():
+            if key in IMPLIED_TRAIT:
+                found.add(IMPLIED_TRAIT[key])
+            found |= traits_in(value)
+    elif isinstance(condition, list | tuple):
+        for item in cast(Sequence[Any], condition):
+            found |= traits_in(item)
+    return found
 
 
 @dataclass(frozen=True)
