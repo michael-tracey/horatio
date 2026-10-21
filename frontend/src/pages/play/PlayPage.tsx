@@ -4,11 +4,13 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { ExpendableOut, GameOut, PlayView } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useDates } from "../../dates";
+import { useAction, usePreferences } from "../../hooks";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { incapacitated, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Sync } from "./usePlay";
 import { useReference } from "./useReference";
+import { useWakeLock } from "./wakeLock";
 
 type Change = { tracker: string; amount: number; damage?: Damage; label: string };
 type RecordTap = (change: Change) => void;
@@ -31,15 +33,19 @@ type Tab = (typeof TABS)[number]["key"];
  * and the game's log with Undo; and Pools, its test pools and powers. Taps are
  * kept on the phone when there is no signal and sent when it returns. The
  * Sheet and Pools load once, when the page opens, so the tabs switch at once.
+ * The person's settings choose the tab it opens on, whether quick notes start
+ * on, and whether the screen stays awake while it is open.
  */
 export function PlayPage() {
   const { characterId = "" } = useParams();
   const [params, setParams] = useSearchParams();
-  const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? "tracker";
+  const prefs = usePreferences();
+  const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? prefs.play_tab;
   const { view, shown, tap, sync, accept } = usePlay(characterId);
   const { reference, error: referenceError } = useReference(characterId);
-  // Quick notes start on every time the Play View opens.
-  const [quickNotes, setQuickNotes] = useState(true);
+  // Quick notes start as the settings say; the switch changes them for this visit.
+  const [quickNotes, setQuickNotes] = useState(prefs.quick_notes);
+  const awake = useWakeLock(prefs.keep_awake);
   const [asking, setAsking] = useState<Change | null>(null);
   const choose = (next: Tab) =>
     setParams(
@@ -51,8 +57,8 @@ export function PlayPage() {
     );
   const tabs = <TabBar tab={tab} onChange={choose} />;
 
-  if (view.isPending) return <PlayShell characterId={characterId} sync={sync} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} sync={sync} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} sync={sync} awake={awake} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} sync={sync} awake={awake} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
 
   const record: RecordTap = (change) => {
     // Quick notes ask what a spend was for; restoring needs no reason.
@@ -63,7 +69,7 @@ export function PlayPage() {
     reference ? show(reference) : referenceError ? <ErrorText error={referenceError} /> : <p className="py-8 text-center text-mist">Loading…</p>;
 
   return (
-    <PlayShell characterId={characterId} sync={sync} name={shown.character_name} tabs={tabs}>
+    <PlayShell characterId={characterId} sync={sync} awake={awake} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
       {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} />)}
@@ -125,8 +131,22 @@ export function PlayPage() {
   );
 }
 
-/** The page around the sheet: back to the character, whether taps are saved, and the tabs. */
-function PlayShell({ characterId, sync, name, tabs, children }: { characterId: string; sync: Sync; name?: string; tabs: ReactNode; children: ReactNode }) {
+/** The page around the sheet: back to the character, whether the screen is kept awake and taps are saved, and the tabs. */
+function PlayShell({
+  characterId,
+  sync,
+  awake,
+  name,
+  tabs,
+  children,
+}: {
+  characterId: string;
+  sync: Sync;
+  awake: boolean;
+  name?: string;
+  tabs: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
@@ -134,7 +154,14 @@ function PlayShell({ characterId, sync, name, tabs, children }: { characterId: s
           <Link to={`/characters/${characterId}`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
             ← {name ?? "Back"}
           </Link>
-          <SyncStatus sync={sync} />
+          <span className="flex items-start gap-2">
+            {awake && (
+              <span className="rounded-full border border-ash px-2.5 py-0.5 text-xs whitespace-nowrap text-mist" title="Kept on while the Play View is open, as your settings ask.">
+                ☀ Screen awake
+              </span>
+            )}
+            <SyncStatus sync={sync} />
+          </span>
         </div>
         {tabs}
       </header>
@@ -505,17 +532,15 @@ function Notes({ add }: { add: (note: string) => void }) {
   );
 }
 
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-const day = (iso: string) => new Date(iso).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
-
 function LogEntries({ log }: { log: ShownEntry[] }) {
+  const dates = useDates();
   if (log.length === 0) return <p className="text-sm text-mist">Nothing yet. Every tap shows here, newest first.</p>;
   return (
     <ol className="divide-y divide-ash text-sm">
       {log.map((e) => (
         <li key={e.id} className="flex gap-3 py-1.5">
           <time className="w-16 shrink-0 text-xs text-mist" dateTime={e.happened_at}>
-            {time(e.happened_at)}
+            {dates.time(e.happened_at)}
           </time>
           <div className="min-w-0 flex-1">
             <p className={cx(e.undone && "text-mist line-through")}>
@@ -605,6 +630,7 @@ function PastGames({ characterId, current }: { characterId: string; current: str
 
 function PastGame({ characterId, game }: { characterId: string; game: GameOut }) {
   const [open, setOpen] = useState(false);
+  const dates = useDates();
   const log = useQuery({
     queryKey: ["play-game", game.id],
     queryFn: () =>
@@ -617,7 +643,7 @@ function PastGame({ characterId, game }: { characterId: string; game: GameOut })
     <li className="py-1">
       <button type="button" className="flex min-h-10 w-full items-center justify-between gap-2 text-left text-sm" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span>
-          Game {game.number} · {day(game.started_at)}
+          Game {game.number} · {dates.date(game.started_at)}
         </span>
         <span className="text-xs text-mist">
           {taps}, {notes} {open ? "▴" : "▾"}

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
+import { PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, ErrorText, Field, Input, Textarea } from "../../components/ui";
 import { useAction, useMe } from "../../hooks";
 import type { abilities } from "./roles";
@@ -14,14 +15,14 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
   const path = { params: { path: { troupe_id: troupe.id } } };
   const [name, setName] = useState(troupe.name);
   const [description, setDescription] = useState(troupe.description);
-  const [leadEmail, setLeadEmail] = useState("");
+  const [leadHandle, setLeadHandle] = useState("");
 
   const save = useAction(() => unwrap(api.PATCH("/api/troupes/{troupe_id}", { ...path, body: { name, description } })));
   const archive = useAction(async () => {
     await unwrap(api.DELETE("/api/troupes/{troupe_id}", path));
     navigate("/troupes");
   });
-  const appoint = useAction(() => unwrap(api.PUT("/api/troupes/{troupe_id}/lead", { ...path, body: { email: leadEmail } })));
+  const appoint = useAction(() => unwrap(api.PUT("/api/troupes/{troupe_id}/lead", { ...path, body: { handle: leadHandle } })));
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -65,8 +66,8 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
               appoint.mutate(undefined);
             }}
           >
-            <Field label="Appoint a new lead by email">
-              <Input type="email" required value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} />
+            <Field label="Appoint a new lead" hint="Type a handle or a name to find them.">
+              <PersonPicker required value={leadHandle} onChange={setLeadHandle} />
             </Field>
             <ErrorText error={appoint.error} />
             <Button type="submit" variant="secondary">

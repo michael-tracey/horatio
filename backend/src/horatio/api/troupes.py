@@ -2,10 +2,10 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import func, select
+from pydantic import BaseModel, Field
+from sqlalchemy import select
 
-from horatio import audit, xp_range
+from horatio import audit, handles, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import TraitCategory, TraitDefinition, Troupe, TroupeStaff, User
 from horatio.permissions import (
@@ -46,7 +46,8 @@ class TroupeOut(BaseModel):
 class NewTroupe(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: str = ""
-    lead_email: EmailStr
+    # The lead storyteller's handle.
+    lead_handle: str
 
 
 class TroupeChanges(BaseModel):
@@ -59,17 +60,18 @@ class TroupeChanges(BaseModel):
 
 
 class NewLead(BaseModel):
-    email: EmailStr
+    handle: str
 
 
 class StaffMember(BaseModel):
     user_id: uuid.UUID
     display_name: str
+    handle: str
     role: Role
 
 
 class StaffAssignment(BaseModel):
-    email: EmailStr
+    handle: str
     role: Role
 
 
@@ -92,6 +94,12 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
     )
 
 
+def staff_member(user: User, role: Role) -> StaffMember:
+    return StaffMember(
+        user_id=user.id, display_name=user.display_name, handle=user.handle, role=role
+    )
+
+
 def get_troupe(db: DbSession, troupe_id: uuid.UUID) -> Troupe:
     troupe = db.get(Troupe, troupe_id)
     if troupe is None:
@@ -99,10 +107,11 @@ def get_troupe(db: DbSession, troupe_id: uuid.UUID) -> Troupe:
     return troupe
 
 
-def existing_user(db: DbSession, email: str) -> User:
-    user = db.scalar(select(User).where(func.lower(User.email) == email.lower()))
+def existing_user(db: DbSession, handle: str) -> User:
+    """Whoever has the handle, or had it lately (horatio.handles)."""
+    user = handles.holder(db, handle) if handle.strip() else None
     if user is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Nobody has an account with that email.")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Nobody has the handle {handle.strip()}.")
     return user
 
 
@@ -117,7 +126,7 @@ def list_troupes(db: DbSession, user: CurrentUser) -> list[TroupeOut]:
 def create_troupe(body: NewTroupe, db: DbSession, user: CurrentUser) -> TroupeOut:
     """The custodian sets up a troupe and names its lead storyteller."""
     require_custodian(user)
-    lead = existing_user(db, body.lead_email)
+    lead = existing_user(db, body.lead_handle)
     troupe = Troupe(name=body.name, description=body.description, lead_user_id=lead.id)
     db.add(troupe)
     db.commit()
@@ -208,7 +217,7 @@ def appoint_lead(
     """The custodian appoints a troupe's lead storyteller."""
     require_custodian(user)
     troupe = get_troupe(db, troupe_id)
-    lead = existing_user(db, body.email)
+    lead = existing_user(db, body.handle)
     # The lead is never also listed as ordinary staff.
     staff_row = db.scalar(
         select(TroupeStaff).where(
@@ -234,10 +243,8 @@ def list_staff(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[S
         .where(TroupeStaff.troupe_id == troupe.id)
         .order_by(User.display_name)
     )
-    return [
-        StaffMember(user_id=lead.id, display_name=lead.display_name, role=Role.LEAD_STORYTELLER)
-    ] + [
-        StaffMember(user_id=u.id, display_name=u.display_name, role=Role(role)) for u, role in staff
+    return [staff_member(lead, Role.LEAD_STORYTELLER)] + [
+        staff_member(u, Role(role)) for u, role in staff
     ]
 
 
@@ -253,7 +260,7 @@ def assign_staff(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "The lead storyteller is appointed by the custodian.",
         )
-    member = existing_user(db, body.email)
+    member = existing_user(db, body.handle)
     if member.id == troupe.lead_user_id:
         raise HTTPException(status.HTTP_409_CONFLICT, "That person is the lead storyteller.")
     row = db.scalar(
@@ -275,7 +282,7 @@ def assign_staff(
         role=body.role.value.replace("_", " "),
     )
     db.commit()
-    return StaffMember(user_id=member.id, display_name=member.display_name, role=body.role)
+    return staff_member(member, body.role)
 
 
 @router.delete("/{troupe_id}/staff/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -20,7 +20,7 @@ from horatio.models import (
 
 
 def make_user(session: Session, email: str = "player@example.com") -> User:
-    user = User(email=email, display_name=email.split("@")[0])
+    user = User(email=email, display_name=email.split("@")[0], handle=email.split("@")[0])
     session.add(user)
     session.flush()
     return user

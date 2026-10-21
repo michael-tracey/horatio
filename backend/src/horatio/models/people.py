@@ -16,10 +16,17 @@ class User(Imported, Record):
     __table_args__ = (
         # Emails are unique regardless of case.
         Index("uq_users_email_lower", text("lower(email)"), unique=True),
+        # So are handles.
+        Index("uq_users_handle_lower", text("lower(handle)"), unique=True),
     )
 
     email: Mapped[str]
     display_name: Mapped[str]
+    # How others find and see them, instead of their email (horatio.handles),
+    # kept as they typed it.
+    handle: Mapped[str]
+    # When they last changed their handle, which they can do once in 30 days.
+    handle_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Null for people who only sign in through Discord or Google.
     password_hash: Mapped[str | None]
     is_custodian: Mapped[bool] = mapped_column(default=False, server_default="false")
@@ -31,6 +38,24 @@ class User(Imported, Record):
     # The Discord username the player gives, such as "mrcarbuncle". Not checked
     # against Discord; `discord_user_id` is the account they sign in with.
     discord_handle: Mapped[str | None]
+    # Their settings (horatio.preferences): only those they have changed, so a
+    # default can change later for everyone who kept it.
+    preferences: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Signs the unsubscribe links in their notification emails
+    # (horatio.notification_emails). A new key cancels every link sent so far.
+    unsubscribe_key: Mapped[uuid.UUID] = mapped_column(server_default=text("gen_random_uuid()"))
+
+
+class FormerHandle(Record):
+    """A handle someone changed from, held for them for a while: no one else can
+    take it, and finding people by it still finds them (horatio.handles)."""
+
+    __tablename__ = "former_handles"
+    __table_args__ = (Index("ix_former_handles_handle_lower", text("lower(handle)")),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    handle: Mapped[str]
+    held_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class AuthIdentity(Record):

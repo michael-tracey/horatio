@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, unwrap } from "./api/client";
-import type { Me } from "./api/types";
+import type { Me, Preferences } from "./api/types";
 
 /** The signed-in user, or null when signed out. */
 export function useMe() {
@@ -15,6 +15,63 @@ export function useMe() {
       }
     },
     staleTime: 60_000,
+  });
+}
+
+/** Every setting's default, as the server has them, for before anyone signs in. */
+export const DEFAULT_PREFERENCES: Preferences = {
+  ratings: "numbers",
+  time_zone: null,
+  date_format: "day_month",
+  clock: "12",
+  paper: "letter",
+  badge_size: "3x5",
+  quick_notes: true,
+  keep_awake: false,
+  play_tab: "tracker",
+  text_size: "normal",
+  email_downtime: false,
+  email_approvals: false,
+  email_troupe_requests: false,
+  email_renames: false,
+  email_pictures: false,
+  email_digest: "at_once",
+};
+
+/** The signed-in person's settings (horatio.preferences), or the defaults. */
+export function usePreferences(): Preferences {
+  const me = useMe();
+  return me.data?.preferences ?? DEFAULT_PREFERENCES;
+}
+
+const PREFERENCES = ["preferences"];
+
+/** Whether a change to the settings is still on its way to the server. The
+ * server merges each change into what it read, so two at once could lose one. */
+export function useSavingPreferences(): boolean {
+  return useIsMutating({ mutationKey: PREFERENCES }) > 0;
+}
+
+/** Change some settings. Takes effect at once: the page shows them before the
+ * server answers, and goes back if it refuses. */
+export function useSetPreferences() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationKey: PREFERENCES,
+    mutationFn: (changes: Partial<Preferences>) => unwrap(api.PATCH("/api/preferences", { body: changes })),
+    onMutate: async (changes) => {
+      await client.cancelQueries({ queryKey: ["me"] });
+      const before = client.getQueryData<Me | null>(["me"]);
+      if (before) client.setQueryData<Me>(["me"], { ...before, preferences: { ...before.preferences, ...changes } });
+      return { before };
+    },
+    onError: (_error, _changes, context) => {
+      if (context?.before) client.setQueryData(["me"], context.before);
+    },
+    onSuccess: (kept) => {
+      const now = client.getQueryData<Me | null>(["me"]);
+      if (now) client.setQueryData<Me>(["me"], { ...now, preferences: kept });
+    },
   });
 }
 

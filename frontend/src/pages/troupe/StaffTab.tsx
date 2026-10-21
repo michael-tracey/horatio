@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { Role, TroupeOut } from "../../api/types";
-import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
+import { AtHandle, PersonPicker } from "../../components/PersonPicker";
+import { Button, Card, ErrorText, Field, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { roleLabel } from "./roles";
 
@@ -12,11 +13,11 @@ const ASSIGNABLE: Role[] = ["storyteller", "assistant_storyteller", "narrator"];
 export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: boolean }) {
   const path = { params: { path: { troupe_id: troupe.id } } };
   const staff = useQuery({ queryKey: ["staff", troupe.id], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/staff", path)) });
-  const [email, setEmail] = useState("");
+  const [handle, setHandle] = useState("");
   const [role, setRole] = useState<Role>("narrator");
   const assign = useAction(async () => {
-    await unwrap(api.PUT("/api/troupes/{troupe_id}/staff", { ...path, body: { email, role } }));
-    setEmail("");
+    await unwrap(api.PUT("/api/troupes/{troupe_id}/staff", { ...path, body: { handle, role } }));
+    setHandle("");
   });
   const remove = useAction((user_id: string) =>
     unwrap(api.DELETE("/api/troupes/{troupe_id}/staff/{user_id}", { params: { path: { troupe_id: troupe.id, user_id } } })),
@@ -35,7 +36,9 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
                   <Link to={`/players/${m.user_id}`} className="hover:text-gold">
                     {m.display_name}
                   </Link>{" "}
-                  <span className="text-sm text-mist">· {roleLabel(m.role)}</span>
+                  <span className="text-sm text-mist">
+                    <AtHandle handle={m.handle} /> · {roleLabel(m.role)}
+                  </span>
                 </span>
                 {canManage && m.role !== "lead_storyteller" && (
                   <Button variant="ghost" onClick={() => remove.mutate(m.user_id)}>
@@ -57,8 +60,8 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
               assign.mutate(undefined);
             }}
           >
-            <Field label="Email" hint="They need an account already.">
-              <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Field label="Handle" hint="Type a handle or a name to find them. They need an account already.">
+              <PersonPicker required value={handle} onChange={setHandle} />
             </Field>
             <Field label="Role">
               <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>

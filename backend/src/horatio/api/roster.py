@@ -25,6 +25,7 @@ class RosterEntry(BaseModel):
     player_name: str
     # None for an NPC, whose player_name is "NPC".
     player_id: uuid.UUID | None
+    player_handle: str | None
     kind: str  # pc | npc
     titles: list[str]
     # Where its picture is (horatio.pictures), or None.
@@ -83,6 +84,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             character_name=c.name,
             player_name=player.display_name if c.kind == "pc" else "NPC",
             player_id=player.id if c.kind == "pc" else None,
+            player_handle=player.handle if c.kind == "pc" else None,
             kind=c.kind,
             titles=titles.held(db, troupe_id, c.id),
             picture=pictures.picture_url(c.id, c.picture_id),
@@ -242,6 +244,7 @@ MESSAGES: dict[str, str] = {
     "no account uses it.",
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
+    "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
     "picture.uploaded": "{actor} gave {character} a picture.",
     "picture.replaced": "{actor} gave {character} a new picture.",

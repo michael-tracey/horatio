@@ -21,6 +21,7 @@ class Person:
         self.client = client
         self.email = email
         self.id: str = data["id"]
+        self.handle: str = data["handle"]
 
 
 def sign_up(
@@ -58,7 +59,7 @@ class Troupe:
         self.stranger = sign_up(client_for, "stranger")
 
         response = self.custodian.client.post(
-            "/troupes", json={"name": "Lords of the Night", "lead_email": self.lead.email}
+            "/troupes", json={"name": "Lords of the Night", "lead_handle": self.lead.handle}
         )
         assert response.status_code == 201, response.text
         self.id: str = response.json()["id"]
@@ -68,7 +69,7 @@ class Troupe:
             (self.narrator, "narrator"),
         ):
             response = self.lead.client.put(
-                f"/troupes/{self.id}/staff", json={"email": person.email, "role": role}
+                f"/troupes/{self.id}/staff", json={"handle": person.handle, "role": role}
             )
             assert response.status_code == 200, response.text
 

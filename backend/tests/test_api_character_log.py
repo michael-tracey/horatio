@@ -51,7 +51,7 @@ def test_staff_see_their_own_troupes_part(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     troupe.player.client.post(f"/characters/{character_id}/troupes", json={"troupe_id": troupe.id})
     other = troupe.custodian.client.post(
-        "/troupes", json={"name": "Elsewhere", "lead_email": troupe.stranger.email}
+        "/troupes", json={"name": "Elsewhere", "lead_handle": troupe.stranger.handle}
     ).json()["id"]
     troupe.player.client.post(f"/characters/{character_id}/troupes", json={"troupe_id": other})
 

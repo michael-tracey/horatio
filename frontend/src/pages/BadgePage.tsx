@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { BadgeOut, StaffBadgeOut } from "../api/types";
 import { clanColour, initials } from "../components/avatar";
-import { nameSize, pages, standing } from "./badgeLayout";
+import { usePreferences } from "../hooks";
+import { PAPERS, pageRule } from "../paper";
+import { BADGE_SIZES, grid, nameSize, pages, perPageText, SQUEEZE, standing, type BadgeSize } from "./badgeLayout";
 
-/** Horatio's colours, or white with black text for printers short of ink. */
+/** White with Horatio's colours as accents, or black on white for a printer without colour. */
 type Look = "horatio" | "plain";
 
 /** Badges for characters in a troupe: those in `?characters=`, in that order, or everyone. */
@@ -20,7 +22,13 @@ export function TroupeBadgesPage() {
   });
   if (badges.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (badges.error) return <p className="p-8 text-black">{badges.error.message}</p>;
-  return <Sheets back={`/troupes/${troupeId}/characters`} items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))} />;
+  return (
+    <Sheets
+      back={`/troupes/${troupeId}/characters`}
+      troupe={badges.data.troupe_name}
+      items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))}
+    />
+  );
 }
 
 /** One character's badge, from its page. */
@@ -38,7 +46,9 @@ export function CharacterBadgePage() {
   });
   if (badges.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (badges.error) return <p className="p-8 text-black">{badges.error.message}</p>;
-  return <Sheets back={`/characters/${characterId}`} items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))} />;
+  return (
+    <Sheets back={`/characters/${characterId}`} troupe={badges.data.troupe_name} items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))} />
+  );
 }
 
 /** The troupe's storytellers' badges: name and role. */
@@ -50,33 +60,52 @@ export function StaffBadgesPage() {
   });
   if (staff.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (staff.error) return <p className="p-8 text-black">{staff.error.message}</p>;
-  return <Sheets back={`/troupes/${troupeId}/characters`} items={staff.data.map((s, i) => ({ key: `${i}`, staff: s }))} />;
+  return (
+    <Sheets back={`/troupes/${troupeId}/characters`} troupe={staff.data.troupe_name} items={staff.data.staff.map((s, i) => ({ key: `${i}`, staff: s }))} />
+  );
 }
 
 type Item = { key: string; badge?: BadgeOut; staff?: StaffBadgeOut };
 
 /**
- * The badges on paper: on screen, side by side with Back, Print and the choice
- * of look above; printed, two to a US Letter page with cut marks at the corners.
+ * The badges on paper: on screen, side by side with Back, the size, the look and
+ * Print above; printed, as many to a page as the person's paper holds, touching,
+ * with cut marks in the margin along every cut line.
  */
-function Sheets({ items, back }: { items: Item[]; back: string }) {
+function Sheets({ items, back, troupe }: { items: Item[]; back: string; troupe: string | null }) {
+  const prefs = usePreferences();
   const [look, setLook] = useState<Look>("horatio");
+  // The person's badge size, unless they pick another for this print.
+  const [size, setSize] = useState<BadgeSize>(prefs.badge_size);
+  const paper = PAPERS[prefs.paper];
+  const { columns, perPage } = grid(size, prefs.paper);
+  const badge = BADGE_SIZES[size];
   return (
     <div className="min-h-screen bg-neutral-200 py-6 text-black print:min-h-0 print:bg-white print:py-0">
       {/* Badges fill the paper themselves: no page margin, no browser header. */}
-      <style>{"@page { size: letter; margin: 0; }"}</style>
+      <style>{pageRule(prefs.paper, "0")}</style>
       <div className="mx-auto mb-4 flex max-w-[8.5in] flex-wrap items-center justify-between gap-3 px-4 print:hidden">
         {/* A link, not history: badges open in a tab of their own. */}
         <Link to={back} className="text-sm underline">
           ← Back
         </Link>
         <span className="text-sm">
-          {items.length === 1 ? "1 badge" : `${items.length} badges`} · 3 × 5 in, two to a page
+          {items.length === 1 ? "1 badge" : `${items.length} badges`} · {perPageText(perPage, prefs.paper)}
         </span>
-        <span className="flex items-center gap-3">
+        <span className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-1.5 text-sm">
+            Size
+            <select value={size} onChange={(e) => setSize(e.target.value as BadgeSize)} className="rounded border border-neutral-400 bg-white px-1 py-0.5">
+              {Object.entries(BADGE_SIZES).map(([value, { label }]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="flex items-center gap-1.5 text-sm">
             <input type="checkbox" checked={look === "plain"} onChange={(e) => setLook(e.target.checked ? "plain" : "horatio")} />
-            Printer-friendly
+            Black and white
           </label>
           <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
             Print
@@ -84,105 +113,196 @@ function Sheets({ items, back }: { items: Item[]; back: string }) {
         </span>
       </div>
       {items.length === 0 && <p className="text-center text-sm">No one to make a badge for.</p>}
-      {pages(items).map((page, i) => (
-        <section
-          key={i}
-          aria-label={`Page ${i + 1}`}
-          className="mx-auto mb-6 flex max-w-[8.5in] flex-wrap justify-center gap-6 px-4 print:mb-0 print:h-[11in] print:w-[8.5in] print:max-w-none print:flex-nowrap print:items-center print:gap-[0.3in] print:px-0 print:break-after-page"
-        >
-          {page.map((item) =>
-            item.badge ? (
-              <Cut key={item.key}>
-                <CharacterBadge badge={item.badge} look={look} />
-              </Cut>
-            ) : item.staff ? (
-              <Cut key={item.key}>
-                <StaffBadge staff={item.staff} look={look} />
-              </Cut>
-            ) : null,
-          )}
-        </section>
-      ))}
+      {pages(items, perPage).map((page, i) => {
+        const across = Math.min(columns, page.length);
+        return (
+          <section
+            key={i}
+            aria-label={`Page ${i + 1}`}
+            style={{ "--page-w": `${paper.width}in`, "--page-h": `${paper.height}in` } as CSSProperties}
+            className="mb-6 px-4 print:mb-0 print:flex print:h-(--page-h) print:w-(--page-w) print:items-center print:justify-center print:px-0 print:break-after-page print:last:break-after-auto"
+          >
+            <div
+              className="relative mx-auto flex max-w-[8.5in] flex-wrap justify-center gap-6 print:mx-0 print:grid print:max-w-none print:gap-0"
+              style={{ gridTemplateColumns: `repeat(${across}, ${badge.width}in)` }}
+            >
+              {page.map((item) =>
+                item.badge ? (
+                  <CharacterBadge key={`${item.key}/${size}`} badge={item.badge} troupe={troupe} look={look} size={size} />
+                ) : item.staff ? (
+                  <StaffBadge key={`${item.key}/${size}`} staff={item.staff} troupe={troupe} look={look} size={size} />
+                ) : null,
+              )}
+              <CutMarks across={across} down={Math.ceil(page.length / columns)} />
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
 
-/** A badge with short marks just outside its corners, to cut along. */
-function Cut({ children }: { children: ReactNode }) {
+/** Short marks just outside the badges, in line with every edge, to cut along. Printed only. */
+function CutMarks({ across, down }: { across: number; down: number }) {
   const mark = "absolute hidden bg-black print:block";
-  const h = `${mark} h-px w-[0.18in]`;
-  const v = `${mark} w-px h-[0.18in]`;
+  const at = (n: number) => Array.from({ length: n + 1 }, (_, i) => `${(i / n) * 100}%`);
   return (
-    <div className="relative">
-      {children}
-      <span className={`${h} top-0 -left-[0.24in]`} />
-      <span className={`${v} -top-[0.24in] left-0`} />
-      <span className={`${h} top-0 -right-[0.24in]`} />
-      <span className={`${v} -top-[0.24in] right-0`} />
-      <span className={`${h} bottom-0 -left-[0.24in]`} />
-      <span className={`${v} -bottom-[0.24in] left-0`} />
-      <span className={`${h} bottom-0 -right-[0.24in]`} />
-      <span className={`${v} -bottom-[0.24in] right-0`} />
-    </div>
+    <>
+      {at(across).map((x) => (
+        <Fragment key={`x${x}`}>
+          <span className={`${mark} -top-[0.2in] h-[0.16in] w-px -translate-x-1/2`} style={{ left: x }} />
+          <span className={`${mark} -bottom-[0.2in] h-[0.16in] w-px -translate-x-1/2`} style={{ left: x }} />
+        </Fragment>
+      ))}
+      {at(down).map((y) => (
+        <Fragment key={`y${y}`}>
+          <span className={`${mark} -left-[0.2in] h-px w-[0.16in] -translate-y-1/2`} style={{ top: y }} />
+          <span className={`${mark} -right-[0.2in] h-px w-[0.16in] -translate-y-1/2`} style={{ top: y }} />
+        </Fragment>
+      ))}
+    </>
   );
 }
 
+/** Both print on white, to spare the ink: colour only in the accents and the band. */
 const LOOKS = {
   horatio: {
-    card: "bg-[#141016] text-[#ede4d3] border-[#c9a24a]/60",
-    accent: "text-[#c9a24a]",
-    rule: "border-[#ede4d3]/50",
-    band: "bg-[#a3253a] text-[#ede4d3]",
+    ink: "#a3253a",
+    card: "border-[#a3253a]",
+    accent: "text-[#a3253a]",
+    band: "bg-[#a3253a] text-white",
     frame: "border-[#c9a24a]",
   },
   plain: {
-    card: "bg-white text-black border-black",
+    ink: "#000000",
+    card: "border-black",
     accent: "text-black",
-    rule: "border-black/60",
     band: "bg-black text-white",
     frame: "border-black",
   },
 } as const;
 
-/** Keeps the dark background and the band when printed, which browsers drop by default. */
+/** Keeps the band's colour when printed, which browsers drop by default. */
 const exact: CSSProperties = { printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" };
 
-function Card({ look, label, children }: { look: Look; label: string; children: ReactNode }) {
+/** A size's lengths, from the 3 × 5 in badge's, squeezed `step`s: `inch` for the
+ * picture and spacing, `pt` for the smaller text, `name` for the name. */
+function scale(size: BadgeSize, step = 0) {
+  const s = BADGE_SIZES[size];
+  const [text, frame] = SQUEEZE[step]!;
+  return {
+    inch: (x: number) => `${+(x * s.frame * frame).toFixed(3)}in`,
+    pt: (x: number) => `${+(x * s.text * text).toFixed(2)}pt`,
+    name: (name: string) => `${+(nameSize(name, size) * frame).toFixed(1)}pt`,
+  };
+}
+
+/** How far a badge is squeezed to fit its card (see SQUEEZE): after each render,
+ * a step further while its contents overflow; again from the start whenever
+ * fonts finish loading, since they change the text's size. */
+function useSqueeze(): [RefObject<HTMLElement | null>, number] {
+  const card = useRef<HTMLElement>(null);
+  const [step, setStep] = useState(0);
+  const [, setFonts] = useState(0);
+  useLayoutEffect(() => {
+    const el = card.current;
+    if (el && el.scrollHeight > el.clientHeight + 1 && step < SQUEEZE.length - 1) setStep(step + 1);
+  });
+  useEffect(() => {
+    const fonts = document.fonts;
+    if (!fonts) return;
+    const again = () => {
+      setStep(0);
+      setFonts((n) => n + 1);
+    };
+    fonts.addEventListener("loadingdone", again);
+    return () => fonts.removeEventListener("loadingdone", again);
+  }, []);
+  return [card, step];
+}
+
+/** The badge's card, white, with the troupe's name small on its bottom line. */
+function Card({
+  look,
+  label,
+  troupe,
+  size,
+  step,
+  card,
+  children,
+}: {
+  look: Look;
+  label: string;
+  troupe: string | null;
+  size: BadgeSize;
+  step: number;
+  card: RefObject<HTMLElement | null>;
+  children: ReactNode;
+}) {
+  const { inch, pt } = scale(size, step);
+  const { width, height } = BADGE_SIZES[size];
   return (
     <article
+      ref={card}
       aria-label={label}
-      style={exact}
-      className={`relative flex h-[5in] w-[3in] flex-col overflow-hidden border-[0.03in] px-[0.15in] pt-[0.15in] font-serif shadow print:shadow-none ${LOOKS[look].card}`}
+      style={{ ...exact, width: `${width}in`, height: `${height}in`, padding: `${inch(0.15)} ${inch(0.15)} 0` }}
+      className={`relative flex shrink-0 flex-col overflow-hidden border-[0.03in] bg-white font-serif text-[#141016] shadow print:shadow-none ${LOOKS[look].card}`}
     >
       {children}
+      <p style={{ height: inch(0.25), paddingTop: inch(0.06), fontSize: `max(${pt(7.5)}, 5.5pt)` }} className="shrink-0 truncate text-center tracking-wide">
+        {troupe}
+      </p>
     </article>
   );
 }
 
 /** The portrait (4:5) with the clan logo beside it; without a picture the logo,
  * larger; with neither, the initials. */
-function Top({ name, picture, logo, clan, look }: { name: string; picture: string | null; logo: string | null; clan: string | null; look: Look }) {
+function Top({
+  name,
+  picture,
+  logo,
+  clan,
+  look,
+  size,
+  step,
+}: {
+  name: string;
+  picture: string | null;
+  logo: string | null;
+  clan: string | null;
+  look: Look;
+  size: BadgeSize;
+  step: number;
+}) {
+  const { inch } = scale(size, step);
   const frame = LOOKS[look].frame;
   if (picture) {
     return (
-      <div className="flex h-[2in] shrink-0 items-start justify-center gap-[0.1in]">
-        <img src={`${picture}/portrait.jpg`} alt="" className={`h-[2in] w-[1.6in] border object-cover ${frame}`} />
-        {logo && <img src={`${logo}/600.webp`} alt={`${clan} logo`} className="h-[0.85in] w-[0.85in] object-contain" />}
+      <div style={{ height: inch(2), gap: inch(0.1) }} className="flex shrink-0 items-start justify-center">
+        <img src={`${picture}/portrait.jpg`} alt="" style={{ height: inch(2), width: inch(1.6) }} className={`border object-cover ${frame}`} />
+        {logo && <img src={`${logo}/600.webp`} alt={`${clan} logo`} style={{ height: inch(0.85), width: inch(0.85) }} className="object-contain" />}
       </div>
     );
   }
   if (logo) {
     return (
-      <div className="flex h-[2in] shrink-0 justify-center">
-        <img src={`${logo}/600.webp`} alt={`${clan} logo`} className="h-[1.9in] w-[1.9in] object-contain" />
+      <div style={{ height: inch(2) }} className="flex shrink-0 justify-center">
+        <img src={`${logo}/600.webp`} alt={`${clan} logo`} style={{ height: inch(1.9), width: inch(1.9) }} className="object-contain" />
       </div>
     );
   }
+  return <Initials name={name} colour={look === "horatio" ? clanColour(clan) : LOOKS.plain.ink} size={size} step={step} />;
+}
+
+/** The name's initials in a ring, outlined rather than filled to spare the ink. */
+function Initials({ name, colour, size, step }: { name: string; colour: string; size: BadgeSize; step: number }) {
+  const { inch } = scale(size, step);
   return (
-    <div className="flex h-[2in] shrink-0 justify-center">
+    <div style={{ height: inch(2) }} className="flex shrink-0 justify-center">
       <span
-        style={look === "horatio" ? { background: clanColour(clan), ...exact } : undefined}
-        className={`grid h-[1.9in] w-[1.9in] place-items-center rounded-full border font-display text-[54pt] leading-none ${frame}`}
+        style={{ color: colour, borderColor: colour, height: inch(1.9), width: inch(1.9), borderWidth: inch(0.04), fontSize: `${+(54 * BADGE_SIZES[size].frame * SQUEEZE[step]![1]).toFixed(1)}pt` }}
+        className="grid place-items-center rounded-full font-display leading-none"
       >
         {initials(name)}
       </span>
@@ -190,50 +310,60 @@ function Top({ name, picture, logo, clan, look }: { name: string; picture: strin
   );
 }
 
-function CharacterBadge({ badge, look }: { badge: BadgeOut; look: Look }) {
+function CharacterBadge({ badge, troupe, look, size }: { badge: BadgeOut; troupe: string | null; look: Look; size: BadgeSize }) {
   const l = LOOKS[look];
+  const [card, step] = useSqueeze();
+  const { inch, pt, name } = scale(size, step);
   return (
-    <Card look={look} label={`Badge for ${badge.name}`}>
-      {/* A Dark Pack symbol comes in white too, for the dark badge. */}
-      <Top name={badge.name} picture={badge.picture} logo={look === "horatio" ? (badge.logo_white ?? badge.logo) : badge.logo} clan={badge.clan} look={look} />
-      <h2 className="mt-[0.1in] text-center font-display leading-tight tracking-wide uppercase" style={{ fontSize: `${nameSize(badge.name)}pt` }}>
+    <Card look={look} label={`Badge for ${badge.name}`} troupe={troupe} size={size} step={step} card={card}>
+      <Top name={badge.name} picture={badge.picture} logo={badge.logo} clan={badge.clan} look={look} size={size} step={step} />
+      <h2 className="text-center font-display leading-tight tracking-wide uppercase" style={{ marginTop: inch(0.1), fontSize: name(badge.name) }}>
         {badge.name}
       </h2>
-      <p className={`text-center text-[12.5pt] ${l.accent}`}>{standing(badge.clan, badge.social_age)}</p>
-      {badge.titles.length > 0 && <p className="text-center text-[11pt] leading-snug italic">{badge.titles.join(", ")}</p>}
-      <div className="mt-[0.1in] text-[10.5pt] leading-snug">
-        <p>
-          <span className="font-bold">Status:</span> {badge.status.join(", ") || "—"}
+      <p className={`text-center ${l.accent}`} style={{ fontSize: pt(12.5) }}>
+        {standing(badge.clan, badge.social_age)}
+      </p>
+      {badge.titles.length > 0 && (
+        <p className="text-center leading-snug italic" style={{ fontSize: pt(11) }}>
+          {badge.titles.join(", ")}
         </p>
-        {/* Room to write in status gained or lost at game. */}
-        <div className={`h-[0.22in] border-b ${l.rule}`} />
-        <div className={`h-[0.22in] border-b ${l.rule}`} />
-      </div>
+      )}
+      <p className="leading-snug" style={{ marginTop: inch(0.1), fontSize: pt(10.5) }}>
+        <span className={`font-bold ${l.accent}`}>Status:</span> {badge.status.join(", ") || "—"}
+      </p>
+      {/* Left empty for the stickers most troupes mark status with. */}
+      <div className="flex-1" style={{ minHeight: inch(0.4) }} />
       {badge.visible.length > 0 && (
-        <ul aria-label="What others can see" style={exact} className={`-mx-[0.15in] mt-auto px-[0.15in] py-[0.08in] text-[10pt] leading-snug font-semibold ${l.band}`}>
+        <ul
+          aria-label="What others can see"
+          style={{ ...exact, marginInline: `-${inch(0.15)}`, padding: `${inch(0.08)} ${inch(0.15)}`, minHeight: inch(0.5), fontSize: pt(10) }}
+          className={`flex flex-col items-center justify-center text-center leading-snug font-semibold ${l.band}`}
+        >
           {badge.visible.map((v) => (
             <li key={v}>{v}</li>
           ))}
         </ul>
       )}
-      {badge.visible.length === 0 && <div className="mt-auto pb-[0.15in]" />}
     </Card>
   );
 }
 
-/** A storyteller's badge: name and role, no status or visible traits. */
-function StaffBadge({ staff, look }: { staff: StaffBadgeOut; look: Look }) {
+/** A storyteller's badge: name and role, no status or visible traits. Initials
+ * rather than Horatio's logo, whose dark shield would take a lot of ink. */
+function StaffBadge({ staff, troupe, look, size }: { staff: StaffBadgeOut; troupe: string | null; look: Look; size: BadgeSize }) {
   const l = LOOKS[look];
+  const [card, step] = useSqueeze();
+  const { inch, pt, name } = scale(size, step);
   return (
-    <Card look={look} label={`Badge for ${staff.name}`}>
-      <div className="flex h-[2in] shrink-0 items-center justify-center">
-        <img src="/logo.webp" alt="Horatio" className="h-[1.9in] w-[1.9in] object-contain" />
-      </div>
-      <h2 className="mt-[0.15in] text-center font-display leading-tight tracking-wide uppercase" style={{ fontSize: `${nameSize(staff.name)}pt` }}>
+    <Card look={look} label={`Badge for ${staff.name}`} troupe={troupe} size={size} step={step} card={card}>
+      <Initials name={staff.name} colour={l.ink} size={size} step={step} />
+      <h2 className="text-center font-display leading-tight tracking-wide uppercase" style={{ marginTop: inch(0.15), fontSize: name(staff.name) }}>
         {staff.name}
       </h2>
-      <p className={`mt-[0.05in] text-center text-[15pt] ${l.accent}`}>{staff.role}</p>
-      <div className={`mx-auto mt-auto mb-[0.25in] w-1/2 border-t ${l.rule}`} />
+      <p className={`text-center ${l.accent}`} style={{ marginTop: inch(0.05), fontSize: pt(15) }}>
+        {staff.role}
+      </p>
+      <div className={`mx-auto mt-auto w-1/2 border-t ${l.frame}`} style={{ marginBottom: inch(0.1) }} />
     </Card>
   );
 }

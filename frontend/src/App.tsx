@@ -7,6 +7,8 @@ import { useMe } from "./hooks";
 import { CharactersPage } from "./pages/CharactersPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
+import { UnsubscribePage } from "./pages/UnsubscribePage";
+import { useTextSize } from "./textSize";
 
 // The bigger pages load when first opened, so the first visit (signing in, the
 // character list) downloads less.
@@ -35,6 +37,7 @@ function RequireSignIn() {
 }
 
 export function App() {
+  useTextSize();
   return (
     <Routes>
       {/* The printed sheet stands alone: no header, black on white. So does the
@@ -53,6 +56,7 @@ export function App() {
         <Route path="/sign-up" element={<SignUpPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
         <Route element={<RequireSignIn />}>
           <Route index element={<Navigate to="/characters" replace />} />
           <Route path="/characters" element={<CharactersPage />} />
@@ -61,7 +65,7 @@ export function App() {
           <Route path="/troupes/:troupeId/*" element={<TroupePage />} />
           <Route path="/cycles/:cycleId/*" element={<CyclePage />} />
           <Route path="/players/:userId" element={<PlayerPage />} />
-          <Route path="/account" element={<AccountPage />} />
+          <Route path="/account/*" element={<AccountPage />} />
           <Route path="/custodian/*" element={<CustodianPage />} />
           <Route path="/people" element={<Navigate to="/custodian/people" replace />} />
         </Route>

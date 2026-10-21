@@ -1,6 +1,6 @@
 """Players' profiles: who someone is, for anyone signed in. The player edits their
-own; the custodian finds anyone, and makes (or cancels) a reset link for someone
-locked out."""
+own, and changes their handle; anyone finds people by handle, and the custodian
+finds anyone, and makes (or cancels) a reset link for someone locked out."""
 
 import re
 import uuid
@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import aliased
 
+from horatio import handles
+from horatio.api.auth import Me, me
 from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
@@ -43,6 +45,7 @@ class PlayerCharacter(BaseModel):
 class PlayerOut(BaseModel):
     id: uuid.UUID
     display_name: str
+    handle: str
     # When they joined: the account's creation, carried over from Yorick if imported.
     member_since: datetime
     bio: str | None
@@ -60,6 +63,7 @@ class PlayerOut(BaseModel):
 class PlayerSummary(BaseModel):
     id: uuid.UUID
     display_name: str
+    handle: str
     email: str
     member_since: datetime
     # When their live reset link expires, if they have one.
@@ -71,6 +75,18 @@ class ProfileIn(BaseModel):
     bio: str | None = None
     links: list[Link] = []
     discord_handle: str | None = None
+
+
+class Someone(BaseModel):
+    """A person as others find them: never their email."""
+
+    id: uuid.UUID
+    handle: str
+    display_name: str
+
+
+class HandleIn(BaseModel):
+    handle: str
 
 
 class ResetIn(BaseModel):
@@ -130,6 +146,7 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
     return PlayerOut(
         id=user.id,
         display_name=user.display_name,
+        handle=user.handle,
         member_since=user.created_at,
         bio=user.bio,
         links=[Link(**link) for link in user.links],
@@ -174,12 +191,14 @@ def clean_handle(handle: str | None) -> str | None:
 
 @router.get("/players")
 def find_players(db: DbSession, user: CurrentUser, q: str = "") -> list[PlayerSummary]:
-    """Every account whose name or email has `q` in it, for the custodian."""
+    """Every account whose name, handle or email has `q` in it, for the custodian."""
     require_custodian(user)
     query = select(User).order_by(func.lower(User.display_name)).limit(50)
     if q.strip():
-        like = f"%{q.strip()}%"
-        query = query.where(or_(User.display_name.ilike(like), User.email.ilike(like)))
+        like = f"%{q.strip().removeprefix('@')}%"
+        query = query.where(
+            or_(User.display_name.ilike(like), User.handle.ilike(like), User.email.ilike(like))
+        )
     found = list(db.scalars(query))
     expiries = {
         user_id: expires_at
@@ -194,12 +213,31 @@ def find_players(db: DbSession, user: CurrentUser, q: str = "") -> list[PlayerSu
         PlayerSummary(
             id=u.id,
             display_name=u.display_name,
+            handle=u.handle,
             email=u.email,
             member_since=u.created_at,
             reset_expires_at=expiries.get(u.id),
         )
         for u in found
     ]
+
+
+@router.get("/handles")
+def find_handles(db: DbSession, user: CurrentUser, q: str = "") -> list[Someone]:
+    """People whose handle starts with `q`, then those whose name has it in it,
+    for picking someone as you type."""
+    return [
+        Someone(id=u.id, handle=u.handle, display_name=u.display_name) for u in handles.find(db, q)
+    ]
+
+
+@router.put("/handle")
+def change_handle(body: HandleIn, db: DbSession, user: CurrentUser) -> Me:
+    """Change the signed-in person's handle: at most once in 30 days, and to one no
+    one has or has held in the last 90."""
+    handles.change(db, user, body.handle)
+    db.commit()
+    return me(user)
 
 
 @router.get("/players/{user_id}")

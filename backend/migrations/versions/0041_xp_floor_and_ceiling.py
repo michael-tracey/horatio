@@ -1,7 +1,7 @@
 """troupe xp floor and ceiling, self-entered xp, and topping up or capping on joining
 
 Revision ID: 0041
-Revises: 0037
+Revises: 0040
 Create Date: 2026-10-20 12:00:00.000000
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0041"
-down_revision: str | None = "0037"
+down_revision: str | None = "0040"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

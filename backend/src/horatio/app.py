@@ -27,6 +27,7 @@ from horatio.api import (
     pictures,
     play,
     players,
+    preferences,
     printing,
     responses,
     roster,
@@ -37,6 +38,7 @@ from horatio.api import (
     titles,
     troupe_requests,
     troupes,
+    unsubscribe,
     xp_awards,
     xp_range,
 )
@@ -107,6 +109,8 @@ for module in (
     troupe_requests,
     xp_awards,
     xp_range,
+    preferences,
+    unsubscribe,
     system,
     play,
 ):

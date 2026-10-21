@@ -348,3 +348,20 @@ def test_uses_a_game_come_from_the_rules() -> None:
     assert play.uses_per_game(spec, 1, {("skills", "Occult"): 3}) == 3
     assert play.uses_per_game("rating", 4, {}) == 4
     assert play.uses_per_game(2, None, {}) == 2
+
+
+def test_npcs_are_at_game_and_reset_with_everyone(troupe: Troupe, agnes: str) -> None:
+    """People → At game lists the troupe's NPCs, and Reset everyone resets them (#91)."""
+    made = troupe.storyteller.client.post(f"/troupes/{troupe.id}/npcs", json={"name": "Lucien"})
+    lucien = made.json()["id"]
+    send(troupe.storyteller, lucien, tap("willpower", -1))
+    send(troupe.player, agnes, tap("blood", -1))
+
+    overview = troupe.lead.client.get(f"/troupes/{troupe.id}/play").json()
+    by_name = {e["character_name"]: e for e in overview}
+    assert (by_name["Lucien"]["kind"], by_name["Lucien"]["player_name"]) == ("npc", "NPC")
+    assert by_name["Lucien"]["taps"] == 1
+
+    reset = troupe.lead.client.post(f"/troupes/{troupe.id}/play/reset")
+    assert reset.json() == {"reset": 2}
+    assert view(troupe.storyteller, lucien)["game"]["number"] == 2

@@ -41,6 +41,7 @@ class TroupeRequestOut(BaseModel):
     status: str
     requester_id: uuid.UUID
     requester_name: str
+    requester_handle: str
     created_at: datetime
     decided_at: datetime | None
     decided_by_name: str | None
@@ -56,13 +57,15 @@ Decider = aliased(User)
 
 def _listed():
     return (
-        select(TroupeRequest, Requester.display_name, Decider.display_name)
+        select(TroupeRequest, Requester.display_name, Requester.handle, Decider.display_name)
         .join(Requester, TroupeRequest.requester_id == Requester.id)
         .outerjoin(Decider, TroupeRequest.decided_by_id == Decider.id)
     )
 
 
-def _out(request: TroupeRequest, requester: str, decider: str | None) -> TroupeRequestOut:
+def _out(
+    request: TroupeRequest, requester: str, handle: str, decider: str | None
+) -> TroupeRequestOut:
     return TroupeRequestOut(
         id=request.id,
         name=request.name,
@@ -71,6 +74,7 @@ def _out(request: TroupeRequest, requester: str, decider: str | None) -> TroupeR
         status=request.status,
         requester_id=request.requester_id,
         requester_name=requester,
+        requester_handle=handle,
         created_at=request.created_at,
         decided_at=request.decided_at,
         decided_by_name=decider,
@@ -122,6 +126,7 @@ def ask(body: NewTroupeRequest, db: DbSession, user: CurrentUser) -> TroupeReque
     db.add(request)
     db.flush()
     audit.record(db, user, "troupe_request.made", name=name)
+    notifications.troupe_request_waiting(db, request, user)
     db.commit()
     return _one(db, request.id)
 

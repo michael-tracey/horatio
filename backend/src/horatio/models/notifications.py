@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index
+from sqlalchemy import DateTime, ForeignKey, Index, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from horatio.models.base import Record
@@ -28,3 +28,28 @@ class Notification(Record):
     # Where in the app to go about it.
     link: Mapped[str]
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class EmailNotice(Record):
+    """A notification waiting to go out by email as well, to someone who asked for
+    that kind by email (horatio.notification_emails). Gone once sent, or once
+    they no longer want it."""
+
+    __tablename__ = "email_notices"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    # Which of the person's email settings it comes under, e.g. "downtime".
+    topic: Mapped[str]
+    # The troupe's name, the line and the link, as the bell shows them.
+    troupe: Mapped[str | None]
+    summary: Mapped[str]
+    link: Mapped[str]
+    # When it may go: at once, at the person's daily digest, or after a failure,
+    # once the wait is over.
+    due_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    attempts: Mapped[int] = mapped_column(default=0, server_default="0")
+    last_error: Mapped[str | None]

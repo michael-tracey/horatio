@@ -57,7 +57,7 @@ def test_signing_in(client_for: Callable[[], TestClient]) -> None:
     sign_up(client_for, "agnes")
     client = client_for()
 
-    response = client.post("/auth/login", json={"email": "Agnes@example.com", "password": PASSWORD})
+    response = client.post("/auth/login", json={"login": "Agnes@example.com", "password": PASSWORD})
 
     assert response.status_code == 200
     assert client.get("/auth/me").status_code == 200
@@ -69,10 +69,10 @@ def test_a_wrong_password_and_an_unknown_email_look_the_same(
     sign_up(client_for, "agnes")
 
     wrong_password = client_for().post(
-        "/auth/login", json={"email": "agnes@example.com", "password": "not my password"}
+        "/auth/login", json={"login": "agnes@example.com", "password": "not my password"}
     )
     no_account = client_for().post(
-        "/auth/login", json={"email": "nobody@example.com", "password": PASSWORD}
+        "/auth/login", json={"login": "nobody@example.com", "password": PASSWORD}
     )
 
     assert wrong_password.status_code == no_account.status_code == 401
@@ -96,11 +96,13 @@ def test_yorick_passwords_still_work_and_are_upgraded(
 ) -> None:
     # Parse stored bcryptjs hashes, which start "$2a$".
     legacy_hash = bcrypt.hashpw(PASSWORD.encode(), bcrypt.gensalt(prefix=b"2a")).decode()
-    session.add(User(email="old@example.com", display_name="Old", password_hash=legacy_hash))
+    session.add(
+        User(email="old@example.com", display_name="Old", handle="old", password_hash=legacy_hash)
+    )
     session.flush()
 
     response = client_for().post(
-        "/auth/login", json={"email": "old@example.com", "password": PASSWORD}
+        "/auth/login", json={"login": "old@example.com", "password": PASSWORD}
     )
 
     assert response.status_code == 200
