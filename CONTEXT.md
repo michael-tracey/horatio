@@ -255,6 +255,14 @@ _Avoid_: Action type, category
 One named thing a character does with Elite or Underworld influence in a month, such as "5: Lockdown"; each type has its own list. A general action has a level, and needs a rating at least that, or one less with one of the character's own specialisations of the type. A conflict action (Attack, Block, Boost, Defend, or a discovery block) is aimed at other influence and has no level.
 _Avoid_: Influence level, influence use
 
+**Influence Log**:
+A troupe's record of every influence action taken in it: logged from downtime answers, spent at games, entered by staff or imported. Its storytellers and assistant storytellers keep it; players never see it, only their own characters' entries. Entries belong to the troupe, so they stay when a character leaves it.
+_Avoid_: Influence sheet, Elite Infl. / UW Infl. (the old spreadsheet's tabs)
+
+**Influence Entry**:
+One line in the influence log: when the action was taken, to the minute, who took it (a character, or a name for someone not in Horatio), its type, specialisation, action and purpose, how many times it was taken, its discovery blocks, and where it came from. Each has a short id such as E12 or UW7.
+_Avoid_: Influence row, influence record
+
 **Participant**:
 A character taking part in a downtime cycle. Participants are the characters whose home troupe runs the cycle when it opens; storytellers and assistant storytellers can add or remove participants afterwards, but only characters whose home troupe it is.
 _Avoid_: Roster entry, entrant

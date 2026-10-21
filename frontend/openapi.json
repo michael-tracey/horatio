@@ -1244,7 +1244,7 @@
         "title": "CharacterChanges",
         "type": "object"
       },
-      "CharacterChoice": {
+      "CharacterChoice-Input": {
         "properties": {
           "character_id": {
             "format": "uuid",
@@ -1254,6 +1254,35 @@
         },
         "required": [
           "character_id"
+        ],
+        "title": "CharacterChoice",
+        "type": "object"
+      },
+      "CharacterChoice-Output": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_troupe": {
+            "title": "In Troupe",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "in_troupe"
         ],
         "title": "CharacterChoice",
         "type": "object"
@@ -2132,6 +2161,25 @@
           "completion_xp"
         ],
         "title": "CycleChanges",
+        "type": "object"
+      },
+      "CycleChoice": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CycleChoice",
         "type": "object"
       },
       "CycleClose": {
@@ -3216,6 +3264,404 @@
         "title": "InfluenceAnswerOut",
         "type": "object"
       },
+      "InfluenceChoicesOut": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "cycles": {
+            "items": {
+              "$ref": "#/components/schemas/CycleChoice"
+            },
+            "title": "Cycles",
+            "type": "array"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Names",
+            "type": "array"
+          },
+          "types": {
+            "items": {
+              "$ref": "#/components/schemas/InfluenceTypeChoices"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "types",
+          "characters",
+          "names",
+          "cycles"
+        ],
+        "title": "InfluenceChoicesOut",
+        "type": "object"
+      },
+      "InfluenceEntryIn": {
+        "properties": {
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "blocks": {
+            "default": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Blocks",
+            "type": "integer"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "cycle_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_details": {
+            "default": false,
+            "title": "Needs Details",
+            "type": "boolean"
+          },
+          "purpose": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Purpose",
+            "type": "string"
+          },
+          "specialization": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Specialization",
+            "type": "string"
+          },
+          "times": {
+            "default": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Times",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "happened_at"
+        ],
+        "title": "InfluenceEntryIn",
+        "type": "object"
+      },
+      "InfluenceEntryOut": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "blocks": {
+            "title": "Blocks",
+            "type": "integer"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "conflict": {
+            "title": "Conflict",
+            "type": "boolean"
+          },
+          "current_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Name"
+          },
+          "cycle_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id"
+          },
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "left_troupe": {
+            "title": "Left Troupe",
+            "type": "boolean"
+          },
+          "logged_at": {
+            "format": "date-time",
+            "title": "Logged At",
+            "type": "string"
+          },
+          "logged_by_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logged By Id"
+          },
+          "logged_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logged By Name"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_details": {
+            "title": "Needs Details",
+            "type": "boolean"
+          },
+          "play_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Play Event Id"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "response_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Response Ids",
+            "type": "array"
+          },
+          "short_id": {
+            "title": "Short Id",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "downtime",
+              "game",
+              "hand",
+              "import"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "specialization": {
+            "title": "Specialization",
+            "type": "string"
+          },
+          "times": {
+            "title": "Times",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "short_id",
+          "type",
+          "happened_at",
+          "character_id",
+          "name",
+          "current_name",
+          "left_troupe",
+          "specialization",
+          "action_key",
+          "action",
+          "conflict",
+          "purpose",
+          "times",
+          "blocks",
+          "source",
+          "cycle_id",
+          "cycle_name",
+          "play_event_id",
+          "reference",
+          "needs_details",
+          "logged_by_id",
+          "logged_by_name",
+          "logged_at",
+          "response_ids"
+        ],
+        "title": "InfluenceEntryOut",
+        "type": "object"
+      },
+      "InfluenceEntryRef": {
+        "description": "The influence log entry an answer was logged in.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "short_id": {
+            "title": "Short Id",
+            "type": "string"
+          },
+          "times": {
+            "title": "Times",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "short_id",
+          "times"
+        ],
+        "title": "InfluenceEntryRef",
+        "type": "object"
+      },
+      "InfluenceLogOut": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/InfluenceEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "entries",
+          "total"
+        ],
+        "title": "InfluenceLogOut",
+        "type": "object"
+      },
       "InfluenceStandingOut": {
         "description": "What a character can do with one type of influence, for the downtime form.",
         "properties": {
@@ -3266,6 +3712,44 @@
           "actions"
         ],
         "title": "InfluenceStandingOut",
+        "type": "object"
+      },
+      "InfluenceTypeChoices": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/InfluenceActionOut"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "specializations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Specializations",
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "actions",
+          "specializations"
+        ],
+        "title": "InfluenceTypeChoices",
         "type": "object"
       },
       "Invite": {
@@ -3428,6 +3912,20 @@
           "asked_themselves"
         ],
         "title": "LiveReset",
+        "type": "object"
+      },
+      "LogAnswerIn": {
+        "properties": {
+          "purpose": {
+            "maxLength": 1000,
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "purpose"
+        ],
+        "title": "LogAnswerIn",
         "type": "object"
       },
       "LogEntry": {
@@ -3650,6 +4148,23 @@
         "title": "LogEntryOut",
         "type": "object"
       },
+      "LoggedOut": {
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/InfluenceEntryOut"
+          },
+          "repeat": {
+            "title": "Repeat",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "entry",
+          "repeat"
+        ],
+        "title": "LoggedOut",
+        "type": "object"
+      },
       "Me": {
         "properties": {
           "display_name": {
@@ -3723,6 +4238,25 @@
           "home"
         ],
         "title": "MembershipOut",
+        "type": "object"
+      },
+      "MergeIn": {
+        "properties": {
+          "entry_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Entry Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entry_ids"
+        ],
+        "title": "MergeIn",
         "type": "object"
       },
       "Morality": {
@@ -8903,6 +9437,16 @@
               }
             ]
           },
+          "influence_entry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InfluenceEntryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "question": {
             "title": "Question",
             "type": "string"
@@ -13327,7 +13871,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CharacterChoice"
+                "$ref": "#/components/schemas/CharacterChoice-Input"
               }
             }
           },
@@ -14097,6 +14641,147 @@
         "summary": "Health"
       }
     },
+    "/api/influence-entries/{entry_id}": {
+      "delete": {
+        "operationId": "delete_entry_api_influence_entries__entry_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Entry",
+        "tags": [
+          "influence log"
+        ]
+      },
+      "put": {
+        "operationId": "change_entry_api_influence_entries__entry_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfluenceEntryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Entry",
+        "tags": [
+          "influence log"
+        ]
+      }
+    },
+    "/api/influence-entries/{entry_id}/merge": {
+      "post": {
+        "description": "Merge repeats into this entry: their times add to its own.",
+        "operationId": "merge_api_influence_entries__entry_id__merge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Merge",
+        "tags": [
+          "influence log"
+        ]
+      }
+    },
     "/api/notifications": {
       "get": {
         "operationId": "list_notifications_api_notifications_get",
@@ -14741,6 +15426,95 @@
         "summary": "Decline",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/influence-entry": {
+      "delete": {
+        "description": "Take an answer back off the log.",
+        "operationId": "unlog_answer_api_responses__response_id__influence_entry_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unlog Answer",
+        "tags": [
+          "influence log"
+        ]
+      },
+      "post": {
+        "description": "Log a player's influence answer, with its purpose trimmed by staff.",
+        "operationId": "log_answer_api_responses__response_id__influence_entry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogAnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoggedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Log Answer",
+        "tags": [
+          "influence log"
         ]
       }
     },
@@ -16798,6 +17572,326 @@
         "summary": "Remove Game",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/influence-log": {
+      "get": {
+        "description": "The troupe's entries, newest first, filtered. `since` counts from that moment\nand `until` up to it.",
+        "operationId": "read_log_api_troupes__troupe_id__influence_log_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "elite",
+                    "underworld"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "specialization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Specialization"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
+            "in": "query",
+            "name": "needs_details",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Needs Details"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "downtime",
+                    "game",
+                    "hand",
+                    "import"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceLogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Log",
+        "tags": [
+          "influence log"
+        ]
+      },
+      "post": {
+        "description": "Log an action by hand: one taken at a game, by an NPC, or outside a cycle.",
+        "operationId": "add_entry_api_troupes__troupe_id__influence_log_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfluenceEntryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Entry",
+        "tags": [
+          "influence log"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/influence-log/choices": {
+      "get": {
+        "description": "What an entry can say: each type's actions and specialisations, the troupe's\ncharacters and cycles, and the names of people not in Horatio.",
+        "operationId": "choices_api_troupes__troupe_id__influence_log_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceChoicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choices",
+        "tags": [
+          "influence log"
         ]
       }
     },

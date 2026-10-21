@@ -167,6 +167,10 @@ class Response(Record):
     assigned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     written_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     written_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The influence log entry staff logged this answer in (horatio.influence_log).
+    influence_entry_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("influence_entries.id", ondelete="SET NULL"), index=True
+    )
 
 
 class Delivery(Record):

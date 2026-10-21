@@ -80,3 +80,6 @@ export type ProfilePerson = Schemas["ProfilePerson"];
 export type InfluenceActionOut = Schemas["InfluenceActionOut"];
 export type InfluenceStandingOut = Schemas["InfluenceStandingOut"];
 export type InfluenceAnswerOut = Schemas["InfluenceAnswerOut"];
+export type InfluenceEntryOut = Schemas["InfluenceEntryOut"];
+export type InfluenceEntryIn = Schemas["InfluenceEntryIn"];
+export type InfluenceChoicesOut = Schemas["InfluenceChoicesOut"];

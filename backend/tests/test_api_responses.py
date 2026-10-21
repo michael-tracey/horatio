@@ -104,6 +104,7 @@ def test_narrators_see_only_their_work_and_never_the_sheet(scene: Scene) -> None
         "answer",
         "structured",
         "influence",
+        "influence_entry",
         "status",
         "assigned_to_user_id",
         "assigned_to_any_narrator",

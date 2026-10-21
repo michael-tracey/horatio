@@ -22,6 +22,7 @@ from horatio.models.downtimes import (
     Submission,
     TroupeConnector,
 )
+from horatio.models.influence import InfluenceEntry
 from horatio.models.notifications import EmailNotice, Notification
 from horatio.models.people import AuthIdentity, FormerHandle, PasswordReset, Session, User
 from horatio.models.play import PlayCounter, PlayEvent, PlayGame
@@ -59,6 +60,7 @@ __all__ = [
     "DisciplinePurchase",
     "DowntimeCycle",
     "EmailNotice",
+    "InfluenceEntry",
     "RandomTable",
     "Response",
     "Notification",

@@ -453,6 +453,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // The lead hands the action to the narrator, who writes it. Staff see the influence action by name.
   await lead.page.getByRole("link", { name: "Responses" }).click();
   await expect(lead.page.getByText("2: Gossip and Insider Trading (Police)")).toBeVisible();
+  // The lead logs it in the troupe's influence log, its purpose trimmed from the answer.
+  await lead.page.getByRole("button", { name: "Log it" }).click();
+  await expect(lead.page.getByLabel("Purpose")).toHaveValue("Ask around the precinct about the missing ledger.");
+  await lead.page.getByLabel("Purpose").fill("To hear about the missing ledger");
+  await lead.page.getByRole("button", { name: "Log it" }).click();
+  await expect(lead.page.getByText("Logged as E1")).toBeVisible();
   await lead.page.getByLabel("Assign to").first().selectOption({ label: "narrator" });
   await expect(lead.page.getByLabel("Assign to").first()).toHaveValue(/.+/);
   await narrator.page.getByRole("link", { name: "Troupes" }).click();
@@ -487,6 +493,40 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("always on")).toBeVisible();
   await expect(lead.page.getByText(/Discord is not set up on this server/)).toBeVisible();
   await expect(lead.page.getByText(/Email is not set up on this server/)).toBeVisible();
+
+  // The troupe's influence log: the logged answer, and an NPC's action logged by hand.
+  await lead.page.getByRole("link", { name: "Downtimes", exact: true }).click();
+  await lead.page.getByRole("link", { name: "Influence log", exact: true }).click();
+  const e1 = lead.page.getByRole("listitem", { name: "Entry E1" });
+  await expect(e1.getByText("To hear about the missing ledger")).toBeVisible();
+  await expect(e1.getByText("Elite, Police · 2: Gossip and Insider Trading")).toBeVisible();
+  await expect(e1.getByRole("link", { name: "Downtime: November" })).toBeVisible();
+  await lead.page.getByRole("button", { name: "Log influence" }).click();
+  const form = lead.page.getByRole("form", { name: "Log influence" });
+  await form.getByLabel("Who").selectOption({ label: "Someone not in Horatio…" });
+  await form.getByLabel("Their name").fill("REDACTED");
+  await form.getByLabel("Type").selectOption({ label: "Underworld" });
+  await form.getByLabel("Specialisation").selectOption("Transportation");
+  await form.getByLabel("Action").selectOption({ label: "5: Lockdown" });
+  await form.getByLabel("Purpose").fill("To secure the location of the gather");
+  await form.getByRole("button", { name: "Log it" }).click();
+  const uw1 = lead.page.getByRole("listitem", { name: "Entry UW1" });
+  await expect(uw1.getByText("REDACTED")).toBeVisible();
+  await expect(uw1.getByText("By hand")).toBeVisible();
+  // Filtered to Underworld, only the NPC's action shows.
+  await lead.page.getByLabel("Type", { exact: true }).selectOption({ label: "Underworld" });
+  await expect(e1).toHaveCount(0);
+  await expect(lead.page.getByText("1 entry, newest first.")).toBeVisible();
+  await lead.page.screenshot(shots("influence-log"));
+  // Edited, then deleted.
+  await uw1.getByRole("button", { name: "Edit" }).click();
+  const edit = lead.page.getByRole("form", { name: "Edit UW1" });
+  await edit.getByLabel("Times taken").fill("3");
+  await edit.getByRole("button", { name: "Save changes" }).click();
+  await expect(uw1.getByText("logged 3 times")).toBeVisible();
+  lead.page.once("dialog", (d) => d.accept());
+  await uw1.getByRole("button", { name: "Delete" }).click();
+  await expect(lead.page.getByText("No influence actions match these filters.")).toBeVisible();
 
   // The printable sheet, in the paper sheet's order.
   await p.getByRole("link", { name: "Sheet", exact: true }).click();

@@ -428,7 +428,7 @@ function Responses({ cycle }: { cycle: CycleOut }) {
       </div>
       {shown.length === 0 && <Empty>Nothing here.</Empty>}
       {shown.map((item) => (
-        <ResponseEditor key={item.id} item={item} troupeId={cycle.troupe_id} extra={<AssignSelect item={item} staff={staff.data ?? []} />} />
+        <ResponseEditor key={item.id} item={item} troupeId={cycle.troupe_id} canLog extra={<AssignSelect item={item} staff={staff.data ?? []} />} />
       ))}
     </div>
   );
