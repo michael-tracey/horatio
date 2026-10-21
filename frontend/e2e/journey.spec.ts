@@ -1035,6 +1035,46 @@ test("settings are kept on the account, and the dark is not optional", async ({ 
   await page.screenshot(shots("settings"));
 });
 
+test("large text makes the app bigger, but not printed sheets and badges", async ({ browser }) => {
+  const { page } = await person(browser, "large-text");
+  await page.getByLabel("Name").fill("Squint");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const character = new URL(page.url()).pathname.split("/")[2]!;
+  const fontSize = () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize);
+  const normal = await fontSize();
+
+  await page.getByRole("link", { name: "large-text" }).click();
+  await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" }).click();
+  // At once, with no reload, and still after one.
+  await expect.poll(fontSize).not.toBe(normal);
+  const large = await fontSize();
+  expect(parseFloat(large) / parseFloat(normal)).toBeCloseTo(1.15);
+  await page.reload();
+  await expect(page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" })).toHaveAttribute("aria-checked", "true");
+  await expect.poll(fontSize).toBe(large);
+  await page.screenshot(shots("settings-large-text"));
+
+  // The Play View too.
+  await page.goto(`/play/characters/${character}`);
+  await expect(page.getByText("Squint").first()).toBeVisible();
+  await expect.poll(fontSize).toBe(large);
+  // But the printed sheet and badge keep their own sizes.
+  await page.goto(`/print/characters/${character}`);
+  await expect(page.getByText("Squint").first()).toBeVisible();
+  expect(await fontSize()).toBe(normal);
+  await page.goto(`/print/characters/${character}/badge`);
+  await expect(page.getByText("Squint").first()).toBeVisible();
+  expect(await fontSize()).toBe(normal);
+
+  // And back to normal.
+  await page.goto("/account/settings");
+  await expect.poll(fontSize).toBe(large);
+  await page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Normal" }).click();
+  await expect.poll(fontSize).toBe(normal);
+});
+
 test("the Play View opens as the settings say", async ({ browser }) => {
   const { page } = await person(browser, "play-settings-player");
   // Headless browsers may refuse a wake lock, so this one is a stand-in that grants it.

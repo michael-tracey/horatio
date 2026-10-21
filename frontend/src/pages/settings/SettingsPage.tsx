@@ -185,7 +185,7 @@ export function SettingsPage() {
       </Card>
 
       <Card title="Appearance">
-        <Setting label="Text size">
+        <Setting label="Text size" hint="Everywhere but printed sheets and badges.">
           <Choice
             name="text_size"
             label="Text size"
