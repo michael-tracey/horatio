@@ -1009,9 +1009,25 @@ test("settings are kept on the account, and the dark is not optional", async ({ 
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" }).click();
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
-  // Saved on the account: it is still pips after a reload.
+  // While a change is saving, the other settings wait for it, so none is lost.
+  await page.route("**/api/preferences", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.continue();
+  });
+  await page.getByRole("radiogroup", { name: "Paper" }).getByRole("radio", { name: "A4" }).click();
+  const clock24 = page.getByRole("radiogroup", { name: "Clock" }).getByRole("radio", { name: "21:30" });
+  await expect(clock24).toBeDisabled();
+  await expect(page.getByText("Saving…")).toBeVisible();
+  await expect(clock24).toBeEnabled();
+  await page.unroute("**/api/preferences");
+  const saved = page.waitForResponse("**/api/preferences");
+  await clock24.click();
+  await saved;
+  // Saved on the account: all three are still set after a reload.
   await page.reload();
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("radiogroup", { name: "Paper" }).getByRole("radio", { name: "A4" })).toHaveAttribute("aria-checked", "true");
+  await expect(clock24).toHaveAttribute("aria-checked", "true");
   const mode = page.getByRole("radiogroup", { name: "Light mode or dark mode" });
   await expect(mode.getByRole("radio", { name: "Light" })).toBeDisabled();
   await expect(mode.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
@@ -1057,4 +1073,54 @@ test("large text makes the app bigger, but not printed sheets and badges", async
   await expect.poll(fontSize).toBe(large);
   await page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Normal" }).click();
   await expect.poll(fontSize).toBe(normal);
+});
+
+test("the Play View opens as the settings say", async ({ browser }) => {
+  const { page } = await person(browser, "play-settings-player");
+  // Headless browsers may refuse a wake lock, so this one is a stand-in that grants it.
+  await page.context().addInitScript(() => {
+    class Lock extends EventTarget {
+      released = false;
+      async release() {
+        this.released = true;
+        this.dispatchEvent(new Event("release"));
+      }
+    }
+    Object.defineProperty(navigator, "wakeLock", { value: { request: async () => new Lock() }, configurable: true });
+  });
+  await page.getByLabel("Name").fill("Mireille");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const characterId = new URL(page.url()).pathname.split("/")[2]!;
+
+  // As it opens by default: on the Tracker, quick notes on, the screen left to dim.
+  await page.goto(`/play/characters/${characterId}`);
+  await expect(page.getByRole("tab", { name: "Tracker" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("Quick notes")).toBeChecked();
+  await expect(page.getByText("Screen awake")).toHaveCount(0);
+
+  // Quick notes off, the screen kept awake, opening on Pools.
+  await page.goto("/account/settings");
+  const saved = () => page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
+  for (const label of ["Quick notes", "Keep the screen awake"]) {
+    const done = saved();
+    await page.getByLabel(label).click();
+    await done;
+  }
+  await expect(page.getByLabel("Quick notes")).not.toBeChecked();
+  await expect(page.getByLabel("Keep the screen awake")).toBeChecked();
+  const done = saved();
+  await page.getByRole("radiogroup", { name: "The Play View opens on" }).getByRole("radio", { name: "Pools" }).click();
+  await done;
+
+  await page.goto(`/play/characters/${characterId}`);
+  await expect(page.getByRole("tab", { name: "Pools" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Screen awake")).toBeVisible();
+  await page.screenshot(shots("play-settings"));
+  // Choosing the Tracker stays on it, and a spend asks for no note.
+  await page.getByRole("tab", { name: "Tracker" }).click();
+  await expect(page.getByRole("tab", { name: "Tracker" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("Quick notes")).not.toBeChecked();
+  await page.getByRole("button", { name: "Spend Willpower", exact: true }).last().click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
