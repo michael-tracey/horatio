@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { NotificationOut } from "../api/types";
+import { useDates } from "../dates";
 import { useAction, useNotifications } from "../hooks";
 import { Avatar } from "./Avatar";
 import { CountBubble } from "./ui";
@@ -105,6 +106,7 @@ export function NotificationBell() {
 }
 
 function Group({ title, items, onOpen, action }: { title: string; items: NotificationOut[]; onOpen: (i: NotificationOut) => void; action?: React.ReactNode }) {
+  const dates = useDates();
   return (
     <section className="border-b border-ash last:border-b-0">
       <h2 className="flex items-center justify-between px-4 pt-3 pb-1 font-sans text-xs tracking-wide text-mist uppercase">
@@ -121,7 +123,7 @@ function Group({ title, items, onOpen, action }: { title: string; items: Notific
                 <span className={`block text-sm ${item.read ? "text-mist" : "text-parchment"}`}>{item.summary}</span>
                 <span className="block text-xs text-mist">
                   {item.troupe_name && `${item.troupe_name} · `}
-                  <time dateTime={item.at} title={new Date(item.at).toLocaleString()}>
+                  <time dateTime={item.at} title={dates.dateTime(item.at)}>
                     {timeAgo(item.at)}
                   </time>
                 </span>

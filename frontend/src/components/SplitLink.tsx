@@ -3,8 +3,8 @@ import { Link } from "react-router";
 
 /**
  * A link with a chevron beside it: the link goes to the usual choice, the
- * chevron opens the other choices. Print uses it: numbers by default, pips if
- * you ask.
+ * chevron opens the other choices. Print uses it: ratings as your setting shows
+ * them, or the other way for one print.
  */
 export function SplitLink({ to, label, choices, menuLabel }: { to: string; label: string; choices: { to: string; label: string }[]; menuLabel: string }) {
   const [open, setOpen] = useState(false);

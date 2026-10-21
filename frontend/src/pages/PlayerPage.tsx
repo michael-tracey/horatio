@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PlayerOut } from "../api/types";
 import { Badge, Card, Empty, ErrorText, Loading, PageTitle } from "../components/ui";
+import { useDates } from "../dates";
 import { useMe } from "../hooks";
 import { ResetPassword } from "./custodian/ResetPassword";
 import { memberSince } from "./players";
@@ -11,6 +12,7 @@ import { memberSince } from "./players";
 export function PlayerPage() {
   const { userId = "" } = useParams();
   const me = useMe();
+  const dates = useDates();
   const player = useQuery({
     queryKey: ["player", userId],
     queryFn: () => unwrap(api.GET("/api/players/{user_id}", { params: { path: { user_id: userId } } })),
@@ -23,7 +25,7 @@ export function PlayerPage() {
   return (
     <>
       <PageTitle
-        subtitle={`Member since ${memberSince(p.member_since)}`}
+        subtitle={`Member since ${memberSince(p.member_since, dates)}`}
         actions={
           mine && (
             <Link to="/account" className="text-sm text-gold underline">

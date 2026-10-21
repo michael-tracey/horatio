@@ -407,8 +407,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Open for submissions" }).click();
   await expect(lead.page.getByText("0 of 1 submitted")).toBeVisible();
 
-  // The player answers and submits.
+  // The player answers and submits. The deadline shows with its zone, so everyone agrees on it.
   await p.getByRole("link", { name: "Downtime", exact: true }).click();
+  await expect(p.getByText(/^Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \S+$/)).toBeVisible();
   await p.getByRole("button", { name: /Add an action/ }).first().click();
   await p.getByLabel("Downtime action").fill("Hunt along the river docks.");
   await p.screenshot(shots("downtime"));
@@ -480,15 +481,36 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   }
   // Ratings print as numbers, and each attribute's focus sits beside it in brackets…
   await expect(p.getByText("Mental (Wits)")).toBeVisible();
-  await expect(p.getByText("●")).toHaveCount(0);
-  // …or as pips, from the chevron beside Print.
+  await expect(p.getByRole("img", { name: /dots$/ })).toHaveCount(0);
+  // …or as pips, for one print, from the chevron beside Print.
   await p.goBack();
   await p.getByRole("button", { name: "Print with numbers or pips" }).click();
-  await p.getByRole("menuitem", { name: "Pips" }).click();
+  await p.getByRole("menuitem", { name: "With pips" }).click();
   await expect(p.getByText("Mental (Wits)")).toBeVisible();
-  await expect(p.getByLabel("7 dots").first()).toContainText("●");
+  await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
   await p.screenshot(shots("print-pips"));
-  // The troupe's print view prints them the same way.
+  // Pips everywhere, from Settings: the Sheet tab shows them, and Print prints
+  // them, with numbers now the chevron's choice.
+  await p.goBack();
+  const sheetPage = p.url();
+  await p.goto("/account/settings");
+  await Promise.all([
+    p.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok()),
+    p.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" }).click(),
+  ]);
+  await p.goto(sheetPage);
+  await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
+  await p.screenshot(shots("sheet-pips"));
+  await p.getByRole("link", { name: "Print", exact: true }).click();
+  await expect(p.getByText("Mental (Wits)")).toBeVisible();
+  await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
+  await p.goBack();
+  await p.getByRole("button", { name: "Print with numbers or pips" }).click();
+  await p.getByRole("menuitem", { name: "With numbers" }).click();
+  await expect(p.getByText("Mental (Wits)")).toBeVisible();
+  await expect(p.getByRole("img", { name: /dots$/ })).toHaveCount(0);
+  // The troupe's print view prints them the same way, as the lead's setting has
+  // them: numbers.
   const troupeSheets = await lead.page.context().newPage();
   await troupeSheets.goto(`/print/troupes/${lead.page.url().match(/\/troupes\/([^/]+)/)![1]}`);
   await expect(troupeSheets.getByText("1 sheet", { exact: true })).toBeVisible();
@@ -500,6 +522,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
     const pdf = await troupeSheets.pdf({ path: "test-results/screens/sheet-a4.pdf", preferCSSPageSize: true });
     expect(pdfPages(pdf)).toEqual({ count: 1, size: "595 × 842" });
   }
+  await expect(troupeSheets.getByRole("img", { name: /dots$/ })).toHaveCount(0);
   await troupeSheets.close();
 });
 
@@ -1042,6 +1065,20 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByText("Game 2")).toBeVisible();
   await p.getByRole("button", { name: /Game 1 ·/ }).click();
   await expect(p.getByText("“fed at the club”")).toBeVisible();
+
+  // With ratings as pips in Settings, the Sheet and Pools tabs show pips too:
+  // Physical 5 of ten, Celerity 2, and its powers' levels.
+  const asPips = await p.request.patch("/api/preferences", { headers, data: { ratings: "pips" } });
+  expect(asPips.status(), await asPips.text()).toBe(200);
+  await p.reload();
+  await p.getByRole("tab", { name: "Sheet" }).click();
+  await expect(p.getByRole("img", { name: "5 dots" }).first()).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Attributes" })).toBeVisible();
+  await p.screenshot(shots("play-sheet-pips"));
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
+  await expect(p.getByRole("img", { name: "2 dots" }).first()).toBeVisible();
+  await p.screenshot(shots("play-pools-pips"));
 });
 
 test("anyone can read About, with the Dark Pack Agreement's notices", async ({ browser }) => {
@@ -1063,12 +1100,168 @@ test("settings are kept on the account, and the dark is not optional", async ({ 
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" }).click();
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
-  // Saved on the account: it is still pips after a reload.
+  // While a change is saving, the other settings wait for it, so none is lost.
+  await page.route("**/api/preferences", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.continue();
+  });
+  await page.getByRole("radiogroup", { name: "Paper" }).getByRole("radio", { name: "A4" }).click();
+  const clock24 = page.getByRole("radiogroup", { name: "Clock" }).getByRole("radio", { name: "21:30" });
+  await expect(clock24).toBeDisabled();
+  await expect(page.getByText("Saving…")).toBeVisible();
+  await expect(clock24).toBeEnabled();
+  await page.unroute("**/api/preferences");
+  const saved = page.waitForResponse("**/api/preferences");
+  await clock24.click();
+  await saved;
+  // Saved on the account: all three are still set after a reload.
   await page.reload();
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("radiogroup", { name: "Paper" }).getByRole("radio", { name: "A4" })).toHaveAttribute("aria-checked", "true");
+  await expect(clock24).toHaveAttribute("aria-checked", "true");
   const mode = page.getByRole("radiogroup", { name: "Light mode or dark mode" });
   await expect(mode.getByRole("radio", { name: "Light" })).toBeDisabled();
   await expect(mode.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
   await expect(page.getByText("The World of Darkness is always dark.")).toBeVisible();
   await page.screenshot(shots("settings"));
+});
+
+test("dates and times show in each person's zone and format", async ({ browser }) => {
+  const { page } = await person(browser, "dates-player");
+  // A rename puts a line in the character's log, on the default 12-hour clock in this device's zone.
+  await page.goto("/characters");
+  await page.getByLabel("Name").fill("Odile Marchand");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  await page.getByRole("button", { name: "More for Odile Marchand" }).click();
+  await page.getByRole("menuitem", { name: "Rename…" }).click();
+  await page.getByLabel("New name").fill("Odile Brun");
+  await page.getByRole("button", { name: "Rename", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Odile Brun");
+  await page.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  const renamed = page.locator("main time").first();
+  await expect(renamed).toHaveText(/^\d{1,2} [A-Z][a-z]{2} \d{4}, \d{1,2}:\d{2} [ap]m$/);
+  const log = page.url();
+
+  // In Tokyo, as ISO dates on a 24-hour clock: the page says at once how a deadline will show.
+  // Each change is waited for, to be sure it is saved before the next page.
+  const saved = () => page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.request().method() === "PATCH" && r.ok());
+  await page.goto("/account/settings");
+  await Promise.all([saved(), page.getByLabel("Time zone").fill("Asia/Tokyo")]);
+  await Promise.all([saved(), page.getByRole("radiogroup", { name: "Dates" }).getByRole("radio", { name: "2026-10-20" }).click()]);
+  await Promise.all([saved(), page.getByRole("radiogroup", { name: "Clock" }).getByRole("radio", { name: "21:30" }).click()]);
+  await expect(page.getByText(/^[A-Z][a-z]{2} \d{4}-\d{2}-\d{2}, \d{2}:\d{2} GMT\+9$/)).toBeVisible();
+  await page.screenshot(shots("settings-dates"));
+  await page.goto(log);
+  const at = new Date((await renamed.getAttribute("datetime")) ?? "");
+  const part = (type: string, parts: Intl.DateTimeFormatPart[]) => parts.find((p) => p.type === type)?.value;
+  const tokyo = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(at);
+  await expect(renamed).toHaveText(`${part("year", tokyo)}-${part("month", tokyo)}-${part("day", tokyo)}, ${part("hour", tokyo)}:${part("minute", tokyo)}`);
+  await page.screenshot(shots("log-dates"));
+
+  // Back to this device's zone: the zone is cleared, and kept that way after a reload.
+  await page.goto("/account/settings");
+  await Promise.all([saved(), page.getByRole("button", { name: "Use this device's" }).click()]);
+  await expect(page.getByLabel("Time zone")).toHaveValue("");
+  await page.reload();
+  await expect(page.getByLabel("Time zone")).toHaveValue("");
+  await expect(page.getByText(/^[A-Z][a-z]{2} \d{4}-\d{2}-\d{2}, \d{2}:\d{2} \S+$/)).toBeVisible();
+});
+
+test("large text makes the app bigger, but not printed sheets and badges", async ({ browser }) => {
+  const { page } = await person(browser, "large-text");
+  await page.getByLabel("Name").fill("Squint");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const character = new URL(page.url()).pathname.split("/")[2]!;
+  const fontSize = () => page.evaluate(() => getComputedStyle(document.documentElement).fontSize);
+  const normal = await fontSize();
+
+  await page.getByRole("link", { name: "large-text" }).click();
+  await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" }).click();
+  // At once, with no reload, and still after one.
+  await expect.poll(fontSize).not.toBe(normal);
+  const large = await fontSize();
+  expect(parseFloat(large) / parseFloat(normal)).toBeCloseTo(1.15);
+  await page.reload();
+  await expect(page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" })).toHaveAttribute("aria-checked", "true");
+  await expect.poll(fontSize).toBe(large);
+  await page.screenshot(shots("settings-large-text"));
+
+  // The Play View too.
+  await page.goto(`/play/characters/${character}`);
+  await expect(page.getByText("Squint").first()).toBeVisible();
+  await expect.poll(fontSize).toBe(large);
+  // But the printed sheet and badge keep their own sizes.
+  await page.goto(`/print/characters/${character}`);
+  await expect(page.getByText("Squint").first()).toBeVisible();
+  expect(await fontSize()).toBe(normal);
+  await page.goto(`/print/characters/${character}/badge`);
+  await expect(page.getByText("Squint").first()).toBeVisible();
+  expect(await fontSize()).toBe(normal);
+
+  // And back to normal.
+  await page.goto("/account/settings");
+  await expect.poll(fontSize).toBe(large);
+  await page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Normal" }).click();
+  await expect.poll(fontSize).toBe(normal);
+});
+
+test("the Play View opens as the settings say", async ({ browser }) => {
+  const { page } = await person(browser, "play-settings-player");
+  // Headless browsers may refuse a wake lock, so this one is a stand-in that grants it.
+  await page.context().addInitScript(() => {
+    class Lock extends EventTarget {
+      released = false;
+      async release() {
+        this.released = true;
+        this.dispatchEvent(new Event("release"));
+      }
+    }
+    Object.defineProperty(navigator, "wakeLock", { value: { request: async () => new Lock() }, configurable: true });
+  });
+  await page.getByLabel("Name").fill("Mireille");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const characterId = new URL(page.url()).pathname.split("/")[2]!;
+
+  // As it opens by default: on the Tracker, quick notes on, the screen left to dim.
+  await page.goto(`/play/characters/${characterId}`);
+  await expect(page.getByRole("tab", { name: "Tracker" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("Quick notes")).toBeChecked();
+  await expect(page.getByText("Screen awake")).toHaveCount(0);
+
+  // Quick notes off, the screen kept awake, opening on Pools.
+  await page.goto("/account/settings");
+  const saved = () => page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
+  for (const label of ["Quick notes", "Keep the screen awake"]) {
+    const done = saved();
+    await page.getByLabel(label).click();
+    await done;
+  }
+  await expect(page.getByLabel("Quick notes")).not.toBeChecked();
+  await expect(page.getByLabel("Keep the screen awake")).toBeChecked();
+  const done = saved();
+  await page.getByRole("radiogroup", { name: "The Play View opens on" }).getByRole("radio", { name: "Pools" }).click();
+  await done;
+
+  await page.goto(`/play/characters/${characterId}`);
+  await expect(page.getByRole("tab", { name: "Pools" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Screen awake")).toBeVisible();
+  await page.screenshot(shots("play-settings"));
+  // Choosing the Tracker stays on it, and a spend asks for no note.
+  await page.getByRole("tab", { name: "Tracker" }).click();
+  await expect(page.getByRole("tab", { name: "Tracker" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("Quick notes")).not.toBeChecked();
+  await page.getByRole("button", { name: "Spend Willpower", exact: true }).last().click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
