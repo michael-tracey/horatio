@@ -1009,9 +1009,25 @@ test("settings are kept on the account, and the dark is not optional", async ({ 
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" }).click();
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
-  // Saved on the account: it is still pips after a reload.
+  // While a change is saving, the other settings wait for it, so none is lost.
+  await page.route("**/api/preferences", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.continue();
+  });
+  await page.getByRole("radiogroup", { name: "Paper" }).getByRole("radio", { name: "A4" }).click();
+  const clock24 = page.getByRole("radiogroup", { name: "Clock" }).getByRole("radio", { name: "21:30" });
+  await expect(clock24).toBeDisabled();
+  await expect(page.getByText("Saving…")).toBeVisible();
+  await expect(clock24).toBeEnabled();
+  await page.unroute("**/api/preferences");
+  const saved = page.waitForResponse("**/api/preferences");
+  await clock24.click();
+  await saved;
+  // Saved on the account: all three are still set after a reload.
   await page.reload();
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("radiogroup", { name: "Paper" }).getByRole("radio", { name: "A4" })).toHaveAttribute("aria-checked", "true");
+  await expect(clock24).toHaveAttribute("aria-checked", "true");
   const mode = page.getByRole("radiogroup", { name: "Light mode or dark mode" });
   await expect(mode.getByRole("radio", { name: "Light" })).toBeDisabled();
   await expect(mode.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
