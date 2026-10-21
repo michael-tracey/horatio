@@ -156,15 +156,23 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   for (const level of ["Healthy", "Injured", "Incapacitated"])
     await expect(part("Health Levels").getByRole("img", { name: `${level}: 3 boxes` })).toBeVisible();
   await expect(part("Expended").getByText("Healthy")).toHaveCount(0);
+  // Changes wait in the cart, with what each costs, until Spend XP.
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
   await part("Backgrounds").getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Search Backgrounds").fill("Elite");
   await p.getByRole("button", { name: "Influences: The Elite" }).click();
-  await p.getByRole("button", { name: "Buy" }).click();
-  await expect(p.getByText("29", { exact: true })).toBeVisible(); // 30 − 1 for Influence
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await expect(cart.getByText("Add Influences: The Elite 1 · 1 XP")).toBeVisible();
   // A focus can be changed after creation, for 10 XP.
   await p.getByRole("listitem").filter({ hasText: "Strength" }).getByRole("button", { name: "Change" }).click();
   await p.getByLabel("Change Strength to").selectOption("Dexterity");
-  await p.getByRole("button", { name: "10 XP" }).click();
+  await p.getByRole("button", { name: "Add to cart · 10 XP" }).click();
+  await expect(cart.getByText("Strength → Dexterity · 10 XP")).toBeVisible();
+  await expect(p.getByText("after these changes", { exact: true })).toBeVisible();
+  await expect(p.getByText("19", { exact: true })).toBeVisible(); // 30 − 1 for Influence − 10
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 11 XP.")).toBeVisible();
+  await expect(p.getByText("Available", { exact: true })).toBeVisible();
   await expect(p.getByText("19", { exact: true })).toBeVisible();
   // Merits that give other traits apply them: Rugged adds a health level to each track.
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
@@ -174,7 +182,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByLabel("Show").selectOption({ label: "What this character can take" });
   await p.getByLabel("Search Merits").fill("Rugged");
   await p.getByRole("button", { name: /^Rugged/ }).click();
-  await p.getByRole("button", { name: "Buy" }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("+1 from Rugged").first()).toBeVisible();
   await expect(p.getByText("16", { exact: true })).toBeVisible();
   for (const level of ["Healthy", "Injured", "Incapacitated"])
@@ -244,6 +253,10 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Once accepted, a discipline dot waits on the home troupe, with the XP held.
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
   await p.getByRole("button", { name: "Raise Celerity" }).click();
+  await expect(cart.getByText("Celerity 2 → 3 · 9 XP")).toBeVisible();
+  await expect(cart.getByText("needs approval")).toBeVisible();
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
   await expect(p.getByText("awaiting approval").first()).toBeVisible();
   await lead.page.getByRole("link", { name: /Approvals/ }).click();
   await expect(lead.page.getByText(/Celerity 2 → 3, for 9 XP/)).toBeVisible();
@@ -375,9 +388,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Cancel" }).click();
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
   await p.getByRole("button", { name: "Raise Investigation" }).click();
-  // What came of it shows right under the trait, where the player is looking.
+  // Until it is spent, the sheet shows what the rating would become.
   const investigation = p.locator("li", { has: p.getByRole("button", { name: "Raise Investigation" }) });
-  await expect(investigation.locator("xpath=following-sibling::li[1]")).toHaveText("Spent 1 XP.");
+  await expect(investigation.getByLabel("1 dots, 2 after the changes in the cart")).toHaveText("1 → 2");
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 1 XP.")).toBeVisible();
+  await expect(investigation.getByLabel("2 dots", { exact: true })).toHaveText("2");
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
   await expect(p.getByText("raised Agnes's Investigation from 1 to 2 (1 XP).", { exact: false })).toBeVisible();
 
@@ -398,7 +414,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await part("Backgrounds").getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Search Backgrounds").fill("Contacts");
   await p.getByRole("button", { name: /^Contacts/ }).click();
-  await p.getByRole("button", { name: "Buy" }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await p.getByRole("button", { name: "Spend XP" }).click();
   await p.getByRole("button", { name: "Add to Contacts Specializations" }).click();
   const contact = p.getByRole("listitem").filter({ has: p.getByLabel("Name a Contacts Specializations") });
   await contact.getByLabel("Name a Contacts Specializations").fill("Reyes");
@@ -508,7 +525,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   ]);
   await p.goto(sheetPage);
   await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
+  // A change in the cart shows as outlined pips, not yet spent; Clear empties the cart.
+  await p.getByRole("button", { name: "Raise Investigation" }).click();
+  await expect(p.getByRole("img", { name: "2 dots, 3 after the changes in the cart" })).toBeVisible();
   await p.screenshot(shots("sheet-pips"));
+  await p.getByRole("button", { name: "Clear" }).click();
+  await expect(p.getByRole("img", { name: "2 dots, 3 after the changes in the cart" })).toHaveCount(0);
   await p.getByRole("link", { name: "Print", exact: true }).click();
   await expect(p.getByText("Mental (Wits)")).toBeVisible();
   await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
@@ -815,6 +837,95 @@ test("a Caitiff chooses their in-clan disciplines while creating", async ({ brow
   // Uncommon disciplines are never offered; once three are chosen, nothing else is.
   await expect(page.getByRole("checkbox", { name: "Protean" })).toHaveCount(0);
   await expect(page.getByRole("checkbox", { name: "Dominate" })).toHaveCount(0);
+});
+
+test("changes on the sheet wait in a cart, and only Spend XP makes them, all or none", async ({ browser }) => {
+  const { page: p } = await person(browser, "carter");
+  await p.getByLabel("Name").fill("Wren");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  // Built through the API all but one pick, which is placed from the sheet.
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+  const put = async (url: string, data: object) => {
+    const response = await p.request.put(url, { headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBe(200);
+  };
+  await put(`/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await put(`/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+
+  // Creation picks go through the cart too: placing one, and taking one back.
+  await p.getByLabel("Pick Skills at 1").selectOption("Melee");
+  await p.getByRole("button", { name: "Take back the pick on Medicine" }).click();
+  await p.getByLabel("Pick Skills at 1").selectOption("Stealth");
+  await expect(cart.getByRole("listitem")).toHaveText([/Take back the pick on Medicine/, /Pick Melee at 1/, /Pick Stealth at 1/]);
+  await expect(p.getByRole("button", { name: "Apply picks" })).toBeEnabled();
+  // The cart is kept in this browser, and leaving the page with it full asks first.
+  const asked = p.waitForEvent("dialog");
+  const reloaded = p.reload();
+  const leaving = await asked;
+  expect(leaving.type()).toBe("beforeunload");
+  await leaving.accept();
+  await reloaded;
+  await expect(cart.getByRole("listitem")).toHaveCount(3);
+  // Finishing with picks still in the cart asks what to do with them.
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByText("3 changes in the cart are not applied yet.", { exact: false })).toBeVisible();
+  await p.getByRole("button", { name: "Apply them and finish" }).click();
+  await expect(p.getByRole("heading", { name: "Character creation" })).toHaveCount(0);
+  await expect(part("Skills").getByText("Stealth")).toBeVisible();
+  await expect(part("Skills").getByText("Medicine")).toHaveCount(0);
+
+  // Two dots of Dodge, priced dot by dot: nothing is spent yet, and the sheet shows what it would be.
+  await p.getByRole("button", { name: "Raise Dodge" }).click();
+  await p.getByRole("button", { name: "Raise Dodge" }).click();
+  await expect(cart.getByText("Dodge 3 → 5 · 9 XP")).toBeVisible();
+  await expect(p.getByLabel("3 dots, 5 after the changes in the cart")).toHaveText("3 → 5");
+  await expect(p.getByText("after these changes", { exact: true })).toBeVisible();
+  await expect(p.getByText("21", { exact: true })).toBeVisible();
+  // Lowering it again steps the cart back.
+  await p.getByRole("button", { name: "Lower Dodge" }).click();
+  await expect(cart.getByText("Dodge 3 → 4 · 4 XP")).toBeVisible();
+  await p.getByRole("button", { name: "Raise Dodge" }).click();
+
+  // Archaic, then Computer, which an Archaic character cannot have: that line is refused, and nothing can be spent.
+  await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Category").selectOption({ label: "Flaws" });
+  await p.getByLabel("Search Flaws").fill("Archaic");
+  await p.getByRole("button", { name: /^Archaic/ }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await part("Skills").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Skills").fill("Computer");
+  await p.getByRole("button", { name: /^Computer/ }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Add Computer 1" })).toContainText("An Archaic character cannot have Computer");
+  await expect(p.getByRole("button", { name: "Spend XP" })).toBeDisabled();
+  await expect(p.getByText("A change can't be made; see the line marked.")).toBeVisible();
+  if (test.info().project.name === "phone") {
+    // Below the sheet on a phone, the cart is a tap away from the bar at the foot of the screen.
+    await p.getByRole("button", { name: "3 changes · 8 XP · Review" }).click();
+    await expect(p.getByRole("button", { name: "Spend XP" })).toBeInViewport();
+  }
+  await p.screenshot(shots("cart"));
+  await p.getByRole("button", { name: "Take Add Computer 1 out of the cart" }).click();
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 7 XP.")).toBeVisible(); // 9 for Dodge, less 2 for Archaic
+  await expect(p.getByText("23", { exact: true })).toBeVisible();
+  await expect(p.locator("li", { has: p.getByRole("button", { name: "Raise Dodge" }) }).getByLabel("5 dots", { exact: true })).toHaveText("5");
+  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
+  await expect(p.getByText("Dodge 3 → 5")).toBeVisible();
 });
 
 test("a player fills in their profile, and the custodian resets their password", async ({ browser }) => {

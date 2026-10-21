@@ -10,17 +10,20 @@ import { applyFilter, filterChoices, quickPicks } from "./traitFilter";
 const NEEDS_FIELD = new Set(["Crafts", "Performance", "Science"]);
 const SHOWN = 40;
 
+/** A new trait for the cart. */
+export type NewTrait = { category: string; name: string; detail: string; rating: number; teacher: string; fixed: boolean };
+
 /**
  * Add a trait to one part of the sheet: pick from a searchable list of the
- * part's categories, see what it costs, and buy it. Traits the rules would
- * refuse are greyed out with the reason.
+ * part's categories, see what it costs, and put it in the cart. Traits the
+ * rules would refuse are greyed out with the reason.
  */
 export function AddTraitPanel({
   character,
   catalogue,
   categories,
   held,
-  onDone,
+  onAdd,
   onClose,
 }: {
   character: CharacterOut;
@@ -28,7 +31,7 @@ export function AddTraitPanel({
   /** Category keys this part of the sheet adds to. */
   categories: string[];
   held: SheetTraitOut[];
-  onDone: (message: string) => void;
+  onAdd: (trait: NewTrait) => void;
   onClose: () => void;
 }) {
   const [category, setCategory] = useState(categories[0] ?? "");
@@ -69,11 +72,10 @@ export function AddTraitPanel({
     const result = await unwrap(api.POST("/api/characters/{character_id}/quote", { params: { path: { character_id: character.id } }, body }));
     setQuote(result.cost);
   });
-  const buy = useAction(async () => {
-    const result = await unwrap(api.PUT("/api/characters/{character_id}/traits", { params: { path: { character_id: character.id } }, body }));
-    onDone(result.cost ? `Added ${name} for ${result.cost} XP.` : `Added ${name}.`);
+  const add = () => {
+    onAdd({ category, name, detail, rating: body.rating ?? 1, teacher: body.teacher, fixed: fixed !== null });
     onClose();
-  });
+  };
 
   return (
     <div className="mb-4 flex flex-col gap-3 rounded-md border border-ash bg-night/40 p-3">
@@ -143,7 +145,7 @@ export function AddTraitPanel({
           className="flex flex-col gap-3 border-t border-ash pt-3"
           onSubmit={(e) => {
             e.preventDefault();
-            buy.mutate(undefined);
+            add();
           }}
         >
           <p className="text-sm text-parchment">{trait.name}</p>
@@ -183,16 +185,14 @@ export function AddTraitPanel({
             </Field>
           )}
           {quote !== null && <p className="text-sm">Costs {quote} XP.</p>}
-          <ErrorText error={price.error ?? buy.error} />
+          <ErrorText error={price.error} />
           <div className="flex gap-2">
             {cat?.rated && (
               <Button type="button" variant="secondary" disabled={price.isPending} onClick={() => price.mutate(undefined)}>
                 Price it
               </Button>
             )}
-            <Button type="submit" disabled={buy.isPending}>
-              {cat?.rated ? "Buy" : "Choose"}
-            </Button>
+            <Button type="submit">Add to cart</Button>
           </div>
         </form>
       )}
