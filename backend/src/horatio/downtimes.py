@@ -21,7 +21,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, responses
+from horatio import audit, influence, responses
 from horatio.models import (
     AllowanceAdjustment,
     Answer,
@@ -597,6 +597,11 @@ def save_answers(
     allowance_now = effective_allowance(db, participant)
     shown = {q.id: q for q in visible_questions(db, cycle, character, allowance_now)}
 
+    submission = submission_for(db, participant)
+    before_now = answers_for(db, submission) if submission else []
+    existing = {(a.question_id, a.slot): a for a in before_now}
+    standings: dict[influence.InfluenceType, influence.Standing] | None = None
+
     used: dict[str, int] = {}
     per_question: dict[uuid.UUID, int] = {}
     seen: set[tuple[uuid.UUID, int]] = set()
@@ -619,6 +624,15 @@ def save_answers(
             ):
                 raise unprocessable(f"{question.prompt!r} takes at most {question.max_answers}.")
             kind = question.action_kind or ""
+            influence_type = influence.type_of(kind)
+            before = existing.get((spec.question_id, spec.slot))
+            changed = before is None or (spec.structured or {}) != before.structured
+            if influence_type is not None and changed:
+                # Checked when it changes, so a rating lowered since does not lock it.
+                standings = standings or influence.standings(db, character)
+                influence.check_answer(
+                    standings[influence_type], question.prompt, spec.structured or {}
+                )
             used[kind] = used.get(kind, 0) + 1
             if used[kind] > allowance_now.get(kind, 0):
                 raise unprocessable(
@@ -626,12 +640,10 @@ def save_answers(
                     f"{allowance_now.get(kind, 0)} this character has."
                 )
 
-    submission = submission_for(db, participant)
     if submission is None:
         submission = Submission(participant_id=participant.id)
         db.add(submission)
         db.flush()
-    existing = {(a.question_id, a.slot): a for a in answers_for(db, submission)}
     by_key = {(s.question_id, s.slot): s for s in kept}
     if submission.status == "submitted":
         # A storyteller has already answered these; the player cannot change them now.

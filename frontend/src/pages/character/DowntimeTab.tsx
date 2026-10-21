@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
-import type { AnswerIn, MyDowntime, QuestionOut } from "../../api/types";
+import type { AnswerIn, InfluenceStandingOut, MyDowntime, QuestionOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { chosenAction, offered, reachable, reachNote } from "../../influence";
 
 type Draft = Record<string, { body: string; structured?: Record<string, unknown> }[]>;
 
@@ -71,6 +72,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             question={q}
             answers={draft[q.id] ?? []}
             remaining={q.kind === "action" ? (d.allowance[q.action_kind!] ?? 0) - used(q.action_kind!) : 0}
+            influence={d.influence?.find((s) => s.action_kind === q.action_kind)}
             onChange={(answers) => setDraft({ ...draft, [q.id]: answers })}
           />
         ))}
@@ -136,11 +138,13 @@ function QuestionCard({
   question,
   answers,
   remaining,
+  influence,
   onChange,
 }: {
   question: QuestionOut;
   answers: Draft[string];
   remaining: number;
+  influence?: InfluenceStandingOut;
   onChange: (answers: Draft[string]) => void;
 }) {
   const canAdd =
@@ -161,16 +165,8 @@ function QuestionCard({
         {answers.map((a, i) => (
           <div key={i} className="flex flex-col gap-2">
             <AnswerInput question={question} value={a.body} onChange={(body) => set(i, { ...a, body })} />
-            {question.action_kind?.startsWith("influence") && (
-              <Field label="Action level">
-                <Input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={String(a.structured?.level ?? "")}
-                  onChange={(e) => set(i, { ...a, structured: { ...a.structured, level: Number(e.target.value) } })}
-                />
-              </Field>
+            {influence && influence.actions.length > 0 && (
+              <InfluenceFields standing={influence} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />
             )}
             {question.kind === "action" && (
               <Button variant="ghost" className="self-start px-0" onClick={() => onChange(answers.filter((_, j) => j !== i))}>
@@ -187,6 +183,60 @@ function QuestionCard({
         {question.kind === "action" && answers.length === 0 && !canAdd && <Empty>No actions of this kind left.</Empty>}
       </div>
     </Card>
+  );
+}
+
+/** An influence answer's specialisation and named action, offering only the actions the character can reach. */
+function InfluenceFields({
+  standing,
+  fields,
+  onChange,
+}: {
+  standing: InfluenceStandingOut;
+  fields: Record<string, unknown> | undefined;
+  onChange: (fields: Record<string, unknown>) => void;
+}) {
+  const specialization = typeof fields?.specialization === "string" ? fields.specialization : "";
+  const action = chosenAction(standing.actions, fields);
+  const others = standing.options.filter((o) => !standing.held.includes(o));
+  const choose = (next: { specialization?: string; action?: string }) => {
+    const spec = next.specialization ?? specialization;
+    const key = next.action ?? action?.key ?? "";
+    const kept = standing.actions.find((a) => a.key === key);
+    // An action from before they had names keeps its level until it changes.
+    const { level: _old, ...rest } = fields ?? {};
+    onChange({ ...rest, specialization: spec || undefined, action: kept && reachable(standing, kept, spec) ? key : undefined });
+  };
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      <Field label="Specialisation">
+        <Select value={specialization} onChange={(e) => choose({ specialization: e.target.value })}>
+          <option value="">None</option>
+          {standing.held.length > 0 && (
+            <optgroup label="Yours">
+              {standing.held.map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </optgroup>
+          )}
+          <optgroup label={standing.held.length ? "Others" : "All"}>
+            {others.map((o) => (
+              <option key={o}>{o}</option>
+            ))}
+          </optgroup>
+        </Select>
+      </Field>
+      <Field label="Action" hint={reachNote(standing, specialization, action)}>
+        <Select value={action?.key ?? ""} onChange={(e) => choose({ action: e.target.value })}>
+          <option value="">Choose…</option>
+          {[...offered(standing, specialization), ...(action && !reachable(standing, action, specialization) ? [action] : [])].map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
+    </div>
   );
 }
 

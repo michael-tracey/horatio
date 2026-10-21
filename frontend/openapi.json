@@ -3105,6 +3105,169 @@
         "title": "HomeTroupeRequest",
         "type": "object"
       },
+      "InfluenceActionOut": {
+        "properties": {
+          "conflict": {
+            "title": "Conflict",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "label",
+          "level",
+          "conflict"
+        ],
+        "title": "InfluenceActionOut",
+        "type": "object"
+      },
+      "InfluenceAnswerOut": {
+        "description": "What an influence answer names, for staff.",
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "conflict": {
+            "title": "Conflict",
+            "type": "boolean"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "specialization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialization"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "specialization",
+          "action_key",
+          "action",
+          "level",
+          "conflict"
+        ],
+        "title": "InfluenceAnswerOut",
+        "type": "object"
+      },
+      "InfluenceStandingOut": {
+        "description": "What a character can do with one type of influence, for the downtime form.",
+        "properties": {
+          "action_kind": {
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/InfluenceActionOut"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "held": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Held",
+            "type": "array"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_kind",
+          "type",
+          "rating",
+          "held",
+          "options",
+          "actions"
+        ],
+        "title": "InfluenceStandingOut",
+        "type": "object"
+      },
       "Invite": {
         "properties": {
           "url": {
@@ -3648,6 +3811,14 @@
             "format": "date-time",
             "title": "Grace Ends At",
             "type": "string"
+          },
+          "influence": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InfluenceStandingOut"
+            },
+            "title": "Influence",
+            "type": "array"
           },
           "late": {
             "title": "Late",
@@ -8722,6 +8893,16 @@
             "title": "Id",
             "type": "string"
           },
+          "influence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InfluenceAnswerOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "question": {
             "title": "Question",
             "type": "string"
@@ -8745,6 +8926,7 @@
           "action_kind",
           "answer",
           "structured",
+          "influence",
           "status",
           "assigned_to_user_id",
           "assigned_to_any_narrator",

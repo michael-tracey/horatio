@@ -42,7 +42,7 @@ class Scene:
                 "question_id": self.elite,
                 "slot": 1,
                 "body": "Lean on the mayor",
-                "structured": {"level": 2},
+                "structured": {"action": "a_friend_in_need"},
             },
             {"question_id": self.nominations, "slot": 1, "body": "Vera, for courtesy"},
         ]
@@ -80,7 +80,8 @@ def test_submitting_gives_every_answer_a_response(scene: Scene) -> None:
         ("Elite influence action", "Lean on the mayor", "unassigned"),
         ("Nominations?", "Vera, for courtesy", "unassigned"),
     ]
-    assert items[2]["structured"] == {"level": 2}
+    assert items[2]["structured"] == {"action": "a_friend_in_need"}
+    assert items[2]["influence"]["action"] == "1: A Friend in Need"
 
 
 def test_narrators_see_only_their_work_and_never_the_sheet(scene: Scene) -> None:
@@ -102,6 +103,7 @@ def test_narrators_see_only_their_work_and_never_the_sheet(scene: Scene) -> None
         "action_kind",
         "answer",
         "structured",
+        "influence",
         "status",
         "assigned_to_user_id",
         "assigned_to_any_narrator",

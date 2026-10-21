@@ -251,6 +251,10 @@ _Avoid_: Extra question, survey question
 A category of downtime action, such as general, feeding, investigation, or elite or underworld influence.
 _Avoid_: Action type, category
 
+**Influence Action**:
+One named thing a character does with Elite or Underworld influence in a month, such as "5: Lockdown"; each type has its own list. A general action has a level, and needs a rating at least that, or one less with one of the character's own specialisations of the type. A conflict action (Attack, Block, Boost, Defend, or a discovery block) is aimed at other influence and has no level.
+_Avoid_: Influence level, influence use
+
 **Participant**:
 A character taking part in a downtime cycle. Participants are the characters whose home troupe runs the cycle when it opens; storytellers and assistant storytellers can add or remove participants afterwards, but only characters whose home troupe it is.
 _Avoid_: Roster entry, entrant

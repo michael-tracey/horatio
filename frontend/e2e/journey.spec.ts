@@ -437,12 +437,22 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText(/^Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \S+$/)).toBeVisible();
   await p.getByRole("button", { name: /Add an action/ }).first().click();
   await p.getByLabel("Downtime action").fill("Hunt along the river docks.");
+  // An influence action is named. Agnes's own Police specialisation lets her Elite 1 reach a level-2 action.
+  const influence = p.locator("section").filter({ has: p.getByRole("heading", { name: "Elite influence action" }) });
+  await influence.getByRole("button", { name: /Add an action/ }).click();
+  await influence.getByLabel("Elite influence action").fill("Ask around the precinct about the missing ledger.");
+  const action = influence.getByLabel("Action", { exact: true });
+  await expect(action.locator("option", { hasText: "Gossip and Insider Trading" })).toHaveCount(0);
+  await influence.getByLabel("Specialisation").selectOption("Police");
+  await action.selectOption({ label: "2: Gossip and Insider Trading" });
+  await expect(influence.getByText("Your Police specialisation counts your Elite as 2 for this.")).toBeVisible();
   await p.screenshot(shots("downtime"));
   await p.getByRole("button", { name: "Submit downtime" }).click();
   await expect(p.getByText("submitted", { exact: true })).toBeVisible();
 
-  // The lead hands the action to the narrator, who writes it.
+  // The lead hands the action to the narrator, who writes it. Staff see the influence action by name.
   await lead.page.getByRole("link", { name: "Responses" }).click();
+  await expect(lead.page.getByText("2: Gossip and Insider Trading (Police)")).toBeVisible();
   await lead.page.getByLabel("Assign to").first().selectOption({ label: "narrator" });
   await expect(lead.page.getByLabel("Assign to").first()).toHaveValue(/.+/);
   await narrator.page.getByRole("link", { name: "Troupes" }).click();

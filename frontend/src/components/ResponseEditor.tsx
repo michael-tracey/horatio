@@ -21,14 +21,20 @@ export function ResponseEditor({ item, troupeId, extra }: { item: WorkItemOut; t
     );
     setBody((b) => (b ? `${b}\n${rolled.text}` : rolled.text));
   });
-  const level = item.structured?.level;
+  const influence = item.influence;
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-ash bg-night/50 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span>
           <strong className="text-gold">{item.character_name}</strong> · {item.question}
-          {level != null && <span className="text-mist"> · level {String(level)}</span>}
+          {influence && (
+            <span className="text-mist">
+              {" "}
+              · {influence.action ?? "no action named"}
+              {influence.specialization && ` (${influence.specialization})`}
+            </span>
+          )}
         </span>
         <Badge tone={item.status === "written" ? "gold" : "mist"}>{item.status}</Badge>
       </div>

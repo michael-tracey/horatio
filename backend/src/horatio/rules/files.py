@@ -302,9 +302,16 @@ def load_rule_set(path: Path) -> RuleSetData:
             raw_grants += tomllib.load(f).get("grants", [])
     grants = load_grants(path.name, raw_grants, traits, categories)
     action_kinds = {
-        k["key"]: ActionKindData(key=k["key"], name=k["name"], fields=tuple(k.get("fields", [])))
+        k["key"]: ActionKindData(
+            key=k["key"],
+            name=k["name"],
+            fields=tuple(k.get("fields", [])),
+            actions=tuple(k.get("actions", [])),
+        )
         for k in raw.get("action_kinds", [])
     }
+    for kind in action_kinds.values():
+        check_named_actions(path.name, kind)
     allowance_rules = [allowance_rule_from_dict(r) for r in raw.get("allowance_rules", [])]
     rule_set = RuleSetData(
         key=raw["key"],
@@ -362,6 +369,22 @@ def load_rule_set(path: Path) -> RuleSetData:
         ):
             raise ValueError(f"{path.name}: {category.key} requires an unknown trait")
     return rule_set
+
+
+def check_named_actions(source: str, kind: ActionKindData) -> None:
+    """An action kind's named actions each have a key and a name, keys differ, and a
+    level, where there is one, is from 1 to 10."""
+    keys = [a.get("key") for a in kind.actions]
+    if len(set(keys)) != len(keys):
+        raise ValueError(f"{source}: {kind.key} names an action twice")
+    for action in kind.actions:
+        if not action.get("key") or not action.get("name"):
+            raise ValueError(f"{source}: each of {kind.key}'s actions needs a key and a name")
+        level = action.get("level")
+        if level is not None and (not isinstance(level, int) or not 1 <= level <= 10):
+            raise ValueError(f"{source}: {kind.key} action {action['key']!r} level is 1 to 10")
+        if level is not None and action.get("conflict"):
+            raise ValueError(f"{source}: {kind.key} conflict action {action['key']!r} has a level")
 
 
 def all_rule_set_files() -> Iterable[Path]:

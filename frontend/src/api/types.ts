@@ -77,3 +77,6 @@ export type ScheduledGameOut = Schemas["ScheduledGameOut"];
 export type ProfileLinks = Schemas["ProfileLinks"];
 export type Someone = Schemas["Someone"];
 export type ProfilePerson = Schemas["ProfilePerson"];
+export type InfluenceActionOut = Schemas["InfluenceActionOut"];
+export type InfluenceStandingOut = Schemas["InfluenceStandingOut"];
+export type InfluenceAnswerOut = Schemas["InfluenceAnswerOut"];

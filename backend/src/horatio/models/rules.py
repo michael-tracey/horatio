@@ -147,6 +147,8 @@ class ActionKind(Record):
     key: Mapped[str]
     name: Mapped[str]
     fields: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+    # The named actions an action of this kind can be (horatio.influence).
+    actions: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class AllowanceRule(Record):

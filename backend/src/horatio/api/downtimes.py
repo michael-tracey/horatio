@@ -8,7 +8,8 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import downtimes, pictures, social_age, xp_range
+from horatio import downtimes, influence, pictures, social_age, xp_range
+from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
@@ -146,6 +147,9 @@ class MyDowntime(BaseModel):
     # What submitting earns, and what it did earn once submitted.
     completion_xp: int
     completion_xp_awarded: int | None
+    # For each influence type the form asks about: the character's rating,
+    # specialisations and the actions it can name.
+    influence: list[InfluenceStandingOut] = []
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -404,6 +408,9 @@ def my_downtime_out(
 ) -> MyDowntime:
     allowance = downtimes.effective_allowance(db, participant)
     submission: Submission | None = downtimes.submission_for(db, participant)
+    questions = downtimes.visible_questions(db, cycle, character, allowance)
+    asked = {influence.type_of(q.action_kind) for q in questions} - {None}
+    standings = influence.standings(db, character) if asked else {}
     return MyDowntime(
         cycle_id=cycle.id,
         cycle_name=cycle.name,
@@ -415,9 +422,7 @@ def my_downtime_out(
             AdjustmentOut(action_kind=a.action_kind, delta=a.delta, reason=a.reason)
             for a in downtimes.adjustments(db, participant)
         ],
-        questions=[
-            question_out(q) for q in downtimes.visible_questions(db, cycle, character, allowance)
-        ],
+        questions=[question_out(q) for q in questions],
         answers=[
             AnswerOut(question_id=a.question_id, slot=a.slot, body=a.body, structured=a.structured)
             for a in (downtimes.answers_for(db, submission) if submission else [])
@@ -426,6 +431,7 @@ def my_downtime_out(
         late=submission.late if submission else False,
         completion_xp=cycle.completion_xp,
         completion_xp_awarded=completion_awarded(db, participant),
+        influence=[standing_out(s) for t, s in standings.items() if t in asked],
     )
 
 
