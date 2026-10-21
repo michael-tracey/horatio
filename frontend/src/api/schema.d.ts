@@ -4904,6 +4904,13 @@ export interface components {
             /** Role */
             role: string;
         };
+        /** StaffBadgesOut */
+        StaffBadgesOut: {
+            /** Staff */
+            staff: components["schemas"]["StaffBadgeOut"][];
+            /** Troupe Name */
+            troupe_name: string;
+        };
         /** StaffMember */
         StaffMember: {
             /** Display Name */
@@ -10555,7 +10562,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StaffBadgeOut"][];
+                    "application/json": components["schemas"]["StaffBadgesOut"];
                 };
             };
             /** @description Validation Error */
