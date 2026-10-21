@@ -3,7 +3,12 @@ import { createContext, useContext, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet } from "../api/types";
+import { Pips } from "../components/ui";
+import { useDates } from "../dates";
 import { HEALTH_RULE, healthRows } from "../health";
+import { DEFAULT_PREFERENCES, useMe, usePreferences } from "../hooks";
+import { PAPERS, pageRule } from "../paper";
+import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 
 type Trait = PrintedSheet["traits"][number];
@@ -12,7 +17,8 @@ type Trait = PrintedSheet["traits"][number];
  * A character sheet laid out for paper, in the order of the official BNS sheet:
  * identity, attributes with focuses, skills, then backgrounds / disciplines /
  * merits and flaws, then blood / willpower / morality, then health and status.
- * Black on white, sized for US Letter, and readable on screen before printing.
+ * Black on white, sized for the person's paper (US Letter or A4) and fitting one
+ * page of it, and readable on screen before printing.
  */
 export function PrintPage() {
   const { characterId = "" } = useParams();
@@ -30,15 +36,15 @@ export function PrintPage() {
       ),
   });
 
-  const pips = params.get("ratings") === "pips";
-  if (sheet.isPending) return <p className="p-8 text-black">Loading…</p>;
+  const pips = usePrintedPips();
+  if (sheet.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
   if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
   return (
-    <Pips.Provider value={pips}>
+    <AsPips.Provider value={pips}>
       <PrintShell back={`/characters/${characterId}`}>
         <Sheet sheet={sheet.data} />
       </PrintShell>
-    </Pips.Provider>
+    </AsPips.Provider>
   );
 }
 
@@ -55,11 +61,11 @@ export function TroupePrintPage() {
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/print", { params: { path: { troupe_id: troupeId }, query: { characters: ids } } })),
   });
 
-  const pips = params.get("ratings") === "pips";
-  if (sheets.isPending) return <p className="p-8 text-black">Loading…</p>;
+  const pips = usePrintedPips();
+  if (sheets.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
   if (sheets.error) return <p className="p-8 text-black">{sheets.error.message}</p>;
   return (
-    <Pips.Provider value={pips}>
+    <AsPips.Provider value={pips}>
       <PrintShell back={`/troupes/${troupeId}/characters`} count={sheets.data.length}>
         {sheets.data.map((sheet, i) => (
           <div key={i} className={i > 0 ? "mt-6 break-before-page print:mt-0" : ""}>
@@ -67,24 +73,30 @@ export function TroupePrintPage() {
           </div>
         ))}
       </PrintShell>
-    </Pips.Provider>
+    </AsPips.Provider>
   );
 }
 
 /** The grey desk the paper sits on, with Back and Print above it; only the paper
- * prints. Back is a link to where the sheets came from, since they often open in
- * a tab of their own, with no history to go back through. */
+ * prints, on the person's paper size. Back is a link to where the sheets came
+ * from, since they often open in a tab of their own, with no history to go back
+ * through. */
 function PrintShell({ back, count, children }: { back: string; count?: number; children: ReactNode }) {
+  const paper = usePreferences().paper;
   return (
     <div className="min-h-screen bg-neutral-200 py-6 text-black print:min-h-0 print:bg-white print:py-0">
-      <div className="mx-auto mb-4 flex max-w-[8.5in] items-center justify-between gap-4 px-4 print:hidden">
+      <style>{pageRule(paper, "0.45in")}</style>
+      <div className="mx-auto mb-4 flex items-center justify-between gap-4 px-4 print:hidden" style={{ maxWidth: `${PAPERS[paper].width}in` }}>
         <Link to={back} className="text-sm underline">
           ← Back
         </Link>
         {count !== undefined && <span className="text-sm">{count === 1 ? "1 sheet" : `${count} sheets`}</span>}
-        <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
-          Print
-        </button>
+        <span className="flex items-center gap-3">
+          <span className="text-sm text-neutral-600">For {PAPERS[paper].name}</span>
+          <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
+            Print
+          </button>
+        </span>
       </div>
       {children}
     </div>
@@ -108,13 +120,23 @@ function label(t: Trait) {
   return t.detail ? `${t.name}: ${t.detail}` : t.name;
 }
 
-/** Whether ratings print as pips, like the paper sheet (`?ratings=pips`), or as
- * numbers, which take less room (the default). */
-const Pips = createContext(false);
+/** Whether ratings print as pips, like the paper sheet, or as numbers, which take
+ * less room: as the person's setting shows them, unless `?ratings=pips` or
+ * `?ratings=numbers` asks for the other way this once. */
+const AsPips = createContext(false);
 
-/** A rating: a number, or filled and empty dots, five to a group, like the paper sheet. */
+/** Whether to print pips; undefined until the person's settings have loaded, so
+ * the sheet never prints one way and then changes. */
+function usePrintedPips(): boolean | undefined {
+  const [params] = useSearchParams();
+  const me = useMe();
+  if (me.isPending) return undefined;
+  return printedRatings(params.get("ratings"), (me.data?.preferences ?? DEFAULT_PREFERENCES).ratings) === "pips";
+}
+
+/** A rating: a number, or filled and empty pips, five to a group, like the paper sheet. */
 function Dots({ value, of = 5 }: { value: number; of?: number }) {
-  const pips = useContext(Pips);
+  const pips = useContext(AsPips);
   if (!pips) {
     return (
       <span className="text-[11px] font-semibold whitespace-nowrap tabular-nums" aria-label={`${value} dots`}>
@@ -122,16 +144,7 @@ function Dots({ value, of = 5 }: { value: number; of?: number }) {
       </span>
     );
   }
-  const total = Math.max(of, value);
-  return (
-    <span className="font-mono text-[11px] tracking-[-0.05em] whitespace-nowrap" aria-label={`${value} dots`}>
-      {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={i > 0 && i % 5 === 0 ? "ml-1" : undefined}>
-          {i < value ? "●" : "○"}
-        </span>
-      ))}
-    </span>
-  );
+  return <Pips value={value} of={of} className="text-[11px]" />;
 }
 
 /** Boxes to tick in play: blood, willpower, health. */
@@ -213,6 +226,8 @@ const SHOWN_ELSEWHERE = new Set([
 ]);
 
 function Sheet({ sheet }: { sheet: PrintedSheet }) {
+  const paper = usePreferences().paper;
+  const dates = useDates();
   const t = sheet.traits;
   const generation = rating(t, "backgrounds", "Generation");
   const [maxBlood, perTurn] = BLOOD[Math.min(generation, 5)]!;
@@ -230,7 +245,10 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
   for (const x of others) otherGroups.set(x.category_name, [...(otherGroups.get(x.category_name) ?? []), x]);
 
   return (
-    <article className="mx-auto flex max-w-[8.5in] flex-col gap-3 bg-white p-[0.45in] font-serif shadow print:max-w-none print:p-0 print:shadow-none">
+    <article
+      className="mx-auto flex flex-col gap-3 bg-white p-[0.45in] font-serif shadow print:p-0 print:shadow-none"
+      style={{ maxWidth: `${PAPERS[paper].width}in` }}
+    >
       <header className="grid grid-cols-[1fr_auto] items-start gap-4 border-b-2 border-black pb-2">
         <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-2 text-[12px]">
           <dt className="font-bold">Character</dt>
@@ -364,8 +382,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
       )}
 
       <footer className="mt-auto border-t border-black pt-1 text-center text-[9px] text-neutral-600">
-        Printed from Horatio {new Date().toLocaleDateString()}
-        {sheet.home && sheet.accepted_at && ` · accepted ${new Date(sheet.accepted_at).toLocaleDateString()} by ${sheet.accepted_by}`}
+        Printed from Horatio {dates.date(new Date())}
+        {sheet.home && sheet.accepted_at && ` · accepted ${dates.date(sheet.accepted_at)} by ${sheet.accepted_by}`}
         <br />
         Unofficial fan-made material under Paradox Interactive's Dark Pack Agreement. Portions © Paradox Interactive AB, used with permission.
       </footer>

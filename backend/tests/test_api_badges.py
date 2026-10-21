@@ -174,7 +174,8 @@ def sign_up_other(client_for: Callable[[], TestClient]) -> Any:
 
 def test_storyteller_badges(troupe: Troupe) -> None:
     staff = troupe.assistant.client.get(f"/troupes/{troupe.id}/staff-badges").json()
-    assert staff == [
+    assert staff["troupe_name"] == "Lords of the Night"
+    assert staff["staff"] == [
         {"name": "lead", "role": "Lead Storyteller"},
         {"name": "storyteller", "role": "Storyteller"},
         {"name": "assistant", "role": "Assistant Storyteller"},

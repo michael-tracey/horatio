@@ -1653,6 +1653,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Preferences */
+        get: operations["read_preferences_api_preferences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change Preferences
+         * @description Change some settings; the rest stay as they are.
+         */
+        patch: operations["change_preferences_api_preferences_patch"];
+        trace?: never;
+    };
     "/api/profile": {
         parameters: {
             query?: never;
@@ -3787,6 +3808,7 @@ export interface components {
             id: string;
             /** Is Custodian */
             is_custodian: boolean;
+            preferences: components["schemas"]["Preferences"];
         };
         /** MembershipOut */
         MembershipOut: {
@@ -4281,6 +4303,63 @@ export interface components {
             name: string;
             /** Note */
             note: string;
+        };
+        /** Preferences */
+        Preferences: {
+            /**
+             * Badge Size
+             * @default 3x5
+             * @enum {string}
+             */
+            badge_size: "3x5" | "3x4" | "cr80" | "4x6";
+            /**
+             * Clock
+             * @default 12
+             * @enum {string}
+             */
+            clock: "12" | "24";
+            /**
+             * Date Format
+             * @default day_month
+             * @enum {string}
+             */
+            date_format: "day_month" | "month_day" | "iso";
+            /**
+             * Keep Awake
+             * @default false
+             */
+            keep_awake: boolean;
+            /**
+             * Paper
+             * @default letter
+             * @enum {string}
+             */
+            paper: "letter" | "a4";
+            /**
+             * Play Tab
+             * @default tracker
+             * @enum {string}
+             */
+            play_tab: "tracker" | "sheet" | "pools";
+            /**
+             * Quick Notes
+             * @default true
+             */
+            quick_notes: boolean;
+            /**
+             * Ratings
+             * @default numbers
+             * @enum {string}
+             */
+            ratings: "numbers" | "pips";
+            /**
+             * Text Size
+             * @default normal
+             * @enum {string}
+             */
+            text_size: "normal" | "large";
+            /** Time Zone */
+            time_zone?: string | null;
         };
         /** PrimaryPathChange */
         PrimaryPathChange: {
@@ -4824,6 +4903,13 @@ export interface components {
             name: string;
             /** Role */
             role: string;
+        };
+        /** StaffBadgesOut */
+        StaffBadgesOut: {
+            /** Staff */
+            staff: components["schemas"]["StaffBadgeOut"][];
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** StaffMember */
         StaffMember: {
@@ -8555,6 +8641,61 @@ export interface operations {
             };
         };
     };
+    read_preferences_api_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+        };
+    };
+    change_preferences_api_preferences_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     edit_profile_api_profile_put: {
         parameters: {
             query?: never;
@@ -10421,7 +10562,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StaffBadgeOut"][];
+                    "application/json": components["schemas"]["StaffBadgesOut"];
                 };
             };
             /** @description Validation Error */

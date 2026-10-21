@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
 import type { AnswerIn, MyDowntime, QuestionOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 type Draft = Record<string, { body: string; structured?: Record<string, unknown> }[]>;
@@ -42,6 +43,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
     },
   });
   const [draft, setDraft] = useState<Draft>({});
+  const dates = useDates();
   useEffect(() => {
     if (downtime.data) setDraft(toDraft(downtime.data));
   }, [downtime.data]);
@@ -85,9 +87,9 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
       <aside className="flex flex-col gap-4">
         <Card title={d.cycle_name}>
           <p className="text-sm">
-            Due <time>{new Date(d.closes_at).toLocaleString()}</time>
+            Due <time dateTime={d.closes_at}>{dates.deadline(d.closes_at)}</time>
           </p>
-          <p className="text-xs text-mist">Accepted until {new Date(d.grace_ends_at).toLocaleString()}</p>
+          <p className="text-xs text-mist">Accepted until {dates.deadline(d.grace_ends_at)}</p>
           {d.completion_xp_awarded != null ? (
             <p className="mt-2 text-sm text-gold">You earned {d.completion_xp_awarded} XP for completing it.</p>
           ) : (

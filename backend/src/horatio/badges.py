@@ -3,8 +3,8 @@ staff print for game, 3 × 5 in, two to a Letter page.
 
 Top to bottom: the picture and the clan's logo, the name, clan and social age
 (horatio.social_age), the titles the character holds in the troupe, its status
-traits (with room to write in what changes at game), and in reversed text what
-others can see or sense about it.
+traits (with room for the stickers most troupes mark status with), in reversed
+text what others can see or sense about it, and the troupe's name (#84).
 
 What others can see comes from the rules data: a trait with a `visible`
 property shows on the badge in those words, `{detail}` filled in with the

@@ -3,6 +3,7 @@ import type { components } from "./schema";
 type Schemas = components["schemas"];
 
 export type Me = Schemas["Me"];
+export type Preferences = Schemas["Preferences"];
 export type CharacterOut = Schemas["CharacterOut"];
 export type SheetOut = Schemas["SheetOut"];
 export type SheetTraitOut = Schemas["SheetTraitOut"];

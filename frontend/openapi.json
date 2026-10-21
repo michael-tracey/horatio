@@ -3263,13 +3263,17 @@
           "is_custodian": {
             "title": "Is Custodian",
             "type": "boolean"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/Preferences"
           }
         },
         "required": [
           "id",
           "email",
           "display_name",
-          "is_custodian"
+          "is_custodian",
+          "preferences"
         ],
         "title": "Me",
         "type": "object"
@@ -4620,6 +4624,100 @@
           "note"
         ],
         "title": "PowerNote",
+        "type": "object"
+      },
+      "Preferences": {
+        "properties": {
+          "badge_size": {
+            "default": "3x5",
+            "enum": [
+              "3x5",
+              "3x4",
+              "cr80",
+              "4x6"
+            ],
+            "title": "Badge Size",
+            "type": "string"
+          },
+          "clock": {
+            "default": "12",
+            "enum": [
+              "12",
+              "24"
+            ],
+            "title": "Clock",
+            "type": "string"
+          },
+          "date_format": {
+            "default": "day_month",
+            "enum": [
+              "day_month",
+              "month_day",
+              "iso"
+            ],
+            "title": "Date Format",
+            "type": "string"
+          },
+          "keep_awake": {
+            "default": false,
+            "title": "Keep Awake",
+            "type": "boolean"
+          },
+          "paper": {
+            "default": "letter",
+            "enum": [
+              "letter",
+              "a4"
+            ],
+            "title": "Paper",
+            "type": "string"
+          },
+          "play_tab": {
+            "default": "tracker",
+            "enum": [
+              "tracker",
+              "sheet",
+              "pools"
+            ],
+            "title": "Play Tab",
+            "type": "string"
+          },
+          "quick_notes": {
+            "default": true,
+            "title": "Quick Notes",
+            "type": "boolean"
+          },
+          "ratings": {
+            "default": "numbers",
+            "enum": [
+              "numbers",
+              "pips"
+            ],
+            "title": "Ratings",
+            "type": "string"
+          },
+          "text_size": {
+            "default": "normal",
+            "enum": [
+              "normal",
+              "large"
+            ],
+            "title": "Text Size",
+            "type": "string"
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
+          }
+        },
+        "title": "Preferences",
         "type": "object"
       },
       "PrimaryPathChange": {
@@ -6099,6 +6197,27 @@
           "role"
         ],
         "title": "StaffBadgeOut",
+        "type": "object"
+      },
+      "StaffBadgesOut": {
+        "properties": {
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/StaffBadgeOut"
+            },
+            "title": "Staff",
+            "type": "array"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_name",
+          "staff"
+        ],
+        "title": "StaffBadgesOut",
         "type": "object"
       },
       "StaffMember": {
@@ -12348,6 +12467,69 @@
         ]
       }
     },
+    "/api/preferences": {
+      "get": {
+        "operationId": "read_preferences_api_preferences_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Preferences",
+        "tags": [
+          "preferences"
+        ]
+      },
+      "patch": {
+        "description": "Change some settings; the rest stay as they are.",
+        "operationId": "change_preferences_api_preferences_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Changes",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Preferences",
+        "tags": [
+          "preferences"
+        ]
+      }
+    },
     "/api/profile": {
       "put": {
         "description": "The signed-in player's own profile.",
@@ -15209,11 +15391,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/StaffBadgeOut"
-                  },
-                  "title": "Response Staff Badges Api Troupes  Troupe Id  Staff Badges Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/StaffBadgesOut"
                 }
               }
             },

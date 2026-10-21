@@ -3,19 +3,20 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading } from "../../components/ui";
+import { useDates, type Dates } from "../../dates";
 import { useAction } from "../../hooks";
 
-function inDays(days: number): string {
-  const d = new Date(Date.now() + days * 86_400_000);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
+/** A datetime input's value some days from now, on the storyteller's clock. */
+function inDays(days: number, dates: Dates): string {
+  return dates.toInput(new Date(Date.now() + days * 86_400_000));
 }
 
 export function CyclesTab({ troupeId }: { troupeId: string }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const cycles = useQuery({ queryKey: ["cycles", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/cycles", path)) });
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
-  const [form, setForm] = useState({ name: "", closes_at: inDays(21), grace_ends_at: inDays(28) });
+  const dates = useDates();
+  const [form, setForm] = useState({ name: "", closes_at: inDays(21, dates), grace_ends_at: inDays(28, dates) });
   // Until changed here, a new cycle earns the troupe's usual amount.
   const [completionXp, setCompletionXp] = useState<number | null>(null);
   const xp = completionXp ?? troupe.data?.downtime_xp ?? 2;
@@ -25,8 +26,8 @@ export function CyclesTab({ troupeId }: { troupeId: string }) {
         ...path,
         body: {
           name: form.name,
-          closes_at: new Date(form.closes_at).toISOString(),
-          grace_ends_at: new Date(form.grace_ends_at).toISOString(),
+          closes_at: dates.fromInput(form.closes_at).toISOString(),
+          grace_ends_at: dates.fromInput(form.grace_ends_at).toISOString(),
           completion_xp: xp,
         },
       }),
@@ -65,7 +66,7 @@ export function CyclesTab({ troupeId }: { troupeId: string }) {
           <Field label="Name">
             <Input required placeholder="November 2026" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </Field>
-          <Field label="Due">
+          <Field label="Due" hint={`In your time zone (${dates.zoneName()}). Players see it in theirs.`}>
             <Input type="datetime-local" required value={form.closes_at} onChange={(e) => setForm({ ...form, closes_at: e.target.value })} />
           </Field>
           <Field label="Accepted until" hint="The grace period: late downtimes are still taken until then.">

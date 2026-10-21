@@ -22,6 +22,7 @@ import {
 } from "../../components/ui";
 import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
+import { pipsOf } from "../../ratings";
 import { AddTraitPanel } from "./AddTraitPanel";
 import { PrintAndBadge } from "./Badge";
 import { rulesTroupe } from "./rules";
@@ -565,7 +566,7 @@ function TraitRow({
       </span>
       {trait.rating !== null && (
         <span className="flex shrink-0 items-center gap-2">
-          <Rating value={trait.rating} pendingFrom={trait.pending_from} />
+          <Rating value={trait.rating} pendingFrom={trait.pending_from} of={pipsOf(trait.category)} />
           {!locked && (
             <span className="flex gap-1">
               <button

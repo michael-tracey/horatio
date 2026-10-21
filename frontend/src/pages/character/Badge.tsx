@@ -5,7 +5,7 @@ import type { CharacterOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { SplitLink } from "../../components/SplitLink";
 import { Button, ErrorText, Field, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, usePreferences } from "../../hooks";
 
 /**
  * [Print] [Badge], side by side at the top of a side panel: the Sheet tab's, and
@@ -14,17 +14,28 @@ import { useAction } from "../../hooks";
 export function PrintAndBadge({ character, badge = true }: { character: CharacterOut; badge?: boolean }) {
   return (
     <div className={badge ? "grid grid-cols-2 gap-2 [&>button]:w-full" : "grid"}>
-      <SplitLink
-        to={`/print/characters/${character.id}`}
-        label="Print"
-        menuLabel="Print with numbers or pips"
-        choices={[
-          { to: `/print/characters/${character.id}`, label: "Numbers" },
-          { to: `/print/characters/${character.id}?ratings=pips`, label: "Pips" },
-        ]}
-      />
+      <PrintButton characterId={character.id} />
       {badge && <BadgeButton character={character} />}
     </div>
+  );
+}
+
+/** Print, with ratings as the person's setting shows them; the chevron prints
+ * once the other way. */
+function PrintButton({ characterId }: { characterId: string }) {
+  const { ratings } = usePreferences();
+  const to = `/print/characters/${characterId}`;
+  return (
+    <SplitLink
+      to={to}
+      label="Print"
+      menuLabel="Print with numbers or pips"
+      choices={[
+        ratings === "pips"
+          ? { to: `${to}?ratings=numbers`, label: "With numbers" }
+          : { to: `${to}?ratings=pips`, label: "With pips" },
+      ]}
+    />
   );
 }
 

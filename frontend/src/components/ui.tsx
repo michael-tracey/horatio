@@ -1,6 +1,8 @@
 import { cloneElement, useId } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactElement, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { Link, NavLink, useLocation } from "react-router";
+import { usePreferences } from "../hooks";
+import { pipGroups } from "../ratings";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -254,13 +256,51 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
   );
 }
 
-/** A rating as a number. Dots from `pendingFrom` up are still waiting for
- * approval, shown in gold after it: "2 +1". */
-export function Rating({ value, pendingFrom }: { value: number; pendingFrom?: number | null }) {
+/**
+ * Filled and empty pips, five to a group, as on the paper sheet. The printed
+ * sheet uses them too, so they look the same on screen and on paper. Sized to
+ * the text around them, in its colour; pips from `pendingFrom` up are still
+ * waiting for approval, in gold.
+ */
+export function Pips({ value, of = 5, pendingFrom, className }: { value: number; of?: number; pendingFrom?: number | null; className?: string }) {
+  return (
+    <span role="img" aria-label={`${value} dots`} className={cx("inline-flex gap-[0.35em] whitespace-nowrap", className)}>
+      {pipGroups(value, of, pendingFrom).map((group, g) => (
+        <span key={g} className="inline-flex gap-[0.12em]">
+          {group.map((pip, i) => (
+            // An SVG rather than "●", so a filled pip prints filled whatever the font or the browser's background setting.
+            <svg key={i} viewBox="0 0 10 10" aria-hidden className={cx("h-[0.7em] w-[0.7em]", pip === "waiting" && "text-gold")}>
+              <circle cx="5" cy="5" r="4.2" stroke="currentColor" strokeWidth="1.2" fill={pip === "empty" ? "none" : "currentColor"} />
+            </svg>
+          ))}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * A rating, as the person shows ratings (Settings → Show ratings as): a number,
+ * or pips, at least `of` of them. Dots from `pendingFrom` up are still waiting
+ * for approval, shown in gold: "2 +1", or gold pips.
+ */
+export function Rating({
+  value,
+  pendingFrom,
+  of = 5,
+  className = "min-w-[1.5rem] text-right font-display text-base text-parchment",
+}: {
+  value: number;
+  pendingFrom?: number | null;
+  of?: number;
+  className?: string;
+}) {
+  const { ratings } = usePreferences();
+  if (ratings === "pips") return <Pips value={value} of={of} pendingFrom={pendingFrom} className={className} />;
   const waiting = pendingFrom != null && pendingFrom < value ? value - pendingFrom : 0;
   return (
-    <span aria-label={`${value} dots`} className="inline-block min-w-[1.5rem] text-right font-display text-base tabular-nums">
-      <span className="text-parchment">{value - waiting}</span>
+    <span aria-label={`${value} dots`} className={cx("inline-block tabular-nums", className)}>
+      {value - waiting}
       {waiting > 0 && <span className="text-gold"> +{waiting}</span>}
     </span>
   );

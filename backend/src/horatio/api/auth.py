@@ -5,6 +5,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from horatio import preferences
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
@@ -14,6 +15,7 @@ from horatio.config import get_settings
 from horatio.connectors import email
 from horatio.db import get_sessionmaker
 from horatio.models import User
+from horatio.preferences import Preferences
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -57,6 +59,8 @@ class Me(BaseModel):
     email: str
     display_name: str
     is_custodian: bool
+    # Their settings, so the app has them from the start (horatio.preferences).
+    preferences: Preferences
 
 
 def me(user: User) -> Me:
@@ -65,6 +69,7 @@ def me(user: User) -> Me:
         email=user.email,
         display_name=user.display_name,
         is_custodian=user.is_custodian,
+        preferences=preferences.read(user),
     )
 
 
