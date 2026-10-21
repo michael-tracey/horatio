@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Preferences } from "../../api/types";
 import { Card, ErrorText, Input } from "../../components/ui";
 import { deviceZone, useDates } from "../../dates";
-import { usePreferences, useSetPreferences } from "../../hooks";
+import { usePreferences, useSavingPreferences, useSetPreferences } from "../../hooks";
 
 type Key = keyof Preferences;
 
@@ -107,14 +107,32 @@ function DeadlineNow() {
   return <span className="text-sm text-parchment">{dates.deadline(new Date())}</span>;
 }
 
+/** True once `on` has stayed true for `ms`, so a quick save doesn't flash. */
+function useAfter(on: boolean, ms: number): boolean {
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    if (!on) return setLate(false);
+    const timer = setTimeout(() => setLate(true), ms);
+    return () => clearTimeout(timer);
+  }, [on, ms]);
+  return on && late;
+}
+
 /**
  * Settings for the signed-in person, saved on their account so they follow
  * them to their phone at game. Each takes effect as soon as it changes.
  */
 export function SettingsPage() {
   const set = useSetPreferences();
+  // Every control waits while a change is saved, so changes reach the server one
+  // at a time and none is lost.
+  const saving = useSavingPreferences();
+  const slow = useAfter(saving, 200);
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <fieldset disabled={saving} aria-busy={saving} className={`grid min-w-0 gap-6 md:grid-cols-2 ${slow ? "cursor-wait opacity-60" : ""}`}>
+      <p role="status" className="pointer-events-none fixed bottom-4 right-4 text-sm text-mist">
+        {slow ? "Saving…" : ""}
+      </p>
       <Card title="Sheets">
         <Setting label="Show ratings as" hint="On character sheets, the Play View and printed sheets.">
           <Choice
@@ -184,7 +202,10 @@ export function SettingsPage() {
         <Setting label="Quick notes" hint="The Play View asks what each spend was for.">
           <Toggle name="quick_notes" label="Quick notes" />
         </Setting>
-        <Setting label="Keep the screen awake" hint="While the Play View is open. Uses more battery.">
+        <Setting
+          label="Keep the screen awake"
+          hint={"wakeLock" in navigator ? "While the Play View is open. Uses more battery." : "While the Play View is open. This browser can't, but your phone's may."}
+        >
           <Toggle name="keep_awake" label="Keep the screen awake" />
         </Setting>
         <Setting label="The Play View opens on">
@@ -201,7 +222,7 @@ export function SettingsPage() {
       </Card>
 
       <Card title="Appearance">
-        <Setting label="Text size">
+        <Setting label="Text size" hint="Everywhere but printed sheets and badges.">
           <Choice
             name="text_size"
             label="Text size"
@@ -228,6 +249,6 @@ export function SettingsPage() {
       {/* #106: notifications by email go here. */}
 
       <ErrorText error={set.error} />
-    </div>
+    </fieldset>
   );
 }
