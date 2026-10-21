@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { XpEntryOut } from "../../api/types";
 import { Button, Card, ErrorText, Input, Loading } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 export function XpTab({ characterId }: { characterId: string }) {
@@ -10,6 +11,7 @@ export function XpTab({ characterId }: { characterId: string }) {
     queryKey: ["xp", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/xp", { params: { path: { character_id: characterId } } })),
   });
+  const dates = useDates();
   if (history.isPending) return <Loading />;
   if (history.error) return <ErrorText error={history.error} />;
   let balance = 0;
@@ -30,7 +32,9 @@ export function XpTab({ characterId }: { characterId: string }) {
           <tbody className="divide-y divide-ash">
             {rows.reverse().map((e) => (
               <tr key={e.id}>
-                <td className="py-2 pr-3 align-top whitespace-nowrap text-mist">{e.entered_on}</td>
+                <td className="py-2 pr-3 align-top whitespace-nowrap text-mist">
+                  <time dateTime={e.entered_on}>{dates.day(e.entered_on)}</time>
+                </td>
                 <td className="py-2 pr-3">
                   {e.reason}
                   {e.kind !== "purchase" && <span className="ml-2 text-xs text-mist">{e.kind}</span>}

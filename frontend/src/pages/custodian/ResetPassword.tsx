@@ -3,11 +3,8 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { ResetLink } from "../../api/types";
 import { Button, ErrorText, Input, Notice } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-
-export function when(at: string) {
-  return new Date(at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
 
 /** Whether Horatio can send email here: if not, reset links are copied and sent by hand. */
 export function useCanEmail() {
@@ -32,6 +29,7 @@ export function useCancelReset(userId: string, onDone?: () => void) {
  */
 export function ResetPassword({ player }: { player: Person }) {
   const canEmail = useCanEmail();
+  const dates = useDates();
   const [link, setLink] = useState<ResetLink | null>(null);
   const [copied, setCopied] = useState(false);
   const make = useAction(async (email: boolean) => {
@@ -51,7 +49,7 @@ export function ResetPassword({ player }: { player: Person }) {
       {live ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p>
-            {player.display_name} has a reset link, unused, until {when(live)}.
+            {player.display_name} has a reset link, unused, until {dates.dateTime(live)}.
           </p>
           <Button type="button" variant="ghost" className="min-h-8 px-2" disabled={cancel.isPending} onClick={() => cancel.mutate(undefined)}>
             Cancel link
