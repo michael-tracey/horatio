@@ -66,7 +66,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
               appoint.mutate(undefined);
             }}
           >
-            <Field label="Appoint a new lead" hint="Type a handle or a name to find them.">
+            <Field label="Appoint a new lead" hint="Pick them from the list, or type a name or handle to find them.">
               <PersonPicker required value={leadHandle} onChange={setLeadHandle} />
             </Field>
             <ErrorText error={appoint.error} />

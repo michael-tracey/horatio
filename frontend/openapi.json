@@ -4054,6 +4054,34 @@
         "title": "PendingDisciplineOut",
         "type": "object"
       },
+      "People": {
+        "properties": {
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/Someone"
+            },
+            "title": "People",
+            "type": "array"
+          }
+        },
+        "required": [
+          "people",
+          "next_offset"
+        ],
+        "title": "People",
+        "type": "object"
+      },
       "Pick": {
         "properties": {
           "category": {
@@ -6336,6 +6364,21 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "plays_here": {
+            "default": false,
+            "title": "Plays Here",
+            "type": "boolean"
+          },
+          "staff_role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -12873,7 +12916,7 @@
     },
     "/api/handles": {
       "get": {
-        "description": "People whose handle starts with `q`, then those whose name has it in it,\nfor picking someone as you type.",
+        "description": "People to pick from, a page at a time: everyone, or with `q` those whose\nhandle starts with it, then those whose name has it in it. Only for those who\npick people: the custodian, and for a troupe, those who manage its staff, who\nsee its players first and who is on its staff already.",
         "operationId": "find_handles_api_handles_get",
         "parameters": [
           {
@@ -12885,6 +12928,46 @@
               "title": "Q",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -12892,11 +12975,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/Someone"
-                  },
-                  "title": "Response Find Handles Api Handles Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/People"
                 }
               }
             },

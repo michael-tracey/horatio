@@ -225,7 +225,8 @@ def test_lists_of_people_show_handles_not_emails(troupe: Troupe) -> None:
     staff = troupe.storyteller.client.get(f"/troupes/{troupe.id}/staff").json()
     roster = troupe.storyteller.client.get(f"/troupes/{troupe.id}/characters").json()
     requests = troupe.custodian.client.get("/troupe-requests").json()
-    found = troupe.player.client.get("/handles", params={"q": "s"}).json()
+    found = troupe.lead.client.get("/handles", params={"q": "s", "troupe_id": troupe.id}).json()
+    found = found["people"]
 
     assert {m["handle"] for m in staff} == {"lead", "storyteller", "assistant", "narrator"}
     assert [e["player_handle"] for e in roster] == ["player"]
@@ -280,9 +281,9 @@ def test_finding_people_as_you_type(troupe: Troupe) -> None:
     sign_up(troupe.client_for, "stormy")
 
     def find(q: str) -> list[str]:
-        response = troupe.narrator.client.get("/handles", params={"q": q})
+        response = troupe.custodian.client.get("/handles", params={"q": q})
         assert response.status_code == 200
-        return [p["handle"] for p in response.json()]
+        return [p["handle"] for p in response.json()["people"]]
 
     # Handles starting with it first, then names with it in them.
     assert find("STOR") == ["storm_crow", "stormy", "storyteller"]
@@ -290,12 +291,92 @@ def test_finding_people_as_you_type(troupe: Troupe) -> None:
     # "_" is a character, not a wildcard.
     assert find("st_") == []
     assert find("teller") == ["storyteller"]
-    assert find("  ") == []
-    assert set(troupe.narrator.client.get("/handles", params={"q": "s"}).json()[0]) == {
+    assert set(troupe.custodian.client.get("/handles").json()["people"][0]) == {
         "id",
         "handle",
         "display_name",
+        "plays_here",
+        "staff_role",
     }
+
+
+def test_the_list_opens_before_anything_is_typed(troupe: Troupe) -> None:
+    sign_up(troupe.client_for, "Agnes")
+
+    def everyone(q: str = "") -> list[str]:
+        found = troupe.custodian.client.get("/handles", params={"q": q}).json()
+        return [p["display_name"] for p in found["people"]]
+
+    # Everyone, alphabetically by display name.
+    assert everyone() == everyone("  ") == sorted(everyone(), key=str.lower)
+    assert everyone()[:2] == ["Agnes", "assistant"]
+    assert len(everyone()) == 8
+
+
+def test_picking_staff_starts_with_the_troupes_own_players(troupe: Troupe) -> None:
+    sign_up(troupe.client_for, "Agnes")
+    character = new_character(troupe, troupe.player)
+    joined = troupe.player.client.post(
+        f"/characters/{character}/troupes", json={"troupe_id": troupe.id}
+    )
+    assert joined.status_code in (200, 201), joined.text
+
+    def picker(q: str = "") -> list[tuple[str, bool, str | None]]:
+        found = troupe.lead.client.get("/handles", params={"q": q, "troupe_id": troupe.id})
+        assert found.status_code == 200, found.text
+        return [(p["handle"], p["plays_here"], p["staff_role"]) for p in found.json()["people"]]
+
+    # Those who play here first, then everyone else; staff marked with their role.
+    assert picker() == [
+        ("player", True, None),
+        ("agnes", False, None),
+        ("assistant", False, "assistant_storyteller"),
+        ("custodian", False, None),
+        ("lead", False, "lead_storyteller"),
+        ("narrator", False, "narrator"),
+        ("storyteller", False, "storyteller"),
+        ("stranger", False, None),
+    ]
+    assert picker("a")[:2] == [("player", True, None), ("agnes", False, None)]
+    # Elsewhere, no one plays here or is on the staff.
+    assert all(
+        not p["plays_here"] and p["staff_role"] is None
+        for p in troupe.custodian.client.get("/handles").json()["people"]
+    )
+
+
+def everyone(troupe: Troupe) -> list[Any]:
+    return troupe.custodian.client.get("/handles", params={"limit": 50}).json()["people"]
+
+
+def test_the_list_comes_a_page_at_a_time(troupe: Troupe) -> None:
+    def page(offset: int) -> Any:
+        found = troupe.custodian.client.get("/handles", params={"offset": offset, "limit": 3})
+        assert found.status_code == 200, found.text
+        return found.json()
+
+    pages = [page(0), page(3), page(6)]
+    assert [p["next_offset"] for p in pages] == [3, 6, None]
+    listed = [person["handle"] for p in pages for person in p["people"]]
+    assert listed == [person["handle"] for person in everyone(troupe)]
+    assert len(listed) == 7
+    too_many = troupe.custodian.client.get("/handles", params={"limit": 51})
+    assert too_many.status_code == 422
+
+
+def test_only_those_who_pick_people_can_list_them(troupe: Troupe) -> None:
+    def status_for(person: Person, **params: str) -> int:
+        return person.client.get("/handles", params=params).status_code
+
+    # Everyone is listed only for the custodian, who names leads.
+    assert status_for(troupe.custodian) == 200
+    for person in (troupe.lead, troupe.storyteller, troupe.player, troupe.stranger):
+        assert status_for(person) == 403
+    # For a troupe, those who manage its staff.
+    for person in (troupe.custodian, troupe.lead, troupe.storyteller):
+        assert status_for(person, troupe_id=troupe.id) == 200
+    for person in (troupe.assistant, troupe.narrator, troupe.player, troupe.stranger):
+        assert status_for(person, troupe_id=troupe.id) == 403
 
 
 def test_finding_people_needs_a_sign_in(client_for: Callable[[], TestClient]) -> None:
