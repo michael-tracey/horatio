@@ -25,3 +25,5 @@ def current_user(user: Annotated[User | None, Depends(optional_user)]) -> User:
 
 
 CurrentUser = Annotated[User, Depends(current_user)]
+# Whoever is signed in, or None: for the few pages anyone may see.
+MaybeUser = Annotated[User | None, Depends(optional_user)]

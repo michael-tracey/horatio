@@ -167,15 +167,22 @@ def reset_expiry(db: DbSession, user: User) -> datetime | None:
     return live.expires_at if live else None
 
 
-def clean_link(link: Link) -> Link:
-    url = link.url.strip()
+def web_address(url: str) -> str:
+    """`url` trimmed, if it is an http or https address; refused otherwise, so a
+    link can never run script (javascript:) or open something else."""
+    url = url.strip()
     parts = urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.netloc or len(url) > 300:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             f"{url or 'A link'} is not a web address: start it with https://.",
         )
-    host = parts.netloc.removeprefix("www.")
+    return url
+
+
+def clean_link(link: Link) -> Link:
+    url = web_address(link.url)
+    host = urlsplit(url).netloc.removeprefix("www.")
     return Link(label=link.label.strip()[:40] or host, url=url)
 
 

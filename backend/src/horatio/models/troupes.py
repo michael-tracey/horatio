@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
@@ -40,6 +41,31 @@ class Troupe(Imported, Record):
     # House rule: the blood characters start a game with (no more than their
     # generation's most). None starts them full.
     starting_blood: Mapped[int | None]
+    # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
+    # anyone at all when `public` is ticked. The portrait and banner are the ids
+    # their files are kept under (horatio.pictures); the portrait's crop is as a
+    # character picture's.
+    public: Mapped[bool] = mapped_column(default=False, server_default="false")
+    portrait_id: Mapped[uuid.UUID | None]
+    portrait_crop: Mapped[dict[str, float] | None] = mapped_column(JSONB)
+    banner_id: Mapped[uuid.UUID | None]
+    # Links, schedule, venue, setting, new players, age and content: all optional
+    # text, kept as horatio.troupe_profiles.Profile writes it.
+    profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Who new players should contact: one of its staff.
+    contact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+
+
+class ScheduledGame(Record):
+    """A game the troupe will run, on its profile. Kept once it is past, but no
+    longer shown."""
+
+    __tablename__ = "scheduled_games"
+    __table_args__ = (CheckConstraint("ends_at > starts_at", name="ends_after_start"),)
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class XpRangeEntry(Record):

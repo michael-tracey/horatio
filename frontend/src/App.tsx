@@ -18,6 +18,7 @@ const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then(
 const CyclePage = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.CyclePage })));
 const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ default: m.PlayPage })));
 const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })));
+const PublicTroupePage = lazy(() => import("./pages/PublicTroupePage").then((m) => ({ default: m.PublicTroupePage })));
 const PrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.PrintPage })));
 const TroupePage = lazy(() => import("./pages/troupe/TroupePage").then((m) => ({ default: m.TroupePage })));
 const TroupeBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.TroupeBadgesPage })));
@@ -57,6 +58,15 @@ export function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
+        {/* A troupe's profile, for anyone if the troupe has made it public. */}
+        <Route
+          path="/t/:troupeId"
+          element={
+            <Suspense fallback={<Loading />}>
+              <PublicTroupePage />
+            </Suspense>
+          }
+        />
         <Route element={<RequireSignIn />}>
           <Route index element={<Navigate to="/characters" replace />} />
           <Route path="/characters" element={<CharactersPage />} />

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContextOptions, type Page } from "@playwright/test";
 
 /**
  * One troupe's month, end to end: the custodian sets up a troupe, a player
@@ -12,8 +12,8 @@ const run = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 const PASSWORD = "a long enough password";
 const shots = (name: string) => ({ path: `test-results/screens/${test.info().project.name}-${name}.png`, fullPage: true });
 
-async function person(browser: Browser, name: string): Promise<{ page: Page; email: string; handle: string }> {
-  const page = await (await browser.newContext()).newPage();
+async function person(browser: Browser, name: string, options: BrowserContextOptions = {}): Promise<{ page: Page; email: string; handle: string }> {
+  const page = await (await browser.newContext(options)).newPage();
   const email = `${name}-${run}@example.com`;
   // Unique to the run, and within a handle's 30 characters.
   const handle = `${name.slice(0, 14)}_${run.slice(-10)}`;
@@ -1454,4 +1454,112 @@ test("the Play View opens as the settings say", async ({ browser }) => {
   await expect(page.getByLabel("Quick notes")).not.toBeChecked();
   await page.getByRole("button", { name: "Spend Willpower", exact: true }).last().click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "profile-custodian");
+  makeCustodian(custodian.email);
+  // The lead plans games in New York; a visitor reads them in Tokyo.
+  const lead = await person(browser, "profile-lead", { timezoneId: "America/New_York" });
+  const player = await person(browser, "profile-player");
+  const visitor = await (await browser.newContext({ timezoneId: "Asia/Tokyo" })).newPage();
+  const troupeName = `Lords of Leeds ${run}`;
+
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Troupes" }).click();
+  await expect(c.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await c.getByLabel("Name").fill(troupeName);
+  await c.getByLabel("Lead storyteller").fill(lead.handle);
+  await c.getByRole("button", { name: "Create troupe" }).click();
+  await expect(c.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // The lead fills in the profile on the troupe's About page.
+  const l = lead.page;
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  const troupeUrl = l.url();
+  const troupeId = troupeUrl.split("/troupes/")[1]!.split("/")[0]!;
+  await l.getByRole("button", { name: "Edit profile" }).click();
+  // A portrait, cropped square like a character's picture.
+  await l.getByRole("button", { name: "Add a portrait" }).click();
+  await l.getByLabel("Choose a portrait").setInputFiles("e2e/portrait.jpg");
+  await expect(l.getByRole("slider", { name: /Where the portrait is/ })).toBeVisible();
+  await l.getByRole("button", { name: "Save picture" }).click();
+  await expect(l.getByRole("dialog")).toBeHidden();
+  await l.getByLabel("Website").fill("https://lords.example.org");
+  await l.getByLabel("Discord invite").fill("https://discord.gg/lords");
+  await l.getByLabel("How often games run").fill("Second Saturday of the month, 7 pm to midnight");
+  // A game: its end starts five hours on.
+  await l.getByLabel("Game starts").fill("2030-01-12T19:00");
+  await expect(l.getByLabel("Game ends")).toHaveValue("2030-01-13T00:00");
+  await l.getByRole("button", { name: "Add game" }).click();
+  await expect(l.getByRole("list", { name: "Upcoming games to edit" }).getByText("Sat 12 Jan 2030, 7 pm to Sun 13 Jan 2030, 12 am EST")).toBeVisible();
+  await l.getByLabel("City or region").fill("Leeds");
+  await l.getByLabel("Venue name").fill("The Crypt");
+  await l.getByLabel("Address", { exact: true }).fill("12 Mill Lane, Leeds");
+  await l.getByLabel("Accessibility").fill("Step-free access and a quiet room.");
+  await l.getByLabel("Chronicle").fill("Leeds by Night");
+  await l.getByLabel("Era").fill("Modern nights");
+  await l.getByLabel("Tone").fill("Slow-burning political horror.");
+  await l.getByLabel("Taking new players?").selectOption({ label: "Welcoming new players" });
+  await l.getByLabel("Contact for new players").selectOption({ label: `profile-lead (@${lead.handle})` });
+  await l.getByLabel("Minimum age").fill("18");
+  await l.getByLabel("Content notes").fill("Violence and body horror.");
+  await l.screenshot(shots("troupe-profile-edit"));
+  await l.getByRole("button", { name: "Save profile" }).click();
+
+  // It shows on the troupe page, with the next game in the lead's own zone.
+  await expect(l.getByText("Sat 12 Jan 2030, 7 pm EST")).toBeVisible();
+  await expect(l.getByText("Welcoming new players")).toBeVisible();
+  await expect(l.getByText("12 Mill Lane, Leeds")).toBeVisible();
+  await expect(l.getByText("18+")).toBeVisible();
+  const website = l.getByRole("link", { name: "Website" });
+  await expect(website).toHaveAttribute("href", "https://lords.example.org");
+  await expect(website).toHaveAttribute("target", "_blank");
+  await expect(l.getByRole("heading", { level: 1 }).locator('img[src*="/portraits/"]')).toBeVisible();
+  await l.screenshot(shots("troupe-profile"));
+
+  // Anyone signed in sees it, street address and all; and the portrait shows in the troupe list.
+  const p = player.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await expect(p.getByRole("link", { name: troupeName }).locator('img[src*="/portraits/"]')).toBeVisible();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByText("12 Mill Lane, Leeds")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Edit profile" })).toHaveCount(0);
+
+  // Unticked, as it starts: someone not signed in is told nothing about it.
+  await visitor.goto(`/t/${troupeId}`);
+  await expect(visitor.getByText(/only for people signed in, or there is no such troupe/)).toBeVisible();
+  await expect(visitor.getByText(troupeName)).toHaveCount(0);
+
+  // Ticked: anyone can see it at its public address, but never the street address.
+  await l.getByRole("button", { name: "Edit profile" }).click();
+  await l.getByRole("checkbox", { name: /Show this troupe's profile to anyone/ }).check();
+  await l.getByRole("button", { name: "Save profile" }).click();
+  await expect(l.getByText("Anyone can see this profile, even people not signed in.")).toBeVisible();
+  await visitor.reload();
+  await expect(visitor.getByRole("heading", { name: troupeName })).toBeVisible();
+  await expect(visitor.getByText("The Crypt")).toBeVisible();
+  await expect(visitor.getByText("to see the address.")).toBeVisible();
+  await expect(visitor.getByText("12 Mill Lane")).toHaveCount(0);
+  await expect(visitor.getByText(lead.email)).toHaveCount(0);
+  await expect(visitor.getByText(`@${lead.handle}`).first()).toBeVisible();
+  // The next game, in the visitor's own zone.
+  await expect(visitor.getByText("Sun 13 Jan 2030, 9 am GMT+9")).toBeVisible();
+  await expect(visitor.locator('img[src*="/portraits/"]').first()).toBeVisible();
+  await visitor.screenshot(shots("troupe-profile-public"));
+  // A link to it previews with the troupe's name and portrait.
+  const shared = await (await visitor.request.get(`/t/${troupeId}`)).text();
+  expect(shared).toContain(`<meta property="og:title" content="${troupeName}" />`);
+  expect(shared).toMatch(/<meta property="og:image" content="[^"]*\/portraits\/[^"]*\/512\.webp" \/>/);
+
+  // Unticked again, it is for people signed in only once more.
+  await l.getByRole("button", { name: "Edit profile" }).click();
+  await l.getByRole("checkbox", { name: /Show this troupe's profile to anyone/ }).uncheck();
+  await l.getByRole("button", { name: "Save profile" }).click();
+  await expect(l.getByText("Only people signed in can see this profile.")).toBeVisible();
+  await visitor.reload();
+  await expect(visitor.getByText(/only for people signed in, or there is no such troupe/)).toBeVisible();
 });

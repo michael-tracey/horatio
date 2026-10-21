@@ -2122,6 +2122,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/banner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Banner
+         * @description A wide banner across the top of the troupe's page, cut 3:1 from the middle
+         *     of the picture.
+         */
+        post: operations["upload_banner_api_troupes__troupe_id__banner_post"];
+        /** Remove Banner */
+        delete: operations["remove_banner_api_troupes__troupe_id__banner_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/banners/{banner_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Banner File */
+        get: operations["banner_file_api_troupes__troupe_id__banners__banner_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/characters": {
         parameters: {
             query?: never;
@@ -2389,6 +2428,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Game
+         * @description A game the troupe will run, for its profile's schedule.
+         */
+        post: operations["add_game_api_troupes__troupe_id__games_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Game */
+        delete: operations["remove_game_api_troupes__troupe_id__games__game_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/lead": {
         parameters: {
             query?: never;
@@ -2487,6 +2563,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/portrait": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Portrait
+         * @description A new portrait, cut square like a character's picture. Without a crop, it
+         *     is the biggest square in the middle.
+         */
+        post: operations["upload_portrait_api_troupes__troupe_id__portrait_post"];
+        /** Remove Portrait */
+        delete: operations["remove_portrait_api_troupes__troupe_id__portrait_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/portrait/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Crop Portrait
+         * @description Move the portrait's crop, cutting it again from the picture as kept.
+         */
+        put: operations["crop_portrait_api_troupes__troupe_id__portrait_crop_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/portraits/{portrait_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Portrait File
+         * @description One of the portrait's files, for whoever may see the profile.
+         */
+        get: operations["portrait_file_api_troupes__troupe_id__portraits__portrait_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/print": {
         parameters: {
             query?: never;
@@ -2501,6 +2639,28 @@ export interface paths {
          */
         get: operations["print_characters_api_troupes__troupe_id__print_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Profile
+         * @description The troupe's profile, for anyone signed in, and for anyone at all if the
+         *     troupe has made it public.
+         */
+        get: operations["read_profile_api_troupes__troupe_id__profile_get"];
+        /** Edit Profile */
+        put: operations["edit_profile_api_troupes__troupe_id__profile_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3053,6 +3213,14 @@ export interface components {
             /** Troupe Name */
             troupe_name: string | null;
         };
+        /** Body_upload_banner_api_troupes__troupe_id__banner_post */
+        Body_upload_banner_api_troupes__troupe_id__banner_post: {
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
         /** Body_upload_logo_api_clan_logos_post */
         Body_upload_logo_api_clan_logos_post: {
             /** Clan */
@@ -3070,6 +3238,20 @@ export interface components {
         };
         /** Body_upload_picture_api_characters__character_id__picture_post */
         Body_upload_picture_api_characters__character_id__picture_post: {
+            /** Crop Size */
+            crop_size?: number | null;
+            /** Crop X */
+            crop_x?: number | null;
+            /** Crop Y */
+            crop_y?: number | null;
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
+        /** Body_upload_portrait_api_troupes__troupe_id__portrait_post */
+        Body_upload_portrait_api_troupes__troupe_id__portrait_post: {
             /** Crop Size */
             crop_size?: number | null;
             /** Crop X */
@@ -4615,6 +4797,8 @@ export interface components {
             traits: components["schemas"]["PrintedTrait"][];
             /** Troupe Name */
             troupe_name: string | null;
+            /** Troupe Portrait */
+            troupe_portrait: string | null;
         };
         /** PrintedTrait */
         PrintedTrait: {
@@ -4666,6 +4850,22 @@ export interface components {
              * @default []
              */
             links: components["schemas"]["Link"][];
+        };
+        /**
+         * ProfileLinks
+         * @description Each an http or https address, or None.
+         */
+        ProfileLinks: {
+            /** Discord */
+            discord?: string | null;
+            /** Facebook */
+            facebook?: string | null;
+            /** Instagram */
+            instagram?: string | null;
+            /** Join */
+            join?: string | null;
+            /** Website */
+            website?: string | null;
         };
         /** Progress */
         Progress: {
@@ -4960,6 +5160,60 @@ export interface components {
             titles: string[];
             /** Waiting */
             waiting: boolean;
+        };
+        /** ScheduledGameIn */
+        ScheduledGameIn: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /** ScheduledGameOut */
+        ScheduledGameOut: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /** Setting */
+        Setting: {
+            /**
+             * Chronicle
+             * @default
+             */
+            chronicle: string;
+            /**
+             * City
+             * @default
+             */
+            city: string;
+            /**
+             * Era
+             * @default
+             */
+            era: string;
+            /**
+             * Tone
+             * @default
+             */
+            tone: string;
         };
         /** SettlementChoice */
         SettlementChoice: {
@@ -5453,6 +5707,8 @@ export interface components {
             allowed_sects: string[];
             /** Archived */
             archived: boolean;
+            /** Banner */
+            banner: string | null;
             /** Description */
             description: string;
             /** Downtime Xp */
@@ -5470,6 +5726,10 @@ export interface components {
             my_role: components["schemas"]["Role"] | null;
             /** Name */
             name: string;
+            /** Portrait */
+            portrait: string | null;
+            /** Public */
+            public: boolean;
             /** Session Xp */
             session_xp: number;
             /** Starting Blood */
@@ -5508,6 +5768,88 @@ export interface components {
             /** Taps */
             taps: number;
             willpower: components["schemas"]["Tracker"];
+        };
+        /** TroupeProfileIn */
+        TroupeProfileIn: {
+            /** Contact Id */
+            contact_id?: string | null;
+            /**
+             * Content Notes
+             * @default
+             */
+            content_notes: string;
+            /** @default {} */
+            links: components["schemas"]["ProfileLinks"];
+            /** Min Age */
+            min_age?: number | null;
+            /** New Players */
+            new_players?: ("welcoming" | "closed") | null;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
+            /**
+             * Schedule
+             * @default
+             */
+            schedule: string;
+            /**
+             * @default {
+             *       "chronicle": "",
+             *       "city": "",
+             *       "era": "",
+             *       "tone": ""
+             *     }
+             */
+            setting: components["schemas"]["Setting"];
+            /**
+             * @default {
+             *       "access": "",
+             *       "address": "",
+             *       "name": "",
+             *       "region": ""
+             *     }
+             */
+            venue: components["schemas"]["Venue"];
+        };
+        /** TroupeProfileOut */
+        TroupeProfileOut: {
+            /** Banner */
+            banner: string | null;
+            /** Can Edit */
+            can_edit: boolean;
+            contact: components["schemas"]["Someone"] | null;
+            /** Content Notes */
+            content_notes: string;
+            /** Description */
+            description: string;
+            /** Games */
+            games: components["schemas"]["ScheduledGameOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            lead: components["schemas"]["Someone"];
+            links: components["schemas"]["ProfileLinks"];
+            /** Min Age */
+            min_age: number | null;
+            /** Name */
+            name: string;
+            /** New Players */
+            new_players: ("welcoming" | "closed") | null;
+            /** Pictures Available */
+            pictures_available: boolean;
+            /** Portrait */
+            portrait: string | null;
+            portrait_crop: components["schemas"]["CropIn"] | null;
+            /** Public */
+            public: boolean;
+            /** Schedule */
+            schedule: string;
+            setting: components["schemas"]["Setting"];
+            venue: components["schemas"]["VenueOut"];
         };
         /** TroupeRequestOut */
         TroupeRequestOut: {
@@ -5587,6 +5929,42 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** Venue */
+        Venue: {
+            /**
+             * Access
+             * @default
+             */
+            access: string;
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Region
+             * @default
+             */
+            region: string;
+        };
+        /** VenueOut */
+        VenueOut: {
+            /** Access */
+            access: string;
+            /** Address */
+            address: string | null;
+            /** Address Hidden */
+            address_hidden: boolean;
+            /** Name */
+            name: string;
+            /** Region */
+            region: string;
         };
         /** VisibleNote */
         VisibleNote: {
@@ -9989,6 +10367,101 @@ export interface operations {
             };
         };
     };
+    upload_banner_api_troupes__troupe_id__banner_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_banner_api_troupes__troupe_id__banner_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_banner_api_troupes__troupe_id__banner_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    banner_file_api_troupes__troupe_id__banners__banner_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                banner_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     roster_api_troupes__troupe_id__characters_get: {
         parameters: {
             query?: never;
@@ -10613,6 +11086,71 @@ export interface operations {
             };
         };
     };
+    add_game_api_troupes__troupe_id__games_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduledGameIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledGameOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_game_api_troupes__troupe_id__games__game_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     appoint_lead_api_troupes__troupe_id__lead_put: {
         parameters: {
             query?: never;
@@ -10810,6 +11348,136 @@ export interface operations {
             };
         };
     };
+    upload_portrait_api_troupes__troupe_id__portrait_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_portrait_api_troupes__troupe_id__portrait_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_portrait_api_troupes__troupe_id__portrait_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    crop_portrait_api_troupes__troupe_id__portrait_crop_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CropIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portrait_file_api_troupes__troupe_id__portraits__portrait_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                portrait_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     print_characters_api_troupes__troupe_id__print_get: {
         parameters: {
             query?: {
@@ -10830,6 +11498,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PrintedSheet"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_profile_api_troupes__troupe_id__profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_profile_api_troupes__troupe_id__profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroupeProfileIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeProfileOut"];
                 };
             };
             /** @description Validation Error */

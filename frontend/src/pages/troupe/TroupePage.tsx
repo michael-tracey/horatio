@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
+import { Avatar } from "../../components/Avatar";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
@@ -45,8 +46,20 @@ export function TroupePage() {
 
   return (
     <>
+      {t.banner && (
+        <img
+          src={`${t.banner}/1500.webp`}
+          srcSet={`${t.banner}/750.webp 750w, ${t.banner}/1500.webp 1500w`}
+          sizes="(min-width: 64rem) 64rem, 100vw"
+          alt=""
+          className="mb-4 aspect-[3/1] w-full rounded-lg border border-ash object-cover"
+        />
+      )}
       <PageTitle actions={t.my_role && <Badge tone="gold">{roleLabel(t.my_role)}</Badge>} subtitle={t.archived ? "Archived" : undefined}>
-        {t.name}
+        <span className="inline-flex items-center gap-3">
+          {t.portrait && <Avatar name={t.name} picture={t.portrait} size="sm" />}
+          {t.name}
+        </span>
       </PageTitle>
       <GroupedTabs
         label="Troupe sections"

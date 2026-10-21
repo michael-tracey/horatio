@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, handles, xp_range
+from horatio import audit, handles, pictures, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import TraitCategory, TraitDefinition, Troupe, TroupeStaff, User
 from horatio.permissions import (
@@ -39,6 +39,12 @@ class TroupeOut(BaseModel):
     xp_ceiling: int
     # House rule: the blood characters start a game with; None for full.
     starting_blood: int | None
+    # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
+    portrait: str | None
+    # Its banner, across the top of its page (add "/1500.webp" or "/750.webp"), or None.
+    banner: str | None
+    # Whether its profile shows to anyone, even people not signed in.
+    public: bool
     # The caller's own role here, if any.
     my_role: Role | None
 
@@ -90,6 +96,9 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         xp_floor=figures.floor,
         xp_ceiling=figures.ceiling,
         starting_blood=troupe.starting_blood,
+        portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
+        banner=pictures.banner_url(troupe.id, troupe.banner_id),
+        public=troupe.public,
         my_role=troupe_role(db, user, troupe),
     )
 

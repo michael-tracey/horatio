@@ -655,6 +655,21 @@
         "title": "BadgesOut",
         "type": "object"
       },
+      "Body_upload_banner_api_troupes__troupe_id__banner_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_banner_api_troupes__troupe_id__banner_post",
+        "type": "object"
+      },
       "Body_upload_logo_api_clan_logos_post": {
         "properties": {
           "clan": {
@@ -732,6 +747,60 @@
           "file"
         ],
         "title": "Body_upload_picture_api_characters__character_id__picture_post",
+        "type": "object"
+      },
+      "Body_upload_portrait_api_troupes__troupe_id__portrait_post": {
+        "properties": {
+          "crop_size": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Size"
+          },
+          "crop_x": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop X"
+          },
+          "crop_y": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Y"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_portrait_api_troupes__troupe_id__portrait_post",
         "type": "object"
       },
       "BuildingTroupe": {
@@ -4988,6 +5057,17 @@
               }
             ],
             "title": "Troupe Name"
+          },
+          "troupe_portrait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Portrait"
           }
         },
         "required": [
@@ -4995,6 +5075,7 @@
           "player_name",
           "splat",
           "troupe_name",
+          "troupe_portrait",
           "titles",
           "picture",
           "kind",
@@ -5162,6 +5243,68 @@
           "display_name"
         ],
         "title": "ProfileIn",
+        "type": "object"
+      },
+      "ProfileLinks": {
+        "description": "Each an http or https address, or None.",
+        "properties": {
+          "discord": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord"
+          },
+          "facebook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facebook"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "join": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Join"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "title": "ProfileLinks",
         "type": "object"
       },
       "Progress": {
@@ -5961,6 +6104,82 @@
           "joined_at"
         ],
         "title": "RosterEntry",
+        "type": "object"
+      },
+      "ScheduledGameIn": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "ScheduledGameIn",
+        "type": "object"
+      },
+      "ScheduledGameOut": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "ScheduledGameOut",
+        "type": "object"
+      },
+      "Setting": {
+        "properties": {
+          "chronicle": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Chronicle",
+            "type": "string"
+          },
+          "city": {
+            "default": "",
+            "maxLength": 200,
+            "title": "City",
+            "type": "string"
+          },
+          "era": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Era",
+            "type": "string"
+          },
+          "tone": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Tone",
+            "type": "string"
+          }
+        },
+        "title": "Setting",
         "type": "object"
       },
       "SettlementChoice": {
@@ -7380,6 +7599,17 @@
             "title": "Archived",
             "type": "boolean"
           },
+          "banner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Banner"
+          },
           "description": {
             "title": "Description",
             "type": "string"
@@ -7411,6 +7641,21 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "portrait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portrait"
+          },
+          "public": {
+            "title": "Public",
+            "type": "boolean"
           },
           "session_xp": {
             "title": "Session Xp",
@@ -7453,6 +7698,9 @@
           "xp_floor",
           "xp_ceiling",
           "starting_blood",
+          "portrait",
+          "banner",
+          "public",
           "my_role"
         ],
         "title": "TroupeOut",
@@ -7538,6 +7786,238 @@
           "health_boxes"
         ],
         "title": "TroupePlayEntry",
+        "type": "object"
+      },
+      "TroupeProfileIn": {
+        "properties": {
+          "contact_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Id"
+          },
+          "content_notes": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Content Notes",
+            "type": "string"
+          },
+          "links": {
+            "$ref": "#/components/schemas/ProfileLinks",
+            "default": {}
+          },
+          "min_age": {
+            "anyOf": [
+              {
+                "maximum": 99.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Age"
+          },
+          "new_players": {
+            "anyOf": [
+              {
+                "enum": [
+                  "welcoming",
+                  "closed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Players"
+          },
+          "public": {
+            "default": false,
+            "title": "Public",
+            "type": "boolean"
+          },
+          "schedule": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Schedule",
+            "type": "string"
+          },
+          "setting": {
+            "$ref": "#/components/schemas/Setting",
+            "default": {
+              "chronicle": "",
+              "city": "",
+              "era": "",
+              "tone": ""
+            }
+          },
+          "venue": {
+            "$ref": "#/components/schemas/Venue",
+            "default": {
+              "access": "",
+              "address": "",
+              "name": "",
+              "region": ""
+            }
+          }
+        },
+        "title": "TroupeProfileIn",
+        "type": "object"
+      },
+      "TroupeProfileOut": {
+        "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Banner"
+          },
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "contact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Someone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content_notes": {
+            "title": "Content Notes",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduledGameOut"
+            },
+            "title": "Games",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lead": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "links": {
+            "$ref": "#/components/schemas/ProfileLinks"
+          },
+          "min_age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Age"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "new_players": {
+            "anyOf": [
+              {
+                "enum": [
+                  "welcoming",
+                  "closed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Players"
+          },
+          "pictures_available": {
+            "title": "Pictures Available",
+            "type": "boolean"
+          },
+          "portrait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portrait"
+          },
+          "portrait_crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CropIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          },
+          "schedule": {
+            "title": "Schedule",
+            "type": "string"
+          },
+          "setting": {
+            "$ref": "#/components/schemas/Setting"
+          },
+          "venue": {
+            "$ref": "#/components/schemas/VenueOut"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "public",
+          "portrait",
+          "portrait_crop",
+          "banner",
+          "links",
+          "schedule",
+          "games",
+          "venue",
+          "setting",
+          "new_players",
+          "contact",
+          "lead",
+          "min_age",
+          "content_notes",
+          "can_edit",
+          "pictures_available"
+        ],
+        "title": "TroupeProfileOut",
         "type": "object"
       },
       "TroupeRequestOut": {
@@ -7741,6 +8221,76 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "Venue": {
+        "properties": {
+          "access": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Access",
+            "type": "string"
+          },
+          "address": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Address",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "region": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "title": "Venue",
+        "type": "object"
+      },
+      "VenueOut": {
+        "properties": {
+          "access": {
+            "title": "Access",
+            "type": "string"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "address_hidden": {
+            "title": "Address Hidden",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "region",
+          "name",
+          "address",
+          "address_hidden",
+          "access"
+        ],
+        "title": "VenueOut",
         "type": "object"
       },
       "VisibleNote": {
@@ -14432,6 +14982,149 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/banner": {
+      "delete": {
+        "operationId": "remove_banner_api_troupes__troupe_id__banner_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Banner",
+        "tags": [
+          "troupe profiles"
+        ]
+      },
+      "post": {
+        "description": "A wide banner across the top of the troupe's page, cut 3:1 from the middle\nof the picture.",
+        "operationId": "upload_banner_api_troupes__troupe_id__banner_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_banner_api_troupes__troupe_id__banner_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Banner",
+        "tags": [
+          "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/banners/{banner_id}/{name}": {
+      "get": {
+        "operationId": "banner_file_api_troupes__troupe_id__banners__banner_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "banner_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Banner Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Banner File",
+        "tags": [
+          "troupe profiles"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/characters": {
       "get": {
         "description": "Every character in the troupe now: those whose home it is first, then visitors.",
@@ -15402,6 +16095,106 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/games": {
+      "post": {
+        "description": "A game the troupe will run, for its profile's schedule.",
+        "operationId": "add_game_api_troupes__troupe_id__games_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduledGameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledGameOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Game",
+        "tags": [
+          "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}": {
+      "delete": {
+        "operationId": "remove_game_api_troupes__troupe_id__games__game_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Game",
+        "tags": [
+          "troupe profiles"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/lead": {
       "put": {
         "description": "The custodian appoints a troupe's lead storyteller.",
@@ -15721,6 +16514,204 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/portrait": {
+      "delete": {
+        "operationId": "remove_portrait_api_troupes__troupe_id__portrait_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Portrait",
+        "tags": [
+          "troupe profiles"
+        ]
+      },
+      "post": {
+        "description": "A new portrait, cut square like a character's picture. Without a crop, it\nis the biggest square in the middle.",
+        "operationId": "upload_portrait_api_troupes__troupe_id__portrait_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_portrait_api_troupes__troupe_id__portrait_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Portrait",
+        "tags": [
+          "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/portrait/crop": {
+      "put": {
+        "description": "Move the portrait's crop, cutting it again from the picture as kept.",
+        "operationId": "crop_portrait_api_troupes__troupe_id__portrait_crop_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CropIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Crop Portrait",
+        "tags": [
+          "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/portraits/{portrait_id}/{name}": {
+      "get": {
+        "description": "One of the portrait's files, for whoever may see the profile.",
+        "operationId": "portrait_file_api_troupes__troupe_id__portraits__portrait_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "portrait_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Portrait Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Portrait File",
+        "tags": [
+          "troupe profiles"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/print": {
       "get": {
         "description": "Printed sheets, headed for this troupe: the characters named, in that order, or\nevery character in the troupe now, in the roster's order.",
@@ -15786,6 +16777,101 @@
         "summary": "Print Characters",
         "tags": [
           "roster"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/profile": {
+      "get": {
+        "description": "The troupe's profile, for anyone signed in, and for anyone at all if the\ntroupe has made it public.",
+        "operationId": "read_profile_api_troupes__troupe_id__profile_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Profile",
+        "tags": [
+          "troupe profiles"
+        ]
+      },
+      "put": {
+        "operationId": "edit_profile_api_troupes__troupe_id__profile_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroupeProfileIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Profile",
+        "tags": [
+          "troupe profiles"
         ]
       }
     },
