@@ -302,6 +302,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/cart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Spend Cart
+         * @description Make a list of sheet changes in one transaction, each checked as if the
+         *     earlier ones had been made. If any is refused, none is made, and each line
+         *     says what it costs or why it is refused. A dry run says the same, saving nothing.
+         */
+        post: operations["spend_cart_api_characters__character_id__cart_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/creation": {
         parameters: {
             query?: never;
@@ -3103,6 +3125,34 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** CartIn */
+        CartIn: {
+            /** Changes */
+            changes: (components["schemas"]["SetChangeIn"] | components["schemas"]["SwapChangeIn"] | components["schemas"]["PickChangeIn"] | components["schemas"]["UnpickChangeIn"])[];
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /** CartLineOut */
+        CartLineOut: {
+            /** Cost */
+            cost: number | null;
+            /** Needs Approval */
+            needs_approval: boolean;
+            /** Refused */
+            refused: string | null;
+        };
+        /** CartOut */
+        CartOut: {
+            /** Applied */
+            applied: boolean;
+            /** Balance */
+            balance: number;
+            /** Lines */
+            lines: components["schemas"]["CartLineOut"][];
+        };
         /** CatalogueOut */
         CatalogueOut: {
             /** Categories */
@@ -4282,6 +4332,31 @@ export interface components {
              */
             rating: number;
         };
+        /**
+         * PickChangeIn
+         * @description Place a creation pick, as `PUT /creation/picks`.
+         */
+        PickChangeIn: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "pick";
+            /** Name */
+            name: string;
+            /**
+             * Rating
+             * @default 1
+             */
+            rating: number;
+        };
         /** PickedTrait */
         PickedTrait: {
             /** Detail */
@@ -4961,6 +5036,35 @@ export interface components {
             /** Waiting */
             waiting: boolean;
         };
+        /**
+         * SetChangeIn
+         * @description Add a trait, change its rating, or (at 0) remove it, as `PUT /traits`.
+         */
+        SetChangeIn: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** From Rating */
+            from_rating?: number | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "set";
+            /** Name */
+            name: string;
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Teacher
+             * @default
+             */
+            teacher: string;
+        };
         /** SettlementChoice */
         SettlementChoice: {
             /** Category */
@@ -5205,6 +5309,23 @@ export interface components {
             message: string;
             /** Step */
             step: string;
+        };
+        /**
+         * SwapChangeIn
+         * @description Swap a focus (or another swappable choice), as `POST /traits/change`.
+         */
+        SwapChangeIn: {
+            /** Category */
+            category: string;
+            /** From Name */
+            from_name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "swap";
+            /** To Name */
+            to_name: string;
         };
         /** SystemOut */
         SystemOut: {
@@ -5561,6 +5682,26 @@ export interface components {
              * @default
              */
             detail: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * UnpickChangeIn
+         * @description Take a creation pick back, as `POST /creation/picks/remove`.
+         */
+        UnpickChangeIn: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "unpick";
             /** Name */
             name: string;
         };
@@ -6423,6 +6564,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    spend_cart_api_characters__character_id__cart_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartOut"];
                 };
             };
             /** @description Validation Error */

@@ -809,6 +809,114 @@
         "title": "BulkAwarded",
         "type": "object"
       },
+      "CartIn": {
+        "properties": {
+          "changes": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "pick": "#/components/schemas/PickChangeIn",
+                  "set": "#/components/schemas/SetChangeIn",
+                  "swap": "#/components/schemas/SwapChangeIn",
+                  "unpick": "#/components/schemas/UnpickChangeIn"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SetChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/SwapChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/PickChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/UnpickChangeIn"
+                }
+              ]
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Changes",
+            "type": "array"
+          },
+          "dry_run": {
+            "default": false,
+            "title": "Dry Run",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "changes"
+        ],
+        "title": "CartIn",
+        "type": "object"
+      },
+      "CartLineOut": {
+        "properties": {
+          "cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "needs_approval": {
+            "title": "Needs Approval",
+            "type": "boolean"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused"
+          }
+        },
+        "required": [
+          "cost",
+          "refused",
+          "needs_approval"
+        ],
+        "title": "CartLineOut",
+        "type": "object"
+      },
+      "CartOut": {
+        "properties": {
+          "applied": {
+            "title": "Applied",
+            "type": "boolean"
+          },
+          "balance": {
+            "title": "Balance",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/CartLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "applied",
+          "balance",
+          "lines"
+        ],
+        "title": "CartOut",
+        "type": "object"
+      },
       "CatalogueOut": {
         "properties": {
           "categories": {
@@ -4084,6 +4192,43 @@
         "title": "Pick",
         "type": "object"
       },
+      "PickChangeIn": {
+        "description": "Place a creation pick, as `PUT /creation/picks`.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "const": "pick",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "category",
+          "name"
+        ],
+        "title": "PickChangeIn",
+        "type": "object"
+      },
       "PickedTrait": {
         "properties": {
           "detail": {
@@ -5963,6 +6108,67 @@
         "title": "RosterEntry",
         "type": "object"
       },
+      "SetChangeIn": {
+        "description": "Add a trait, change its rating, or (at 0) remove it, as `PUT /traits`.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "from_rating": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Rating"
+          },
+          "kind": {
+            "const": "set",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "teacher": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Teacher",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "category",
+          "name"
+        ],
+        "title": "SetChangeIn",
+        "type": "object"
+      },
       "SettlementChoice": {
         "properties": {
           "category": {
@@ -6616,6 +6822,36 @@
           "message"
         ],
         "title": "StepNeed",
+        "type": "object"
+      },
+      "SwapChangeIn": {
+        "description": "Swap a focus (or another swappable choice), as `POST /traits/change`.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "from_name": {
+            "title": "From Name",
+            "type": "string"
+          },
+          "kind": {
+            "const": "swap",
+            "title": "Kind",
+            "type": "string"
+          },
+          "to_name": {
+            "title": "To Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "category",
+          "from_name",
+          "to_name"
+        ],
+        "title": "SwapChangeIn",
         "type": "object"
       },
       "SystemOut": {
@@ -7673,6 +7909,36 @@
           "name"
         ],
         "title": "Unpick",
+        "type": "object"
+      },
+      "UnpickChangeIn": {
+        "description": "Take a creation pick back, as `POST /creation/picks/remove`.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "const": "unpick",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "category",
+          "name"
+        ],
+        "title": "UnpickChangeIn",
         "type": "object"
       },
       "Unsubscribe": {
@@ -9151,6 +9417,60 @@
         "summary": "Set Building Troupe",
         "tags": [
           "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/cart": {
+      "post": {
+        "description": "Make a list of sheet changes in one transaction, each checked as if the\nearlier ones had been made. If any is refused, none is made, and each line\nsays what it costs or why it is refused. A dry run says the same, saving nothing.",
+        "operationId": "spend_cart_api_characters__character_id__cart_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CartIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Spend Cart",
+        "tags": [
+          "sheets"
         ]
       }
     },
