@@ -102,7 +102,7 @@ export function SettingsPage() {
             ]}
           />
         </Setting>
-        <Setting label="Badge size" hint="To fit your badge holders.">
+        <Setting label="Badge size" hint="To fit your badge holders. You can pick another size when you print.">
           <Choice
             name="badge_size"
             label="Badge size"

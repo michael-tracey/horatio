@@ -4,6 +4,8 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet } from "../api/types";
 import { HEALTH_RULE, healthRows } from "../health";
+import { usePreferences } from "../hooks";
+import { PAPERS, pageRule } from "../paper";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 
 type Trait = PrintedSheet["traits"][number];
@@ -12,7 +14,8 @@ type Trait = PrintedSheet["traits"][number];
  * A character sheet laid out for paper, in the order of the official BNS sheet:
  * identity, attributes with focuses, skills, then backgrounds / disciplines /
  * merits and flaws, then blood / willpower / morality, then health and status.
- * Black on white, sized for US Letter, and readable on screen before printing.
+ * Black on white, sized for the person's paper (US Letter or A4) and fitting one
+ * page of it, and readable on screen before printing.
  */
 export function PrintPage() {
   const { characterId = "" } = useParams();
@@ -72,19 +75,25 @@ export function TroupePrintPage() {
 }
 
 /** The grey desk the paper sits on, with Back and Print above it; only the paper
- * prints. Back is a link to where the sheets came from, since they often open in
- * a tab of their own, with no history to go back through. */
+ * prints, on the person's paper size. Back is a link to where the sheets came
+ * from, since they often open in a tab of their own, with no history to go back
+ * through. */
 function PrintShell({ back, count, children }: { back: string; count?: number; children: ReactNode }) {
+  const paper = usePreferences().paper;
   return (
     <div className="min-h-screen bg-neutral-200 py-6 text-black print:min-h-0 print:bg-white print:py-0">
-      <div className="mx-auto mb-4 flex max-w-[8.5in] items-center justify-between gap-4 px-4 print:hidden">
+      <style>{pageRule(paper, "0.45in")}</style>
+      <div className="mx-auto mb-4 flex items-center justify-between gap-4 px-4 print:hidden" style={{ maxWidth: `${PAPERS[paper].width}in` }}>
         <Link to={back} className="text-sm underline">
           ← Back
         </Link>
         {count !== undefined && <span className="text-sm">{count === 1 ? "1 sheet" : `${count} sheets`}</span>}
-        <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
-          Print
-        </button>
+        <span className="flex items-center gap-3">
+          <span className="text-sm text-neutral-600">For {PAPERS[paper].name}</span>
+          <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
+            Print
+          </button>
+        </span>
       </div>
       {children}
     </div>
@@ -213,6 +222,7 @@ const SHOWN_ELSEWHERE = new Set([
 ]);
 
 function Sheet({ sheet }: { sheet: PrintedSheet }) {
+  const paper = usePreferences().paper;
   const t = sheet.traits;
   const generation = rating(t, "backgrounds", "Generation");
   const [maxBlood, perTurn] = BLOOD[Math.min(generation, 5)]!;
@@ -230,7 +240,10 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
   for (const x of others) otherGroups.set(x.category_name, [...(otherGroups.get(x.category_name) ?? []), x]);
 
   return (
-    <article className="mx-auto flex max-w-[8.5in] flex-col gap-3 bg-white p-[0.45in] font-serif shadow print:max-w-none print:p-0 print:shadow-none">
+    <article
+      className="mx-auto flex flex-col gap-3 bg-white p-[0.45in] font-serif shadow print:p-0 print:shadow-none"
+      style={{ maxWidth: `${PAPERS[paper].width}in` }}
+    >
       <header className="grid grid-cols-[1fr_auto] items-start gap-4 border-b-2 border-black pb-2">
         <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-2 text-[12px]">
           <dt className="font-bold">Character</dt>
