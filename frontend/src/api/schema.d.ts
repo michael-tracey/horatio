@@ -519,6 +519,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/home-troupe/xp-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Home Troupe Xp
+         * @description Where the character's XP stands against `troupe_id`'s floor and ceiling.
+         */
+        post: operations["preview_home_troupe_xp_api_characters__character_id__home_troupe_xp_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/log": {
         parameters: {
             query?: never;
@@ -1084,6 +1104,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/xp/self-entered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Self Entered Xp
+         * @description A player adds XP to their own character while it has no home troupe, such
+         *     as for one played elsewhere. The troupe it asks to join accepts or removes it.
+         */
+        post: operations["add_self_entered_xp_api_characters__character_id__xp_self_entered_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/xp/{entry_id}/correction": {
         parameters: {
             query?: never;
@@ -1096,7 +1137,8 @@ export interface paths {
         /**
          * Correct Xp
          * @description Correct a mistaken award with a new entry; the award itself is left as written.
-         *     Whoever may award the character XP may correct it.
+         *     Whoever may award the character XP may correct it, and a player their own
+         *     self-entered XP while the character has no home troupe.
          */
         post: operations["correct_xp_api_characters__character_id__xp__entry_id__correction_post"];
         delete?: never;
@@ -2696,6 +2738,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/xp-range": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Range
+         * @description Anyone can see where a troupe stands, as they can see the troupe.
+         */
+        get: operations["read_range_api_troupes__troupe_id__xp_range_get"];
+        /**
+         * Set Range
+         * @description Storytellers set the floor or ceiling by hand, for a chronicle that began
+         *     before Horatio. Games and downtimes still add to them afterwards.
+         */
+        put: operations["set_range_api_troupes__troupe_id__xp_range_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/unsubscribe/{token}": {
         parameters: {
             query?: never;
@@ -3024,6 +3091,8 @@ export interface components {
         BulkAward: {
             /** Awards */
             awards: components["schemas"]["CharacterAward"][];
+            /** Game Xp */
+            game_xp?: number | null;
             /** Reason */
             reason: string;
         };
@@ -3409,6 +3478,14 @@ export interface components {
             /** Completion Xp */
             completion_xp: number;
         };
+        /** CycleClose */
+        CycleClose: {
+            /**
+             * Add To Ceiling
+             * @default true
+             */
+            add_to_ceiling: boolean;
+        };
         /** CycleOut */
         CycleOut: {
             /** Closed At */
@@ -3463,6 +3540,7 @@ export interface components {
              * @default []
              */
             settlements: components["schemas"]["SettlementOverride"][];
+            xp?: components["schemas"]["XpDecision"] | null;
         };
         /** Decline */
         Decline: {
@@ -3745,6 +3823,11 @@ export interface components {
              * @default []
              */
             settlements: components["schemas"]["SettlementChoice"][];
+            /**
+             * Top Up
+             * @default true
+             */
+            top_up: boolean;
             /**
              * Troupe Id
              * Format: uuid
@@ -4730,6 +4813,7 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+            xp?: components["schemas"]["XpReviewOut"] | null;
         };
         /** QuoteOut */
         QuoteOut: {
@@ -5339,6 +5423,8 @@ export interface components {
             name?: string | null;
             /** Session Xp */
             session_xp?: number | null;
+            /** Starting Xp */
+            starting_xp?: number | null;
         };
         /** TroupeChoice */
         TroupeChoice: {
@@ -5388,6 +5474,12 @@ export interface components {
             session_xp: number;
             /** Starting Blood */
             starting_blood: number | null;
+            /** Starting Xp */
+            starting_xp: number;
+            /** Xp Ceiling */
+            xp_ceiling: number;
+            /** Xp Floor */
+            xp_floor: number;
         };
         /** TroupePlayEntry */
         TroupePlayEntry: {
@@ -5574,6 +5666,36 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * XpDecision
+         * @description Home troupe changes only: what to do about the character's XP as it joins.
+         */
+        XpDecision: {
+            /**
+             * Above Ceiling
+             * @default keep
+             * @enum {string}
+             */
+            above_ceiling: "keep" | "remove";
+            /**
+             * Extra
+             * @default 0
+             */
+            extra: number;
+            /**
+             * Extra Reason
+             * @default
+             */
+            extra_reason: string;
+            /**
+             * Self Entered
+             * @default keep
+             * @enum {string}
+             */
+            self_entered: "keep" | "remove";
+            /** Top Up */
+            top_up?: boolean | null;
+        };
         /** XpEntryOut */
         XpEntryOut: {
             /** Amount */
@@ -5609,6 +5731,98 @@ export interface components {
             to_rating: number | null;
             /** Trait */
             trait: string | null;
+        };
+        /** XpRangeChange */
+        XpRangeChange: {
+            /** Ceiling */
+            ceiling?: number | null;
+            /** Floor */
+            floor?: number | null;
+            /** Reason */
+            reason: string;
+        };
+        /** XpRangeEntryOut */
+        XpRangeEntryOut: {
+            /** Ceiling Change */
+            ceiling_change: number;
+            /**
+             * Entered On
+             * Format: date
+             */
+            entered_on: string;
+            /** Floor Change */
+            floor_change: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Reason */
+            reason: string;
+        };
+        /** XpRangeOut */
+        XpRangeOut: {
+            /** Ceiling */
+            ceiling: number;
+            /** Downtime Xp */
+            downtime_xp: number;
+            /** Downtimes */
+            downtimes: number;
+            /** Entries */
+            entries: components["schemas"]["XpRangeEntryOut"][];
+            /** Floor */
+            floor: number;
+            /** Game Xp */
+            game_xp: number;
+            /** Games */
+            games: number;
+            /** Set Ceiling */
+            set_ceiling: number;
+            /** Set Floor */
+            set_floor: number;
+            /** Starting Xp */
+            starting_xp: number;
+        };
+        /**
+         * XpReviewOut
+         * @description A joining character's XP against the troupe's floor and ceiling: as it
+         *     stands while the request waits, and what was done once it is decided.
+         */
+        XpReviewOut: {
+            /** Above Ceiling Removed */
+            above_ceiling_removed?: number | null;
+            /** Ceiling */
+            ceiling: number;
+            /** Extra */
+            extra?: number | null;
+            /** Floor */
+            floor: number;
+            /** Given */
+            given: number;
+            /** Self Entered */
+            self_entered: number;
+            /** Self Entered Removed */
+            self_entered_removed?: number | null;
+            /** Top Up Asked */
+            top_up_asked: boolean;
+            /** Topped Up */
+            topped_up?: number | null;
+        };
+        /**
+         * XpStandingOut
+         * @description The character's XP against a troupe's floor and ceiling.
+         */
+        XpStandingOut: {
+            /** Ceiling */
+            ceiling: number;
+            /** Floor */
+            floor: number;
+            /** Given */
+            given: number;
+            /** Self Entered */
+            self_entered: number;
         };
         /** XpSummary */
         XpSummary: {
@@ -6634,6 +6848,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DifferenceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_home_troupe_xp_api_characters__character_id__home_troupe_xp_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroupeChoice"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpStandingOut"];
                 };
             };
             /** @description Validation Error */
@@ -7736,6 +7985,41 @@ export interface operations {
             };
         };
     };
+    add_self_entered_xp_api_characters__character_id__xp_self_entered_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["XpAward"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     correct_xp_api_characters__character_id__xp__entry_id__correction_post: {
         parameters: {
             query?: never;
@@ -7959,7 +8243,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CycleClose"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -11064,6 +11352,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkAwarded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_range_api_troupes__troupe_id__xp_range_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpRangeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_range_api_troupes__troupe_id__xp_range_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["XpRangeChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XpRangeOut"];
                 };
             };
             /** @description Validation Error */

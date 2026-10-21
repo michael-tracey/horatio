@@ -45,6 +45,7 @@ from horatio.models.troupes import (
     TroupeSpecialization,
     TroupeStaff,
     TroupeTitle,
+    XpRangeEntry,
 )
 
 __all__ = [
@@ -96,4 +97,5 @@ __all__ = [
     "TroupeTitle",
     "User",
     "XpEntry",
+    "XpRangeEntry",
 ]

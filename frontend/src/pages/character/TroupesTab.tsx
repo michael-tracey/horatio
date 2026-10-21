@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
-import type { CharacterOut, DifferenceOut } from "../../api/types";
+import type { CharacterOut, DifferenceOut, XpStandingOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { describeDifference, settlementLabel } from "../../settlements";
@@ -129,10 +129,16 @@ function HomeTroupe({
   const [differences, setDifferences] = useState<DifferenceOut[] | null>(null);
   const [settlements, setSettlements] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
+  const [standing, setStanding] = useState<XpStandingOut | null>(null);
+  const [topUp, setTopUp] = useState(true);
   const key = (d: DifferenceOut) => `${d.difference === "creation_differs"}/${d.category}/${d.name}/${d.detail}`;
 
   const preview = useAction(async (troupe_id: string) => {
-    const found = await unwrap(api.POST("/api/characters/{character_id}/home-troupe/preview", { ...path, body: { troupe_id } }));
+    const [found, xp] = await Promise.all([
+      unwrap(api.POST("/api/characters/{character_id}/home-troupe/preview", { ...path, body: { troupe_id } })),
+      unwrap(api.POST("/api/characters/{character_id}/home-troupe/xp-preview", { ...path, body: { troupe_id } })),
+    ]);
+    setStanding(xp);
     setDifferences(found);
     setSettlements(Object.fromEntries(found.map((d) => [key(d), d.allowed_settlements[0] ?? "keep_price"])));
   });
@@ -143,6 +149,7 @@ function HomeTroupe({
         body: {
           troupe_id: troupeId,
           note,
+          top_up: topUp,
           settlements: (differences ?? []).map((d) => ({
             category: d.category,
             name: d.name,
@@ -201,6 +208,7 @@ function HomeTroupe({
               ))}
             </>
           )}
+          {standing && <XpStanding standing={standing} topUp={topUp} onTopUp={setTopUp} />}
           {unbanked > 0 && (
             <Notice>
               Only 5 unspent creation XP carry over once a home troupe accepts {character.name}. If accepted now, {unbanked} XP will
@@ -217,5 +225,27 @@ function HomeTroupe({
         </div>
       )}
     </Card>
+  );
+}
+
+/** The character's XP against the troupe's floor and ceiling, and the top-up below the floor. */
+function XpStanding({ standing: s, topUp, onTopUp }: { standing: XpStandingOut; topUp: boolean; onTopUp: (on: boolean) => void }) {
+  const below = s.floor - s.given;
+  const above = s.given - s.ceiling;
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-ash px-3 py-2 text-sm">
+      <p>
+        This troupe's XP floor is {s.floor} and its ceiling {s.ceiling}. This character has been given {s.given} XP
+        {s.self_entered > 0 && <>, {s.self_entered} of it self-entered</>}.
+      </p>
+      {below > 0 && (
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={topUp} onChange={(e) => onTopUp(e.target.checked)} />
+          Top up to the floor: {below} XP more{s.self_entered > 0 && " (more if the storytellers remove self-entered XP)"}
+        </label>
+      )}
+      {above > 0 && <p className="text-gold">That is {above} XP above the ceiling. The storytellers will see it, and decide whether it stays.</p>}
+      {s.self_entered > 0 && <p className="text-mist">The storytellers see self-entered XP apart, and accept or remove it.</p>}
+    </div>
   );
 }

@@ -40,6 +40,7 @@ from horatio.api import (
     troupes,
     unsubscribe,
     xp_awards,
+    xp_range,
 )
 from horatio.config import get_settings
 
@@ -107,6 +108,7 @@ for module in (
     badges,
     troupe_requests,
     xp_awards,
+    xp_range,
     preferences,
     unsubscribe,
     system,

@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import downtimes, pictures, social_age
+from horatio import downtimes, pictures, social_age, xp_range
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
@@ -55,6 +55,11 @@ class NewCycle(BaseModel):
 
 class CycleChanges(BaseModel):
     completion_xp: int = Field(ge=0, le=100)
+
+
+class CycleClose(BaseModel):
+    # Also add the cycle's XP for completing it to the troupe's XP ceiling.
+    add_to_ceiling: bool = True
 
 
 class CycleOut(BaseModel):
@@ -301,9 +306,13 @@ def open_cycle(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CycleOu
 
 
 @router.post("/cycles/{cycle_id}/close")
-def close_cycle(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CycleOut:
+def close_cycle(
+    cycle_id: uuid.UUID, db: DbSession, user: CurrentUser, body: CycleClose | None = None
+) -> CycleOut:
     cycle, _ = staff_cycle(db, user, cycle_id)
     downtimes.close_cycle(db, user, cycle)
+    if body is None or body.add_to_ceiling:
+        xp_range.add_downtime(db, user, cycle)
     db.commit()
     return cycle_out(db, cycle)
 

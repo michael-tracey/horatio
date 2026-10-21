@@ -1,7 +1,16 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, UniqueConstraint, func, text
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,9 +34,32 @@ class Troupe(Imported, Record):
     # downtime. Defaults for awarding and for new cycles; each can be changed there.
     session_xp: Mapped[int] = mapped_column(default=8, server_default="8")
     downtime_xp: Mapped[int] = mapped_column(default=2, server_default="2")
+    # The XP a character had when the chronicle began: where the troupe's XP floor
+    # and ceiling start (horatio.xp_range).
+    starting_xp: Mapped[int] = mapped_column(default=30, server_default="30")
     # House rule: the blood characters start a game with (no more than their
     # generation's most). None starts them full.
     starting_blood: Mapped[int | None]
+
+
+class XpRangeEntry(Record):
+    """One change to a troupe's XP floor and ceiling: a game's XP, a downtime
+    cycle's XP for completing it, or staff setting either figure by hand. The
+    figures are the troupe's starting XP plus every change (horatio.xp_range)."""
+
+    __tablename__ = "xp_range_entries"
+    __table_args__ = (CheckConstraint("kind in ('game', 'downtime', 'set')", name="kind"),)
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    kind: Mapped[str]
+    floor_change: Mapped[int]
+    ceiling_change: Mapped[int]
+    reason: Mapped[str] = mapped_column(default="", server_default="")
+    entered_on: Mapped[date] = mapped_column(Date, server_default=func.current_date())
+    # Null for a downtime cycle counted when the floor and ceiling began.
+    entered_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # For a downtime: the cycle whose closing added it.
+    cycle_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("downtime_cycles.id"))
 
 
 class TroupeRequest(Record):

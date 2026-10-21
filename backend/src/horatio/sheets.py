@@ -24,7 +24,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select, true
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications
+from horatio import audit, notifications, xp_range
 from horatio.models import (
     Approval,
     Character,
@@ -34,6 +34,7 @@ from horatio.models import (
     SheetVersion,
     TraitCategory,
     TraitDefinition,
+    Troupe,
     TroupeMembership,
     User,
     XpEntry,
@@ -804,15 +805,22 @@ def replace_choice(
 
 
 def start_character(db: Session, player: User, character: Character) -> None:
-    """Give a new character the rule set's starting XP."""
-    starting_xp = db.scalar(select(RuleSet.starting_xp).where(RuleSet.splat == character.splat))
+    """Give a new character its starting XP: the XP floor of the troupe it is built
+    for, or the rule set's starting XP when it is built in its player's vault."""
+    reason = "Starting experience"
+    if character.building_troupe_id is not None:
+        troupe = db.get_one(Troupe, character.building_troupe_id)
+        starting_xp = xp_range.figures(db, troupe).floor
+        reason = f"Starting experience: {troupe.name}'s XP floor"
+    else:
+        starting_xp = db.scalar(select(RuleSet.starting_xp).where(RuleSet.splat == character.splat))
     if starting_xp:
         db.add(
             XpEntry(
                 character_id=character.id,
                 kind="award",
                 amount=starting_xp,
-                reason="Starting experience",
+                reason=reason,
                 entered_by=player.id,
             )
         )
@@ -1262,6 +1270,7 @@ def decide(
     approve: bool,
     note: str,
     settlement_overrides: Mapping[uuid.UUID, str] | None = None,
+    xp: xp_range.Decision | None = None,
 ) -> Approval:
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
@@ -1279,7 +1288,7 @@ def decide(
     elif approve and approval.kind == "home_troupe_change":
         from horatio.reconciliation import approve_change  # imports this module
 
-        approve_change(db, staff, approval, character, settlement_overrides or {})
+        approve_change(db, staff, approval, character, settlement_overrides or {}, xp)
     approval.status = "approved" if approve else "declined"
     approval.decided_by = staff.id
     approval.decided_at = datetime.now(UTC)
@@ -1373,14 +1382,19 @@ def withdraw(db: Session, player: User, approval: Approval) -> Approval:
 
 def earned_and_spent(entries: Iterable[tuple[str, int]]) -> tuple[int, int]:
     """XP earned and spent from (kind, amount) pairs. A correction changes what an
-    award gave, so it counts toward earned whichever way it goes."""
+    award gave, and a cap what was earned before joining a troupe, so they count
+    toward earned whichever way they go."""
     earned = spent = 0
     for kind, amount in entries:
-        if kind == "correction" or amount > 0:
+        if kind in ("correction", "cap") or amount > 0:
             earned += amount
         else:
             spent -= amount
     return earned, spent
+
+
+# XP entries a correction can put right: XP given, by staff or (in the vault) by the player.
+CORRECTABLE = ("award", "self_entered")
 
 
 def award_xp(db: Session, staff: User, character: Character, amount: int, reason: str) -> XpEntry:
@@ -1412,9 +1426,10 @@ def awarded(db: Session, award: XpEntry) -> int:
 def correct_xp(
     db: Session, staff: User, character: Character, award: XpEntry, amount: int, reason: str
 ) -> XpEntry:
-    """Put right a mistaken award: the award is left as written, and a correction
-    entry adds the difference between what it gives now and `amount`."""
-    if award.character_id != character.id or award.kind != "award":
+    """Put right a mistaken award (or self-entered XP): the award is left as
+    written, and a correction entry adds the difference between what it gives
+    now and `amount`."""
+    if award.character_id != character.id or award.kind not in CORRECTABLE:
         raise unprocessable("Only an award can be corrected.")
     was = awarded(db, award)
     difference = amount - was

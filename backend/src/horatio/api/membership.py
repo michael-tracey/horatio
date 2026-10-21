@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from horatio import reconciliation, sheets
+from horatio import reconciliation, sheets, xp_range
 from horatio.api.sheets import ApprovalOut, approval_out, players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe, TroupeMembership
@@ -66,6 +66,19 @@ class HomeTroupeRequest(BaseModel):
     troupe_id: uuid.UUID
     note: str = ""
     settlements: list[SettlementChoice] = []
+    # Below the troupe's XP floor: ask to be topped up to it.
+    top_up: bool = True
+
+
+class XpStandingOut(BaseModel):
+    """The character's XP against a troupe's floor and ceiling."""
+
+    # XP given: awards, self-entered XP and corrections, not what flaws pay back.
+    given: int
+    # The part of it the player entered themselves.
+    self_entered: int
+    floor: int
+    ceiling: int
 
 
 def running_troupe(db: DbSession, troupe_id: uuid.UUID) -> Troupe:
@@ -145,6 +158,22 @@ def preview_home_troupe(
     return [difference_out(d) for d in reconciliation.find_differences(db, character, troupe)]
 
 
+@router.post("/home-troupe/xp-preview")
+def preview_home_troupe_xp(
+    character_id: uuid.UUID, body: TroupeChoice, db: DbSession, user: CurrentUser
+) -> XpStandingOut:
+    """Where the character's XP stands against `troupe_id`'s floor and ceiling."""
+    character = players_character(db, user, character_id)
+    troupe = running_troupe(db, body.troupe_id)
+    found = xp_range.review(db, character, troupe, True)
+    return XpStandingOut(
+        given=found.given,
+        self_entered=found.self_entered,
+        floor=found.floor,
+        ceiling=found.ceiling,
+    )
+
+
 @router.post("/home-troupe", status_code=status.HTTP_201_CREATED)
 def request_home_troupe(
     character_id: uuid.UUID, body: HomeTroupeRequest, db: DbSession, user: CurrentUser
@@ -168,6 +197,7 @@ def request_home_troupe(
             for s in body.settlements
         },
         body.note,
+        body.top_up,
     )
     db.commit()
     return approval_out(approval)

@@ -165,6 +165,18 @@ _Avoid_: Spend, buy
 One line in a character's XP history: an award of XP, or a purchase.
 _Avoid_: Experience notation, XP log row
 
+**XP Floor**:
+The least XP a character in a troupe should have been given by now: the troupe's starting XP and every game's XP. A character built for the troupe starts at it, and one joining below it is offered a top-up.
+_Avoid_: Minimum XP, baseline
+
+**XP Ceiling**:
+The most XP a character in a troupe could have been given by now: the floor and every downtime's XP for completing it. A character joining above it is shown to staff, who keep or take away what is above.
+_Avoid_: Maximum XP, XP cap
+
+**Self-entered XP**:
+XP a player adds to their own character while it has no home troupe, such as for one played elsewhere. The troupe it makes its home accepts or removes it.
+_Avoid_: Self-award, bonus XP
+
 **Long Text**:
 A piece of free-form writing attached to a character, such as its background or history.
 _Avoid_: Notes, bio, extended text

@@ -764,6 +764,19 @@
             "title": "Awards",
             "type": "array"
           },
+          "game_xp": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Xp"
+          },
           "reason": {
             "maxLength": 500,
             "minLength": 1,
@@ -1944,6 +1957,17 @@
         "title": "CycleChanges",
         "type": "object"
       },
+      "CycleClose": {
+        "properties": {
+          "add_to_ceiling": {
+            "default": true,
+            "title": "Add To Ceiling",
+            "type": "boolean"
+          }
+        },
+        "title": "CycleClose",
+        "type": "object"
+      },
       "CycleOut": {
         "properties": {
           "closed_at": {
@@ -2060,6 +2084,16 @@
             },
             "title": "Settlements",
             "type": "array"
+          },
+          "xp": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/XpDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "title": "Decision",
@@ -2876,6 +2910,11 @@
             },
             "title": "Settlements",
             "type": "array"
+          },
+          "top_up": {
+            "default": true,
+            "title": "Top Up",
+            "type": "boolean"
           },
           "troupe_id": {
             "format": "uuid",
@@ -5452,6 +5491,16 @@
             "format": "uuid",
             "title": "Troupe Id",
             "type": "string"
+          },
+          "xp": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/XpReviewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -7240,6 +7289,19 @@
               }
             ],
             "title": "Session Xp"
+          },
+          "starting_xp": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starting Xp"
           }
         },
         "title": "TroupeChanges",
@@ -7364,6 +7426,18 @@
               }
             ],
             "title": "Starting Blood"
+          },
+          "starting_xp": {
+            "title": "Starting Xp",
+            "type": "integer"
+          },
+          "xp_ceiling": {
+            "title": "Xp Ceiling",
+            "type": "integer"
+          },
+          "xp_floor": {
+            "title": "Xp Floor",
+            "type": "integer"
           }
         },
         "required": [
@@ -7375,6 +7449,9 @@
           "allowed_sects",
           "session_xp",
           "downtime_xp",
+          "starting_xp",
+          "xp_floor",
+          "xp_ceiling",
           "starting_blood",
           "my_role"
         ],
@@ -7847,6 +7924,55 @@
         "title": "XpCorrection",
         "type": "object"
       },
+      "XpDecision": {
+        "description": "Home troupe changes only: what to do about the character's XP as it joins.",
+        "properties": {
+          "above_ceiling": {
+            "default": "keep",
+            "enum": [
+              "keep",
+              "remove"
+            ],
+            "title": "Above Ceiling",
+            "type": "string"
+          },
+          "extra": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Extra",
+            "type": "integer"
+          },
+          "extra_reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Extra Reason",
+            "type": "string"
+          },
+          "self_entered": {
+            "default": "keep",
+            "enum": [
+              "keep",
+              "remove"
+            ],
+            "title": "Self Entered",
+            "type": "string"
+          },
+          "top_up": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Up"
+          }
+        },
+        "title": "XpDecision",
+        "type": "object"
+      },
       "XpEntryOut": {
         "properties": {
           "amount": {
@@ -7956,6 +8082,255 @@
           "to_rating"
         ],
         "title": "XpEntryOut",
+        "type": "object"
+      },
+      "XpRangeChange": {
+        "properties": {
+          "ceiling": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ceiling"
+          },
+          "floor": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "XpRangeChange",
+        "type": "object"
+      },
+      "XpRangeEntryOut": {
+        "properties": {
+          "ceiling_change": {
+            "title": "Ceiling Change",
+            "type": "integer"
+          },
+          "entered_on": {
+            "format": "date",
+            "title": "Entered On",
+            "type": "string"
+          },
+          "floor_change": {
+            "title": "Floor Change",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "floor_change",
+          "ceiling_change",
+          "reason",
+          "entered_on"
+        ],
+        "title": "XpRangeEntryOut",
+        "type": "object"
+      },
+      "XpRangeOut": {
+        "properties": {
+          "ceiling": {
+            "title": "Ceiling",
+            "type": "integer"
+          },
+          "downtime_xp": {
+            "title": "Downtime Xp",
+            "type": "integer"
+          },
+          "downtimes": {
+            "title": "Downtimes",
+            "type": "integer"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/XpRangeEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "floor": {
+            "title": "Floor",
+            "type": "integer"
+          },
+          "game_xp": {
+            "title": "Game Xp",
+            "type": "integer"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "set_ceiling": {
+            "title": "Set Ceiling",
+            "type": "integer"
+          },
+          "set_floor": {
+            "title": "Set Floor",
+            "type": "integer"
+          },
+          "starting_xp": {
+            "title": "Starting Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "starting_xp",
+          "floor",
+          "ceiling",
+          "games",
+          "game_xp",
+          "downtimes",
+          "downtime_xp",
+          "set_floor",
+          "set_ceiling",
+          "entries"
+        ],
+        "title": "XpRangeOut",
+        "type": "object"
+      },
+      "XpReviewOut": {
+        "description": "A joining character's XP against the troupe's floor and ceiling: as it\nstands while the request waits, and what was done once it is decided.",
+        "properties": {
+          "above_ceiling_removed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Above Ceiling Removed"
+          },
+          "ceiling": {
+            "title": "Ceiling",
+            "type": "integer"
+          },
+          "extra": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra"
+          },
+          "floor": {
+            "title": "Floor",
+            "type": "integer"
+          },
+          "given": {
+            "title": "Given",
+            "type": "integer"
+          },
+          "self_entered": {
+            "title": "Self Entered",
+            "type": "integer"
+          },
+          "self_entered_removed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Self Entered Removed"
+          },
+          "top_up_asked": {
+            "title": "Top Up Asked",
+            "type": "boolean"
+          },
+          "topped_up": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topped Up"
+          }
+        },
+        "required": [
+          "given",
+          "self_entered",
+          "floor",
+          "ceiling",
+          "top_up_asked"
+        ],
+        "title": "XpReviewOut",
+        "type": "object"
+      },
+      "XpStandingOut": {
+        "description": "The character's XP against a troupe's floor and ceiling.",
+        "properties": {
+          "ceiling": {
+            "title": "Ceiling",
+            "type": "integer"
+          },
+          "floor": {
+            "title": "Floor",
+            "type": "integer"
+          },
+          "given": {
+            "title": "Given",
+            "type": "integer"
+          },
+          "self_entered": {
+            "title": "Self Entered",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "given",
+          "self_entered",
+          "floor",
+          "ceiling"
+        ],
+        "title": "XpStandingOut",
         "type": "object"
       },
       "XpSummary": {
@@ -9408,6 +9783,60 @@
           }
         },
         "summary": "Preview Home Troupe",
+        "tags": [
+          "membership"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/home-troupe/xp-preview": {
+      "post": {
+        "description": "Where the character's XP stands against `troupe_id`'s floor and ceiling.",
+        "operationId": "preview_home_troupe_xp_api_characters__character_id__home_troupe_xp_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroupeChoice"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpStandingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Home Troupe Xp",
         "tags": [
           "membership"
         ]
@@ -11126,9 +11555,63 @@
         ]
       }
     },
+    "/api/characters/{character_id}/xp/self-entered": {
+      "post": {
+        "description": "A player adds XP to their own character while it has no home troupe, such\nas for one played elsewhere. The troupe it asks to join accepts or removes it.",
+        "operationId": "add_self_entered_xp_api_characters__character_id__xp_self_entered_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/XpAward"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Self Entered Xp",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
     "/api/characters/{character_id}/xp/{entry_id}/correction": {
       "post": {
-        "description": "Correct a mistaken award with a new entry; the award itself is left as written.\nWhoever may award the character XP may correct it.",
+        "description": "Correct a mistaken award with a new entry; the award itself is left as written.\nWhoever may award the character XP may correct it, and a player their own\nself-entered XP while the character has no home troupe.",
         "operationId": "correct_xp_api_characters__character_id__xp__entry_id__correction_post",
         "parameters": [
           {
@@ -11442,6 +11925,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CycleClose"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -16083,6 +16583,102 @@
         "summary": "Award All",
         "tags": [
           "xp awards"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/xp-range": {
+      "get": {
+        "description": "Anyone can see where a troupe stands, as they can see the troupe.",
+        "operationId": "read_range_api_troupes__troupe_id__xp_range_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpRangeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Range",
+        "tags": [
+          "xp range"
+        ]
+      },
+      "put": {
+        "description": "Storytellers set the floor or ceiling by hand, for a chronicle that began\nbefore Horatio. Games and downtimes still add to them afterwards.",
+        "operationId": "set_range_api_troupes__troupe_id__xp_range_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/XpRangeChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XpRangeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Range",
+        "tags": [
+          "xp range"
         ]
       }
     },

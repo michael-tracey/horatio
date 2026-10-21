@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import sheets, titles
+from horatio import sheets, titles, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Approval,
@@ -180,7 +180,7 @@ class XpEntryOut(BaseModel):
     detail: str | None
     from_rating: int | None
     to_rating: int | None
-    # A correction: the award it corrects.
+    # A correction: the award (or self-entered XP) it corrects.
     corrects_id: uuid.UUID | None = None
     # An award that has been corrected: what it gives now.
     corrected_to: int | None = None
@@ -462,6 +462,7 @@ def xp_history(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> lis
         if e.corrects_id is not None:
             corrected[e.corrects_id] = corrected.get(e.corrects_id, 0) + e.amount
     may_correct = home_troupe_awarding(db, user, character) is not None
+    own = self_entering(db, user, character)
     return [
         XpEntryOut(
             id=e.id,
@@ -475,7 +476,8 @@ def xp_history(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> lis
             to_rating=e.to_rating,
             corrects_id=e.corrects_id,
             corrected_to=e.amount + corrected[e.id] if e.id in corrected else None,
-            correctable=may_correct and e.kind == "award",
+            correctable=(may_correct and e.kind in sheets.CORRECTABLE)
+            or (own and e.kind == "self_entered"),
         )
         for e, trait_name in rows
     ]
@@ -490,15 +492,20 @@ def correct_xp(
     user: CurrentUser,
 ) -> XpEntryOut:
     """Correct a mistaken award with a new entry; the award itself is left as written.
-    Whoever may award the character XP may correct it."""
+    Whoever may award the character XP may correct it, and a player their own
+    self-entered XP while the character has no home troupe."""
     character = visible_character(db, user, character_id)
-    if home_troupe_awarding(db, user, character) is None:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN, "Only the home troupe's staff correct its experience."
-        )
     award = db.get(XpEntry, entry_id)
     if award is None or award.character_id != character.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such entry.")
+    own = award.kind == "self_entered" and self_entering(db, user, character)
+    if not own and home_troupe_awarding(db, user, character) is None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the home troupe's staff correct its experience."
+        )
+    if own:
+        character = players_character(db, user, character_id)
+        sheets.ensure_unlocked(db, character)
     entry = sheets.correct_xp(db, user, character, award, body.amount, body.reason)
     db.commit()
     return XpEntryOut(
@@ -512,6 +519,40 @@ def correct_xp(
         from_rating=None,
         to_rating=None,
         corrects_id=award.id,
+    )
+
+
+def self_entering(db: DbSession, user: User, character: Character) -> bool:
+    """Whether `user` may add XP to the character themselves: its player, while it
+    has no home troupe."""
+    return (
+        character.kind == "pc"
+        and character.home_troupe_id is None
+        and character.status == "active"
+        and can_edit_character(db, user, character)
+    )
+
+
+@router.post("/xp/self-entered", status_code=status.HTTP_201_CREATED)
+def add_self_entered_xp(
+    character_id: uuid.UUID, body: XpAward, db: DbSession, user: CurrentUser
+) -> XpEntryOut:
+    """A player adds XP to their own character while it has no home troupe, such
+    as for one played elsewhere. The troupe it asks to join accepts or removes it."""
+    character = players_character(db, user, character_id)
+    sheets.ensure_unlocked(db, character)
+    entry = xp_range.add_self_entered(db, user, character, body.amount, body.reason.strip())
+    db.commit()
+    return XpEntryOut(
+        id=entry.id,
+        kind=entry.kind,
+        amount=entry.amount,
+        reason=entry.reason,
+        entered_on=date.today(),
+        trait=None,
+        detail=None,
+        from_rating=None,
+        to_rating=None,
     )
 
 

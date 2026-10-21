@@ -238,6 +238,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.screenshot(shots("bulk-xp"));
   await lead.page.getByRole("button", { name: "Yes, award 9 XP" }).click();
   await expect(lead.page.getByText("Awarded 9 XP to 1 character for “Game, 18 October”.")).toBeVisible();
+  // The everyone amount also raised the troupe's XP floor and ceiling.
+  await expect(lead.page.getByText("The floor and ceiling went up by 8.", { exact: false })).toBeVisible();
 
   // Once accepted, a discipline dot waits on the home troupe, with the XP held.
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
@@ -583,6 +585,108 @@ test("a troupe changes what new characters start with and their downtime actions
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
   }
   await expect(p.getByText("0 of 9 points")).toBeVisible();
+});
+
+test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
+  // A whole character creation, then a home troupe request.
+  test.slow();
+  const custodian = await person(browser, "floor-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "floor-lead");
+  const player = await person(browser, "floor-player");
+  const troupeName = `Court of Bones ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // The chronicle began before Horatio: the lead sets the floor and ceiling by hand.
+  const l = lead.page;
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  await l.getByRole("link", { name: "Customize", exact: true }).click();
+  await l.getByRole("link", { name: "Rules", exact: true }).click();
+  await l.getByRole("link", { name: "Starting points", exact: true }).click();
+  await l.getByRole("button", { name: "Set by hand" }).click();
+  await l.getByLabel("Floor", { exact: true }).fill("100");
+  await l.getByLabel("Ceiling", { exact: true }).fill("120");
+  await l.getByLabel("Why", { exact: true }).fill("Chronicle began in 2019");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(l.getByText("(30 starting + 70 set by hand)")).toBeVisible();
+  await expect(l.getByText("(30 starting + 90 set by hand)")).toBeVisible();
+  await l.screenshot(shots("xp-range"));
+
+  // Players see where the troupe stands on its page.
+  const p = player.page;
+  await p.reload();
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: "XP floor and ceiling" })).toBeVisible();
+  await expect(p.getByText("100 XP", { exact: true })).toBeVisible();
+
+  // A character built for the troupe starts at its floor.
+  await p.getByRole("link", { name: "Characters" }).click();
+  await p.getByLabel("Name").fill("Mara");
+  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Create" }).click();
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
+  await p.getByLabel("Sect").selectOption("Camarilla");
+  const next = async (heading: string) => {
+    await p.getByRole("button", { name: "Save and continue" }).click();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  };
+  const tap = async (...dots: string[]) => {
+    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
+  };
+  await next("Attributes");
+  await tap("Physical 7", "Social 5", "Mental 3");
+  await next("Focuses");
+  await tap("Strength 1", "Wits 1", "Charisma 1");
+  await next("Skills");
+  await tap("Brawl 4", "Dodge 3", "Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2");
+  await tap("Investigation 1", "Leadership 1", "Medicine 1", "Melee 1");
+  await next("Backgrounds");
+  await tap("Fame 3", "Herd 2", "Generation 1");
+  await next("Disciplines");
+  await tap("Celerity 2", "Potence 1", "Presence 1");
+  await next("Merits & flaws");
+  await next("Review");
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
+  await expect(p.getByText(`Starting experience: ${troupeName}'s XP floor`)).toBeVisible();
+
+  // Mara was played elsewhere first: her player adds that XP themselves.
+  await p.getByLabel("XP", { exact: true }).fill("30");
+  await p.getByLabel("Why", { exact: true }).fill("Played at another troupe");
+  await p.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(p.getByText("self-entered", { exact: true })).toBeVisible();
+
+  // Asking to make the troupe her home, she sees she is above its ceiling.
+  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
+  await expect(p.getByText("That is 10 XP above the ceiling.", { exact: false })).toBeVisible();
+  await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
+  await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
+
+  // The lead sees the self-entered XP apart, and what is above the ceiling, and removes it.
+  await l.getByRole("link", { name: "People", exact: true }).click();
+  await l.getByRole("link", { name: /Approvals/ }).click();
+  await expect(l.getByLabel("Self-entered XP: 30")).toBeVisible();
+  await l.getByLabel("Above the ceiling by 10 XP").selectOption({ label: "Remove the 10 XP above the ceiling" });
+  await expect(l.getByText("After joining it will have been given 120 XP.", { exact: false })).toBeVisible();
+  await l.screenshot(shots("xp-approval"));
+  await l.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+
+  // Taking it away is its own entry in Mara's XP history.
+  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
+  await expect(p.getByText(`XP above ${troupeName}'s ceiling of 120`)).toBeVisible();
+  await expect(p.getByText("above a ceiling", { exact: true })).toBeVisible();
 });
 
 test("a character in no troupe can be deleted from the vault", async ({ browser }) => {

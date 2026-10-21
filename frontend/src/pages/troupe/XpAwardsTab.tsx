@@ -18,6 +18,7 @@ export function XpAwardsTab({ troupeId }: { troupeId: string }) {
   const [amounts, setAmounts] = useState<Amounts>({});
   const [reason, setReason] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [toRange, setToRange] = useState(true);
   const [done, setDone] = useState<string | null>(null);
 
   const characters = list.data?.characters ?? [];
@@ -32,10 +33,17 @@ export function XpAwardsTab({ troupeId }: { troupeId: string }) {
     const result = await unwrap(
       api.POST("/api/troupes/{troupe_id}/xp-awards", {
         ...path,
-        body: { reason, awards: characters.map((c) => ({ character_id: c.character_id, amount: amounts[c.character_id] ?? 0 })) },
+        body: {
+          reason,
+          awards: characters.map((c) => ({ character_id: c.character_id, amount: amounts[c.character_id] ?? 0 })),
+          game_xp: toRange ? set : null,
+        },
       }),
     );
-    setDone(`Awarded ${result.total} XP to ${result.characters} character${result.characters === 1 ? "" : "s"} for “${reason.trim()}”.`);
+    setDone(
+      `Awarded ${result.total} XP to ${result.characters} character${result.characters === 1 ? "" : "s"} for “${reason.trim()}”.` +
+        (toRange && set > 0 ? ` The floor and ceiling went up by ${set}.` : ""),
+    );
     setConfirming(false);
     setReason("");
     setAmounts(everyone(ids, set));
@@ -113,6 +121,19 @@ export function XpAwardsTab({ troupeId }: { troupeId: string }) {
           })}
         </ul>
 
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={toRange}
+            onChange={(e) => {
+              setToRange(e.target.checked);
+              setConfirming(false);
+            }}
+          />
+          Also add to floor and ceiling
+          <span className="text-xs text-mist">(the {set} everyone gets, not each character's own amount)</span>
+        </label>
+
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm">
             {sum.total} XP to {sum.characters} of {characters.length} character{characters.length === 1 ? "" : "s"}
@@ -136,6 +157,7 @@ export function XpAwardsTab({ troupeId }: { troupeId: string }) {
           <p role="status" className="text-sm text-gold">
             {sum.characters === 1 ? "One character gets" : `Each of ${sum.characters} characters gets`} an award entry for “{reason.trim()}”. A mistake can be
             corrected from the character's Experience tab.
+            {toRange && set > 0 && ` The troupe's XP floor and ceiling go up by ${set}.`}
           </p>
         )}
         <ErrorText error={award.error} />

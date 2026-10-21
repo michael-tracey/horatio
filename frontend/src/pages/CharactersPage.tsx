@@ -66,7 +66,7 @@ export function CharactersPage() {
                 <option value="vampire">Vampire</option>
               </Select>
             </Field>
-            <BuildFor value={buildFor} onChange={setBuildFor} />
+            <BuildFor value={buildFor} onChange={setBuildFor} newCharacter />
             <ErrorText error={create.error} />
             <Button type="submit" disabled={create.isPending}>
               Create

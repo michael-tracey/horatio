@@ -114,8 +114,12 @@ class XpEntry(Record):
     __tablename__ = "xp_entries"
     __table_args__ = (
         # A fee is XP spent on something other than dots, such as changing a focus.
+        # A self-entered entry is XP a player added to a character with no home
+        # troupe; a cap is XP above a troupe's ceiling taken away as it became home.
         CheckConstraint(
-            "kind in ('award', 'purchase', 'settlement', 'fee', 'correction')", name="kind"
+            "kind in ('award', 'purchase', 'settlement', 'fee', 'correction',"
+            " 'self_entered', 'cap')",
+            name="kind",
         ),
         CheckConstraint(
             "kind <> 'purchase' or (trait_definition_id is not null"
@@ -151,5 +155,6 @@ class XpEntry(Record):
     reconciliation_item_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("reconciliation_items.id")
     )
-    # For a correction: the award it corrects, by `amount` (the difference).
+    # For a correction: the award (or self-entered entry) it corrects, by `amount`
+    # (the difference).
     corrects_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("xp_entries.id"), index=True)

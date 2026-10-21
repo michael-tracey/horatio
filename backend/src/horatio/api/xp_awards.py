@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import sheets
+from horatio import sheets, xp_range
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, User
@@ -38,6 +38,9 @@ class BulkAward(BaseModel):
     # The reason every character's entry gets, such as "Game, 18 October".
     reason: str = Field(min_length=1, max_length=500)
     awards: list[CharacterAward]
+    # The game's XP, as everyone got it before any was raised or lowered: added to
+    # the troupe's XP floor and ceiling. None leaves them as they are.
+    game_xp: int | None = Field(default=None, ge=0, le=1000)
 
 
 class BulkAwarded(BaseModel):
@@ -77,7 +80,7 @@ def award_all(
     troupe_id: uuid.UUID, body: BulkAward, db: DbSession, user: CurrentUser
 ) -> BulkAwarded:
     """Each character an ordinary award entry, all together or none at all."""
-    staff_troupe(db, user, troupe_id, TroupeAction.AWARD_XP)
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.AWARD_XP)
     reason = body.reason.strip()
     if not reason:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Give a note for the award.")
@@ -98,5 +101,7 @@ def award_all(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Nobody would get any XP.")
     for award in given:
         sheets.award_xp(db, user, characters[award.character_id], award.amount, reason)
+    if body.game_xp:
+        xp_range.add_game(db, user, troupe, body.game_xp, reason)
     db.commit()
     return BulkAwarded(characters=len(given), total=sum(a.amount for a in given))

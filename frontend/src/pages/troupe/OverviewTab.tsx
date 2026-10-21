@@ -7,6 +7,7 @@ import { PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, ErrorText, Field, Input, Textarea } from "../../components/ui";
 import { useAction, useMe } from "../../hooks";
 import type { abilities } from "./roles";
+import { XpRangeCard } from "./XpRange";
 
 export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
   const me = useMe();
@@ -55,6 +56,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
         </Card>
       )}
       <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
+      <XpRangeCard troupeId={troupe.id} canEdit={false} />
       {me.data?.is_custodian && (
         <Card title="Lead storyteller">
           <form

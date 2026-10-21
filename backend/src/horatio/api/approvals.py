@@ -4,13 +4,20 @@ import uuid
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import pictures, sheets, social_age
+from horatio import pictures, sheets, social_age, xp_range
 from horatio.api.sheets import ApprovalOut, approval_out
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Approval, Character, DisciplinePurchase, TraitDefinition, Troupe
+from horatio.models import (
+    Approval,
+    Character,
+    DisciplinePurchase,
+    HomeTroupeChange,
+    TraitDefinition,
+    Troupe,
+)
 from horatio.permissions import TroupeAction, require_troupe_action
 from horatio.reconciliation import allowed_settlements, items_for
 
@@ -43,6 +50,25 @@ class DisciplineOut(BaseModel):
     teacher: str
 
 
+class XpReviewOut(BaseModel):
+    """A joining character's XP against the troupe's floor and ceiling: as it
+    stands while the request waits, and what was done once it is decided."""
+
+    # XP given: awards, self-entered XP and corrections, not what flaws pay back.
+    given: int
+    # The part of it the player entered themselves.
+    self_entered: int
+    floor: int
+    ceiling: int
+    # The player asked to be topped up to the floor.
+    top_up_asked: bool
+    # Once decided:
+    self_entered_removed: int | None = None
+    topped_up: int | None = None
+    above_ceiling_removed: int | None = None
+    extra: int | None = None
+
+
 class QueuedApproval(ApprovalOut):
     character_name: str
     # The character's picture (horatio.pictures) and clan, for its placeholder.
@@ -52,6 +78,8 @@ class QueuedApproval(ApprovalOut):
     discipline: DisciplineOut | None
     # For a home troupe change: each difference and how it is to be settled.
     reconciliation: list[ReconciliationOut]
+    # For a player character's home troupe change: its XP against the floor and ceiling.
+    xp: XpReviewOut | None = None
 
 
 class SettlementOverride(BaseModel):
@@ -67,10 +95,25 @@ class SettlementOverride(BaseModel):
     ]
 
 
+class XpDecision(BaseModel):
+    """Home troupe changes only: what to do about the character's XP as it joins."""
+
+    # Accept or remove the XP its player entered themselves.
+    self_entered: Literal["keep", "remove"] = "keep"
+    # Below the floor: top it up or not; None goes with the player's choice.
+    top_up: bool | None = None
+    # Above the ceiling: keep it, or take away what is above.
+    above_ceiling: Literal["keep", "remove"] = "keep"
+    # More XP for this character, such as for a returning player, and why.
+    extra: int = Field(default=0, ge=0, le=10000)
+    extra_reason: str = Field(default="", max_length=500)
+
+
 class Decision(BaseModel):
     note: str = ""
     # Home troupe changes only: settle these differences differently from the player's proposal.
     settlements: list[SettlementOverride] = []
+    xp: XpDecision | None = None
 
 
 def reconciliation_out(db: DbSession, approval: Approval) -> list[ReconciliationOut]:
@@ -101,6 +144,21 @@ def reconciliation_out(db: DbSession, approval: Approval) -> list[Reconciliation
         )
         for item in items_for(db, approval)
     ]
+
+
+def xp_review_out(db: DbSession, approval: Approval, character: Character) -> XpReviewOut | None:
+    if approval.kind != "home_troupe_change" or character.kind != "pc":
+        return None
+    change = db.scalars(
+        select(HomeTroupeChange).where(HomeTroupeChange.approval_id == approval.id)
+    ).one()
+    if change.xp_review is not None:
+        return XpReviewOut(**change.xp_review)
+    if approval.status != "pending":
+        # Decided before floors and ceilings were kept.
+        return None
+    troupe = db.get_one(Troupe, approval.troupe_id)
+    return XpReviewOut(**xp_range.review(db, character, troupe, change.top_up).as_record())
 
 
 def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
@@ -150,6 +208,7 @@ def troupe_approvals(
             clan=standing[c.id].clan,
             discipline=discipline_out(db, a),
             reconciliation=reconciliation_out(db, a),
+            xp=xp_review_out(db, a, c),
         )
         for a, c in rows
     ]
@@ -170,6 +229,7 @@ def decide(
         approve,
         body.note,
         {o.item_id: o.settlement for o in body.settlements},
+        xp_range.Decision(**body.xp.model_dump()) if body.xp else None,
     )
     db.commit()
     return approval_out(approval)

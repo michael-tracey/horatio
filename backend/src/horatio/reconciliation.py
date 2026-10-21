@@ -15,6 +15,10 @@ Each difference is settled one by one: the player proposes how, the new
 troupe's storytellers or assistant storytellers confirm or change it, and a
 character with any difference unsettled is not let in.
 
+The character's XP is also set against the troupe's XP floor and ceiling
+(horatio.xp_range): topped up below the floor if the player asks, and above the
+ceiling or self-entered, kept or taken away as staff decide.
+
 Approval moves the home troupe, applies the settlements, and freezes the sheet
 as approved. For a character's first home troupe, that is also the sheet's
 first approval.
@@ -28,7 +32,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications, titles
+from horatio import audit, notifications, titles, xp_range
 from horatio.creation import Pool, pools_for
 from horatio.models import (
     Approval,
@@ -427,6 +431,7 @@ def request_change(
     troupe: Troupe,
     settlements: Mapping[ItemKey, str],
     note: str,
+    top_up: bool = True,
 ) -> Approval:
     if character.home_troupe_id == troupe.id:
         raise conflict("That is already the character's home troupe.")
@@ -453,7 +458,10 @@ def request_change(
     db.add(approval)
     db.flush()
     change = HomeTroupeChange(
-        approval_id=approval.id, from_troupe_id=character.home_troupe_id, to_troupe_id=troupe.id
+        approval_id=approval.id,
+        from_troupe_id=character.home_troupe_id,
+        to_troupe_id=troupe.id,
+        top_up=top_up,
     )
     db.add(change)
     db.flush()
@@ -560,9 +568,11 @@ def approve_change(
     approval: Approval,
     character: Character,
     overrides: Mapping[uuid.UUID, str],
+    xp: xp_range.Decision | None = None,
 ) -> None:
     """Settle every difference (the player's proposal unless staff override it),
-    move the home troupe, and approve the sheet as it now stands."""
+    settle the character's XP against the troupe's floor and ceiling, move the
+    home troupe, and approve the sheet as it now stands."""
     change = db.scalars(
         select(HomeTroupeChange).where(HomeTroupeChange.approval_id == approval.id)
     ).one()
@@ -582,8 +592,18 @@ def approve_change(
         item.settlement = settlement
         item.xp_delta = delta
         total += delta
-    if xp_balance(db, character) + total < 0:
-        raise conflict("Those settlements cost more XP than the character has.")
+    # A player character's XP against the troupe's floor and ceiling (horatio.xp_range).
+    troupe = db.get_one(Troupe, change.to_troupe_id)
+    decision = xp or xp_range.Decision()
+    review = xp_range.review(db, character, troupe, change.top_up)
+    plan = xp_range.plan(review, decision) if character.kind == "pc" else xp_range.Plan()
+    if xp_balance(db, character) + total + plan.delta < 0:
+        raise conflict(
+            "Those settlements cost more XP than the character has."
+            if xp_balance(db, character) + total < 0
+            else f"{character.name} has spent that XP: taking it away would leave"
+            " less than nothing. Keep it instead."
+        )
 
     reopen = False
     for item in items:
@@ -617,9 +637,36 @@ def approve_change(
             reopen = True
     db.flush()
 
+    # Self-entered XP and XP above the ceiling go before the bank, the top-up
+    # after it, so none of the top-up is lost.
+    if plan.self_entered_removed:
+        xp_range.remove_self_entered(db, staff, character, troupe)
+    xp_range.remove_above_ceiling(
+        db, staff, character, troupe, plan.above_ceiling_removed, review.ceiling
+    )
     old_troupe = change.from_troupe_id
     if old_troupe is None:
         bank_creation_xp(db, staff, character)
+    xp_range.top_up(db, staff, character, troupe, plan.topped_up, review.floor)
+    xp_range.give_extra(db, staff, character, troupe, plan.extra, decision.extra_reason)
+    if character.kind == "pc":
+        review.self_entered_removed = plan.self_entered_removed
+        review.topped_up = plan.topped_up
+        review.above_ceiling_removed = plan.above_ceiling_removed
+        review.extra = plan.extra
+        change.xp_review = review.as_record()
+    if plan.delta or plan.self_entered_removed:
+        audit.record(
+            db,
+            staff,
+            "xp.joining",
+            troupe_id=troupe.id,
+            character_id=character.id,
+            topped_up=plan.topped_up,
+            extra=plan.extra,
+            self_entered_removed=plan.self_entered_removed,
+            above_ceiling_removed=plan.above_ceiling_removed,
+        )
     character.home_troupe_id = change.to_troupe_id
     sync_fixed_ratings(db, character)
     # The sheet as the new home troupe accepted it: the floor for lowering ratings.
