@@ -3,12 +3,14 @@ import type { Preferences } from "../../api/types";
 import { Card, ErrorText, Input } from "../../components/ui";
 import { deviceZone, useDates } from "../../dates";
 import { usePreferences, useSavingPreferences, useSetPreferences } from "../../hooks";
+import { EmailNotifications } from "./EmailNotifications";
 import { HandleCard } from "./HandleCard";
 
 type Key = keyof Preferences;
 
-/** One setting: what it is, a hint, and its control. */
-function Setting({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
+/** One setting: what it is, a hint, and its control. Shared with the cards in
+ * their own files (EmailNotifications). */
+export function Setting({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 border-b border-ash/60 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
@@ -21,7 +23,7 @@ function Setting({ label, hint, children }: { label: string; hint?: ReactNode; c
 }
 
 /** A setting with a few choices, as buttons side by side. */
-function Choice<K extends Key>({ name, label, choices }: { name: K; label: string; choices: [Preferences[K], string][] }) {
+export function Choice<K extends Key>({ name, label, choices }: { name: K; label: string; choices: [Preferences[K], string][] }) {
   const prefs = usePreferences();
   const set = useSetPreferences();
   return (
@@ -247,7 +249,7 @@ export function SettingsPage() {
 
       <HandleCard />
 
-      {/* #106: notifications by email go here. */}
+      <EmailNotifications />
 
       <ErrorText error={set.error} />
     </fieldset>

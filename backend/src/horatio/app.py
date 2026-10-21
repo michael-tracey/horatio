@@ -38,6 +38,7 @@ from horatio.api import (
     titles,
     troupe_requests,
     troupes,
+    unsubscribe,
     xp_awards,
 )
 from horatio.config import get_settings
@@ -107,6 +108,7 @@ for module in (
     troupe_requests,
     xp_awards,
     preferences,
+    unsubscribe,
     system,
     play,
 ):

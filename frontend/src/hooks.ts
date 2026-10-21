@@ -30,6 +30,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
   keep_awake: false,
   play_tab: "tracker",
   text_size: "normal",
+  email_downtime: false,
+  email_approvals: false,
+  email_troupe_requests: false,
+  email_renames: false,
+  email_pictures: false,
+  email_digest: "at_once",
 };
 
 /** The signed-in person's settings (horatio.preferences), or the defaults. */

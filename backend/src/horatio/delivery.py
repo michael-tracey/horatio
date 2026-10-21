@@ -218,11 +218,13 @@ def mark_sent(delivery: Delivery, user: User) -> None:
 
 
 def send_due_now() -> int:
-    """`send_due` in a session of its own, for the worker."""
+    """`send_due` in a session of its own, for the worker; then the notifications
+    people asked for by email (horatio.notification_emails)."""
+    from horatio import notification_emails
     from horatio.db import get_sessionmaker
 
     with get_sessionmaker()() as db:
-        return send_due(db)
+        return send_due(db) + notification_emails.send_due(db)
 
 
 async def send_forever(interval: float) -> None:

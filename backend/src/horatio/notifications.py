@@ -11,7 +11,10 @@ Two kinds of item come through one list:
   stay until the person reads them.
 
 A new kind of task is a new function in `TASK_SOURCES`; a new kind of message
-is a call to `notify` wherever the event happens.
+is a call to `notify` wherever the event happens. Either may also come by email
+to those who choose it (horatio.notification_emails): `notify` sees to that for
+messages; a task emails when its work arrives (`approval_waiting`,
+`troupe_request_waiting`).
 """
 
 import uuid
@@ -22,6 +25,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
+from horatio import notification_emails
 from horatio.models import (
     Approval,
     Character,
@@ -70,6 +74,19 @@ def troupes_where(db: Session, user: User, action: TroupeAction) -> list[Troupe]
     return list(db.scalars(query))
 
 
+def approvers(db: Session, troupe: Troupe) -> list[uuid.UUID]:
+    """Who decides the running troupe's approvals: the people `troupes_where` finds
+    it for."""
+    roles = [r.value for r in TROUPE_POLICY[TroupeAction.APPROVE_CHANGES]]
+    staff = db.scalars(
+        select(TroupeStaff.user_id).where(
+            TroupeStaff.troupe_id == troupe.id, TroupeStaff.role.in_(roles)
+        )
+    )
+    lead = [troupe.lead_user_id] if "lead_storyteller" in roles else []
+    return list(dict.fromkeys([*lead, *staff]))
+
+
 def approval_tasks(db: Session, user: User) -> list[Item]:
     """Requests waiting in troupes where the person approves changes."""
     troupes = {t.id: t for t in troupes_where(db, user, TroupeAction.APPROVE_CHANGES)}
@@ -82,6 +99,13 @@ def approval_tasks(db: Session, user: User) -> list[Item]:
             .where(Approval.troupe_id.in_(troupes), Approval.status == "pending")
         )
     )
+    return approval_items(db, troupes, [(approval, about) for approval, about in rows])
+
+
+def approval_items(
+    db: Session, troupes: dict[uuid.UUID, Troupe], rows: list[tuple[Approval, Character]]
+) -> list[Item]:
+    """Waiting approvals as tasks, saying what each asks for."""
     disciplines = {
         approval_id: (name, bought)
         for approval_id, name, bought in db.execute(
@@ -158,6 +182,31 @@ def troupe_request_tasks(db: Session, user: User) -> list[Item]:
 
 TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [approval_tasks, troupe_request_tasks]
 
+
+def approval_waiting(db: Session, approval: Approval) -> None:
+    """A request has just been made: email the troupe's approvers who want that,
+    except whoever asked. The bell's task needs nothing; it appears by itself."""
+    troupe = db.get_one(Troupe, approval.troupe_id)
+    if troupe.archived_at is not None:
+        return
+    about = db.get_one(Character, approval.character_id)
+    [item] = approval_items(db, {troupe.id: troupe}, [(approval, about)])
+    people = [p for p in approvers(db, troupe) if p != approval.requested_by]
+    notification_emails.queue(db, people, item.kind, item.summary, item.link, troupe_id=troupe.id)
+
+
+def troupe_request_waiting(db: Session, request: TroupeRequest, requester: User) -> None:
+    """Someone has just asked for a new troupe: email the custodians who want that."""
+    custodians = db.scalars(select(User.id).where(User.is_custodian, User.id != requester.id))
+    notification_emails.queue(
+        db,
+        custodians,
+        "troupe_request",
+        f"{requester.display_name} asks for a new troupe, {request.name}",
+        "/custodian/troupe-requests",
+    )
+
+
 # Read messages older than this many are left out of the list.
 READ_MESSAGES_SHOWN = 20
 
@@ -217,8 +266,10 @@ def notify(
     troupe_id: uuid.UUID | None = None,
     character_id: uuid.UUID | None = None,
 ) -> None:
-    """Leave a message for each of `user_ids`, in the same transaction as the event."""
-    for user_id in dict.fromkeys(user_ids):
+    """Leave a message for each of `user_ids`, in the same transaction as the event,
+    and an email for those who want this kind by email."""
+    user_ids = list(dict.fromkeys(user_ids))
+    for user_id in user_ids:
         db.add(
             Notification(
                 user_id=user_id,
@@ -230,6 +281,7 @@ def notify(
             )
         )
     db.flush()
+    notification_emails.queue(db, user_ids, kind, summary, link, troupe_id=troupe_id)
 
 
 def mark_read(db: Session, user: User, ids: Iterable[uuid.UUID] | None = None) -> None:

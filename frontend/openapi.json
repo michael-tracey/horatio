@@ -2482,6 +2482,19 @@
         "title": "DiscordSetup",
         "type": "object"
       },
+      "EmailHelp": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "EmailHelp",
+        "type": "object"
+      },
       "ExpendableOut": {
         "properties": {
           "counter_id": {
@@ -4696,6 +4709,40 @@
             ],
             "title": "Date Format",
             "type": "string"
+          },
+          "email_approvals": {
+            "default": false,
+            "title": "Email Approvals",
+            "type": "boolean"
+          },
+          "email_digest": {
+            "default": "at_once",
+            "enum": [
+              "at_once",
+              "daily"
+            ],
+            "title": "Email Digest",
+            "type": "string"
+          },
+          "email_downtime": {
+            "default": false,
+            "title": "Email Downtime",
+            "type": "boolean"
+          },
+          "email_pictures": {
+            "default": false,
+            "title": "Email Pictures",
+            "type": "boolean"
+          },
+          "email_renames": {
+            "default": false,
+            "title": "Email Renames",
+            "type": "boolean"
+          },
+          "email_troupe_requests": {
+            "default": false,
+            "title": "Email Troupe Requests",
+            "type": "boolean"
           },
           "keep_awake": {
             "default": false,
@@ -7549,6 +7596,34 @@
           "name"
         ],
         "title": "Unpick",
+        "type": "object"
+      },
+      "Unsubscribe": {
+        "properties": {
+          "about": {
+            "title": "About",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "subscribed": {
+            "title": "Subscribed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "display_name",
+          "email",
+          "about",
+          "subscribed"
+        ],
+        "title": "Unsubscribe",
         "type": "object"
       },
       "ValidationError": {
@@ -12716,6 +12791,28 @@
         ]
       }
     },
+    "/api/preferences/email": {
+      "get": {
+        "description": "Whether notifications can come by email here (horatio.notification_emails).",
+        "operationId": "email_help_api_preferences_email_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailHelp"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Email Help",
+        "tags": [
+          "preferences"
+        ]
+      }
+    },
     "/api/profile": {
       "put": {
         "description": "The signed-in player's own profile.",
@@ -15986,6 +16083,90 @@
         "summary": "Award All",
         "tags": [
           "xp awards"
+        ]
+      }
+    },
+    "/api/unsubscribe/{token}": {
+      "get": {
+        "description": "What an unsubscribe link stops, so the page can ask first.",
+        "operationId": "unsubscribe_for_api_unsubscribe__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unsubscribe"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsubscribe For",
+        "tags": [
+          "unsubscribe"
+        ]
+      },
+      "post": {
+        "description": "Stop the emails the link is about. The bell still shows them.",
+        "operationId": "unsubscribe_api_unsubscribe__token__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unsubscribe"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsubscribe",
+        "tags": [
+          "unsubscribe"
         ]
       }
     }

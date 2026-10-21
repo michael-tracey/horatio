@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, titles
+from horatio import audit, notifications, titles
 from horatio.creation import Pool, pools_for
 from horatio.models import (
     Approval,
@@ -483,6 +483,7 @@ def request_change(
         kind=approval.kind,
         differences=len(differences),
     )
+    notifications.approval_waiting(db, approval)
     return approval
 
 

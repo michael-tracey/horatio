@@ -1166,6 +1166,31 @@ test("settings are kept on the account, and the dark is not optional", async ({ 
   await page.screenshot(shots("settings"));
 });
 
+test("notifications by email: a choice per kind, once the server can send email", async ({ browser }) => {
+  const { page } = await person(browser, "email-player");
+  await page.goto("/account/settings");
+  // This suite's server has no email set up, and the setting says so.
+  await expect(page.getByText("Email isn't set up on this server, so notifications come only to the bell.")).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Downtime results" })).toHaveCount(0);
+
+  // Where it is set up, each kind is bell only until chosen, and the choice is kept.
+  await page.route("**/api/preferences/email", (route) => route.fulfill({ json: { available: true } }));
+  await page.reload();
+  const downtime = page.getByRole("radiogroup", { name: "Downtime results" });
+  await expect(downtime.getByRole("radio", { name: "Bell only" })).toHaveAttribute("aria-checked", "true");
+  await downtime.getByRole("radio", { name: "Bell and email" }).click();
+  await page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" }).click();
+  await expect(page.getByText(/gathers them into one email at 8 am/)).toBeVisible();
+  await page.reload();
+  await expect(downtime.getByRole("radio", { name: "Bell and email" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" })).toHaveAttribute("aria-checked", "true");
+  await page.screenshot(shots("settings-email"));
+
+  // An unsubscribe link that isn't real says so, and where to choose instead.
+  await page.goto("/unsubscribe/not-a-real-link");
+  await expect(page.getByText(/This unsubscribe link doesn't work/)).toBeVisible();
+});
+
 test("a handle to be found by, and to sign in with", async ({ browser }) => {
   const { page } = await person(browser, "handle-player");
   await page.getByRole("link", { name: "handle-player" }).click();
