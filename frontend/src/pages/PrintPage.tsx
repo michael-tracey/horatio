@@ -3,7 +3,10 @@ import { createContext, useContext, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet } from "../api/types";
+import { Pips } from "../components/ui";
 import { HEALTH_RULE, healthRows } from "../health";
+import { DEFAULT_PREFERENCES, useMe } from "../hooks";
+import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 
 type Trait = PrintedSheet["traits"][number];
@@ -30,15 +33,15 @@ export function PrintPage() {
       ),
   });
 
-  const pips = params.get("ratings") === "pips";
-  if (sheet.isPending) return <p className="p-8 text-black">Loading…</p>;
+  const pips = usePrintedPips();
+  if (sheet.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
   if (sheet.error) return <p className="p-8 text-black">{sheet.error.message}</p>;
   return (
-    <Pips.Provider value={pips}>
+    <AsPips.Provider value={pips}>
       <PrintShell back={`/characters/${characterId}`}>
         <Sheet sheet={sheet.data} />
       </PrintShell>
-    </Pips.Provider>
+    </AsPips.Provider>
   );
 }
 
@@ -55,11 +58,11 @@ export function TroupePrintPage() {
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/print", { params: { path: { troupe_id: troupeId }, query: { characters: ids } } })),
   });
 
-  const pips = params.get("ratings") === "pips";
-  if (sheets.isPending) return <p className="p-8 text-black">Loading…</p>;
+  const pips = usePrintedPips();
+  if (sheets.isPending || pips === undefined) return <p className="p-8 text-black">Loading…</p>;
   if (sheets.error) return <p className="p-8 text-black">{sheets.error.message}</p>;
   return (
-    <Pips.Provider value={pips}>
+    <AsPips.Provider value={pips}>
       <PrintShell back={`/troupes/${troupeId}/characters`} count={sheets.data.length}>
         {sheets.data.map((sheet, i) => (
           <div key={i} className={i > 0 ? "mt-6 break-before-page print:mt-0" : ""}>
@@ -67,7 +70,7 @@ export function TroupePrintPage() {
           </div>
         ))}
       </PrintShell>
-    </Pips.Provider>
+    </AsPips.Provider>
   );
 }
 
@@ -108,13 +111,23 @@ function label(t: Trait) {
   return t.detail ? `${t.name}: ${t.detail}` : t.name;
 }
 
-/** Whether ratings print as pips, like the paper sheet (`?ratings=pips`), or as
- * numbers, which take less room (the default). */
-const Pips = createContext(false);
+/** Whether ratings print as pips, like the paper sheet, or as numbers, which take
+ * less room: as the person's setting shows them, unless `?ratings=pips` or
+ * `?ratings=numbers` asks for the other way this once. */
+const AsPips = createContext(false);
 
-/** A rating: a number, or filled and empty dots, five to a group, like the paper sheet. */
+/** Whether to print pips; undefined until the person's settings have loaded, so
+ * the sheet never prints one way and then changes. */
+function usePrintedPips(): boolean | undefined {
+  const [params] = useSearchParams();
+  const me = useMe();
+  if (me.isPending) return undefined;
+  return printedRatings(params.get("ratings"), (me.data?.preferences ?? DEFAULT_PREFERENCES).ratings) === "pips";
+}
+
+/** A rating: a number, or filled and empty pips, five to a group, like the paper sheet. */
 function Dots({ value, of = 5 }: { value: number; of?: number }) {
-  const pips = useContext(Pips);
+  const pips = useContext(AsPips);
   if (!pips) {
     return (
       <span className="text-[11px] font-semibold whitespace-nowrap tabular-nums" aria-label={`${value} dots`}>
@@ -122,16 +135,7 @@ function Dots({ value, of = 5 }: { value: number; of?: number }) {
       </span>
     );
   }
-  const total = Math.max(of, value);
-  return (
-    <span className="font-mono text-[11px] tracking-[-0.05em] whitespace-nowrap" aria-label={`${value} dots`}>
-      {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={i > 0 && i % 5 === 0 ? "ml-1" : undefined}>
-          {i < value ? "●" : "○"}
-        </span>
-      ))}
-    </span>
-  );
+  return <Pips value={value} of={of} className="text-[11px]" />;
 }
 
 /** Boxes to tick in play: blood, willpower, health. */

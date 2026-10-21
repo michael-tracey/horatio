@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import type { DisciplinePowers, PlayReference, TestPool } from "../../api/types";
+import { Rating } from "../../components/ui";
+import { pipsOf } from "../../ratings";
 import { breakdown, grouped, total } from "./pools";
 
 type Trait = PlayReference["traits"][number];
@@ -43,7 +45,7 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
                   {t.detail ? `${t.name}: ${t.detail}` : t.name}
                   {brackets(t, reference.traits).length > 0 && <span className="text-mist"> ({brackets(t, reference.traits).join(", ")})</span>}
                 </span>
-                {t.rating !== null && <span className="shrink-0 font-display text-base text-gold tabular-nums">{t.rating}</span>}
+                {t.rating !== null && <Rating value={t.rating} of={pipsOf(t.category)} className="shrink-0 font-display text-base text-gold" />}
               </li>
             ))}
           </ul>
@@ -88,7 +90,7 @@ function PoolRow({ pool, willpower }: { pool: TestPool; willpower: number }) {
 
 function Discipline({ discipline }: { discipline: DisciplinePowers }) {
   return (
-    <Panel title={discipline.name} aside={<span className="font-display text-lg text-gold tabular-nums">{discipline.rating}</span>}>
+    <Panel title={discipline.name} aside={<Rating value={discipline.rating} className="font-display text-lg text-gold" />}>
       <p className="mb-2 text-xs text-mist">
         {discipline.pool ? `${discipline.pool} against ${discipline.versus}.` : null} {discipline.note}
       </p>
@@ -97,7 +99,7 @@ function Discipline({ discipline }: { discipline: DisciplinePowers }) {
         {discipline.powers.map((p) => (
           <li key={p.level}>
             <p>
-              <span className="inline-block w-5 text-gold tabular-nums">{p.level}</span> <strong className="font-semibold">{p.name}</strong>
+              <Rating value={p.level} of={p.level} className="min-w-5 text-gold" /> <strong className="font-semibold">{p.name}</strong>
             </p>
             <p className="text-mist">{p.note}</p>
             {p.focus && <p className="text-xs text-gold">Your focus: {p.focus}</p>}
