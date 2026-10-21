@@ -1586,8 +1586,10 @@ export interface paths {
         };
         /**
          * Find Handles
-         * @description People whose handle starts with `q`, then those whose name has it in it,
-         *     for picking someone as you type.
+         * @description People to pick from, a page at a time: everyone, or with `q` those whose
+         *     handle starts with it, then those whose name has it in it. Only for those who
+         *     pick people: the custodian, and for a troupe, those who manage its staff, who
+         *     see its players first and who is on its staff already.
          */
         get: operations["find_handles_api_handles_get"];
         put?: never;
@@ -4265,6 +4267,13 @@ export interface components {
             /** To Rating */
             to_rating: number;
         };
+        /** People */
+        People: {
+            /** Next Offset */
+            next_offset: number | null;
+            /** People */
+            people: components["schemas"]["Someone"][];
+        };
         /** Pick */
         Pick: {
             /** Category */
@@ -5116,6 +5125,12 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Plays Here
+             * @default false
+             */
+            plays_here: boolean;
+            staff_role?: components["schemas"]["Role"] | null;
         };
         /** StaffAssignment */
         StaffAssignment: {
@@ -8893,6 +8908,9 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
+                troupe_id?: string | null;
+                offset?: number;
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -8906,7 +8924,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Someone"][];
+                    "application/json": components["schemas"]["People"];
                 };
             };
             /** @description Validation Error */

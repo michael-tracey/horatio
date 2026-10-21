@@ -19,6 +19,7 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
     await unwrap(api.PUT("/api/troupes/{troupe_id}/staff", { ...path, body: { handle, role } }));
     setHandle("");
   });
+  const change = useAction((body: { handle: string; role: Role }) => unwrap(api.PUT("/api/troupes/{troupe_id}/staff", { ...path, body })));
   const remove = useAction((user_id: string) =>
     unwrap(api.DELETE("/api/troupes/{troupe_id}/staff/{user_id}", { params: { path: { troupe_id: troupe.id, user_id } } })),
   );
@@ -31,7 +32,7 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
         ) : (
           <ul className="divide-y divide-ash">
             {staff.data?.map((m) => (
-              <li key={m.user_id} className="flex items-center justify-between gap-2 py-2">
+              <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span>
                   <Link to={`/players/${m.user_id}`} className="hover:text-gold">
                     {m.display_name}
@@ -41,18 +42,33 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
                   </span>
                 </span>
                 {canManage && m.role !== "lead_storyteller" && (
-                  <Button variant="ghost" onClick={() => remove.mutate(m.user_id)}>
-                    Remove
-                  </Button>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <Select
+                      aria-label={`Role for ${m.display_name}`}
+                      className="w-auto"
+                      value={m.role}
+                      disabled={change.isPending}
+                      onChange={(e) => change.mutate({ handle: m.handle, role: e.target.value as Role })}
+                    >
+                      {ASSIGNABLE.map((r) => (
+                        <option key={r} value={r}>
+                          {roleLabel(r)}
+                        </option>
+                      ))}
+                    </Select>
+                    <Button variant="ghost" onClick={() => remove.mutate(m.user_id)}>
+                      Remove
+                    </Button>
+                  </span>
                 )}
               </li>
             ))}
           </ul>
         )}
-        <ErrorText error={staff.error ?? remove.error} />
+        <ErrorText error={staff.error ?? change.error ?? remove.error} />
       </Card>
       {canManage && (
-        <Card title="Add or change staff">
+        <Card title="Add staff">
           <form
             className="flex flex-col gap-3"
             onSubmit={(e) => {
@@ -60,8 +76,8 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
               assign.mutate(undefined);
             }}
           >
-            <Field label="Handle" hint="Type a handle or a name to find them. They need an account already.">
-              <PersonPicker required value={handle} onChange={setHandle} />
+            <Field label="Person" hint="Pick them from the list, or type a name or handle to find them. They need an account already.">
+              <PersonPicker required troupeId={troupe.id} value={handle} onChange={setHandle} />
             </Field>
             <Field label="Role">
               <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>

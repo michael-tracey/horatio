@@ -70,7 +70,7 @@ function NewTroupe() {
         <Field label="Description">
           <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </Field>
-        <Field label="Lead storyteller" hint="Type a handle or a name to find them. They need an account already.">
+        <Field label="Lead storyteller" hint="Pick them from the list, or type a name or handle to find them. They need an account already.">
           <PersonPicker required value={form.lead_handle} onChange={(lead_handle) => setForm({ ...form, lead_handle })} />
         </Field>
         <ErrorText error={create.error} />

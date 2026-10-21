@@ -13,14 +13,16 @@ it keep working. They can take it back themselves.
 
 import re
 import unicodedata
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from itertools import count
+from typing import Any
 
-from sqlalchemy import case, delete, func, or_, select
+from sqlalchemy import ColumnElement, case, delete, exists, false, func, null, or_, select
 from sqlalchemy.orm import Session
 
 from horatio.audit import record
-from horatio.models import FormerHandle, User
+from horatio.models import Character, FormerHandle, Troupe, TroupeMembership, TroupeStaff, User
 from horatio.sheets import conflict, unprocessable
 
 HANDLE = re.compile(r"[A-Za-z0-9_-]{3,30}")
@@ -115,18 +117,51 @@ def change(db: Session, user: User, wanted: str) -> None:
     user.handle_changed_at = now
 
 
-def find(db: Session, q: str, limit: int = 10) -> list[User]:
-    """People for a type-ahead: handles starting with `q` first, then display names
-    with it in them."""
+@dataclass(frozen=True)
+class Found:
+    """Someone to pick, and, when picking for a troupe, how they stand in it."""
+
+    user: User
+    # They have a character in the troupe now.
+    plays_here: bool = False
+    # Their role on the troupe's staff, the lead's included.
+    staff_role: str | None = None
+
+
+def find(
+    db: Session, q: str = "", *, troupe: Troupe | None = None, offset: int = 0, limit: int = 20
+) -> list[Found]:
+    """People to pick from, a page at a time: everyone, or with `q` those whose
+    handle starts with it, then those whose display name has it in it. With a
+    troupe, the people who play there come first. Then alphabetically by display
+    name."""
     q = q.strip().removeprefix("@").lower()
-    if not q:
-        return []
-    by_handle = func.lower(User.handle).startswith(q, autoescape=True)
-    return list(
-        db.scalars(
-            select(User)
-            .where(or_(by_handle, func.lower(User.display_name).contains(q, autoescape=True)))
-            .order_by(case((by_handle, 0), else_=1), func.lower(User.handle))
-            .limit(limit)
+    plays_here: ColumnElement[bool] = false()
+    staff_role: ColumnElement[Any] = null()
+    order: list[ColumnElement[Any]] = []
+    if troupe is not None:
+        plays_here = exists().where(
+            Character.player_id == User.id,
+            Character.kind == "pc",
+            Character.status == "active",
+            TroupeMembership.character_id == Character.id,
+            TroupeMembership.troupe_id == troupe.id,
+            TroupeMembership.left_at.is_(None),
         )
-    )
+        staff_role = case(
+            (User.id == troupe.lead_user_id, "lead_storyteller"),
+            else_=select(TroupeStaff.role)
+            .where(TroupeStaff.troupe_id == troupe.id, TroupeStaff.user_id == User.id)
+            .scalar_subquery(),
+        )
+        order.append(case((plays_here, 0), else_=1))
+    query = select(User, plays_here, staff_role)
+    if q:
+        by_handle = func.lower(User.handle).startswith(q, autoescape=True)
+        query = query.where(
+            or_(by_handle, func.lower(User.display_name).contains(q, autoescape=True))
+        )
+        order.append(case((by_handle, 0), else_=1))
+    order += [func.lower(User.display_name), func.lower(User.handle), User.id]
+    rows = db.execute(query.order_by(*order).offset(offset).limit(limit))
+    return [Found(user, bool(here), role) for user, here, role in rows]
