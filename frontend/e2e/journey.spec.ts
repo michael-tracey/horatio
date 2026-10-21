@@ -61,12 +61,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: "Troupes" }).click();
   await lead.page.getByRole("link", { name: troupeName }).click();
   await lead.page.getByRole("link", { name: "Staff" }).click();
-  await expect(lead.page.getByRole("heading", { name: "Add or change staff" })).toBeVisible();
+  await expect(lead.page.getByRole("heading", { name: "Add staff" })).toBeVisible();
   await lead.page.screenshot(shots("troupe-nav"));
   // Found by typing part of their handle, and picked from what comes up.
-  await lead.page.getByLabel("Handle").fill(narrator.handle.slice(0, -3));
+  await lead.page.getByLabel("Person").fill(narrator.handle.slice(0, -3));
   await lead.page.getByRole("option", { name: `@${narrator.handle}` }).click();
-  await expect(lead.page.getByLabel("Handle")).toHaveValue(narrator.handle);
+  await expect(lead.page.getByLabel("Person")).toHaveValue(narrator.handle);
   await lead.page.getByRole("button", { name: "Save" }).click();
   await expect(lead.page.getByText(`@${narrator.handle} · Narrator`)).toBeVisible();
 
@@ -1283,7 +1283,10 @@ test("notifications by email: a choice per kind, once the server can send email"
   const downtime = page.getByRole("radiogroup", { name: "Downtime results" });
   await expect(downtime.getByRole("radio", { name: "Bell only" })).toHaveAttribute("aria-checked", "true");
   await downtime.getByRole("radio", { name: "Bell and email" }).click();
-  await page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" }).click();
+  await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok()),
+    page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" }).click(),
+  ]);
   await expect(page.getByText(/gathers them into one email at 8 am/)).toBeVisible();
   await page.reload();
   await expect(downtime.getByRole("radio", { name: "Bell and email" })).toHaveAttribute("aria-checked", "true");
@@ -1314,6 +1317,64 @@ test("a handle to be found by, and to sign in with", async ({ browser }) => {
   await other.getByLabel("Password").fill(PASSWORD);
   await other.getByRole("button", { name: "Sign in" }).click();
   await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+});
+
+test("a lead adds staff by picking from a list of people, the troupe's own players first", async ({ browser }) => {
+  const custodian = await person(browser, "staff-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "staff-lead");
+  const player = await person(browser, "staff-player");
+  const troupeName = `Court of Keys ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  // The custodian finds the lead in the list by typing part of their handle.
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle.slice(0, -2));
+  await custodian.page.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${lead.handle}` }).click();
+  await expect(custodian.page.getByLabel("Lead storyteller")).toHaveValue(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // The player's character visits the troupe.
+  const p = player.page;
+  await p.getByLabel("Name").fill("Agnes Moreau");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Visit" }).click();
+  await expect(p.getByText("visiting")).toBeVisible();
+
+  // The list opens as soon as the box is clicked: the troupe's player first.
+  await lead.page.getByRole("link", { name: "Troupes" }).click();
+  await lead.page.getByRole("link", { name: troupeName }).click();
+  await lead.page.getByRole("link", { name: "Staff", exact: true }).click();
+  await lead.page.getByLabel("Person").click();
+  const people = lead.page.getByRole("listbox", { name: "People" });
+  await expect(people.getByRole("option").first()).toContainText(`@${player.handle}`);
+  await expect(people.getByRole("option").first()).toContainText("Plays here");
+  await expect(people).not.toContainText("@example.com");
+  await lead.page.screenshot(shots("staff-picker"));
+  await people.getByRole("option", { name: `@${player.handle}` }).click();
+  await expect(lead.page.getByLabel("Person")).toHaveValue(player.handle);
+  await lead.page.getByRole("button", { name: "Save" }).click();
+  await expect(lead.page.getByText(`@${player.handle} · Narrator`)).toBeVisible();
+
+  // Now on the staff, they are greyed out with their role.
+  await lead.page.getByLabel("Person").click();
+  const added = people.getByRole("option", { name: `@${player.handle}` });
+  await expect(added).toHaveAttribute("aria-disabled", "true");
+  await expect(added).toContainText("Narrator");
+  // So is the lead.
+  await lead.page.getByLabel("Person").fill(lead.handle);
+  await expect(people.getByRole("option", { name: `@${lead.handle}` })).toHaveAttribute("aria-disabled", "true");
+  await expect(people.getByRole("option", { name: `@${lead.handle}` })).toContainText("Lead Storyteller");
+  await lead.page.keyboard.press("Escape");
+
+  // Their role is changed in the staff list.
+  await lead.page.getByLabel("Role for staff-player").selectOption("assistant_storyteller");
+  await expect(lead.page.getByText(`@${player.handle} · Assistant Storyteller`)).toBeVisible();
 });
 
 test("dates and times show in each person's zone and format", async ({ browser }) => {
@@ -1377,11 +1438,13 @@ test("large text makes the app bigger, but not printed sheets and badges", async
 
   await page.getByRole("link", { name: "large-text" }).click();
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
+  const saved = page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
   await page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" }).click();
-  // At once, with no reload, and still after one.
+  // At once, with no reload, and still after one (once it has saved).
   await expect.poll(fontSize).not.toBe(normal);
   const large = await fontSize();
   expect(parseFloat(large) / parseFloat(normal)).toBeCloseTo(1.15);
+  await saved;
   await page.reload();
   await expect(page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" })).toHaveAttribute("aria-checked", "true");
   await expect.poll(fontSize).toBe(large);
