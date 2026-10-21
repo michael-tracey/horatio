@@ -3,6 +3,7 @@ import type { Preferences } from "../../api/types";
 import { Card, ErrorText, Input } from "../../components/ui";
 import { deviceZone, useDates } from "../../dates";
 import { usePreferences, useSavingPreferences, useSetPreferences } from "../../hooks";
+import { HandleCard } from "./HandleCard";
 
 type Key = keyof Preferences;
 
@@ -244,7 +245,7 @@ export function SettingsPage() {
         </Setting>
       </Card>
 
-      {/* #103: your handle goes here. */}
+      <HandleCard />
 
       {/* #106: notifications by email go here. */}
 

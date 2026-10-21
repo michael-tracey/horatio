@@ -18,10 +18,10 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
 export function SignInPage() {
   const me = useMe();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const signIn = useAction(async () => {
-    await unwrap(api.POST("/api/auth/login", { body: { email, password } }));
+    await unwrap(api.POST("/api/auth/login", { body: { login, password } }));
     navigate("/characters");
   });
 
@@ -33,8 +33,8 @@ export function SignInPage() {
   return (
     <Shell title="Sign in">
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <Field label="Email">
-          <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field label="Email or handle">
+          <Input autoComplete="username" autoCapitalize="none" spellCheck={false} required value={login} onChange={(e) => setLogin(e.target.value)} />
         </Field>
         <Field label="Password">
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -59,7 +59,7 @@ export function SignInPage() {
 
 export function SignUpPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ display_name: "", email: "", password: "" });
+  const [form, setForm] = useState({ display_name: "", handle: "", email: "", password: "" });
   const signUp = useAction(async () => {
     await unwrap(api.POST("/api/auth/signup", { body: form }));
     navigate("/characters");
@@ -78,7 +78,10 @@ export function SignUpPage() {
         <Field label="Your name">
           <Input required autoComplete="name" value={form.display_name} onChange={set("display_name")} />
         </Field>
-        <Field label="Email">
+        <Field label="Handle" hint="How others find you, instead of your email. Letters, numbers, _ and -. Leave it blank for one made from your name.">
+          <Input autoComplete="off" autoCapitalize="none" spellCheck={false} value={form.handle} onChange={set("handle")} />
+        </Field>
+        <Field label="Email" hint="Only you and the custodian see it.">
           <Input type="email" required autoComplete="email" value={form.email} onChange={set("email")} />
         </Field>
         <Field label="Password" hint="At least 10 characters.">

@@ -42,7 +42,7 @@ def make_home(troupe: Troupe, character_id: str) -> None:
 def second_troupe(troupe: Troupe) -> str:
     """A second troupe, led by the first one's storyteller."""
     response = troupe.custodian.client.post(
-        "/troupes", json={"name": "Second City", "lead_email": troupe.storyteller.email}
+        "/troupes", json={"name": "Second City", "lead_handle": troupe.storyteller.handle}
     )
     return response.json()["id"]
 
@@ -134,7 +134,7 @@ def test_dots_the_home_troupe_accepted_cannot_be_taken_back(troupe: Troupe) -> N
 def test_only_the_home_troupe_awards_xp(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     visited = troupe.custodian.client.post(
-        "/troupes", json={"name": "Visited", "lead_email": troupe.stranger.email}
+        "/troupes", json={"name": "Visited", "lead_handle": troupe.stranger.handle}
     ).json()["id"]
     join(troupe.player, character_id, visited)
     make_home(troupe, character_id)

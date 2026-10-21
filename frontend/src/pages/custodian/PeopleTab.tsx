@@ -9,7 +9,7 @@ import { useDates } from "../../dates";
 import { memberSince } from "../players";
 import { ResetPassword, useCancelReset } from "./ResetPassword";
 
-/** Every account, for the custodian: find someone by name or email, open their
+/** Every account, for the custodian: find someone by name, handle or email, open their
  * profile, or reset their password here. Below, the reset links out now and who
  * has reset their password. */
 export function PeopleTab() {
@@ -23,7 +23,7 @@ export function PeopleTab() {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <Input type="search" aria-label="Search people" placeholder="Name or email…" value={q} onChange={(e) => setQ(e.target.value)} className="mb-3" />
+        <Input type="search" aria-label="Search people" placeholder="Name, handle or email…" value={q} onChange={(e) => setQ(e.target.value)} className="mb-3" />
         {people.isPending ? (
           <Loading />
         ) : people.data?.length ? (
@@ -51,7 +51,7 @@ function Person({ person }: { person: PlayerSummary }) {
         <Link to={`/players/${person.id}`} className="flex min-w-0 flex-col gap-0.5 hover:text-gold sm:flex-row sm:items-center sm:gap-3">
           <span>{person.display_name}</span>
           <span className="text-xs break-all text-mist">
-            {person.email} · since {memberSince(person.member_since, dates)}
+            @{person.handle} · {person.email} · since {memberSince(person.member_since, dates)}
           </span>
         </Link>
         <span className="flex items-center gap-2">

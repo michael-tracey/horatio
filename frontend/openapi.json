@@ -2773,6 +2773,19 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HandleIn": {
+        "properties": {
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "title": "HandleIn",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "levels": {
@@ -3255,6 +3268,10 @@
             "title": "Email",
             "type": "string"
           },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -3264,6 +3281,18 @@
             "title": "Is Custodian",
             "type": "boolean"
           },
+          "next_handle_change": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Handle Change"
+          },
           "preferences": {
             "$ref": "#/components/schemas/Preferences"
           }
@@ -3272,6 +3301,8 @@
           "id",
           "email",
           "display_name",
+          "handle",
+          "next_handle_change",
           "is_custodian",
           "preferences"
         ],
@@ -3497,14 +3528,13 @@
       },
       "NewLead": {
         "properties": {
-          "email": {
-            "format": "email",
-            "title": "Email",
+          "handle": {
+            "title": "Handle",
             "type": "string"
           }
         },
         "required": [
-          "email"
+          "handle"
         ],
         "title": "NewLead",
         "type": "object"
@@ -3575,9 +3605,8 @@
             "title": "Description",
             "type": "string"
           },
-          "lead_email": {
-            "format": "email",
-            "title": "Lead Email",
+          "lead_handle": {
+            "title": "Lead Handle",
             "type": "string"
           },
           "name": {
@@ -3589,7 +3618,7 @@
         },
         "required": [
           "name",
-          "lead_email"
+          "lead_handle"
         ],
         "title": "NewTroupe",
         "type": "object"
@@ -4393,6 +4422,10 @@
             ],
             "title": "Email"
           },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -4430,6 +4463,7 @@
         "required": [
           "id",
           "display_name",
+          "handle",
           "member_since",
           "bio",
           "links",
@@ -4450,6 +4484,10 @@
           },
           "email": {
             "title": "Email",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
             "type": "string"
           },
           "id": {
@@ -4478,6 +4516,7 @@
         "required": [
           "id",
           "display_name",
+          "handle",
           "email",
           "member_since",
           "reset_expires_at"
@@ -5766,6 +5805,17 @@
             ],
             "title": "Picture"
           },
+          "player_handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Handle"
+          },
           "player_id": {
             "anyOf": [
               {
@@ -5803,6 +5853,7 @@
           "character_name",
           "player_name",
           "player_id",
+          "player_handle",
           "kind",
           "titles",
           "picture",
@@ -6119,9 +6170,9 @@
       },
       "SignIn": {
         "properties": {
-          "email": {
-            "format": "email",
-            "title": "Email",
+          "login": {
+            "minLength": 1,
+            "title": "Login",
             "type": "string"
           },
           "password": {
@@ -6130,7 +6181,7 @@
           }
         },
         "required": [
-          "email",
+          "login",
           "password"
         ],
         "title": "SignIn",
@@ -6149,6 +6200,17 @@
             "title": "Email",
             "type": "string"
           },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          },
           "password": {
             "minLength": 10,
             "title": "Password",
@@ -6163,11 +6225,35 @@
         "title": "SignUp",
         "type": "object"
       },
+      "Someone": {
+        "description": "A person as others find them: never their email.",
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "handle",
+          "display_name"
+        ],
+        "title": "Someone",
+        "type": "object"
+      },
       "StaffAssignment": {
         "properties": {
-          "email": {
-            "format": "email",
-            "title": "Email",
+          "handle": {
+            "title": "Handle",
             "type": "string"
           },
           "role": {
@@ -6175,7 +6261,7 @@
           }
         },
         "required": [
-          "email",
+          "handle",
           "role"
         ],
         "title": "StaffAssignment",
@@ -6226,6 +6312,10 @@
             "title": "Display Name",
             "type": "string"
           },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
           "role": {
             "$ref": "#/components/schemas/Role"
           },
@@ -6238,6 +6328,7 @@
         "required": [
           "user_id",
           "display_name",
+          "handle",
           "role"
         ],
         "title": "StaffMember",
@@ -7376,6 +7467,10 @@
             "title": "Reason",
             "type": "string"
           },
+          "requester_handle": {
+            "title": "Requester Handle",
+            "type": "string"
+          },
           "requester_id": {
             "format": "uuid",
             "title": "Requester Id",
@@ -7410,6 +7505,7 @@
           "status",
           "requester_id",
           "requester_name",
+          "requester_handle",
           "created_at",
           "decided_at",
           "decided_by_name",
@@ -12158,6 +12254,96 @@
         ]
       }
     },
+    "/api/handle": {
+      "put": {
+        "description": "Change the signed-in person's handle: at most once in 30 days, and to one no\none has or has held in the last 90.",
+        "operationId": "change_handle_api_handle_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Handle",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/handles": {
+      "get": {
+        "description": "People whose handle starts with `q`, then those whose name has it in it,\nfor picking someone as you type.",
+        "operationId": "find_handles_api_handles_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Someone"
+                  },
+                  "title": "Response Find Handles Api Handles Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Find Handles",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "operationId": "health_api_health_get",
@@ -12281,7 +12467,7 @@
     },
     "/api/players": {
       "get": {
-        "description": "Every account whose name or email has `q` in it, for the custodian.",
+        "description": "Every account whose name, handle or email has `q` in it, for the custodian.",
         "operationId": "find_players_api_players_get",
         "parameters": [
           {

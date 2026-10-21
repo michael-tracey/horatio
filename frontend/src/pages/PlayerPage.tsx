@@ -25,7 +25,7 @@ export function PlayerPage() {
   return (
     <>
       <PageTitle
-        subtitle={`Member since ${memberSince(p.member_since, dates)}`}
+        subtitle={`@${p.handle} · Member since ${memberSince(p.member_since, dates)}`}
         actions={
           mine && (
             <Link to="/account" className="text-sm text-gold underline">

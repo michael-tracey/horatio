@@ -23,7 +23,7 @@ from horatio.models.downtimes import (
     TroupeConnector,
 )
 from horatio.models.notifications import Notification
-from horatio.models.people import AuthIdentity, PasswordReset, Session, User
+from horatio.models.people import AuthIdentity, FormerHandle, PasswordReset, Session, User
 from horatio.models.play import PlayCounter, PlayEvent, PlayGame
 from horatio.models.rules import (
     ActionKind,
@@ -78,6 +78,7 @@ __all__ = [
     "ClanLogo",
     "CostRule",
     "CreationRule",
+    "FormerHandle",
     "HomeTroupeChange",
     "ReconciliationItem",
     "RuleSet",

@@ -187,7 +187,7 @@ def reset_link(troupe: Troupe, user_id: str) -> str:
 
 
 def sign_in(client: TestClient, email: str, password: str) -> int:
-    return client.post("/auth/login", json={"email": email, "password": password}).status_code
+    return client.post("/auth/login", json={"login": email, "password": password}).status_code
 
 
 def test_a_reset_link_sets_a_new_password_and_ends_other_sessions(
@@ -253,7 +253,12 @@ def test_a_link_expires_after_a_day(
 def test_a_reset_gives_a_discord_only_account_a_password(
     troupe: Troupe, client_for: Callable[[], TestClient], session: Session
 ) -> None:
-    user = User(email="discord@example.com", display_name="Discord Only", password_hash=None)
+    user = User(
+        email="discord@example.com",
+        display_name="Discord Only",
+        handle="discord_only",
+        password_hash=None,
+    )
     session.add(user)
     session.flush()
     token = reset_link(troupe, str(user.id))
