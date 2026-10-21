@@ -24,6 +24,13 @@ async function person(browser: Browser, name: string): Promise<{ page: Page; ema
   return { page, email };
 }
 
+/** How many pages a PDF that Chromium printed has, and the first one's size in points. */
+function pdfPages(pdf: Buffer): { count: number; size: string } {
+  const text = pdf.toString("latin1");
+  const box = text.match(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/)!;
+  return { count: text.match(/\/Type \/Page\b/g)?.length ?? 0, size: `${Math.round(Number(box[1]))} × ${Math.round(Number(box[2]))}` };
+}
+
 function makeCustodian(email: string) {
   execFileSync("uv", ["run", "python", "-m", "horatio.custodian", email], { cwd: "../backend", stdio: "ignore" });
 }
@@ -285,12 +292,43 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await badges.screenshot(shots("badges-plain"));
   if (test.info().project.name === "desktop") {
     await badges.emulateMedia({ media: "print" });
-    await badges.pdf({ path: "test-results/screens/badges.pdf", format: "Letter", printBackground: true });
+    const pdf = await badges.pdf({ path: "test-results/screens/badges.pdf", preferCSSPageSize: true, printBackground: true });
+    expect(pdfPages(pdf)).toEqual({ count: 1, size: "612 × 792" });
+    await badges.emulateMedia({ media: "screen" });
+  }
+  // Four sizes, for common badge holders, as many to the paper as fit; the
+  // contents scale to each, the troupe's name still on the bottom line.
+  await expect(badges.getByText("1 badge · four to each US Letter page")).toBeVisible();
+  for (const [size, perPage, inches, shot] of [
+    ["3 × 4 in", "four", 3, "3x4"],
+    ["ID card, 2.25 × 3.5 in", "nine", 2.25, "cr80"],
+    ["4 × 6 in", "two", 4, "4x6"],
+  ] as const) {
+    await badges.getByLabel("Size").selectOption({ label: size });
+    await expect(badges.getByText(`1 badge · ${perPage} to each US Letter page`)).toBeVisible();
+    expect((await badge.boundingBox())!.width).toBeCloseTo(inches * 96, 0);
+    await expect(badge.getByText(troupeName)).toBeVisible();
+    expect(await badge.evaluate((card) => card.scrollHeight - card.clientHeight)).toBeLessThanOrEqual(1);
+    await badges.screenshot(shots(`badges-${shot}`));
   }
   await badges.close();
+  // Each person's paper and badge size are settings: badges open at that size.
+  const characters = lead.page.url();
+  await lead.page.goto("/account/settings");
+  for (const [setting, choice] of [
+    ["Paper", "A4"],
+    ["Badge size", "3 × 4 in"],
+  ] as const) {
+    const saved = lead.page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
+    await lead.page.getByRole("radiogroup", { name: setting }).getByRole("radio", { name: choice }).click();
+    await saved;
+  }
+  await lead.page.goto(characters);
   const staffTab = lead.page.context().waitForEvent("page");
   await lead.page.getByRole("button", { name: "Storyteller badges" }).click();
   const staffBadges = await staffTab;
+  await expect(staffBadges.getByLabel("Size")).toHaveValue("3x4");
+  await expect(staffBadges.getByText("2 badges · four to each A4 page")).toBeVisible();
   await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText("Lead Storyteller")).toBeVisible();
   await expect(staffBadges.getByRole("article", { name: "Badge for narrator" }).getByText("Narrator", { exact: true })).toBeVisible();
   await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText(troupeName)).toBeVisible();
@@ -436,7 +474,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.screenshot(shots("print"));
   if (test.info().project.name === "desktop") {
     await p.emulateMedia({ media: "print" });
-    await p.pdf({ path: "test-results/screens/sheet.pdf", format: "Letter" });
+    // On one page of US Letter, the paper Horatio starts on.
+    const pdf = await p.pdf({ path: "test-results/screens/sheet.pdf", preferCSSPageSize: true });
+    expect(pdfPages(pdf)).toEqual({ count: 1, size: "612 × 792" });
     await p.emulateMedia({ media: "screen" });
   }
   // Ratings print as numbers, and each attribute's focus sits beside it in brackets…
@@ -475,6 +515,13 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await troupeSheets.goto(`/print/troupes/${lead.page.url().match(/\/troupes\/([^/]+)/)![1]}`);
   await expect(troupeSheets.getByText("1 sheet", { exact: true })).toBeVisible();
   await specialised(troupeSheets);
+  // On the lead's paper, A4, still one page to a sheet.
+  await expect(troupeSheets.getByText("For A4")).toBeVisible();
+  if (test.info().project.name === "desktop") {
+    await troupeSheets.emulateMedia({ media: "print" });
+    const pdf = await troupeSheets.pdf({ path: "test-results/screens/sheet-a4.pdf", preferCSSPageSize: true });
+    expect(pdfPages(pdf)).toEqual({ count: 1, size: "595 × 842" });
+  }
   await expect(troupeSheets.getByRole("img", { name: /dots$/ })).toHaveCount(0);
   await troupeSheets.close();
 });
