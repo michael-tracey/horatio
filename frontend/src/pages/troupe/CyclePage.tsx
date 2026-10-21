@@ -6,6 +6,7 @@ import type { CycleOut, ParticipantOut, QuestionIn, WorkItemOut } from "../../ap
 import { Avatar } from "../../components/Avatar";
 import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { DeliveryTab } from "./DeliveryTab";
 
@@ -63,6 +64,7 @@ function Overview({ cycle }: { cycle: CycleOut }) {
   const close = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/close", path)));
   const deliver = useAction(async () => setDelivered(await unwrap(api.POST("/api/cycles/{cycle_id}/deliver", path))));
   const complete = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/complete", path)));
+  const dates = useDates();
   const p = progress.data;
 
   return (
@@ -70,9 +72,9 @@ function Overview({ cycle }: { cycle: CycleOut }) {
       <Card title="Where it stands">
         <dl className="grid grid-cols-2 gap-y-1 text-sm">
           <dt className="text-mist">Due</dt>
-          <dd>{new Date(cycle.closes_at).toLocaleString()}</dd>
+          <dd>{dates.deadline(cycle.closes_at)}</dd>
           <dt className="text-mist">Accepted until</dt>
-          <dd>{new Date(cycle.grace_ends_at).toLocaleString()}</dd>
+          <dd>{dates.deadline(cycle.grace_ends_at)}</dd>
           <dt className="text-mist">XP for completing</dt>
           <dd>
             <CompletionXp cycle={cycle} />

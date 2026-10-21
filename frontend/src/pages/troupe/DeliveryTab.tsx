@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { DeliveryOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Loading } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 const CHANNEL_NAMES: Record<string, string> = { horatio: "In Horatio", discord: "Discord", email: "Email" };
@@ -77,6 +78,7 @@ function DeliveryCell({ delivery, who, channel }: { delivery: DeliveryOut | unde
   const path = { params: { path: { delivery_id: delivery?.id ?? "" } } };
   const retry = useAction(() => unwrap(api.POST("/api/deliveries/{delivery_id}/retry", path)));
   const mark = useAction(() => unwrap(api.POST("/api/deliveries/{delivery_id}/mark-sent", path)));
+  const dates = useDates();
   if (!delivery) return <span className="text-mist">—</span>;
   const label = `${who}'s ${channelName(channel)} delivery`;
   return (
@@ -91,7 +93,7 @@ function DeliveryCell({ delivery, who, channel }: { delivery: DeliveryOut | unde
       {delivery.status === "pending" && delivery.attempts > 0 && (
         <span className="text-xs text-mist">
           {delivery.attempts} {delivery.attempts === 1 ? "try" : "tries"} so far
-          {delivery.next_attempt_at && `; next at ${new Date(delivery.next_attempt_at).toLocaleTimeString()}`}
+          {delivery.next_attempt_at && `; next at ${dates.time(delivery.next_attempt_at)}`}
         </span>
       )}
       {delivery.last_error && delivery.status !== "sent" && <span className="text-xs text-blood-bright">{delivery.last_error}</span>}

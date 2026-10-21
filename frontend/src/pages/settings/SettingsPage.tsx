@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Preferences } from "../../api/types";
-import { Card, ErrorText, Select } from "../../components/ui";
+import { Card, ErrorText, Input } from "../../components/ui";
+import { deviceZone, useDates } from "../../dates";
 import { usePreferences, useSavingPreferences, useSetPreferences } from "../../hooks";
 
 type Key = keyof Preferences;
@@ -53,24 +54,57 @@ function Toggle({ name, label }: { name: "quick_notes" | "keep_awake"; label: st
   );
 }
 
-function deviceZone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+/** Every IANA zone this browser knows, such as "America/New_York". */
+function allZones(): string[] {
+  const zones = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
+  return [...new Set([...zones, "UTC", deviceZone()])].sort();
 }
 
+/** The zone times show in: type to search the list, or leave it empty to follow this device. */
 function TimeZone() {
   const prefs = usePreferences();
   const set = useSetPreferences();
-  const zones = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [deviceZone()];
+  const zones = useMemo(allZones, []);
+  const saved = prefs.time_zone ?? "";
+  const [text, setText] = useState(saved);
+  useEffect(() => setText(saved), [saved]);
+  const choose = (zone: string | null) => {
+    if (zone !== prefs.time_zone) set.mutate({ time_zone: zone });
+  };
   return (
-    <Select aria-label="Time zone" value={prefs.time_zone ?? ""} onChange={(e) => set.mutate({ time_zone: e.target.value || null })} className="max-w-64 text-sm">
-      <option value="">This device's ({deviceZone()})</option>
-      {zones.map((z) => (
-        <option key={z} value={z}>
-          {z.replaceAll("_", " ")}
-        </option>
-      ))}
-    </Select>
+    <span className="flex flex-col items-start gap-1 sm:items-end">
+      <Input
+        type="search"
+        aria-label="Time zone"
+        list="time-zones"
+        placeholder={`This device's (${deviceZone()})`}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          if (zones.includes(e.target.value)) choose(e.target.value);
+        }}
+        // Left empty, times follow the device; left half-typed, the zone stays as it was.
+        onBlur={() => (text.trim() ? setText(saved) : choose(null))}
+        className="w-64 max-w-full text-sm"
+      />
+      <datalist id="time-zones">
+        {zones.map((z) => (
+          <option key={z} value={z} />
+        ))}
+      </datalist>
+      {prefs.time_zone && (
+        <button type="button" className="text-xs text-mist underline hover:text-parchment" onClick={() => choose(null)}>
+          Use this device's
+        </button>
+      )}
+    </span>
   );
+}
+
+/** The time now, as a downtime's deadline would show it with these settings. */
+function DeadlineNow() {
+  const dates = useDates();
+  return <span className="text-sm text-parchment">{dates.deadline(new Date())}</span>;
 }
 
 /** True once `on` has stayed true for `ms`, so a quick save doesn't flash. */
@@ -158,6 +192,9 @@ export function SettingsPage() {
               ["24", "21:30"],
             ]}
           />
+        </Setting>
+        <Setting label="Deadlines show as" hint="With their zone, so players elsewhere agree on them.">
+          <DeadlineNow />
         </Setting>
       </Card>
 

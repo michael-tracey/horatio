@@ -3,6 +3,7 @@ import { createContext, useContext, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet } from "../api/types";
+import { useDates } from "../dates";
 import { HEALTH_RULE, healthRows } from "../health";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 
@@ -213,6 +214,7 @@ const SHOWN_ELSEWHERE = new Set([
 ]);
 
 function Sheet({ sheet }: { sheet: PrintedSheet }) {
+  const dates = useDates();
   const t = sheet.traits;
   const generation = rating(t, "backgrounds", "Generation");
   const [maxBlood, perTurn] = BLOOD[Math.min(generation, 5)]!;
@@ -364,8 +366,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
       )}
 
       <footer className="mt-auto border-t border-black pt-1 text-center text-[9px] text-neutral-600">
-        Printed from Horatio {new Date().toLocaleDateString()}
-        {sheet.home && sheet.accepted_at && ` · accepted ${new Date(sheet.accepted_at).toLocaleDateString()} by ${sheet.accepted_by}`}
+        Printed from Horatio {dates.date(new Date())}
+        {sheet.home && sheet.accepted_at && ` · accepted ${dates.date(sheet.accepted_at)} by ${sheet.accepted_by}`}
         <br />
         Unofficial fan-made material under Paradox Interactive's Dark Pack Agreement. Portions © Paradox Interactive AB, used with permission.
       </footer>
