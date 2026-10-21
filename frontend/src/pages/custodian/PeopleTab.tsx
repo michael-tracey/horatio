@@ -51,7 +51,7 @@ function Person({ person }: { person: PlayerSummary }) {
         <Link to={`/players/${person.id}`} className="flex min-w-0 flex-col gap-0.5 hover:text-gold sm:flex-row sm:items-center sm:gap-3">
           <span>{person.display_name}</span>
           <span className="text-xs break-all text-mist">
-            @{person.handle} Â· {person.email} Â· since {memberSince(person.member_since, dates)}
+            @{person.handle} · {person.email} · since {memberSince(person.member_since, dates)}
           </span>
         </Link>
         <span className="flex items-center gap-2">
