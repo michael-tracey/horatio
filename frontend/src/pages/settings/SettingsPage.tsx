@@ -165,7 +165,10 @@ export function SettingsPage() {
         <Setting label="Quick notes" hint="The Play View asks what each spend was for.">
           <Toggle name="quick_notes" label="Quick notes" />
         </Setting>
-        <Setting label="Keep the screen awake" hint="While the Play View is open. Uses more battery.">
+        <Setting
+          label="Keep the screen awake"
+          hint={"wakeLock" in navigator ? "While the Play View is open. Uses more battery." : "While the Play View is open. This browser can't, but your phone's may."}
+        >
           <Toggle name="keep_awake" label="Keep the screen awake" />
         </Setting>
         <Setting label="The Play View opens on">
