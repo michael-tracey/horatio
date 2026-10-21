@@ -20,12 +20,11 @@ import {
   Rating,
   Select,
 } from "../../components/ui";
-import { SplitLink } from "../../components/SplitLink";
 import { HEALTH_RULE, healthRows } from "../../health";
-import { useAction, usePreferences } from "../../hooks";
+import { useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
 import { AddTraitPanel } from "./AddTraitPanel";
-import { BadgeButton } from "./Badge";
+import { PrintAndBadge } from "./Badge";
 import { rulesTroupe } from "./rules";
 import {
   NEEDS_FIELD,
@@ -400,10 +399,7 @@ export function SheetTab({
         {!s.traits.some((t) => t.id === lastTrait) && outcome}
       </div>
       <aside className="flex flex-col gap-3">
-        <div className={badge ? "grid grid-cols-2 gap-2 [&>button]:w-full" : "grid"}>
-          <PrintButton characterId={character.id} />
-          {badge && <BadgeButton character={character} />}
-        </div>
+        <PrintAndBadge character={character} badge={badge} />
         <Card dense title="Experience">
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
@@ -468,25 +464,6 @@ export function swapOptions(
     .filter((t) => t.category === trait.category && !mine.has(t.name))
     .map((t) => t.name);
   return others.length ? { cost, others } : null;
-}
-
-/** Print, with ratings as the person's setting shows them; the chevron prints
- * once the other way. */
-function PrintButton({ characterId }: { characterId: string }) {
-  const { ratings } = usePreferences();
-  const to = `/print/characters/${characterId}`;
-  return (
-    <SplitLink
-      to={to}
-      label="Print"
-      menuLabel="Print with numbers or pips"
-      choices={[
-        ratings === "pips"
-          ? { to: `${to}?ratings=numbers`, label: "With numbers" }
-          : { to: `${to}?ratings=pips`, label: "With pips" },
-      ]}
-    />
-  );
 }
 
 function TraitRow({

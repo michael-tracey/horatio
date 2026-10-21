@@ -224,3 +224,36 @@ def test_the_custodian_uploads_clan_logos(troupe: Troupe, kept: Path) -> None:
     assert gone.status_code == 204
     assert badge_of(troupe, "Agnes")["logo"] is None
     assert not list((kept / "clan-logos").iterdir())
+
+
+def test_an_npcs_badge_reads_like_a_player_characters(troupe: Troupe) -> None:
+    """NPCs get badges from their own page and the troupe's NPC list (issue #91)."""
+    agnes = member(troupe, troupe.player, "Agnes", "Toreador")
+    made = troupe.storyteller.client.post(f"/troupes/{troupe.id}/npcs", json={"name": "Lucien"})
+    lucien = made.json()["id"]
+    rating = {"category": "clan", "name": "Ventrue", "rating": None}
+    assert troupe.storyteller.client.put(
+        f"/characters/{lucien}/npc/ratings", json=rating
+    ).is_success
+    give(troupe, lucien, ("status_traits", "Acknowledged", 1, ""))
+    titled = troupe.lead.client.put(
+        f"/troupes/{troupe.id}/characters/{lucien}/titles", json={"titles": ["Prince"]}
+    )
+    assert titled.status_code == 200, titled.text
+
+    # Chosen from the NPC list, alone or with player characters.
+    chosen = troupe.assistant.client.get(
+        f"/troupes/{troupe.id}/badges", params={"characters": [lucien, agnes]}
+    )
+    assert chosen.status_code == 200, chosen.text
+    badge = chosen.json()["badges"][0]
+    assert [b["name"] for b in chosen.json()["badges"]] == ["Lucien", "Agnes"]
+    assert (badge["clan"], badge["titles"], badge["status"]) == (
+        "Ventrue",
+        ["Prince"],
+        ["Acknowledged"],
+    )
+    # From its own page, with the titles it holds in its troupe.
+    one = troupe.storyteller.client.get(f"/characters/{lucien}/badge").json()
+    assert one["troupe_name"] == "Lords of the Night"
+    assert one["badges"][0] == badge
