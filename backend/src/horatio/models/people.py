@@ -31,6 +31,9 @@ class User(Imported, Record):
     # The Discord username the player gives, such as "mrcarbuncle". Not checked
     # against Discord; `discord_user_id` is the account they sign in with.
     discord_handle: Mapped[str | None]
+    # Their settings (horatio.preferences): only those they have changed, so a
+    # default can change later for everyone who kept it.
+    preferences: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class AuthIdentity(Record):
