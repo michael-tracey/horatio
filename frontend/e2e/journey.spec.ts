@@ -1283,7 +1283,10 @@ test("notifications by email: a choice per kind, once the server can send email"
   const downtime = page.getByRole("radiogroup", { name: "Downtime results" });
   await expect(downtime.getByRole("radio", { name: "Bell only" })).toHaveAttribute("aria-checked", "true");
   await downtime.getByRole("radio", { name: "Bell and email" }).click();
-  await page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" }).click();
+  await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok()),
+    page.getByRole("radiogroup", { name: "Send emails" }).getByRole("radio", { name: "Once a day" }).click(),
+  ]);
   await expect(page.getByText(/gathers them into one email at 8 am/)).toBeVisible();
   await page.reload();
   await expect(downtime.getByRole("radio", { name: "Bell and email" })).toHaveAttribute("aria-checked", "true");
@@ -1377,11 +1380,13 @@ test("large text makes the app bigger, but not printed sheets and badges", async
 
   await page.getByRole("link", { name: "large-text" }).click();
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
+  const saved = page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
   await page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" }).click();
-  // At once, with no reload, and still after one.
+  // At once, with no reload, and still after one (once it has saved).
   await expect.poll(fontSize).not.toBe(normal);
   const large = await fontSize();
   expect(parseFloat(large) / parseFloat(normal)).toBeCloseTo(1.15);
+  await saved;
   await page.reload();
   await expect(page.getByRole("radiogroup", { name: "Text size" }).getByRole("radio", { name: "Large" })).toHaveAttribute("aria-checked", "true");
   await expect.poll(fontSize).toBe(large);
