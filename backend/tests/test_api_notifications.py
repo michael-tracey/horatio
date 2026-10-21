@@ -77,7 +77,7 @@ def test_a_task_goes_when_the_work_is_done(troupe: Troupe) -> None:
 
 def test_tasks_come_from_every_troupe_the_person_runs(troupe: Troupe) -> None:
     other = troupe.custodian.client.post(
-        "/troupes", json={"name": "Second City", "lead_email": troupe.assistant.email}
+        "/troupes", json={"name": "Second City", "lead_handle": troupe.assistant.handle}
     ).json()["id"]
     first = new_character(troupe, troupe.player, "Agnes")
     second = new_character(troupe, troupe.player, "Bertrand")

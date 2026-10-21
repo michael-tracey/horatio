@@ -1514,6 +1514,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/handle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Handle
+         * @description Change the signed-in person's handle: at most once in 30 days, and to one no
+         *     one has or has held in the last 90.
+         */
+        put: operations["change_handle_api_handle_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/handles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find Handles
+         * @description People whose handle starts with `q`, then those whose name has it in it,
+         *     for picking someone as you type.
+         */
+        get: operations["find_handles_api_handles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -1595,7 +1637,7 @@ export interface paths {
         };
         /**
          * Find Players
-         * @description Every account whose name or email has `q` in it, for the custodian.
+         * @description Every account whose name, handle or email has `q` in it, for the custodian.
          */
         get: operations["find_players_api_players_get"];
         put?: never;
@@ -3665,6 +3707,11 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HandleIn */
+        HandleIn: {
+            /** Handle */
+            handle: string;
+        };
         /** Health */
         Health: {
             /** Levels */
@@ -3850,6 +3897,8 @@ export interface components {
             display_name: string;
             /** Email */
             email: string;
+            /** Handle */
+            handle: string;
             /**
              * Id
              * Format: uuid
@@ -3857,6 +3906,8 @@ export interface components {
             id: string;
             /** Is Custodian */
             is_custodian: boolean;
+            /** Next Handle Change */
+            next_handle_change: string | null;
             preferences: components["schemas"]["Preferences"];
         };
         /** MembershipOut */
@@ -3948,11 +3999,8 @@ export interface components {
         };
         /** NewLead */
         NewLead: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
+            /** Handle */
+            handle: string;
         };
         /** NewNpc */
         NewNpc: {
@@ -3988,11 +4036,8 @@ export interface components {
              * @default
              */
             description: string;
-            /**
-             * Lead Email
-             * Format: email
-             */
-            lead_email: string;
+            /** Lead Handle */
+            lead_handle: string;
             /** Name */
             name: string;
         };
@@ -4269,6 +4314,8 @@ export interface components {
             display_name: string;
             /** Email */
             email: string | null;
+            /** Handle */
+            handle: string;
             /**
              * Id
              * Format: uuid
@@ -4292,6 +4339,8 @@ export interface components {
             display_name: string;
             /** Email */
             email: string;
+            /** Handle */
+            handle: string;
             /**
              * Id
              * Format: uuid
@@ -4815,6 +4864,8 @@ export interface components {
             kind: string;
             /** Picture */
             picture: string | null;
+            /** Player Handle */
+            player_handle: string | null;
             /** Player Id */
             player_id: string | null;
             /** Player Name */
@@ -4948,11 +4999,8 @@ export interface components {
         };
         /** SignIn */
         SignIn: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
+            /** Login */
+            login: string;
             /** Password */
             password: string;
         };
@@ -4965,16 +5013,30 @@ export interface components {
              * Format: email
              */
             email: string;
+            /** Handle */
+            handle?: string | null;
             /** Password */
             password: string;
         };
+        /**
+         * Someone
+         * @description A person as others find them: never their email.
+         */
+        Someone: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
         /** StaffAssignment */
         StaffAssignment: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
+            /** Handle */
+            handle: string;
             role: components["schemas"]["Role"];
         };
         /** StaffBadgeOut */
@@ -4984,10 +5046,19 @@ export interface components {
             /** Role */
             role: string;
         };
+        /** StaffBadgesOut */
+        StaffBadgesOut: {
+            /** Staff */
+            staff: components["schemas"]["StaffBadgeOut"][];
+            /** Troupe Name */
+            troupe_name: string;
+        };
         /** StaffMember */
         StaffMember: {
             /** Display Name */
             display_name: string;
+            /** Handle */
+            handle: string;
             role: components["schemas"]["Role"];
             /**
              * User Id
@@ -5370,6 +5441,8 @@ export interface components {
             note: string;
             /** Reason */
             reason: string;
+            /** Requester Handle */
+            requester_handle: string;
             /**
              * Requester Id
              * Format: uuid
@@ -8495,6 +8568,70 @@ export interface operations {
             };
         };
     };
+    change_handle_api_handle_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    find_handles_api_handles_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Someone"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health_api_health_get: {
         parameters: {
             query?: never;
@@ -10666,7 +10803,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StaffBadgeOut"][];
+                    "application/json": components["schemas"]["StaffBadgesOut"];
                 };
             };
             /** @description Validation Error */

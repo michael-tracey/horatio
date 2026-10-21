@@ -8,6 +8,7 @@ import { CharactersPage } from "./pages/CharactersPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
+import { useTextSize } from "./textSize";
 
 // The bigger pages load when first opened, so the first visit (signing in, the
 // character list) downloads less.
@@ -36,6 +37,7 @@ function RequireSignIn() {
 }
 
 export function App() {
+  useTextSize();
   return (
     <Routes>
       {/* The printed sheet stands alone: no header, black on white. So does the

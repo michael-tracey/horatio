@@ -5,10 +5,11 @@ import { api, unwrap } from "../../api/client";
 import type { LiveReset, PlayerSummary } from "../../api/types";
 import { LogList } from "../../components/LogList";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
+import { useDates } from "../../dates";
 import { memberSince } from "../players";
-import { ResetPassword, useCancelReset, when } from "./ResetPassword";
+import { ResetPassword, useCancelReset } from "./ResetPassword";
 
-/** Every account, for the custodian: find someone by name or email, open their
+/** Every account, for the custodian: find someone by name, handle or email, open their
  * profile, or reset their password here. Below, the reset links out now and who
  * has reset their password. */
 export function PeopleTab() {
@@ -22,7 +23,7 @@ export function PeopleTab() {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <Input type="search" aria-label="Search people" placeholder="Name or email…" value={q} onChange={(e) => setQ(e.target.value)} className="mb-3" />
+        <Input type="search" aria-label="Search people" placeholder="Name, handle or email…" value={q} onChange={(e) => setQ(e.target.value)} className="mb-3" />
         {people.isPending ? (
           <Loading />
         ) : people.data?.length ? (
@@ -43,13 +44,14 @@ export function PeopleTab() {
 
 function Person({ person }: { person: PlayerSummary }) {
   const [open, setOpen] = useState(false);
+  const dates = useDates();
   return (
     <li className="py-2">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <Link to={`/players/${person.id}`} className="flex min-w-0 flex-col gap-0.5 hover:text-gold sm:flex-row sm:items-center sm:gap-3">
           <span>{person.display_name}</span>
           <span className="text-xs break-all text-mist">
-            {person.email} · since {memberSince(person.member_since)}
+            @{person.handle} · {person.email} · since {memberSince(person.member_since, dates)}
           </span>
         </Link>
         <span className="flex items-center gap-2">
@@ -114,6 +116,7 @@ function PasswordResets() {
 
 function LiveLink({ reset }: { reset: LiveReset }) {
   const cancel = useCancelReset(reset.user_id);
+  const dates = useDates();
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
       <span>
@@ -121,7 +124,7 @@ function LiveLink({ reset }: { reset: LiveReset }) {
           {reset.display_name}
         </Link>{" "}
         <span className="text-xs text-mist">
-          until {when(reset.expires_at)}, {reset.asked_themselves ? "asked for by them" : `made by ${reset.made_by}`}
+          until {dates.dateTime(reset.expires_at)}, {reset.asked_themselves ? "asked for by them" : `made by ${reset.made_by}`}
         </span>
       </span>
       <Button

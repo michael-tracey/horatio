@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Preferences } from "../../api/types";
-import { Card, ErrorText, Select } from "../../components/ui";
-import { usePreferences, useSetPreferences } from "../../hooks";
+import { Card, ErrorText, Input } from "../../components/ui";
+import { deviceZone, useDates } from "../../dates";
+import { usePreferences, useSavingPreferences, useSetPreferences } from "../../hooks";
 import { EmailNotifications } from "./EmailNotifications";
+import { HandleCard } from "./HandleCard";
 
 type Key = keyof Preferences;
 
@@ -55,24 +57,68 @@ function Toggle({ name, label }: { name: "quick_notes" | "keep_awake"; label: st
   );
 }
 
-function deviceZone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+/** Every IANA zone this browser knows, such as "America/New_York". */
+function allZones(): string[] {
+  const zones = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
+  return [...new Set([...zones, "UTC", deviceZone()])].sort();
 }
 
+/** The zone times show in: type to search the list, or leave it empty to follow this device. */
 function TimeZone() {
   const prefs = usePreferences();
   const set = useSetPreferences();
-  const zones = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [deviceZone()];
+  const zones = useMemo(allZones, []);
+  const saved = prefs.time_zone ?? "";
+  const [text, setText] = useState(saved);
+  useEffect(() => setText(saved), [saved]);
+  const choose = (zone: string | null) => {
+    if (zone !== prefs.time_zone) set.mutate({ time_zone: zone });
+  };
   return (
-    <Select aria-label="Time zone" value={prefs.time_zone ?? ""} onChange={(e) => set.mutate({ time_zone: e.target.value || null })} className="max-w-64 text-sm">
-      <option value="">This device's ({deviceZone()})</option>
-      {zones.map((z) => (
-        <option key={z} value={z}>
-          {z.replaceAll("_", " ")}
-        </option>
-      ))}
-    </Select>
+    <span className="flex flex-col items-start gap-1 sm:items-end">
+      <Input
+        type="search"
+        aria-label="Time zone"
+        list="time-zones"
+        placeholder={`This device's (${deviceZone()})`}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          if (zones.includes(e.target.value)) choose(e.target.value);
+        }}
+        // Left empty, times follow the device; left half-typed, the zone stays as it was.
+        onBlur={() => (text.trim() ? setText(saved) : choose(null))}
+        className="w-64 max-w-full text-sm"
+      />
+      <datalist id="time-zones">
+        {zones.map((z) => (
+          <option key={z} value={z} />
+        ))}
+      </datalist>
+      {prefs.time_zone && (
+        <button type="button" className="text-xs text-mist underline hover:text-parchment" onClick={() => choose(null)}>
+          Use this device's
+        </button>
+      )}
+    </span>
   );
+}
+
+/** The time now, as a downtime's deadline would show it with these settings. */
+function DeadlineNow() {
+  const dates = useDates();
+  return <span className="text-sm text-parchment">{dates.deadline(new Date())}</span>;
+}
+
+/** True once `on` has stayed true for `ms`, so a quick save doesn't flash. */
+function useAfter(on: boolean, ms: number): boolean {
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    if (!on) return setLate(false);
+    const timer = setTimeout(() => setLate(true), ms);
+    return () => clearTimeout(timer);
+  }, [on, ms]);
+  return on && late;
 }
 
 /**
@@ -81,8 +127,15 @@ function TimeZone() {
  */
 export function SettingsPage() {
   const set = useSetPreferences();
+  // Every control waits while a change is saved, so changes reach the server one
+  // at a time and none is lost.
+  const saving = useSavingPreferences();
+  const slow = useAfter(saving, 200);
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <fieldset disabled={saving} aria-busy={saving} className={`grid min-w-0 gap-6 md:grid-cols-2 ${slow ? "cursor-wait opacity-60" : ""}`}>
+      <p role="status" className="pointer-events-none fixed bottom-4 right-4 text-sm text-mist">
+        {slow ? "Saving…" : ""}
+      </p>
       <Card title="Sheets">
         <Setting label="Show ratings as" hint="On character sheets, the Play View and printed sheets.">
           <Choice
@@ -104,7 +157,7 @@ export function SettingsPage() {
             ]}
           />
         </Setting>
-        <Setting label="Badge size" hint="To fit your badge holders.">
+        <Setting label="Badge size" hint="To fit your badge holders. You can pick another size when you print.">
           <Choice
             name="badge_size"
             label="Badge size"
@@ -143,13 +196,19 @@ export function SettingsPage() {
             ]}
           />
         </Setting>
+        <Setting label="Deadlines show as" hint="With their zone, so players elsewhere agree on them.">
+          <DeadlineNow />
+        </Setting>
       </Card>
 
       <Card title="At game">
         <Setting label="Quick notes" hint="The Play View asks what each spend was for.">
           <Toggle name="quick_notes" label="Quick notes" />
         </Setting>
-        <Setting label="Keep the screen awake" hint="While the Play View is open. Uses more battery.">
+        <Setting
+          label="Keep the screen awake"
+          hint={"wakeLock" in navigator ? "While the Play View is open. Uses more battery." : "While the Play View is open. This browser can't, but your phone's may."}
+        >
           <Toggle name="keep_awake" label="Keep the screen awake" />
         </Setting>
         <Setting label="The Play View opens on">
@@ -166,7 +225,7 @@ export function SettingsPage() {
       </Card>
 
       <Card title="Appearance">
-        <Setting label="Text size">
+        <Setting label="Text size" hint="Everywhere but printed sheets and badges.">
           <Choice
             name="text_size"
             label="Text size"
@@ -188,11 +247,11 @@ export function SettingsPage() {
         </Setting>
       </Card>
 
-      {/* #103: your handle goes here. */}
+      <HandleCard />
 
       <EmailNotifications />
 
       <ErrorText error={set.error} />
-    </div>
+    </fieldset>
   );
 }

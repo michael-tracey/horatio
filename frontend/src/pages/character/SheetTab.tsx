@@ -20,11 +20,11 @@ import {
   Rating,
   Select,
 } from "../../components/ui";
-import { SplitLink } from "../../components/SplitLink";
 import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
+import { pipsOf } from "../../ratings";
 import { AddTraitPanel } from "./AddTraitPanel";
-import { BadgeButton } from "./Badge";
+import { PrintAndBadge } from "./Badge";
 import { rulesTroupe } from "./rules";
 import {
   NEEDS_FIELD,
@@ -399,18 +399,7 @@ export function SheetTab({
         {!s.traits.some((t) => t.id === lastTrait) && outcome}
       </div>
       <aside className="flex flex-col gap-3">
-        <div className={badge ? "grid grid-cols-2 gap-2 [&>button]:w-full" : "grid"}>
-          <SplitLink
-            to={`/print/characters/${character.id}`}
-            label="Print"
-            menuLabel="Print with numbers or pips"
-            choices={[
-              { to: `/print/characters/${character.id}`, label: "Numbers" },
-              { to: `/print/characters/${character.id}?ratings=pips`, label: "Pips" },
-            ]}
-          />
-          {badge && <BadgeButton character={character} />}
-        </div>
+        <PrintAndBadge character={character} badge={badge} />
         <Card dense title="Experience">
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
@@ -577,7 +566,7 @@ function TraitRow({
       </span>
       {trait.rating !== null && (
         <span className="flex shrink-0 items-center gap-2">
-          <Rating value={trait.rating} pendingFrom={trait.pending_from} />
+          <Rating value={trait.rating} pendingFrom={trait.pending_from} of={pipsOf(trait.category)} />
           {!locked && (
             <span className="flex gap-1">
               <button

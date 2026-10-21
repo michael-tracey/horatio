@@ -42,7 +42,7 @@ def at_home(troupe: Troupe, name: str = "Agnes Moreau", player: Person | None = 
 
 def other_troupe(troupe: Troupe, name: str = "Elsewhere") -> str:
     response = troupe.custodian.client.post(
-        "/troupes", json={"name": name, "lead_email": troupe.stranger.email}
+        "/troupes", json={"name": name, "lead_handle": troupe.stranger.handle}
     )
     assert response.status_code == 201, response.text
     return response.json()["id"]

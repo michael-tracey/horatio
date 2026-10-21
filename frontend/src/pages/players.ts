@@ -1,7 +1,9 @@
+import type { Dates } from "../dates";
+
 /** "March 2019 (7 years)": when a player joined, and how long ago. */
-export function memberSince(joined: string, now: Date = new Date()): string {
+export function memberSince(joined: string, dates: Dates, now: Date = new Date()): string {
   const at = new Date(joined);
-  const month = at.toLocaleDateString(undefined, { year: "numeric", month: "long" });
+  const month = dates.month(at);
   const months = (now.getFullYear() - at.getFullYear()) * 12 + now.getMonth() - at.getMonth() - (now.getDate() < at.getDate() ? 1 : 0);
   const years = Math.floor(months / 12);
   const span =

@@ -16,7 +16,7 @@ def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
 
 def test_only_the_custodian_creates_troupes(troupe: Troupe) -> None:
     response = troupe.lead.client.post(
-        "/troupes", json={"name": "Mine", "lead_email": troupe.lead.email}
+        "/troupes", json={"name": "Mine", "lead_handle": troupe.lead.handle}
     )
 
     assert response.status_code == 403
@@ -62,12 +62,12 @@ def test_storytellers_manage_staff_but_assistants_and_narrators_do_not(troupe: T
     newcomer = sign_up(troupe.client_for, "newcomer")
     for person in (troupe.assistant, troupe.narrator, troupe.player):
         response = person.client.put(
-            f"/troupes/{troupe.id}/staff", json={"email": newcomer.email, "role": "narrator"}
+            f"/troupes/{troupe.id}/staff", json={"handle": newcomer.handle, "role": "narrator"}
         )
         assert response.status_code == 403
 
     response = troupe.storyteller.client.put(
-        f"/troupes/{troupe.id}/staff", json={"email": newcomer.email, "role": "narrator"}
+        f"/troupes/{troupe.id}/staff", json={"handle": newcomer.handle, "role": "narrator"}
     )
 
     assert response.status_code == 200
@@ -89,12 +89,12 @@ def test_all_staff_can_see_the_staff_list_but_players_cannot(troupe: Troupe) -> 
 def test_the_lead_role_is_not_handed_out_as_staff(troupe: Troupe) -> None:
     response = troupe.lead.client.put(
         f"/troupes/{troupe.id}/staff",
-        json={"email": troupe.player.email, "role": "lead_storyteller"},
+        json={"handle": troupe.player.handle, "role": "lead_storyteller"},
     )
     assert response.status_code == 422
 
     response = troupe.storyteller.client.put(
-        f"/troupes/{troupe.id}/staff", json={"email": troupe.lead.email, "role": "narrator"}
+        f"/troupes/{troupe.id}/staff", json={"handle": troupe.lead.handle, "role": "narrator"}
     )
     assert response.status_code == 409
 
@@ -102,13 +102,13 @@ def test_the_lead_role_is_not_handed_out_as_staff(troupe: Troupe) -> None:
 def test_the_custodian_appoints_a_new_lead(troupe: Troupe) -> None:
     assert (
         troupe.lead.client.put(
-            f"/troupes/{troupe.id}/lead", json={"email": troupe.storyteller.email}
+            f"/troupes/{troupe.id}/lead", json={"handle": troupe.storyteller.handle}
         ).status_code
         == 403
     )
 
     response = troupe.custodian.client.put(
-        f"/troupes/{troupe.id}/lead", json={"email": troupe.storyteller.email}
+        f"/troupes/{troupe.id}/lead", json={"handle": troupe.storyteller.handle}
     )
 
     assert response.status_code == 200

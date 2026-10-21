@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, unwrap } from "./api/client";
 import type { Me, Preferences } from "./api/types";
 
@@ -44,11 +44,20 @@ export function usePreferences(): Preferences {
   return me.data?.preferences ?? DEFAULT_PREFERENCES;
 }
 
+const PREFERENCES = ["preferences"];
+
+/** Whether a change to the settings is still on its way to the server. The
+ * server merges each change into what it read, so two at once could lose one. */
+export function useSavingPreferences(): boolean {
+  return useIsMutating({ mutationKey: PREFERENCES }) > 0;
+}
+
 /** Change some settings. Takes effect at once: the page shows them before the
  * server answers, and goes back if it refuses. */
 export function useSetPreferences() {
   const client = useQueryClient();
   return useMutation({
+    mutationKey: PREFERENCES,
     mutationFn: (changes: Partial<Preferences>) => unwrap(api.PATCH("/api/preferences", { body: changes })),
     onMutate: async (changes) => {
       await client.cancelQueries({ queryKey: ["me"] });

@@ -158,7 +158,7 @@ def test_npc_ratings_are_still_checked_against_the_catalogue(troupe: Troupe) -> 
 def test_npcs_spend_no_xp_need_no_approval_and_stay_home(troupe: Troupe) -> None:
     npc = make_npc(troupe)["id"]
     other = troupe.custodian.client.post(
-        "/troupes", json={"name": "Elsewhere", "lead_email": troupe.storyteller.email}
+        "/troupes", json={"name": "Elsewhere", "lead_handle": troupe.storyteller.handle}
     ).json()["id"]
     client = troupe.storyteller.client
 

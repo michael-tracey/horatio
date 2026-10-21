@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
+import { AtHandle } from "../../components/PersonPicker";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
@@ -52,7 +53,7 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
   const matched = sent.items.length ? new Map((search.data ?? []).map((m) => [m.character_id, m.values])) : null;
   const q = query.trim().toLowerCase();
   const shown = everyone.filter(
-    (e) => (!matched || matched.has(e.character_id)) && (!q || `${e.character_name} ${e.player_name}`.toLowerCase().includes(q)),
+    (e) => (!matched || matched.has(e.character_id)) && (!q || `${e.character_name} ${e.player_name} ${e.player_handle ?? ""}`.toLowerCase().includes(q)),
   );
   const names: Names = {
     category: (key) => catalogue.data?.categories.find((c) => c.key === key)?.name ?? key,
@@ -220,7 +221,7 @@ function RosterRow({
         </Link>
         {entry.player_id && (
           <Link to={`/players/${entry.player_id}`} className="truncate text-xs text-mist hover:text-gold">
-            {entry.player_name}
+            {entry.player_name} {entry.player_handle && <AtHandle handle={entry.player_handle} />}
           </Link>
         )}
       </span>

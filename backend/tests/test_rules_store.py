@@ -24,7 +24,7 @@ def normalised(rules: Sequence[CostRuleData]) -> list[str]:
 
 
 def make_troupe(session: Session, name: str) -> Troupe:
-    lead = User(email=f"lead-{name}@example.com", display_name=name)
+    lead = User(email=f"lead-{name}@example.com", display_name=name, handle=f"lead-{name}")
     session.add(lead)
     session.flush()
     troupe = Troupe(name=name, lead_user_id=lead.id)

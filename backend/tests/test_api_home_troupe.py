@@ -65,7 +65,7 @@ def house_rule(session: Session, troupe: Troupe, rule: CostRuleData) -> None:
 
 def second_troupe(troupe: Troupe) -> str:
     response = troupe.custodian.client.post(
-        "/troupes", json={"name": "Second City", "lead_email": troupe.storyteller.email}
+        "/troupes", json={"name": "Second City", "lead_handle": troupe.storyteller.handle}
     )
     assert response.status_code == 201, response.text
     return response.json()["id"]
@@ -285,7 +285,7 @@ def test_only_the_new_troupes_running_staff_decide(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     other = sign_up(troupe.client_for, "other-lead")
     other_troupe = troupe.custodian.client.post(
-        "/troupes", json={"name": "Elsewhere", "lead_email": other.email}
+        "/troupes", json={"name": "Elsewhere", "lead_handle": other.handle}
     ).json()["id"]
     request_home(troupe.player, character_id, troupe.id)
     approval_id = queue(troupe.lead, troupe.id)[0]["id"]

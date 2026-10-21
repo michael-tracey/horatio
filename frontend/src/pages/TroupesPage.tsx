@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../api/client";
+import { PersonPicker } from "../components/PersonPicker";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Textarea } from "../components/ui";
+import { useDates } from "../dates";
 import { useAction, useMe } from "../hooks";
 import { roleLabel } from "./troupe/roles";
-import { requestStatus, when } from "./troupeRequests";
+import { requestStatus } from "./troupeRequests";
 
 export function TroupesPage() {
   const me = useMe();
@@ -48,10 +50,10 @@ export function TroupesPage() {
 }
 
 function NewTroupe() {
-  const [form, setForm] = useState({ name: "", description: "", lead_email: "" });
+  const [form, setForm] = useState({ name: "", description: "", lead_handle: "" });
   const create = useAction(async () => {
     await unwrap(api.POST("/api/troupes", { body: form }));
-    setForm({ name: "", description: "", lead_email: "" });
+    setForm({ name: "", description: "", lead_handle: "" });
   });
   return (
     <Card title="New troupe">
@@ -68,8 +70,8 @@ function NewTroupe() {
         <Field label="Description">
           <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </Field>
-        <Field label="Lead storyteller's email" hint="They need an account already.">
-          <Input type="email" required value={form.lead_email} onChange={(e) => setForm({ ...form, lead_email: e.target.value })} />
+        <Field label="Lead storyteller" hint="Type a handle or a name to find them. They need an account already.">
+          <PersonPicker required value={form.lead_handle} onChange={(lead_handle) => setForm({ ...form, lead_handle })} />
         </Field>
         <ErrorText error={create.error} />
         <Button type="submit" disabled={create.isPending}>
@@ -117,6 +119,7 @@ function AskForTroupe() {
 }
 
 function MyRequests() {
+  const dates = useDates();
   const mine = useQuery({ queryKey: ["troupe-requests", "mine"], queryFn: () => unwrap(api.GET("/api/troupe-requests/mine")) });
   const withdraw = useAction((id: string) => unwrap(api.DELETE("/api/troupe-requests/{request_id}", { params: { path: { request_id: id } } })));
   const shown = mine.data?.filter((r) => r.status !== "withdrawn") ?? [];
@@ -137,8 +140,8 @@ function MyRequests() {
               <Badge tone={r.status === "approved" ? "gold" : r.status === "declined" ? "blood" : "mist"}>{requestStatus(r.status)}</Badge>
             </div>
             <span className="text-xs text-mist">
-              Asked {when(r.created_at)}
-              {r.decided_at && `; ${requestStatus(r.status).toLowerCase()} ${when(r.decided_at)}`}
+              Asked {dates.date(r.created_at)}
+              {r.decided_at && `; ${requestStatus(r.status).toLowerCase()} ${dates.date(r.decided_at)}`}
             </span>
             {r.reason && <span className="text-xs text-mist">“{r.reason}”</span>}
             {r.status === "pending" && (

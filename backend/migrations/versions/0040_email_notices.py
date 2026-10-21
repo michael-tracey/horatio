@@ -1,7 +1,7 @@
 """notifications waiting to go by email, and the key that signs their unsubscribe links
 
 Revision ID: 0040
-Revises: 0038
+Revises: 0039
 Create Date: 2026-10-20 20:00:00.000000
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0040"
-down_revision: str | None = "0038"
+down_revision: str | None = "0039"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
