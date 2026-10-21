@@ -25,6 +25,8 @@ import { useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
 import { AddTraitPanel } from "./AddTraitPanel";
 import { PrintAndBadge } from "./Badge";
+import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart, type Cart } from "./cart";
+import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
 import { rulesTroupe } from "./rules";
 import {
   NEEDS_FIELD,
@@ -32,14 +34,6 @@ import {
   SpecializationRow,
   useSpecializations,
 } from "./Specializations";
-
-type TraitChange = {
-  category: string;
-  name: string;
-  detail: string;
-  rating: number | null;
-  teacher?: string;
-};
 
 function useSheet(characterId: string) {
   return useQuery({
@@ -135,51 +129,47 @@ export function SheetTab({
   const sheet = useSheet(character.id);
   const catalogue = useCatalogue(character);
   const creation = useCreation(character);
-  const [message, setMessage] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
-  // The trait last raised, lowered or swapped: what came of it shows under its row.
-  const [lastTrait, setLastTrait] = useState<string | null>(null);
   const kinds = useSpecializations(character.id);
-
-  const swap = useAction(
-    async (body: { category: string; from_name: string; to_name: string }) => {
-      const result = await unwrap(
-        api.POST("/api/characters/{character_id}/traits/change", {
-          params: { path: { character_id: character.id } },
-          body,
-        }),
-      );
-      setMessage(`Spent ${result.cost} XP.`);
-      return result;
-    },
-  );
-  const change = useAction(async (body: TraitChange) => {
-    const result = await unwrap(
-      api.PUT("/api/characters/{character_id}/traits", {
-        params: { path: { character_id: character.id } },
-        body: { teacher: "", ...body },
-      }),
-    );
-    setMessage(
-      result.cost > 0
-        ? `Spent ${result.cost} XP.`
-        : result.cost < 0
-          ? `Gained ${-result.cost} XP.`
-          : null,
-    );
-    return result;
-  });
+  // Changes wait in the cart until Spend XP; only the player has one.
+  const cart = useCart(character.id);
+  const shopping = mine && character.kind === "pc";
+  const prices = useCartPrices(character.id, shopping ? cart.lines : []);
+  useLeaveWarning(shopping && cart.lines.length > 0);
 
   if (sheet.isPending) return <Loading />;
   if (sheet.error) return <ErrorText error={sheet.error} />;
   const s = sheet.data;
-  const failed = change.error ?? swap.error;
-  const outcome = failed ? <ErrorText error={failed} /> : message ? <Notice>{message}</Notice> : null;
   // Only a home troupe request locks the sheet: its differences must stay as they are.
   const movingHome = s.pending_approvals.some(
     (a) => a.kind === "home_troupe_change",
   );
   const locked = !mine || movingHome || s.status === "retired";
+  const lines = shopping ? cart.lines : [];
+  // Traits the cart adds show on the sheet too, not yet spent.
+  const adds: SheetTraitOut[] = added(lines, s.traits).flatMap((l) => {
+    const c = catalogue.data?.categories.find((c) => c.key === l.category);
+    return c
+      ? [
+          {
+            id: `cart/${l.category}/${l.name}/${l.detail}`,
+            category: l.category,
+            category_name: c.name,
+            group: c.group,
+            name: l.name,
+            detail: l.detail,
+            rating: 0,
+            free_rating: 0,
+            min_rating: 0,
+            pending_from: null,
+            granted_rating: 0,
+            granted_by: [],
+            note: "",
+          },
+        ]
+      : [];
+  });
+  const inCart = (t: SheetTraitOut) => t.id.startsWith("cart/");
   // Identity (clan, sect...) is shown with the name, in the page title.
   // Specialisations show under their skill or background, not as traits of their own,
   // and health levels as boxes in a part of their own.
@@ -187,7 +177,7 @@ export function SheetTab({
     catalogue.data?.categories.filter((c) => c.specializes).map((c) => c.key),
   );
   const groups = groupTraits(
-    s.traits.filter(
+    [...s.traits, ...adds].filter(
       (t) =>
         t.rating !== null &&
         !specCategories.has(t.category) &&
@@ -196,7 +186,7 @@ export function SheetTab({
     catalogue.data,
   );
   const kindOf = (t: SheetTraitOut) =>
-    kinds.data?.find(
+    inCart(t) ? undefined : kinds.data?.find(
       (k) => k.parent_category === t.category && k.parent_name === t.name,
     );
   const addable = addableByGroup(catalogue.data);
@@ -246,9 +236,11 @@ export function SheetTab({
   const healthAfter = catalogue.data?.categories.find(
     (c) => c.key === "health_levels",
   )?.group;
+  const showCart = shopping && (!locked || lines.length > 0);
+  const left = prices.totals?.left;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
+    <div className={`grid gap-4 lg:grid-cols-[1fr_18rem] ${showCart && lines.length ? "pb-16 lg:pb-0" : ""}`}>
       <div className="flex flex-col gap-3">
         {mine &&
           character.kind === "pc" &&
@@ -257,6 +249,9 @@ export function SheetTab({
             <CreationPanel
               character={character}
               creation={creation.data}
+              catalogue={catalogue.data}
+              held={s.traits}
+              cart={cart}
               locked={locked}
             />
           )}
@@ -305,11 +300,8 @@ export function SheetTab({
                   character={character}
                   catalogue={catalogue.data}
                   categories={addable.get(group) ?? []}
-                  held={s.traits}
-                  onDone={(done) => {
-                    setLastTrait(null);
-                    setMessage(done);
-                  }}
+                  held={[...s.traits, ...adds]}
+                  onAdd={(trait) => cart.update((l) => setRating(l, { ...trait, rating: 0 }, trait.rating))}
                   onClose={() => setAdding(null)}
                 />
               )}
@@ -338,34 +330,20 @@ export function SheetTab({
                           trait={t}
                           locked={locked || derived.has(t.category)}
                           points={pointsOf(t)}
-                          onChange={(rating) => {
-                            setLastTrait(t.id);
-                            change.mutate({
-                              category: t.category,
-                              name: t.name,
-                              detail: t.detail,
-                              rating,
-                            });
-                          }}
+                          planned={plannedRating(lines, t)}
+                          swappedTo={swappedTo(lines, t.category, t.name)}
+                          onChange={(rating) =>
+                            cart.update((l) =>
+                              setRating(l, { ...t, rating: t.rating ?? 0, fixed: pointsOf(t) !== null }, rating),
+                            )
+                          }
                           swap={
                             character.creation_complete && catalogue.data
                               ? swapOptions(t, s.traits, catalogue.data)
                               : null
                           }
-                          onSwap={(to) => {
-                            setLastTrait(t.id);
-                            swap.mutate({
-                              category: t.category,
-                              from_name: t.name,
-                              to_name: to,
-                            });
-                          }}
+                          onSwap={(to) => cart.update((l) => swap(l, t.category, t.name, to))}
                         />,
-                        lastTrait === t.id && (
-                          <li key={`${t.id}/outcome`} className="pb-1">
-                            {outcome}
-                          </li>
-                        ),
                         kindOf(t) && (
                           <SpecializationRow
                             key={`${t.id}/specs`}
@@ -376,6 +354,7 @@ export function SheetTab({
                         ),
                         mine &&
                           !locked &&
+                          !inCart(t) &&
                           t.category === "skills" &&
                           NEEDS_FIELD.has(t.name) &&
                           !t.detail && (
@@ -395,8 +374,6 @@ export function SheetTab({
           ])}
           {!parts.includes(healthAfter ?? "") && health}
         </div>
-        {/* Under the trait's row, unless it has gone (taken off the sheet). */}
-        {!s.traits.some((t) => t.id === lastTrait) && outcome}
       </div>
       <aside className="flex flex-col gap-3">
         <PrintAndBadge character={character} badge={badge} />
@@ -405,8 +382,11 @@ export function SheetTab({
             <div>
               <dt className="text-xs text-mist">Available</dt>
               <dd className="font-display text-2xl text-gold">
-                {s.xp.balance}
+                {lines.length > 0 && left != null ? left : s.xp.balance}
               </dd>
+              {lines.length > 0 && left != null && (
+                <dd className="text-xs leading-tight text-gold">after these changes</dd>
+              )}
             </div>
             <div>
               <dt className="text-xs text-mist">Earned</dt>
@@ -432,6 +412,14 @@ export function SheetTab({
             </ul>
           )}
         </Card>
+        {showCart && (
+          <CartPanel
+            character={character}
+            cart={cart}
+            balance={s.xp.balance}
+            creating={!character.creation_complete}
+          />
+        )}
         {(character.creation_complete || !mine) && (
           <TroupesCard character={character} sheet={s} mine={mine} />
         )}
@@ -442,6 +430,7 @@ export function SheetTab({
           </Notice>
         )}
       </aside>
+      {showCart && <CartBar characterId={character.id} cart={cart} />}
     </div>
   );
 }
@@ -473,30 +462,45 @@ function TraitRow({
   swap,
   onSwap,
   points = null,
+  planned = null,
+  swappedTo = null,
 }: {
   trait: SheetTraitOut;
   locked: boolean;
   /** A merit or flaw's fixed point value: shown instead of dots. */
   points?: number | null;
-  onChange: (rating: number | null) => void;
+  /** The rating a change in the cart would give it. */
+  planned?: number | null;
+  /** What a swap in the cart would change it to. */
+  swappedTo?: string | null;
+  onChange: (rating: number) => void;
   swap: { cost: number; others: string[] } | null;
   onSwap: (to: string) => void;
 }) {
   const [swapping, setSwapping] = useState(false);
   const [to, setTo] = useState("");
   const pending = trait.pending_from !== null;
+  // Only in the cart: not on the saved sheet yet.
+  const adding = trait.id.startsWith("cart/");
   if (points !== null) {
+    const removing = planned === 0;
     return (
       <li className="flex min-h-7 items-center justify-between gap-2 text-sm">
         <span className="min-w-0">
-          {trait.name}
+          <span className={removing ? "line-through" : adding ? "text-gold" : undefined}>{trait.name}</span>
           {trait.detail && <span className="text-mist">: {trait.detail}</span>}
+          {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
         </span>
         <span className="flex shrink-0 items-center gap-2">
           <Badge tone="gold">{points}</Badge>
+          {!locked && removing && (
+            <Button variant="ghost" className="min-h-6 px-1 text-xs" onClick={() => onChange(trait.rating ?? 0)}>
+              Keep
+            </Button>
+          )}
           {!locked &&
-            trait.rating !== null &&
-            trait.rating > trait.min_rating && (
+            !removing &&
+            (adding || (trait.rating !== null && trait.rating > trait.min_rating)) && (
               <button
                 aria-label={`Remove ${trait.name}`}
                 className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment"
@@ -512,7 +516,10 @@ function TraitRow({
   if (swap && !locked) {
     return (
       <li className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span>{trait.name}</span>
+        <span>
+          {trait.name}
+          {swappedTo && <span className="text-gold"> → {swappedTo}</span>}
+        </span>
         {swapping ? (
           <span className="flex items-center gap-1">
             <Select
@@ -529,12 +536,13 @@ function TraitRow({
             <Button
               variant="secondary"
               disabled={!to}
+              title={`Changing it costs ${swap.cost} XP.`}
               onClick={() => {
                 onSwap(to);
                 setSwapping(false);
               }}
             >
-              {swap.cost} XP
+              Add to cart · {swap.cost} XP
             </Button>
           </span>
         ) : (
@@ -545,10 +553,11 @@ function TraitRow({
       </li>
     );
   }
+  const current = planned ?? trait.rating ?? 0;
   return (
     <li className="flex min-h-7 items-center justify-between gap-2 text-sm">
       <span className="min-w-0">
-        <span className={pending ? "text-gold" : undefined}>{trait.name}</span>
+        <span className={pending || adding ? "text-gold" : undefined}>{trait.name}</span>
         {trait.detail && <span className="text-mist">: {trait.detail}</span>}
         {pending && (
           <span className="ml-2">
@@ -566,19 +575,19 @@ function TraitRow({
       </span>
       {trait.rating !== null && (
         <span className="flex shrink-0 items-center gap-2">
-          <Rating value={trait.rating} pendingFrom={trait.pending_from} of={pipsOf(trait.category)} />
+          <Rating value={trait.rating} pendingFrom={trait.pending_from} planned={planned} of={pipsOf(trait.category)} />
           {!locked && (
             <span className="flex gap-1">
               <button
                 aria-label={`Lower ${trait.name}`}
                 title={
-                  trait.rating <= trait.min_rating
+                  current <= trait.min_rating && !adding
                     ? "Accepted by the home troupe; only storytellers can take these dots away."
                     : undefined
                 }
                 className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment disabled:opacity-30"
-                disabled={pending || trait.rating <= trait.min_rating}
-                onClick={() => onChange(trait.rating! - 1)}
+                disabled={pending || current <= trait.min_rating}
+                onClick={() => onChange(current - 1)}
               >
                 −
               </button>
@@ -586,7 +595,7 @@ function TraitRow({
                 aria-label={`Raise ${trait.name}`}
                 className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment disabled:opacity-30"
                 disabled={pending}
-                onClick={() => onChange(trait.rating! + 1)}
+                onClick={() => onChange(current + 1)}
               >
                 +
               </button>
@@ -737,29 +746,41 @@ function TroupesCard({
   );
 }
 
+type Pool = CreationOut["pools"][number];
+
 function CreationPanel({
   character,
   creation,
+  catalogue,
+  held,
+  cart,
   locked,
 }: {
   character: CharacterOut;
   creation: CreationOut;
+  catalogue: CatalogueOut | undefined;
+  held: SheetTraitOut[];
+  cart: Cart;
   locked: boolean;
 }) {
-  const path = { params: { path: { character_id: character.id } } };
-  const remove = useAction(
-    (body: { category: string; name: string; detail: string }) =>
-      unwrap(
-        api.POST("/api/characters/{character_id}/creation/picks/remove", {
-          ...path,
-          body,
-        }),
-      ),
-  );
-  const finish = useAction(() =>
-    unwrap(api.POST("/api/characters/{character_id}/creation/complete", path)),
-  );
-  const byCategory = new Map<string, CreationOut["pools"]>();
+  const lines = cart.lines;
+  const takenBack = (p: Pool, name: string, detail: string) =>
+    lines.some((l) => l.kind === "unpick" && l.category === p.category && l.name === name && l.detail === detail);
+  // A pick goes in its category's points, or its picks at that rating.
+  const poolOf = (category: string, rating: number) =>
+    creation.pools.find((o) => o.category === category && o.kind === "points") ??
+    creation.pools.find((o) => o.category === category && o.rating === rating);
+  const cartPicks = (p: Pool) =>
+    lines.flatMap((l) => (l.kind === "pick" && poolOf(l.category, l.rating) === p ? [l] : []));
+  // The pools as the cart would leave them.
+  const used = (p: Pool) => {
+    const kept = p.traits.filter((t) => !takenBack(p, t.name, t.detail));
+    const picks = cartPicks(p);
+    return p.kind === "points"
+      ? kept.reduce((n, t) => n + t.pick, 0) + picks.reduce((n, l) => n + l.rating, 0)
+      : kept.length + picks.length;
+  };
+  const byCategory = new Map<string, Pool[]>();
   for (const p of creation.pools)
     byCategory.set(p.category_name, [
       ...(byCategory.get(p.category_name) ?? []),
@@ -767,7 +788,18 @@ function CreationPanel({
     ]);
   const left = creation.pools
     .filter((p) => p.kind === "picks")
-    .reduce((n, p) => n + p.remaining, 0);
+    .reduce((n, p) => n + Math.max(0, p.allowed - used(p)), 0);
+  // What a pool could take: traits of its category not held, nor already picked in the cart.
+  const choices = (p: Pool) => {
+    const taken = new Set([
+      ...held.filter((t) => t.category === p.category && (t.rating ?? 0) > 0).map((t) => t.name),
+      ...lines.flatMap((l) => (l.kind === "pick" && l.category === p.category ? [l.name] : [])),
+    ]);
+    const room = p.allowed - used(p);
+    return (catalogue?.traits ?? []).filter(
+      (t) => t.category === p.category && (!taken.has(t.name) || takenBack(p, t.name, "")) && (p.kind === "picks" || (t.fixed_rating ?? 1) <= room),
+    );
+  };
 
   return (
     <Card
@@ -780,6 +812,7 @@ function CreationPanel({
     >
       <p className="mb-3 text-sm text-mist">
         Characters are built in the creation wizard, one step at a time.
+        Picks placed or taken back here wait in the cart until you apply them.
         Experience can be spent once creation is finished.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -789,51 +822,92 @@ function CreationPanel({
               {category}
             </h3>
             <ul className="flex flex-col gap-1 text-sm">
-              {pools.map((p) => (
-                <li key={p.rating}>
-                  <span className={p.remaining > 0 ? "text-gold" : "text-mist"}>
-                    {p.kind === "points"
-                      ? `${p.used} of ${p.allowed} points`
-                      : `At ${p.rating}: ${p.used} of ${p.allowed}`}
-                  </span>
-                  {p.traits.map((t) => (
-                    <span
-                      key={`${t.name}/${t.detail}`}
-                      className="ml-2 inline-flex items-center gap-1"
-                    >
-                      {t.name}
-                      {t.detail && `: ${t.detail}`}
-                      {!locked && (
+              {pools.map((p) => {
+                const n = used(p);
+                const options = locked || n >= p.allowed ? [] : choices(p);
+                return (
+                  <li key={p.rating}>
+                    <span className={n < p.allowed ? "text-gold" : "text-mist"}>
+                      {p.kind === "points"
+                        ? `${n} of ${p.allowed} points`
+                        : `At ${p.rating}: ${n} of ${p.allowed}`}
+                    </span>
+                    {p.traits.map((t) =>
+                      takenBack(p, t.name, t.detail) ? (
+                        <span key={`${t.name}/${t.detail}`} className="ml-2 inline-flex items-center gap-1">
+                          <span className="text-mist line-through">
+                            {t.name}
+                            {t.detail && `: ${t.detail}`}
+                          </span>
+                          <button
+                            aria-label={`Keep the pick on ${t.name}`}
+                            className="text-xs text-gold hover:text-parchment"
+                            onClick={() => cart.update((l) => l.filter((x) => !(x.kind === "unpick" && x.category === p.category && x.name === t.name && x.detail === t.detail)))}
+                          >
+                            keep
+                          </button>
+                        </span>
+                      ) : (
+                        <span key={`${t.name}/${t.detail}`} className="ml-2 inline-flex items-center gap-1">
+                          {t.name}
+                          {t.detail && `: ${t.detail}`}
+                          {!locked && (
+                            <button
+                              aria-label={`Take back the pick on ${t.name}`}
+                              className="text-mist hover:text-blood-bright"
+                              onClick={() => cart.update((l) => unpick(l, { category: p.category, name: t.name, detail: t.detail }))}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </span>
+                      ),
+                    )}
+                    {cartPicks(p).map((l) => (
+                      <span key={`cart/${l.name}/${l.detail}`} className="ml-2 inline-flex items-center gap-1 text-gold">
+                        {l.name}
+                        <span className="text-xs">(in the cart)</span>
                         <button
-                          aria-label={`Take back the pick on ${t.name}`}
+                          aria-label={`Take the pick on ${l.name} out of the cart`}
                           className="text-mist hover:text-blood-bright"
-                          onClick={() =>
-                            remove.mutate({
-                              category: p.category,
-                              name: t.name,
-                              detail: t.detail,
-                            })
-                          }
+                          onClick={() => cart.remove(l)}
                         >
                           ×
                         </button>
-                      )}
-                    </span>
-                  ))}
-                </li>
-              ))}
+                      </span>
+                    ))}
+                    {options.length > 0 && (
+                      <Select
+                        aria-label={p.kind === "points" ? `Pick ${category}` : `Pick ${category} at ${p.rating}`}
+                        value=""
+                        onChange={(e) => {
+                          const trait = options.find((t) => t.name === e.target.value);
+                          if (trait)
+                            cart.update((l) =>
+                              pick(l, { category: p.category, name: trait.name, detail: "" }, p.kind === "points" ? (trait.fixed_rating ?? 1) : p.rating),
+                            );
+                        }}
+                        className="mt-1 min-h-8 py-1 text-sm"
+                      >
+                        <option value="">{p.kind === "points" ? "Pick one…" : `Pick one at ${p.rating}…`}</option>
+                        {options.map((t) => (
+                          <option key={t.name} value={t.name}>
+                            {t.name}
+                            {p.kind === "points" ? ` (${t.fixed_rating ?? 1})` : ""}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
       </div>
-      <ErrorText error={remove.error ?? finish.error} />
-      <Button
-        className="mt-4"
-        disabled={locked || finish.isPending}
-        onClick={() => finish.mutate(undefined)}
-      >
+      <FinishCreation character={character} cart={cart} disabled={locked} className="mt-4">
         {left > 0 ? `Finish creation (${left} picks left)` : "Finish creation"}
-      </Button>
+      </FinishCreation>
     </Card>
   );
 }

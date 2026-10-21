@@ -161,6 +161,10 @@ _Avoid_: Adjustment, correction
 A trait bought for a character, recorded with the cost paid at the time; only reconciliation can change it, never a later rule change.
 _Avoid_: Spend, buy
 
+**Cart**:
+Changes to a sheet a player has gathered on the Sheet tab but not yet made: raises, lowers, new traits, swaps and creation picks. Spend XP makes them all at once, or none if any is refused. It is kept in the player's browser, one per character.
+_Avoid_: Basket, pending changes, draft
+
 **XP Entry**:
 One line in a character's XP history: an award of XP, or a purchase.
 _Avoid_: Experience notation, XP log row

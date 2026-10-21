@@ -6,6 +6,8 @@ import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut } from
 import { Button, Card, ErrorText, Field, Loading, Notice, Select } from "../../../components/ui";
 import { useAction, useUnavailable } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
+import { useCart } from "../cart";
+import { FinishCreation } from "../CartPanel";
 import { rulesTroupe } from "../rules";
 import { quickPicks } from "../traitFilter";
 import { DotGrid, PointsList } from "./DotGrid";
@@ -347,10 +349,8 @@ function ExtraInClan({ character, sheet, catalogue }: { character: CharacterOut;
 
 function ReviewStep({ character, creation, steps }: { character: CharacterOut; creation: CreationOut; steps: Step[] }) {
   const navigate = useNavigate();
-  const finish = useAction(async () => {
-    await unwrap(api.POST("/api/characters/{character_id}/creation/complete", { params: { path: { character_id: character.id } } }));
-    navigate(`/characters/${character.id}`);
-  });
+  // Picks placed on the Sheet tab wait in the cart; finishing asks what to do with them.
+  const cart = useCart(character.id);
   const stepFor = (category: string) => steps.find((s) => s.categories.includes(category));
   const open = creation.pools.filter((p) => p.kind === "picks" && p.remaining > 0);
 
@@ -385,10 +385,9 @@ function ReviewStep({ character, creation, steps }: { character: CharacterOut; c
       ) : (
         <Notice>Everything is placed. After finishing, new dots come from experience.</Notice>
       )}
-      <ErrorText error={finish.error} />
-      <Button className="self-start" disabled={open.length > 0 || finish.isPending} onClick={() => finish.mutate(undefined)}>
+      <FinishCreation character={character} cart={cart} disabled={open.length > 0} className="self-start" onFinished={() => navigate(`/characters/${character.id}`)}>
         Finish creation
-      </Button>
+      </FinishCreation>
     </div>
   );
 }

@@ -24,6 +24,14 @@ describe("pipGroups", () => {
     // Nothing waits when the rating has not gone past where approval began.
     expect(pipGroups(2, 5, 2)).toEqual([["held", "held", "empty", "empty", "empty"]]);
   });
+
+  it("marks the pips a change in the cart would add or take away", () => {
+    expect(pipGroups(2, 5, null, 4)).toEqual([["held", "held", "planned", "planned", "empty"]]);
+    expect(pipGroups(3, 5, null, 2)).toEqual([["held", "held", "planned", "empty", "empty"]]);
+    expect(pipGroups(4, 5, null, 6).map((g) => g.length)).toEqual([5, 1]);
+    // No change, nothing planned.
+    expect(pipGroups(2, 5, null, 2)).toEqual(pipGroups(2));
+  });
 });
 
 describe("pipsOf", () => {

@@ -262,15 +262,36 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
  * the text around them, in its colour; pips from `pendingFrom` up are still
  * waiting for approval, in gold.
  */
-export function Pips({ value, of = 5, pendingFrom, className }: { value: number; of?: number; pendingFrom?: number | null; className?: string }) {
+export function Pips({
+  value,
+  of = 5,
+  pendingFrom,
+  planned = null,
+  className,
+}: {
+  value: number;
+  of?: number;
+  pendingFrom?: number | null;
+  planned?: number | null;
+  className?: string;
+}) {
   return (
-    <span role="img" aria-label={`${value} dots`} className={cx("inline-flex gap-[0.35em] whitespace-nowrap", className)}>
-      {pipGroups(value, of, pendingFrom).map((group, g) => (
+    <span role="img" aria-label={ratingLabel(value, planned)} className={cx("inline-flex gap-[0.35em] whitespace-nowrap", className)}>
+      {pipGroups(value, of, pendingFrom, planned).map((group, g) => (
         <span key={g} className="inline-flex gap-[0.12em]">
           {group.map((pip, i) => (
             // An SVG rather than "●", so a filled pip prints filled whatever the font or the browser's background setting.
-            <svg key={i} viewBox="0 0 10 10" aria-hidden className={cx("h-[0.7em] w-[0.7em]", pip === "waiting" && "text-gold")}>
-              <circle cx="5" cy="5" r="4.2" stroke="currentColor" strokeWidth="1.2" fill={pip === "empty" ? "none" : "currentColor"} />
+            <svg key={i} viewBox="0 0 10 10" aria-hidden className={cx("h-[0.7em] w-[0.7em]", (pip === "waiting" || pip === "planned") && "text-gold")}>
+              <circle
+                cx="5"
+                cy="5"
+                r="4.2"
+                stroke="currentColor"
+                strokeWidth={pip === "planned" ? 1.4 : 1.2}
+                // Outlined and dashed: in the cart, not yet spent.
+                strokeDasharray={pip === "planned" ? "2.2 1.1" : undefined}
+                fill={pip === "empty" || pip === "planned" ? "none" : "currentColor"}
+              />
             </svg>
           ))}
         </span>
@@ -279,29 +300,37 @@ export function Pips({ value, of = 5, pendingFrom, className }: { value: number;
   );
 }
 
+function ratingLabel(value: number, planned: number | null) {
+  return planned != null && planned !== value ? `${value} dots, ${planned} after the changes in the cart` : `${value} dots`;
+}
+
 /**
  * A rating, as the person shows ratings (Settings → Show ratings as): a number,
  * or pips, at least `of` of them. Dots from `pendingFrom` up are still waiting
- * for approval, shown in gold: "2 +1", or gold pips.
+ * for approval, shown in gold: "2 +1", or gold pips. `planned` is the rating a
+ * change in the cart would make it, not yet spent: "2 → 3", or outlined pips.
  */
 export function Rating({
   value,
   pendingFrom,
+  planned = null,
   of = 5,
   className = "min-w-[1.5rem] text-right font-display text-base text-parchment",
 }: {
   value: number;
   pendingFrom?: number | null;
+  planned?: number | null;
   of?: number;
   className?: string;
 }) {
   const { ratings } = usePreferences();
-  if (ratings === "pips") return <Pips value={value} of={of} pendingFrom={pendingFrom} className={className} />;
+  if (ratings === "pips") return <Pips value={value} of={of} pendingFrom={pendingFrom} planned={planned} className={className} />;
   const waiting = pendingFrom != null && pendingFrom < value ? value - pendingFrom : 0;
   return (
-    <span aria-label={`${value} dots`} className={cx("inline-block tabular-nums", className)}>
+    <span aria-label={ratingLabel(value, planned)} className={cx("inline-block tabular-nums", className)}>
       {value - waiting}
       {waiting > 0 && <span className="text-gold"> +{waiting}</span>}
+      {planned != null && planned !== value && <span className="text-gold"> → {planned}</span>}
     </span>
   );
 }
