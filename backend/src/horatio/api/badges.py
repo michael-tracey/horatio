@@ -55,6 +55,12 @@ class StaffBadgeOut(BaseModel):
     role: str
 
 
+class StaffBadgesOut(BaseModel):
+    # Printed small at the foot of every badge.
+    troupe_name: str
+    staff: list[StaffBadgeOut]
+
+
 class VisibleNote(BaseModel):
     # One thing per line, as it is to read on the badge.
     note: str = Field(max_length=500)
@@ -100,7 +106,7 @@ def character_badge(
 
 
 @router.get("/troupes/{troupe_id}/staff-badges")
-def staff_badges(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[StaffBadgeOut]:
+def staff_badges(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> StaffBadgesOut:
     """Badges for the troupe's staff: each person's name and role, lead first."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     lead = db.get_one(User, troupe.lead_user_id)
@@ -113,9 +119,11 @@ def staff_badges(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list
         ),
         key=lambda s: (order.index(s[1]), s[0].lower()),
     )
-    return [StaffBadgeOut(name=lead.display_name, role=ROLE_NAMES["lead_storyteller"])] + [
-        StaffBadgeOut(name=name, role=ROLE_NAMES[role]) for name, role in staff
-    ]
+    return StaffBadgesOut(
+        troupe_name=troupe.name,
+        staff=[StaffBadgeOut(name=lead.display_name, role=ROLE_NAMES["lead_storyteller"])]
+        + [StaffBadgeOut(name=name, role=ROLE_NAMES[role]) for name, role in staff],
+    )
 
 
 @router.get("/characters/{character_id}/visible-note")

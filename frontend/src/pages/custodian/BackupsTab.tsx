@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
 import { Badge, Button, Card, Empty, ErrorText, Loading, Notice } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 /** "2.4 MB": a backup's size, to the nearest sensible unit. */
@@ -14,6 +15,7 @@ export function fileSize(bytes: number): string {
 export function BackupsTab() {
   const backups = useQuery({ queryKey: ["backups"], queryFn: () => unwrap(api.GET("/api/backups")) });
   const make = useAction(() => unwrap(api.POST("/api/backups")));
+  const dates = useDates();
 
   if (backups.isPending) return <Loading />;
   if (backups.data && !backups.data.available) {
@@ -48,7 +50,7 @@ export function BackupsTab() {
           {backups.data.backups.map((b) => (
             <li key={b.name} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span className="flex flex-wrap items-center gap-2">
-                <time dateTime={b.made_at}>{new Date(b.made_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</time>
+                <time dateTime={b.made_at}>{dates.dateTime(b.made_at)}</time>
                 <Badge tone={b.manual ? "gold" : "mist"}>{b.manual ? "Made here" : "Nightly"}</Badge>
                 <span className="text-xs text-mist">{fileSize(b.size)}</span>
               </span>

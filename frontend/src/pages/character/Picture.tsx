@@ -6,6 +6,7 @@ import { Avatar } from "../../components/Avatar";
 import { Dialog } from "../../components/Dialog";
 import { Button, ErrorText, Notice } from "../../components/ui";
 import { fromCrop, portraitFrame, resized, SMALLEST, square, toCrop, type Box, type Crop } from "../../components/crop";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -53,6 +54,7 @@ function PictureEditor({ character, onDone }: { character: CharacterOut; onDone:
   const [step, setStep] = useState<Step>({ kind: "choose" });
   const [tooBig, setTooBig] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const dates = useDates();
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => () => (step.kind === "new" ? URL.revokeObjectURL(step.url) : undefined), [step]);
 
@@ -120,7 +122,7 @@ function PictureEditor({ character, onDone }: { character: CharacterOut; onDone:
       {picture.data?.uploaded_by && (
         <p className="text-xs text-mist">
           Uploaded by {picture.data.uploaded_by}
-          {picture.data.uploaded_at && ` on ${new Date(picture.data.uploaded_at).toLocaleDateString()}`}
+          {picture.data.uploaded_at && ` on ${dates.date(picture.data.uploaded_at)}`}
         </p>
       )}
       <p className="text-center text-sm text-mist">

@@ -4,8 +4,8 @@ import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { Button, ErrorText } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { longDate } from "./longDate";
 
 /**
  * The character's less-used actions, behind a ⋯ button beside Play: Rename, and
@@ -27,6 +27,7 @@ export function CharacterMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const dates = useDates();
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -56,7 +57,7 @@ export function CharacterMenu({
           {renameOn ? (
             <button type="button" role="menuitem" disabled className={item}>
               Rename
-              <span className="block text-xs">You can rename {character.name} again on {longDate(renameOn)}.</span>
+              <span className="block text-xs">You can rename {character.name} again on {dates.longDay(renameOn)}.</span>
             </button>
           ) : (
             canRename && (

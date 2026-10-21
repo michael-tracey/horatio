@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
 import { Badge, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { PrintAndBadge } from "./Badge";
 import { identityChoices } from "./creation/logic";
 import { MORALITY, heldMorality, moralityLabel, moralityOptions, moveMorality, willpowerAndHealth } from "./morality";
 
@@ -57,6 +58,8 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
         <ErrorText error={set.error} />
       </div>
       <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
+        {/* Only the troupe's staff see an NPC, and they all print its badge. */}
+        <PrintAndBadge character={character} />
         <Card title="Worth">
           <p className="font-display text-3xl text-gold">{tally.data?.total ?? "…"} XP</p>
           <p className="mt-1 text-xs text-mist">What this build would cost a player character here. Starting traits are free.</p>

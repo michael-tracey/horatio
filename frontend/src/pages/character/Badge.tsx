@@ -3,8 +3,41 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
+import { SplitLink } from "../../components/SplitLink";
 import { Button, ErrorText, Field, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, usePreferences } from "../../hooks";
+
+/**
+ * [Print] [Badge], side by side at the top of a side panel: the Sheet tab's, and
+ * an NPC's Build tab's. Without `badge`, Print fills the width.
+ */
+export function PrintAndBadge({ character, badge = true }: { character: CharacterOut; badge?: boolean }) {
+  return (
+    <div className={badge ? "grid grid-cols-2 gap-2 [&>button]:w-full" : "grid"}>
+      <PrintButton characterId={character.id} />
+      {badge && <BadgeButton character={character} />}
+    </div>
+  );
+}
+
+/** Print, with ratings as the person's setting shows them; the chevron prints
+ * once the other way. */
+function PrintButton({ characterId }: { characterId: string }) {
+  const { ratings } = usePreferences();
+  const to = `/print/characters/${characterId}`;
+  return (
+    <SplitLink
+      to={to}
+      label="Print"
+      menuLabel="Print with numbers or pips"
+      choices={[
+        ratings === "pips"
+          ? { to: `${to}?ratings=numbers`, label: "With numbers" }
+          : { to: `${to}?ratings=pips`, label: "With pips" },
+      ]}
+    />
+  );
+}
 
 /**
  * For staff: the character's game badge. What others can see or sense comes
