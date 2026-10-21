@@ -313,9 +313,10 @@ export interface paths {
         put?: never;
         /**
          * Spend Cart
-         * @description Make a list of sheet changes in one transaction, each checked as if the
-         *     earlier ones had been made. If any is refused, none is made, and each line
-         *     says what it costs or why it is refused. A dry run says the same, saving nothing.
+         * @description Make a list of sheet changes in one transaction, each priced as if the
+         *     earlier ones had been made, and the sheet they end with checked against the
+         *     one they started from. If any is refused, none is made, and each line says
+         *     what it costs or why it is refused. A dry run says the same, saving nothing.
          */
         post: operations["spend_cart_api_characters__character_id__cart_post"];
         delete?: never;

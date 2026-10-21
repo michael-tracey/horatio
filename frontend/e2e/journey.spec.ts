@@ -900,7 +900,7 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   await expect(cart.getByText("Dodge 3 → 4 · 4 XP")).toBeVisible();
   await p.getByRole("button", { name: "Raise Dodge" }).click();
 
-  // Archaic, then Computer, which an Archaic character cannot have: that line is refused, and nothing can be spent.
+  // Archaic, then Computer, which an Archaic character cannot have: Archaic's line is refused, and nothing can be spent.
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Category").selectOption({ label: "Flaws" });
   await p.getByLabel("Search Flaws").fill("Archaic");
@@ -910,7 +910,8 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   await p.getByLabel("Search Skills").fill("Computer");
   await p.getByRole("button", { name: /^Computer/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
-  await expect(cart.getByRole("listitem").filter({ hasText: "Add Computer 1" })).toContainText("An Archaic character cannot have Computer");
+  await expect(cart.getByRole("listitem").filter({ hasText: "Add Archaic" })).toContainText("An Archaic character cannot have Computer");
+  await expect(cart.getByRole("listitem").filter({ hasText: "Add Computer 1" })).not.toContainText("cannot have");
   await expect(p.getByRole("button", { name: "Spend XP" })).toBeDisabled();
   await expect(p.getByText("A change can't be made; see the line marked.")).toBeVisible();
   if (test.info().project.name === "phone") {
@@ -926,6 +927,46 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   await expect(p.locator("li", { has: p.getByRole("button", { name: "Raise Dodge" }) }).getByLabel("5 dots", { exact: true })).toHaveText("5");
   await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
   await expect(p.getByText("Dodge 3 → 5")).toBeVisible();
+});
+
+test("a cart is judged by the sheet it ends with, so a technique may go in before what it needs", async ({ browser }) => {
+  const { page: p } = await person(browser, "tactician");
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Kestrel" });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+
+  // Fearful Blow (Potence 2 and Presence 2) is in the cart before the dots it needs, as a cart kept from an earlier visit might be.
+  const lines = [
+    { kind: "set", category: "techniques", name: "Fearful Blow", detail: "", from: 0, to: 1, fixed: true },
+    { kind: "set", category: "disciplines", name: "Potence", detail: "", from: 1, to: 2 },
+    { kind: "set", category: "disciplines", name: "Presence", detail: "", from: 1, to: 2 },
+  ];
+  await p.evaluate(([key, value]) => localStorage.setItem(key, value), [`horatio.cart.${id}`, JSON.stringify(lines)]);
+  await p.goto(`/characters/${id}`);
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  // Each line is priced as if the ones above it were made, and none is refused.
+  await expect(cart.getByRole("listitem")).toHaveText([/Add Fearful Blow.* · 12 XP/, /Potence 1 → 2 · 6 XP/, /Presence 1 → 2 · 6 XP/]);
+  await expect(p.getByText("A change can't be made; see the line marked.")).toHaveCount(0);
+
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 24 XP.")).toBeVisible();
+  await expect(p.locator("main").getByText("Fearful Blow", { exact: true })).toBeVisible();
 });
 
 test("a player fills in their profile, and the custodian resets their password", async ({ browser }) => {

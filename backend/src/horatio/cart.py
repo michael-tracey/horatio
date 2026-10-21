@@ -3,14 +3,19 @@
 A player gathers raises, lowers, new traits, swaps and creation picks on the
 Sheet tab, and spends them in one go. Each change is made by the same code as
 making it alone (`sheets.set_trait`, `sheets.change_choice`, the creation
-picks), in order, as if the earlier ones had been made, so costs and checks are
-the same either way and each keeps its own XP entry. A refused change is rolled
-back to its own savepoint and the rest are still tried, so every refusal is
-found at once; the caller then keeps all of them or none.
+picks), in order, as if the earlier ones had been made, so it costs the same
+either way and keeps its own XP entry. A refused change is rolled back to its
+own savepoint and the rest are still tried, so every refusal is found at once;
+the caller then keeps all of them or none.
+
+What a change costs, and whether it can be made at all (the XP, the troupe's
+limits, traits chosen only during creation), is judged as it is made. The
+sheet's checks are judged once, on the sheet the whole cart ends with: a cart
+may add a technique before raising the discipline it needs.
 """
 
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, replace
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
@@ -18,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from horatio import creation, sheets
 from horatio.models import Approval, Character, CharacterTrait, User
+from horatio.sheets import TraitKey
 
 
 @dataclass(frozen=True)
@@ -97,7 +103,7 @@ def make(db: Session, user: User, character: Character, change: Change) -> None:
                     f"{change.name} is at {now} now, not {change.from_rating}: "
                     "the sheet has changed since this went in the cart."
                 )
-        with sheets.checked(db, character, user):
+        with sheets.checked(db, character, user, rules=False):
             sheets.set_trait(
                 db,
                 user,
@@ -109,12 +115,12 @@ def make(db: Session, user: User, character: Character, change: Change) -> None:
                 teacher=change.teacher,
             )
     elif isinstance(change, Swap):
-        with sheets.checked(db, character, user):
+        with sheets.checked(db, character, user, rules=False):
             sheets.change_choice(
                 db, user, character, change.category, change.from_name, change.to_name
             )
     elif isinstance(change, Pick):
-        with sheets.checked(db, character, user):
+        with sheets.checked(db, character, user, rules=False):
             creation.place_pick(
                 db, user, character, change.category, change.name, change.detail, change.rating
             )
@@ -153,16 +159,72 @@ def waiting(db: Session, character: Character) -> int:
     )
 
 
+@dataclass(frozen=True)
+class Step:
+    """What one change did to the sheet's traits."""
+
+    # Traits it added.
+    brought: frozenset[TraitKey] = frozenset()
+    # Traits it added, took away or changed the rating of.
+    touched: frozenset[TraitKey] = frozenset()
+
+
+def held_traits(db: Session, character: Character) -> dict[TraitKey, int | None]:
+    return {r.key: r.trait.rating for r in sheets.sheet_rows(db, character)}
+
+
+def step(before: dict[TraitKey, int | None], after: dict[TraitKey, int | None]) -> Step:
+    return Step(
+        brought=frozenset(after.keys() - before.keys()),
+        touched=frozenset(
+            key
+            for key in before.keys() | after.keys()
+            if key not in before or key not in after or before[key] != after[key]
+        ),
+    )
+
+
+def culprit(problem: sheets.Problem, steps: Sequence[Step]) -> int:
+    """The change a problem with the finished sheet is put down to: the last to
+    bring in the trait it is about, else the last to touch that trait, else the
+    last to touch what the broken check looks at, else the last to change anything."""
+
+    def about(key: TraitKey) -> bool:
+        return key[0] == problem.category and (
+            problem.name is None or key[1:] == (problem.name, problem.detail)
+        )
+
+    def looked_at(key: TraitKey) -> bool:
+        return bool({(key[0], key[1]), (key[0], None)} & problem.looks_at)
+
+    tests: list[Callable[[Step], bool]] = [
+        lambda s: any(about(k) for k in s.brought),
+        lambda s: any(about(k) for k in s.touched),
+        lambda s: any(looked_at(k) for k in s.touched),
+        lambda s: bool(s.touched),
+    ]
+    for test in tests:
+        found = [i for i, s in enumerate(steps) if test(s)]
+        if found:
+            return found[-1]
+    return len(steps) - 1
+
+
 def apply_changes(
     db: Session, user: User, character: Character, changes: Sequence[Change]
 ) -> list[Outcome]:
     """Make each change in turn, each as if the ones before it had been made.
-    A refused change is undone and the rest still tried. Nothing is committed:
-    the caller keeps the lot, or rolls it back if any was refused."""
+    A refused change is undone and the rest still tried. Then the sheet they end
+    with is checked against the one they started from, and each check it breaks
+    refuses the change it is put down to. Nothing is committed: the caller keeps
+    the lot, or rolls it back if any was refused."""
+    start = sheets.sheet_state(db, character)
     outcomes: list[Outcome] = []
+    steps: list[Step] = []
     for change in changes:
         balance = sheets.xp_balance(db, character)
         held = waiting(db, character)
+        traits_before = held_traits(db, character)
         savepoint = db.begin_nested()
         try:
             make(db, user, character, change)
@@ -172,6 +234,7 @@ def apply_changes(
             db.expire_all()
             refused = str(error.detail)
             outcomes.append(Outcome(cost=would_cost(db, character, change), refused=refused))
+            steps.append(Step())
             continue
         savepoint.commit()
         outcomes.append(
@@ -180,4 +243,17 @@ def apply_changes(
                 needs_approval=waiting(db, character) > held,
             )
         )
+        steps.append(step(traits_before, held_traits(db, character)))
+    if character.kind != "pc":
+        return outcomes
+    refused, reviewed = sheets.broken_since(db, user, character, start, creation_only=False)
+    problems: dict[int, list[sheets.Problem]] = {}
+    for problem in refused:
+        problems.setdefault(culprit(problem, steps), []).append(problem)
+    for i, found in problems.items():
+        reasons = [outcomes[i].refused, sheets.refusal(found)]
+        outcomes[i] = replace(outcomes[i], refused=" ".join(r for r in reasons if r))
+    for problem in reviewed:
+        i = culprit(problem, steps)
+        outcomes[i] = replace(outcomes[i], needs_approval=True)
     return outcomes

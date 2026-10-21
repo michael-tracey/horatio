@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_creation import creating
 from tests.test_api_focus_change import with_focus
+from tests.test_api_house_checks import CALM_HEART, accepted_brujah, house
 from tests.test_api_sheets import make_home_troupe_member
 
 
@@ -90,18 +91,133 @@ def test_one_refusal_and_nothing_is_spent(troupe: Troupe) -> None:
         character_id,
         rating("skills", "Brawl", 1),
         rating("flaws", "Archaic", 2),
-        # Checked as if Archaic were already held.
         rating("skills", "Computer", 1),
     )
 
+    # The check is Archaic's, so the line bringing Archaic in is refused.
     assert lines(response) == [
         (1, None),
-        (-2, None),
-        (1, "An Archaic character cannot have Computer, Drive, Science or Security. (p. 259)"),
+        (-2, "An Archaic character cannot have Computer, Drive, Science or Security. (p. 259)"),
+        (1, None),
     ]
     assert response.json()["applied"] is False
     assert not {"Brawl", "Archaic", "Computer"} & held(troupe.player, character_id).keys()
     assert sheet(troupe.player, character_id)["xp"]["balance"] == 30
+
+
+FEARFUL_BLOW = "Fearful Blow needs Potence 2 and Presence 2. (p. 227)"
+
+
+@pytest.mark.parametrize("technique_first", [True, False])
+def test_a_technique_may_go_in_before_the_disciplines_it_needs(
+    troupe: Troupe, technique_first: bool
+) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Brujah")
+    disciplines = [rating("disciplines", "Potence", 2), rating("disciplines", "Presence", 2)]
+    technique = rating("techniques", "Fearful Blow", 1)
+    changes = [technique, *disciplines] if technique_first else [*disciplines, technique]
+
+    dry_run = spend(troupe.player, character_id, *changes, dry_run=True)
+    response = spend(troupe.player, character_id, *changes)
+
+    assert [refused for _, refused in lines(dry_run)] == [None, None, None]
+    assert lines(response) == lines(dry_run)
+    assert response.json()["applied"] is True
+    now = held(troupe.player, character_id)
+    assert (now["Potence"], now["Presence"], now["Fearful Blow"]) == (2, 2, 1)
+
+
+@pytest.mark.parametrize("lower_first", [True, False])
+def test_a_discipline_may_be_lowered_before_the_technique_on_it_goes(
+    troupe: Troupe, lower_first: bool
+) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Brujah")
+    spend(
+        troupe.player,
+        character_id,
+        rating("disciplines", "Potence", 2),
+        rating("disciplines", "Presence", 2),
+        rating("techniques", "Fearful Blow", 1),
+    )
+    lower = rating("disciplines", "Presence", 1, from_rating=2)
+    remove = rating("techniques", "Fearful Blow", 0, from_rating=1)
+    changes = [lower, remove] if lower_first else [remove, lower]
+
+    response = spend(troupe.player, character_id, *changes)
+
+    assert [refused for _, refused in lines(response)] == [None, None]
+    now = held(troupe.player, character_id)
+    assert now["Presence"] == 1
+    assert "Fearful Blow" not in now
+
+
+def test_a_cart_that_ends_with_a_check_broken_is_refused_on_its_line(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Brujah")
+
+    response = spend(
+        troupe.player,
+        character_id,
+        rating("techniques", "Fearful Blow", 1),
+        rating("disciplines", "Potence", 2),
+        rating("skills", "Brawl", 1),
+    )
+
+    assert [refused for _, refused in lines(response)] == [FEARFUL_BLOW, None, None]
+    assert response.json()["applied"] is False
+    assert "Fearful Blow" not in held(troupe.player, character_id)
+
+
+def test_a_check_broken_by_a_trait_it_looks_at_is_refused_on_that_line(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    spend(troupe.player, character_id, rating("flaws", "Archaic", 2))
+
+    response = spend(
+        troupe.player,
+        character_id,
+        rating("skills", "Computer", 1),
+        rating("skills", "Brawl", 1),
+    )
+
+    assert [refused for _, refused in lines(response)] == [
+        "An Archaic character cannot have Computer, Drive, Science or Security. (p. 259)",
+        None,
+    ]
+
+
+@pytest.mark.usefixtures("without_bank")
+def test_a_review_check_the_finished_sheet_breaks_waits_once(troupe: Troupe) -> None:
+    character_id = accepted_brujah(troupe)
+    house(troupe, troupe.storyteller, CALM_HEART, "review")
+
+    response = spend(
+        troupe.player,
+        character_id,
+        rating("skills", "Brawl", 1),
+        rating("merits", "Calm Heart", 1),
+    )
+
+    assert [line["needs_approval"] for line in response.json()["lines"]] == [False, True]
+    approvals = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
+    assert [a["kind"] for a in approvals] == ["review"]
+
+
+@pytest.mark.usefixtures("without_bank")
+def test_a_review_check_broken_only_part_way_waits_on_nothing(troupe: Troupe) -> None:
+    character_id = accepted_brujah(troupe)
+    reviewed = house(troupe, troupe.storyteller, "techniques/Fearful Blow/1", "review")
+    assert reviewed.status_code == 200, reviewed.text
+
+    response = spend(
+        troupe.player,
+        character_id,
+        rating("techniques", "Fearful Blow", 1),
+        rating("disciplines", "Potence", 2),
+        rating("disciplines", "Presence", 2),
+    )
+
+    assert [refused for _, refused in lines(response)] == [None, None, None]
+    approvals = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
+    assert "review" not in [a["kind"] for a in approvals]
 
 
 def test_the_xp_runs_out_part_way(troupe: Troupe) -> None:

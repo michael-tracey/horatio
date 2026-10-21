@@ -94,3 +94,26 @@ def test_subjects_by_detail_and_prefix() -> None:
     assert violations([hearing], [BRUJAH, t("merits", "Acute Sense", 1, "Sight")]) == []
     assert len(violations([hearing], [BRUJAH, t("merits", "Acute Sense", 1, "Hearing")])) == 1
     assert len(violations([paths], [BRUJAH, t("merits", "Path of Night")])) == 1
+
+
+def test_what_a_check_looks_at() -> None:
+    technique = CheckData(
+        key="t",
+        category="techniques",
+        name="Fearful Blow",
+        requires={
+            "has_all": [
+                {"category": "disciplines", "name": "Potence", "rating": 2},
+                {"category": "disciplines", "name": "Presence", "rating": 2},
+            ]
+        },
+    )
+    merit = CheckData(
+        key="m",
+        category="merits",
+        forbids={"any_of": [{"clan": ["Brujah"]}, {"count": {"category": "flaws", "gt": 2}}]},
+        requires={"generation": {"lte": 3}},
+    )
+
+    assert technique.looks_at() == {("disciplines", "Potence"), ("disciplines", "Presence")}
+    assert merit.looks_at() == {("clan", None), ("flaws", None), ("backgrounds", "Generation")}
