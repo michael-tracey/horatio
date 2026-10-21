@@ -22,7 +22,8 @@ import {
 } from "../../components/ui";
 import { SplitLink } from "../../components/SplitLink";
 import { HEALTH_RULE, healthRows } from "../../health";
-import { useAction } from "../../hooks";
+import { useAction, usePreferences } from "../../hooks";
+import { pipsOf } from "../../ratings";
 import { AddTraitPanel } from "./AddTraitPanel";
 import { BadgeButton } from "./Badge";
 import { rulesTroupe } from "./rules";
@@ -400,15 +401,7 @@ export function SheetTab({
       </div>
       <aside className="flex flex-col gap-3">
         <div className={badge ? "grid grid-cols-2 gap-2 [&>button]:w-full" : "grid"}>
-          <SplitLink
-            to={`/print/characters/${character.id}`}
-            label="Print"
-            menuLabel="Print with numbers or pips"
-            choices={[
-              { to: `/print/characters/${character.id}`, label: "Numbers" },
-              { to: `/print/characters/${character.id}?ratings=pips`, label: "Pips" },
-            ]}
-          />
+          <PrintButton characterId={character.id} />
           {badge && <BadgeButton character={character} />}
         </div>
         <Card dense title="Experience">
@@ -475,6 +468,25 @@ export function swapOptions(
     .filter((t) => t.category === trait.category && !mine.has(t.name))
     .map((t) => t.name);
   return others.length ? { cost, others } : null;
+}
+
+/** Print, with ratings as the person's setting shows them; the chevron prints
+ * once the other way. */
+function PrintButton({ characterId }: { characterId: string }) {
+  const { ratings } = usePreferences();
+  const to = `/print/characters/${characterId}`;
+  return (
+    <SplitLink
+      to={to}
+      label="Print"
+      menuLabel="Print with numbers or pips"
+      choices={[
+        ratings === "pips"
+          ? { to: `${to}?ratings=numbers`, label: "With numbers" }
+          : { to: `${to}?ratings=pips`, label: "With pips" },
+      ]}
+    />
+  );
 }
 
 function TraitRow({
@@ -577,7 +589,7 @@ function TraitRow({
       </span>
       {trait.rating !== null && (
         <span className="flex shrink-0 items-center gap-2">
-          <Rating value={trait.rating} pendingFrom={trait.pending_from} />
+          <Rating value={trait.rating} pendingFrom={trait.pending_from} of={pipsOf(trait.category)} />
           {!locked && (
             <span className="flex gap-1">
               <button

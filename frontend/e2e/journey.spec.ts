@@ -434,19 +434,41 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   }
   // Ratings print as numbers, and each attribute's focus sits beside it in brackets…
   await expect(p.getByText("Mental (Wits)")).toBeVisible();
-  await expect(p.getByText("●")).toHaveCount(0);
-  // …or as pips, from the chevron beside Print.
+  await expect(p.getByRole("img", { name: /dots$/ })).toHaveCount(0);
+  // …or as pips, for one print, from the chevron beside Print.
   await p.goBack();
   await p.getByRole("button", { name: "Print with numbers or pips" }).click();
-  await p.getByRole("menuitem", { name: "Pips" }).click();
+  await p.getByRole("menuitem", { name: "With pips" }).click();
   await expect(p.getByText("Mental (Wits)")).toBeVisible();
-  await expect(p.getByLabel("7 dots").first()).toContainText("●");
+  await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
   await p.screenshot(shots("print-pips"));
-  // The troupe's print view prints them the same way.
+  // Pips everywhere, from Settings: the Sheet tab shows them, and Print prints
+  // them, with numbers now the chevron's choice.
+  await p.goBack();
+  const sheetPage = p.url();
+  await p.goto("/account/settings");
+  await Promise.all([
+    p.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok()),
+    p.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" }).click(),
+  ]);
+  await p.goto(sheetPage);
+  await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
+  await p.screenshot(shots("sheet-pips"));
+  await p.getByRole("link", { name: "Print", exact: true }).click();
+  await expect(p.getByText("Mental (Wits)")).toBeVisible();
+  await expect(p.getByRole("img", { name: "7 dots" }).first()).toBeVisible();
+  await p.goBack();
+  await p.getByRole("button", { name: "Print with numbers or pips" }).click();
+  await p.getByRole("menuitem", { name: "With numbers" }).click();
+  await expect(p.getByText("Mental (Wits)")).toBeVisible();
+  await expect(p.getByRole("img", { name: /dots$/ })).toHaveCount(0);
+  // The troupe's print view prints them the same way, as the lead's setting has
+  // them: numbers.
   const troupeSheets = await lead.page.context().newPage();
   await troupeSheets.goto(`/print/troupes/${lead.page.url().match(/\/troupes\/([^/]+)/)![1]}`);
   await expect(troupeSheets.getByText("1 sheet", { exact: true })).toBeVisible();
   await specialised(troupeSheets);
+  await expect(troupeSheets.getByRole("img", { name: /dots$/ })).toHaveCount(0);
   await troupeSheets.close();
 });
 
@@ -989,6 +1011,20 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByText("Game 2")).toBeVisible();
   await p.getByRole("button", { name: /Game 1 ·/ }).click();
   await expect(p.getByText("“fed at the club”")).toBeVisible();
+
+  // With ratings as pips in Settings, the Sheet and Pools tabs show pips too:
+  // Physical 5 of ten, Celerity 2, and its powers' levels.
+  const asPips = await p.request.patch("/api/preferences", { headers, data: { ratings: "pips" } });
+  expect(asPips.status(), await asPips.text()).toBe(200);
+  await p.reload();
+  await p.getByRole("tab", { name: "Sheet" }).click();
+  await expect(p.getByRole("img", { name: "5 dots" }).first()).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Attributes" })).toBeVisible();
+  await p.screenshot(shots("play-sheet-pips"));
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
+  await expect(p.getByRole("img", { name: "2 dots" }).first()).toBeVisible();
+  await p.screenshot(shots("play-pools-pips"));
 });
 
 test("anyone can read About, with the Dark Pack Agreement's notices", async ({ browser }) => {
