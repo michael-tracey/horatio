@@ -52,6 +52,9 @@ class TraitOut(BaseModel):
     # for (a clan, bloodline or generation), for filtering lists.
     kind: str | None = None
     requirement: str | None = None
+    # A skill bought once per field, such as Performance: Singing (p. 92): one
+    # the catalogue says needs a specialisation.
+    needs_field: bool = False
 
 
 class CatalogueOut(BaseModel):
@@ -127,6 +130,8 @@ def catalogue(
                 requirement=t.properties.get("requirement")
                 if t.properties.get("requirement") != "requires_specialization"
                 else None,
+                needs_field=t.category == "skills"
+                and t.properties.get("requirement") == "requires_specialization",
             )
             for t in traits
             if category is None or t.category == category

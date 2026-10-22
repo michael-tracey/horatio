@@ -2,17 +2,18 @@ import { useMemo, useState } from "react";
 import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
-import { canTap, clear, left, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
+import { FIELD_PLACEHOLDER } from "../fields";
+import { canTap, clear, fieldProblems, keysOf, left, traitOf, nextCopy, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
 
+// Long lists get a search box.
 const SEARCH_FROM = 12;
-/** Skills bought once per field, such as Performance: Singing (MET: VTM p. 92). */
-const NEEDS_FIELD = new Set(["Crafts", "Performance", "Science"]); // Long lists get a search box.
 
 function useFiltered(traits: TraitOut[], picks: Picks) {
   const [query, setQuery] = useState("");
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return traits.filter((t) => !q || t.name.toLowerCase().includes(q) || t.name in picks);
+    const picked = new Set(Object.keys(picks).map(traitOf));
+    return traits.filter((t) => !q || t.name.toLowerCase().includes(q) || picked.has(t.name));
   }, [traits, picks, query]);
   return { query, setQuery, shown };
 }
@@ -49,7 +50,7 @@ export function DotGrid({
   picks: Picks;
   onChange: (picks: Picks) => void;
   tag?: (trait: TraitOut) => string | null;
-  /** The field each picked Crafts, Performance or Science is for. */
+  /** The field each picked Crafts, Performance or Science is for, by pick (see logic's `copyKey`). */
   details?: Record<string, string>;
   onDetail?: (name: string, detail: string) => void;
   /** Traits the rules do not allow this character, and why. */
@@ -74,14 +75,27 @@ export function DotGrid({
         ])
         .filter(([, ts]) => ts.length > 0)
     : [[null, shown]];
-  const row = (trait: TraitOut) => {
-    const rating = picks[trait.name] ?? 0;
-    const label = tag?.(trait);
-    const barred = rating ? undefined : unavailable[trait.name];
-    const about = trait.description ? `about-${title}-${trait.name}`.replace(/\W+/g, "-") : undefined;
+  // Another field of a skill (Performance: Dance beside Singing), added but not yet tapped.
+  const [added, setAdded] = useState<string[]>([]);
+  // The field box to focus when it appears: the one just tapped or added.
+  const [focus, setFocus] = useState<string | null>(null);
+  const problems = onDetail ? fieldProblems(picks, details, (name) => !!traits.find((t) => t.name === name)?.needs_field) : {};
+
+  /** One row of dots, for a trait or for one more field of it (`key` then names that field's pick). */
+  const line = (trait: TraitOut, key: string) => {
+    const copy = key !== trait.name;
+    const rating = picks[key] ?? 0;
+    const label = copy ? null : tag?.(trait);
+    const barred = rating || copy ? undefined : unavailable[trait.name];
+    const about = !copy && trait.description ? `about-${title}-${trait.name}`.replace(/\W+/g, "-") : undefined;
     const shown = open.has(trait.name);
+    const fielded = trait.needs_field && onDetail && (rating > 0 || copy);
+    const remove = () => {
+      onChange(clear(picks, key));
+      setAdded(added.filter((k) => k !== key));
+    };
     return (
-      <li key={trait.name} className="py-1.5">
+      <div key={key} className={copy ? "mt-1.5" : undefined}>
         <div className="flex items-center justify-between gap-3">
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
             {about ? (
@@ -100,12 +114,13 @@ export function DotGrid({
             )}
             <span className={rating ? "text-parchment" : barred ? "text-ash" : "text-mist"}>{trait.name}</span>
             {label && <span className="text-xs text-gold">{label}</span>}
-            {rating > 0 && NEEDS_FIELD.has(trait.name) && onDetail && (
+            {fielded && (
               <Input
-                aria-label={`${trait.name} field`}
-                placeholder="Field, such as Singing"
-                value={details[trait.name] ?? ""}
-                onChange={(e) => onDetail(trait.name, e.target.value)}
+                aria-label={`${key} field`}
+                placeholder={FIELD_PLACEHOLDER}
+                autoFocus={focus === key}
+                value={details[key] ?? ""}
+                onChange={(e) => onDetail(key, e.target.value)}
                 className="h-8 w-40 py-0"
               />
             )}
@@ -113,16 +128,19 @@ export function DotGrid({
           <span className="flex shrink-0 items-center gap-0.5">
             {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
               const pickable = dot in allowed;
-              const enabled = pickable && !barred && canTap(picks, allowed, trait.name, dot);
+              const enabled = pickable && !barred && canTap(picks, allowed, key, dot);
               const filled = dot <= rating;
               return (
                 <button
                   key={dot}
                   type="button"
-                  aria-label={`${trait.name} ${dot}`}
+                  aria-label={`${key} ${dot}`}
                   aria-pressed={rating === dot}
                   disabled={!enabled}
-                  onClick={() => onChange(tap(picks, allowed, trait.name, dot))}
+                  onClick={() => {
+                    if (!rating && trait.needs_field) setFocus(key);
+                    onChange(tap(picks, allowed, key, dot));
+                  }}
                   className={[
                     "grid h-8 w-7 place-items-center rounded text-lg leading-none",
                     pickable ? "hover:bg-ash" : "cursor-default",
@@ -137,20 +155,44 @@ export function DotGrid({
             {/* Kept in place when hidden, so every row's dots line up. */}
             <button
               type="button"
-              aria-label={`Clear ${trait.name}`}
-              disabled={!rating}
-              onClick={() => onChange(clear(picks, trait.name))}
-              className={`ml-1 h-8 rounded px-2 text-xs text-mist hover:bg-ash hover:text-parchment ${rating ? "" : "invisible"}`}
+              aria-label={`Clear ${key}`}
+              disabled={!rating && !copy}
+              onClick={remove}
+              className={`ml-1 h-8 rounded px-2 text-xs text-mist hover:bg-ash hover:text-parchment ${rating || copy ? "" : "invisible"}`}
             >
               Clear
             </button>
           </span>
         </div>
         {barred && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{barred}</p>}
+        {problems[key] && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{problems[key].message}</p>}
         {about && (
           <p id={about} hidden={!shown} className="mt-1 pl-6 text-xs leading-relaxed text-mist">
             {trait.description}
           </p>
+        )}
+      </div>
+    );
+  };
+
+  const row = (trait: TraitOut) => {
+    const fields = trait.needs_field && onDetail;
+    const copies = fields
+      ? [...new Set([...keysOf(picks, trait.name), ...added.filter((k) => traitOf(k) === trait.name)])].filter((k) => k !== trait.name)
+      : [];
+    const more = () => {
+      const key = nextCopy([...Object.keys(picks), ...added], trait.name);
+      setAdded([...added, key]);
+      setFocus(key);
+    };
+    return (
+      <li key={trait.name} className="py-1.5">
+        {line(trait, trait.name)}
+        {copies.map((key) => line(trait, key))}
+        {fields && keysOf(picks, trait.name).length > 0 && (
+          <button type="button" onClick={more} className="mt-1 ml-6 text-xs text-gold underline hover:text-parchment">
+            Add another field
+          </button>
         )}
       </li>
     );

@@ -28,8 +28,8 @@ import { PrintAndBadge } from "./Badge";
 import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart, type Cart } from "./cart";
 import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
 import { rulesTroupe } from "./rules";
+import { fieldSkills } from "./fields";
 import {
-  NEEDS_FIELD,
   SetField,
   SpecializationRow,
   useSpecializations,
@@ -129,6 +129,7 @@ export function SheetTab({
   const sheet = useSheet(character.id);
   const catalogue = useCatalogue(character);
   const creation = useCreation(character);
+  const needsField = fieldSkills(catalogue.data);
   const [adding, setAdding] = useState<string | null>(null);
   const kinds = useSpecializations(character.id);
   // Changes wait in the cart until Spend XP; only the player has one.
@@ -356,7 +357,7 @@ export function SheetTab({
                           !locked &&
                           !inCart(t) &&
                           t.category === "skills" &&
-                          NEEDS_FIELD.has(t.name) &&
+                          needsField.has(t.name) &&
                           !t.detail && (
                             <SetField
                               key={`${t.id}/field`}

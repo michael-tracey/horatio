@@ -4,10 +4,9 @@ import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { useAction, useUnavailable } from "../../hooks";
 import { QuickPicks } from "./creation/DotGrid";
+import { FIELD_PLACEHOLDER } from "./fields";
 import { applyFilter, filterChoices, quickPicks } from "./traitFilter";
 
-/** Skills bought once per field, such as Performance: Singing (MET: VTM p. 92). */
-const NEEDS_FIELD = new Set(["Crafts", "Performance", "Science"]);
 const SHOWN = 40;
 
 /** A new trait for the cart. */
@@ -57,7 +56,8 @@ export function AddTraitPanel({
   );
   const trait = all.find((t) => t.name === name);
   const fixed = trait?.fixed_rating ?? null;
-  const needsField = category === "skills" && NEEDS_FIELD.has(name);
+  // Skills bought once per field, such as Performance: Singing (MET: VTM p. 92).
+  const needsField = !!trait?.needs_field;
   // After acceptance, discipline dots wait on the home troupe, who will want to know the teacher.
   const asksTeacher = category === "disciplines" && character.home_troupe_id !== null;
   const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null, teacher: asksTeacher ? teacher : "" };
@@ -161,8 +161,8 @@ export function AddTraitPanel({
               </Select>
             </Field>
           ) : (
-            <Field label={needsField ? "Field" : "Detail"} hint={needsField ? "Bought once per field, such as Singing." : "Optional: a specialisation, subject, or name."}>
-              <Input required={needsField} value={detail} onChange={(e) => setDetail(e.target.value)} />
+            <Field label={needsField ? "Field" : "Detail"} hint={needsField ? "Bought once per field." : "Optional: a specialisation, subject, or name."}>
+              <Input required={needsField} placeholder={needsField ? FIELD_PLACEHOLDER : undefined} value={detail} onChange={(e) => setDetail(e.target.value)} />
             </Field>
           )}
           {cat?.rated && fixed === null && (
