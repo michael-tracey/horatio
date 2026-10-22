@@ -267,6 +267,14 @@ _Avoid_: Influence row, influence record
 A character's own influence entries, from the log of every troupe it has acted in, newest first. Its player and its home troupe's storytellers and assistant storytellers see it; it never shows another character's entries, nor blocks others placed.
 _Avoid_: Influence log (that is the troupe's), influence sheet
 
+**Influence Lookup**:
+Gossip and Insider Trading (Elite) or Word on the Street (Underworld): an influence action answered from the influence log. It finds others' recent actions of its type in any of the character's specialisations of it, never who took them. Its strength is how many actions the character spends on it in one cycle, and it looks back the troupe's lookback in days from the cycle's close.
+_Avoid_: Search, investigation
+
+**Discovery Block**:
+An influence action that hides one influence entry from lookups. Each accepted block adds one to the entry's blocks, and a lookup needs more strength than that to find it. It can be paid with either type's actions, and only general actions can be blocked.
+_Avoid_: Cover-up, hide
+
 **Participant**:
 A character taking part in a downtime cycle. Participants are the characters whose home troupe runs the cycle when it opens; storytellers and assistant storytellers can add or remove participants afterwards, but only characters whose home troupe it is.
 _Avoid_: Roster entry, entrant

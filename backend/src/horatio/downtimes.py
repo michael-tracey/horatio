@@ -450,6 +450,7 @@ def settle_owed_actions(db: Session, participant: CycleParticipant, cycle: Downt
                 delta=-debt.amount,
                 reason=debt.reason,
                 adjusted_by=debt.owed_by,
+                owed_action_id=debt.id,
             )
         )
         debt.participant_id = participant.id
@@ -499,11 +500,23 @@ def adjustments(db: Session, participant: CycleParticipant) -> list[AllowanceAdj
     )
 
 
-def effective_allowance(db: Session, participant: CycleParticipant) -> dict[str, int]:
+def allowance_totals(db: Session, participant: CycleParticipant) -> dict[str, int]:
+    """The allowance with its adjustments, before any is stopped at zero."""
     totals = dict(participant.allowance)
     for adjustment in adjustments(db, participant):
         totals[adjustment.action_kind] = totals.get(adjustment.action_kind, 0) + adjustment.delta
-    return {k: max(0, v) for k, v in totals.items()}
+    return totals
+
+
+def effective_allowance(db: Session, participant: CycleParticipant) -> dict[str, int]:
+    """The allowance with its adjustments. None goes below zero."""
+    return {k: max(0, v) for k, v in allowance_totals(db, participant).items()}
+
+
+def shortfall(db: Session, participant: CycleParticipant) -> dict[str, int]:
+    """Actions taken off beyond the allowance, such as more influence spent at
+    games than the character's rating allows a month (MET: VtM core, p. 510)."""
+    return {k: -v for k, v in allowance_totals(db, participant).items() if v < 0}
 
 
 # --- submissions ------------------------------------------------------------------------

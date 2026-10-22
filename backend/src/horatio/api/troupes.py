@@ -39,6 +39,8 @@ class TroupeOut(BaseModel):
     xp_ceiling: int
     # House rule: the blood characters start a game with; None for full.
     starting_blood: int | None
+    # House rule: how many days back influence lookups look, from their cycle's close.
+    influence_lookback_days: int
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
     portrait: str | None
     # Its banner, across the top of its page (add "/1500.webp" or "/750.webp"), or None.
@@ -96,6 +98,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         xp_floor=figures.floor,
         xp_ceiling=figures.ceiling,
         starting_blood=troupe.starting_blood,
+        influence_lookback_days=troupe.influence_lookback_days,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
         public=troupe.public,

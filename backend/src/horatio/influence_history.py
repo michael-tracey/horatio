@@ -21,11 +21,16 @@ from sqlalchemy.orm import Session
 from horatio import influence, influence_log
 from horatio.influence import InfluenceType
 from horatio.models import (
+    Answer,
     Character,
+    CycleParticipant,
+    InfluenceBlock,
     InfluenceEntry,
     OwedAction,
     PlayEvent,
     PlayGame,
+    Response,
+    Submission,
     Troupe,
     User,
 )
@@ -38,10 +43,9 @@ DEFAULT_LOOKBACK_DAYS = 90
 
 def lookback_days(db: Session, troupe_id: uuid.UUID) -> int:
     """How many days back a Gossip or Word on the Street in the troupe can find an
-    action. #130 makes this a troupe setting; until it is, every troupe has the
-    rules' 90 days."""
-    del db, troupe_id
-    return DEFAULT_LOOKBACK_DAYS
+    action: the troupe's setting (horatio.influence_lookups)."""
+    troupe = db.get(Troupe, troupe_id)
+    return troupe.influence_lookback_days if troupe else DEFAULT_LOOKBACK_DAYS
 
 
 def findable(
@@ -56,11 +60,23 @@ def findable(
 def blocks_placed(
     db: Session, character: Character, entries: Sequence[InfluenceEntry]
 ) -> dict[uuid.UUID, int]:
-    """The discovery blocks the character put on each entry. The log keeps only a
-    count on each entry, with no one's name on it, until #131 records who placed
-    each block; until then none are shown, since some could be others'."""
-    del db, character, entries
-    return {}
+    """The discovery blocks the character put on each entry: those added by a
+    response to one of its own downtime answers. Others' blocks never count."""
+    if not entries:
+        return {}
+    rows = db.execute(
+        select(InfluenceBlock.entry_id, func.count())
+        .join(Response, Response.id == InfluenceBlock.response_id)
+        .join(Answer, Answer.id == Response.answer_id)
+        .join(Submission, Submission.id == Answer.submission_id)
+        .join(CycleParticipant, CycleParticipant.id == Submission.participant_id)
+        .where(
+            CycleParticipant.character_id == character.id,
+            InfluenceBlock.entry_id.in_([e.id for e in entries]),
+        )
+        .group_by(InfluenceBlock.entry_id)
+    )
+    return {entry_id: count for entry_id, count in rows}
 
 
 def home_troupe(db: Session, character: Character) -> Troupe | None:

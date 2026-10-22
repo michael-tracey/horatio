@@ -7,6 +7,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, S
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { TYPE_NAMES } from "../../influence";
+import { BlockSources } from "./BlockSources";
 import { logQuery, NO_FILTERS, sourceText, whoText, type LogFilters } from "./influenceLog";
 import { allowanceWarning, another, cycleDate, specializationGroups, type EntryFields } from "./logInfluence";
 import { WhoPicker } from "./WhoPicker";
@@ -203,6 +204,7 @@ function EntryRow({
         </span>
       </div>
       {entry.purpose && <p>{entry.purpose}</p>}
+      <BlockSources entry={entry} />
       <div className="flex flex-wrap items-center gap-2 text-xs text-mist">
         {entry.times > 1 && <Badge tone="gold">logged {entry.times} times</Badge>}
         {entry.blocks > 0 && <Badge>{entry.blocks === 1 ? "1 block" : `${entry.blocks} blocks`}</Badge>}

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from horatio.handles import from_name
 from horatio.models import FormerHandle, User
 from tests.api_helpers import PASSWORD, Person, Troupe, new_character, sign_up
+from tests.conftest import load_rules
 
 
 @pytest.fixture
@@ -408,5 +409,6 @@ def test_the_migration_gives_existing_accounts_handles(
             assert list(handles) == ["agnes", "agnes2", "lord_ruthven", "player", "player2"]
     finally:
         command.upgrade(alembic_config, "head")
+        load_rules(engine)  # the downgrade dropped the influence actions; later tests need them
         with engine.begin() as connection:
             connection.execute(text("delete from users where email like 'migrated-%'"))

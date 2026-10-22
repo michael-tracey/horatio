@@ -6,6 +6,8 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, S
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { chosenAction, offered, reachable, reachNote } from "../../influence";
+import { DISCOVERY_BLOCK, LOOKUP_LEVEL, LOOKUP_NOTE } from "../../influenceLookups";
+import { BlockTarget } from "./BlockTarget";
 
 type Draft = Record<string, { body: string; structured?: Record<string, unknown> }[]>;
 
@@ -69,6 +71,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
         {d.questions.map((q) => (
           <QuestionCard
             key={q.id}
+            characterId={characterId}
             question={q}
             answers={draft[q.id] ?? []}
             remaining={q.kind === "action" ? (d.allowance[q.action_kind!] ?? 0) - used(q.action_kind!) : 0}
@@ -135,12 +138,14 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
 }
 
 function QuestionCard({
+  characterId,
   question,
   answers,
   remaining,
   influence,
   onChange,
 }: {
+  characterId: string;
   question: QuestionOut;
   answers: Draft[string];
   remaining: number;
@@ -166,7 +171,7 @@ function QuestionCard({
           <div key={i} className="flex flex-col gap-2">
             <AnswerInput question={question} value={a.body} onChange={(body) => set(i, { ...a, body })} />
             {influence && influence.actions.length > 0 && (
-              <InfluenceFields standing={influence} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />
+              <InfluenceFields characterId={characterId} standing={influence} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />
             )}
             {question.kind === "action" && (
               <Button variant="ghost" className="self-start px-0" onClick={() => onChange(answers.filter((_, j) => j !== i))}>
@@ -188,10 +193,12 @@ function QuestionCard({
 
 /** An influence answer's specialisation and named action, offering only the actions the character can reach. */
 function InfluenceFields({
+  characterId,
   standing,
   fields,
   onChange,
 }: {
+  characterId: string;
   standing: InfluenceStandingOut;
   fields: Record<string, unknown> | undefined;
   onChange: (fields: Record<string, unknown>) => void;
@@ -205,6 +212,11 @@ function InfluenceFields({
     const kept = standing.actions.find((a) => a.key === key);
     // An action from before they had names keeps its level until it changes.
     const { level: _old, ...rest } = fields ?? {};
+    // What a discovery block hides goes with it.
+    if (key !== DISCOVERY_BLOCK) {
+      delete rest.block;
+      delete rest.block_entry;
+    }
     onChange({ ...rest, specialization: spec || undefined, action: kept && reachable(standing, kept, spec) ? key : undefined });
   };
   return (
@@ -226,7 +238,10 @@ function InfluenceFields({
           </optgroup>
         </Select>
       </Field>
-      <Field label="Action" hint={reachNote(standing, specialization, action)}>
+      <Field
+        label="Action"
+        hint={[reachNote(standing, specialization, action), action?.level === LOOKUP_LEVEL && !action.conflict && LOOKUP_NOTE].filter(Boolean).join(" ") || null}
+      >
         <Select value={action?.key ?? ""} onChange={(e) => choose({ action: e.target.value })}>
           <option value="">Choose…</option>
           {[...offered(standing, specialization), ...(action && !reachable(standing, action, specialization) ? [action] : [])].map((o) => (
@@ -236,6 +251,7 @@ function InfluenceFields({
           ))}
         </Select>
       </Field>
+      {action?.key === DISCOVERY_BLOCK && <BlockTarget characterId={characterId} fields={fields} onChange={onChange} />}
     </div>
   );
 }

@@ -377,6 +377,11 @@ function ParticipantCard({ cycle, participant }: { cycle: CycleOut; participant:
           {a.delta} {a.action_kind}: {a.reason}
         </p>
       ))}
+      {Object.entries(participant.shortfall).map(([k, n]) => (
+        <p key={k} className="text-xs text-blood-bright">
+          Short {n} {k.replace(/_/g, " ")}: more was taken off than the allowance, which stops at 0.
+        </p>
+      ))}
       {!participant.removed && cycle.status === "open" && (
         <details className="mt-3 text-sm">
           <summary className="cursor-pointer text-mist">Adjust, accept late, or remove</summary>
