@@ -280,6 +280,7 @@ MESSAGES: dict[str, str] = {
     "influence.deleted": "{actor} deleted {entry} from the influence log: {who}, {what}.",
     "influence.merged": "{actor} merged {merged} into {entry} in the influence log"
     " ({times} times).",
+    "influence.detailed_at_game": "{actor} gave the details of {entry} at a game: {who}, {what}.",
 }
 
 

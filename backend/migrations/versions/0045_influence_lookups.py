@@ -1,7 +1,7 @@
 """how far back influence lookups look, and the discovery blocks on log entries
 
 Revision ID: 0045
-Revises: 0044
+Revises: 0047
 Create Date: 2026-10-21 22:00:00.000000
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0045"
-down_revision: str | None = "0044"
+down_revision: str | None = "0047"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

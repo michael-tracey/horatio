@@ -87,3 +87,5 @@ export type LookupOut = Schemas["LookupOut"];
 export type DiscoveryBlockOut = Schemas["DiscoveryBlockOut"];
 export type OwnEntryOut = Schemas["OwnEntryOut"];
 export type BlockSourceOut = Schemas["BlockSourceOut"];
+export type InfluenceSpendOut = Schemas["InfluenceSpendOut"];
+export type InfluenceDetailsIn = Schemas["InfluenceDetailsIn"];

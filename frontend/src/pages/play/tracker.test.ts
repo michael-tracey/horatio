@@ -25,7 +25,8 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     },
     morality: { name: "Humanity", value: 5, rating: 5 },
     beast: { value: 0, most: 5, start: 0 },
-    expendables: [{ key: "trait:backgrounds/Herd/", name: "Herd", detail: "", group: "Backgrounds", uses: 2, left: 2, counter_id: null }],
+    expendables: [{ key: "trait:backgrounds/Herd/", name: "Herd", detail: "", group: "Backgrounds", uses: 2, left: 2, counter_id: null, owed: 0 }],
+    influence: [],
     game: null,
     log: [],
     ...overrides,
@@ -35,6 +36,50 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
 const at = (minute: number) => new Date(Date.UTC(2026, 9, 17, 20, minute));
 const change = (tracker: string, amount: number, minute: number, damage: "normal" | "aggravated" | null = null) =>
   makeTap({ kind: "change", tracker, amount, damage }, "g1", at(minute));
+
+const ELITE = "trait:backgrounds/Influences: The Elite/";
+
+function withElite(): PlayView {
+  return view({
+    expendables: [{ key: ELITE, name: "Influences: The Elite", detail: "", group: "Backgrounds", uses: 3, left: 3, counter_id: null, influence: "elite", owed: 0 }],
+    influence: [
+      {
+        action_kind: "influence_elite",
+        type: "elite",
+        rating: 3,
+        held: ["News Media"],
+        options: ["News Media"],
+        actions: [{ key: "no_party_crashers", name: "No Party Crashers", label: "5: No Party Crashers", level: 5, conflict: false }],
+      },
+    ],
+  });
+}
+
+describe("influence spends", () => {
+  it("read as the server reads them, with the details given", () => {
+    const tap = makeTap(
+      { kind: "change", tracker: ELITE, amount: -1, influence: { action: "no_party_crashers", specialization: "News Media", purpose: "To secure the Weather" } },
+      "g1",
+      at(1),
+    );
+    const shown = withPending(withElite(), [tap]);
+
+    expect(shown.expendables[0]!.left).toBe(2);
+    expect(shown.log[0]!.text).toBe("Elite: 5: No Party Crashers (News Media), To secure the Weather");
+  });
+
+  it("say when the details are still to come, and how many uses one spend took", () => {
+    const shown = withPending(withElite(), [makeTap({ kind: "change", tracker: ELITE, amount: -2 }, "g1", at(1))]);
+
+    expect(shown.log[0]!.text).toBe("Elite ×2: details to come");
+  });
+
+  it("read as any other counter where there is no troupe to log them in", () => {
+    const shown = withPending({ ...withElite(), influence: [] }, [makeTap({ kind: "change", tracker: ELITE, amount: -1 }, "g1", at(1))]);
+
+    expect(shown.log[0]!.text).toBe("Influences: The Elite 3 → 2");
+  });
+});
 
 describe("withPending", () => {
   it("shows taps not yet sent on top of the server's view, newest first", () => {

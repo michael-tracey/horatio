@@ -294,7 +294,9 @@ EDITABLE = (
 )
 
 
-def change_entry(db: Session, actor: User, entry: InfluenceEntry, details: Details) -> list[str]:
+def change_entry(
+    db: Session, actor: User | None, entry: InfluenceEntry, details: Details
+) -> list[str]:
     """Change what an entry says. A change of type gives it the other type's next
     number. Returns the names of the fields that changed."""
     details = checked(db, entry.troupe_id, details, keep=entry)

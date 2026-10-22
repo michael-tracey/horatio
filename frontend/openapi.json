@@ -2975,6 +2975,21 @@
             "title": "Group",
             "type": "string"
           },
+          "influence": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence"
+          },
           "key": {
             "title": "Key",
             "type": "string"
@@ -2986,6 +3001,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "owed": {
+            "default": 0,
+            "title": "Owed",
+            "type": "integer"
           },
           "uses": {
             "title": "Uses",
@@ -3543,6 +3563,34 @@
         "title": "InfluenceChoicesOut",
         "type": "object"
       },
+      "InfluenceDetailsIn": {
+        "description": "What an influence spend was for (horatio.play_influence).",
+        "properties": {
+          "action": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Action",
+            "type": "string"
+          },
+          "purpose": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Purpose",
+            "type": "string"
+          },
+          "specialization": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Specialization",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "InfluenceDetailsIn",
+        "type": "object"
+      },
       "InfluenceEntryIn": {
         "properties": {
           "action_key": {
@@ -3907,6 +3955,84 @@
           "total"
         ],
         "title": "InfluenceLogOut",
+        "type": "object"
+      },
+      "InfluenceSpendOut": {
+        "description": "What an influence spend logged, for the game's log.",
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "changed_by_staff": {
+            "title": "Changed By Staff",
+            "type": "boolean"
+          },
+          "entry_id": {
+            "format": "uuid",
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "needs_details": {
+            "title": "Needs Details",
+            "type": "boolean"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "short_id": {
+            "title": "Short Id",
+            "type": "string"
+          },
+          "specialization": {
+            "title": "Specialization",
+            "type": "string"
+          },
+          "times": {
+            "title": "Times",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entry_id",
+          "short_id",
+          "type",
+          "specialization",
+          "action_key",
+          "action",
+          "purpose",
+          "times",
+          "needs_details",
+          "changed_by_staff"
+        ],
+        "title": "InfluenceSpendOut",
         "type": "object"
       },
       "InfluenceStandingOut": {
@@ -4342,6 +4468,16 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "influence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InfluenceSpendOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "kind": {
             "title": "Kind",
@@ -5241,6 +5377,13 @@
             "title": "Removed",
             "type": "boolean"
           },
+          "shortfall": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Shortfall",
+            "type": "object"
+          },
           "submission_status": {
             "anyOf": [
               {
@@ -5266,6 +5409,7 @@
           "allowance",
           "breakdown",
           "adjustments",
+          "shortfall",
           "removed",
           "late_accepted",
           "submission_status",
@@ -5679,6 +5823,14 @@
           },
           "health": {
             "$ref": "#/components/schemas/Health"
+          },
+          "influence": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InfluenceStandingOut"
+            },
+            "title": "Influence",
+            "type": "array"
           },
           "kind": {
             "title": "Kind",
@@ -8492,6 +8644,16 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "influence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InfluenceDetailsIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "kind": {
             "enum": [
@@ -12796,6 +12958,70 @@
           }
         },
         "summary": "Record Taps",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/taps/{tap_id}/influence": {
+      "put": {
+        "description": "Add or change what an influence spend was for, from the game's log. Anyone\nwho can see the sheet can until the game ends; after that, only the staff who\nkeep the troupe's influence log.",
+        "operationId": "give_influence_details_api_characters__character_id__play_taps__tap_id__influence_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "tap_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tap Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfluenceDetailsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Influence Details",
         "tags": [
           "play"
         ]
