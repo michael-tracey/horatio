@@ -467,6 +467,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/downtime/block-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Block Choices
+         * @description The player's own character's entries that a discovery block in this cycle
+         *     can hide. Players never see anyone else's.
+         */
+        get: operations["block_choices_api_characters__character_id__downtime_block_choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/downtime/results": {
         parameters: {
             query?: never;
@@ -1640,6 +1661,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/influence-blocks/{block_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Block
+         * @description Take a block back off its entry, from the log page.
+         */
+        delete: operations["remove_block_api_influence_blocks__block_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/influence-entries/{entry_id}": {
         parameters: {
             query?: never;
@@ -1930,6 +1971,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/responses/{response_id}/discovery-block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discovery Block
+         * @description A discovery block answer: the entry the player picked, the block once
+         *     accepted, and the entries it could hide.
+         */
+        get: operations["discovery_block_api_responses__response_id__discovery_block_get"];
+        put?: never;
+        /**
+         * Accept Block
+         * @description Accept the block on an entry of either type: one more block on it, and the
+         *     response says so.
+         */
+        post: operations["accept_block_api_responses__response_id__discovery_block_post"];
+        /**
+         * Remove Answer Block
+         * @description Take the block this answer added back off its entry.
+         */
+        delete: operations["remove_answer_block_api_responses__response_id__discovery_block_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/responses/{response_id}/influence-entry": {
         parameters: {
             query?: never;
@@ -1949,6 +2020,27 @@ export interface paths {
          * @description Take an answer back off the log.
          */
         delete: operations["unlog_answer_api_responses__response_id__influence_entry_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup
+         * @description What a Gossip and Insider Trading or Word on the Street answer finds in the
+         *     log, with the character's other answers it combines with.
+         */
+        get: operations["lookup_api_responses__response_id__lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2591,6 +2683,26 @@ export interface paths {
          */
         get: operations["choices_api_troupes__troupe_id__influence_log_choices_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/influence-lookback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Lookback
+         * @description House rule: how many days back lookups look, from the close of their cycle.
+         */
+        put: operations["set_lookback_api_troupes__troupe_id__influence_lookback_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3346,6 +3458,57 @@ export interface components {
             /** Troupe Name */
             troupe_name: string | null;
         };
+        /** BlockChoicesOut */
+        BlockChoicesOut: {
+            /** Entries */
+            entries: components["schemas"]["OwnEntryOut"][];
+            window: components["schemas"]["WindowOut"];
+        };
+        /** BlockIn */
+        BlockIn: {
+            /**
+             * Entry Id
+             * Format: uuid
+             */
+            entry_id: string;
+        };
+        /** BlockOut */
+        BlockOut: {
+            entry: components["schemas"]["InfluenceEntryOut"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /**
+         * BlockSourceOut
+         * @description A discovery block an answer added to an entry (horatio.influence_lookups).
+         */
+        BlockSourceOut: {
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
+            /** Added By Name */
+            added_by_name: string;
+            /** Character Id */
+            character_id: string | null;
+            /** Character Name */
+            character_name: string | null;
+            /** Cycle Id */
+            cycle_id: string | null;
+            /** Cycle Name */
+            cycle_name: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Response Id */
+            response_id: string | null;
+        };
         /** Body_upload_banner_api_troupes__troupe_id__banner_post */
         Body_upload_banner_api_troupes__troupe_id__banner_post: {
             /**
@@ -4038,6 +4201,16 @@ export interface components {
             /** Guild Name */
             guild_name: string | null;
         };
+        /** DiscoveryBlockOut */
+        DiscoveryBlockOut: {
+            block: components["schemas"]["BlockOut"] | null;
+            /** Choices */
+            choices: components["schemas"]["InfluenceEntryOut"][];
+            picked: components["schemas"]["InfluenceEntryOut"] | null;
+            /** Whose */
+            whose: ("own" | "other") | null;
+            window: components["schemas"]["WindowOut"];
+        };
         /** EmailHelp */
         EmailHelp: {
             /** Available */
@@ -4117,6 +4290,27 @@ export interface components {
         ForgotHelp: {
             /** Can Email */
             can_email: boolean;
+        };
+        /**
+         * FoundOut
+         * @description One entry a lookup finds. Never who took it.
+         */
+        FoundOut: {
+            /** Action */
+            action: string;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /** Specialization */
+            specialization: string;
+            /** Times */
+            times: number;
         };
         /** GameLog */
         GameLog: {
@@ -4301,6 +4495,11 @@ export interface components {
             action: string;
             /** Action Key */
             action_key: string | null;
+            /**
+             * Blocked By
+             * @default []
+             */
+            blocked_by: components["schemas"]["BlockSourceOut"][];
             /** Blocks */
             blocks: number;
             /** Character Id */
@@ -4571,6 +4770,49 @@ export interface components {
             /** Repeat */
             repeat: boolean;
         };
+        /** Lookback */
+        Lookback: {
+            /** Days */
+            days: number;
+        };
+        /**
+         * LookupAnswerOut
+         * @description One of the character's answers taking the lookup this cycle.
+         */
+        LookupAnswerOut: {
+            /** Answer */
+            answer: string;
+            /** Body */
+            body: string;
+            /** Question */
+            question: string;
+            /**
+             * Response Id
+             * Format: uuid
+             */
+            response_id: string;
+            /** Status */
+            status: string;
+        };
+        /** LookupOut */
+        LookupOut: {
+            /** Action Name */
+            action_name: string;
+            /** Answers */
+            answers: components["schemas"]["LookupAnswerOut"][];
+            /** Found */
+            found: components["schemas"]["FoundOut"][];
+            /** Specializations */
+            specializations: string[];
+            /** Strength */
+            strength: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
+            window: components["schemas"]["WindowOut"];
+        };
         /** Me */
         Me: {
             /** Display Name */
@@ -4795,6 +5037,35 @@ export interface components {
             name: string;
             /** Note */
             note: string | null;
+        };
+        /**
+         * OwnEntryOut
+         * @description One of the player's own character's entries, to pick for a discovery block.
+         */
+        OwnEntryOut: {
+            /** Action */
+            action: string;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /** Specialization */
+            specialization: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /** ParticipantDeliveries */
         ParticipantDeliveries: {
@@ -6242,6 +6513,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Influence Lookback Days */
+            influence_lookback_days: number;
             /**
              * Lead User Id
              * Format: uuid
@@ -6514,6 +6787,25 @@ export interface components {
         VisibleNote: {
             /** Note */
             note: string;
+        };
+        /**
+         * WindowOut
+         * @description The stretch of the log searched, both ends included: from `days` before the
+         *     cycle closes until it closes.
+         */
+        WindowOut: {
+            /** Days */
+            days: number;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /**
+             * Until
+             * Format: date-time
+             */
+            until: string;
         };
         /** WorkCycle */
         WorkCycle: {
@@ -7646,6 +7938,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyDowntime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    block_choices_api_characters__character_id__downtime_block_choices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockChoicesOut"];
                 };
             };
             /** @description Validation Error */
@@ -9904,6 +10227,35 @@ export interface operations {
             };
         };
     };
+    remove_block_api_influence_blocks__block_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                block_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     change_entry_api_influence_entries__entry_id__put: {
         parameters: {
             query?: never;
@@ -10482,6 +10834,101 @@ export interface operations {
             };
         };
     };
+    discovery_block_api_responses__response_id__discovery_block_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoveryBlockOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_block_api_responses__response_id__discovery_block_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_answer_block_api_responses__response_id__discovery_block_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     log_answer_api_responses__response_id__influence_entry_post: {
         parameters: {
             query?: never;
@@ -10534,6 +10981,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_api_responses__response_id__lookup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -11994,6 +12472,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InfluenceChoicesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_lookback_api_troupes__troupe_id__influence_lookback_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Lookback"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

@@ -655,6 +655,147 @@
         "title": "BadgesOut",
         "type": "object"
       },
+      "BlockChoicesOut": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/OwnEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "window": {
+            "$ref": "#/components/schemas/WindowOut"
+          }
+        },
+        "required": [
+          "window",
+          "entries"
+        ],
+        "title": "BlockChoicesOut",
+        "type": "object"
+      },
+      "BlockIn": {
+        "properties": {
+          "entry_id": {
+            "format": "uuid",
+            "title": "Entry Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entry_id"
+        ],
+        "title": "BlockIn",
+        "type": "object"
+      },
+      "BlockOut": {
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/InfluenceEntryOut"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "entry"
+        ],
+        "title": "BlockOut",
+        "type": "object"
+      },
+      "BlockSourceOut": {
+        "description": "A discovery block an answer added to an entry (horatio.influence_lookups).",
+        "properties": {
+          "added_at": {
+            "format": "date-time",
+            "title": "Added At",
+            "type": "string"
+          },
+          "added_by_name": {
+            "title": "Added By Name",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "cycle_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id"
+          },
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "response_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Id"
+          }
+        },
+        "required": [
+          "id",
+          "response_id",
+          "character_id",
+          "character_name",
+          "cycle_id",
+          "cycle_name",
+          "added_at",
+          "added_by_name"
+        ],
+        "title": "BlockSourceOut",
+        "type": "object"
+      },
       "Body_upload_banner_api_troupes__troupe_id__banner_post": {
         "properties": {
           "file": {
@@ -2741,6 +2882,64 @@
         "title": "DiscordSetup",
         "type": "object"
       },
+      "DiscoveryBlockOut": {
+        "properties": {
+          "block": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlockOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/InfluenceEntryOut"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "picked": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InfluenceEntryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "whose": {
+            "anyOf": [
+              {
+                "enum": [
+                  "own",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whose"
+          },
+          "window": {
+            "$ref": "#/components/schemas/WindowOut"
+          }
+        },
+        "required": [
+          "whose",
+          "picked",
+          "block",
+          "window",
+          "choices"
+        ],
+        "title": "DiscoveryBlockOut",
+        "type": "object"
+      },
       "EmailHelp": {
         "properties": {
           "available": {
@@ -2950,6 +3149,46 @@
           "can_email"
         ],
         "title": "ForgotHelp",
+        "type": "object"
+      },
+      "FoundOut": {
+        "description": "One entry a lookup finds. Never who took it.",
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "short_id": {
+            "title": "Short Id",
+            "type": "string"
+          },
+          "specialization": {
+            "title": "Specialization",
+            "type": "string"
+          },
+          "times": {
+            "title": "Times",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "short_id",
+          "happened_at",
+          "specialization",
+          "action",
+          "purpose",
+          "times"
+        ],
+        "title": "FoundOut",
         "type": "object"
       },
       "GameLog": {
@@ -3415,6 +3654,14 @@
               }
             ],
             "title": "Action Key"
+          },
+          "blocked_by": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BlockSourceOut"
+            },
+            "title": "Blocked By",
+            "type": "array"
           },
           "blocks": {
             "title": "Blocks",
@@ -4165,6 +4412,111 @@
         "title": "LoggedOut",
         "type": "object"
       },
+      "Lookback": {
+        "properties": {
+          "days": {
+            "maximum": 3650.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days"
+        ],
+        "title": "Lookback",
+        "type": "object"
+      },
+      "LookupAnswerOut": {
+        "description": "One of the character's answers taking the lookup this cycle.",
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "response_id": {
+            "format": "uuid",
+            "title": "Response Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "response_id",
+          "question",
+          "answer",
+          "body",
+          "status"
+        ],
+        "title": "LookupAnswerOut",
+        "type": "object"
+      },
+      "LookupOut": {
+        "properties": {
+          "action_name": {
+            "title": "Action Name",
+            "type": "string"
+          },
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/LookupAnswerOut"
+            },
+            "title": "Answers",
+            "type": "array"
+          },
+          "found": {
+            "items": {
+              "$ref": "#/components/schemas/FoundOut"
+            },
+            "title": "Found",
+            "type": "array"
+          },
+          "specializations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Specializations",
+            "type": "array"
+          },
+          "strength": {
+            "title": "Strength",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/WindowOut"
+          }
+        },
+        "required": [
+          "type",
+          "action_name",
+          "strength",
+          "window",
+          "specializations",
+          "found",
+          "answers"
+        ],
+        "title": "LookupOut",
+        "type": "object"
+      },
       "Me": {
         "properties": {
           "display_name": {
@@ -4732,6 +5084,56 @@
           "note"
         ],
         "title": "OtherPower",
+        "type": "object"
+      },
+      "OwnEntryOut": {
+        "description": "One of the player's own character's entries, to pick for a discovery block.",
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "short_id": {
+            "title": "Short Id",
+            "type": "string"
+          },
+          "specialization": {
+            "title": "Specialization",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "short_id",
+          "type",
+          "happened_at",
+          "specialization",
+          "action",
+          "purpose"
+        ],
+        "title": "OwnEntryOut",
         "type": "object"
       },
       "ParticipantDeliveries": {
@@ -8632,6 +9034,10 @@
             "title": "Id",
             "type": "string"
           },
+          "influence_lookback_days": {
+            "title": "Influence Lookback Days",
+            "type": "integer"
+          },
           "lead_user_id": {
             "format": "uuid",
             "title": "Lead User Id",
@@ -8707,6 +9113,7 @@
           "xp_floor",
           "xp_ceiling",
           "starting_blood",
+          "influence_lookback_days",
           "portrait",
           "banner",
           "public",
@@ -9344,6 +9751,32 @@
           "note"
         ],
         "title": "VisibleNote",
+        "type": "object"
+      },
+      "WindowOut": {
+        "description": "The stretch of the log searched, both ends included: from `days` before the\ncycle closes until it closes.",
+        "properties": {
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "since",
+          "until",
+          "days"
+        ],
+        "title": "WindowOut",
         "type": "object"
       },
       "WorkCycle": {
@@ -11213,6 +11646,50 @@
         "summary": "Save Answers",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/downtime/block-choices": {
+      "get": {
+        "description": "The player's own character's entries that a discovery block in this cycle\ncan hide. Players never see anyone else's.",
+        "operationId": "block_choices_api_characters__character_id__downtime_block_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockChoicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Block Choices",
+        "tags": [
+          "influence lookups"
         ]
       }
     },
@@ -14641,6 +15118,43 @@
         "summary": "Health"
       }
     },
+    "/api/influence-blocks/{block_id}": {
+      "delete": {
+        "description": "Take a block back off its entry, from the log page.",
+        "operationId": "remove_block_api_influence_blocks__block_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "block_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Block Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Block",
+        "tags": [
+          "influence lookups"
+        ]
+      }
+    },
     "/api/influence-entries/{entry_id}": {
       "delete": {
         "operationId": "delete_entry_api_influence_entries__entry_id__delete",
@@ -15429,6 +15943,137 @@
         ]
       }
     },
+    "/api/responses/{response_id}/discovery-block": {
+      "delete": {
+        "description": "Take the block this answer added back off its entry.",
+        "operationId": "remove_answer_block_api_responses__response_id__discovery_block_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Answer Block",
+        "tags": [
+          "influence lookups"
+        ]
+      },
+      "get": {
+        "description": "A discovery block answer: the entry the player picked, the block once\naccepted, and the entries it could hide.",
+        "operationId": "discovery_block_api_responses__response_id__discovery_block_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryBlockOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discovery Block",
+        "tags": [
+          "influence lookups"
+        ]
+      },
+      "post": {
+        "description": "Accept the block on an entry of either type: one more block on it, and the\nresponse says so.",
+        "operationId": "accept_block_api_responses__response_id__discovery_block_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Block",
+        "tags": [
+          "influence lookups"
+        ]
+      }
+    },
     "/api/responses/{response_id}/influence-entry": {
       "delete": {
         "description": "Take an answer back off the log.",
@@ -15515,6 +16160,50 @@
         "summary": "Log Answer",
         "tags": [
           "influence log"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/lookup": {
+      "get": {
+        "description": "What a Gossip and Insider Trading or Word on the Street answer finds in the\nlog, with the character's other answers it combines with.",
+        "operationId": "lookup_api_responses__response_id__lookup_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LookupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lookup",
+        "tags": [
+          "influence lookups"
         ]
       }
     },
@@ -17892,6 +18581,60 @@
         "summary": "Choices",
         "tags": [
           "influence log"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/influence-lookback": {
+      "put": {
+        "description": "House rule: how many days back lookups look, from the close of their cycle.",
+        "operationId": "set_lookback_api_troupes__troupe_id__influence_lookback_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Lookback"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Lookback",
+        "tags": [
+          "influence lookups"
         ]
       }
     },

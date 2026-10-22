@@ -1828,3 +1828,157 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
   await visitor.reload();
   await expect(visitor.getByText(/only for people signed in, or there is no such troupe/)).toBeVisible();
 });
+
+test("Gossip is filled from the influence log, and a discovery block hides an entry from it", async ({ browser }) => {
+  // A whole character creation, then a downtime answered from the log.
+  test.slow();
+  const custodian = await person(browser, "gossip-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "gossip-lead");
+  const player = await person(browser, "gossip-player");
+  const troupeName = `Court of Whispers ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  const l = lead.page;
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(l.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+
+  // Agnes is built for the troupe, then takes Elite 3 with News Media, and joins it.
+  const p = player.page;
+  await p.reload();
+  await p.getByLabel("Name").fill("Agnes");
+  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Create" }).click();
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
+  await p.getByLabel("Sect").selectOption("Camarilla");
+  const next = async (heading: string) => {
+    await p.getByRole("button", { name: "Save and continue" }).click();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  };
+  const tap = async (...dots: string[]) => {
+    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
+  };
+  await next("Attributes");
+  await tap("Physical 7", "Social 5", "Mental 3");
+  await next("Focuses");
+  await tap("Strength 1", "Wits 1", "Charisma 1");
+  await next("Skills");
+  await tap("Brawl 4", "Dodge 3", "Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2");
+  await tap("Investigation 1", "Leadership 1", "Medicine 1", "Melee 1");
+  await next("Backgrounds");
+  await tap("Fame 3", "Herd 2", "Generation 1");
+  await next("Disciplines");
+  await tap("Celerity 2", "Potence 1", "Presence 1");
+  await next("Merits & flaws");
+  await next("Review");
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  const agnes = new URL(p.url()).pathname.split("/")[2]!;
+  for (const [category, name, rating] of [
+    ["backgrounds", "Influences: The Elite", 3],
+    ["influence_elite_specializations", "News Media", 1],
+  ] as const) {
+    const bought = await p.request.put(`/api/characters/${agnes}/traits`, { headers, data: { category, name, rating } });
+    expect(bought.status(), await bought.text()).toBe(200);
+  }
+  const asked = await p.request.post(`/api/characters/${agnes}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBe(201);
+  const approved = await l.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+  expect(approved.status(), await approved.text()).toBe(200);
+
+  // A cycle, and the troupe's log: three Elite actions by someone else in News Media, one
+  // of them blocked once and one too long ago, and one of Agnes's own.
+  const day = 24 * 60 * 60 * 1000;
+  const closes = new Date(Date.now() + 7 * day);
+  const made = await l.request.post(`/api/troupes/${troupeId}/cycles`, {
+    headers,
+    data: { name: "Winter", closes_at: closes.toISOString(), grace_ends_at: new Date(closes.getTime() + 7 * day).toISOString() },
+  });
+  expect(made.status(), await made.text()).toBe(201);
+  const cycleId = (await made.json()).id;
+  expect((await l.request.post(`/api/cycles/${cycleId}/open`, { headers })).status()).toBe(200);
+  for (const [who, action_key, purpose, daysBeforeClose, blocks] of [
+    ["REDACTED", "smooth_over", "To bury the mayor's scandal", 17, 0],
+    ["REDACTED", "no_party_crashers", "To keep the press out of the gala", 100, 0],
+    ["agnes", "a_friend_in_need", "To call in a favour from the editor", 12, 0],
+    ["REDACTED", "bureaucratic_errors", "To lose the dock permits", 27, 1],
+  ] as const) {
+    const data = {
+      type: "elite",
+      happened_at: new Date(closes.getTime() - daysBeforeClose * day).toISOString(),
+      ...(who === "agnes" ? { character_id: agnes } : { name: who }),
+      specialization: "News Media",
+      action_key,
+      purpose,
+      blocks,
+    };
+    const logged = await l.request.post(`/api/troupes/${troupeId}/influence-log`, { headers, data });
+    expect(logged.status(), await logged.text()).toBe(201);
+  }
+
+  // Agnes spends two actions on Gossip, and one hiding her own favour from the editor.
+  await p.goto(`/characters/${agnes}/downtime`);
+  const elite = p.locator("section").filter({ has: p.getByRole("heading", { name: "Elite influence action" }) });
+  const answer = async (i: number, text: string, action: string) => {
+    await elite.getByRole("button", { name: /Add an action/ }).click();
+    await elite.getByLabel("Elite influence action").nth(i).fill(text);
+    await elite.getByLabel("Specialisation").nth(i).selectOption("News Media");
+    await elite.getByLabel("Action", { exact: true }).nth(i).selectOption({ label: action });
+  };
+  await answer(0, "Ask the newsroom what is stirring.", "2: Gossip and Insider Trading");
+  await expect(elite.getByText("Covers all your specialisations; more actions find better-hidden things.")).toBeVisible();
+  await answer(1, "Ask again at the Herald.", "2: Gossip and Insider Trading");
+  await answer(2, "Bury the favour I called in from the editor.", "Discovery block");
+  await elite.getByLabel("Whose action to hide").selectOption({ label: "One of mine" });
+  // Only her own actions to pick from, by their ids.
+  const own = elite.getByLabel("Your action").locator("option", { hasText: "To call in a favour from the editor" });
+  await expect(own).toHaveText(/^E3 · /);
+  await expect(elite.getByLabel("Your action").locator("option")).toHaveCount(2);
+  await elite.getByLabel("Your action").selectOption((await own.getAttribute("value"))!);
+  await p.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(p.getByText("submitted", { exact: true })).toBeVisible();
+
+  // The lead fills the first Gossip answer from the log: the result goes on the last,
+  // strength 2, so the once-blocked entry shows, and never Agnes's own or who took them.
+  await l.goto(`/cycles/${cycleId}/responses`);
+  const responses = l.getByRole("textbox", { name: "Response to Agnes" });
+  await l.getByRole("button", { name: "Fill from the log" }).first().click();
+  await expect(responses.nth(0)).toHaveValue("Combined with your other Gossip and Insider Trading actions: strength 2, results below.");
+  const result = l.getByRole("textbox", { name: "Combined response: Ask again at the Herald." });
+  await expect(result).toHaveValue(/^Gossip and Insider Trading, strength 2, in News Media, since .*:\n- .*, News Media, 3: Bureaucratic Errors, To lose the dock permits \(E4\)\n- .*, News Media, 4: Smooth Over, To bury the mayor's scandal \(E1\)$/);
+  await l.screenshot(shots("gossip"));
+  await l.getByRole("button", { name: "Save response" }).first().click();
+  await expect(responses.nth(1)).toHaveValue(/To bury the mayor's scandal \(E1\)$/);
+
+  // The block, on the entry Agnes picked.
+  await expect(l.getByLabel("Entry to block").locator("option:checked")).toHaveText(/^E3 · .* · Agnes · Elite, News Media · 1: A Friend in Need/);
+  await l.getByRole("button", { name: "Accept the block" }).click();
+  await expect(l.getByText("Blocked E3 (now 1).")).toBeVisible();
+  await expect(responses.nth(2)).toHaveValue("Blocked (now 1).");
+
+  // The log shows where the block came from.
+  await l.goto(`/troupes/${troupeId}/influence`);
+  const e3 = l.getByRole("listitem", { name: "Entry E3" });
+  await expect(e3.getByText("1 block")).toBeVisible();
+  await expect(e3.getByText(/Blocked by Agnes in Winter, accepted by gossip-lead/)).toBeVisible();
+
+  // A longer lookback finds the action from 100 days back.
+  await l.goto(`/troupes/${troupeId}/rules/actions`);
+  await expect(l.getByText("90 days", { exact: true })).toBeVisible();
+  await l.getByRole("button", { name: "Change how far lookups look back" }).click();
+  await l.getByLabel("Days to look back").fill("120");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(l.getByText("120 days", { exact: true })).toBeVisible();
+  await l.goto(`/cycles/${cycleId}/responses`);
+  await l.getByRole("button", { name: "Fill from the log" }).first().click();
+  await expect(l.getByRole("textbox", { name: "Combined response: Ask again at the Herald." })).toHaveValue(/To keep the press out of the gala \(E2\)/);
+});
