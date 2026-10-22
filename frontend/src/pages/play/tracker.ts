@@ -1,4 +1,5 @@
-import type { PlayLogEntry, PlayView, TapIn } from "../../api/types";
+import type { InfluenceDetailsIn, PlayLogEntry, PlayView, TapIn } from "../../api/types";
+import { TYPE_NAMES } from "../../influence";
 
 /**
  * The Play View's taps on the device. The server works the trackers out from
@@ -37,7 +38,15 @@ export function tapId(): string {
 
 /** A new tap, stamped with when it happened here and the game it was made in. */
 export function makeTap(
-  what: { kind: Tap["kind"]; tracker?: string; amount?: number; damage?: Damage | null; note?: string; undoes?: string | null },
+  what: {
+    kind: Tap["kind"];
+    tracker?: string;
+    amount?: number;
+    damage?: Damage | null;
+    note?: string;
+    undoes?: string | null;
+    influence?: InfluenceDetailsIn | null;
+  },
   gameId: string | null | undefined,
   now: Date = new Date(),
 ): Tap {
@@ -51,7 +60,25 @@ export function makeTap(
     damage: what.damage ?? null,
     note: what.note?.trim() ?? "",
     undoes: what.undoes ?? null,
+    influence: what.influence ?? null,
   };
+}
+
+/** The standing to ask a spend's details with: the tracker is an Influences counter whose spends are logged. */
+export function influenceStanding(view: PlayView, tracker: string) {
+  const type = view.expendables.find((e) => e.key === tracker)?.influence;
+  return type ? view.influence.find((s) => s.type === type) : undefined;
+}
+
+/** An influence spend as the game's log reads it, as the server says it: "Elite: 5: No Party Crashers (News Media), To secure the Weather". */
+export function spendText(view: PlayView, tracker: string, amount: number, details: InfluenceDetailsIn | null | undefined): string | null {
+  const standing = influenceStanding(view, tracker);
+  if (!standing || amount >= 0) return null;
+  const name = TYPE_NAMES[standing.type] + (amount < -1 ? ` ×${-amount}` : "");
+  const action = details && standing.actions.find((a) => a.key === details.action);
+  if (!details || !action) return `${name}: details to come`;
+  const said = action.label + (details.specialization ? ` (${details.specialization})` : "");
+  return details.purpose?.trim() ? `${name}: ${said}, ${details.purpose.trim()}` : `${name}: ${said}`;
 }
 
 /** What a tracker is called, as the log names it. */
@@ -122,8 +149,10 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
 }
 
 /** The change as the log reads it: "Blood 7 → 6". */
-export function describe(view: PlayView, tap: Pick<Tap, "kind" | "tracker" | "amount" | "damage">, change: [number, number] | null): string {
+export function describe(view: PlayView, tap: Pick<Tap, "kind" | "tracker" | "amount" | "damage" | "influence">, change: [number, number] | null): string {
   if (tap.kind === "note") return "Note";
+  const spent = tap.kind === "change" ? spendText(view, tap.tracker, tap.amount, tap.influence) : null;
+  if (spent) return spent;
   if (tap.tracker === "health") {
     const text = `Health: ${tap.amount > 0 ? "took" : "healed"} ${Math.abs(tap.amount)} ${tap.damage ?? "normal"}`;
     return change ? `${text} (${change[0]} → ${change[1]} marked)` : text;

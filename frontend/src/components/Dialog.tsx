@@ -1,8 +1,21 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 
 /** A modal dialog over the page: Escape, the × or a click outside closes it.
- * Its content mounts only while open, so forms inside start fresh each time. */
-export function Dialog({ title, open, onClose, children }: { title: string; open: boolean; onClose: () => void; children: ReactNode }) {
+ * Its content mounts only while open, so forms inside start fresh each time.
+ * A wide one has room for a form of several columns. */
+export function Dialog({
+  title,
+  open,
+  onClose,
+  wide = false,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onClose: () => void;
+  wide?: boolean;
+  children: ReactNode;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -20,7 +33,7 @@ export function Dialog({ title, open, onClose, children }: { title: string; open
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-lg border border-ash bg-dusk p-0 text-parchment shadow-xl backdrop:bg-black/60"
+      className={`m-auto ${wide ? "w-[min(48rem,calc(100vw-2rem))]" : "w-[min(28rem,calc(100vw-2rem))]"} rounded-lg border border-ash bg-dusk p-0 text-parchment shadow-xl backdrop:bg-black/60`}
     >
       <div className="flex items-center justify-between gap-3 border-b border-ash px-4 py-3">
         <h2 id={titleId} className="font-display text-gold">

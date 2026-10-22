@@ -24,6 +24,7 @@ host nginx :443 ── Let's Encrypt certificate, renewed by certbot's timer
 | `playbook.yml` | Postgres, migrations, the app, nginx and TLS, nightly backups |
 | `production.env.example` | The settings to copy to `production.env` (gitignored) |
 | `custodian.sh` | Makes an account the custodian |
+| `import-influence-log.sh` | Imports a troupe's influence log from the old spreadsheet |
 
 ## Before the first deploy
 
@@ -85,6 +86,23 @@ GitHub, and marked if uncommitted changes went in), when it was built, when the 
 last started, and whether the database is on the newest migration that build has.
 `deploy.sh` bakes the commit and build time into the image; a `--no-build` redeploy
 keeps the image's own.
+
+## Importing the influence log
+
+LotsLarp's influence history is in the `Elite Infl.` and `UW Infl.` tabs of its old
+spreadsheet. Download the spreadsheet as .xlsx (File → Download → Microsoft Excel),
+or those two tabs as CSV into one folder, then:
+
+```bash
+deploy/import-influence-log.sh LotsLarp.xlsx --troupe "LotsLarp" --dry-run  # see what it would do
+deploy/import-influence-log.sh LotsLarp.xlsx --troupe "LotsLarp"
+```
+
+It reports the rows it skipped and why, and the names that match no character in
+the troupe, which it keeps as text. Running it again updates the entries it made
+rather than adding them twice, so once the characters are in Horatio, run it again
+to link their entries. Dates are midnight in `--timezone`, `America/New_York` unless
+given.
 
 ## Dark Pack resources
 

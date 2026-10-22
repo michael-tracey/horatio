@@ -7,6 +7,7 @@ import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
+import { InfluenceLogTab } from "./InfluenceLogTab";
 import { LogTab } from "./LogTab";
 import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
@@ -89,6 +90,7 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/downtimes`, label: "Cycles" }] : []),
               ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
               ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
+              ...(can.running ? [{ to: `${base}/influence`, label: "Influence log" }] : []),
             ],
           },
           {
@@ -116,7 +118,8 @@ export function TroupePage() {
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
         {can.running && <Route path="connectors" element={<ConnectorsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}
-        {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} />} />}
+        {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} canLog={can.running} />} />}
+        {can.running && <Route path="influence" element={<InfluenceLogTab troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
       </Routes>
     </>
