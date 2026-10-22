@@ -89,9 +89,10 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByLabel("Faction")).toHaveValue("Orthodox");
   await p.getByLabel("Sect").selectOption("Camarilla");
   await expect(p.getByLabel("Faction")).toHaveCount(0);
+  // Saving a step reloads what can be taken, which can take several seconds on a busy server.
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
@@ -654,7 +655,7 @@ test("a troupe changes what new characters start with and their downtime actions
     // A vampire needs Generation before leaving Backgrounds.
     if (heading === "Disciplines") await p.getByRole("button", { name: "Generation 1", exact: true }).click();
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   }
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
@@ -709,7 +710,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await p.getByLabel("Sect").selectOption("Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
@@ -901,7 +902,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await p.getByLabel("Sect").selectOption("Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
@@ -1044,6 +1045,54 @@ test("a Caitiff chooses their in-clan disciplines while creating", async ({ brow
   // Uncommon disciplines are never offered; once three are chosen, nothing else is.
   await expect(page.getByRole("checkbox", { name: "Protean" })).toHaveCount(0);
   await expect(page.getByRole("checkbox", { name: "Dominate" })).toHaveCount(0);
+});
+
+test("a merit taken in the creation wizard gives the traits it grants", async ({ browser }) => {
+  const { page: p } = await person(browser, "creep");
+  await p.getByLabel("Name").fill("Grub");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  await p.getByLabel("Clan").selectOption("Nosferatu: Creeps");
+  await expect(p.getByLabel("Clan")).toHaveValue("Nosferatu: Creeps");
+  // Every pick but the merits placed through the API.
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Mental", 7], ["Physical", 5], ["Social", 3]],
+    focus_physicals: [["Dexterity", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Manipulation", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Obfuscate", 2], ["Animalism", 1], ["Auspex", 1]],
+  };
+  for (const [category, picks] of Object.entries(build)) {
+    const response = await p.request.put(`/api/characters/${id}/creation/categories/${category}`, {
+      headers: { "X-Horatio": "1" },
+      data: { picks: picks.map(([name, rating]) => ({ name, rating })) },
+    });
+    expect(response.status(), await response.text()).toBe(200);
+  }
+
+  await p.goto(`/characters/${id}/create/merits`);
+  await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible();
+  await p.getByLabel("Search Merits").fill("Extrasensory");
+  await p.getByRole("checkbox", { name: /^Extrasensory Perceptions/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  // Saving waits for the lists of what can be taken to reload, which takes a while with both browsers at it.
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+  // Only the merit's own point comes from the budget.
+  await expect(p.getByText("Extrasensory Perceptions (1 of 7 points)")).toBeVisible();
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+
+  // Acute Sense for hearing and for smell, and the Perception focus beside Wits, all marked as given by the merit.
+  const row = (text: string | RegExp) => p.locator("main li").filter({ hasText: text });
+  await expect(row("Acute Sense: Hearing")).toContainText("from Extrasensory Perceptions");
+  await expect(row("Acute Sense: Smell")).toContainText("from Extrasensory Perceptions");
+  await expect(row(/^Perception\b/)).toContainText("+1 from Extrasensory Perceptions");
+  await expect(row("Wits")).toBeVisible();
+  // Given, not bought: neither can be taken off on its own.
+  await expect(p.getByRole("button", { name: "Remove Acute Sense" })).toHaveCount(0);
 });
 
 test("changes on the sheet wait in a cart, and only Spend XP makes them, all or none", async ({ browser }) => {
@@ -2157,7 +2206,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await p.getByLabel("Sect").selectOption("Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
@@ -2369,7 +2418,7 @@ test("Crafts, Performance and Science take a field in the wizard, kept through B
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();

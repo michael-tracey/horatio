@@ -23,7 +23,8 @@ Condition vocabulary (every key in one table must hold):
                                     the subject itself: one of these names, its
                                     rating, whether it has a detail
     copies = { gte = 2 }            how many times the sheet holds the subject's
-                                    trait (with different details)
+                                    trait (with different details), leaving out
+                                    copies another trait gives (SheetTrait.granted)
     in_clan = true                  the subject is one of the character's in-clan
                                     disciplines
     accepted = true                 a home troupe has accepted the character
@@ -45,7 +46,8 @@ Condition vocabulary (every key in one table must hold):
                                     merits of one value. Names starting with
                                     `except_prefix` never count, nor pairs listed in
                                     `together` ([[a, b], ...]). A check's message can
-                                    name the other trait as {other}.
+                                    name the other trait as {other}. A merit another
+                                    trait gives never counts.
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
@@ -260,7 +262,10 @@ def matches(
             held = sum(
                 1
                 for t in sheet
-                if t.category == subject.category and t.name == subject.name and t.rating != 0
+                if t.category == subject.category
+                and t.name == subject.name
+                and t.rating != 0
+                and not t.granted
             )
             ok = compare(held, test)
         elif key == "in_clan":
@@ -317,7 +322,7 @@ def clashing(
             "except_prefix" in test and t.name.startswith(test["except_prefix"])
         )
 
-    if not counts(subject):
+    if subject.granted or not counts(subject):
         return None
     allowed = [set(pair) for pair in test.get("together", ())]
     return next(
@@ -328,6 +333,7 @@ def clashing(
             and t.name != subject.name
             and t.rating == subject.rating
             and t.rating != 0
+            and not t.granted
             and counts(t)
             and {t.name, subject.name} not in allowed
         ),

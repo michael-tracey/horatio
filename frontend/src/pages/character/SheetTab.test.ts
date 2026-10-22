@@ -56,6 +56,11 @@ describe("swapOptions", () => {
     expect(swapOptions(strength, [strength], catalogue)).toEqual({ cost: 10, others: ["Dexterity", "Stamina"] });
   });
 
+  it("offers nothing for a focus a merit gives", () => {
+    const strength = { ...trait("focus_physicals", "Physical Focus", "Attributes", "Strength"), granted_rating: 1, granted_by: ["Dust in the Wind"] };
+    expect(swapOptions(strength, [strength], catalogue)).toBeNull();
+  });
+
   it("offers nothing for categories that cannot be swapped", () => {
     const brawl = trait("skills", "Skills", "Skills", "Brawl");
     expect(swapOptions(brawl, [brawl], catalogue)).toBeNull();

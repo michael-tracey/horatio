@@ -5,7 +5,9 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
     add          change another trait's rating by `amount` (Rugged: +1 Healthy;
                  Low Pain Threshold: -1 Injured), the dots free
     free_up_to   the first `amount` dots of a trait are free (Personal Cult: 5 in
-                 a background); dots already bought there are refunded
+                 a background); dots already bought there are refunded. A merit
+                 is given this way, whole and at its value, whatever `amount`
+                 says (Extrasensory Perceptions: Acute Sense)
     raise_max    the trait can go `amount` higher than its category usually allows
                  (Blood of the Tzimisce: Lore +2)
     price_in_clan  the trait is priced as in-clan without being in-clan
@@ -13,7 +15,8 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
     cost_percent the trait costs `amount` percent of its price, rounded up
                  (Supernatural Aria: Performance: Singing at 50)
     convert      the trait named in `from` becomes the target, keeping its rating
-                 (a Path merit turns Humanity into that Path); undone with the merit
+                 (a Path merit turns Humanity into that Path); undone with the merit.
+                 The target can be the player's choice (Path Adherent)
 
 A grant can also hold only `when` a condition holds, in the vocabulary of
 horatio.rules.checks: Fortitude gives a Stamina-focused character a health level
@@ -131,9 +134,15 @@ def effects(
             label = trait.full_name
             if grant.kind == "convert":
                 assert grant.convert_from is not None
-                found.converts[(grant.convert_from["category"], grant.convert_from["name"])] = (
-                    grant.target["name"]
-                )
+                if "choose" in grant.target:
+                    chosen = chosen_target(grant, trait.detail, rule_set)
+                    if chosen is None:
+                        found.unchosen.append((trait, grant))
+                        continue
+                    to = chosen[1]
+                else:
+                    to = grant.target["name"]
+                found.converts[(grant.convert_from["category"], grant.convert_from["name"])] = to
                 continue
             if "choose" in grant.target:
                 target = chosen_target(grant, trait.detail, rule_set)
@@ -248,7 +257,11 @@ def validate_grant(
     for name in names:
         if not any((c, name) in rule_set_traits for c in grant.categories):
             raise ValueError(f"grant {grant.key} names unknown trait {name!r}")
-    if grant.kind == "convert" and not (grant.convert_from and grant.target.get("name")):
-        raise ValueError(f"grant {grant.key} must convert `from` one trait to a named one")
+    if grant.kind == "convert" and not (
+        grant.convert_from and (grant.target.get("name") or choose)
+    ):
+        raise ValueError(
+            f"grant {grant.key} must convert `from` one trait to a named or chosen one"
+        )
     if grant.kind in ("add", "free_up_to") and not (grant.target.get("name") or choose):
         raise ValueError(f"grant {grant.key} must name one trait, or let the player choose one")

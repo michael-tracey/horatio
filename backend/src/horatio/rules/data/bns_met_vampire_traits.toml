@@ -7018,6 +7018,24 @@ page_reference = "256"
 properties = { visible = "Path of Harmony" }
 
 [[traits]]
+category = "paths"
+name = "Entelechy"
+page_reference = "Vol. 2, p. 263"
+properties = { visible = "Path of Entelechy" }
+
+[[traits]]
+category = "paths"
+name = "Nocturnal Redemption"
+page_reference = "Vol. 2, p. 263"
+properties = { visible = "Path of Nocturnal Redemption" }
+
+[[traits]]
+category = "paths"
+name = "Hive"
+page_reference = "Vol. 2, p. 264"
+properties = { visible = "Path of the Hive" }
+
+[[traits]]
 category = "merits"
 name = "Thaumaturgic Expertise"
 description = "Learn another Thaumaturgy path without a teacher at in-clan cost, though it is not in-clan. May be bought more than once."

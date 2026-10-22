@@ -274,6 +274,14 @@ class SheetTrait:
     rating: int | None = None
     free_rating: int = 0
     detail: str = ""
+    # Dots another trait's grant gives it (horatio.rules.grants).
+    granted_rating: int = 0
+
+    @property
+    def granted(self) -> bool:
+        """Held only because another trait gives it, as Extrasensory Perceptions
+        gives Acute Sense: not bought, so not counted as a copy or a clan merit."""
+        return self.granted_rating > 0 and self.granted_rating >= (self.rating or 0)
 
     @property
     def full_name(self) -> str:
