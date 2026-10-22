@@ -131,7 +131,9 @@ def test_two_word_on_the_street_actions_make_one_result_of_strength_two(scene: S
     once_blocked = scene.add(30 * day, blocks=1, purpose="To hide a payment")
     twice_blocked = scene.add(20 * day, specialization="Infrastructure", blocks=2)
     scene.add(5 * day, character_id=scene.agnes, action_key="free_travel")  # her own
-    scene.add(5 * day, action_key="attack")  # a conflict action
+    scene.add(
+        5 * day, action_key="attack", target={"character_id": scene.bram}
+    )  # a conflict action
     scene.add(5 * day, specialization="Arts")  # not one of hers
     scene.add(5 * day, type="elite", specialization="Finance", action_key="smooth_over")
     responses = scene.words(2)
@@ -293,7 +295,12 @@ def test_a_player_picks_from_their_own_entries_in_the_lookback(scene: Scene) -> 
         action_key="a_friend_in_need",
     )
     scene.add(timedelta(days=200), character_id=scene.agnes)  # too long ago
-    scene.add(timedelta(days=3), character_id=scene.agnes, action_key="attack")  # no blocking it
+    scene.add(
+        timedelta(days=3),
+        character_id=scene.agnes,
+        action_key="attack",
+        target={"character_id": scene.bram},
+    )  # no blocking it
     scene.add(timedelta(days=3), character_id=scene.bram)  # someone else's
 
     choices = scene.troupe.player.client.get(f"/characters/{scene.agnes}/downtime/block-choices")
@@ -387,7 +394,7 @@ def test_an_elite_block_can_hide_an_underworld_entry(scene: Scene) -> None:
 
 
 def test_conflict_actions_cannot_be_blocked(scene: Scene) -> None:
-    attack = scene.add(timedelta(days=3), action_key="attack")
+    attack = scene.add(timedelta(days=3), action_key="attack", target={"character_id": scene.bram})
     (response,) = scene.submit((UNDERWORLD, block(), "Hide the attack"))
 
     refused = scene.troupe.storyteller.client.post(

@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from horatio import influence_log, responses
 from horatio.api.downtimes import staff_cycle, staff_troupe
 from horatio.api.influence import InfluenceAnswerOut, answer_out
+from horatio.api.influence_effects import BlockWarningOut, block_warnings
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
@@ -55,6 +56,8 @@ class WorkItemOut(BaseModel):
     influence: InfluenceAnswerOut | None
     # The influence log entry staff logged it in.
     influence_entry: InfluenceEntryRef | None = None
+    # Recorded Blocks an influence answer looks to be up against.
+    influence_blocks: list[BlockWarningOut] = []
     status: str
     assigned_to_user_id: uuid.UUID | None
     assigned_to_any_narrator: bool
@@ -137,6 +140,7 @@ def item_out(db: DbSession, item: responses.WorkItem) -> WorkItemOut:
         structured=item.answer.structured,
         influence=answer_out(rules, item.question.action_kind, item.answer.structured),
         influence_entry=entry_ref(db, item.response),
+        influence_blocks=block_warnings(db, item),
         status=item.response.status,
         assigned_to_user_id=item.response.assigned_to_user_id,
         assigned_to_any_narrator=item.response.assigned_to_any_narrator,

@@ -8,6 +8,7 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { TYPE_NAMES } from "../../influence";
 import { BlockSources } from "./BlockSources";
+import { EffectsCard, ResolveButton, TargetFields, targetBody, targetForm } from "./InfluenceEffects";
 import { logQuery, NO_FILTERS, sourceText, whoText, type LogFilters } from "./influenceLog";
 import { allowanceWarning, another, cycleDate, specializationGroups, type EntryFields } from "./logInfluence";
 import { WhoPicker } from "./WhoPicker";
@@ -115,6 +116,7 @@ export function InfluenceLogTab({ troupeId }: { troupeId: string }) {
           </Field>
         </div>
       </Card>
+      <EffectsCard troupeId={troupeId} />
       {toMerge.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => merge.mutate(toMerge.map((e) => e.id))} disabled={merge.isPending}>
@@ -201,6 +203,7 @@ function EntryRow({
         <span className="text-mist">
           · {TYPE_NAMES[entry.type]}
           {entry.specialization && `, ${entry.specialization}`} · {entry.action}
+          {entry.target?.text && ` → ${entry.target.text}`}
         </span>
       </div>
       {entry.purpose && <p>{entry.purpose}</p>}
@@ -209,6 +212,7 @@ function EntryRow({
         {entry.times > 1 && <Badge tone="gold">logged {entry.times} times</Badge>}
         {entry.blocks > 0 && <Badge>{entry.blocks === 1 ? "1 block" : `${entry.blocks} blocks`}</Badge>}
         {entry.needs_details && <Badge tone="blood">needs details</Badge>}
+        {entry.effect && <Badge tone={entry.effect.active ? "gold" : "mist"}>{entry.effect.active ? entry.effect.text : `${entry.effect.text}, over`}</Badge>}
         {entry.cycle_id && entry.source === "downtime" ? (
           <Link to={`/cycles/${entry.cycle_id}`} className="hover:text-gold">
             {sourceText(entry)}
@@ -222,6 +226,7 @@ function EntryRow({
           </span>
         )}
         <span className="ml-auto flex gap-2">
+          <ResolveButton entry={entry} />
           <Button variant="ghost" className="px-2 py-0" onClick={onEdit}>
             Edit
           </Button>
@@ -272,6 +277,7 @@ export function EntryForm({
   });
   // The short id of the entry Add another last logged.
   const [logged, setLogged] = useState<string | null>(null);
+  const [target, setTarget] = useState(targetForm(entry));
   const set = (change: Partial<EntryFields>) => setForm({ ...form, ...change });
   const type = choices.types.find((t) => t.type === form.type)!;
   const characterOf = form.who.startsWith("c:") ? form.who.slice(2) : "";
@@ -311,12 +317,14 @@ export function EntryForm({
       blocks: form.blocks,
       cycle_id: form.cycle_id || null,
       needs_details: form.needs_details,
+      target: targetBody(target, form.action_key),
     };
     const saved = entry
       ? await unwrap(api.PUT("/api/influence-entries/{entry_id}", { params: { path: { entry_id: entry.id } }, body }))
       : await unwrap(api.POST("/api/troupes/{troupe_id}/influence-log", { params: { path: { troupe_id: troupeId } }, body }));
     if (more) {
       setForm(another(form));
+      setTarget(targetForm(undefined));
       setLogged(saved.short_id);
     } else onDone();
   });
@@ -381,6 +389,13 @@ export function EntryForm({
             ))}
           </Select>
         </Field>
+        <TargetFields
+          choices={choices}
+          actionKey={form.action_key}
+          type={form.type}
+          form={target}
+          onChange={(change) => setTarget({ ...target, ...change })}
+        />
         <Field label={`When (${dates.zoneName()})`}>
           <Input type="datetime-local" value={form.happened_at} onChange={(e) => set({ happened_at: e.target.value })} />
         </Field>

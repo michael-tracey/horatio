@@ -146,16 +146,20 @@ def test_findable_now_is_the_lookback_to_the_minute_without_conflict_actions(
 ) -> None:
     now = datetime.now(UTC)
 
-    def add(days: float, action: str = "smooth_over") -> None:
+    def add(days: float, action: str = "smooth_over", **extra: Any) -> None:
         when = now - timedelta(days=days)
         added = scene.add(
-            type="elite", character_id=scene.agnes, action_key=action, happened_at=when.isoformat()
+            type="elite",
+            character_id=scene.agnes,
+            action_key=action,
+            happened_at=when.isoformat(),
+            **extra,
         )
         assert added.status_code == 201, added.text
 
     add(90, "a_friend_in_need")  # a minute or so outside, by the time it is read
     add(89.99)
-    add(1, "attack")
+    add(1, "attack", target={"character_id": scene.agnes})
 
     found = history(scene).json()
 

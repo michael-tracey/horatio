@@ -13,6 +13,14 @@ from sqlalchemy import or_, select
 from horatio import influence, influence_log, influence_lookups, specializations
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceActionOut, action_out
+from horatio.api.influence_effects import (
+    EffectKind,
+    EffectRef,
+    InfluenceTargetIn,
+    InfluenceTargetOut,
+    target_in,
+    targets_out,
+)
 from horatio.api.responses import response_item
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.influence import InfluenceType
@@ -85,6 +93,11 @@ class InfluenceEntryOut(BaseModel):
     logged_at: datetime
     # Downtime answers logged in it.
     response_ids: list[uuid.UUID]
+    # A targeted action's target; the effect resolving it recorded, and the kind it
+    # would record (horatio.influence_effects).
+    target: InfluenceTargetOut | None = None
+    effect: EffectRef | None = None
+    resolves: EffectKind | None = None
     # The blocks discovery block answers added, of `blocks`; staff may set the
     # rest by hand.
     blocked_by: list[BlockSourceOut] = []
@@ -111,6 +124,8 @@ class InfluenceEntryIn(BaseModel):
     needs_details: bool = False
     # A downtime cycle of the troupe's it applies to.
     cycle_id: uuid.UUID | None = None
+    # What an Attack, Defend, Boost or Block is aimed at.
+    target: InfluenceTargetIn | None = None
 
 
 class MergeIn(BaseModel):
@@ -222,6 +237,7 @@ def entries_out(
     ):
         responses.setdefault(entry_id, []).append(response_id)
 
+    targets = targets_out(db, entries)
     blocked_by = influence_lookups.block_sources(db, [e.id for e in entries])
 
     def current_name(entry: InfluenceEntry) -> str:
@@ -259,6 +275,9 @@ def entries_out(
                 logged_by_name=users.get(e.logged_by) if e.logged_by else None,
                 logged_at=e.created_at,
                 response_ids=responses.get(e.id, []),
+                target=targets[e.id][0],
+                effect=targets[e.id][1],
+                resolves=targets[e.id][2],
                 blocked_by=[BlockSourceOut(**vars(b)) for b in blocked_by.get(e.id, [])],
             )
         )
@@ -300,6 +319,7 @@ def details_from(
         blocks=body.blocks,
         needs_details=body.needs_details,
         cycle_id=body.cycle_id,
+        target=target_in(db, troupe_id, body.target),
     )
 
 
