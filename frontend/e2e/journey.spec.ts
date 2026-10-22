@@ -503,8 +503,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(e1.getByRole("link", { name: "Downtime: November" })).toBeVisible();
   await lead.page.getByRole("button", { name: "Log influence" }).click();
   const form = lead.page.getByRole("form", { name: "Log influence" });
-  await form.getByLabel("Who").selectOption({ label: "Someone not in Horatio…" });
-  await form.getByLabel("Their name").fill("REDACTED");
+  await form.getByLabel("Who").fill("REDACTED");
+  await form.getByRole("option", { name: /^REDACTED/ }).click();
   await form.getByLabel("Type").selectOption({ label: "Underworld" });
   await form.getByLabel("Specialisation").selectOption("Transportation");
   await form.getByLabel("Action").selectOption({ label: "5: Lockdown" });
@@ -871,6 +871,163 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("link", { name: "Play Sheriff Ilse" }).click();
   await expect(p.getByRole("heading", { name: "Sheriff Ilse" })).toBeVisible();
   await expect(p.getByRole("tab", { name: "Tracker" })).toBeVisible();
+});
+
+test("storytellers log influence for PCs, NPCs and names only, and a player reads their character's", async ({ browser }) => {
+  // A whole character creation, then a home troupe request.
+  test.slow();
+  const custodian = await person(browser, "infl-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "infl-lead");
+  const player = await person(browser, "infl-player");
+  const troupeName = `Court of Ledgers ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // The player builds Corvin for the troupe, with Elite 3, and asks to make it home.
+  const p = player.page;
+  await p.reload();
+  await p.getByLabel("Name").fill("Corvin");
+  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const corvin = new URL(p.url()).pathname.split("/")[2]!;
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await p.getByLabel("Sect").selectOption("Camarilla");
+  const next = async (heading: string) => {
+    await p.getByRole("button", { name: "Save and continue" }).click();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  };
+  const tap = async (...dots: string[]) => {
+    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
+  };
+  await next("Attributes");
+  await tap("Physical 7", "Social 5", "Mental 3");
+  await next("Focuses");
+  await tap("Strength 1", "Wits 1", "Charisma 1");
+  await next("Skills");
+  await tap("Brawl 4", "Dodge 3", "Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2");
+  await tap("Investigation 1", "Leadership 1", "Medicine 1", "Melee 1");
+  await next("Backgrounds");
+  await tap("Influences: The Elite 3", "Herd 2", "Generation 1");
+  await next("Disciplines");
+  await tap("Celerity 2", "Potence 1", "Presence 1");
+  await next("Merits & flaws");
+  await next("Review");
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
+  await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
+
+  // The lead accepts Corvin, keeps an NPC, and opens a cycle.
+  const l = lead.page;
+  await l.reload();
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(l.url()).pathname.split("/")[2]!;
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  await l.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+  const made = await l.request.post(`/api/troupes/${troupeId}/npcs`, { headers: { "X-Horatio": "1" }, data: { name: "Prince Vasquez", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  await l.goto(`/troupes/${troupeId}/downtimes`);
+  await expect(l.getByRole("heading", { name: "New cycle" })).toBeVisible();
+  await l.getByLabel("Name").fill("December");
+  await l.getByRole("button", { name: "Create draft" }).click();
+  await l.getByRole("link", { name: "December" }).click();
+  await l.getByRole("button", { name: "Open for submissions" }).click();
+  await expect(l.getByText("0 of 1 submitted")).toBeVisible();
+
+  // Beside a submission on the cycle page, the tool opens with the character and cycle filled in.
+  await l.getByRole("link", { name: "Participants" }).click();
+  await l.getByRole("button", { name: "Log influence for Corvin" }).click();
+  let form = l.getByRole("dialog").getByRole("form", { name: "Log influence" });
+  await expect(form.getByLabel("Who")).toHaveValue("Corvin");
+  await expect(form.getByLabel("Applies to this downtime")).toHaveValue(/.+/);
+  await form.getByRole("button", { name: "Cancel" }).click();
+  await expect(l.getByRole("dialog")).toBeHidden();
+
+  // From Corvin's page: four times over his Elite 3 for December warns, and logs all the same.
+  await l.goto(`/characters/${corvin}/influence`);
+  await l.getByRole("button", { name: "Log influence for Corvin" }).click();
+  form = l.getByRole("dialog").getByRole("form", { name: "Log influence" });
+  await expect(form.getByLabel("Who")).toHaveValue("Corvin");
+  await form.getByLabel("Action").selectOption({ label: "4: Smooth Over" });
+  await form.getByLabel("Applies to this downtime").selectOption({ label: "December" });
+  await form.getByLabel("Times taken").fill("4");
+  await expect(form.getByText("Corvin has 3 Elite actions in December, and this makes 4 logged. You can still log it.")).toBeVisible();
+  await form.getByLabel("Purpose").fill("To bury the inspector's report");
+  await l.screenshot(shots("log-influence"));
+  await form.getByRole("button", { name: "Log it", exact: true }).click();
+  await expect(l.getByRole("dialog")).toBeHidden();
+  const e1 = l.getByRole("listitem", { name: "Entry E1" });
+  await expect(e1.getByText("To bury the inspector's report")).toBeVisible();
+  await expect(e1.getByText("taken 4 times")).toBeVisible();
+  await expect(e1.getByRole("link", { name: "Logged by staff, for December" })).toBeVisible();
+
+  // On the log page, an NPC's whole month with Add another, dated by the cycle, then a name only.
+  await l.goto(`/troupes/${troupeId}/influence`);
+  await l.getByRole("button", { name: "Log influence" }).click();
+  form = l.getByRole("form", { name: "Log influence" });
+  await form.getByLabel("Who").fill("vasq");
+  await form.getByRole("option", { name: /Prince Vasquez/ }).click();
+  await form.getByLabel("Or date it by").selectOption({ label: "December" });
+  await form.getByLabel("Specialisation").selectOption("Finance");
+  await form.getByLabel("Action").selectOption({ label: "2: Gossip and Insider Trading" });
+  await form.getByLabel("Purpose").fill("To hear who is buying the docks");
+  await form.getByRole("button", { name: "Add another" }).click();
+  await expect(form.getByText("Logged E2.")).toBeVisible();
+  // The date, cycle and who stay; the rest starts again.
+  await expect(form.getByLabel("Who")).toHaveValue("Prince Vasquez");
+  await expect(form.getByLabel("Applies to this downtime")).toHaveValue(/.+/);
+  await expect(form.getByLabel("Purpose")).toHaveValue("");
+  await expect(form.getByLabel("Action")).toHaveValue("");
+  await form.getByLabel("Action").selectOption({ label: "5: No Party Crashers" });
+  await form.getByLabel("Purpose").fill("To keep the Anarchs out of the gala");
+  await form.getByRole("button", { name: "Add another" }).click();
+  await expect(form.getByText("Logged E3.")).toBeVisible();
+  await form.getByLabel("Who").fill("REDACTED");
+  await form.getByRole("option", { name: /^REDACTED/ }).click();
+  await form.getByLabel("Type").selectOption({ label: "Underworld" });
+  await form.getByLabel("Action").selectOption({ label: "5: Lockdown" });
+  await form.getByRole("button", { name: "Log it", exact: true }).click();
+  await expect(l.getByRole("listitem", { name: "Entry UW1" }).getByText("REDACTED")).toBeVisible();
+  await expect(l.getByRole("listitem", { name: "Entry E3" }).getByText("By hand, for December")).toBeVisible();
+  await expect(l.getByRole("listitem", { name: "Entry E3" }).getByText(/logged by infl-lead/)).toBeVisible();
+
+  // The NPC's own page has its history, for staff, and the tool with it filled in.
+  await l.goto(`/characters/${npc}/influence`);
+  await expect(l.getByRole("listitem", { name: "Entry E3" })).toBeVisible();
+  await expect(l.getByRole("listitem", { name: "Entry E2" })).toBeVisible();
+  await expect(l.getByRole("listitem", { name: "Entry E1" })).toHaveCount(0);
+  await expect(l.getByText("Elite: 2 spent: 2 logged by staff.")).toBeVisible();
+  await l.getByRole("button", { name: "Log influence for Prince Vasquez" }).click();
+  await expect(l.getByRole("dialog").getByLabel("Who")).toHaveValue("Prince Vasquez");
+  await l.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
+
+  // The player sees Corvin's own action, and no one else's, nor the tool.
+  await p.goto(`/characters/${corvin}`);
+  await p.locator("main").getByRole("link", { name: "Influence", exact: true }).click();
+  const own = p.getByRole("listitem", { name: "Entry E1" });
+  await expect(own.getByText("Elite · 4: Smooth Over")).toBeVisible();
+  await expect(own.getByText("To bury the inspector's report")).toBeVisible();
+  await expect(p.getByRole("listitem", { name: /Entry (E2|E3|UW1)/ })).toHaveCount(0);
+  await expect(p.getByText("Elite: 4 of 3 spent: 4 logged by staff.")).toBeVisible();
+  await expect(p.getByRole("button", { name: /Log influence/ })).toHaveCount(0);
+  await p.getByLabel("Findable now (last 90 days)").check();
+  await expect(own).toBeVisible();
+  await p.getByLabel("Type").selectOption({ label: "Underworld" });
+  await expect(p.getByText("No influence actions match these filters.")).toBeVisible();
+  await p.screenshot(shots("influence-history"));
 });
 
 test("a Caitiff chooses their in-clan disciplines while creating", async ({ browser }) => {
@@ -1430,10 +1587,10 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
 test("influence spent at a game goes in the troupe's influence log, and comes off the next downtime", async ({ browser }) => {
   // A whole character creation, a home troupe, then a game and a downtime.
   test.slow();
-  const custodian = await person(browser, "infl-custodian");
+  const custodian = await person(browser, "game-infl-custodian");
   makeCustodian(custodian.email);
-  const lead = await person(browser, "infl-lead");
-  const player = await person(browser, "infl-player");
+  const lead = await person(browser, "game-infl-lead");
+  const player = await person(browser, "game-infl-player");
   const troupeName = `Court of Whispers ${run}`;
   await custodian.page.reload();
   await custodian.page.getByRole("link", { name: "Troupes" }).click();

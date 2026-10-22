@@ -3,7 +3,7 @@
 
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -21,6 +21,7 @@ from horatio.models import (
     DowntimeCycle,
     InfluenceEntry,
     Response,
+    ScheduledGame,
     Troupe,
     TroupeMembership,
     User,
@@ -31,6 +32,8 @@ from horatio.rules.model import TroupeRules
 router = APIRouter(tags=["influence log"])
 
 Source = Literal["downtime", "game", "hand", "import"]
+# How many past games the Log influence tool offers to date an entry by.
+GAMES = 30
 
 
 class BlockSourceOut(BaseModel):
@@ -145,6 +148,18 @@ class CharacterChoice(BaseModel):
 class CycleChoice(BaseModel):
     id: uuid.UUID
     name: str
+    # Picking a cycle in the Log influence tool dates the entry when it opened, or
+    # when it closes if it has not opened yet.
+    opened_at: datetime | None
+    closes_at: datetime
+
+
+class GameChoice(BaseModel):
+    """A game on the troupe's schedule, which dates an entry when it started."""
+
+    id: uuid.UUID
+    starts_at: datetime
+    ends_at: datetime
 
 
 class InfluenceChoicesOut(BaseModel):
@@ -155,6 +170,8 @@ class InfluenceChoicesOut(BaseModel):
     # People not in Horatio the log names.
     names: list[str]
     cycles: list[CycleChoice]
+    # The troupe's games that have started, newest first.
+    games: list[GameChoice]
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -386,7 +403,22 @@ def choices(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Influence
             + sorted(gone, key=lambda c: c.name.casefold())
         ],
         names=influence_log.names_only(db, troupe_id),
-        cycles=[CycleChoice(id=c.id, name=c.name) for c in cycles],
+        cycles=[
+            CycleChoice(id=c.id, name=c.name, opened_at=c.opened_at, closes_at=c.closes_at)
+            for c in cycles
+        ],
+        games=[
+            GameChoice(id=g.id, starts_at=g.starts_at, ends_at=g.ends_at)
+            for g in db.scalars(
+                select(ScheduledGame)
+                .where(
+                    ScheduledGame.troupe_id == troupe_id,
+                    ScheduledGame.starts_at <= datetime.now(UTC),
+                )
+                .order_by(ScheduledGame.starts_at.desc())
+                .limit(GAMES)
+            )
+        ],
     )
 
 

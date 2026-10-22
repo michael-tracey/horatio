@@ -2306,6 +2306,11 @@
       },
       "CycleChoice": {
         "properties": {
+          "closes_at": {
+            "format": "date-time",
+            "title": "Closes At",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -2314,11 +2319,25 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "opened_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened At"
           }
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "opened_at",
+          "closes_at"
         ],
         "title": "CycleChoice",
         "type": "object"
@@ -2413,6 +2432,40 @@
           "questions"
         ],
         "title": "CycleOut",
+        "type": "object"
+      },
+      "CycleUseOut": {
+        "properties": {
+          "allowance": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowance"
+          },
+          "logged": {
+            "title": "Logged",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "allowance",
+          "logged"
+        ],
+        "title": "CycleUseOut",
         "type": "object"
       },
       "DarkPackOut": {
@@ -3131,6 +3184,31 @@
         "title": "FilterMatch",
         "type": "object"
       },
+      "FinishIn": {
+        "properties": {
+          "action_key": {
+            "title": "Action Key",
+            "type": "string"
+          },
+          "purpose": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Purpose",
+            "type": "string"
+          },
+          "specialization": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Specialization",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_key"
+        ],
+        "title": "FinishIn",
+        "type": "object"
+      },
       "Forgot": {
         "properties": {
           "email": {
@@ -3209,6 +3287,33 @@
           "times"
         ],
         "title": "FoundOut",
+        "type": "object"
+      },
+      "GameChoice": {
+        "description": "A game on the troupe's schedule, which dates an entry when it started.",
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "GameChoice",
         "type": "object"
       },
       "GameLog": {
@@ -3380,6 +3485,174 @@
         "title": "HeldTitles",
         "type": "object"
       },
+      "HistoryEntryOut": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "can_finish": {
+            "title": "Can Finish",
+            "type": "boolean"
+          },
+          "conflict": {
+            "title": "Conflict",
+            "type": "boolean"
+          },
+          "cycle_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id"
+          },
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
+          "findable": {
+            "title": "Findable",
+            "type": "boolean"
+          },
+          "game_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Number"
+          },
+          "game_started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Started At"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "needs_details": {
+            "title": "Needs Details",
+            "type": "boolean"
+          },
+          "other_troupe": {
+            "title": "Other Troupe",
+            "type": "boolean"
+          },
+          "own_blocks": {
+            "title": "Own Blocks",
+            "type": "integer"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "short_id": {
+            "title": "Short Id",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "downtime",
+              "game",
+              "hand",
+              "import"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "specialization": {
+            "title": "Specialization",
+            "type": "string"
+          },
+          "times": {
+            "title": "Times",
+            "type": "integer"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "short_id",
+          "troupe_id",
+          "troupe_name",
+          "other_troupe",
+          "type",
+          "happened_at",
+          "specialization",
+          "action_key",
+          "action",
+          "conflict",
+          "purpose",
+          "times",
+          "own_blocks",
+          "source",
+          "cycle_id",
+          "cycle_name",
+          "game_number",
+          "game_started_at",
+          "needs_details",
+          "can_finish",
+          "findable"
+        ],
+        "title": "HistoryEntryOut",
+        "type": "object"
+      },
       "HomeTroupeRequest": {
         "properties": {
           "note": {
@@ -3539,6 +3812,13 @@
             "title": "Cycles",
             "type": "array"
           },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameChoice"
+            },
+            "title": "Games",
+            "type": "array"
+          },
           "names": {
             "items": {
               "type": "string"
@@ -3558,7 +3838,8 @@
           "types",
           "characters",
           "names",
-          "cycles"
+          "cycles",
+          "games"
         ],
         "title": "InfluenceChoicesOut",
         "type": "object"
@@ -3934,6 +4215,56 @@
           "times"
         ],
         "title": "InfluenceEntryRef",
+        "type": "object"
+      },
+      "InfluenceHistoryOut": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "log_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Troupe Id"
+          },
+          "lookback_days": {
+            "title": "Lookback Days",
+            "type": "integer"
+          },
+          "owed": {
+            "items": {
+              "$ref": "#/components/schemas/OwedOut"
+            },
+            "title": "Owed",
+            "type": "array"
+          },
+          "standings": {
+            "items": {
+              "$ref": "#/components/schemas/InfluenceStandingOut"
+            },
+            "title": "Standings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries",
+          "standings",
+          "owed",
+          "lookback_days",
+          "log_troupe_id"
+        ],
+        "title": "InfluenceHistoryOut",
         "type": "object"
       },
       "InfluenceLogOut": {
@@ -4529,6 +4860,31 @@
           "undoes"
         ],
         "title": "LogEntryOut",
+        "type": "object"
+      },
+      "LogStandingOut": {
+        "description": "What the Log influence tool needs about a character.",
+        "properties": {
+          "cycle": {
+            "items": {
+              "$ref": "#/components/schemas/CycleUseOut"
+            },
+            "title": "Cycle",
+            "type": "array"
+          },
+          "standings": {
+            "items": {
+              "$ref": "#/components/schemas/InfluenceStandingOut"
+            },
+            "title": "Standings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "standings",
+          "cycle"
+        ],
+        "title": "LogStandingOut",
         "type": "object"
       },
       "LoggedOut": {
@@ -5220,6 +5576,28 @@
           "note"
         ],
         "title": "OtherPower",
+        "type": "object"
+      },
+      "OwedOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "amount"
+        ],
+        "title": "OwedOut",
         "type": "object"
       },
       "OwnEntryOut": {
@@ -12145,6 +12523,114 @@
         ]
       }
     },
+    "/api/characters/{character_id}/influence": {
+      "get": {
+        "description": "The character's own influence actions, newest first, from every troupe it\nhas acted in. Never another character's, nor blocks others placed.",
+        "operationId": "read_history_api_characters__character_id__influence_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceHistoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read History",
+        "tags": [
+          "influence history"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/influence/{entry_id}": {
+      "put": {
+        "description": "Fill in the details of an entry spent at a game still going.",
+        "operationId": "finish_entry_api_characters__character_id__influence__entry_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinishIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryEntryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Finish Entry",
+        "tags": [
+          "influence history"
+        ]
+      }
+    },
     "/api/characters/{character_id}/log": {
       "get": {
         "description": "Everything that happened to the character, newest first. Its player sees it\nall; a troupe's staff see the sheet's own history and what happened in their\ntroupe, not in the character's other troupes.",
@@ -18763,6 +19249,77 @@
         "summary": "Add Entry",
         "tags": [
           "influence log"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/influence-log/characters/{character_id}": {
+      "get": {
+        "description": "A character's own specialisations, for the Log influence tool to offer first,\nand for a cycle, its allowance of each type and what is logged against it.",
+        "operationId": "log_standing_api_troupes__troupe_id__influence_log_characters__character_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycle_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cycle Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogStandingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Log Standing",
+        "tags": [
+          "influence history"
         ]
       }
     },

@@ -263,6 +263,10 @@ _Avoid_: Influence sheet, Elite Infl. / UW Infl. (the old spreadsheet's tabs)
 One line in the influence log: when the action was taken, to the minute, who took it (a character, or a name for someone not in Horatio), its type, specialisation, action and purpose, how many times it was taken, its discovery blocks, and where it came from. Each has a short id such as E12 or UW7.
 _Avoid_: Influence row, influence record
 
+**Influence History**:
+A character's own influence entries, from the log of every troupe it has acted in, newest first. Its player and its home troupe's storytellers and assistant storytellers see it; it never shows another character's entries, nor blocks others placed.
+_Avoid_: Influence log (that is the troupe's), influence sheet
+
 **Influence Lookup**:
 Gossip and Insider Trading (Elite) or Word on the Street (Underworld): an influence action answered from the influence log. It finds others' recent actions of its type in any of the character's specialisations of it, never who took them. Its strength is how many actions the character spends on it in one cycle, and it looks back the troupe's lookback in days from the cycle's close.
 _Avoid_: Search, investigation

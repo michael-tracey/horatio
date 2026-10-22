@@ -493,3 +493,27 @@ def test_merging_entries_keeps_the_blocks_answers_added(scene: Scene) -> None:
     assert merged.status_code == 200, merged.text
     assert merged.json()["blocks"] == 1
     assert [b["response_id"] for b in merged.json()["blocked_by"]] == [response["id"]]
+
+
+def test_a_characters_history_shows_the_blocks_it_placed_and_the_troupes_lookback(
+    scene: Scene,
+) -> None:
+    # Blocked twice already by others, then once by Agnes.
+    mine = scene.add(timedelta(days=3), character_id=scene.agnes, blocks=2)
+    entry_id = scene.entry(mine)["id"]
+    (response,) = scene.submit(
+        (UNDERWORLD, block({"block": "own", "block_entry": entry_id}), "Hide the bank job"),
+    )
+    accepted = scene.troupe.assistant.client.post(
+        f"/responses/{response['id']}/discovery-block", json={"entry_id": entry_id}
+    )
+    assert accepted.status_code == 200, accepted.text
+    changed = scene.troupe.storyteller.client.put(
+        f"/troupes/{scene.troupe.id}/influence-lookback", json={"days": 100}
+    )
+    assert changed.status_code == 200, changed.text
+
+    found = scene.troupe.player.client.get(f"/characters/{scene.agnes}/influence").json()
+
+    assert found["lookback_days"] == 100
+    assert [(e["id"], e["own_blocks"]) for e in found["entries"]] == [(entry_id, 1)]
