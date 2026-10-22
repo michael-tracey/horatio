@@ -263,6 +263,10 @@ _Avoid_: Influence sheet, Elite Infl. / UW Infl. (the old spreadsheet's tabs)
 One line in the influence log: when the action was taken, to the minute, who took it (a character, or a name for someone not in Horatio), its type, specialisation, action and purpose, how many times it was taken, its discovery blocks, and where it came from. Each has a short id such as E12 or UW7.
 _Avoid_: Influence row, influence record
 
+**Influence History**:
+A character's own influence entries, from the log of every troupe it has acted in, newest first. Its player and its home troupe's storytellers and assistant storytellers see it; it never shows another character's entries, nor blocks others placed.
+_Avoid_: Influence log (that is the troupe's), influence sheet
+
 **Participant**:
 A character taking part in a downtime cycle. Participants are the characters whose home troupe runs the cycle when it opens; storytellers and assistant storytellers can add or remove participants afterwards, but only characters whose home troupe it is.
 _Avoid_: Roster entry, entrant

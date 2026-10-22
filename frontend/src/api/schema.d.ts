@@ -562,6 +562,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/influence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read History
+         * @description The character's own influence actions, newest first, from every troupe it
+         *     has acted in. Never another character's, nor blocks others placed.
+         */
+        get: operations["read_history_api_characters__character_id__influence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/influence/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Finish Entry
+         * @description Fill in the details of an entry spent at a game still going.
+         */
+        put: operations["finish_entry_api_characters__character_id__influence__entry_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/log": {
         parameters: {
             query?: never;
@@ -2577,6 +2618,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/influence-log/characters/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Log Standing
+         * @description A character's own specialisations, for the Log influence tool to offer first,
+         *     and for a cycle, its allowance of each type and what is logged against it.
+         */
+        get: operations["log_standing_api_troupes__troupe_id__influence_log_characters__character_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/influence-log/choices": {
         parameters: {
             query?: never;
@@ -3838,12 +3900,19 @@ export interface components {
         /** CycleChoice */
         CycleChoice: {
             /**
+             * Closes At
+             * Format: date-time
+             */
+            closes_at: string;
+            /**
              * Id
              * Format: uuid
              */
             id: string;
             /** Name */
             name: string;
+            /** Opened At */
+            opened_at: string | null;
         };
         /** CycleClose */
         CycleClose: {
@@ -3887,6 +3956,18 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /** CycleUseOut */
+        CycleUseOut: {
+            /** Allowance */
+            allowance: number | null;
+            /** Logged */
+            logged: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /** DarkPackOut */
         DarkPackOut: {
@@ -4100,6 +4181,21 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** FinishIn */
+        FinishIn: {
+            /** Action Key */
+            action_key: string;
+            /**
+             * Purpose
+             * @default
+             */
+            purpose: string;
+            /**
+             * Specialization
+             * @default
+             */
+            specialization: string;
+        };
         /** Forgot */
         Forgot: {
             /**
@@ -4117,6 +4213,27 @@ export interface components {
         ForgotHelp: {
             /** Can Email */
             can_email: boolean;
+        };
+        /**
+         * GameChoice
+         * @description A game on the troupe's schedule, which dates an entry when it started.
+         */
+        GameChoice: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
         };
         /** GameLog */
         GameLog: {
@@ -4177,6 +4294,68 @@ export interface components {
         HeldTitles: {
             /** Titles */
             titles: string[];
+        };
+        /** HistoryEntryOut */
+        HistoryEntryOut: {
+            /** Action */
+            action: string;
+            /** Action Key */
+            action_key: string | null;
+            /** Can Finish */
+            can_finish: boolean;
+            /** Conflict */
+            conflict: boolean;
+            /** Cycle Id */
+            cycle_id: string | null;
+            /** Cycle Name */
+            cycle_name: string | null;
+            /** Findable */
+            findable: boolean;
+            /** Game Number */
+            game_number: number | null;
+            /** Game Started At */
+            game_started_at: string | null;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Needs Details */
+            needs_details: boolean;
+            /** Other Troupe */
+            other_troupe: boolean;
+            /** Own Blocks */
+            own_blocks: number;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "downtime" | "game" | "hand" | "import";
+            /** Specialization */
+            specialization: string;
+            /** Times */
+            times: number;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /** HomeTroupeRequest */
         HomeTroupeRequest: {
@@ -4241,6 +4420,8 @@ export interface components {
             characters: components["schemas"]["CharacterChoice-Output"][];
             /** Cycles */
             cycles: components["schemas"]["CycleChoice"][];
+            /** Games */
+            games: components["schemas"]["GameChoice"][];
             /** Names */
             names: string[];
             /** Types */
@@ -4377,6 +4558,19 @@ export interface components {
             short_id: string;
             /** Times */
             times: number;
+        };
+        /** InfluenceHistoryOut */
+        InfluenceHistoryOut: {
+            /** Entries */
+            entries: components["schemas"]["HistoryEntryOut"][];
+            /** Log Troupe Id */
+            log_troupe_id: string | null;
+            /** Lookback Days */
+            lookback_days: number;
+            /** Owed */
+            owed: components["schemas"]["OwedOut"][];
+            /** Standings */
+            standings: components["schemas"]["InfluenceStandingOut"][];
         };
         /** InfluenceLogOut */
         InfluenceLogOut: {
@@ -4564,6 +4758,16 @@ export interface components {
             undoes: string | null;
             /** Undone */
             undone: boolean;
+        };
+        /**
+         * LogStandingOut
+         * @description What the Log influence tool needs about a character.
+         */
+        LogStandingOut: {
+            /** Cycle */
+            cycle: components["schemas"]["CycleUseOut"][];
+            /** Standings */
+            standings: components["schemas"]["InfluenceStandingOut"][];
         };
         /** LoggedOut */
         LoggedOut: {
@@ -4795,6 +4999,16 @@ export interface components {
             name: string;
             /** Note */
             note: string | null;
+        };
+        /** OwedOut */
+        OwedOut: {
+            /** Amount */
+            amount: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /** ParticipantDeliveries */
         ParticipantDeliveries: {
@@ -7842,6 +8056,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["XpStandingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_history_api_characters__character_id__influence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InfluenceHistoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finish_entry_api_characters__character_id__influence__entry_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinishIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryEntryOut"];
                 };
             };
             /** @description Validation Error */
@@ -11963,6 +12244,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InfluenceEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_standing_api_troupes__troupe_id__influence_log_characters__character_id__get: {
+        parameters: {
+            query?: {
+                cycle_id?: string | null;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogStandingOut"];
                 };
             };
             /** @description Validation Error */

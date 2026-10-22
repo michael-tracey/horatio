@@ -9,6 +9,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, P
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { DeliveryTab } from "./DeliveryTab";
+import { LogInfluenceButton } from "./LogInfluence";
 
 export function CyclePage() {
   const { cycleId = "" } = useParams();
@@ -344,7 +345,7 @@ function ParticipantCard({ cycle, participant }: { cycle: CycleOut; participant:
         </Link>
       }
       actions={
-        <span className="flex gap-2">
+        <span className="flex flex-wrap items-center gap-2">
           {participant.removed ? (
             <Badge tone="blood">removed</Badge>
           ) : (
@@ -354,6 +355,13 @@ function ParticipantCard({ cycle, participant }: { cycle: CycleOut; participant:
             </Badge>
           )}
           {participant.completion_xp_awarded != null && <Badge tone="gold">+{participant.completion_xp_awarded} XP</Badge>}
+          {/* For actions the player reported outside the form. */}
+          <LogInfluenceButton
+            troupeId={cycle.troupe_id}
+            characterId={participant.character_id}
+            cycleId={cycle.id}
+            label={`Log influence for ${participant.character_name}`}
+          />
         </span>
       }
     >
