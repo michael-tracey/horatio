@@ -89,6 +89,7 @@ class SheetRow:
             rating=self.trait.rating,
             free_rating=self.trait.free_rating,
             detail=self.trait.detail,
+            granted_rating=self.trait.granted_rating,
         )
 
     def snapshot(self) -> dict[str, Any]:
@@ -507,20 +508,21 @@ def convert(
     rules: TroupeRules,
     found: Effects,
     before: Mapping[tuple[str, str], str] | None = None,
-) -> None:
+) -> bool:
     """Bring conversions into line: a held Path merit turns Humanity into that
     Path, keeping its dots; without the merit the Path turns back into Humanity.
     Given what the grants wanted `before` a change (to an NPC, whose staff can
     choose its Path directly), only a conversion the change altered is made, and
-    losing a merit turns back only the Path that merit gave."""
-    targets = {
-        (g.convert_from["category"], g.convert_from["name"]): set()
-        for g in rules.rule_set.grants
-        if g.kind == "convert" and g.convert_from
-    }
+    losing a merit turns back only the Path that merit gave. Says whether it
+    converted anything."""
+    targets: dict[tuple[str, str], set[str]] = {}
     for g in rules.rule_set.grants:
         if g.kind == "convert" and g.convert_from:
-            targets[(g.convert_from["category"], g.convert_from["name"])].add(g.target["name"])
+            possible = targets.setdefault(
+                (g.convert_from["category"], g.convert_from["name"]), set()
+            )
+            possible.update(choices(g, rules.rule_set) or [g.target["name"]])
+    changed = False
     rows = sheet_rows(db, character)
     for (category, origin), possible in targets.items():
         wanted = found.converts.get((category, origin), origin)
@@ -540,7 +542,14 @@ def convert(
                 continue
         definition, _ = find_definition(db, character, category, wanted)
         current.trait.trait_definition_id = definition.id
+        changed = True
     db.flush()
+    return changed
+
+
+# How many times granted traits may grant others in turn (Web of Knives gives
+# the Path of Blood merit, which converts Humanity).
+GRANT_DEPTH = 4
 
 
 def apply_grants(
@@ -551,10 +560,30 @@ def apply_grants(
 ) -> None:
     """Bring every granted trait into line with the grants the sheet now holds:
     add what new grants give, take back what lost grants gave (nothing refunded,
-    MET: VTM p. 236), and refund dots a `free_up_to` grant now makes free."""
+    MET: VTM p. 236), and refund dots a `free_up_to` grant now makes free. A
+    merit or flaw is given whole, at its value. A granted trait can grant others,
+    so this goes round until nothing changes."""
+    for _ in range(GRANT_DEPTH):
+        if not grant_once(db, user, character, converts_before):
+            return
+
+
+def grant_once(
+    db: Session,
+    user: User,
+    character: Character,
+    converts_before: Mapping[tuple[str, str], str] | None,
+) -> bool:
+    """One round of apply_grants. Says whether it changed anything."""
     rules = rules_for(db, character)
-    convert(db, character, rules, sheet_effects(db, character), converts_before)
+    changed = convert(db, character, rules, sheet_effects(db, character), converts_before)
     found = sheet_effects(db, character)
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    for key in list(found.free_up_to):
+        # A merit is held at its value, so giving it means giving all of it.
+        whole = fixed_rating(rules, sheet, key[0], key[1])
+        if whole is not None:
+            found.free_up_to[key] = whole
     wanted: dict[TraitKey, tuple[int, int]] = {
         key: (amount, 0) for key, amount in found.added.items()
     }
@@ -610,12 +639,14 @@ def apply_grants(
             base_rating -= bought
         if granted == old and not bought:
             continue
+        changed = True
         trait.rating = max(0, base_rating + granted)
         trait.free_rating = max(0, base_free + granted)
         trait.granted_rating = granted
         if trait.rating == 0 and trait.free_rating == 0 and trait.creation_pick is None:
             db.delete(trait)
     db.flush()
+    return changed
 
 
 def held_beyond_limit(db: Session, character: Character) -> dict[str, int]:
@@ -722,6 +753,12 @@ class SheetState:
     fixed: dict[TraitKey, int | None]
     ratings: dict[TraitKey, int]
     xp: set[uuid.UUID]
+    # Traits whose grant needs a choice their detail does not make.
+    unchosen: set[tuple[str, str, str, str]]
+
+
+def unchosen_keys(db: Session, character: Character) -> set[tuple[str, str, str, str]]:
+    return {(t.category, t.name, t.detail, g.key) for t, g in sheet_effects(db, character).unchosen}
 
 
 def sheet_state(db: Session, character: Character) -> SheetState:
@@ -731,6 +768,7 @@ def sheet_state(db: Session, character: Character) -> SheetState:
         fixed=creation_only_traits(db, character),
         ratings={r.key: r.trait.rating or 0 for r in sheet_rows(db, character)},
         xp=set(db.scalars(select(XpEntry.id).where(XpEntry.character_id == character.id))),
+        unchosen=unchosen_keys(db, character),
     )
 
 
@@ -808,6 +846,9 @@ def broken_since(
             refused.append(Problem(f"{key[1]} can only be chosen during character creation.", *key))
     if checks:
         for trait, grant in sheet_effects(db, character).unchosen:
+            # A trait held before its grant needed a choice is left be until changed.
+            if (trait.category, trait.name, trait.detail, grant.key) in before.unchosen:
+                continue
             options = choices(grant, rule_set)
             listed = ", ".join(options) if len(options) <= 8 else "the trait it applies to"
             refused.append(
@@ -1016,14 +1057,15 @@ def owe(db: Session, user: User, character: Character, amount: int, reason: str)
 def held_points(
     db: Session, character: Character, category_key: str, leave_out: TraitKey | None = None
 ) -> int:
-    """The points the character holds in a category, as its troupe prices them."""
+    """The points the character holds in a category, as its troupe prices them.
+    A merit another trait gives is not counted: the character did not buy it."""
     rules = rules_for(db, character)
     rows = sheet_rows(db, character)
     sheet = [r.as_rules_trait() for r in rows]
     return sum(
-        points(rules, sheet, r.as_rules_trait())
-        for r in rows
-        if r.category.key == category_key and r.key != leave_out
+        points(rules, sheet, trait)
+        for r, trait in zip(rows, sheet, strict=True)
+        if r.category.key == category_key and r.key != leave_out and not trait.granted
     )
 
 

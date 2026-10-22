@@ -516,6 +516,13 @@ requires = { any_of = [
   { has = { category = "merits", name = "Additional Common Discipline" }, self = { names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"] } },
   { has = { category = "merits", name = "Additional Uncommon Discipline" }, self = { names = ["Protean", "Dementation", "Serpentis", "Quietus"] } },
   { has = { category = "merits", name = "Pliable Blood" }, self = { names = ["Auspex", "Celerity", "Dementation", "Dominate", "Fortitude", "Presence", "Protean", "Quietus", "Serpentis"] } },
+  # Merits that give the discipline themselves (bns_met_vampire_grants.toml).
+  { has = { category = "merits", name = "Web of Knives" }, self = { names = ["Potence"] } },
+  { has = { category = "merits", name = "Strength of Honor" }, self = { names = ["Potence"] } },
+  { has = { category = "merits", name = "Iron Scales" }, self = { names = ["Fortitude"] } },
+  { has = { category = "merits", name = "Seekers of the Hidden" }, self = { names = ["Spiritus"] } },
+  { has = { category = "merits", name = "Blessing of the Gorgons" }, self = { names = ["Serpentis"] } },
+  { has = { category = "merits", name = "Bonds of Stolen Vitae" }, self = { names = ["Animalism", "Auspex", "Obfuscate", "Protean"] } },
 ] }
 message = "Extra in-clan disciplines come from being Caitiff or from a merit, and only from its list."
 page = "246"
@@ -2123,6 +2130,7 @@ category = "paths"
 name = "Blood"
 requires = { has_any = [
   { category = "merits", name = "Path of Blood" },
+  { category = "merits", name = "Path Adherent", detail = "Blood" },
 ] }
 message = "The Path of Blood comes from its merit."
 page = "253"
@@ -2132,6 +2140,7 @@ category = "paths"
 name = "Caine"
 requires = { has_any = [
   { category = "merits", name = "Path of Caine" },
+  { category = "merits", name = "Path Adherent", detail = "Caine" },
 ] }
 message = "The Path of Caine comes from its merit."
 page = "253"
@@ -2141,6 +2150,7 @@ category = "paths"
 name = "Cathari"
 requires = { has_any = [
   { category = "merits", name = "Path of Cathari" },
+  { category = "merits", name = "Path Adherent", detail = "Cathari" },
 ] }
 message = "The Path of Cathari comes from its merit."
 page = "253"
@@ -2150,6 +2160,7 @@ category = "paths"
 name = "Chivalry"
 requires = { has_any = [
   { category = "merits", name = "Path of Chivalry" },
+  { category = "merits", name = "Path Adherent", detail = "Chivalry" },
 ] }
 message = "The Path of Chivalry comes from its merit."
 page = "253"
@@ -2159,6 +2170,7 @@ category = "paths"
 name = "Death and the Soul"
 requires = { has_any = [
   { category = "merits", name = "Path of Death and the Soul" },
+  { category = "merits", name = "Path Adherent", detail = "Death and the Soul" },
 ] }
 message = "The Path of Death and the Soul comes from its merit."
 page = "253"
@@ -2168,6 +2180,7 @@ category = "paths"
 name = "Ecstasy"
 requires = { has_any = [
   { category = "merits", name = "Path of Ecstasy" },
+  { category = "merits", name = "Path Adherent", detail = "Ecstasy" },
 ] }
 message = "The Path of Ecstasy comes from its merit."
 page = "253"
@@ -2178,6 +2191,7 @@ name = "Evil Revelations"
 requires = { has_any = [
   { category = "merits", name = "Path of Evil Revelations" },
   { category = "merits", name = "Infernal Heritage" },
+  { category = "merits", name = "Path Adherent", detail = "Evil Revelations" },
 ] }
 message = "The Path of Evil Revelations comes from its merit."
 page = "253"
@@ -2187,6 +2201,7 @@ category = "paths"
 name = "Feral Heart"
 requires = { has_any = [
   { category = "merits", name = "Path of Feral Heart" },
+  { category = "merits", name = "Path Adherent", detail = "Feral Heart" },
 ] }
 message = "The Path of Feral Heart comes from its merit."
 page = "253"
@@ -2196,6 +2211,7 @@ category = "paths"
 name = "Harmony"
 requires = { has_any = [
   { category = "merits", name = "Path of Harmony" },
+  { category = "merits", name = "Path Adherent", detail = "Harmony" },
 ] }
 message = "The Path of Harmony comes from its merit."
 page = "253"
@@ -2205,6 +2221,7 @@ category = "paths"
 name = "Heaven"
 requires = { has_any = [
   { category = "merits", name = "Path of Heaven" },
+  { category = "merits", name = "Path Adherent", detail = "Heaven" },
 ] }
 message = "The Path of Heaven comes from its merit."
 page = "253"
@@ -2214,6 +2231,7 @@ category = "paths"
 name = "Honorable Accord"
 requires = { has_any = [
   { category = "merits", name = "Path of Honorable Accord" },
+  { category = "merits", name = "Path Adherent", detail = "Honorable Accord" },
 ] }
 message = "The Path of Honorable Accord comes from its merit."
 page = "253"
@@ -2223,6 +2241,7 @@ category = "paths"
 name = "Lilith"
 requires = { has_any = [
   { category = "merits", name = "Path of Lilith" },
+  { category = "merits", name = "Path Adherent", detail = "Lilith" },
 ] }
 message = "The Path of Lilith comes from its merit."
 page = "253"
@@ -2232,6 +2251,7 @@ category = "paths"
 name = "Metamorphosis"
 requires = { has_any = [
   { category = "merits", name = "Path of Metamorphosis" },
+  { category = "merits", name = "Path Adherent", detail = "Metamorphosis" },
 ] }
 message = "The Path of Metamorphosis comes from its merit."
 page = "253"
@@ -2241,6 +2261,7 @@ category = "paths"
 name = "Night"
 requires = { has_any = [
   { category = "merits", name = "Path of Night" },
+  { category = "merits", name = "Path Adherent", detail = "Night" },
 ] }
 message = "The Path of Night comes from its merit."
 page = "253"
@@ -2250,6 +2271,7 @@ category = "paths"
 name = "Orion"
 requires = { has_any = [
   { category = "merits", name = "Path of Orion" },
+  { category = "merits", name = "Path Adherent", detail = "Orion" },
 ] }
 message = "The Path of Orion comes from its merit."
 page = "253"
@@ -2259,6 +2281,7 @@ category = "paths"
 name = "Paradox"
 requires = { has_any = [
   { category = "merits", name = "Path of Paradox" },
+  { category = "merits", name = "Path Adherent", detail = "Paradox" },
 ] }
 message = "The Path of Paradox comes from its merit."
 page = "253"
@@ -2268,6 +2291,7 @@ category = "paths"
 name = "Power and the Inner Voice"
 requires = { has_any = [
   { category = "merits", name = "Path of Power and the Inner Voice" },
+  { category = "merits", name = "Path Adherent", detail = "Power and the Inner Voice" },
 ] }
 message = "The Path of Power and the Inner Voice comes from its merit."
 page = "253"
@@ -2277,6 +2301,7 @@ category = "paths"
 name = "Scorched Heart"
 requires = { has_any = [
   { category = "merits", name = "Path of Scorched Heart" },
+  { category = "merits", name = "Path Adherent", detail = "Scorched Heart" },
 ] }
 message = "The Path of Scorched Heart comes from its merit."
 page = "253"
@@ -2286,9 +2311,40 @@ category = "paths"
 name = "Typhon-Set"
 requires = { has_any = [
   { category = "merits", name = "Path of Typhon-Set" },
+  { category = "merits", name = "Path Adherent", detail = "Typhon-Set" },
 ] }
 message = "The Path of Typhon-Set comes from its merit."
 page = "253"
+
+[[checks]]
+category = "paths"
+name = "Entelechy"
+requires = { has_any = [
+  { category = "merits", name = "Path of Entelechy" },
+  { category = "merits", name = "Path Adherent", detail = "Entelechy" },
+] }
+message = "The Path of Entelechy comes from its merit."
+page = "Vol. 2, p. 263"
+
+[[checks]]
+category = "paths"
+name = "Nocturnal Redemption"
+requires = { has_any = [
+  { category = "merits", name = "Path of Nocturnal Redemption" },
+  { category = "merits", name = "Path Adherent", detail = "Nocturnal Redemption" },
+] }
+message = "The Path of Nocturnal Redemption comes from its merit."
+page = "Vol. 2, p. 263"
+
+[[checks]]
+category = "paths"
+name = "Hive"
+requires = { has_any = [
+  { category = "merits", name = "Path of the Hive" },
+  { category = "merits", name = "Path Adherent", detail = "Hive" },
+] }
+message = "The Path of the Hive comes from its merit."
+page = "Vol. 2, p. 264"
 
 # --- specialisations per dot (pp. 92, 98, 99, 102) -----------------------------------
 

@@ -445,7 +445,8 @@ export function swapOptions(
   const cost = catalogue.categories.find(
     (c) => c.key === trait.category,
   )?.change_cost;
-  if (cost == null) return null;
+  // A focus a merit gives goes with the merit, not by changing it.
+  if (cost == null || isGranted(trait)) return null;
   const mine = new Set(
     held.filter((h) => h.category === trait.category).map((h) => h.name),
   );
@@ -453,6 +454,23 @@ export function swapOptions(
     .filter((t) => t.category === trait.category && !mine.has(t.name))
     .map((t) => t.name);
   return others.length ? { cost, others } : null;
+}
+
+/** Held only because another trait gives it: Extrasensory Perceptions' Acute Sense. */
+function isGranted(trait: SheetTraitOut) {
+  return trait.granted_rating > 0 && trait.granted_rating >= (trait.rating ?? 0);
+}
+
+/** "+1 from Rugged": what another trait gives this one. */
+function GrantedBy({ trait, points = false }: { trait: SheetTraitOut; points?: boolean }) {
+  if (trait.granted_rating === 0 || trait.granted_by.length === 0) return null;
+  // A merit is given whole, so it is simply "from" the merit that gives it.
+  const amount = points ? "" : `${trait.granted_rating > 0 ? `+${trait.granted_rating}` : trait.granted_rating} `;
+  return (
+    <span className="ml-2 text-xs text-mist">
+      {amount}from {trait.granted_by.join(", ")}
+    </span>
+  );
 }
 
 function TraitRow({
@@ -490,6 +508,7 @@ function TraitRow({
           <span className={removing ? "line-through" : adding ? "text-gold" : undefined}>{trait.name}</span>
           {trait.detail && <span className="text-mist">: {trait.detail}</span>}
           {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
+          <GrantedBy trait={trait} points />
         </span>
         <span className="flex shrink-0 items-center gap-2">
           <Badge tone="gold">{points}</Badge>
@@ -564,14 +583,7 @@ function TraitRow({
             <Badge tone="gold">awaiting approval</Badge>
           </span>
         )}
-        {trait.granted_rating !== 0 && trait.granted_by.length > 0 && (
-          <span className="ml-2 text-xs text-mist">
-            {trait.granted_rating > 0
-              ? `+${trait.granted_rating}`
-              : trait.granted_rating}{" "}
-            from {trait.granted_by.join(", ")}
-          </span>
-        )}
+        <GrantedBy trait={trait} />
       </span>
       {trait.rating !== null && (
         <span className="flex shrink-0 items-center gap-2">

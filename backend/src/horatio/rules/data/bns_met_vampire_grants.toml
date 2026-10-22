@@ -1,6 +1,12 @@
 # Traits that give a Vampire other traits (horatio.rules.grants). Page numbers
-# are MET: Vampire The Masquerade (core). Where the player chooses what is
-# granted, the source trait's detail names it ("Resources", "Performance: Singing").
+# are MET: Vampire The Masquerade (core) unless they name a volume. Where the
+# player chooses what is granted, the source trait's detail names it
+# ("Resources", "Performance: Singing").
+#
+# A merit or flaw that only changes how something works, without giving a trait,
+# is listed under `rules_only` at the end instead, for staff to apply by hand;
+# tests/test_grants_data.py keeps every trait that says it gives another in one
+# list or the other.
 
 # --- health and Willpower -------------------------------------------------------
 
@@ -109,6 +115,190 @@ target = { categories = ["focus_physicals", "focus_socials", "focus_mentals"], c
 amount = 1
 page = "253"
 
+# A focus a merit gives on top of the usual one per attribute (p. 90); if the
+# character already has that focus, it is not given twice.
+[[grants]]
+source = { category = "merits", name = "Extrasensory Perceptions" }
+kind = "free_up_to"
+target = { category = "focus_mentals", name = "Perception" }
+amount = 1
+page = "Vol. 2, p. 49"
+
+[[grants]]
+source = { category = "merits", name = "Dust in the Wind" }
+kind = "free_up_to"
+target = { category = "focus_physicals", name = "Strength" }
+amount = 1
+page = "Vol. 2, p. 34"
+
+[[grants]]
+source = { category = "merits", name = "Beauty of the Beholder" }
+kind = "free_up_to"
+target = { category = "focus_socials", name = "Appearance" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 47"
+
+[[grants]]
+source = { category = "merits", name = "Art Imitates Life" }
+kind = "free_up_to"
+target = { category = "focus_socials", name = "Appearance" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 53"
+
+# --- merits that give other merits, whole and free --------------------------------
+
+# The benefits of Acute Sense for hearing and for smell, without buying them.
+[[grants]]
+source = { category = "merits", name = "Extrasensory Perceptions" }
+kind = "free_up_to"
+target = { category = "merits", name = "Acute Sense", detail = "Hearing" }
+amount = 1
+page = "Vol. 2, p. 49"
+
+[[grants]]
+source = { category = "merits", name = "Extrasensory Perceptions" }
+kind = "free_up_to"
+target = { category = "merits", name = "Acute Sense", detail = "Smell" }
+amount = 1
+page = "Vol. 2, p. 49"
+
+[[grants]]
+source = { category = "merits", name = "Forge of the Soul" }
+kind = "free_up_to"
+target = { category = "merits", name = "Medium" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 42"
+
+# For the Path of Conjuring only.
+[[grants]]
+source = { category = "merits", name = "Forge of the Soul" }
+kind = "free_up_to"
+target = { category = "merits", name = "Thaumaturgic Expertise", detail = "Thaumaturgy: Path of Conjuring" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 42"
+
+# With no demon as master.
+[[grants]]
+source = { category = "merits", name = "Moloch's Heir" }
+kind = "free_up_to"
+target = { category = "merits", name = "Infernal Power" }
+amount = 3
+page = "Vol. 2 Issue 1, p. 46"
+
+# The sect merit Social Elite also gives is the player's choice: rules_only.
+[[grants]]
+source = { category = "merits", name = "Social Elite" }
+kind = "free_up_to"
+target = { category = "merits", name = "Reputation" }
+amount = 2
+page = "Vol. 2 Issue 1, p. 35"
+
+[[grants]]
+source = { category = "merits", name = "To the Manor Born" }
+kind = "free_up_to"
+target = { category = "merits", name = "Code of Honor" }
+amount = 2
+page = "Vol. 2 Issue 1, p. 45"
+
+# Web of Knives also gives Potence in-clan, below.
+[[grants]]
+source = { category = "merits", name = "Web of Knives" }
+kind = "free_up_to"
+target = { category = "merits", name = "Path of Blood" }
+amount = 3
+page = "Vol. 2 Issue 1, p. 26"
+
+# --- innate status (pp. 312, 404-405, 452-453, 486) -------------------------------
+
+[[grants]]
+source = { category = "merits", name = "Architect of the Tower" }
+kind = "free_up_to"
+target = { category = "status_traits", name = "Architech" }
+amount = 1
+page = "404"
+
+# Only while neither the character nor their sire is Disgraced.
+[[grants]]
+source = { category = "merits", name = "Prestigious Sire" }
+when = { not = { has = { category = "status_traits", name = "Disgraced" } } }
+kind = "free_up_to"
+target = { category = "status_traits", name = "Loyal" }
+amount = 1
+page = "405"
+
+[[grants]]
+source = { category = "merits", name = "Black Hand Membership" }
+kind = "free_up_to"
+target = { category = "status_traits", name = "Branded" }
+amount = 1
+page = "452"
+
+[[grants]]
+source = { category = "merits", name = "Inquisition Membership" }
+kind = "free_up_to"
+target = { category = "status_traits", name = "Purified" }
+amount = 1
+page = "453"
+
+[[grants]]
+source = { category = "merits", name = "Keeper of a Sacred Text" }
+kind = "free_up_to"
+target = { category = "status_traits", name = "Annointed" }
+amount = 1
+page = "453"
+
+# The status is named for the gang, and works as Moniker.
+[[grants]]
+source = { category = "merits", name = "Moniker" }
+kind = "free_up_to"
+target = { category = "status_traits", name = "Moniker" }
+amount = 1
+page = "486"
+
+# --- extra in-clan disciplines (as Additional Common or Uncommon Discipline, p. 248) --
+
+[[grants]]
+source = { category = "merits", name = "Web of Knives" }
+kind = "add"
+target = { category = "extra_in_clan_disciplines", name = "Potence" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 26"
+
+[[grants]]
+source = { category = "merits", name = "Iron Scales" }
+kind = "add"
+target = { category = "extra_in_clan_disciplines", name = "Fortitude" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 31"
+
+[[grants]]
+source = { category = "merits", name = "Seekers of the Hidden" }
+kind = "add"
+target = { category = "extra_in_clan_disciplines", name = "Spiritus" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 32"
+
+[[grants]]
+source = { category = "merits", name = "Strength of Honor" }
+kind = "add"
+target = { category = "extra_in_clan_disciplines", name = "Potence" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 45"
+
+[[grants]]
+source = { category = "merits", name = "Blessing of the Gorgons" }
+kind = "add"
+target = { category = "extra_in_clan_disciplines", name = "Serpentis" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 48"
+
+[[grants]]
+source = { category = "merits", name = "Bonds of Stolen Vitae" }
+kind = "add"
+target = { category = "extra_in_clan_disciplines", choose = ["Animalism", "Auspex", "Obfuscate", "Protean"] }
+amount = 1
+page = "Vol. 2 Issue 1, p. 53"
+
 # --- free dots ----------------------------------------------------------------------
 
 [[grants]]
@@ -132,6 +322,43 @@ target = { category = "skills", name = "Lore" }
 amount = 2
 page = "244"
 
+# The same merit under the name Yorick gave it.
+[[grants]]
+source = { category = "merits", name = "Blood of Tzimisce" }
+kind = "free_up_to"
+target = { category = "skills", name = "Lore" }
+amount = 2
+page = "244"
+
+[[grants]]
+source = { category = "merits", name = "Seasoned Traveler" }
+kind = "free_up_to"
+target = { category = "skills", choose = ["Streetwise", "Survival"] }
+amount = 3
+page = "Vol. 2 Issue 1, p. 31"
+
+[[grants]]
+source = { category = "merits", name = "All the Best Toys" }
+kind = "free_up_to"
+target = { category = "skills", name = "Drive" }
+amount = 5
+page = "Vol. 2, p. 34"
+
+[[grants]]
+source = { category = "merits", name = "Diva" }
+kind = "free_up_to"
+target = { category = "backgrounds", name = "Fame" }
+amount = 2
+page = "Vol. 2 Issue 1, p. 52"
+
+# The grove is a remote Haven, outside any city.
+[[grants]]
+source = { category = "merits", name = "Consecrated Grove" }
+kind = "free_up_to"
+target = { category = "backgrounds", name = "Haven" }
+amount = 5
+page = "Vol. 2, p. 55"
+
 # --- higher caps -------------------------------------------------------------------
 
 [[grants]]
@@ -147,6 +374,28 @@ kind = "raise_max"
 target = { category = "skills", names = ["Lore"] }
 amount = 2
 page = "244"
+
+[[grants]]
+source = { category = "merits", name = "Blood of Tzimisce" }
+kind = "raise_max"
+target = { category = "skills", names = ["Lore"] }
+amount = 2
+page = "244"
+
+[[grants]]
+source = { category = "merits", name = "Seasoned Traveler" }
+kind = "raise_max"
+target = { category = "skills", names = ["Streetwise", "Survival"] }
+amount = 2
+page = "Vol. 2 Issue 1, p. 31"
+
+# Every skill can go one higher.
+[[grants]]
+source = { category = "merits", name = "Obsessive Study" }
+kind = "raise_max"
+target = { category = "skills" }
+amount = 1
+page = "Vol. 2 Issue 1, p. 26"
 
 [[grants]]
 source = { category = "merits", name = "Skill Aptitude" }
@@ -215,6 +464,42 @@ kind = "price_in_clan"
 target = { category = "disciplines", choose = "any", choose_prefix = "Thaumaturgy: " }
 amount = 0
 page = "245"
+
+[[grants]]
+source = { category = "merits", name = "Chosen of the Crone" }
+kind = "price_in_clan"
+target = { category = "disciplines", names = ["Thaumaturgy: Path of Neptune's Might", "Thaumaturgy: Path of Weather Mastery", "Thaumaturgy: Path of Elemental Mastery"] }
+amount = 0
+page = "Vol. 2, p. 55"
+
+# Path merits a merit lets the character take at no cost, if they choose to.
+[[grants]]
+source = { category = "merits", name = "Chosen of the Crone" }
+kind = "cost_percent"
+target = { category = "merits", names = ["Path of Feral Heart", "Path of Lilith", "Path of Harmony"] }
+amount = 0
+page = "Vol. 2, p. 55"
+
+[[grants]]
+source = { category = "merits", name = "Lichborne" }
+kind = "cost_percent"
+target = { category = "merits", name = "Path of Death and the Soul" }
+amount = 0
+page = "Vol. 2, p. 61"
+
+[[grants]]
+source = { category = "merits", name = "Moloch's Heir" }
+kind = "cost_percent"
+target = { category = "merits", name = "Path of the Hive" }
+amount = 0
+page = "Vol. 2, p. 264"
+
+[[grants]]
+source = { category = "merits", name = "To the Manor Born" }
+kind = "cost_percent"
+target = { category = "merits", names = ["Path of Honorable Accord", "Path of Chivalry"] }
+amount = 0
+page = "Vol. 2 Issue 1, p. 45"
 
 # --- Paths of Enlightenment (pp. 253-259, 305) ----------------------------------
 # Taking a Path merit converts the character's Morality from Humanity to that
@@ -360,3 +645,209 @@ kind = "convert"
 from = { category = "paths", name = "Humanity" }
 target = { category = "paths", name = "Evil Revelations" }
 amount = 0
+
+[[grants]]
+source = { category = "merits", name = "Path of Entelechy" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Entelechy" }
+amount = 0
+page = "Vol. 2, p. 263"
+
+[[grants]]
+source = { category = "merits", name = "Path of Nocturnal Redemption" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Nocturnal Redemption" }
+amount = 0
+page = "Vol. 2, p. 263"
+
+[[grants]]
+source = { category = "merits", name = "Path of the Hive" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", name = "Hive" }
+amount = 0
+page = "Vol. 2, p. 264"
+
+# The benefits of the Path merit its detail names ("Night"), as a newcomer to it.
+[[grants]]
+source = { category = "merits", name = "Path Adherent" }
+kind = "convert"
+from = { category = "paths", name = "Humanity" }
+target = { category = "paths", choose = "any", except = ["Humanity"] }
+amount = 0
+page = "Vol. 2, p. 262"
+
+# --- rules only -----------------------------------------------------------------
+# Merits and flaws that say they give, or count as, another trait, but that only
+# change how something works, give something that is not a trait on the sheet,
+# or leave the choice to the player and staff. Staff apply these by hand.
+
+[[rules_only]]
+category = "merits"
+name = "Acute Sense"
+page = "248"
+why = "Works as the Auspex power Heightened Senses for one sense; the power itself is not given."
+
+[[rules_only]]
+category = "merits"
+name = "Adaptive"
+page = "Vol. 2 Issue 1, p. 45"
+why = "A discipline's focus benefit without the focus; the focus is not given."
+
+[[rules_only]]
+category = "merits"
+name = "Additional Common Discipline"
+page = "248"
+why = "The player adds the discipline they choose under Extra In-Clan Disciplines; the checks allow it."
+
+[[rules_only]]
+category = "merits"
+name = "Additional Uncommon Discipline"
+page = "248"
+why = "The player adds the discipline they choose under Extra In-Clan Disciplines; the checks allow it."
+
+[[rules_only]]
+category = "merits"
+name = "Arcane Branding"
+page = "Vol. 2 Issue 1, p. 53"
+why = "Magic Resistance's benefits except against Tremere blood magic; the merit is not given, and cannot be held with it."
+
+[[rules_only]]
+category = "merits"
+name = "Auspicious"
+page = "245"
+why = "Copies a general merit of 3 points or less that the player chooses; staff add the copied merit's effect."
+
+[[rules_only]]
+category = "merits"
+name = "Chimerical Templar"
+page = "Vol. 2 Issue 1, p. 50"
+why = "Extra health levels for the character's illusions, not for the character."
+
+[[rules_only]]
+category = "merits"
+name = "Chosen of Cappadocius"
+page = "Vol. 2 Issue 1, p. 47"
+why = "Six free specializations the player chooses (two each in Lore, Linguistics and Academics), and rituals at x1 XP."
+
+[[rules_only]]
+category = "merits"
+name = "Dark Statue"
+page = "248"
+why = "Three extra health levels only while in stone form."
+
+[[rules_only]]
+category = "merits"
+name = "Dhampir"
+page = "485"
+why = "Builds the character as a ghoul with 7 discipline dots; staff build it."
+
+[[rules_only]]
+category = "merits"
+name = "Ghostly Retainer"
+page = "240"
+why = "A wraith NPC built as a level 5 Retainer, not dots of the Retainers background."
+
+[[rules_only]]
+category = "merits"
+name = "Humble Abode"
+page = "Vol. 2 Issue 1, p. 36"
+why = "Two Haven advantages the player chooses, on top of the background's dots."
+
+[[rules_only]]
+category = "merits"
+name = "Inceptor"
+page = "Vol. 2 Issue 1, p. 46"
+why = "Lets a Caitiff choose Kineticism or a path as one of their three in-clan disciplines."
+
+[[rules_only]]
+category = "merits"
+name = "Moon Bound"
+page = "Vol. 2, p. 55"
+why = "A focus and a bonus that change with the moon each game."
+
+[[rules_only]]
+category = "merits"
+name = "Old Habits"
+page = "Vol. 2 Issue 1, p. 41"
+why = "Up to 3 points of Sabbat merits the player and Storyteller choose, free."
+
+[[rules_only]]
+category = "merits"
+name = "Paragon"
+page = "245"
+why = "A Ventrue lieutenant NPC built as a level 6 Retainer, more money from Resources and an extra action per Influence."
+
+[[rules_only]]
+category = "merits"
+name = "Piece That Remains"
+page = "Vol. 2 Issue 1, p. 46"
+why = "A 1- or 2-point clan merit of another clan that the player chooses, free."
+
+[[rules_only]]
+category = "merits"
+name = "Pliable Blood"
+page = "242"
+why = "The player adds the discipline they choose under Extra In-Clan Disciplines; the checks allow it."
+
+[[rules_only]]
+category = "merits"
+name = "Polymorphic Demeanor"
+page = "Vol. 2 Issue 1, p. 42"
+why = "Changes the archetype and one focus for a game, then they return."
+
+[[rules_only]]
+category = "merits"
+name = "Shadows of the Past"
+page = "Vol. 2, p. 260"
+why = "Changes the in-clan disciplines, and up to 3 points of Lasombra merits the player chooses, free."
+
+[[rules_only]]
+category = "merits"
+name = "Spirit Guide"
+page = "Vol. 2 Issue 1, p. 32"
+why = "Totem 2, a background the Vampire catalogue does not have."
+
+[[rules_only]]
+category = "merits"
+name = "The Master's Path"
+page = "Vol. 2 Issue 1, p. 52"
+why = "Golconda Seeker's benefits with two choices; the merit itself, with its requirements, is not given."
+
+[[rules_only]]
+category = "merits"
+name = "Typhonic Beast"
+page = "Vol. 2 Issue 1, p. 31"
+why = "A form with the benefits of two Serpentis powers; the powers are not given."
+
+[[rules_only]]
+category = "merits"
+name = "Ventrue Royalty"
+page = "Vol. 2 Issue 1, p. 44"
+why = "9 free background dots, as 4, 3 and 2 in three backgrounds the player chooses."
+
+[[rules_only]]
+category = "merits"
+name = "Vestiges of Greatness"
+page = "246"
+why = "The player adds the discipline they choose under Extra In-Clan Disciplines; the checks allow it."
+
+[[rules_only]]
+category = "flaws"
+name = "Baali: Infernal Thrall"
+page = "Vol. 2, p. 281"
+why = "Bound as if by Infernal Power, with none of its benefits; the merit is not given."
+
+[[rules_only]]
+category = "flaws"
+name = "Conspicuous Consumption"
+page = "261"
+why = "Eats flesh as Personal Masquerade allows, and nothing else of it."
+
+[[rules_only]]
+category = "flaws"
+name = "Inept"
+page = "263"
+why = "No free dot in one in-clan discipline, and out-of-clan prices for it."
