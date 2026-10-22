@@ -61,6 +61,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/uploads"
           HORATIO_FRONTEND_DIST=$GITHUB_WORKSPACE/frontend/dist HORATIO_UPLOAD_DIR=$RUNNER_TEMP/uploads uv run uvicorn horatio.app:app --port 8766 &
+          echo $! > "$RUNNER_TEMP/horatio.pid"
           for i in $(seq 1 30); do curl -sf localhost:8766/api/health && break; sleep 1; done
       - run: npx playwright test
         working-directory: frontend
@@ -70,3 +71,8 @@ jobs:
           name: e2e-results
           path: frontend/test-results
           retention-days: 7
+      # The running server holds uv's cache lock, and setup-uv's cache step waits
+      # five minutes for it, then fails the job after every test has passed.
+      - name: Stop Horatio
+        if: always()
+        run: kill "$(cat "$RUNNER_TEMP/horatio.pid")" 2>/dev/null || true
