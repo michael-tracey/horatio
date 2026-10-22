@@ -849,6 +849,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play/taps/{tap_id}/influence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Give Influence Details
+         * @description Add or change what an influence spend was for, from the game's log. Anyone
+         *     who can see the sheet can until the game ends; after that, only the staff who
+         *     keep the troupe's influence log.
+         */
+        put: operations["give_influence_details_api_characters__character_id__play_taps__tap_id__influence_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/primary-path": {
         parameters: {
             query?: never;
@@ -4051,12 +4073,19 @@ export interface components {
             detail: string;
             /** Group */
             group: string;
+            /** Influence */
+            influence?: ("elite" | "underworld") | null;
             /** Key */
             key: string;
             /** Left */
             left: number;
             /** Name */
             name: string;
+            /**
+             * Owed
+             * @default 0
+             */
+            owed: number;
             /** Uses */
             uses: number;
         };
@@ -4246,6 +4275,24 @@ export interface components {
             /** Types */
             types: components["schemas"]["InfluenceTypeChoices"][];
         };
+        /**
+         * InfluenceDetailsIn
+         * @description What an influence spend was for (horatio.play_influence).
+         */
+        InfluenceDetailsIn: {
+            /** Action */
+            action: string;
+            /**
+             * Purpose
+             * @default
+             */
+            purpose: string;
+            /**
+             * Specialization
+             * @default
+             */
+            specialization: string;
+        };
         /** InfluenceEntryIn */
         InfluenceEntryIn: {
             /** Action Key */
@@ -4384,6 +4431,38 @@ export interface components {
             entries: components["schemas"]["InfluenceEntryOut"][];
             /** Total */
             total: number;
+        };
+        /**
+         * InfluenceSpendOut
+         * @description What an influence spend logged, for the game's log.
+         */
+        InfluenceSpendOut: {
+            /** Action */
+            action: string | null;
+            /** Action Key */
+            action_key: string | null;
+            /** Changed By Staff */
+            changed_by_staff: boolean;
+            /**
+             * Entry Id
+             * Format: uuid
+             */
+            entry_id: string;
+            /** Needs Details */
+            needs_details: boolean;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /** Specialization */
+            specialization: string;
+            /** Times */
+            times: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /**
          * InfluenceStandingOut
@@ -4552,6 +4631,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            influence?: components["schemas"]["InfluenceSpendOut"] | null;
             /** Kind */
             kind: string;
             /** Note */
@@ -4842,6 +4922,10 @@ export interface components {
             picture: string | null;
             /** Removed */
             removed: boolean;
+            /** Shortfall */
+            shortfall: {
+                [key: string]: number;
+            };
             /** Submission Status */
             submission_status: string | null;
             /** Submitted Late */
@@ -4999,6 +5083,11 @@ export interface components {
             /** Generation */
             generation: number;
             health: components["schemas"]["Health"];
+            /**
+             * Influence
+             * @default []
+             */
+            influence: components["schemas"]["InfluenceStandingOut"][];
             /** Kind */
             kind: string;
             /** Log */
@@ -6069,6 +6158,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            influence?: components["schemas"]["InfluenceDetailsIn"] | null;
             /**
              * Kind
              * @enum {string}
@@ -8355,6 +8445,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Taps"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_influence_details_api_characters__character_id__play_taps__tap_id__influence_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                tap_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InfluenceDetailsIn"];
             };
         };
         responses: {
