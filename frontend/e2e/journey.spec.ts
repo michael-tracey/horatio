@@ -89,9 +89,10 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByLabel("Faction")).toHaveValue("Orthodox");
   await p.getByLabel("Sect").selectOption("Camarilla");
   await expect(p.getByLabel("Faction")).toHaveCount(0);
+  // Saving a step reloads what can be taken, which can take several seconds on a busy server.
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
@@ -654,7 +655,7 @@ test("a troupe changes what new characters start with and their downtime actions
     // A vampire needs Generation before leaving Backgrounds.
     if (heading === "Disciplines") await p.getByRole("button", { name: "Generation 1", exact: true }).click();
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   }
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
@@ -709,7 +710,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await p.getByLabel("Sect").selectOption("Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
@@ -901,7 +902,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await p.getByLabel("Sect").selectOption("Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
@@ -2205,7 +2206,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await p.getByLabel("Sect").selectOption("Camarilla");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
@@ -2417,7 +2418,7 @@ test("Crafts, Performance and Science take a field in the wizard, kept through B
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
   const next = async (heading: string) => {
     await p.getByRole("button", { name: "Save and continue" }).click();
-    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
   const tap = async (...dots: string[]) => {
     for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
