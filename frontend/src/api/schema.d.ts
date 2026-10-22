@@ -467,6 +467,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/downtime/block-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Block Choices
+         * @description The player's own character's entries that a discovery block in this cycle
+         *     can hide. Players never see anyone else's.
+         */
+        get: operations["block_choices_api_characters__character_id__downtime_block_choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/downtime/results": {
         parameters: {
             query?: never;
@@ -562,6 +583,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/influence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read History
+         * @description The character's own influence actions, newest first, from every troupe it
+         *     has acted in. Never another character's, nor blocks others placed.
+         */
+        get: operations["read_history_api_characters__character_id__influence_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/influence-effects": {
         parameters: {
             query?: never;
@@ -575,6 +617,26 @@ export interface paths {
          */
         get: operations["character_effects_api_characters__character_id__influence_effects_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/influence/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Finish Entry
+         * @description Fill in the details of an entry spent at a game still going.
+         */
+        put: operations["finish_entry_api_characters__character_id__influence__entry_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -863,6 +925,28 @@ export interface paths {
          * @description Record taps, perhaps made offline a while ago, in the order they happened.
          */
         post: operations["record_taps_api_characters__character_id__play_taps_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/taps/{tap_id}/influence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Give Influence Details
+         * @description Add or change what an influence spend was for, from the game's log. Anyone
+         *     who can see the sheet can until the game ends; after that, only the staff who
+         *     keep the troupe's influence log.
+         */
+        put: operations["give_influence_details_api_characters__character_id__play_taps__tap_id__influence_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1660,6 +1744,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/influence-blocks/{block_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Block
+         * @description Take a block back off its entry, from the log page.
+         */
+        delete: operations["remove_block_api_influence_blocks__block_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/influence-effects/{effect_id}": {
         parameters: {
             query?: never;
@@ -1995,6 +2099,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/responses/{response_id}/discovery-block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discovery Block
+         * @description A discovery block answer: the entry the player picked, the block once
+         *     accepted, and the entries it could hide.
+         */
+        get: operations["discovery_block_api_responses__response_id__discovery_block_get"];
+        put?: never;
+        /**
+         * Accept Block
+         * @description Accept the block on an entry of either type: one more block on it, and the
+         *     response says so.
+         */
+        post: operations["accept_block_api_responses__response_id__discovery_block_post"];
+        /**
+         * Remove Answer Block
+         * @description Take the block this answer added back off its entry.
+         */
+        delete: operations["remove_answer_block_api_responses__response_id__discovery_block_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/responses/{response_id}/influence-entry": {
         parameters: {
             query?: never;
@@ -2014,6 +2148,27 @@ export interface paths {
          * @description Take an answer back off the log.
          */
         delete: operations["unlog_answer_api_responses__response_id__influence_entry_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup
+         * @description What a Gossip and Insider Trading or Word on the Street answer finds in the
+         *     log, with the character's other answers it combines with.
+         */
+        get: operations["lookup_api_responses__response_id__lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2683,6 +2838,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/influence-log/characters/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Log Standing
+         * @description A character's own specialisations, for the Log influence tool to offer first,
+         *     and for a cycle, its allowance of each type and what is logged against it.
+         */
+        get: operations["log_standing_api_troupes__troupe_id__influence_log_characters__character_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/influence-log/choices": {
         parameters: {
             query?: never;
@@ -2697,6 +2873,26 @@ export interface paths {
          */
         get: operations["choices_api_troupes__troupe_id__influence_log_choices_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/influence-lookback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Lookback
+         * @description House rule: how many days back lookups look, from the close of their cycle.
+         */
+        put: operations["set_lookback_api_troupes__troupe_id__influence_lookback_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3452,24 +3648,48 @@ export interface components {
             /** Troupe Name */
             troupe_name: string | null;
         };
-        /** BlockIn */
-        BlockIn: {
-            /** Activity */
-            activity: string;
-            /** Ends At */
-            ends_at?: string | null;
+        /** BlockChoicesOut */
+        BlockChoicesOut: {
+            /** Entries */
+            entries: components["schemas"]["OwnEntryOut"][];
+            window: components["schemas"]["WindowOut"];
+        };
+        /** BlockOut */
+        BlockOut: {
+            entry: components["schemas"]["InfluenceEntryOut"];
             /**
-             * Starts At
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /**
+         * BlockSourceOut
+         * @description A discovery block an answer added to an entry (horatio.influence_lookups).
+         */
+        BlockSourceOut: {
+            /**
+             * Added At
              * Format: date-time
              */
-            starts_at: string;
-            /** Strength */
-            strength: number;
+            added_at: string;
+            /** Added By Name */
+            added_by_name: string;
+            /** Character Id */
+            character_id: string | null;
+            /** Character Name */
+            character_name: string | null;
+            /** Cycle Id */
+            cycle_id: string | null;
+            /** Cycle Name */
+            cycle_name: string | null;
             /**
-             * Type
-             * @enum {string}
+             * Id
+             * Format: uuid
              */
-            type: "elite" | "underworld";
+            id: string;
+            /** Response Id */
+            response_id: string | null;
         };
         /** BlockWarningOut */
         BlockWarningOut: {
@@ -4014,12 +4234,19 @@ export interface components {
         /** CycleChoice */
         CycleChoice: {
             /**
+             * Closes At
+             * Format: date-time
+             */
+            closes_at: string;
+            /**
              * Id
              * Format: uuid
              */
             id: string;
             /** Name */
             name: string;
+            /** Opened At */
+            opened_at: string | null;
         };
         /** CycleClose */
         CycleClose: {
@@ -4063,6 +4290,18 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /** CycleUseOut */
+        CycleUseOut: {
+            /** Allowance */
+            allowance: number | null;
+            /** Logged */
+            logged: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /** DarkPackOut */
         DarkPackOut: {
@@ -4214,6 +4453,16 @@ export interface components {
             /** Guild Name */
             guild_name: string | null;
         };
+        /** DiscoveryBlockOut */
+        DiscoveryBlockOut: {
+            block: components["schemas"]["BlockOut"] | null;
+            /** Choices */
+            choices: components["schemas"]["InfluenceEntryOut"][];
+            picked: components["schemas"]["InfluenceEntryOut"] | null;
+            /** Whose */
+            whose: ("own" | "other") | null;
+            window: components["schemas"]["WindowOut"];
+        };
         /** EffectRef */
         EffectRef: {
             /** Active */
@@ -4239,12 +4488,19 @@ export interface components {
             detail: string;
             /** Group */
             group: string;
+            /** Influence */
+            influence?: ("elite" | "underworld") | null;
             /** Key */
             key: string;
             /** Left */
             left: number;
             /** Name */
             name: string;
+            /**
+             * Owed
+             * @default 0
+             */
+            owed: number;
             /** Uses */
             uses: number;
         };
@@ -4288,6 +4544,21 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** FinishIn */
+        FinishIn: {
+            /** Action Key */
+            action_key: string;
+            /**
+             * Purpose
+             * @default
+             */
+            purpose: string;
+            /**
+             * Specialization
+             * @default
+             */
+            specialization: string;
+        };
         /** Forgot */
         Forgot: {
             /**
@@ -4305,6 +4576,48 @@ export interface components {
         ForgotHelp: {
             /** Can Email */
             can_email: boolean;
+        };
+        /**
+         * FoundOut
+         * @description One entry a lookup finds. Never who took it.
+         */
+        FoundOut: {
+            /** Action */
+            action: string;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /** Specialization */
+            specialization: string;
+            /** Times */
+            times: number;
+        };
+        /**
+         * GameChoice
+         * @description A game on the troupe's schedule, which dates an entry when it started.
+         */
+        GameChoice: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
         };
         /** GameLog */
         GameLog: {
@@ -4365,6 +4678,68 @@ export interface components {
         HeldTitles: {
             /** Titles */
             titles: string[];
+        };
+        /** HistoryEntryOut */
+        HistoryEntryOut: {
+            /** Action */
+            action: string;
+            /** Action Key */
+            action_key: string | null;
+            /** Can Finish */
+            can_finish: boolean;
+            /** Conflict */
+            conflict: boolean;
+            /** Cycle Id */
+            cycle_id: string | null;
+            /** Cycle Name */
+            cycle_name: string | null;
+            /** Findable */
+            findable: boolean;
+            /** Game Number */
+            game_number: number | null;
+            /** Game Started At */
+            game_started_at: string | null;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Needs Details */
+            needs_details: boolean;
+            /** Other Troupe */
+            other_troupe: boolean;
+            /** Own Blocks */
+            own_blocks: number;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "downtime" | "game" | "hand" | "import";
+            /** Specialization */
+            specialization: string;
+            /** Times */
+            times: number;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /** HomeTroupeRequest */
         HomeTroupeRequest: {
@@ -4429,10 +4804,30 @@ export interface components {
             characters: components["schemas"]["CharacterChoice-Output"][];
             /** Cycles */
             cycles: components["schemas"]["CycleChoice"][];
+            /** Games */
+            games: components["schemas"]["GameChoice"][];
             /** Names */
             names: string[];
             /** Types */
             types: components["schemas"]["InfluenceTypeChoices"][];
+        };
+        /**
+         * InfluenceDetailsIn
+         * @description What an influence spend was for (horatio.play_influence).
+         */
+        InfluenceDetailsIn: {
+            /** Action */
+            action: string;
+            /**
+             * Purpose
+             * @default
+             */
+            purpose: string;
+            /**
+             * Specialization
+             * @default
+             */
+            specialization: string;
         };
         /** InfluenceEffectOut */
         InfluenceEffectOut: {
@@ -4544,6 +4939,11 @@ export interface components {
             action: string;
             /** Action Key */
             action_key: string | null;
+            /**
+             * Blocked By
+             * @default []
+             */
+            blocked_by: components["schemas"]["BlockSourceOut"][];
             /** Blocks */
             blocks: number;
             /** Character Id */
@@ -4625,12 +5025,57 @@ export interface components {
             /** Times */
             times: number;
         };
+        /** InfluenceHistoryOut */
+        InfluenceHistoryOut: {
+            /** Entries */
+            entries: components["schemas"]["HistoryEntryOut"][];
+            /** Log Troupe Id */
+            log_troupe_id: string | null;
+            /** Lookback Days */
+            lookback_days: number;
+            /** Owed */
+            owed: components["schemas"]["OwedOut"][];
+            /** Standings */
+            standings: components["schemas"]["InfluenceStandingOut"][];
+        };
         /** InfluenceLogOut */
         InfluenceLogOut: {
             /** Entries */
             entries: components["schemas"]["InfluenceEntryOut"][];
             /** Total */
             total: number;
+        };
+        /**
+         * InfluenceSpendOut
+         * @description What an influence spend logged, for the game's log.
+         */
+        InfluenceSpendOut: {
+            /** Action */
+            action: string | null;
+            /** Action Key */
+            action_key: string | null;
+            /** Changed By Staff */
+            changed_by_staff: boolean;
+            /**
+             * Entry Id
+             * Format: uuid
+             */
+            entry_id: string;
+            /** Needs Details */
+            needs_details: boolean;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /** Specialization */
+            specialization: string;
+            /** Times */
+            times: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /**
          * InfluenceStandingOut
@@ -4834,6 +5279,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            influence?: components["schemas"]["InfluenceSpendOut"] | null;
             /** Kind */
             kind: string;
             /** Note */
@@ -4847,11 +5293,64 @@ export interface components {
             /** Undone */
             undone: boolean;
         };
+        /**
+         * LogStandingOut
+         * @description What the Log influence tool needs about a character.
+         */
+        LogStandingOut: {
+            /** Cycle */
+            cycle: components["schemas"]["CycleUseOut"][];
+            /** Standings */
+            standings: components["schemas"]["InfluenceStandingOut"][];
+        };
         /** LoggedOut */
         LoggedOut: {
             entry: components["schemas"]["InfluenceEntryOut"];
             /** Repeat */
             repeat: boolean;
+        };
+        /** Lookback */
+        Lookback: {
+            /** Days */
+            days: number;
+        };
+        /**
+         * LookupAnswerOut
+         * @description One of the character's answers taking the lookup this cycle.
+         */
+        LookupAnswerOut: {
+            /** Answer */
+            answer: string;
+            /** Body */
+            body: string;
+            /** Question */
+            question: string;
+            /**
+             * Response Id
+             * Format: uuid
+             */
+            response_id: string;
+            /** Status */
+            status: string;
+        };
+        /** LookupOut */
+        LookupOut: {
+            /** Action Name */
+            action_name: string;
+            /** Answers */
+            answers: components["schemas"]["LookupAnswerOut"][];
+            /** Found */
+            found: components["schemas"]["FoundOut"][];
+            /** Specializations */
+            specializations: string[];
+            /** Strength */
+            strength: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
+            window: components["schemas"]["WindowOut"];
         };
         /** Me */
         Me: {
@@ -5078,6 +5577,45 @@ export interface components {
             /** Note */
             note: string | null;
         };
+        /** OwedOut */
+        OwedOut: {
+            /** Amount */
+            amount: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
+        };
+        /**
+         * OwnEntryOut
+         * @description One of the player's own character's entries, to pick for a discovery block.
+         */
+        OwnEntryOut: {
+            /** Action */
+            action: string;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /** Specialization */
+            specialization: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
+        };
         /** ParticipantDeliveries */
         ParticipantDeliveries: {
             /**
@@ -5124,6 +5662,10 @@ export interface components {
             picture: string | null;
             /** Removed */
             removed: boolean;
+            /** Shortfall */
+            shortfall: {
+                [key: string]: number;
+            };
             /** Submission Status */
             submission_status: string | null;
             /** Submitted Late */
@@ -5333,6 +5875,11 @@ export interface components {
             /** Generation */
             generation: number;
             health: components["schemas"]["Health"];
+            /**
+             * Influence
+             * @default []
+             */
+            influence: components["schemas"]["InfluenceStandingOut"][];
             /** Kind */
             kind: string;
             /** Log */
@@ -6419,6 +6966,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            influence?: components["schemas"]["InfluenceDetailsIn"] | null;
             /**
              * Kind
              * @enum {string}
@@ -6592,6 +7140,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Influence Lookback Days */
+            influence_lookback_days: number;
             /**
              * Lead User Id
              * Format: uuid
@@ -6865,6 +7415,25 @@ export interface components {
             /** Note */
             note: string;
         };
+        /**
+         * WindowOut
+         * @description The stretch of the log searched, both ends included: from `days` before the
+         *     cycle closes until it closes.
+         */
+        WindowOut: {
+            /** Days */
+            days: number;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /**
+             * Until
+             * Format: date-time
+             */
+            until: string;
+        };
         /** WorkCycle */
         WorkCycle: {
             /**
@@ -7116,6 +7685,33 @@ export interface components {
              * @default 0
              */
             unbanked: number;
+        };
+        /** BlockIn */
+        horatio__api__influence_effects__BlockIn: {
+            /** Activity */
+            activity: string;
+            /** Ends At */
+            ends_at?: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Strength */
+            strength: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
+        };
+        /** BlockIn */
+        horatio__api__influence_lookups__BlockIn: {
+            /**
+             * Entry Id
+             * Format: uuid
+             */
+            entry_id: string;
         };
         /** ResetIn */
         horatio__api__play__ResetIn: {
@@ -8014,6 +8610,37 @@ export interface operations {
             };
         };
     };
+    block_choices_api_characters__character_id__downtime_block_choices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockChoicesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     my_results_api_characters__character_id__downtime_results_get: {
         parameters: {
             query?: never;
@@ -8210,6 +8837,37 @@ export interface operations {
             };
         };
     };
+    read_history_api_characters__character_id__influence_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InfluenceHistoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     character_effects_api_characters__character_id__influence_effects_get: {
         parameters: {
             query?: never;
@@ -8228,6 +8886,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterEffectOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finish_entry_api_characters__character_id__influence__entry_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinishIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryEntryOut"];
                 };
             };
             /** @description Validation Error */
@@ -8741,6 +9435,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Taps"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_influence_details_api_characters__character_id__play_taps__tap_id__influence_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                tap_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InfluenceDetailsIn"];
             };
         };
         responses: {
@@ -10290,6 +11020,35 @@ export interface operations {
             };
         };
     };
+    remove_block_api_influence_blocks__block_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                block_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     remove_effect_api_influence_effects__effect_id__delete: {
         parameters: {
             query?: never;
@@ -10970,6 +11729,101 @@ export interface operations {
             };
         };
     };
+    discovery_block_api_responses__response_id__discovery_block_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoveryBlockOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_block_api_responses__response_id__discovery_block_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__influence_lookups__BlockIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_answer_block_api_responses__response_id__discovery_block_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     log_answer_api_responses__response_id__influence_entry_post: {
         parameters: {
             query?: never;
@@ -11022,6 +11876,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_api_responses__response_id__lookup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -12397,7 +13282,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BlockIn"];
+                "application/json": components["schemas"]["horatio__api__influence_effects__BlockIn"];
             };
         };
         responses: {
@@ -12532,6 +13417,40 @@ export interface operations {
             };
         };
     };
+    log_standing_api_troupes__troupe_id__influence_log_characters__character_id__get: {
+        parameters: {
+            query?: {
+                cycle_id?: string | null;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogStandingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     choices_api_troupes__troupe_id__influence_log_choices_get: {
         parameters: {
             query?: never;
@@ -12550,6 +13469,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InfluenceChoicesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_lookback_api_troupes__troupe_id__influence_lookback_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Lookback"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

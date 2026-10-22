@@ -42,6 +42,7 @@ from horatio import audit, influence, influence_targets
 from horatio.influence import InfluenceType
 from horatio.models import (
     Character,
+    InfluenceBlock,
     InfluenceEntry,
     Response,
     Submission,
@@ -314,10 +315,14 @@ EDITABLE = (
 )
 
 
-def change_entry(db: Session, actor: User, entry: InfluenceEntry, details: Details) -> list[str]:
+def change_entry(
+    db: Session, actor: User | None, entry: InfluenceEntry, details: Details
+) -> list[str]:
     """Change what an entry says. A change of type gives it the other type's next
     number. Returns the names of the fields that changed."""
-    details = checked(db, entry.troupe_id, details, keep=entry)
+    details = checked(
+        db, entry.troupe_id, details, keep=entry, require_target=entry.source != "import"
+    )
     changed = [f for f in EDITABLE if getattr(entry, f) != getattr(details, f)]
     if influence_targets.of(entry) != details.target:
         changed.append("target")
@@ -387,6 +392,13 @@ def merge_entries(
         update(Response)
         .where(Response.influence_entry_id.in_([o.id for o in others]))
         .values(influence_entry_id=keep.id)
+        .execution_options(synchronize_session="fetch")
+    )
+    # So do the discovery blocks answers added to them (horatio.influence_lookups).
+    db.execute(
+        update(InfluenceBlock)
+        .where(InfluenceBlock.entry_id.in_([o.id for o in others]))
+        .values(entry_id=keep.id)
         .execution_options(synchronize_session="fetch")
     )
     for other in others:

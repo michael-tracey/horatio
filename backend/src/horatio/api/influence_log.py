@@ -3,14 +3,14 @@
 
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import or_, select
 
-from horatio import influence, influence_log, specializations
+from horatio import influence, influence_log, influence_lookups, specializations
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceActionOut, action_out
 from horatio.api.influence_effects import (
@@ -29,6 +29,7 @@ from horatio.models import (
     DowntimeCycle,
     InfluenceEntry,
     Response,
+    ScheduledGame,
     Troupe,
     TroupeMembership,
     User,
@@ -39,6 +40,22 @@ from horatio.rules.model import TroupeRules
 router = APIRouter(tags=["influence log"])
 
 Source = Literal["downtime", "game", "hand", "import"]
+# How many past games the Log influence tool offers to date an entry by.
+GAMES = 30
+
+
+class BlockSourceOut(BaseModel):
+    """A discovery block an answer added to an entry (horatio.influence_lookups)."""
+
+    id: uuid.UUID
+    response_id: uuid.UUID | None
+    # Whose answer, in which cycle; None if the response has gone since.
+    character_id: uuid.UUID | None
+    character_name: str | None
+    cycle_id: uuid.UUID | None
+    cycle_name: str | None
+    added_at: datetime
+    added_by_name: str
 
 
 class InfluenceEntryOut(BaseModel):
@@ -81,6 +98,9 @@ class InfluenceEntryOut(BaseModel):
     target: InfluenceTargetOut | None = None
     effect: EffectRef | None = None
     resolves: EffectKind | None = None
+    # The blocks discovery block answers added, of `blocks`; staff may set the
+    # rest by hand.
+    blocked_by: list[BlockSourceOut] = []
 
 
 class InfluenceLogOut(BaseModel):
@@ -143,6 +163,18 @@ class CharacterChoice(BaseModel):
 class CycleChoice(BaseModel):
     id: uuid.UUID
     name: str
+    # Picking a cycle in the Log influence tool dates the entry when it opened, or
+    # when it closes if it has not opened yet.
+    opened_at: datetime | None
+    closes_at: datetime
+
+
+class GameChoice(BaseModel):
+    """A game on the troupe's schedule, which dates an entry when it started."""
+
+    id: uuid.UUID
+    starts_at: datetime
+    ends_at: datetime
 
 
 class InfluenceChoicesOut(BaseModel):
@@ -153,6 +185,8 @@ class InfluenceChoicesOut(BaseModel):
     # People not in Horatio the log names.
     names: list[str]
     cycles: list[CycleChoice]
+    # The troupe's games that have started, newest first.
+    games: list[GameChoice]
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -204,6 +238,7 @@ def entries_out(
         responses.setdefault(entry_id, []).append(response_id)
 
     targets = targets_out(db, entries)
+    blocked_by = influence_lookups.block_sources(db, [e.id for e in entries])
 
     def current_name(entry: InfluenceEntry) -> str:
         character = characters.get(entry.character_id) if entry.character_id else None
@@ -243,6 +278,7 @@ def entries_out(
                 target=targets[e.id][0],
                 effect=targets[e.id][1],
                 resolves=targets[e.id][2],
+                blocked_by=[BlockSourceOut(**vars(b)) for b in blocked_by.get(e.id, [])],
             )
         )
     return found
@@ -387,7 +423,22 @@ def choices(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Influence
             + sorted(gone, key=lambda c: c.name.casefold())
         ],
         names=influence_log.names_only(db, troupe_id),
-        cycles=[CycleChoice(id=c.id, name=c.name) for c in cycles],
+        cycles=[
+            CycleChoice(id=c.id, name=c.name, opened_at=c.opened_at, closes_at=c.closes_at)
+            for c in cycles
+        ],
+        games=[
+            GameChoice(id=g.id, starts_at=g.starts_at, ends_at=g.ends_at)
+            for g in db.scalars(
+                select(ScheduledGame)
+                .where(
+                    ScheduledGame.troupe_id == troupe_id,
+                    ScheduledGame.starts_at <= datetime.now(UTC),
+                )
+                .order_by(ScheduledGame.starts_at.desc())
+                .limit(GAMES)
+            )
+        ],
     )
 
 

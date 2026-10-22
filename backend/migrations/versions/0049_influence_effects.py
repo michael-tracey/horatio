@@ -1,7 +1,7 @@
 """targeted influence actions: their targets, and the effects they make
 
 Revision ID: 0049
-Revises: 0044
+Revises: 0045
 Create Date: 2026-10-21 22:00:00.000000
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0049"
-down_revision: str | None = "0044"
+down_revision: str | None = "0045"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

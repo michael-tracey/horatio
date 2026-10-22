@@ -3,12 +3,15 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { InfluenceChoicesOut, InfluenceEntryIn, InfluenceEntryOut } from "../../api/types";
-import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { TYPE_NAMES } from "../../influence";
+import { BlockSources } from "./BlockSources";
 import { EffectsCard, ResolveButton, TargetFields, targetBody, targetForm } from "./InfluenceEffects";
 import { logQuery, NO_FILTERS, sourceText, whoText, type LogFilters } from "./influenceLog";
+import { allowanceWarning, another, cycleDate, specializationGroups, type EntryFields } from "./logInfluence";
+import { WhoPicker } from "./WhoPicker";
 
 const PAGE = 100;
 
@@ -204,6 +207,7 @@ function EntryRow({
         </span>
       </div>
       {entry.purpose && <p>{entry.purpose}</p>}
+      <BlockSources entry={entry} />
       <div className="flex flex-wrap items-center gap-2 text-xs text-mist">
         {entry.times > 1 && <Badge tone="gold">logged {entry.times} times</Badge>}
         {entry.blocks > 0 && <Badge>{entry.blocks === 1 ? "1 block" : `${entry.blocks} blocks`}</Badge>}
@@ -216,7 +220,11 @@ function EntryRow({
         ) : (
           <span>{sourceText(entry)}</span>
         )}
-        {entry.logged_by_name && <span>· logged by {entry.logged_by_name}</span>}
+        {entry.logged_by_name && (
+          <span>
+            · logged by {entry.logged_by_name}, {dates.date(entry.logged_at)}
+          </span>
+        )}
         <span className="ml-auto flex gap-2">
           <ResolveButton entry={entry} />
           <Button variant="ghost" className="px-2 py-0" onClick={onEdit}>
@@ -231,22 +239,32 @@ function EntryRow({
   );
 }
 
-/** Add an entry by hand, or change one. */
-function EntryForm({
+/**
+ * The Log influence tool (#134): add an entry by hand, for a PC, an NPC or a name
+ * only, or change one. Opened on this page, on a character's page with the
+ * character filled in, and beside a submission on the cycle page. Add another
+ * keeps the date, cycle and character for the next entry in a batch.
+ */
+export function EntryForm({
   troupeId,
   choices,
   entry,
+  characterId,
+  cycleId,
   onDone,
 }: {
   troupeId: string;
   choices: InfluenceChoicesOut;
   entry?: InfluenceEntryOut;
+  /** Filled in for a new entry. */
+  characterId?: string;
+  cycleId?: string;
   onDone: () => void;
 }) {
   const dates = useDates();
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<EntryFields>({
     type: entry?.type ?? "elite",
-    who: entry ? (entry.character_id ? `c:${entry.character_id}` : "name") : "",
+    who: entry ? (entry.character_id ? `c:${entry.character_id}` : "name") : characterId ? `c:${characterId}` : "",
     name: entry && !entry.character_id ? entry.name : "",
     specialization: entry?.specialization ?? "",
     action_key: entry?.action_key ?? "",
@@ -254,17 +272,43 @@ function EntryForm({
     times: entry?.times ?? 1,
     blocks: entry?.blocks ?? 0,
     happened_at: dates.toInput(entry?.happened_at ?? new Date()),
-    cycle_id: entry?.cycle_id ?? "",
+    cycle_id: entry?.cycle_id ?? cycleId ?? "",
     needs_details: entry?.needs_details ?? false,
   });
+  // The short id of the entry Add another last logged.
+  const [logged, setLogged] = useState<string | null>(null);
   const [target, setTarget] = useState(targetForm(entry));
-  const set = (change: Partial<typeof form>) => setForm({ ...form, ...change });
+  const set = (change: Partial<EntryFields>) => setForm({ ...form, ...change });
   const type = choices.types.find((t) => t.type === form.type)!;
-  const save = useAction(async () => {
+  const characterOf = form.who.startsWith("c:") ? form.who.slice(2) : "";
+  const character = choices.characters.find((c) => c.id === characterOf);
+  const standing = useQuery({
+    queryKey: ["influence-standing", troupeId, characterOf, form.cycle_id],
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/troupes/{troupe_id}/influence-log/characters/{character_id}", {
+          params: { path: { troupe_id: troupeId, character_id: characterOf }, query: { cycle_id: form.cycle_id || undefined } },
+        }),
+      ),
+    enabled: !!characterOf,
+  });
+  const held = (characterOf && standing.data?.standings.find((s) => s.type === form.type)?.held) || [];
+  const specializations = specializationGroups(held, type.specializations, form.specialization);
+  const cycle = choices.cycles.find((c) => c.id === form.cycle_id);
+  const warning =
+    !entry && character?.kind === "pc" && cycle
+      ? allowanceWarning(
+          standing.data?.cycle.find((u) => u.type === form.type),
+          form.times,
+          character.name,
+          cycle.name,
+        )
+      : null;
+  const save = useAction(async (more: boolean) => {
     const body: InfluenceEntryIn = {
       type: form.type,
       happened_at: dates.fromInput(form.happened_at).toISOString(),
-      character_id: form.who.startsWith("c:") ? form.who.slice(2) : null,
+      character_id: characterOf || null,
       name: form.who === "name" ? form.name : "",
       specialization: form.specialization,
       action_key: form.action_key || null,
@@ -275,12 +319,25 @@ function EntryForm({
       needs_details: form.needs_details,
       target: targetBody(target, form.action_key),
     };
-    if (entry) await unwrap(api.PUT("/api/influence-entries/{entry_id}", { params: { path: { entry_id: entry.id } }, body }));
-    else await unwrap(api.POST("/api/troupes/{troupe_id}/influence-log", { params: { path: { troupe_id: troupeId } }, body }));
-    onDone();
+    const saved = entry
+      ? await unwrap(api.PUT("/api/influence-entries/{entry_id}", { params: { path: { entry_id: entry.id } }, body }))
+      : await unwrap(api.POST("/api/troupes/{troupe_id}/influence-log", { params: { path: { troupe_id: troupeId } }, body }));
+    if (more) {
+      setForm(another(form));
+      setTarget(targetForm(undefined));
+      setLogged(saved.short_id);
+    } else onDone();
   });
   // A character who has left can stay on an entry that already names them, but not be newly logged.
   const characters = choices.characters.filter((c) => c.in_troupe || `c:${c.id}` === form.who);
+  const dateFrom = (value: string) => {
+    const [kind, id] = value.split(":");
+    const cycle = kind === "cycle" ? choices.cycles.find((c) => c.id === id) : undefined;
+    const game = kind === "game" ? choices.games.find((g) => g.id === id) : undefined;
+    if (cycle) set({ happened_at: dates.toInput(cycleDate(cycle)), cycle_id: form.cycle_id || cycle.id });
+    else if (game) set({ happened_at: dates.toInput(game.starts_at) });
+  };
+  const ready = !!characterOf || (form.who === "name" && !!form.name.trim());
 
   return (
     <form
@@ -288,30 +345,16 @@ function EntryForm({
       className="mb-4 flex flex-col gap-3"
       onSubmit={(e) => {
         e.preventDefault();
-        save.mutate(undefined);
+        save.mutate(false);
       }}
     >
+      {logged && <Notice>Logged {logged}. The next one keeps the date, cycle and who took it.</Notice>}
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Who">
-          <Select value={form.who} onChange={(e) => set({ who: e.target.value })}>
-            <option value="">Choose…</option>
-            {characters.map((c) => (
-              <option key={c.id} value={`c:${c.id}`}>
-                {c.name}
-                {c.kind === "npc" ? " (NPC)" : ""}
-                {c.in_troupe ? "" : " (left the troupe)"}
-              </option>
-            ))}
-            <option value="name">Someone not in Horatio…</option>
-          </Select>
+          <WhoPicker characters={characters} who={form.who} name={form.name} onChange={(who, name) => set({ who, name })} />
         </Field>
-        {form.who === "name" && (
-          <Field label="Their name">
-            <Input value={form.name} onChange={(e) => set({ name: e.target.value })} />
-          </Field>
-        )}
         <Field label="Type">
-          <Select value={form.type} onChange={(e) => set({ type: e.target.value as typeof form.type, action_key: "" })}>
+          <Select value={form.type} onChange={(e) => set({ type: e.target.value as EntryFields["type"], action_key: "" })}>
             {choices.types.map((t) => (
               <option key={t.type} value={t.type}>
                 {t.name}
@@ -322,9 +365,18 @@ function EntryForm({
         <Field label="Specialisation">
           <Select value={form.specialization} onChange={(e) => set({ specialization: e.target.value })}>
             <option value="">None</option>
-            {type.specializations.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
+            {specializations.own.length > 0 && (
+              <optgroup label={`${character?.name ?? "Their"}'s own`}>
+                {specializations.own.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label={specializations.own.length ? "Every other" : "Every specialisation"}>
+              {specializations.others.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </optgroup>
           </Select>
         </Field>
         <Field label="Action">
@@ -347,7 +399,32 @@ function EntryForm({
         <Field label={`When (${dates.zoneName()})`}>
           <Input type="datetime-local" value={form.happened_at} onChange={(e) => set({ happened_at: e.target.value })} />
         </Field>
-        <Field label="Downtime it applies to">
+        {(choices.cycles.length > 0 || choices.games.length > 0) && (
+          <Field label="Or date it by">
+            <Select value="" onChange={(e) => dateFrom(e.target.value)}>
+              <option value="">A cycle or a game…</option>
+              {choices.cycles.length > 0 && (
+                <optgroup label="Cycles">
+                  {choices.cycles.map((c) => (
+                    <option key={c.id} value={`cycle:${c.id}`}>
+                      {c.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {choices.games.length > 0 && (
+                <optgroup label="Games">
+                  {choices.games.map((g) => (
+                    <option key={g.id} value={`game:${g.id}`}>
+                      {dates.gameStart(g.starts_at)}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </Select>
+          </Field>
+        )}
+        <Field label="Applies to this downtime">
           <Select value={form.cycle_id} onChange={(e) => set({ cycle_id: e.target.value })}>
             <option value="">None</option>
             {choices.cycles.map((c) => (
@@ -360,7 +437,7 @@ function EntryForm({
         <Field label="Times taken">
           <Input type="number" min={1} value={form.times} onChange={(e) => set({ times: Number(e.target.value) })} />
         </Field>
-        <Field label="Blocks">
+        <Field label="Blocks already on it">
           <Input type="number" min={0} value={form.blocks} onChange={(e) => set({ blocks: Number(e.target.value) })} />
         </Field>
       </div>
@@ -371,13 +448,19 @@ function EntryForm({
         <input type="checkbox" checked={form.needs_details} onChange={(e) => set({ needs_details: e.target.checked })} />
         Needs details
       </label>
+      {warning && <Notice>{warning}</Notice>}
       <ErrorText error={save.error} />
-      <div className="flex gap-2">
-        <Button type="submit" disabled={save.isPending || !form.who}>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={save.isPending || !ready}>
           {entry ? "Save changes" : "Log it"}
         </Button>
+        {!entry && (
+          <Button type="button" variant="secondary" title="Log this one, and start the next with the same date, cycle and who" disabled={save.isPending || !ready} onClick={() => save.mutate(true)}>
+            Add another
+          </Button>
+        )}
         <Button type="button" variant="ghost" onClick={onDone}>
-          Cancel
+          {logged ? "Done" : "Cancel"}
         </Button>
       </div>
     </form>
