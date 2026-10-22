@@ -1427,6 +1427,144 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await p.screenshot(shots("play-pools-pips"));
 });
 
+test("influence spent at a game goes in the troupe's influence log, and comes off the next downtime", async ({ browser }) => {
+  // A whole character creation, a home troupe, then a game and a downtime.
+  test.slow();
+  const custodian = await person(browser, "infl-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "infl-lead");
+  const player = await person(browser, "infl-player");
+  const troupeName = `Court of Whispers ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  const l = lead.page;
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(l.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+
+  // Iris, built for the troupe with Elite 3, takes a News Media specialisation and makes it her home.
+  const p = player.page;
+  await p.reload();
+  await p.getByLabel("Name").fill("Iris");
+  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Create" }).click();
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
+  await p.getByLabel("Sect").selectOption("Camarilla");
+  const next = async (heading: string) => {
+    await p.getByRole("button", { name: "Save and continue" }).click();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
+  };
+  const tap = async (...dots: string[]) => {
+    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
+  };
+  await next("Attributes");
+  await tap("Physical 7", "Social 5", "Mental 3");
+  await next("Focuses");
+  await tap("Strength 1", "Wits 1", "Charisma 1");
+  await next("Skills");
+  await tap("Brawl 4", "Dodge 3", "Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2");
+  await tap("Investigation 1", "Leadership 1", "Medicine 1", "Melee 1");
+  await next("Backgrounds");
+  await tap("Influences: The Elite 3", "Herd 2", "Generation 1");
+  await next("Disciplines");
+  await tap("Celerity 2", "Potence 1", "Presence 1");
+  await next("Merits & flaws");
+  await next("Review");
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  const iris = new URL(p.url()).pathname.split("/")[2]!;
+  const special = await p.request.put(`/api/characters/${iris}/traits`, {
+    headers,
+    data: { category: "influence_elite_specializations", name: "News Media", rating: 1 },
+  });
+  expect(special.status(), await special.text()).toBe(200);
+  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
+  await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
+  await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
+  const queue = await l.request.get(`/api/troupes/${troupeId}/approvals`, { headers });
+  for (const request of await queue.json()) {
+    const approved = await l.request.post(`/api/approvals/${request.id}/approve`, { headers, data: {} });
+    expect(approved.status(), await approved.text()).toBe(200);
+  }
+
+  // At the game: spending Elite always asks what it was for, offering only the actions Iris can reach.
+  await p.goto(`/play/characters/${iris}`);
+  const elite = p.getByRole("listitem").filter({ hasText: "Influences: The Elite" });
+  await expect(elite.getByText("Backgrounds · 3 of 3 left")).toBeVisible();
+  await expect(elite.getByRole("button", { name: /^Restore/ })).toHaveCount(0);
+  await p.getByRole("button", { name: "Use Influences: The Elite" }).click();
+  const sheet = p.getByRole("dialog", { name: "Spend Elite influence" });
+  await expect(sheet.getByLabel("Action").getByRole("option", { name: "5: No Party Crashers" })).toHaveCount(0);
+  await sheet.getByLabel("Specialisation").selectOption("News Media");
+  await expect(sheet.getByText("Your News Media specialisation counts your Elite as 4 for this.")).toHaveCount(0);
+  await sheet.getByLabel("Action").selectOption({ label: "4: Smooth Over" });
+  await expect(sheet.getByText("Your News Media specialisation counts your Elite as 4 for this.")).toBeVisible();
+  await sheet.getByLabel("Action").selectOption({ label: "2: Gossip and Insider Trading" });
+  await sheet.getByLabel("Purpose").fill("To hear what is said about the mayor");
+  await p.screenshot(shots("play-influence"));
+  await sheet.getByRole("button", { name: "Spend", exact: true }).click();
+  await expect(p.getByText("Elite: 2: Gossip and Insider Trading (News Media), To hear what is said about the mayor")).toBeVisible();
+  await expect(elite.getByText("Backgrounds · 2 of 3 left")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // A loud room: Skip details spends it all the same.
+  await p.getByRole("button", { name: "Use Influences: The Elite" }).click();
+  await sheet.getByRole("button", { name: "Skip details" }).click();
+  await expect(p.getByText("Elite: details to come")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // One spent by mistake, and undone.
+  await p.getByRole("button", { name: "Use Influences: The Elite" }).click();
+  await sheet.getByRole("button", { name: "Skip details" }).click();
+  await expect(elite.getByText("Backgrounds · 0 of 3 left")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await p.getByRole("button", { name: "Undo Elite: details to come" }).click();
+  await expect(p.getByText("Undid: Influences: The Elite 1 → 0")).toBeVisible();
+  await expect(elite.getByText("Backgrounds · 1 of 3 left")).toBeVisible();
+
+  // The troupe's influence log has the two spends, one needing details, and not the one undone.
+  await l.goto(`/troupes/${troupeId}/influence`);
+  const e1 = l.getByRole("listitem", { name: "Entry E1" });
+  await expect(e1.getByText("To hear what is said about the mayor")).toBeVisible();
+  await expect(e1.getByText("At a game")).toBeVisible();
+  await expect(l.getByRole("listitem", { name: "Entry E2" }).getByText("needs details")).toBeVisible();
+  await expect(l.getByRole("listitem", { name: "Entry E3" })).toHaveCount(0);
+
+  // Iris adds the details from the game's log, while the game goes on.
+  await p.getByRole("button", { name: "Add details to E2" }).click();
+  const later = p.getByRole("dialog", { name: "Details of E2" });
+  await later.getByLabel("Action").selectOption({ label: "1: A Friend in Need" });
+  await later.getByLabel("Purpose").fill("To get a favour from the mayor's aide");
+  await later.getByRole("button", { name: "Save details" }).click();
+  await expect(p.getByText("Elite: 1: A Friend in Need, To get a favour from the mayor's aide")).toBeVisible();
+  await l.reload();
+  await expect(l.getByRole("listitem", { name: "Entry E2" }).getByText("To get a favour from the mayor's aide")).toBeVisible();
+
+  // One pool a month: the next downtime's Elite allowance is two lower, for the two spent at the game.
+  const now = Date.now();
+  const made = await l.request.post(`/api/troupes/${troupeId}/cycles`, {
+    headers,
+    data: { name: "After the game", closes_at: new Date(now + 7 * 86400e3).toISOString(), grace_ends_at: new Date(now + 9 * 86400e3).toISOString() },
+  });
+  expect(made.status(), await made.text()).toBe(201);
+  const cycleId = (await made.json()).id;
+  const opened = await l.request.post(`/api/cycles/${cycleId}/open`, { headers });
+  expect(opened.status(), await opened.text()).toBe(200);
+  await l.goto(`/cycles/${cycleId}/participants`);
+  await expect(l.getByText(/1 influence elite/)).toBeVisible();
+  await expect(l.getByText(/^-1 influence_elite: Spent at the \d+ \w+ game$/)).toHaveCount(2);
+  await l.screenshot(shots("cycle-influence-owed"));
+});
+
 test("anyone can read About, with the Dark Pack Agreement's notices", async ({ browser }) => {
   // Signed out: the sign-in page's footer links to it.
   const page = await (await browser.newContext()).newPage();

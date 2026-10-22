@@ -11,12 +11,22 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, play, reference, sheets
+from horatio import audit, influence_log, play, play_influence, reference, sheets
 from horatio.api.downtimes import staff_troupe
+from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.roster import roster
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Character, PlayCounter, PlayEvent, PlayGame, User
-from horatio.permissions import TroupeAction, visible_character
+from horatio.influence import InfluenceType
+from horatio.models import (
+    Character,
+    InfluenceEntry,
+    PlayCounter,
+    PlayEvent,
+    PlayGame,
+    Troupe,
+    User,
+)
+from horatio.permissions import TroupeAction, require_troupe_action, visible_character
 
 router = APIRouter(tags=["play"])
 
@@ -60,6 +70,29 @@ class ExpendableOut(BaseModel):
     uses: int
     left: int
     counter_id: uuid.UUID | None
+    # Influences: its type. Spending a use logs it in the troupe's influence log.
+    influence: InfluenceType | None = None
+    # Influence spent at earlier games that no downtime cycle has taken off yet:
+    # `uses` is already that much lower, as the month has one pool.
+    owed: int = 0
+
+
+class InfluenceSpendOut(BaseModel):
+    """What an influence spend logged, for the game's log."""
+
+    entry_id: uuid.UUID
+    # The entry's short id in the troupe's influence log: E12, UW7.
+    short_id: str
+    type: InfluenceType
+    specialization: str
+    action_key: str | None
+    # "5: No Party Crashers"; None while it needs details.
+    action: str | None
+    purpose: str
+    times: int
+    needs_details: bool
+    # Staff have changed it in the troupe's log since it was spent.
+    changed_by_staff: bool
 
 
 class LogEntryOut(BaseModel):
@@ -80,6 +113,8 @@ class LogEntryOut(BaseModel):
     undone: bool
     # For an undo, the tap it undid.
     undoes: uuid.UUID | None
+    # Influence spent: what the troupe's influence log has for it.
+    influence: InfluenceSpendOut | None = None
 
 
 class GameOut(BaseModel):
@@ -118,10 +153,28 @@ class PlayView(BaseModel):
     morality: Morality | None
     beast: Tracker
     expendables: list[ExpendableOut]
+    # What the character can do with each type of influence it has, for the
+    # details of a spend. Empty when there is no troupe to log spends in.
+    influence: list[InfluenceStandingOut] = []
     # The game now; None before the character's first tap.
     game: GameOut | None
     # The game's log, newest first.
     log: list[LogEntryOut]
+
+
+class InfluenceDetailsIn(BaseModel):
+    """What an influence spend was for (horatio.play_influence)."""
+
+    # The action's key in the troupe's rules, such as "no_party_crashers".
+    action: str = Field(min_length=1, max_length=80)
+    # One of the character's own specialisations of the type, or none.
+    specialization: str = Field(default="", max_length=120)
+    purpose: str = Field(default="", max_length=300)
+
+    def details(self) -> play_influence.Details:
+        return play_influence.Details(
+            action=self.action, specialization=self.specialization, purpose=self.purpose
+        )
 
 
 class TapIn(BaseModel):
@@ -138,6 +191,9 @@ class TapIn(BaseModel):
     damage: Literal["normal", "aggravated"] | None = None
     note: str = Field(default="", max_length=300)
     undoes: uuid.UUID | None = None
+    # Spending Influences: the action's details. Left out when the player skips
+    # them; the spend is logged all the same, as needing details.
+    influence: InfluenceDetailsIn | None = None
 
     @model_validator(mode="after")
     def complete(self) -> Self:
@@ -214,6 +270,7 @@ def log_out(
     by_id = {e.id: e for e in events}
     undone = {e.undoes_id for e in events if e.kind == "undo"}
     actors = names(db, {e.actor_id for e in events})
+    spends = spends_out(db, play_influence.entries(db, by_id))
 
     def target(event: PlayEvent) -> PlayEvent | None:
         return by_id.get(event.undoes_id) if event.undoes_id else None
@@ -227,7 +284,9 @@ def log_out(
             damage=event.damage,
             before=event.before,
             after=event.after,
-            text=play.describe(
+            text=spend.text
+            if (spend := spends.get(event.id))
+            else play.describe(
                 event, limits, by_id.get(event.undoes_id) if event.undoes_id else None
             ),
             note=event.note,
@@ -236,9 +295,44 @@ def log_out(
             by_staff=not (character.kind == "pc" and event.actor_id == character.player_id),
             undone=event.id in undone,
             undoes=undid.client_id if (undid := target(event)) else None,
+            influence=spend.out if (spend := spends.get(event.id)) else None,
         )
         for event in reversed(play.in_order(events))
     ]
+
+
+class Spend(BaseModel):
+    text: str
+    out: InfluenceSpendOut
+
+
+def spends_out(db: Session, entries: dict[uuid.UUID, InfluenceEntry]) -> dict[uuid.UUID, Spend]:
+    """Each influence spend's log entry, by its tap's id, and how the log reads it."""
+    staff = play_influence.changed_by_staff(db, entries.values())
+    rules = {t: influence_log.troupe_rules(db, t) for t in {e.troupe_id for e in entries.values()}}
+    found: dict[uuid.UUID, Spend] = {}
+    for event_id, entry in entries.items():
+        action = (
+            None
+            if entry.action_key is None
+            else influence_log.action_label(rules[entry.troupe_id], entry)
+        )
+        found[event_id] = Spend(
+            text=play_influence.text(entry, action),
+            out=InfluenceSpendOut(
+                entry_id=entry.id,
+                short_id=influence_log.short_id(entry),
+                type=entry.type,  # type: ignore[arg-type]  # checked by the database
+                specialization=entry.specialization,
+                action_key=entry.action_key,
+                action=action,
+                purpose=entry.purpose,
+                times=entry.times,
+                needs_details=entry.needs_details,
+                changed_by_staff=entry.id in staff,
+            ),
+        )
+    return found
 
 
 def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
@@ -268,8 +362,8 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
 
 
 def play_view(db: Session, character: Character) -> PlayView:
-    limits = play.limits(db, character)
     game = play.current_game(db, character)
+    limits = play.limits(db, character, game)
     events = play.game_events(db, game) if game else []
     state = play.replay(limits, events).state
     rows = sheets.sheet_rows(db, character)
@@ -312,9 +406,12 @@ def play_view(db: Session, character: Character) -> PlayView:
                 uses=e.uses,
                 left=state["uses"].get(e.key, e.uses),
                 counter_id=e.counter_id,
+                influence=e.influence,  # type: ignore[arg-type]  # from horatio.influence.TYPES
+                owed=e.owed,
             )
             for e in limits.expendables
         ],
+        influence=[standing_out(s) for s in play_influence.standings(db, character)],
         game=game_out(db, game, events) if game else None,
         log=log_out(db, character, limits, events),
     )
@@ -363,6 +460,7 @@ def record_taps(character_id: uuid.UUID, body: Taps, db: DbSession, user: Curren
                 damage=t.damage,
                 note=t.note,
                 undoes=t.undoes,
+                influence=t.influence.details() if t.influence else None,
             )
             for t in body.taps
         ],
@@ -414,8 +512,37 @@ def read_game(
     events = play.game_events(db, game)
     return GameLog(
         game=game_out(db, game, events),
-        log=log_out(db, character, play.limits(db, character), events),
+        log=log_out(db, character, play.limits(db, character, game), events),
     )
+
+
+@router.put("/characters/{character_id}/play/taps/{tap_id}/influence")
+def give_influence_details(
+    character_id: uuid.UUID,
+    tap_id: uuid.UUID,
+    body: InfluenceDetailsIn,
+    db: DbSession,
+    user: CurrentUser,
+) -> PlayView:
+    """Add or change what an influence spend was for, from the game's log. Anyone
+    who can see the sheet can until the game ends; after that, only the staff who
+    keep the troupe's influence log."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    found = db.execute(
+        select(PlayEvent, PlayGame)
+        .join(PlayGame, PlayEvent.game_id == PlayGame.id)
+        .where(PlayEvent.client_id == tap_id, PlayGame.character_id == character.id)
+    ).one_or_none()
+    entry = play_influence.entries(db, [found[0].id]).get(found[0].id) if found else None
+    if found is None or entry is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No influence was spent with that tap.")
+    if found[1].ended_at is not None:
+        require_troupe_action(
+            db, user, db.get_one(Troupe, entry.troupe_id), TroupeAction.MANAGE_INFLUENCE_LOG
+        )
+    play_influence.give_details(db, user, character, entry, body.details())
+    db.commit()
+    return play_view(db, character)
 
 
 @router.post("/characters/{character_id}/play/counters")
@@ -459,8 +586,8 @@ def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
     found: list[TroupePlayEntry] = []
     for entry in roster(troupe_id, db, user):
         character = db.get_one(Character, entry.character_id)
-        limits = play.limits(db, character)
         game = play.current_game(db, character)
+        limits = play.limits(db, character, game)
         events = play.game_events(db, game) if game else []
         state = play.replay(limits, events).state
         found.append(
