@@ -168,6 +168,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
                 key=kind.key,
                 name=kind.name,
                 fields=[dict(f) for f in kind.fields],
+                actions=[dict(a) for a in kind.actions],
             )
         )
     session.execute(
@@ -352,6 +353,7 @@ def add_house_action_kind(
         key=kind.key,
         name=kind.name,
         fields=[dict(f) for f in kind.fields],
+        actions=[dict(a) for a in kind.actions],
     )
     session.add(row)
     session.flush()
@@ -534,7 +536,11 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
 
     def kind_data(row: ActionKind) -> ActionKindData:
         return ActionKindData(
-            key=row.key, name=row.name, fields=tuple(row.fields), house=row.troupe_id is not None
+            key=row.key,
+            name=row.name,
+            fields=tuple(row.fields),
+            actions=tuple(row.actions),
+            house=row.troupe_id is not None,
         )
 
     allowance_rows = list(

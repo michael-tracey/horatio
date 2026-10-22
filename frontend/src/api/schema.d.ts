@@ -4069,6 +4069,61 @@ export interface components {
              */
             troupe_id: string;
         };
+        /** InfluenceActionOut */
+        InfluenceActionOut: {
+            /** Conflict */
+            conflict: boolean;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Level */
+            level: number | null;
+            /** Name */
+            name: string;
+        };
+        /**
+         * InfluenceAnswerOut
+         * @description What an influence answer names, for staff.
+         */
+        InfluenceAnswerOut: {
+            /** Action */
+            action: string | null;
+            /** Action Key */
+            action_key: string | null;
+            /** Conflict */
+            conflict: boolean;
+            /** Level */
+            level: number | null;
+            /** Specialization */
+            specialization: string | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
+        };
+        /**
+         * InfluenceStandingOut
+         * @description What a character can do with one type of influence, for the downtime form.
+         */
+        InfluenceStandingOut: {
+            /** Action Kind */
+            action_kind: string;
+            /** Actions */
+            actions: components["schemas"]["InfluenceActionOut"][];
+            /** Held */
+            held: string[];
+            /** Options */
+            options: string[];
+            /** Rating */
+            rating: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
+        };
         /** Invite */
         Invite: {
             /** Url */
@@ -4282,6 +4337,11 @@ export interface components {
              * Format: date-time
              */
             grace_ends_at: string;
+            /**
+             * Influence
+             * @default []
+             */
+            influence: components["schemas"]["InfluenceStandingOut"][];
             /** Late */
             late: boolean;
             /** Questions */
@@ -6188,6 +6248,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            influence: components["schemas"]["InfluenceAnswerOut"] | null;
             /** Question */
             question: string;
             /** Status */

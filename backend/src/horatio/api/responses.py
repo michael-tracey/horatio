@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 
 from horatio import responses
 from horatio.api.downtimes import staff_cycle, staff_troupe
+from horatio.api.influence import InfluenceAnswerOut, answer_out
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
@@ -23,6 +24,7 @@ from horatio.models import (
     User,
 )
 from horatio.permissions import TroupeAction, require_troupe_action
+from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(tags=["responses"])
 
@@ -39,6 +41,8 @@ class WorkItemOut(BaseModel):
     action_kind: str | None
     answer: str
     structured: dict[str, Any]
+    # An influence answer's action and specialisation (horatio.influence).
+    influence: InfluenceAnswerOut | None
     status: str
     assigned_to_user_id: uuid.UUID | None
     assigned_to_any_narrator: bool
@@ -98,7 +102,9 @@ class ResultOut(BaseModel):
     message: str
 
 
-def item_out(item: responses.WorkItem) -> WorkItemOut:
+def item_out(db: DbSession, item: responses.WorkItem) -> WorkItemOut:
+    # The rules of the troupe running the cycle, where the action was taken.
+    rules = read_troupe_rules(db, item.character.splat, item.cycle.troupe_id)
     return WorkItemOut(
         id=item.response.id,
         cycle_id=item.cycle.id,
@@ -108,6 +114,7 @@ def item_out(item: responses.WorkItem) -> WorkItemOut:
         action_kind=item.question.action_kind,
         answer=item.answer.body,
         structured=item.answer.structured,
+        influence=answer_out(rules, item.question.action_kind, item.answer.structured),
         status=item.response.status,
         assigned_to_user_id=item.response.assigned_to_user_id,
         assigned_to_any_narrator=item.response.assigned_to_any_narrator,
@@ -145,14 +152,14 @@ def work_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
 def all_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkItemOut]:
     """Every response in the cycle, for storytellers and assistant storytellers."""
     cycle, _ = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
-    return [item_out(i) for i in responses.work_items(db, cycle)]
+    return [item_out(db, i) for i in responses.work_items(db, cycle)]
 
 
 @router.get("/cycles/{cycle_id}/responses/mine")
 def my_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkItemOut]:
     """Responses assigned to me, and for narrators the any-narrator pool."""
     cycle, _ = staff_cycle(db, user, cycle_id, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
-    return [item_out(i) for i in responses.mine(db, user, cycle)]
+    return [item_out(db, i) for i in responses.mine(db, user, cycle)]
 
 
 @router.get("/cycles/{cycle_id}/progress")
@@ -216,7 +223,7 @@ def assign(
     require_troupe_action(db, user, troupe, TroupeAction.ASSIGN_RESPONSES)
     responses.assign(db, user, item, troupe, body.user_id, body.any_narrator)
     db.commit()
-    return item_out(item)
+    return item_out(db, item)
 
 
 @router.post("/responses/{response_id}/accept")
@@ -224,7 +231,7 @@ def accept(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> WorkItem
     item, troupe = response_item(db, user, response_id)
     responses.accept(db, user, item, troupe)
     db.commit()
-    return item_out(item)
+    return item_out(db, item)
 
 
 @router.post("/responses/{response_id}/decline")
@@ -232,7 +239,7 @@ def decline(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> WorkIte
     item, troupe = response_item(db, user, response_id)
     responses.decline(db, user, item, troupe)
     db.commit()
-    return item_out(item)
+    return item_out(db, item)
 
 
 @router.get("/responses/{response_id}")
@@ -241,7 +248,7 @@ def read_response(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> W
     visible = responses.can_write(db, user, item, troupe) or item.response.assigned_to_any_narrator
     if not visible:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such response.")
-    return item_out(item)
+    return item_out(db, item)
 
 
 @router.put("/responses/{response_id}")
@@ -251,7 +258,7 @@ def write(response_id: uuid.UUID, body: Writing, db: DbSession, user: CurrentUse
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This response is not assigned to you.")
     responses.write(db, user, item, troupe, body.body)
     db.commit()
-    return item_out(item)
+    return item_out(db, item)
 
 
 # --- fill tables ------------------------------------------------------------------------

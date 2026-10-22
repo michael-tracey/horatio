@@ -812,12 +812,35 @@ properties = { in_clan = ["Auspex", "Dominate", "Fortitude"] }
 key = "general"
 name = "Downtime action"
 
+# Influence: each dot is one action a month, of its own type (MET: VtM core,
+# pp. 509–515). An answer names one of the kind's actions, by key. A general
+# action has a level, and needs a rating at least that, or one less with a
+# specialisation of the type (p. 512). A conflict action is a targeted action.
 [[action_kinds]]
 key = "influence_elite"
 name = "Elite influence action"
 fields = [
   { key = "specialization", label = "Specialisation", type = "trait", category = "influence_elite_specializations" },
-  { key = "level", label = "Action level", type = "number", min = 1, max = 10 },
+  { key = "action", label = "Action", type = "influence_action" },
+]
+actions = [
+  { key = "a_friend_in_need", name = "A Friend in Need", level = 1 },
+  { key = "gossip_and_insider_trading", name = "Gossip and Insider Trading", level = 2 },
+  { key = "bureaucratic_errors", name = "Bureaucratic Errors", level = 3 },
+  { key = "smooth_over", name = "Smooth Over", level = 4 },
+  { key = "no_party_crashers", name = "No Party Crashers", level = 5 },
+  { key = "everything_has_a_price", name = "Everything Has a Price", level = 6 },
+  { key = "private_collection", name = "Private Collection", level = 7 },
+  { key = "pop_star_meltdown", name = "Pop Star Meltdown", level = 8 },
+  { key = "the_power_behind_the_throne", name = "The Power Behind the Throne", level = 9 },
+  { key = "regional_influence", name = "Regional Influence", level = 10 },
+  # Targeted actions (p. 510): no level, and paid from either type for a Block (p. 511).
+  { key = "attack", name = "Attack", conflict = true },
+  { key = "block", name = "Block", conflict = true },
+  { key = "boost", name = "Boost", conflict = true },
+  { key = "defend", name = "Defend", conflict = true },
+  # A Block on discovering one logged action, so lookups cannot find it (p. 511).
+  { key = "discovery_block", name = "Discovery block", conflict = true },
 ]
 
 [[action_kinds]]
@@ -825,7 +848,26 @@ key = "influence_underworld"
 name = "Underworld influence action"
 fields = [
   { key = "specialization", label = "Specialisation", type = "trait", category = "influence_underworld_specializations" },
-  { key = "level", label = "Action level", type = "number", min = 1, max = 10 },
+  { key = "action", label = "Action", type = "influence_action" },
+]
+actions = [
+  { key = "free_travel", name = "Free Travel", level = 1 },
+  { key = "word_on_the_street", name = "Word on the Street", level = 2 },
+  { key = "illegal_favors", name = "Illegal Favors", level = 3 },
+  { key = "airing_dirty_laundry", name = "Airing Dirty Laundry", level = 4 },
+  { key = "lockdown", name = "Lockdown", level = 5 },
+  { key = "pulling_strings", name = "Pulling Strings", level = 6 },
+  { key = "look_the_other_way", name = "Look the Other Way", level = 7 },
+  { key = "want_take_have", name = "Want. Take. Have.", level = 8 },
+  { key = "an_offer_you_cant_refuse", name = "An Offer You Can't Refuse", level = 9 },
+  { key = "regional_influence", name = "Regional Influence", level = 10 },
+  # Targeted actions (p. 510): no level, and paid from either type for a Block (p. 511).
+  { key = "attack", name = "Attack", conflict = true },
+  { key = "block", name = "Block", conflict = true },
+  { key = "boost", name = "Boost", conflict = true },
+  { key = "defend", name = "Defend", conflict = true },
+  # A Block on discovering one logged action, so lookups cannot find it (p. 511).
+  { key = "discovery_block", name = "Discovery block", conflict = true },
 ]
 
 [[action_kinds]]

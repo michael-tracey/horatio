@@ -99,8 +99,12 @@ class ActionKindData:
 
     key: str
     name: str
-    # Extra inputs an action of this kind asks for, such as an influence level.
+    # Extra inputs an action of this kind asks for, such as an influence's
+    # specialisation.
     fields: tuple[Mapping[str, Any], ...] = ()
+    # The named actions an action of this kind can be, such as "5: Lockdown" for
+    # Underworld influence (horatio.influence): {key, name, level?, conflict?}.
+    actions: tuple[Mapping[str, Any], ...] = ()
     # True for an action kind a troupe added itself.
     house: bool = False
 
