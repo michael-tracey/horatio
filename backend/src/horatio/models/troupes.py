@@ -41,6 +41,10 @@ class Troupe(Imported, Record):
     # House rule: the blood characters start a game with (no more than their
     # generation's most). None starts them full.
     starting_blood: Mapped[int | None]
+    # House rule: how many days back Gossip & Insider Trading and Word on the
+    # Street look in the influence log, from the close of the lookup's cycle
+    # (horatio.influence_lookups). The rules' "within the last 3 months".
+    influence_lookback_days: Mapped[int] = mapped_column(default=90, server_default="90")
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a

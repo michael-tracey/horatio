@@ -42,6 +42,7 @@ from horatio import audit, influence
 from horatio.influence import InfluenceType
 from horatio.models import (
     Character,
+    InfluenceBlock,
     InfluenceEntry,
     Response,
     Submission,
@@ -364,6 +365,13 @@ def merge_entries(
         update(Response)
         .where(Response.influence_entry_id.in_([o.id for o in others]))
         .values(influence_entry_id=keep.id)
+        .execution_options(synchronize_session="fetch")
+    )
+    # So do the discovery blocks answers added to them (horatio.influence_lookups).
+    db.execute(
+        update(InfluenceBlock)
+        .where(InfluenceBlock.entry_id.in_([o.id for o in others]))
+        .values(entry_id=keep.id)
         .execution_options(synchronize_session="fetch")
     )
     for other in others:

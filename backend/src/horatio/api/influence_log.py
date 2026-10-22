@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import or_, select
 
-from horatio import influence, influence_log, specializations
+from horatio import influence, influence_log, influence_lookups, specializations
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceActionOut, action_out
 from horatio.api.responses import response_item
@@ -31,6 +31,20 @@ from horatio.rules.model import TroupeRules
 router = APIRouter(tags=["influence log"])
 
 Source = Literal["downtime", "game", "hand", "import"]
+
+
+class BlockSourceOut(BaseModel):
+    """A discovery block an answer added to an entry (horatio.influence_lookups)."""
+
+    id: uuid.UUID
+    response_id: uuid.UUID | None
+    # Whose answer, in which cycle; None if the response has gone since.
+    character_id: uuid.UUID | None
+    character_name: str | None
+    cycle_id: uuid.UUID | None
+    cycle_name: str | None
+    added_at: datetime
+    added_by_name: str
 
 
 class InfluenceEntryOut(BaseModel):
@@ -68,6 +82,9 @@ class InfluenceEntryOut(BaseModel):
     logged_at: datetime
     # Downtime answers logged in it.
     response_ids: list[uuid.UUID]
+    # The blocks discovery block answers added, of `blocks`; staff may set the
+    # rest by hand.
+    blocked_by: list[BlockSourceOut] = []
 
 
 class InfluenceLogOut(BaseModel):
@@ -188,6 +205,8 @@ def entries_out(
     ):
         responses.setdefault(entry_id, []).append(response_id)
 
+    blocked_by = influence_lookups.block_sources(db, [e.id for e in entries])
+
     def current_name(entry: InfluenceEntry) -> str:
         character = characters.get(entry.character_id) if entry.character_id else None
         return character.name if character else entry.name
@@ -223,6 +242,7 @@ def entries_out(
                 logged_by_name=users.get(e.logged_by) if e.logged_by else None,
                 logged_at=e.created_at,
                 response_ids=responses.get(e.id, []),
+                blocked_by=[BlockSourceOut(**vars(b)) for b in blocked_by.get(e.id, [])],
             )
         )
     return found
