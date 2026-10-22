@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
-import { canTap, clear, identityChoices, isRanking, left, tap, togglePoints } from "./logic";
+import { fieldSkills } from "../fields";
+import { canTap, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, tap, togglePoints, traitOf } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
@@ -105,5 +106,54 @@ describe("identityChoices", () => {
     expect(keys([])).toEqual(["sect"]);
     expect(keys([{ category: "sect", name: "Camarilla" }])).toEqual(["sect"]);
     expect(keys([{ category: "sect", name: "Sabbat" }])).toEqual(["sect", "faction"]);
+  });
+});
+
+describe("more than one field of a skill", () => {
+  const fielded = (name: string) => ["Crafts", "Performance", "Science"].includes(name);
+
+  it("keys the second field apart from the first, and finds the trait again", () => {
+    const key = nextCopy(["Performance"], "Performance");
+    expect(key).toBe(copyKey("Performance", 2));
+    expect(traitOf(key)).toBe("Performance");
+    expect(traitOf("Performance")).toBe("Performance");
+    expect(nextCopy(["Performance", key], "Performance")).toBe(copyKey("Performance", 3));
+  });
+
+  it("counts each field's pick against the ratings", () => {
+    const picks = tap({ Performance: 3 }, SKILLS, copyKey("Performance", 2), 3);
+    expect(picks).toEqual({ Performance: 3, [copyKey("Performance", 2)]: 3 });
+    expect(left(picks, SKILLS, 3)).toBe(0);
+    expect(keysOf(picks, "Performance")).toEqual(["Performance", copyKey("Performance", 2)]);
+  });
+
+  it("gives saved fields of one skill a key each, and their fields", () => {
+    const saved = keyed([
+      { name: "Performance", detail: "Singing", pick: 2 },
+      { name: "Brawl", detail: "", pick: 4 },
+      { name: "Performance", detail: "Dance", pick: 1 },
+    ]);
+    expect(saved.picks).toEqual({ Brawl: 4, Performance: 2, [copyKey("Performance", 2)]: 1 });
+    expect(saved.details).toEqual({ Brawl: "", Performance: "Singing", [copyKey("Performance", 2)]: "Dance" });
+  });
+
+  it("says which picks still need a field, and which repeat one", () => {
+    const picks = { Brawl: 4, Performance: 2, [copyKey("Performance", 2)]: 1, Science: 3 };
+    const problems = fieldProblems(picks, { Performance: "Singing", [copyKey("Performance", 2)]: " singing " }, fielded);
+    expect(Object.keys(problems).sort()).toEqual([copyKey("Performance", 2), "Science"]);
+    expect(problems.Science).toEqual({ message: "Science needs a field.", twice: false });
+    expect(problems[copyKey("Performance", 2)]!.twice).toBe(true);
+    expect(fieldProblems({ Performance: 2 }, { Performance: "Singing" }, fielded)).toEqual({});
+  });
+
+  it("takes the skills that need a field from the rules", () => {
+    const catalogue = {
+      traits: [
+        { category: "skills", name: "Crafts", needs_field: true },
+        { category: "skills", name: "Brawl", needs_field: false },
+      ],
+    } as unknown as CatalogueOut;
+    expect([...fieldSkills(catalogue)]).toEqual(["Crafts"]);
+    expect(fieldSkills(undefined).size).toBe(0);
   });
 });

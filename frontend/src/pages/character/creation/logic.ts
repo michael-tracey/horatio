@@ -5,6 +5,7 @@
  */
 
 import type { CatalogueOut, CategoryOut } from "../../../api/types";
+import { fieldNeeded } from "../fields";
 
 export type Picks = Record<string, number>;
 export type Allowed = Record<number, number>;
@@ -92,4 +93,76 @@ export function identityChoices(catalogue: CatalogueOut, sheet: { traits: { cate
       catalogue.traits.some((t) => t.category === c.key) &&
       (!c.requires || sheet.traits.some((t) => t.category === c.requires!.category && t.name === c.requires!.name)),
   );
+}
+
+/**
+ * A skill bought once per field can be picked more than once, a field each
+ * (Performance: Singing 2 and Performance: Dance 1). The first is picked under
+ * the skill's name; each other under a key of its own, from `copyKey`.
+ */
+const COPY = " #";
+
+export function copyKey(name: string, n: number): string {
+  return `${name}${COPY}${n}`;
+}
+
+/** The trait a pick is on, whichever of its fields it is. */
+export function traitOf(key: string): string {
+  const at = key.indexOf(COPY);
+  return at === -1 ? key : key.slice(0, at);
+}
+
+/** The keys picked on `name`, the skill's own first. */
+export function keysOf(picks: Picks, name: string): string[] {
+  return Object.keys(picks)
+    .filter((k) => traitOf(k) === name)
+    .sort((a, b) => (a === name ? -1 : b === name ? 1 : a.localeCompare(b, undefined, { numeric: true })));
+}
+
+/** A key for one more field of `name`, not yet in use. */
+export function nextCopy(taken: Iterable<string>, name: string): string {
+  const used = new Set(taken);
+  let n = 2;
+  while (used.has(copyKey(name, n))) n++;
+  return copyKey(name, n);
+}
+
+/**
+ * Saved picks of one category as the wizard holds them: picks and their
+ * details, by key. A skill with several fields gets a key per field, the
+ * highest rated first.
+ */
+export function keyed(traits: { name: string; detail: string; pick: number }[]): { picks: Picks; details: Record<string, string> } {
+  const picks: Picks = {};
+  const details: Record<string, string> = {};
+  const sorted = [...traits].sort((a, b) => a.name.localeCompare(b.name) || b.pick - a.pick || a.detail.localeCompare(b.detail));
+  for (const t of sorted) {
+    const key = t.name in picks ? nextCopy(Object.keys(picks), t.name) : t.name;
+    picks[key] = t.pick;
+    details[key] = t.detail;
+  }
+  return { picks, details };
+}
+
+/** What stops a pick of a skill that needs a field: no field yet, or a field another
+ * pick of that skill already has (`twice`, which cannot be saved at all). */
+export type FieldProblem = { message: string; twice: boolean };
+
+export function fieldProblems(
+  picks: Picks,
+  details: Record<string, string>,
+  needsField: (name: string) => boolean,
+): Record<string, FieldProblem> {
+  const problems: Record<string, FieldProblem> = {};
+  const seen = new Set<string>();
+  for (const key of Object.keys(picks).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
+    const name = traitOf(key);
+    if (!needsField(name)) continue;
+    const field = (details[key] ?? "").trim();
+    const known = `${name}/${field.toLowerCase()}`;
+    if (!field) problems[key] = { message: `${fieldNeeded(name)}.`, twice: false };
+    else if (seen.has(known)) problems[key] = { message: `${name}: ${field} is picked already; give this one another field.`, twice: true };
+    seen.add(known);
+  }
+  return problems;
 }

@@ -7082,6 +7082,11 @@ export interface components {
             kind?: string | null;
             /** Name */
             name: string;
+            /**
+             * Needs Field
+             * @default false
+             */
+            needs_field: boolean;
             /** Page Reference */
             page_reference: string | null;
             /** Requirement */

@@ -495,7 +495,9 @@ forbids = { copies = { gte = 4 }, self = { names = ["Cursed", "Eerie Presence"] 
 message = "Cursed and Eerie Presence can each be taken up to three times."
 page = "261"
 
-# Crafts, Performance and Science are each bought for one field (p. 92).
+# Crafts, Performance and Science are each bought for one field (p. 92). The names
+# are the skills the catalogue marks `requires_specialization` (a test keeps them so).
+# The wizard asks for the field on the Skills step.
 [[checks]]
 category = "skills"
 requires = { any_of = [
@@ -503,6 +505,7 @@ requires = { any_of = [
   { not = { self = { names = ["Crafts", "Performance", "Science"] } } },
 ] }
 strength = "complete"
+step = "skills"
 message = "Crafts, Performance and Science need a field, such as Performance: Singing."
 page = "92"
 

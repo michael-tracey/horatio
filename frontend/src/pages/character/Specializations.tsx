@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { CharacterOut, SheetTraitOut } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { FIELD_PLACEHOLDER, fieldNeeded } from "./fields";
 
 const CUSTOM = "Custom";
 
@@ -118,11 +119,8 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
   );
 }
 
-/** Skills bought once per field (MET: VTM p. 92). */
-export const NEEDS_FIELD = new Set(["Crafts", "Performance", "Science"]);
-
 /** A Crafts, Performance or Science held without its field: set one. */
-export function SetField({ character, trait }: { character: CharacterOut; trait: SheetTraitOut }) {
+export function SetField({ character, trait }: { character: CharacterOut; trait: Pick<SheetTraitOut, "category" | "name"> }) {
   const [field, setField] = useState("");
   const save = useAction(() =>
     unwrap(
@@ -134,8 +132,8 @@ export function SetField({ character, trait }: { character: CharacterOut; trait:
   );
   return (
     <li className="-mt-0.5 mb-1 ml-3 flex flex-wrap items-center gap-1.5 border-l border-blood/60 pl-3 text-xs">
-      <span className="text-blood-bright">{trait.name} needs a field:</span>
-      <Input aria-label={`${trait.name} field`} value={field} onChange={(e) => setField(e.target.value)} placeholder="Such as Singing" className="min-h-8 w-40 py-1 text-xs" />
+      <span className="text-blood-bright">{fieldNeeded(trait.name)}:</span>
+      <Input aria-label={`${trait.name} field`} value={field} onChange={(e) => setField(e.target.value)} placeholder={FIELD_PLACEHOLDER} className="min-h-8 w-40 py-1 text-xs" />
       <Button variant="secondary" className="min-h-8 px-2 py-1 text-xs" disabled={!field.trim() || save.isPending} onClick={() => save.mutate(undefined)}>
         Set
       </Button>

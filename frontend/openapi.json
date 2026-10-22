@@ -9969,6 +9969,11 @@
             "title": "Name",
             "type": "string"
           },
+          "needs_field": {
+            "default": false,
+            "title": "Needs Field",
+            "type": "boolean"
+          },
           "page_reference": {
             "anyOf": [
               {
