@@ -34,6 +34,7 @@ import {
   SpecializationRow,
   useSpecializations,
 } from "./Specializations";
+import { InfluenceEffects } from "./InfluenceEffects";
 
 function useSheet(characterId: string) {
   return useQuery({
@@ -377,6 +378,7 @@ export function SheetTab({
       </div>
       <aside className="flex flex-col gap-3">
         <PrintAndBadge character={character} badge={badge} />
+        <InfluenceEffects characterId={character.id} />
         <Card dense title="Experience">
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>

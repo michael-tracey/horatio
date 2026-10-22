@@ -6,7 +6,9 @@ import type { CharacterOut } from "../../api/types";
 import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { CreationWizard } from "./creation/Wizard";
+import { abilities } from "../troupe/roles";
 import { DowntimeTab } from "./DowntimeTab";
+import { InfluenceTab } from "./InfluenceTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
 import { CharacterMenu } from "./Actions";
@@ -25,6 +27,13 @@ export function CharacterPage() {
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}", { params: { path: { character_id: characterId } } })),
   });
   const [renaming, setRenaming] = useState(false);
+  // A PC's influence is for its player and its home troupe's storytellers and assistants.
+  const homeId = character.data?.kind === "pc" && character.data.player_id !== me.data?.id ? character.data.home_troupe_id : null;
+  const home = useQuery({
+    queryKey: ["troupe", homeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: homeId! } } })),
+    enabled: !!homeId,
+  });
 
   if (character.isPending) return <Loading />;
   if (character.error) return <ErrorText error={character.error} />;
@@ -65,12 +74,14 @@ export function CharacterPage() {
             ...(!c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
             { to: base, label: "Build", end: true },
             { to: `${base}/sheet`, label: "Sheet" },
+            { to: `${base}/influence`, label: "Influence" },
             { to: `${base}/log`, label: "Log" },
           ]}
         />
         <Routes>
           <Route index element={<NpcBuilder character={c} />} />
           <Route path="sheet" element={<SheetTab character={c} mine={false} badge />} />
+          <Route path="influence" element={<InfluenceTab character={c} mine={false} />} />
           <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
           {!c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         </Routes>
@@ -79,6 +90,7 @@ export function CharacterPage() {
   }
 
   const mine = c.player_id === me.data?.id;
+  const influence = mine || custodian || (!!home.data && abilities(home.data.my_role, custodian).running);
   // The custodian renames at any time; the player once every 3 months in a troupe.
   const canRename = custodian || (mine && c.status === "active");
   const renameOn = !custodian && mine && c.status === "active" ? c.next_rename_on : null;
@@ -118,6 +130,7 @@ export function CharacterPage() {
                 { to: `${base}/results`, label: "Results" },
               ]
             : []),
+          ...(influence ? [{ to: `${base}/influence`, label: "Influence" }] : []),
           { to: `${base}/log`, label: "Log" },
         ]}
       />
@@ -126,6 +139,7 @@ export function CharacterPage() {
         <Route index element={<SheetTab character={c} mine={mine} badge={!mine || custodian} />} />
         <Route path="xp" element={<XpTab characterId={c.id} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
+        {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}
         {mine && !c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (
           <>

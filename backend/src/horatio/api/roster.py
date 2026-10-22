@@ -268,6 +268,22 @@ MESSAGES: dict[str, str] = {
     "play.counter_added": "{actor} added a counter to {character}'s Play View: {name} ({uses}).",
     "play.counter_removed": "{actor} removed the counter {name} from {character}'s Play View.",
     "house.starting_blood": "{actor} set the blood characters start a game with: {blood}.",
+    "influence.blocked": "{actor} blocked {entry} in the influence log: {who}, {what} "
+    "(now {blocks}).",
+    "influence.unblocked": "{actor} took a block off {entry} in the influence log: {who}, "
+    "{what} (now {blocks}).",
+    "house.influence_lookback": "{actor} set how far back influence lookups look: {days} days.",
+    "influence.logged": "{actor} logged {entry} in the influence log: {who}, {what}.",
+    "influence.repeated": "{actor} logged {who}'s {what} again in {entry} ({times} times).",
+    "influence.unrepeated": "{actor} took one of {who}'s {what} off {entry} ({times} left).",
+    "influence.changed": "{actor} changed {entry} in the influence log: {fields}.",
+    "influence.deleted": "{actor} deleted {entry} from the influence log: {who}, {what}.",
+    "influence.merged": "{actor} merged {merged} into {entry} in the influence log"
+    " ({times} times).",
+    "influence.resolved": "{actor} resolved {entry}: {who}, {what}.",
+    "influence.block_recorded": "{actor} recorded an influence block: {what}.",
+    "influence.effect_removed": "{actor} took back an influence effect: {what}.",
+    "influence.detailed_at_game": "{actor} gave the details of {entry} at a game: {who}, {what}.",
 }
 
 

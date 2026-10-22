@@ -31,7 +31,7 @@ export function WorkTab({ troupeId }: { troupeId: string }) {
 
 /** A staff member's own work in one cycle: what is assigned to them, and for
  * narrators the any-narrator pool. No character sheets here, by design. */
-export function MyWork({ troupeId }: { troupeId: string }) {
+export function MyWork({ troupeId, canLog = false }: { troupeId: string; canLog?: boolean }) {
   const { cycleId = "" } = useParams();
   const me = useMe();
   const items = useQuery({
@@ -58,6 +58,7 @@ export function MyWork({ troupeId }: { troupeId: string }) {
                 key={item.id}
                 item={item}
                 troupeId={troupeId}
+                canLog={canLog}
                 extra={
                   item.status !== "written" && (
                     <Button variant="ghost" onClick={() => decline.mutate(item.id)}>

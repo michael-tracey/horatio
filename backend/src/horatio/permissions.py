@@ -55,6 +55,7 @@ class TroupeAction(StrEnum):
     MANAGE_NPCS = "manage_npcs"
     MANAGE_TITLES = "manage_titles"
     RESET_GAMES = "reset_games"
+    MANAGE_INFLUENCE_LOG = "manage_influence_log"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -86,6 +87,8 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.MANAGE_TITLES: frozenset(_RUNNING),
     # Resetting every character's Play View after a game.
     TroupeAction.RESET_GAMES: frozenset(_RUNNING),
+    # Reading and keeping the troupe's influence log. Players never see it.
+    TroupeAction.MANAGE_INFLUENCE_LOG: frozenset(_RUNNING),
 }
 
 

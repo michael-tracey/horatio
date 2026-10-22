@@ -99,6 +99,9 @@ class ParticipantOut(BaseModel):
     allowance: dict[str, int]
     breakdown: list[AllowanceLineOut]
     adjustments: list[AdjustmentOut]
+    # Actions taken off beyond the allowance, which stops at zero: more influence
+    # spent at games than the month allows.
+    shortfall: dict[str, int]
     removed: bool
     late_accepted: bool
     submission_status: str | None
@@ -206,6 +209,7 @@ def participant_out(db: DbSession, p: CycleParticipant) -> ParticipantOut:
             AdjustmentOut(action_kind=a.action_kind, delta=a.delta, reason=a.reason)
             for a in downtimes.adjustments(db, p)
         ],
+        shortfall=downtimes.shortfall(db, p),
         removed=p.removed_at is not None,
         late_accepted=p.late_accepted_by is not None,
         submission_status=submission.status if submission else None,

@@ -24,7 +24,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, sheets
+from horatio import audit, influence_effects, play_influence, sheets
 from horatio.models import Character, PlayCounter, PlayEvent, PlayGame, Troupe, User
 
 # Most blood, and blood a turn, by Generation dots (MET: VTM pp. 100-101).
@@ -49,6 +49,10 @@ class Expendable:
     group: str
     uses: int
     counter_id: uuid.UUID | None = None
+    # Influences: the type, and the actions spent at earlier games that no
+    # downtime cycle has taken off yet, which `uses` is already lowered by.
+    influence: str | None = None
+    owed: int = 0
 
     @property
     def label(self) -> str:
@@ -149,7 +153,10 @@ def home_troupe(db: Session, character: Character) -> Troupe | None:
     return db.get(Troupe, troupe_id) if troupe_id else None
 
 
-def limits(db: Session, character: Character) -> Limits:
+def limits(db: Session, character: Character, game: PlayGame | None = None) -> Limits:
+    """The sheet's limits for `game` (or a game not yet started). Influence is one
+    pool a month, shared with downtimes (MET: VtM core, p. 510), so its counters
+    start lower by what earlier games spent that no cycle has taken off yet."""
     rows = sheets.sheet_rows(db, character)
     rule_set = sheets.rules_for(db, character).rule_set
     ratings: dict[tuple[str, str], int] = {}
@@ -164,17 +171,25 @@ def limits(db: Session, character: Character) -> Limits:
     path = next((r for r in rows if r.category.key == "paths"), None)
 
     expendables: list[Expendable] = []
+    owed: dict[str, int] | None = None
     for row in rows:
         spec = rule_set.trait_properties(row.category.key, row.definition.name).get("uses_per_game")
         uses = uses_per_game(spec, row.trait.rating, ratings) if spec is not None else 0
         if uses > 0:
+            key = trait_key(row.category.key, row.definition.name, row.trait.detail)
+            influence_type = play_influence.type_of_tracker(key)
+            if influence_type is not None and owed is None:
+                owed = {str(k): v for k, v in play_influence.owed(db, character, game).items()}
+            spent = min(uses, owed.get(influence_type, 0)) if influence_type and owed else 0
             expendables.append(
                 Expendable(
-                    key=trait_key(row.category.key, row.definition.name, row.trait.detail),
+                    key=key,
                     name=row.definition.name,
                     detail=row.trait.detail,
                     group=row.category.name,
-                    uses=uses,
+                    uses=uses - spent,
+                    influence=influence_type,
+                    owed=spent,
                 )
             )
     counters = list(
@@ -196,6 +211,8 @@ def limits(db: Session, character: Character) -> Limits:
         for c in counters
         if c.removed_at is None
     ]
+    # Attacks and Boosts holding on the character move its Influences counters.
+    expendables = influence_effects.play_uses(db, character, expendables)
     return Limits(
         generation=generation,
         blood=blood,
@@ -327,7 +344,7 @@ def reset(db: Session, character: Character, actor: User, *, troupe_id: uuid.UUI
     game = current_game(db, character)
     if game is None or not game_events(db, game):
         return False
-    refresh(db, game, limits(db, character))
+    refresh(db, game, limits(db, character, game))
     game.ended_at = datetime.now(UTC)
     game.ended_by_id = actor.id
     db.flush()
@@ -351,6 +368,8 @@ class Tap:
     damage: str | None = None
     note: str = ""
     undoes: uuid.UUID | None = None
+    # An influence spend's details; None when the player skipped them.
+    influence: play_influence.Details | None = None
 
 
 def undone_already(db: Session, event: PlayEvent) -> bool:
@@ -361,7 +380,8 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
     """Record taps from a device, in the games they were made in, and replay
     those games. A tap already recorded (sent again after a lost reply) is
     skipped, as is an undo of something already undone. The caller holds the
-    character's lock."""
+    character's lock. Influence spent, and undone, is logged and owed as it
+    arrives (horatio.play_influence)."""
     ids = [t.id for t in taps] + [t.undoes for t in taps if t.undoes is not None]
     existing = {
         e.client_id: (e, character_id)
@@ -412,10 +432,12 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         )
         db.add(event)
         db.flush()
+        if target is not None:
+            play_influence.cancel(db, actor, target)
+        elif event.kind == "change":
+            play_influence.spend(db, character, actor, event, tap.influence)
         existing[tap.id] = (event, character.id)
         touched[game.id] = game
-    if touched:
-        found = limits(db, character)
-        for game in touched.values():
-            refresh(db, game, found)
+    for game in touched.values():
+        refresh(db, game, limits(db, character, game))
     db.flush()

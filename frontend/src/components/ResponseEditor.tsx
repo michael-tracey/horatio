@@ -1,20 +1,41 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, unwrap } from "../api/client";
 import type { WorkItemOut } from "../api/types";
 import { useAction } from "../hooks";
-import { Badge, Button, ErrorText, Select, Textarea } from "./ui";
+import { DISCOVERY_BLOCK, LOOKUP_LEVEL } from "../influenceLookups";
+import { CombinedAnswers, DiscoveryBlock, LookupFill, type Combined } from "./InfluenceLookupTools";
+import { Badge, Button, ErrorText, Field, Input, Select, Textarea } from "./ui";
 
 /** One downtime action and the box to answer it in, with fill tables to roll from. */
-export function ResponseEditor({ item, troupeId, extra }: { item: WorkItemOut; troupeId: string; extra?: React.ReactNode }) {
+export function ResponseEditor({
+  item,
+  troupeId,
+  extra,
+  canLog = false,
+}: {
+  item: WorkItemOut;
+  troupeId: string;
+  extra?: React.ReactNode;
+  /** Storytellers and assistants can log an influence answer in the troupe's influence log. */
+  canLog?: boolean;
+}) {
   const [body, setBody] = useState(item.body);
+  // Follow the response when it is saved from elsewhere, such as a lookup combined with it.
+  useEffect(() => setBody(item.body), [item.body]);
+  // The character's other answers to a lookup, filled in with this one.
+  const [others, setOthers] = useState<Combined[]>([]);
   const [table, setTable] = useState("");
   const tables = useQuery({
     queryKey: ["tables", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/random-tables", { params: { path: { troupe_id: troupeId } } })),
     staleTime: 60_000,
   });
-  const save = useAction(() => unwrap(api.PUT("/api/responses/{response_id}", { params: { path: { response_id: item.id } }, body: { body } })));
+  const save = useAction(async () => {
+    await unwrap(api.PUT("/api/responses/{response_id}", { params: { path: { response_id: item.id } }, body: { body } }));
+    for (const o of others) await unwrap(api.PUT("/api/responses/{response_id}", { params: { path: { response_id: o.id } }, body: { body: o.text } }));
+    setOthers([]);
+  });
   const roll = useAction(async (name: string) => {
     const rolled = await unwrap(
       api.POST("/api/troupes/{troupe_id}/random-tables/{name}/roll", { params: { path: { troupe_id: troupeId, name } } }),
@@ -39,9 +60,14 @@ export function ResponseEditor({ item, troupeId, extra }: { item: WorkItemOut; t
         <Badge tone={item.status === "written" ? "gold" : "mist"}>{item.status}</Badge>
       </div>
       <p className="text-sm whitespace-pre-line">{item.answer}</p>
+      {item.influence_blocks.length > 0 && (
+        <p className="text-sm text-gold" role="note">
+          May be up against {item.influence_blocks.map((b) => b.text).join("; ")}. The cost is yours to judge.
+        </p>
+      )}
       <Textarea aria-label={`Response to ${item.character_name}`} value={body} onChange={(e) => setBody(e.target.value)} placeholder="The result…" />
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={() => save.mutate(undefined)} disabled={save.isPending || body === item.body}>
+        <Button onClick={() => save.mutate(undefined)} disabled={save.isPending || (body === item.body && !others.length)}>
           Save response
         </Button>
         {!!tables.data?.length && (
@@ -59,9 +85,75 @@ export function ResponseEditor({ item, troupeId, extra }: { item: WorkItemOut; t
             </Button>
           </>
         )}
+        {canLog && influence?.level === LOOKUP_LEVEL && (
+          <LookupFill
+            item={item}
+            onFill={(own, rest) => {
+              setBody(own);
+              setOthers(rest);
+            }}
+          />
+        )}
         {extra}
       </div>
       <ErrorText error={save.error ?? roll.error} />
+      <CombinedAnswers others={others} onChange={setOthers} />
+      {canLog && influence?.action_key === DISCOVERY_BLOCK && <DiscoveryBlock item={item} onWrite={setBody} />}
+      {canLog && item.influence && <LogAnswer item={item} />}
     </div>
+  );
+}
+
+/** Log an influence answer in the troupe's influence log, with its purpose trimmed from the player's answer. */
+function LogAnswer({ item }: { item: WorkItemOut }) {
+  const [purpose, setPurpose] = useState<string | null>(null);
+  const path = { params: { path: { response_id: item.id } } };
+  const log = useAction(async (text: string) => {
+    await unwrap(api.POST("/api/responses/{response_id}/influence-entry", { ...path, body: { purpose: text } }));
+    setPurpose(null);
+  });
+  const unlog = useAction(() => unwrap(api.DELETE("/api/responses/{response_id}/influence-entry", path)));
+  const logged = item.influence_entry;
+
+  if (logged)
+    return (
+      <div className="flex flex-wrap items-center gap-2 text-sm text-mist">
+        <span>
+          Logged as <strong className="text-gold">{logged.short_id}</strong>
+          {logged.times > 1 && `, ${logged.times} times`}.
+        </span>
+        <Button variant="ghost" className="px-2" onClick={() => unlog.mutate(undefined)} disabled={unlog.isPending}>
+          Take it off the log
+        </Button>
+        <ErrorText error={unlog.error} />
+      </div>
+    );
+  if (purpose === null)
+    return (
+      <Button variant="secondary" className="self-start" onClick={() => setPurpose(item.answer)} disabled={!item.influence?.action_key}>
+        Log it
+      </Button>
+    );
+  return (
+    <form
+      className="flex flex-col gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        log.mutate(purpose);
+      }}
+    >
+      <Field label="Purpose" hint="Trim it to one line. Gossip and Word on the Street show it, never who took the action.">
+        <Input value={purpose} onChange={(e) => setPurpose(e.target.value)} />
+      </Field>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={log.isPending || !purpose.trim()}>
+          Log it
+        </Button>
+        <Button type="button" variant="ghost" onClick={() => setPurpose(null)}>
+          Cancel
+        </Button>
+      </div>
+      <ErrorText error={log.error} />
+    </form>
   );
 }
