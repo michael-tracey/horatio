@@ -1974,7 +1974,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   makeCustodian(custodian.email);
   const lead = await person(browser, "gossip-lead");
   const player = await person(browser, "gossip-player");
-  const troupeName = `Court of Whispers ${run}`;
+  const troupeName = `Court of Rumours ${run}`;
   await custodian.page.reload();
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
