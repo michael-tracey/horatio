@@ -275,6 +275,9 @@ MESSAGES: dict[str, str] = {
     "influence.deleted": "{actor} deleted {entry} from the influence log: {who}, {what}.",
     "influence.merged": "{actor} merged {merged} into {entry} in the influence log"
     " ({times} times).",
+    "influence.resolved": "{actor} resolved {entry}: {who}, {what}.",
+    "influence.block_recorded": "{actor} recorded an influence block: {what}.",
+    "influence.effect_removed": "{actor} took back an influence effect: {what}.",
 }
 
 

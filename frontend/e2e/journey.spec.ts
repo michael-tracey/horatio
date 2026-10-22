@@ -1828,3 +1828,84 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
   await visitor.reload();
   await expect(visitor.getByText(/only for people signed in, or there is no such troupe/)).toBeVisible();
 });
+
+test("a storyteller resolves an attack, its target's Defend taken off, and the target's influence counts lower", async ({ browser }) => {
+  const custodian = await person(browser, "attack-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "attack-lead");
+  const troupeName = `Court of Knives ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // Two NPCs, made straight through the API: Isolde with Elite 4, Vasquez with Elite 3.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const npcs: Record<string, string> = {};
+  for (const [name, elite] of [
+    ["Isolde", 4],
+    ["Vasquez", 3],
+  ] as const) {
+    const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(made.status(), await made.text()).toBe(201);
+    npcs[name] = (await made.json()).id;
+    const rated = await p.request.put(`/api/characters/${npcs[name]}/npc/ratings`, {
+      headers,
+      data: { category: "backgrounds", name: "Influences: The Elite", rating: elite, detail: "" },
+    });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+  // Vasquez defended a minute ago, before the attack.
+  const defended = await p.request.post(`/api/troupes/${troupeId}/influence-log`, {
+    headers,
+    data: { type: "elite", happened_at: new Date(Date.now() - 60_000).toISOString(), character_id: npcs.Vasquez, action_key: "defend" },
+  });
+  expect(defended.status(), await defended.text()).toBe(201);
+
+  // The lead logs Isolde's attack on Vasquez's Elite, 4 actions: 2 levels.
+  await p.goto(`/troupes/${troupeId}/influence`);
+  await p.getByRole("button", { name: "Log influence" }).click();
+  const form = p.getByRole("form", { name: "Log influence" });
+  await form.getByLabel("Who", { exact: true }).selectOption({ label: "Isolde (NPC)" });
+  await form.getByLabel("Action", { exact: true }).selectOption({ label: "Attack" });
+  await form.getByLabel("Attacking").selectOption({ label: "Vasquez (NPC)" });
+  await form.getByLabel("Times taken").fill("4");
+  await form.getByRole("button", { name: "Log it" }).click();
+  const attack = p.getByRole("listitem", { name: "Entry E2" });
+  await expect(attack.getByText("Attack → Vasquez's Elite")).toBeVisible();
+
+  // Resolving it shows the cost and the Defend taken off.
+  await attack.getByRole("button", { name: "Resolve" }).click();
+  const dialog = p.getByRole("dialog");
+  await expect(dialog.getByText("An attack on Vasquez's Elite, at 3 now.")).toBeVisible();
+  await expect(dialog.getByText("2 levels at 2 actions each: 4 actions. E2 spent 4.")).toBeVisible();
+  await expect(dialog.getByLabel("Defends")).toContainText("Vasquez's Defends (E1) take 1 level off. Vasquez loses 1 level and as many actions");
+  await p.screenshot(shots("influence-resolve"));
+  await dialog.getByRole("button", { name: "Record the attack" }).click();
+  await expect(attack.getByText("Elite 1 lower")).toBeVisible();
+  await expect(p.getByRole("list", { name: "Effects and blocks" }).getByText("Vasquez: Elite 1 lower (1 defended)")).toBeVisible();
+
+  // Vasquez's sheet shows it, and the Play View's Elite counter starts lower.
+  await p.goto(`/characters/${npcs.Vasquez}/sheet`);
+  await expect(p.getByRole("heading", { name: "Influence changed" })).toBeVisible();
+  await expect(p.getByText(/\(attacked\), until .*, or 2 more games if that is later/)).toBeVisible();
+  await p.goto(`/play/characters/${npcs.Vasquez}`);
+  const elite = p.getByRole("listitem").filter({ hasText: "Influences: The Elite" });
+  await expect(elite.getByText("2 of 2 left", { exact: false })).toBeVisible();
+
+  // Taken back, the counter is whole again.
+  await p.goto(`/troupes/${troupeId}/influence`);
+  p.once("dialog", (d) => void d.accept());
+  await p.getByRole("list", { name: "Effects and blocks" }).getByRole("button", { name: "Take back" }).click();
+  await expect(p.getByText("Nothing holding now.")).toBeVisible();
+  await p.goto(`/play/characters/${npcs.Vasquez}`);
+  await expect(p.getByRole("listitem").filter({ hasText: "Influences: The Elite" }).getByText("3 of 3 left", { exact: false })).toBeVisible();
+});

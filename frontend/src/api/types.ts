@@ -83,3 +83,7 @@ export type InfluenceAnswerOut = Schemas["InfluenceAnswerOut"];
 export type InfluenceEntryOut = Schemas["InfluenceEntryOut"];
 export type InfluenceEntryIn = Schemas["InfluenceEntryIn"];
 export type InfluenceChoicesOut = Schemas["InfluenceChoicesOut"];
+export type InfluenceTargetIn = Schemas["InfluenceTargetIn"];
+export type InfluenceEffectOut = Schemas["InfluenceEffectOut"];
+export type CharacterEffectOut = Schemas["CharacterEffectOut"];
+export type PlanOut = Schemas["PlanOut"];

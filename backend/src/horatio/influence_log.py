@@ -38,7 +38,7 @@ from typing import Any
 from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit, influence
+from horatio import audit, influence, influence_targets
 from horatio.influence import InfluenceType
 from horatio.models import (
     Character,
@@ -157,10 +157,17 @@ class Details:
     blocks: int = 0
     needs_details: bool = False
     cycle_id: uuid.UUID | None = None
+    # A targeted action's target (horatio.influence_targets).
+    target: influence_targets.Target = influence_targets.NONE
 
 
 def checked(
-    db: Session, troupe_id: uuid.UUID, details: Details, *, keep: InfluenceEntry | None = None
+    db: Session,
+    troupe_id: uuid.UUID,
+    details: Details,
+    *,
+    keep: InfluenceEntry | None = None,
+    require_target: bool = True,
 ) -> Details:
     """The details cleaned up and checked: the action is one of the type's in the
     troupe's rules, and the character is in the troupe (unless it is the one the
@@ -197,8 +204,20 @@ def checked(
             name = character.name
     elif not name:
         raise unprocessable("Choose a character, or name someone not in Horatio.")
+    target = influence_targets.checked(
+        db,
+        troupe_id,
+        influence_type=details.influence_type,
+        action_key=action_key,
+        character_id=details.character_id,
+        wanted=details.target,
+        required=require_target and not details.needs_details,
+        keep=keep,
+        in_troupe=lambda c: in_troupe(db, troupe_id, c),
+    )
     return replace(
         details,
+        target=target,
         name=name,
         specialization=details.specialization.strip(),
         action_key=action_key,
@@ -231,7 +250,8 @@ def add_entry(
     row's own; it is used when free, else the next one is."""
     if source not in SOURCES:
         raise ValueError(f"unknown source {source!r}")
-    details = checked(db, troupe.id, details)
+    # An imported row keeps what the sheet had, target or none.
+    details = checked(db, troupe.id, details, require_target=source != "import")
     if reference is not None and (
         db.scalar(
             select(InfluenceEntry.id).where(
@@ -265,6 +285,7 @@ def add_entry(
         reference=reference,
         needs_details=details.needs_details,
         logged_by=actor.id if actor else None,
+        **influence_targets.columns(details.target),
     )
     db.add(entry)
     db.flush()
@@ -298,6 +319,8 @@ def change_entry(db: Session, actor: User, entry: InfluenceEntry, details: Detai
     number. Returns the names of the fields that changed."""
     details = checked(db, entry.troupe_id, details, keep=entry)
     changed = [f for f in EDITABLE if getattr(entry, f) != getattr(details, f)]
+    if influence_targets.of(entry) != details.target:
+        changed.append("target")
     was = short_id(entry)
     if details.influence_type != entry.type:
         changed.insert(0, "type")
@@ -305,6 +328,8 @@ def change_entry(db: Session, actor: User, entry: InfluenceEntry, details: Detai
         entry.type, entry.number = details.influence_type, number
     for name in EDITABLE:
         setattr(entry, name, getattr(details, name))
+    for name, value in influence_targets.columns(details.target).items():
+        setattr(entry, name, value)
     db.flush()
     if changed:
         audit.record(
@@ -448,6 +473,8 @@ def log_answer(
             action_key=action.key,
             purpose=purpose,
             cycle_id=item.cycle.id,
+            # A targeted action's target is for staff to add.
+            needs_details=action.key in influence_targets.TARGETED,
         ),
         source="downtime",
     )

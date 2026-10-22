@@ -655,6 +655,85 @@
         "title": "BadgesOut",
         "type": "object"
       },
+      "BlockIn": {
+        "properties": {
+          "activity": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Activity",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "strength": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Strength",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "activity",
+          "strength",
+          "starts_at"
+        ],
+        "title": "BlockIn",
+        "type": "object"
+      },
+      "BlockWarningOut": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "strength": {
+            "title": "Strength",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "strength",
+          "ends_at"
+        ],
+        "title": "BlockWarningOut",
+        "type": "object"
+      },
       "Body_upload_banner_api_troupes__troupe_id__banner_post": {
         "properties": {
           "file": {
@@ -1285,6 +1364,65 @@
           "in_troupe"
         ],
         "title": "CharacterChoice",
+        "type": "object"
+      },
+      "CharacterEffectOut": {
+        "description": "An effect on a character, for its sheet: what and until when, not who made it.",
+        "properties": {
+          "defended": {
+            "title": "Defended",
+            "type": "integer"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "games_left": {
+            "title": "Games Left",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "attack",
+              "boost"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "levels": {
+            "title": "Levels",
+            "type": "integer"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "type",
+          "levels",
+          "defended",
+          "starts_at",
+          "ends_at",
+          "games_left",
+          "text"
+        ],
+        "title": "CharacterEffectOut",
         "type": "object"
       },
       "CharacterOut": {
@@ -2741,6 +2879,30 @@
         "title": "DiscordSetup",
         "type": "object"
       },
+      "EffectRef": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "active"
+        ],
+        "title": "EffectRef",
+        "type": "object"
+      },
       "EmailHelp": {
         "properties": {
           "available": {
@@ -3304,6 +3466,146 @@
         "title": "InfluenceChoicesOut",
         "type": "object"
       },
+      "InfluenceEffectOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "activity": {
+            "title": "Activity",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "defended": {
+            "title": "Defended",
+            "type": "integer"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "entry_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Id"
+          },
+          "entry_short_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Short Id"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "games_left": {
+            "title": "Games Left",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "attack",
+              "boost",
+              "block"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "levels": {
+            "title": "Levels",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "recorded_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded By Name"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "upcoming": {
+            "title": "Upcoming",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "type",
+          "character_id",
+          "name",
+          "entry_id",
+          "entry_short_id",
+          "levels",
+          "defended",
+          "activity",
+          "starts_at",
+          "ends_at",
+          "games",
+          "games_left",
+          "active",
+          "upcoming",
+          "text",
+          "recorded_by_name"
+        ],
+        "title": "InfluenceEffectOut",
+        "type": "object"
+      },
       "InfluenceEntryIn": {
         "properties": {
           "action_key": {
@@ -3375,6 +3677,16 @@
             "maxLength": 200,
             "title": "Specialization",
             "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InfluenceTargetIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "times": {
             "default": 1,
@@ -3470,6 +3782,16 @@
             ],
             "title": "Cycle Name"
           },
+          "effect": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EffectRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "happened_at": {
             "format": "date-time",
             "title": "Happened At",
@@ -3547,6 +3869,22 @@
             ],
             "title": "Reference"
           },
+          "resolves": {
+            "anyOf": [
+              {
+                "enum": [
+                  "attack",
+                  "boost",
+                  "block"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolves"
+          },
           "response_ids": {
             "items": {
               "format": "uuid",
@@ -3572,6 +3910,16 @@
           "specialization": {
             "title": "Specialization",
             "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InfluenceTargetOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "times": {
             "title": "Times",
@@ -3712,6 +4060,135 @@
           "actions"
         ],
         "title": "InfluenceStandingOut",
+        "type": "object"
+      },
+      "InfluenceTargetIn": {
+        "description": "What a targeted action is aimed at: a character; for an Attack, a log entry's\nshort id instead (UW268), whoever took it; for a Block, an activity.",
+        "properties": {
+          "activity": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Activity",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "entry": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          }
+        },
+        "title": "InfluenceTargetIn",
+        "type": "object"
+      },
+      "InfluenceTargetOut": {
+        "properties": {
+          "activity": {
+            "title": "Activity",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "entry_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Id"
+          },
+          "entry_short_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Short Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "entry_id",
+          "entry_short_id",
+          "type",
+          "activity",
+          "text"
+        ],
+        "title": "InfluenceTargetOut",
         "type": "object"
       },
       "InfluenceTypeChoices": {
@@ -5113,6 +5590,125 @@
           "uploaded_at"
         ],
         "title": "PictureOut",
+        "type": "object"
+      },
+      "PlanOut": {
+        "description": "What resolving an entry would record, before staff confirm it.",
+        "properties": {
+          "activity": {
+            "title": "Activity",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "defended": {
+            "title": "Defended",
+            "type": "integer"
+          },
+          "defends": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Defends",
+            "type": "array"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "attack",
+              "boost",
+              "block"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "levels": {
+            "title": "Levels",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "per_level": {
+            "title": "Per Level",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "result": {
+            "title": "Result",
+            "type": "integer"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "integer"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "type",
+          "character_id",
+          "name",
+          "spent",
+          "levels",
+          "cost",
+          "per_level",
+          "rating",
+          "defends",
+          "defended",
+          "result",
+          "activity",
+          "starts_at",
+          "ends_at",
+          "games",
+          "notes"
+        ],
+        "title": "PlanOut",
         "type": "object"
       },
       "PlayReference": {
@@ -6778,6 +7374,26 @@
         "title": "ReconciliationOut",
         "type": "object"
       },
+      "RemovedOut": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "RemovedOut",
+        "type": "object"
+      },
       "ResetFor": {
         "properties": {
           "display_name": {
@@ -6835,6 +7451,64 @@
           "expires_at"
         ],
         "title": "ResetLink",
+        "type": "object"
+      },
+      "ResolveIn": {
+        "properties": {
+          "activity": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "levels": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Levels"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          }
+        },
+        "title": "ResolveIn",
         "type": "object"
       },
       "ResultOut": {
@@ -9437,6 +10111,14 @@
               }
             ]
           },
+          "influence_blocks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BlockWarningOut"
+            },
+            "title": "Influence Blocks",
+            "type": "array"
+          },
           "influence_entry": {
             "anyOf": [
               {
@@ -11503,6 +12185,54 @@
         "summary": "Preview Home Troupe Xp",
         "tags": [
           "membership"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/influence-effects": {
+      "get": {
+        "description": "The Attacks and Boosts holding on a character now, for its sheet.",
+        "operationId": "character_effects_api_characters__character_id__influence_effects_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CharacterEffectOut"
+                  },
+                  "title": "Response Character Effects Api Characters  Character Id  Influence Effects Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Effects",
+        "tags": [
+          "influence effects"
         ]
       }
     },
@@ -14641,6 +15371,50 @@
         "summary": "Health"
       }
     },
+    "/api/influence-effects/{effect_id}": {
+      "delete": {
+        "description": "Take an effect back, as if never resolved; its entry can be resolved again.",
+        "operationId": "remove_effect_api_influence_effects__effect_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "effect_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Effect Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemovedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Effect",
+        "tags": [
+          "influence effects"
+        ]
+      }
+    },
     "/api/influence-entries/{entry_id}": {
       "delete": {
         "operationId": "delete_entry_api_influence_entries__entry_id__delete",
@@ -14779,6 +15553,171 @@
         "summary": "Merge",
         "tags": [
           "influence log"
+        ]
+      }
+    },
+    "/api/influence-entries/{entry_id}/resolution": {
+      "get": {
+        "description": "What resolving an Attack, Boost, Block or location action would record: the\ncost, the Defends taken off, and how long it lasts.",
+        "operationId": "preview_api_influence_entries__entry_id__resolution_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "levels",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Levels"
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "elite",
+                    "underworld"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "activity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Activity"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ends_at",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ends At"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview",
+        "tags": [
+          "influence effects"
+        ]
+      },
+      "post": {
+        "description": "Resolve the entry: record its effect on the target's influence, or its Block.",
+        "operationId": "resolve_api_influence_entries__entry_id__resolution_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceEffectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve",
+        "tags": [
+          "influence effects"
         ]
       }
     },
@@ -17572,6 +18511,118 @@
         "summary": "Remove Game",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/influence-blocks": {
+      "post": {
+        "description": "Record a Block on an activity with no log entry behind it, such as an NPC's.",
+        "operationId": "record_block_api_troupes__troupe_id__influence_blocks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceEffectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Block",
+        "tags": [
+          "influence effects"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/influence-effects": {
+      "get": {
+        "description": "The troupe's effects and blocks holding now or still to begin, newest first;\nwith `ended`, those over too.",
+        "operationId": "troupe_effects_api_troupes__troupe_id__influence_effects_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ended",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Ended",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InfluenceEffectOut"
+                  },
+                  "title": "Response Troupe Effects Api Troupes  Troupe Id  Influence Effects Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Effects",
+        "tags": [
+          "influence effects"
         ]
       }
     },

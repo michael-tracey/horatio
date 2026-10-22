@@ -50,6 +50,11 @@ export function ResponseEditor({
         <Badge tone={item.status === "written" ? "gold" : "mist"}>{item.status}</Badge>
       </div>
       <p className="text-sm whitespace-pre-line">{item.answer}</p>
+      {item.influence_blocks.length > 0 && (
+        <p className="text-sm text-gold" role="note">
+          May be up against {item.influence_blocks.map((b) => b.text).join("; ")}. The cost is yours to judge.
+        </p>
+      )}
       <Textarea aria-label={`Response to ${item.character_name}`} value={body} onChange={(e) => setBody(e.target.value)} placeholder="The result…" />
       <div className="flex flex-wrap items-center gap-2">
         <Button onClick={() => save.mutate(undefined)} disabled={save.isPending || body === item.body}>

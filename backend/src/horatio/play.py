@@ -24,7 +24,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, sheets
+from horatio import audit, influence_effects, sheets
 from horatio.models import Character, PlayCounter, PlayEvent, PlayGame, Troupe, User
 
 # Most blood, and blood a turn, by Generation dots (MET: VTM pp. 100-101).
@@ -196,6 +196,8 @@ def limits(db: Session, character: Character) -> Limits:
         for c in counters
         if c.removed_at is None
     ]
+    # Attacks and Boosts holding on the character move its Influences counters.
+    expendables = influence_effects.play_uses(db, character, expendables)
     return Limits(
         generation=generation,
         blood=blood,
