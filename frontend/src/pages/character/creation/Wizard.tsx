@@ -11,7 +11,9 @@ import { FinishCreation } from "../CartPanel";
 import { rulesTroupe } from "../rules";
 import { quickPicks } from "../traitFilter";
 import { DotGrid, PointsList } from "./DotGrid";
-import { identityChoices, type Allowed, type Picks } from "./logic";
+import { fieldSkills } from "../fields";
+import { SetField } from "../Specializations";
+import { fieldProblems, identityChoices, keyed, traitOf, type Allowed, type Picks } from "./logic";
 
 type Step = { key: string; title: string; categories: string[]; intro?: string };
 
@@ -38,22 +40,17 @@ function buildSteps(creation: CreationOut): Step[] {
   return [{ key: "concept", title: "Concept", categories: [] }, ...steps, { key: "review", title: "Review", categories: [] }];
 }
 
-/** The picks already saved, per category. */
-function savedPicks(creation: CreationOut): Record<string, Picks> {
+/** The picks already saved, and the detail saved with each (a merit's choice, a
+ * skill's field), by category then pick (see logic's `copyKey`). */
+function saved(creation: CreationOut): { picks: Record<string, Picks>; details: Record<string, Record<string, string>> } {
   const picks: Record<string, Picks> = {};
-  for (const pool of creation.pools) {
-    for (const t of pool.traits) (picks[pool.category] ??= {})[t.name] = t.pick;
-  }
-  return picks;
-}
-
-/** The detail saved with each pick, by category then name: a merit's choice. */
-function savedDetails(creation: CreationOut): Record<string, Record<string, string>> {
   const details: Record<string, Record<string, string>> = {};
-  for (const pool of creation.pools) {
-    for (const t of pool.traits) (details[pool.category] ??= {})[t.name] = t.detail;
+  for (const category of new Set(creation.pools.map((p) => p.category))) {
+    const kept = keyed(creation.pools.filter((p) => p.category === category).flatMap((p) => p.traits));
+    picks[category] = kept.picks;
+    details[category] = kept.details;
   }
-  return details;
+  return { picks, details };
 }
 
 function allowedFor(creation: CreationOut, category: string): Allowed {
@@ -148,26 +145,29 @@ function StepView({
   onNext?: () => void;
   steps: Step[];
 }) {
-  const saved = useMemo(() => savedPicks(creation), [creation]);
-  const [picks, setPicks] = useState<Record<string, Picks>>(saved);
-  useEffect(() => setPicks(saved), [saved]);
-  const savedDetail = useMemo(() => savedDetails(creation), [creation]);
+  const { picks: before, details: savedDetail } = useMemo(() => saved(creation), [creation]);
+  const [picks, setPicks] = useState<Record<string, Picks>>(before);
+  useEffect(() => setPicks(before), [before]);
   const [details, setDetails] = useState(savedDetail);
   useEffect(() => setDetails(savedDetail), [savedDetail]);
+  // A Crafts, Performance or Science with no field, or two with one field: by category, then pick.
+  const needsField = fieldSkills(catalogue);
+  const problems = Object.fromEntries(
+    step.categories.map((c) => [c, fieldProblems(picks[c] ?? {}, details[c] ?? {}, (name) => needsField.has(name))]),
+  );
 
   const save = useAction(async () => {
     for (const category of step.categories) {
       const mine = picks[category] ?? {};
-      const before = saved[category] ?? {};
       const detail = details[category] ?? {};
       const same =
-        JSON.stringify(Object.entries(mine).sort()) === JSON.stringify(Object.entries(before).sort()) &&
-        Object.keys(mine).every((name) => (detail[name] ?? "") === (savedDetail[category]?.[name] ?? ""));
+        JSON.stringify(Object.entries(mine).sort()) === JSON.stringify(Object.entries(before[category] ?? {}).sort()) &&
+        Object.keys(mine).every((key) => (detail[key] ?? "").trim() === (savedDetail[category]?.[key] ?? ""));
       if (same) continue;
       await unwrap(
         api.PUT("/api/characters/{character_id}/creation/categories/{category}", {
           params: { path: { character_id: character.id, category } },
-          body: { picks: Object.entries(mine).map(([name, rating]) => ({ name, rating, detail: detail[name] ?? "" })) },
+          body: { picks: Object.entries(mine).map(([key, rating]) => ({ name: traitOf(key), rating, detail: (detail[key] ?? "").trim() })) },
         }),
       );
     }
@@ -177,9 +177,13 @@ function StepView({
   });
   const needs = creation.needs.filter((n) => step.categories.includes(n.step));
   // Stay on the step if saving fails (save.error shows why), and going forward
-  // while the step still needs something (the notice says what).
-  const move = (to: (() => void) | undefined, forward: boolean) =>
+  // while the step still needs something, such as a skill's field (the notice,
+  // and the row, say what). Two picks of one skill with one field cannot be saved.
+  const twice = Object.values(problems).some((p) => Object.values(p).some((why) => why.twice));
+  const move = (to: (() => void) | undefined, forward: boolean) => {
+    if (twice) return;
     save.mutate(undefined, { onSuccess: (left) => (forward && left.length ? undefined : to?.()) });
+  };
 
   const traitsOf = (category: string) => catalogue.traits.filter((t) => t.category === category);
   const nameOf = (category: string) => catalogue.categories.find((c) => c.key === category)?.name ?? category;
@@ -193,7 +197,7 @@ function StepView({
     <Card title={step.title} className="min-w-0">
       {step.intro && <p className="mb-4 text-sm text-mist">{step.intro}</p>}
       {step.key === "concept" && <ConceptStep character={character} sheet={sheet} catalogue={catalogue} />}
-      {step.key === "review" && <ReviewStep character={character} creation={creation} steps={steps} />}
+      {step.key === "review" && <ReviewStep character={character} creation={creation} catalogue={catalogue} steps={steps} />}
       {/* Held while saving: the save reloads the picks, which would drop a tap made meanwhile. */}
       <fieldset disabled={save.isPending} className="flex min-w-0 flex-col gap-8">
         {step.categories.map((category) => {
@@ -347,12 +351,29 @@ function ExtraInClan({ character, sheet, catalogue }: { character: CharacterOut;
   );
 }
 
-function ReviewStep({ character, creation, steps }: { character: CharacterOut; creation: CreationOut; steps: Step[] }) {
+function ReviewStep({
+  character,
+  creation,
+  catalogue,
+  steps,
+}: {
+  character: CharacterOut;
+  creation: CreationOut;
+  catalogue: CatalogueOut;
+  steps: Step[];
+}) {
   const navigate = useNavigate();
   // Picks placed on the Sheet tab wait in the cart; finishing asks what to do with them.
   const cart = useCart(character.id);
   const stepFor = (category: string) => steps.find((s) => s.categories.includes(category));
   const open = creation.pools.filter((p) => p.kind === "picks" && p.remaining > 0);
+  // Picks of Crafts, Performance or Science still without a field, while the rules
+  // (as the troupe plays them) need one: given one here.
+  const needsField = fieldSkills(catalogue);
+  const fieldsNeeded = creation.needs.some((n) => n.step === "skills");
+  const unfielded = creation.pools.flatMap((p) =>
+    p.traits.filter((t) => fieldsNeeded && needsField.has(t.name) && !t.detail).map((t) => ({ category: p.category, name: t.name })),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -368,7 +389,7 @@ function ReviewStep({ character, creation, steps }: { character: CharacterOut; c
                 {p.kind === "picks" ? ` at ${p.rating}` : ""}
               </span>
               <span>
-                {p.traits.map((t) => t.name).join(", ") || "—"}
+                {p.traits.map((t) => (t.detail ? `${t.name}: ${t.detail}` : t.name)).join(", ") || "—"}
                 {p.kind === "points" ? ` (${p.used} of ${p.allowed} points)` : p.remaining ? ` (${p.remaining} left)` : ""}
               </span>
               {!done && step && (
@@ -380,12 +401,34 @@ function ReviewStep({ character, creation, steps }: { character: CharacterOut; c
           );
         })}
       </ul>
+      {unfielded.length > 0 && (
+        <section aria-label="Fields to give" className="flex flex-col gap-1">
+          <ul className="flex flex-col gap-1">
+            {unfielded.map((t) => (
+              <SetField key={`${t.category}/${t.name}`} character={character} trait={t} />
+            ))}
+          </ul>
+          {stepFor("skills") && (
+            <Link className="self-start text-sm text-gold underline" to={`/characters/${character.id}/create/${stepFor("skills")!.key}`}>
+              Back to {stepFor("skills")!.title}
+            </Link>
+          )}
+        </section>
+      )}
       {open.length > 0 ? (
         <Notice>Place every pick to finish. Merit and flaw points are optional.</Notice>
+      ) : unfielded.length > 0 ? (
+        <Notice>Everything is placed. Give each skill above its field to finish.</Notice>
       ) : (
         <Notice>Everything is placed. After finishing, new dots come from experience.</Notice>
       )}
-      <FinishCreation character={character} cart={cart} disabled={open.length > 0} className="self-start" onFinished={() => navigate(`/characters/${character.id}`)}>
+      <FinishCreation
+        character={character}
+        cart={cart}
+        disabled={open.length > 0 || unfielded.length > 0}
+        className="self-start"
+        onFinished={() => navigate(`/characters/${character.id}`)}
+      >
         Finish creation
       </FinishCreation>
     </div>

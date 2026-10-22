@@ -2359,3 +2359,84 @@ test("a storyteller resolves an attack, its target's Defend taken off, and the t
   await p.goto(`/play/characters/${npcs.Vasquez}`);
   await expect(p.getByRole("listitem").filter({ hasText: "Influences: The Elite" }).getByText("3 of 3 left", { exact: false })).toBeVisible();
 });
+
+test("Crafts, Performance and Science take a field in the wizard, kept through Back and a reload", async ({ browser }) => {
+  const { page: p } = await person(browser, "fielder");
+  await p.getByLabel("Name").fill("Lark");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
+  const next = async (heading: string) => {
+    await p.getByRole("button", { name: "Save and continue" }).click();
+    await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  };
+  const tap = async (...dots: string[]) => {
+    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
+  };
+  await next("Attributes");
+  await tap("Physical 7", "Social 5", "Mental 3");
+  await next("Focuses");
+  await tap("Strength 1", "Wits 1", "Charisma 1");
+  await next("Skills");
+
+  // Choosing Performance asks for its field there and then.
+  await tap("Performance 3");
+  await expect(p.getByLabel("Performance field")).toBeFocused();
+  await expect(p.getByLabel("Performance field")).toHaveAttribute("placeholder", "Such as Singing");
+  await p.getByLabel("Performance field").fill("Singing");
+  // A second field of the same skill has its own dots.
+  await p.getByRole("button", { name: "Add another field" }).click();
+  await expect(p.getByLabel("Performance #2 field")).toBeFocused();
+  await p.getByLabel("Performance #2 field").fill("Dance");
+  await tap("Performance #2 1");
+  await tap("Brawl 4", "Science 3", "Awareness 2", "Empathy 2", "Firearms 2", "Investigation 1", "Leadership 1", "Medicine 1");
+  // Science has no field yet: the row says so, and the step will not move on.
+  await expect(p.getByText("Science needs a field.")).toBeVisible();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByText(/Before moving on: Crafts, Performance and Science need a field/)).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible();
+  await p.screenshot(shots("creation-fields"));
+  await p.getByLabel("Science field").fill("Chemistry");
+  await expect(p.getByText("Science needs a field.")).toHaveCount(0);
+  await next("Backgrounds");
+
+  // The fields are kept going Back, and through a reload.
+  await p.getByRole("button", { name: "Back" }).click();
+  await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible();
+  await expect(p.getByLabel("Performance field")).toHaveValue("Singing");
+  await expect(p.getByLabel("Performance #2 field")).toHaveValue("Dance");
+  await p.reload();
+  await expect(p.getByLabel("Science field")).toHaveValue("Chemistry");
+  await expect(p.getByRole("button", { name: "Performance #2 1", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await next("Backgrounds");
+  await tap("Fame 3", "Herd 2", "Generation 1");
+  await next("Disciplines");
+  await tap("Celerity 2", "Potence 1", "Presence 1");
+  await next("Merits & flaws");
+
+  // A pick placed without its field elsewhere (as on the Sheet tab) is given one on Review.
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+  const creation = await (await p.request.get(`/api/characters/${id}/creation`)).json();
+  const skills = creation.pools
+    .filter((pool: { category: string }) => pool.category === "skills")
+    .flatMap((pool: { traits: { name: string; detail: string; pick: number }[] }) => pool.traits)
+    .map((t: { name: string; detail: string; pick: number }) => (t.name === "Medicine" ? { name: "Crafts", detail: "", rating: 1 } : { name: t.name, detail: t.detail, rating: t.pick }));
+  const placed = await p.request.put(`/api/characters/${id}/creation/categories/skills`, { headers: { "X-Horatio": "1" }, data: { picks: skills } });
+  expect(placed.status(), await placed.text()).toBe(200);
+  await p.goto(`/characters/${id}/create/review`);
+  await expect(p.getByText(/Performance: Singing, Science: Chemistry/)).toBeVisible();
+  await expect(p.getByText("Crafts needs a field:")).toBeVisible();
+  await expect(p.getByRole("link", { name: "Back to Skills" })).toBeVisible();
+  await expect(p.getByRole("button", { name: "Finish creation" })).toBeDisabled();
+  await p.getByLabel("Crafts field").fill("Woodwork");
+  await p.getByRole("button", { name: "Set" }).click();
+  await expect(p.getByText("Crafts needs a field:")).toHaveCount(0);
+  await expect(p.getByText(/Crafts: Woodwork/)).toBeVisible();
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Character creation" })).toHaveCount(0);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  for (const skill of ["Performance: Singing", "Performance: Dance", "Science: Chemistry", "Crafts: Woodwork"])
+    await expect(part("Skills").getByText(skill, { exact: true })).toBeVisible();
+});
