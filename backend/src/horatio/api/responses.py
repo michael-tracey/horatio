@@ -9,16 +9,19 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
-from horatio import responses
+from horatio import influence_log, responses
 from horatio.api.downtimes import staff_cycle, staff_troupe
 from horatio.api.influence import InfluenceAnswerOut, answer_out
+from horatio.api.influence_effects import BlockWarningOut, block_warnings
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     CycleParticipant,
     Delivery,
     DowntimeCycle,
+    InfluenceEntry,
     RandomTable,
+    Response,
     Submission,
     Troupe,
     User,
@@ -27,6 +30,14 @@ from horatio.permissions import TroupeAction, require_troupe_action
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(tags=["responses"])
+
+
+class InfluenceEntryRef(BaseModel):
+    """The influence log entry an answer was logged in."""
+
+    id: uuid.UUID
+    short_id: str
+    times: int
 
 
 class WorkItemOut(BaseModel):
@@ -43,6 +54,10 @@ class WorkItemOut(BaseModel):
     structured: dict[str, Any]
     # An influence answer's action and specialisation (horatio.influence).
     influence: InfluenceAnswerOut | None
+    # The influence log entry staff logged it in.
+    influence_entry: InfluenceEntryRef | None = None
+    # Recorded Blocks an influence answer looks to be up against.
+    influence_blocks: list[BlockWarningOut] = []
     status: str
     assigned_to_user_id: uuid.UUID | None
     assigned_to_any_narrator: bool
@@ -102,6 +117,15 @@ class ResultOut(BaseModel):
     message: str
 
 
+def entry_ref(db: DbSession, response: Response) -> InfluenceEntryRef | None:
+    entry = (
+        db.get(InfluenceEntry, response.influence_entry_id) if response.influence_entry_id else None
+    )
+    if entry is None:
+        return None
+    return InfluenceEntryRef(id=entry.id, short_id=influence_log.short_id(entry), times=entry.times)
+
+
 def item_out(db: DbSession, item: responses.WorkItem) -> WorkItemOut:
     # The rules of the troupe running the cycle, where the action was taken.
     rules = read_troupe_rules(db, item.character.splat, item.cycle.troupe_id)
@@ -115,6 +139,8 @@ def item_out(db: DbSession, item: responses.WorkItem) -> WorkItemOut:
         answer=item.answer.body,
         structured=item.answer.structured,
         influence=answer_out(rules, item.question.action_kind, item.answer.structured),
+        influence_entry=entry_ref(db, item.response),
+        influence_blocks=block_warnings(db, item),
         status=item.response.status,
         assigned_to_user_id=item.response.assigned_to_user_id,
         assigned_to_any_narrator=item.response.assigned_to_any_narrator,

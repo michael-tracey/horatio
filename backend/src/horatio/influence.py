@@ -158,7 +158,11 @@ class Standing:
 
 def standings(db: Session, character: Character) -> dict[InfluenceType, Standing]:
     """The character's rating, specialisations and actions in each type, under its
-    own troupe rules. The rating is the sheet's as it stands."""
+    own troupe rules. The rating is the sheet's as it stands, moved by any Attack or
+    Boost holding on it now (horatio.influence_effects)."""
+    from horatio import influence_effects  # imports this module
+
+    moved = influence_effects.changes(db, character.id)
     rules = rules_for(db, character)
     kinds = {k.category: k for k in specializations.kinds(db, character)}
     found: dict[InfluenceType, Standing] = {}
@@ -167,7 +171,9 @@ def standings(db: Session, character: Character) -> dict[InfluenceType, Standing
         held = [specialization_name(n, d) for n, d in kind.held] if kind else []
         found[influence_type] = Standing(
             influence_type=influence_type,
-            rating=kind.parent_rating if kind else 0,
+            rating=influence_effects.rating_with(
+                kind.parent_rating if kind else 0, moved[influence_type]
+            ),
             held=held,
             options=sorted(set(kind.options if kind else []) | set(held)),
             actions=actions(rules, influence_type),

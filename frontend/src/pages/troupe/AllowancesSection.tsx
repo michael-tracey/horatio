@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { AllowanceOut, AllowancesOut } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { InfluenceLookback } from "./InfluenceLookback";
 
 /** An editor's target: a new trait rule, a rule set rule to replace, or a troupe rule to change. */
 type Editing = { kind: "new" } | { kind: "replace"; rule: AllowanceOut } | { kind: "change"; rule: AllowanceOut };
@@ -93,6 +94,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
         </div>
         <ErrorText error={remove.error} />
       </Card>
+      <InfluenceLookback troupeId={troupeId} canEdit={canEdit} />
     </div>
   );
 }
