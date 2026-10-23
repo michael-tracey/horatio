@@ -3024,11 +3024,11 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
 });
 
 test("feeding in a downtime: Herd given to another character, both answered, and half Blood at the next game", async ({ browser }) => {
-  const custodian = await person(browser, "feed-custodian");
+  const custodian = await person(browser, "dtfeed-custodian");
   makeCustodian(custodian.email);
-  const lead = await person(browser, "feed-lead");
-  const giver = await person(browser, "feed-giver");
-  const receiver = await person(browser, "feed-receiver");
+  const lead = await person(browser, "dtfeed-lead");
+  const giver = await person(browser, "dtfeed-giver");
+  const receiver = await person(browser, "dtfeed-receiver");
   const headers = { "X-Horatio": "1" };
   const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
     const response = await page.request.fetch(url, { method, headers, data });
