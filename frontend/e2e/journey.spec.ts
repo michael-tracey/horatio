@@ -1084,6 +1084,8 @@ test("a merit taken in the creation wizard gives the traits it grants", async ({
   await expect(p.getByText("Extrasensory Perceptions (1 of 7 points)")).toBeVisible();
   await p.getByRole("button", { name: "Finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  // The sheet shows the creation card until the finished character reloads, and it lists Wits too.
+  await expect(p.getByRole("heading", { name: "Character creation" })).toHaveCount(0);
 
   // Acute Sense for hearing and for smell, and the Perception focus beside Wits, all marked as given by the merit.
   const row = (text: string | RegExp) => p.locator("main li").filter({ hasText: text });
