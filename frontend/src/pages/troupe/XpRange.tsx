@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import { Button, Card, ErrorText, Field, Input } from "../../components/ui";
 import { useAction } from "../../hooks";
@@ -12,7 +12,7 @@ const KINDS: Record<string, string> = { game: "Game", downtime: "Downtime", set:
  * have been given by now. A character built for the troupe starts at the floor.
  * Storytellers can set either by hand, for a chronicle that began before Horatio.
  */
-export function XpRangeCard({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+export function XpRangeCard({ troupeId, canEdit, link }: { troupeId: string; canEdit: boolean; link?: ReactNode }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const range = useQuery({ queryKey: ["xp-range", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/xp-range", path)) });
   const [editing, setEditing] = useState(false);
@@ -31,19 +31,21 @@ export function XpRangeCard({ troupeId, canEdit }: { troupeId: string; canEdit: 
     <Card
       title="XP floor and ceiling"
       actions={
-        canEdit &&
-        !editing && (
-          <Button
-            variant="ghost"
-            className="min-h-8 px-2"
-            onClick={() => {
-              setForm({ floor: r.floor, ceiling: r.ceiling, reason: "" });
-              setEditing(true);
-            }}
-          >
-            Set by hand
-          </Button>
-        )
+        <span className="flex flex-wrap items-center gap-2">
+          {link}
+          {canEdit && !editing && (
+            <Button
+              variant="ghost"
+              className="min-h-8 px-2"
+              onClick={() => {
+                setForm({ floor: r.floor, ceiling: r.ceiling, reason: "" });
+                setEditing(true);
+              }}
+            >
+              Set by hand
+            </Button>
+          )}
+        </span>
       }
     >
       <p className="mb-3 text-sm text-mist">

@@ -7735,6 +7735,19 @@
         "title": "Progress",
         "type": "object"
       },
+      "PublicIn": {
+        "properties": {
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "public"
+        ],
+        "title": "PublicIn",
+        "type": "object"
+      },
       "QuestionIn": {
         "properties": {
           "action_kind": {
@@ -10120,6 +10133,10 @@
             "title": "Category",
             "type": "string"
           },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -10146,6 +10163,7 @@
         "required": [
           "category",
           "name",
+          "group",
           "parent_name",
           "catalogue",
           "troupe"
@@ -10413,9 +10431,15 @@
             "title": "New Players"
           },
           "public": {
-            "default": false,
-            "title": "Public",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public"
           },
           "schedule": {
             "default": "",
@@ -10907,6 +10931,34 @@
           "note"
         ],
         "title": "VisibleNote",
+        "type": "object"
+      },
+      "WaitingLine": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "link": {
+            "title": "Link",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "count",
+          "link"
+        ],
+        "title": "WaitingLine",
         "type": "object"
       },
       "WindowOut": {
@@ -21157,6 +21209,60 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/profile/public": {
+      "put": {
+        "description": "Show the profile to anyone, or only to people signed in, without touching\nthe rest of it: the Profile tab's switch, which saves at once.",
+        "operationId": "set_public_api_troupes__troupe_id__profile_public_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Public",
+        "tags": [
+          "troupe profiles"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/random-tables": {
       "get": {
         "operationId": "list_tables_api_troupes__troupe_id__random_tables_get",
@@ -21808,6 +21914,54 @@
         "summary": "Remove Title",
         "tags": [
           "titles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/waiting": {
+      "get": {
+        "description": "What is waiting on the viewer in this troupe, for its staff only.",
+        "operationId": "read_waiting_api_troupes__troupe_id__waiting_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WaitingLine"
+                  },
+                  "title": "Response Read Waiting Api Troupes  Troupe Id  Waiting Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Waiting",
+        "tags": [
+          "troupes"
         ]
       }
     },

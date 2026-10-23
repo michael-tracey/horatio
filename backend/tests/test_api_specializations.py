@@ -52,6 +52,9 @@ def test_a_troupe_sets_its_own_list_and_its_characters_choose_from_it(troupe: Tr
 
     elite = next(k for k in listed.json() if k["category"] == ELITE)
     assert elite["troupe"] == ["Finance", "Police"]
+    # Grouped as on a sheet, for the Specialisations tab's own tabs.
+    assert {k["category"]: k["group"] for k in listed.json()}["lore_specializations"] == "Skills"
+    assert elite["group"] == "Backgrounds"
     character_id = built_for(troupe)
     take(troupe.player, character_id, "backgrounds", "Influences: The Elite", 2)
     kinds = troupe.player.client.get(f"/characters/{character_id}/specializations").json()

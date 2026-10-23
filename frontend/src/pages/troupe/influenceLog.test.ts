@@ -13,6 +13,11 @@ describe("the influence log page", () => {
     });
   });
 
+  it("filters to entries that need details, or leaves them all in", () => {
+    expect(logQuery({ ...NO_FILTERS, needsDetails: true }, dates)).toMatchObject({ needs_details: true });
+    expect(logQuery(NO_FILTERS, dates).needs_details).toBeUndefined();
+  });
+
   it("filters by a character, or by someone not in Horatio", () => {
     expect(logQuery({ ...NO_FILTERS, who: "c:123" }, dates)).toMatchObject({ character_id: "123", name: undefined });
     expect(logQuery({ ...NO_FILTERS, who: "n:REDACTED" }, dates)).toMatchObject({ character_id: undefined, name: "REDACTED" });

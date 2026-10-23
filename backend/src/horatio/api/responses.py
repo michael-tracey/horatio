@@ -190,7 +190,12 @@ def my_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
 
 @router.get("/cycles/{cycle_id}/progress")
 def progress(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Progress:
-    cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
+    cycle, _ = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
+    return cycle_progress(db, cycle)
+
+
+def cycle_progress(db: DbSession, cycle: DowntimeCycle) -> Progress:
+    """How far the cycle has got: submitted, assigned and written."""
     items = responses.work_items(db, cycle)
     assignee_ids = {i.response.assigned_to_user_id for i in items if i.response.assigned_to_user_id}
     names = {

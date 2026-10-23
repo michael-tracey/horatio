@@ -5,12 +5,13 @@ import { api, unwrap } from "../../api/client";
 import type { Role, TroupeOut } from "../../api/types";
 import { AtHandle, PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, ErrorText, Field, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, useMe } from "../../hooks";
 import { roleLabel } from "./roles";
 
 const ASSIGNABLE: Role[] = ["storyteller", "assistant_storyteller", "narrator"];
 
 export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: boolean }) {
+  const me = useMe();
   const path = { params: { path: { troupe_id: troupe.id } } };
   const staff = useQuery({ queryKey: ["staff", troupe.id], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/staff", path)) });
   const [handle, setHandle] = useState("");
@@ -95,6 +96,34 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
           </form>
         </Card>
       )}
+      {me.data?.is_custodian && <AppointLead troupe={troupe} />}
     </div>
+  );
+}
+
+/** The custodian appoints the troupe's lead storyteller. */
+function AppointLead({ troupe }: { troupe: TroupeOut }) {
+  const [handle, setHandle] = useState("");
+  const appoint = useAction(() =>
+    unwrap(api.PUT("/api/troupes/{troupe_id}/lead", { params: { path: { troupe_id: troupe.id } }, body: { handle } })),
+  );
+  return (
+    <Card title="Lead storyteller">
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          appoint.mutate(undefined);
+        }}
+      >
+        <Field label="Appoint a new lead" hint="Pick them from the list, or type a name or handle to find them.">
+          <PersonPicker required value={handle} onChange={setHandle} />
+        </Field>
+        <ErrorText error={appoint.error} />
+        <Button type="submit" variant="secondary" disabled={appoint.isPending}>
+          Appoint
+        </Button>
+      </form>
+    </Card>
   );
 }

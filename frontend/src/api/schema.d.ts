@@ -3103,6 +3103,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/profile/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Public
+         * @description Show the profile to anyone, or only to people signed in, without touching
+         *     the rest of it: the Profile tab's switch, which saves at once.
+         */
+        put: operations["set_public_api_troupes__troupe_id__profile_public_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/random-tables": {
         parameters: {
             query?: never;
@@ -3287,6 +3308,26 @@ export interface paths {
         post?: never;
         /** Remove Title */
         delete: operations["remove_title_api_troupes__troupe_id__titles__name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/waiting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Waiting
+         * @description What is waiting on the viewer in this troupe, for its staff only.
+         */
+        get: operations["read_waiting_api_troupes__troupe_id__waiting_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -6247,6 +6288,11 @@ export interface components {
             /** Written */
             written: number;
         };
+        /** PublicIn */
+        PublicIn: {
+            /** Public */
+            public: boolean;
+        };
         /** QuestionIn */
         QuestionIn: {
             /** Action Kind */
@@ -7121,6 +7167,8 @@ export interface components {
             catalogue: string[];
             /** Category */
             category: string;
+            /** Group */
+            group: string;
             /** Name */
             name: string;
             /** Parent Name */
@@ -7213,11 +7261,8 @@ export interface components {
             min_age?: number | null;
             /** New Players */
             new_players?: ("welcoming" | "closed") | null;
-            /**
-             * Public
-             * @default false
-             */
-            public: boolean;
+            /** Public */
+            public?: boolean | null;
             /**
              * Schedule
              * @default
@@ -7419,6 +7464,17 @@ export interface components {
         VisibleNote: {
             /** Note */
             note: string;
+        };
+        /** WaitingLine */
+        WaitingLine: {
+            /** Count */
+            count: number;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Link */
+            link: string;
         };
         /**
          * WindowOut
@@ -13948,6 +14004,41 @@ export interface operations {
             };
         };
     };
+    set_public_api_troupes__troupe_id__profile_public_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tables_api_troupes__troupe_id__random_tables_get: {
         parameters: {
             query?: never;
@@ -14360,6 +14451,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_waiting_api_troupes__troupe_id__waiting_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitingLine"][];
                 };
             };
             /** @description Validation Error */

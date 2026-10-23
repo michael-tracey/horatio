@@ -34,6 +34,8 @@ class KindOut(BaseModel):
 class TroupeKindOut(BaseModel):
     category: str
     name: str
+    # Where it is listed on a sheet: "Skills" or "Backgrounds".
+    group: str
     parent_name: str
     catalogue: list[str]
     # The troupe's list; None uses the catalogue (and free text).
@@ -90,6 +92,7 @@ def troupe_kinds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list
         TroupeKindOut(
             category=c.key,
             name=c.name,
+            group=c.group,
             parent_name=c.specializes["name"],
             catalogue=sorted(
                 n

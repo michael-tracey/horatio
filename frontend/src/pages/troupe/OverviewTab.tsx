@@ -1,83 +1,119 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
-import { PersonPicker } from "../../components/PersonPicker";
-import { Button, Card, ErrorText, Field, Input, Textarea } from "../../components/ui";
-import { useAction, useMe } from "../../hooks";
-import { TroupeProfileSection } from "./ProfileEditor";
+import { AtHandle } from "../../components/PersonPicker";
+import { Card, ErrorText, Loading } from "../../components/ui";
+import { useDates } from "../../dates";
+import { useAction } from "../../hooks";
 import type { abilities } from "./roles";
 import { XpRangeCard } from "./XpRange";
 
+/**
+ * The troupe at a glance: what it is, when it next plays, who leads it, which
+ * sects may join, and its XP floor and ceiling; for its staff, what is waiting
+ * on them. The full profile is on the Profile tab.
+ */
 export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
-  const me = useMe();
-  const navigate = useNavigate();
-  const path = { params: { path: { troupe_id: troupe.id } } };
-  const [name, setName] = useState(troupe.name);
-  const [description, setDescription] = useState(troupe.description);
-  const [leadHandle, setLeadHandle] = useState("");
-
-  const save = useAction(() => unwrap(api.PATCH("/api/troupes/{troupe_id}", { ...path, body: { name, description } })));
-  const archive = useAction(async () => {
-    await unwrap(api.DELETE("/api/troupes/{troupe_id}", path));
-    navigate("/troupes");
-  });
-  const appoint = useAction(() => unwrap(api.PUT("/api/troupes/{troupe_id}/lead", { ...path, body: { handle: leadHandle } })));
-
+  const base = `/troupes/${troupe.id}`;
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <div className="md:col-span-2">
-        <TroupeProfileSection troupe={troupe} />
-      </div>
-      {can.lead && !troupe.archived && (
-        <Card title="Troupe settings">
-          <div className="flex flex-col gap-3">
-            <Field label="Name">
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </Field>
-            <Field label="Description">
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-            </Field>
-            <ErrorText error={save.error ?? archive.error} />
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => save.mutate(undefined)} disabled={save.isPending}>
-                Save
-              </Button>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  if (window.confirm(`Archive ${troupe.name}? It closes to everyone; its history is kept.`)) archive.mutate(undefined);
-                }}
-              >
-                Archive troupe
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
+      {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
+      <Summary troupe={troupe} />
       <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
-      <XpRangeCard troupeId={troupe.id} canEdit={false} />
-      {me.data?.is_custodian && (
-        <Card title="Lead storyteller">
-          <form
-            className="flex flex-col gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              appoint.mutate(undefined);
-            }}
-          >
-            <Field label="Appoint a new lead" hint="Pick them from the list, or type a name or handle to find them.">
-              <PersonPicker required value={leadHandle} onChange={setLeadHandle} />
-            </Field>
-            <ErrorText error={appoint.error} />
-            <Button type="submit" variant="secondary">
-              Appoint
-            </Button>
-          </form>
-        </Card>
-      )}
+      <div className="md:col-span-2">
+        <XpRangeCard
+          troupeId={troupe.id}
+          canEdit={can.storyteller && !troupe.archived}
+          link={
+            can.running && (
+              <Link to={`${base}/xp`} className="text-sm text-mist underline hover:text-parchment">
+                Award XP
+              </Link>
+            )
+          }
+        />
+      </div>
     </div>
+  );
+}
+
+/** What waits on this staff member, one line per kind of work, each a link straight to it. */
+function WaitingCard({ troupeId }: { troupeId: string }) {
+  const waiting = useQuery({
+    queryKey: ["waiting", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/waiting", { params: { path: { troupe_id: troupeId } } })),
+    refetchInterval: 60_000,
+  });
+  return (
+    <Card title="Waiting on you" className="md:col-span-2">
+      {waiting.isPending ? (
+        <Loading />
+      ) : waiting.error ? (
+        <ErrorText error={waiting.error} />
+      ) : waiting.data.length === 0 ? (
+        <p className="text-sm text-mist">Nothing waiting.</p>
+      ) : (
+        <ul className="divide-y divide-ash" aria-label="Waiting on you">
+          {waiting.data.map((line) => (
+            <li key={`${line.kind} ${line.link}`}>
+              <Link to={line.link} className="flex items-center justify-between gap-3 py-2 text-sm hover:text-gold">
+                <span>{line.label}</span>
+                <span className="min-w-8 rounded-full border border-gold/50 px-2 py-0.5 text-center text-xs text-gold tabular-nums">{line.count}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/** The troupe's description, next game, schedule and lead, from its profile. */
+function Summary({ troupe }: { troupe: TroupeOut }) {
+  const dates = useDates();
+  const profile = useQuery({
+    queryKey: ["troupe-profile", troupe.id],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/profile", { params: { path: { troupe_id: troupe.id } } })),
+  });
+  const p = profile.data;
+  const next = p?.games[0];
+  return (
+    <Card>
+      <div className="flex flex-col gap-3 text-sm">
+        {/* Not a heading: the page's own title already is. */}
+        <p className="font-display text-lg text-gold">{troupe.name}</p>
+        <p className="whitespace-pre-line">{troupe.description || <span className="text-mist">No description yet.</span>}</p>
+        {profile.isPending ? (
+          <Loading />
+        ) : profile.error ? (
+          <ErrorText error={profile.error} />
+        ) : (
+          p && (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+              <dt className="text-mist">Next game</dt>
+              <dd>{next ? dates.gameStart(next.starts_at) : <span className="text-mist">None planned</span>}</dd>
+              {p.schedule && (
+                <>
+                  <dt className="text-mist">Schedule</dt>
+                  <dd>{p.schedule}</dd>
+                </>
+              )}
+              <dt className="text-mist">Lead storyteller</dt>
+              <dd>
+                <Link to={`/players/${p.lead.id}`} className="hover:text-gold">
+                  {p.lead.display_name}
+                </Link>{" "}
+                <AtHandle handle={p.lead.handle} />
+              </dd>
+            </dl>
+          )
+        )}
+        <Link to={`/troupes/${troupe.id}/profile`} className="self-start text-mist underline hover:text-parchment">
+          See the full profile
+        </Link>
+      </div>
+    </Card>
   );
 }
 
