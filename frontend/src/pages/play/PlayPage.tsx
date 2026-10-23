@@ -216,7 +216,7 @@ function TabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   );
 }
 
-function SyncStatus({ sync }: { sync: Sync }) {
+export function SyncStatus({ sync }: { sync: Sync }) {
   const waiting = sync.waiting === 1 ? "1 tap waiting" : `${sync.waiting} taps waiting`;
   const text = !sync.online ? (sync.waiting ? `Offline · ${waiting}` : "Offline") : sync.waiting ? `Saving · ${waiting}` : "Saved";
   return (
@@ -717,7 +717,7 @@ function Notes({ add }: { add: (note: string) => void }) {
   );
 }
 
-function LogEntries({ log, onDetails }: { log: ShownEntry[]; onDetails?: (entry: ShownEntry) => void }) {
+export function LogEntries({ log, onDetails }: { log: ShownEntry[]; onDetails?: (entry: ShownEntry) => void }) {
   const dates = useDates();
   if (log.length === 0) return <p className="text-sm text-mist">Nothing yet. Every tap shows here, newest first.</p>;
   return (
@@ -790,7 +790,7 @@ function GameLog({ view, undo, onDetails }: { view: Shown; undo: (entry: ShownEn
   );
 }
 
-function ResetGame({ view, sync, onReset }: { view: PlayView; sync: Sync; onReset: (view: PlayView) => Promise<void> }) {
+export function ResetGame({ view, sync, onReset }: { view: PlayView; sync: Sync; onReset: (view: PlayView) => Promise<void> }) {
   const [asking, setAsking] = useState(false);
   const reset = useAction(async () => {
     const data = await unwrap(
