@@ -525,6 +525,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/give": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give
+         * @description A storyteller or assistant storyteller of a player's character's home troupe
+         *     gives it a trait, or raises one: free, despite the rules, or both, always with
+         *     a reason. Nothing waits on approval; the player is told.
+         */
+        post: operations["give_api_characters__character_id__give_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/home-troupe": {
         parameters: {
             query?: never;
@@ -2404,7 +2426,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Troupe Approvals */
+        /**
+         * Troupe Approvals
+         * @description The troupe's requests in one state, oldest first: of one kind, if given.
+         */
         get: operations["troupe_approvals_api_troupes__troupe_id__approvals_get"];
         put?: never;
         post?: never;
@@ -3839,6 +3864,11 @@ export interface components {
         };
         /** CartLineOut */
         CartLineOut: {
+            /**
+             * Breaks
+             * @default []
+             */
+            breaks: string[];
             /** Cost */
             cost: number | null;
             /** Needs Approval */
@@ -4360,6 +4390,11 @@ export interface components {
         /** Decision */
         Decision: {
             /**
+             * At Cost
+             * @default false
+             */
+            at_cost: boolean;
+            /**
              * Note
              * @default
              */
@@ -4526,6 +4561,67 @@ export interface components {
         EmailHelp: {
             /** Available */
             available: boolean;
+        };
+        /**
+         * ExceptionAskOut
+         * @description A trait asked for by exception: the rules it breaks, why, and whether free.
+         */
+        ExceptionAskOut: {
+            /** Breaks */
+            breaks: string[];
+            /** Free */
+            free: boolean;
+            /** Normal Cost */
+            normal_cost: number | null;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * ExceptionIn
+         * @description A change asked of the home troupe's staff as an exception to the rules.
+         */
+        ExceptionIn: {
+            /**
+             * Free
+             * @default false
+             */
+            free: boolean;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * ExceptionOut
+         * @description A trait held by exception (horatio.trait_exceptions).
+         */
+        ExceptionOut: {
+            /** At */
+            at: string | null;
+            /** Breaks */
+            breaks: string[];
+            /** By */
+            by: string | null;
+            /** Category */
+            category: string;
+            /** Detail */
+            detail: string;
+            /** Free */
+            free: boolean;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Reason */
+            reason: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "waiting" | "approved" | "given";
+            /**
+             * Trait Id
+             * Format: uuid
+             */
+            trait_id: string;
         };
         /** ExpendableOut */
         ExpendableOut: {
@@ -4694,6 +4790,49 @@ export interface components {
             started_at: string;
             /** Taps */
             taps: number;
+        };
+        /** GiveIn */
+        GiveIn: {
+            /** Category */
+            category: string;
+            /**
+             * Despite
+             * @default false
+             */
+            despite: boolean;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Free
+             * @default false
+             */
+            free: boolean;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Reason */
+            reason: string;
+            /**
+             * Trial
+             * @default false
+             */
+            trial: boolean;
+        };
+        /** GiveOut */
+        GiveOut: {
+            /** Breaks */
+            breaks: string[];
+            /** Cost */
+            cost: number;
+            /** Given */
+            given: boolean;
+            /** Refused */
+            refused: string | null;
+            sheet: components["schemas"]["SheetOut"];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -6396,6 +6535,7 @@ export interface components {
             /** Clan */
             clan: string | null;
             discipline: components["schemas"]["DisciplineOut"] | null;
+            exception?: components["schemas"]["ExceptionAskOut"] | null;
             /**
              * Id
              * Format: uuid
@@ -6625,6 +6765,7 @@ export interface components {
              * @default
              */
             detail: string;
+            exception?: components["schemas"]["ExceptionIn"] | null;
             /** From Rating */
             from_rating?: number | null;
             /**
@@ -6707,6 +6848,11 @@ export interface components {
              * Format: uuid
              */
             character_id: string;
+            /**
+             * Exceptions
+             * @default []
+             */
+            exceptions: components["schemas"]["ExceptionOut"][];
             /** Home Troupe Id */
             home_troupe_id: string | null;
             /** Kind */
@@ -8764,6 +8910,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyDowntime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_api_characters__character_id__give_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GiveOut"];
                 };
             };
             /** @description Validation Error */
@@ -12538,6 +12719,7 @@ export interface operations {
         parameters: {
             query?: {
                 state?: "pending" | "approved" | "declined" | "withdrawn";
+                kind?: ("home_troupe_change" | "discipline" | "review" | "exception") | null;
             };
             header?: never;
             path: {

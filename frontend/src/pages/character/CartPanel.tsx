@@ -5,7 +5,8 @@ import type { components } from "../../api/schema";
 import type { CharacterOut } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Notice } from "../../components/ui";
 import { useAction } from "../../hooks";
-import { costText, describe, toChange, type Cart, type CartLine } from "./cart";
+import { AskStaff } from "./AskStaff";
+import { askException, costText, describe, toChange, type Cart, type CartLine } from "./cart";
 
 type CartOut = components["schemas"]["CartOut"];
 
@@ -70,6 +71,8 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
   const prices = useCartPrices(character.id, cart.lines);
   const client = useQueryClient();
   const [message, setMessage] = useState<ReactNode>(null);
+  // A refused line being asked of staff as an exception.
+  const [asking, setAsking] = useState<CartLine | null>(null);
   const spend = useAction(async () => {
     const lines = cart.lines;
     const result = await post(character.id, lines, false);
@@ -119,6 +122,9 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
               {lines.map((line, i) => {
                 const priced = prices.data?.lines[i];
                 const cost = costText(priced?.cost);
+                const exception = line.kind === "set" ? line.exception : undefined;
+                // Only a home troupe's staff can make an exception, and only to add or raise a trait.
+                const askable = !!priced?.refused && !exception && line.kind === "set" && line.to > line.from && !!character.home_troupe_id;
                 return (
                   <li key={`${describe(line)}/${i}`} className="flex flex-col gap-0.5">
                     <span className="flex items-start justify-between gap-2">
@@ -127,6 +133,7 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
                         {cost && <span className="text-mist"> · {cost}</span>}
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
+                        {exception && <Badge tone="gold">exception</Badge>}
                         {priced?.needs_approval && <Badge tone="gold">needs approval</Badge>}
                         <button
                           aria-label={`Take ${describe(line)} out of the cart`}
@@ -141,6 +148,29 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
                       </span>
                     </span>
                     {priced?.refused && <span className="text-xs text-blood-bright">{priced.refused}</span>}
+                    {exception && (
+                      <span className="text-xs text-mist">
+                        Asked of staff{exception.free ? ", free" : ""}: {exception.reason}
+                        {priced?.breaks.length ? <span className="block">Against the rules: {priced.breaks.join(" ")}</span> : null}
+                      </span>
+                    )}
+                    {askable && asking !== line && (
+                      <button type="button" className="self-start text-xs text-gold underline" onClick={() => setAsking(line)}>
+                        Ask staff
+                      </button>
+                    )}
+                    {askable && asking === line && (
+                      <AskStaff
+                        name={describe(line)}
+                        refusal={priced?.refused ?? ""}
+                        onCancel={() => setAsking(null)}
+                        onAsk={(asked) => {
+                          setAsking(null);
+                          setMessage(null);
+                          cart.update((ls) => askException(ls, line, asked));
+                        }}
+                      />
+                    )}
                   </li>
                 );
               })}

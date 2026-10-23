@@ -3,7 +3,8 @@ import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
-import type { CartLine } from "./cart";
+import { AskStaff } from "./AskStaff";
+import type { CartLine, Exception } from "./cart";
 import { foundElsewhere, shownChips, useBarred, useChoices } from "./choices";
 import { QuickPicks } from "./creation/DotGrid";
 import { FIELD_PLACEHOLDER } from "./fields";
@@ -12,7 +13,7 @@ import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./trait
 const SHOWN = 40;
 
 /** A new trait for the cart. */
-export type NewTrait = { category: string; name: string; detail: string; rating: number; teacher: string; fixed: boolean };
+export type NewTrait = { category: string; name: string; detail: string; rating: number; teacher: string; fixed: boolean; exception?: Exception };
 
 /**
  * Add a trait to one part of the sheet: pick a category from its chips, then from
@@ -50,6 +51,8 @@ export function AddTraitPanel({
   const [rating, setRating] = useState(1);
   const [quote, setQuote] = useState<number | null>(null);
   const [teacher, setTeacher] = useState("");
+  // A trait the rules refuse, asked of staff as an exception.
+  const [asking, setAsking] = useState<TraitOut | null>(null);
   const cat = catalogue.categories.find((c) => c.key === category);
   const choices = useChoices(character.id, catalogue, categories, held, lines);
   const current = choices.find((c) => c.key === category);
@@ -80,6 +83,7 @@ export function AddTraitPanel({
   const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null, teacher: asksTeacher ? teacher : "" };
 
   const choose = (t: TraitOut) => {
+    setAsking(null);
     setName(t.name);
     setDetail("");
     setRating(1);
@@ -123,7 +127,21 @@ export function AddTraitPanel({
       </div>
       <ul className="flex max-h-72 flex-col overflow-y-auto">
         {matching.slice(0, SHOWN).map((t) => (
-          <TraitChoice key={t.name} trait={t} chosen={t.name === name} refused={unavailable[t.name]} onChoose={() => choose(t)} />
+          <TraitChoice
+            key={t.name}
+            trait={t}
+            chosen={t.name === name}
+            refused={unavailable[t.name]}
+            onChoose={() => choose(t)}
+            onAsk={
+              character.home_troupe_id
+                ? () => {
+                    setName("");
+                    setAsking(t);
+                  }
+                : undefined
+            }
+          />
         ))}
         {elsewhere.map((found) => (
           <li key={`${found.category.key}/${found.trait.name}`}>
@@ -147,6 +165,21 @@ export function AddTraitPanel({
           </li>
         )}
       </ul>
+      {asking && (
+        <AskStaff
+          key={asking.name}
+          name={asking.name}
+          refusal={unavailable[asking.name] ?? ""}
+          trait={asking}
+          rated={!!cat?.rated}
+          maxRating={cat?.max_rating}
+          onCancel={() => setAsking(null)}
+          onAsk={(exception, chosen) => {
+            onAdd({ category, name: asking.name, ...chosen, teacher: "", fixed: asking.fixed_rating != null, exception });
+            onClose();
+          }}
+        />
+      )}
       {trait && (
         <form
           className="flex flex-col gap-3 border-t border-ash pt-3"
@@ -207,8 +240,23 @@ export function AddTraitPanel({
   );
 }
 
-/** One trait in the list: chosen, or greyed with why the rules refuse it. */
-function TraitChoice({ trait, chosen, refused, onChoose }: { trait: TraitOut; chosen: boolean; refused?: string; onChoose: () => void }) {
+/**
+ * One trait in the list: chosen, or greyed with why the rules refuse it, and then
+ * (given `onAsk`) a way to ask staff for it as an exception.
+ */
+function TraitChoice({
+  trait,
+  chosen,
+  refused,
+  onChoose,
+  onAsk,
+}: {
+  trait: TraitOut;
+  chosen: boolean;
+  refused?: string;
+  onChoose: () => void;
+  onAsk?: () => void;
+}) {
   return (
     <li>
       <button
@@ -224,6 +272,11 @@ function TraitChoice({ trait, chosen, refused, onChoose }: { trait: TraitOut; ch
         </span>
         {refused && <span className="text-xs text-blood-bright">{refused}</span>}
       </button>
+      {refused && onAsk && (
+        <button type="button" className="ml-2 text-xs text-gold underline" onClick={onAsk}>
+          Ask staff
+        </button>
+      )}
     </li>
   );
 }

@@ -136,7 +136,17 @@ export function CharacterPage() {
       />
       <Routes>
         {/* Badges are the staff's to print; whoever else sees the page is staff. */}
-        <Route index element={<SheetTab character={c} mine={mine} badge={!mine || custodian} />} />
+        <Route
+          index
+          element={
+            <SheetTab
+              character={c}
+              mine={mine}
+              badge={!mine || custodian}
+              give={!mine && (custodian || (!!home.data && abilities(home.data.my_role, custodian).running))}
+            />
+          }
+        />
         <Route path="xp" element={<XpTab characterId={c.id} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}

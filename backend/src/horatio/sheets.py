@@ -11,17 +11,21 @@ Once the character has a home troupe, every discipline dot it buys waits on
 that troupe's staff: the XP is spent at once and refunded if they decline.
 Only a home troupe request locks the sheet, so the differences it settles stay
 the differences there are.
+
+A trait can also be held by exception (horatio.trait_exceptions): asked of the
+home troupe's staff, or given by them, it sets aside the checks it names for
+that trait alone, and `sheet_violations` leaves them out.
 """
 
 import uuid
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select, true
+from sqlalchemy import delete, func, select, true
 from sqlalchemy.orm import Session
 
 from horatio import audit, notifications, xp_range
@@ -34,6 +38,7 @@ from horatio.models import (
     SheetVersion,
     TraitCategory,
     TraitDefinition,
+    TraitException,
     Troupe,
     TroupeMembership,
     User,
@@ -60,6 +65,10 @@ TraitKey = tuple[str, str, str]  # category, name, detail
 # Categories whose every dot, once the character has a home troupe, waits on its staff.
 NEEDS_HOME_APPROVAL = frozenset({"disciplines"})
 
+# Approvals that hold dots on the sheet until decided: declining or withdrawing
+# takes them back and refunds the XP.
+HELD_KINDS = ("discipline", "review", "exception")
+
 FINISH_CREATION_FIRST = (
     "Build the character in the creation wizard first; "
     + "experience can be spent once it is finished."
@@ -72,6 +81,13 @@ def conflict(message: str) -> HTTPException:
 
 def unprocessable(message: str) -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, message)
+
+
+class Unpriced(HTTPException):
+    """The rules give no price for a change: a trait that cannot be bought, say."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(status.HTTP_422_UNPROCESSABLE_CONTENT, message)
 
 
 @dataclass
@@ -241,6 +257,12 @@ def accepted_ratings(db: Session, character: Character) -> dict[TraitKey, int]:
         query = query.where(Approval.decided_at >= accepted_at)
     for category, name, detail, rating in db.execute(query):
         floor[(category, name, detail)] = max(floor.get((category, name, detail), 0), rating)
+    # A trait staff gave by exception, like dots they approved.
+    for row, exception in held_by_exception(db, character):
+        if exception.given_at is not None and (
+            accepted_at is None or exception.given_at >= accepted_at
+        ):
+            floor[row.key] = max(floor.get(row.key, 0), exception.rating)
     return floor
 
 
@@ -416,10 +438,39 @@ def name_primary_path(
     )
 
 
+def held_by_exception(db: Session, character: Character) -> list[tuple[SheetRow, TraitException]]:
+    """The character's traits held by exception, with their exceptions, oldest first."""
+    rows = {r.trait.id: r for r in sheet_rows(db, character)}
+    return [
+        (rows[e.character_trait_id], e)
+        for e in db.scalars(
+            select(TraitException)
+            .where(TraitException.character_id == character.id)
+            .order_by(TraitException.created_at, TraitException.id)
+        )
+        if e.character_trait_id in rows
+    ]
+
+
+def excepted_checks(db: Session, character: Character) -> dict[tuple[str, str, str, str], int]:
+    """The checks exceptions set aside, as violation keys (check, category, name,
+    detail), each with the highest rating it is set aside up to."""
+    found: dict[tuple[str, str, str, str], int] = {}
+    for row, exception in held_by_exception(db, character):
+        for check in exception.checks:
+            key = (check["key"], *row.key)
+            found[key] = max(found.get(key, 0), exception.rating)
+    return found
+
+
 def sheet_violations(db: Session, character: Character) -> list[Violation]:
-    """The checks the character's sheet breaks now."""
+    """The checks the character's sheet breaks now, but for those an exception
+    sets aside for its trait, at up to the rating it was given at."""
     sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
-    return violations(rules_for(db, character).checks(), sheet, check_context(db, character, sheet))
+    context = check_context(db, character, sheet)
+    found = violations(rules_for(db, character).checks(), sheet, context)
+    excepted = excepted_checks(db, character)
+    return [v for v in found if (v.subject.rating or 0) > excepted.get(v.key, -1)]
 
 
 def blocking(violation: Violation, character: Character) -> bool:
@@ -869,6 +920,21 @@ def problem(violation: Violation) -> Problem:
     )
 
 
+@dataclass(frozen=True)
+class Judgement:
+    """What a change to a sheet newly breaks (`broken_since`)."""
+
+    # The problems that refuse it.
+    refused: list[Problem] = field(default_factory=list[Problem])
+    # The review checks it now waits on.
+    reviewed: list[Problem] = field(default_factory=list[Problem])
+    # The checks it breaks on traits asked or given by exception, by trait: set
+    # aside rather than refusing or waiting.
+    excepted: dict[TraitKey, list[Violation]] = field(
+        default_factory=dict[TraitKey, list[Violation]]
+    )
+
+
 def broken_since(
     db: Session,
     user: User | None,
@@ -877,16 +943,29 @@ def broken_since(
     *,
     checks: bool = True,
     creation_only: bool = True,
-) -> tuple[list[Problem], list[Problem]]:
+    excepting: Iterable[TraitKey] = (),
+) -> Judgement:
     """What a player's character's sheet breaks now that it did not `before`: the
     problems that refuse the change, and the review checks it now waits on, each
     raised as an approval if nothing else in the checks refuses it. `checks` judges
     the rule set's checks, how many traits a category holds, and grants left
-    unchosen; `creation_only` judges traits only chosen during creation."""
+    unchosen; `creation_only` judges traits only chosen during creation. A check a
+    trait in `excepting` breaks, that would refuse or wait, is set aside for an
+    exception instead."""
     db.expire_all()
     now_broken = (
         [v for v in sheet_violations(db, character) if v.key not in before.broken] if checks else []
     )
+    asked = set(excepting)
+    excepted: dict[TraitKey, list[Violation]] = {}
+    for violation in now_broken:
+        subject = violation.subject
+        key = (subject.category, subject.name, subject.detail)
+        waits = violation.check.strength == "review"
+        if key in asked and (blocking(violation, character) or waits):
+            excepted.setdefault(key, []).append(violation)
+    set_aside = {v.key for found in excepted.values() for v in found}
+    now_broken = [v for v in now_broken if v.key not in set_aside]
     refused = [problem(v) for v in now_broken if blocking(v, character)]
     reviewed: list[Problem] = []
     if user is not None and character.home_troupe_id is not None and not refused:
@@ -931,7 +1010,7 @@ def broken_since(
                     trait.detail,
                 )
             )
-    return refused, reviewed
+    return Judgement(refused, reviewed, excepted)
 
 
 def refusal(problems: Sequence[Problem]) -> str:
@@ -964,7 +1043,7 @@ def checked(
     if character.kind != "pc":
         savepoint.commit()
         return
-    refused, _ = broken_since(db, user, character, before, checks=rules)
+    refused = broken_since(db, user, character, before, checks=rules).refused
     if refused:
         savepoint.rollback()
         raise conflict(refusal(refused))
@@ -1028,8 +1107,17 @@ def start_character(db: Session, player: User, character: Character) -> None:
 
 @dataclass
 class Change:
+    # What it cost; None for an unrated trait, or one given free.
     quote: Quote | None
     trait: CharacterTrait | None
+    # Given free: what it would have cost, where the rules price it.
+    normal_cost: int | None = None
+
+
+# How a change is made by exception (horatio.trait_exceptions): "asked" of the home
+# troupe's staff, waiting on an exception approval rather than any other; or
+# "given" by them, waiting on nothing.
+ByException = Literal["asked", "given"] | None
 
 
 def quote_change(
@@ -1088,7 +1176,7 @@ def quote_change(
     try:
         quote = purchase_cost(rules_for(db, character), sheet, before, rating)
     except PricingError as error:
-        raise unprocessable(str(error)) from error
+        raise Unpriced(str(error)) from error
     return quote, current_rating
 
 
@@ -1186,10 +1274,19 @@ def set_trait(
     rating: int | None,
     note: str | None = None,
     teacher: str = "",
+    *,
+    free: str | None = None,
+    by_exception: ByException = None,
 ) -> Change:
     """Add a trait, change its rating, or (at rating 0) remove it, buying or
     refunding the difference. Unrated traits replace the category's choice.
-    `teacher` names who teaches a discipline dot that waits on the home troupe."""
+    `teacher` names who teaches a discipline dot that waits on the home troupe.
+
+    A raise `free` (the reason it is) costs nothing: its dots are free dots, and
+    its line in the XP history is 0 XP, with the reason. One made `by_exception`
+    never waits as a discipline dot, nor owes downtime actions for learning yet:
+    an asked exception owes them when approved, and a given one at once, unless
+    it is free."""
     ensure_unlocked(db, character)
     definition, category = find_definition(db, character, category_key, name)
     if rating:
@@ -1214,13 +1311,30 @@ def set_trait(
         db, character, category
     ):
         raise conflict(FINISH_CREATION_FIRST)
-    quote, current_rating = quote_change(db, character, category_key, name, detail, rating)
-    assert quote is not None and rating is not None and current_rating is not None
-    if category.points_limit is not None and rating > current_rating:
-        quote = within_points_limit(db, character, category, definition, detail, rating, quote)
+    existing = db.scalar(
+        select(CharacterTrait).where(
+            CharacterTrait.character_id == character.id,
+            CharacterTrait.trait_definition_id == definition.id,
+            CharacterTrait.detail == detail,
+        )
+    )
+    priced: Quote | None
+    try:
+        priced, current_rating = quote_change(db, character, category_key, name, detail, rating)
+    except Unpriced:
+        # Given free, it needs no price; staff are told it had none.
+        if free is None:
+            raise
+        priced, current_rating = None, (existing.rating or 0) if existing else 0
+    assert rating is not None and current_rating is not None
+    if free is not None and rating <= current_rating:
+        raise unprocessable("Only a trait added or raised can be free.")
+    if priced is not None and category.points_limit is not None and rating > current_rating:
+        priced = within_points_limit(db, character, category, definition, detail, rating, priced)
+    quote = priced
 
     accepted = accepted_ratings(db, character).get((category.key, definition.name, detail), 0)
-    if rating < accepted and category.buy_off_factor and rating == 0:
+    if rating < accepted and category.buy_off_factor and rating == 0 and quote is not None:
         # Buying off an accepted flaw costs a multiple of what it gave (p. 236).
         held = SheetTrait(category.key, definition.name, current_rating, 0, detail)
         sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
@@ -1237,18 +1351,11 @@ def set_trait(
         raise conflict(
             f"{name} is waiting for the home troupe's approval. Withdraw that to change it."
         )
-    if quote.cost > 0 and xp_balance(db, character) < quote.cost:
-        raise conflict(
-            f"That costs {quote.cost} XP, and the character has {xp_balance(db, character)}."
-        )
+    cost = 0 if free is not None or quote is None else quote.cost
+    if cost > 0 and xp_balance(db, character) < cost:
+        raise conflict(f"That costs {cost} XP, and the character has {xp_balance(db, character)}.")
 
-    trait = db.scalar(
-        select(CharacterTrait).where(
-            CharacterTrait.character_id == character.id,
-            CharacterTrait.trait_definition_id == definition.id,
-            CharacterTrait.detail == detail,
-        )
-    )
+    trait = existing
     if trait is None:
         trait = CharacterTrait(
             character_id=character.id, trait_definition_id=definition.id, rating=0, detail=detail
@@ -1262,20 +1369,26 @@ def set_trait(
         and category.key in NEEDS_HOME_APPROVAL
         and character.home_troupe_id is not None
         and character.kind == "pc"
+        and by_exception is None
     )
-    if rating != current_rating and quote.cost != 0:
+    if rating != current_rating and (cost != 0 or free is not None):
         db.add(
             XpEntry(
                 character_id=character.id,
                 kind="purchase",
-                amount=-quote.cost,
-                reason=f"{name} {current_rating} → {rating}",
+                amount=-cost,
+                reason=f"{name} {current_rating} → {rating}"
+                + (f", free by exception: {free}" if free is not None else ""),
                 entered_by=player.id,
                 trait_definition_id=definition.id,
                 detail=detail or None,
                 from_rating=current_rating,
                 to_rating=rating,
-                cost_basis=quote.rule.describe(),
+                cost_basis={"free": free}
+                if free is not None
+                else quote.rule.describe()
+                if quote is not None
+                else {},
             )
         )
     if rating == 0 and trait.free_rating == 0:
@@ -1283,6 +1396,8 @@ def set_trait(
         trait = None
     else:
         trait.rating = rating
+        if free is not None:
+            trait.free_rating = (trait.free_rating or 0) + rating - current_rating
     db.flush()
     audit.record(
         db,
@@ -1294,9 +1409,11 @@ def set_trait(
         detail=detail,
         from_rating=current_rating,
         to_rating=rating,
-        cost=quote.cost,
+        cost=cost,
+        free=free or "",
     )
-    if not held and rating > current_rating:
+    learning_now = by_exception is None or (by_exception == "given" and free is None)
+    if not held and rating > current_rating and learning_now:
         whole = definition.properties.get("rating") is not None
         actions = owed_for(db, character, category, rating - current_rating, whole)
         doing = f"Gaining {name}" if whole else f"Learning {name} {rating}"
@@ -1318,7 +1435,7 @@ def set_trait(
                 detail=detail,
                 from_rating=current_rating,
                 to_rating=rating,
-                cost=quote.cost,
+                cost=cost,
                 teacher=teacher,
             )
         )
@@ -1335,6 +1452,8 @@ def set_trait(
             rating=rating,
         )
         notifications.approval_waiting(db, approval)
+    if free is not None:
+        return Change(quote=None, trait=trait, normal_cost=priced.cost if priced else None)
     return Change(quote=quote, trait=trait)
 
 
@@ -1368,6 +1487,8 @@ def change_choice(
         raise conflict(f"That costs {cost} XP, and the character has {xp_balance(db, character)}.")
 
     old.trait.trait_definition_id = new_definition.id
+    # An exception was for the trait swapped away, not the one it becomes.
+    db.execute(delete(TraitException).where(TraitException.character_trait_id == old.trait.id))
     db.add(
         XpEntry(
             character_id=character.id,
@@ -1472,12 +1593,21 @@ def decide(
     note: str,
     settlement_overrides: Mapping[uuid.UUID, str] | None = None,
     xp: xp_range.Decision | None = None,
+    at_cost: bool = False,
 ) -> Approval:
+    """Approve or decline a request. `at_cost`, for a trait asked for free by
+    exception: approve it, but charge the XP it costs at the normal price."""
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
     character = lock_character(db, approval.character_id)
-    if not approve and approval.kind in ("discipline", "review"):
+    if at_cost and not (approve and approval.kind == "exception"):
+        raise unprocessable("Only an exception asked for free can be approved at normal cost.")
+    if not approve and approval.kind in HELD_KINDS:
         undo_discipline(db, staff, character, approval, "declined")
+    elif approve and approval.kind == "exception":
+        from horatio.trait_exceptions import approve_asked  # imports this module
+
+        approve_asked(db, staff, character, approval, at_cost)
     elif approve and approval.kind == "discipline":
         bought = db.scalars(
             select(DisciplinePurchase).where(DisciplinePurchase.approval_id == approval.id)
@@ -1504,13 +1634,14 @@ def decide(
         approval_id=approval.id,
         kind=approval.kind,
         **discipline_details(db, approval),
+        **({"at_cost": True} if at_cost else {}),
     )
     return approval
 
 
 def discipline_details(db: Session, approval: Approval) -> dict[str, Any]:
     """What the log says about a held purchase: which trait, to what rating."""
-    if approval.kind not in ("discipline", "review"):
+    if approval.kind not in HELD_KINDS:
         return {}
     found = db.execute(
         select(TraitDefinition.name, DisciplinePurchase.to_rating)
@@ -1523,7 +1654,8 @@ def discipline_details(db: Session, approval: Approval) -> dict[str, Any]:
 def undo_discipline(
     db: Session, user: User, character: Character, approval: Approval, why: str
 ) -> None:
-    """Take back discipline dots that were not approved, and refund their XP."""
+    """Take back held dots that were not approved, and refund their XP. An
+    exception asked for them goes too, and dots it gave free stop being free."""
     bought = db.scalar(
         select(DisciplinePurchase).where(DisciplinePurchase.approval_id == approval.id)
     )
@@ -1536,6 +1668,13 @@ def undo_discipline(
             CharacterTrait.detail == bought.detail,
         )
     )
+    asked = db.scalar(select(TraitException).where(TraitException.approval_id == approval.id))
+    if asked is not None:
+        if asked.free and trait is not None:
+            gained = bought.to_rating - bought.from_rating
+            trait.free_rating = max(0, trait.free_rating - gained)
+        db.delete(asked)
+        db.flush()
     if trait is not None:
         if bought.from_rating == 0 and trait.free_rating == 0:
             db.delete(trait)
@@ -1561,7 +1700,7 @@ def undo_discipline(
 def withdraw(db: Session, player: User, approval: Approval) -> Approval:
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
-    if approval.kind in ("discipline", "review"):
+    if approval.kind in HELD_KINDS:
         undo_discipline(
             db, player, lock_character(db, approval.character_id), approval, "withdrawn"
         )

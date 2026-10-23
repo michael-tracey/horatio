@@ -2712,3 +2712,118 @@ test("a troupe's Profile tab switches it public at once, About sets its XP range
   await expect(p.getByRole("heading", { name: "Waiting on you" })).toHaveCount(0);
   await expect(p.getByRole("button", { name: "Set by hand" })).toHaveCount(0);
 });
+
+test("a player asks staff for an elder power the rules refuse, free, and a storyteller approves it", async ({ browser }) => {
+  const custodian = await person(browser, "exc-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "exc-lead");
+  const player = await person(browser, "exc-player");
+  const troupeName = `Court of Favours ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  // Wren is built through the API, with Celerity 2, and joins the troupe.
+  const p = player.page;
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Wren" });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+  const asked = await send("POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  const accepted = await lead.page.request.post(`/api/approvals/${asked.id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBe(200);
+
+  // An elder power needs all five dots of its discipline: greyed in the Add panel, with a way to ask staff.
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await part("Disciplines").getByRole("button", { name: "Add" }).click();
+  await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Elder Disciplines/ }).click();
+  await p.getByLabel("Search Elder Disciplines").fill("Celerity: Zephyr");
+  // Left out of what Wren can take: shown greyed, with the reason, a tap away.
+  await expect(p.getByText("None you can take. 1 you can't:")).toBeVisible();
+  await p.getByRole("button", { name: "show", exact: true }).click();
+  const row = p.getByRole("listitem").filter({ has: p.getByRole("button", { name: /^Celerity: Zephyr/ }) });
+  await expect(row.getByRole("button", { name: /^Celerity: Zephyr/ })).toBeDisabled();
+  await expect(row).toContainText("An elder power needs all 5 dots of its discipline first.");
+  await row.getByRole("button", { name: "Ask staff" }).click();
+  const ask = p.getByRole("form", { name: "Ask staff for Celerity: Zephyr" });
+  await ask.getByLabel("Why").fill("A gift of the Methuselah's blood");
+  await ask.getByLabel("Ask for it at no XP cost").check();
+  await ask.getByRole("button", { name: "Put it in the cart" }).click();
+
+  // In the cart it is an exception line, with the rule it breaks, and nothing to pay.
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  const line = cart.getByRole("listitem").filter({ hasText: "Add Celerity: Zephyr" });
+  await expect(line.getByText("exception", { exact: true })).toBeVisible();
+  await expect(line.getByText("needs approval")).toBeVisible();
+  await expect(line).toContainText("Asked of staff, free: A gift of the Methuselah's blood");
+  await expect(line).toContainText("Against the rules: An elder power needs all 5 dots of its discipline first.");
+  await p.screenshot(shots("exception-cart"));
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
+  await expect(part("Disciplines").getByRole("button", { name: "exception asked" })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Against the rules" })).toHaveCount(0);
+
+  // The lead finds it among the exceptions, with the rule broken and the reason, and approves it.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  await l.getByLabel("Kind").selectOption({ label: "Exceptions" });
+  const card = l.locator("section").filter({ hasText: "Wren" });
+  await expect(card.getByText("exception, free")).toBeVisible();
+  await expect(card).toContainText("Celerity: Zephyr 0 → 1, asked for free");
+  await expect(card).toContainText("Against the rules: An elder power needs all 5 dots of its discipline first.");
+  await expect(card).toContainText("A gift of the Methuselah's blood");
+  await l.screenshot(shots("exception-approval"));
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+
+  // On Wren's sheet it is marked as given by exception, and its rule is not flagged.
+  await p.reload();
+  await expect(part("Disciplines").getByRole("button", { name: "by exception" })).toBeVisible();
+  const exceptions = p.getByRole("list", { name: "Traits held by exception" });
+  await expect(exceptions).toContainText("Celerity: Zephyr 1");
+  await expect(exceptions).toContainText("Given by exception: approved by exc-lead");
+  await expect(exceptions).toContainText(", free");
+  await expect(p.getByRole("heading", { name: "Against the rules" })).toHaveCount(0);
+  await part("Disciplines").getByRole("button", { name: "by exception" }).click();
+  await expect(part("Disciplines")).toContainText("A gift of the Methuselah's blood");
+  await p.screenshot(shots("exception-sheet"));
+
+  // The lead gives Wren Calm Heart, which no Brujah may take: free, and despite that rule once it is shown.
+  await l.goto(`/characters/${id}`);
+  const merits = l.locator("section").filter({ has: l.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
+  await merits.getByRole("button", { name: "Give Merits and Flaws" }).click();
+  await l.getByLabel("Search Merits to give").fill("Calm Heart");
+  await l.getByRole("button", { name: /^Calm Heart/ }).click();
+  const giving = l.getByRole("form", { name: "Give Calm Heart" });
+  await giving.getByLabel("Free: at no XP cost").check();
+  await giving.getByLabel("Reason").fill("Raised by a True Brujah");
+  await giving.getByRole("button", { name: "Check" }).click();
+  await expect(giving).toContainText("Brujah cannot take Calm Heart");
+  await expect(giving.getByRole("button", { name: "Give", exact: true })).toBeDisabled();
+  await giving.getByLabel("Give it despite these rules").check();
+  await giving.getByRole("button", { name: "Give", exact: true }).click();
+  await expect(merits.getByRole("button", { name: "by exception" })).toBeVisible();
+  await expect(l.getByRole("list", { name: "Traits held by exception" })).toContainText("Given by exception: given by exc-lead");
+
+  // Wren's player is told.
+  await p.goto("/");
+  await p.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(p.getByText("exc-lead gave Wren Calm Heart 1, free: Raised by a True Brujah")).toBeVisible();
+});

@@ -1,7 +1,7 @@
 """A character's sheet, purchases, XP history, and discipline dots waiting on the home troupe."""
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -109,6 +109,27 @@ class PendingDisciplineOut(BaseModel):
     cost: int
 
 
+class ExceptionOut(BaseModel):
+    """A trait held by exception (horatio.trait_exceptions)."""
+
+    trait_id: uuid.UUID
+    category: str
+    name: str
+    detail: str
+    # The rating it was given at: raising it further is judged as normal.
+    rating: int
+    free: bool
+    reason: str
+    # The rules it sets aside for this trait.
+    breaks: list[str]
+    # Asked, and still "waiting" on the home troupe; "approved" by its staff; or
+    # "given" by them.
+    status: Literal["waiting", "approved", "given"]
+    # Who approved or gave it, and when.
+    by: str | None
+    at: datetime | None
+
+
 class PrimaryPathOut(BaseModel):
     discipline: str
     # The clan's in-clan path, or the one the player named; None until named.
@@ -139,6 +160,8 @@ class SheetOut(BaseModel):
     problems: list[ProblemOut]
     # For each discipline learned as paths, which path is primary (MET: VTM p. 187).
     primary_paths: list[PrimaryPathOut] = []
+    # Traits held by exception, oldest first.
+    exceptions: list[ExceptionOut] = []
 
 
 class TraitChange(BaseModel):
@@ -209,6 +232,36 @@ def approval_out(approval: Approval) -> ApprovalOut:
         player_note=approval.player_note,
         staff_note=approval.staff_note,
     )
+
+
+def exceptions_out(db: DbSession, character: Character) -> list[ExceptionOut]:
+    held = sheets.held_by_exception(db, character)
+    people = {
+        p.id: p.display_name
+        for p in db.scalars(
+            select(User).where(User.id.in_([e.given_by for _, e in held if e.given_by]))
+        )
+    }
+    return [
+        ExceptionOut(
+            trait_id=row.trait.id,
+            category=row.category.key,
+            name=row.definition.name,
+            detail=row.trait.detail,
+            rating=e.rating,
+            free=e.free,
+            reason=e.reason,
+            breaks=[c["message"] for c in e.checks],
+            status="waiting"
+            if e.given_at is None
+            else "approved"
+            if e.approval_id is not None
+            else "given",
+            by=people.get(e.given_by) if e.given_by else None,
+            at=e.given_at,
+        )
+        for row, e in held
+    ]
 
 
 def sheet_out(db: DbSession, character: Character) -> SheetOut:
@@ -294,6 +347,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             PrimaryPathOut(discipline=p.discipline, path=p.path, native=p.native, options=p.options)
             for p in sheets.primary_paths(db, character)
         ],
+        exceptions=exceptions_out(db, character),
         problems=[
             ProblemOut(
                 category=v.subject.category,

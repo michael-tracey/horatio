@@ -8,7 +8,13 @@ from horatio.models.approvals import (
 )
 from horatio.models.audit import AuditEvent
 from horatio.models.base import Base
-from horatio.models.characters import Character, CharacterTrait, SheetVersion, XpEntry
+from horatio.models.characters import (
+    Character,
+    CharacterTrait,
+    SheetVersion,
+    TraitException,
+    XpEntry,
+)
 from horatio.models.downtimes import (
     AllowanceAdjustment,
     Answer,
@@ -97,6 +103,7 @@ __all__ = [
     "StartingTrait",
     "TraitCategory",
     "TraitDefinition",
+    "TraitException",
     "Troupe",
     "TroupeMembership",
     "TroupeRequest",

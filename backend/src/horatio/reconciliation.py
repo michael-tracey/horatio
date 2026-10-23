@@ -48,6 +48,7 @@ from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import (
+    HELD_KINDS,
     SheetRow,
     conflict,
     ensure_unlocked,
@@ -191,7 +192,7 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
             Approval.status == "pending",
         )
     ):
-        if approval.kind in ("discipline", "review"):
+        if approval.kind in HELD_KINDS:
             undo_discipline(db, player, character, approval, "withdrawn")
         approval.status = "withdrawn"
         approval.decided_at = datetime.now(UTC)

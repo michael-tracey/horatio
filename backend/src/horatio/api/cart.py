@@ -11,8 +11,18 @@ from horatio import cart, sheets
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.permissions import visible_character
+from horatio.trait_exceptions import Ask
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["sheets"])
+
+
+class ExceptionIn(BaseModel):
+    """A change asked of the home troupe's staff as an exception to the rules."""
+
+    # Why: one line, always given.
+    reason: str = Field(min_length=1, max_length=500)
+    # Asked for at no XP cost; the reason says why (a plot reward, a ruling).
+    free: bool = False
 
 
 class SetChangeIn(BaseModel):
@@ -26,6 +36,8 @@ class SetChangeIn(BaseModel):
     # The rating the cart was made from: refused if the sheet has moved on since.
     from_rating: int | None = Field(default=None, ge=0)
     teacher: str = Field(default="", max_length=200)
+    # Asked as an exception: made at once, waiting on the home troupe's staff.
+    exception: ExceptionIn | None = None
 
 
 class SwapChangeIn(BaseModel):
@@ -75,6 +87,8 @@ class CartLineOut(BaseModel):
     refused: str | None
     # Made, but waiting on the home troupe's approval.
     needs_approval: bool
+    # Asked as an exception: the rules it breaks, set aside if staff approve.
+    breaks: list[str] = []
 
 
 class CartOut(BaseModel):
@@ -96,6 +110,9 @@ def to_change(change: CartChangeIn) -> cart.Change:
                 change.rating,
                 change.from_rating,
                 change.teacher,
+                Ask(change.exception.reason.strip(), change.exception.free)
+                if change.exception
+                else None,
             )
         case SwapChangeIn():
             return cart.Swap(change.category, change.from_name, change.to_name)
@@ -125,7 +142,12 @@ def spend_cart(character_id: uuid.UUID, body: CartIn, db: DbSession, user: Curre
         applied=applied,
         balance=balance,
         lines=[
-            CartLineOut(cost=o.cost, refused=o.refused, needs_approval=o.needs_approval)
+            CartLineOut(
+                cost=o.cost,
+                refused=o.refused,
+                needs_approval=o.needs_approval,
+                breaks=list(o.breaks),
+            )
             for o in outcomes
         ],
     )

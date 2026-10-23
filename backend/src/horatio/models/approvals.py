@@ -11,27 +11,30 @@ from horatio.models.base import Record
 
 class Approval(Record):
     """Something waiting on (or decided by) a troupe's storytellers or assistant
-    storytellers: a home troupe change, or a discipline dot bought in the home
-    troupe. One queue for every kind. `sheet_change` is kept only for history."""
+    storytellers: a home troupe change, a discipline dot bought in the home
+    troupe, a change held for review, or a trait asked for by exception. One
+    queue for every kind. `sheet_change` is kept only for history."""
 
     __tablename__ = "approvals"
     __table_args__ = (
         CheckConstraint(
-            "kind in ('sheet_change', 'home_troupe_change', 'discipline', 'review')",
+            "kind in ('sheet_change', 'home_troupe_change', 'discipline', 'review', 'exception')",
             name="kind",
         ),
         CheckConstraint(
             "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
         ),
         # A character has at most one home troupe request waiting in each troupe;
-        # discipline dots each wait on their own.
+        # dots held for approval each wait on their own.
         Index(
             "uq_approvals_one_pending",
             "character_id",
             "troupe_id",
             "kind",
             unique=True,
-            postgresql_where=text("status = 'pending' and kind not in ('discipline', 'review')"),
+            postgresql_where=text(
+                "status = 'pending' and kind not in ('discipline', 'review', 'exception')"
+            ),
         ),
     )
 
@@ -48,8 +51,9 @@ class Approval(Record):
 
 
 class DisciplinePurchase(Record):
-    """The dots of a discipline bought in the home troupe, held until its staff decide.
-    The XP is spent when bought and refunded if they decline."""
+    """The dots of a discipline bought in the home troupe, held until its staff decide;
+    also the dots of a change held for review or asked for by exception. The XP is
+    spent when bought and refunded if they decline."""
 
     __tablename__ = "discipline_purchases"
 
