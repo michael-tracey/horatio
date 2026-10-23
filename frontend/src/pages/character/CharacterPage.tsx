@@ -15,6 +15,7 @@ import { CharacterMenu } from "./Actions";
 import { RenameCharacter } from "./Rename";
 import { CharacterPicture } from "./Picture";
 import { ResultsTab } from "./ResultsTab";
+import { CharacterShared } from "../troupe/SharedBackground";
 import { SheetTab } from "./SheetTab";
 import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
@@ -27,6 +28,12 @@ export function CharacterPage() {
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}", { params: { path: { character_id: characterId } } })),
   });
   const [renaming, setRenaming] = useState(false);
+  // The Shared backgrounds tab shows once the character has put dots in one.
+  const shared = useQuery({
+    queryKey: ["character-shared", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/shared-backgrounds", { params: { path: { character_id: characterId } } })),
+    enabled: character.data?.kind === "pc",
+  });
   // A PC's influence is for its player and its home troupe's storytellers and assistants.
   const homeId = character.data?.kind === "pc" && character.data.player_id !== me.data?.id ? character.data.home_troupe_id : null;
   const home = useQuery({
@@ -131,6 +138,7 @@ export function CharacterPage() {
               ]
             : []),
           ...(influence ? [{ to: `${base}/influence`, label: "Influence" }] : []),
+          ...(shared.data?.length ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
           { to: `${base}/log`, label: "Log" },
         ]}
       />
@@ -150,6 +158,7 @@ export function CharacterPage() {
         <Route path="xp" element={<XpTab characterId={c.id} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}
+        <Route path="shared" element={<CharacterShared characterId={c.id} />} />
         {mine && !c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (
           <>

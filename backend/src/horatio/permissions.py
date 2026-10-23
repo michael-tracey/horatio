@@ -56,6 +56,7 @@ class TroupeAction(StrEnum):
     MANAGE_TITLES = "manage_titles"
     RESET_GAMES = "reset_games"
     MANAGE_INFLUENCE_LOG = "manage_influence_log"
+    MANAGE_SHARED_BACKGROUNDS = "manage_shared_backgrounds"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -89,6 +90,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.RESET_GAMES: frozenset(_RUNNING),
     # Reading and keeping the troupe's influence log. Players never see it.
     TroupeAction.MANAGE_INFLUENCE_LOG: frozenset(_RUNNING),
+    # Setting up shared backgrounds and keeping their logs. The players of the
+    # characters sharing one also see it (horatio.shared_backgrounds).
+    TroupeAction.MANAGE_SHARED_BACKGROUNDS: frozenset(_RUNNING),
 }
 
 

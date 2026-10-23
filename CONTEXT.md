@@ -189,6 +189,14 @@ _Avoid_: Self-award, bonus XP
 A piece of free-form writing attached to a character, such as its background or history.
 _Avoid_: Notes, bio, extended text
 
+**Shared Background**:
+A Haven, Herd, Allies or Contacts that characters in a coterie, pack or gang pool together, each putting in dots of their own; the group's rating is what is put in, never more than 5. A troupe's storytellers and assistant storytellers set one up and keep its log; the players of the characters that have put dots in see it, and log uses for their own. It is a record only: it changes no rating on any sheet.
+_Avoid_: Pool, group background, coterie background (in names)
+
+**Shared Background Entry**:
+One line in a shared background's log: a character putting dots in or taking them out, or drawing on it, with when, what for, an optional note and who logged it.
+_Avoid_: Contribution row, use record
+
 **Portrait**:
 The picture shown for a character or troupe.
 _Avoid_: Avatar, image, photo
