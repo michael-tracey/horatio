@@ -145,7 +145,10 @@ function StepView({
   onNext?: () => void;
   steps: Step[];
 }) {
-  const { picks: before, details: savedDetail } = useMemo(() => saved(creation), [creation]);
+  // Keyed by content, so a refetch that brings back the same saved picks (as the last
+  // step's save does) doesn't wipe taps on this step that aren't saved yet.
+  const savedKey = JSON.stringify(saved(creation));
+  const { picks: before, details: savedDetail } = useMemo(() => JSON.parse(savedKey) as ReturnType<typeof saved>, [savedKey]);
   const [picks, setPicks] = useState<Record<string, Picks>>(before);
   useEffect(() => setPicks(before), [before]);
   const [details, setDetails] = useState(savedDetail);
