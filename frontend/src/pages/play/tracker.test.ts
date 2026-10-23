@@ -12,6 +12,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     sect: "Camarilla",
     generation: 1,
     blood_per_turn: 1,
+    herd: 2,
     blood: { value: 10, most: 10, start: 10 },
     half_blood: false,
     willpower: { value: 6, most: 6, start: 6 },
@@ -223,5 +224,12 @@ describe("makeTap", () => {
     expect(tap.note).toBe("fed");
     expect(tap.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(tapId()).not.toBe(tapId());
+  });
+});
+
+describe("makeTap with an id chosen ahead", () => {
+  it("keeps the id, so feeding's tap is the same tap however often it is made", () => {
+    const id = tapId();
+    expect(makeTap({ id, kind: "change", tracker: "blood", amount: 2 }, "g1", at(5)).id).toBe(id);
   });
 });

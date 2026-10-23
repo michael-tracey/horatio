@@ -147,6 +147,9 @@ class PlayView(BaseModel):
     sect: str | None
     generation: int
     blood_per_turn: int
+    # The Herd background's rating: feeding at a game takes 5 minutes for that
+    # much blood, rather than 15 for 2 (MET: VtM core, p. 102).
+    herd: int = 0
     blood: Tracker
     # Blood started at half: the character fed short last downtime.
     half_blood: bool = False
@@ -384,6 +387,14 @@ def play_view(db: Session, character: Character) -> PlayView:
         sect=one("sect"),
         generation=limits.generation,
         blood_per_turn=limits.blood_per_turn,
+        herd=max(
+            (
+                r.trait.rating or 0
+                for r in rows
+                if r.category.key == "backgrounds" and r.definition.name == "Herd"
+            ),
+            default=0,
+        ),
         blood=Tracker(value=state["blood"], most=limits.blood, start=limits.starting_blood),
         half_blood=limits.half_blood,
         willpower=Tracker(value=state["willpower"], most=limits.willpower, start=limits.willpower),

@@ -6335,6 +6335,11 @@ export interface components {
             half_blood: boolean;
             health: components["schemas"]["Health"];
             /**
+             * Herd
+             * @default 0
+             */
+            herd: number;
+            /**
              * Influence
              * @default []
              */

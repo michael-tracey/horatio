@@ -7,6 +7,7 @@ import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
+import { Feed, FeedButton } from "./Feed";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Sync } from "./usePlay";
@@ -51,6 +52,8 @@ export function PlayPage() {
   const [spending, setSpending] = useState<Change | null>(null);
   // An influence spend in the game's log whose details are being added or changed.
   const [detailing, setDetailing] = useState<ShownEntry | null>(null);
+  // The Feed sheet is open (the timer itself is kept by Feed, on the device).
+  const [feeding, setFeeding] = useState(false);
   const choose = (next: Tab) =>
     setParams(
       (p) => {
@@ -89,6 +92,7 @@ export function PlayPage() {
               most={shown.blood.most}
               hint={`${shown.blood_per_turn} a turn${shown.half_blood ? " · Half Blood: fed short last downtime" : ""}`}
               record={record}
+              extra={<FeedButton onClick={() => setFeeding(true)} />}
             />
             <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} />
             <HealthTracker view={shown} record={record} />
@@ -123,6 +127,7 @@ export function PlayPage() {
           <PastGames characterId={characterId} current={shown.game?.id} />
         </>
       )}
+      <Feed view={shown} asking={feeding} onClose={() => setFeeding(false)} tap={tap} />
       {spending && (
         <InfluenceSheet
           standing={influenceStanding(shown, spending.tracker)!}
@@ -289,6 +294,7 @@ function BoxTracker({
   record,
   small,
   spendIsUp,
+  extra,
 }: {
   title: string;
   tracker: string;
@@ -299,6 +305,8 @@ function BoxTracker({
   small?: boolean;
   /** Beast traits are gained rather than spent: "+" adds one. */
   spendIsUp?: boolean;
+  /** Another button beside − and + (Feed, by Blood). */
+  extra?: ReactNode;
 }) {
   const down = () => record({ tracker, amount: -1, label: title });
   const up = () => record({ tracker, amount: 1, label: title });
@@ -331,6 +339,7 @@ function BoxTracker({
       <div className="mt-3 flex items-center justify-between gap-3">
         <span className="text-xs text-mist">{hint}</span>
         <span className="flex gap-2">
+          {extra}
           <TapButton label={spendIsUp ? `Remove a ${title} point` : `Spend ${title}`} onClick={down} disabled={value <= 0} tone={spendIsUp ? "plain" : "blood"}>
             −
           </TapButton>
