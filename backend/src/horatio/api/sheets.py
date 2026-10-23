@@ -170,7 +170,7 @@ class TraitChange(BaseModel):
     detail: str = Field(default="", max_length=200)
     # Null for traits without a rating; 0 removes a rated trait.
     rating: int | None = Field(default=None, ge=0)
-    note: str | None = None
+    note: str | None = Field(default=None, max_length=1000)
     # For a discipline dot that waits on the home troupe: who teaches it.
     teacher: str = Field(default="", max_length=200)
 

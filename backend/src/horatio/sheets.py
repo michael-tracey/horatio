@@ -1050,6 +1050,11 @@ def checked(
     savepoint.commit()
 
 
+# The archetype a player makes up (p. 86): its detail is the name they give it, and
+# its note says what it means for the character.
+CUSTOM_ARCHETYPE = ("archetype", "Other…")
+
+
 def replace_choice(
     db: Session,
     character: Character,
@@ -1296,6 +1301,8 @@ def set_trait(
 
     if not category.rated:
         quote_change(db, character, category_key, name, detail, rating)  # validates
+        if (category.key, name) == CUSTOM_ARCHETYPE and not detail.strip():
+            raise unprocessable("Name the archetype.")
         trait = replace_choice(db, character, definition, category, detail)
         if note is not None:
             trait.note = note

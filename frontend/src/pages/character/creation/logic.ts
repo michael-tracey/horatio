@@ -84,6 +84,14 @@ export function spent(picks: Picks): number {
   return Object.values(picks).reduce((a, b) => a + b, 0);
 }
 
+/** The archetype a player makes up (p. 86): its detail is the name they give it. */
+export const CUSTOM_ARCHETYPE = "Other…";
+
+/** What a choice is called: a custom archetype by the name its player gave it. */
+export function choiceName(t: { category: string; name: string; detail: string }): string {
+  return t.category === "archetype" && t.name === CUSTOM_ARCHETYPE && t.detail.trim() ? t.detail : t.name;
+}
+
 /** The unrated choices (clan, sect…) to offer, leaving out any whose
  * requirement the sheet does not meet: faction only for the Sabbat. */
 export function identityChoices(catalogue: CatalogueOut, sheet: { traits: { category: string; name: string }[] }): CategoryOut[] {

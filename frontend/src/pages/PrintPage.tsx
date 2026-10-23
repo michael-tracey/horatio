@@ -8,6 +8,7 @@ import { useDates } from "../dates";
 import { HEALTH_RULE, healthRows } from "../health";
 import { DEFAULT_PREFERENCES, useMe, usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
+import { choiceName } from "./character/creation/logic";
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 
@@ -108,7 +109,8 @@ function by(traits: Trait[], ...categories: string[]) {
 }
 
 function one(traits: Trait[], category: string): string {
-  return traits.find((t) => t.category === category)?.name ?? "";
+  const found = traits.find((t) => t.category === category);
+  return found ? choiceName(found) : "";
 }
 
 function rating(traits: Trait[], category: string, name: string): number {
