@@ -3,6 +3,8 @@ import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { useAction, useUnavailable } from "../../hooks";
+import { AskStaff } from "./AskStaff";
+import type { Exception } from "./cart";
 import { QuickPicks } from "./creation/DotGrid";
 import { FIELD_PLACEHOLDER } from "./fields";
 import { applyFilter, filterChoices, quickPicks } from "./traitFilter";
@@ -10,7 +12,7 @@ import { applyFilter, filterChoices, quickPicks } from "./traitFilter";
 const SHOWN = 40;
 
 /** A new trait for the cart. */
-export type NewTrait = { category: string; name: string; detail: string; rating: number; teacher: string; fixed: boolean };
+export type NewTrait = { category: string; name: string; detail: string; rating: number; teacher: string; fixed: boolean; exception?: Exception };
 
 /**
  * Add a trait to one part of the sheet: pick from a searchable list of the
@@ -41,6 +43,8 @@ export function AddTraitPanel({
   const [rating, setRating] = useState(1);
   const [quote, setQuote] = useState<number | null>(null);
   const [teacher, setTeacher] = useState("");
+  // A trait the rules refuse, asked of staff as an exception.
+  const [asking, setAsking] = useState<TraitOut | null>(null);
   const cat = catalogue.categories.find((c) => c.key === category);
   const unavailable = useUnavailable(character.id, category).data ?? {};
   // What no choice could allow, for "What this character can take"; a merit refused
@@ -63,6 +67,7 @@ export function AddTraitPanel({
   const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null, teacher: asksTeacher ? teacher : "" };
 
   const choose = (t: TraitOut) => {
+    setAsking(null);
     setName(t.name);
     setDetail("");
     setRating(1);
@@ -134,12 +139,36 @@ export function AddTraitPanel({
                 </span>
                 {barred && <span className="text-xs text-blood-bright">{barred}</span>}
               </button>
+              {barred && character.home_troupe_id && (
+                <button type="button" className="ml-2 text-xs text-gold underline" onClick={() => {
+                    setName("");
+                    setAsking(t);
+                  }}
+                >
+                  Ask staff
+                </button>
+              )}
             </li>
           );
         })}
         {matching.length === 0 && <li className="px-2 text-sm text-mist">Nothing matches.</li>}
         {matching.length > SHOWN && <li className="px-2 text-xs text-mist">Search to see all {matching.length}.</li>}
       </ul>
+      {asking && (
+        <AskStaff
+          key={asking.name}
+          name={asking.name}
+          refusal={unavailable[asking.name] ?? ""}
+          trait={asking}
+          rated={!!cat?.rated}
+          maxRating={cat?.max_rating}
+          onCancel={() => setAsking(null)}
+          onAsk={(exception, chosen) => {
+            onAdd({ category, name: asking.name, ...chosen, teacher: "", fixed: asking.fixed_rating != null, exception });
+            onClose();
+          }}
+        />
+      )}
       {trait && (
         <form
           className="flex flex-col gap-3 border-t border-ash pt-3"

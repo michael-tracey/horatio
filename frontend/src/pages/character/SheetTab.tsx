@@ -6,6 +6,7 @@ import type {
   CatalogueOut,
   CharacterOut,
   CreationOut,
+  ExceptionOut,
   SheetOut,
   SheetTraitOut,
 } from "../../api/types";
@@ -27,6 +28,8 @@ import { AddTraitPanel } from "./AddTraitPanel";
 import { PrintAndBadge } from "./Badge";
 import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart, type Cart } from "./cart";
 import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
+import { ExceptionMark, ExceptionsCard } from "./Exceptions";
+import { GivePanel } from "./GivePanel";
 import { rulesTroupe } from "./rules";
 import { fieldSkills } from "./fields";
 import {
@@ -121,17 +124,21 @@ export function SheetTab({
   character,
   mine,
   badge = false,
+  give = false,
 }: {
   character: CharacterOut;
   mine: boolean;
   /** Whether this viewer prints badges: the troupe's staff and the custodian. */
   badge?: boolean;
+  /** Whether this viewer gives traits by exception: the home troupe's storytellers and assistants. */
+  give?: boolean;
 }) {
   const sheet = useSheet(character.id);
   const catalogue = useCatalogue(character);
   const creation = useCreation(character);
   const needsField = fieldSkills(catalogue.data);
   const [adding, setAdding] = useState<string | null>(null);
+  const [giving, setGiving] = useState<string | null>(null);
   const kinds = useSpecializations(character.id);
   // Changes wait in the cart until Spend XP; only the player has one.
   const cart = useCart(character.id);
@@ -197,6 +204,17 @@ export function SheetTab({
     character.kind === "pc" &&
     character.creation_complete &&
     !!catalogue.data;
+  // Staff give a player's character traits by exception, beside Add.
+  const canGive =
+    give &&
+    !mine &&
+    character.kind === "pc" &&
+    !!character.home_troupe_id &&
+    character.creation_complete &&
+    s.status !== "retired" &&
+    !movingHome &&
+    !!catalogue.data;
+  const exceptionOf = (t: SheetTraitOut) => s.exceptions.findLast((e) => e.trait_id === t.id);
   // Every part that holds traits, then parts the player can add to.
   // Only categories with something left to add (all three attributes are always held).
   const heldNames = new Set(s.traits.map((t) => `${t.category}/${t.name}`));
@@ -211,7 +229,7 @@ export function SheetTab({
     );
   }
   const parts = [...addable.keys()].filter(
-    (g) => groups.has(g) || (canAdd && (addable.get(g)?.length ?? 0) > 0),
+    (g) => groups.has(g) || ((canAdd || canGive) && (addable.get(g)?.length ?? 0) > 0),
   );
   const single = (group: string) => (groups.get(group)?.size ?? 0) === 1;
   // Small parts (a few traits in one category) sit side by side; the rest span the width.
@@ -222,7 +240,7 @@ export function SheetTab({
       0,
     );
     const specialised = [...(categories?.values() ?? [])].some((ts) => ts.some((t) => kindOf(t)));
-    return adding === group || specialised || (categories?.size ?? 0) > 1 || count > 5;
+    return adding === group || giving === group || specialised || (categories?.size ?? 0) > 1 || count > 5;
   };
   const pointsOf = (t: SheetTraitOut) =>
     catalogue.data?.traits.find(
@@ -273,6 +291,7 @@ export function SheetTab({
             </ul>
           </Card>
         )}
+        <ExceptionsCard exceptions={s.exceptions} />
         {parts.length === 0 && (
           <Empty>
             The sheet is empty{mine ? "" : " until the player builds it"}.
@@ -294,9 +313,27 @@ export function SheetTab({
                   >
                     {adding === group ? "Close" : "Add"}
                   </Button>
+                ) : canGive && (addable.get(group)?.length ?? 0) > 0 ? (
+                  <Button
+                    variant="ghost"
+                    aria-label={giving === group ? `Close giving ${group}` : `Give ${group}`}
+                    aria-expanded={giving === group}
+                    onClick={() => setGiving(giving === group ? null : group)}
+                  >
+                    {giving === group ? "Close" : "Give"}
+                  </Button>
                 ) : undefined
               }
             >
+              {giving === group && catalogue.data && (
+                <GivePanel
+                  character={character}
+                  catalogue={catalogue.data}
+                  categories={addable.get(group) ?? []}
+                  held={s.traits}
+                  onClose={() => setGiving(null)}
+                />
+              )}
               {adding === group && catalogue.data && (
                 <AddTraitPanel
                   character={character}
@@ -332,6 +369,7 @@ export function SheetTab({
                           trait={t}
                           locked={locked || derived.has(t.category)}
                           points={pointsOf(t)}
+                          exception={exceptionOf(t)}
                           planned={plannedRating(lines, t)}
                           swappedTo={swappedTo(lines, t.category, t.name)}
                           onChange={(rating) =>
@@ -485,9 +523,12 @@ function TraitRow({
   points = null,
   planned = null,
   swappedTo = null,
+  exception,
 }: {
   trait: SheetTraitOut;
   locked: boolean;
+  /** Held by exception: asked of staff, or given by them. */
+  exception?: ExceptionOut;
   /** A merit or flaw's fixed point value: shown instead of dots. */
   points?: number | null;
   /** The rating a change in the cart would give it. */
@@ -512,6 +553,7 @@ function TraitRow({
           {trait.detail && <span className="text-mist">: {trait.detail}</span>}
           {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
           <GrantedBy trait={trait} points />
+          {exception && <ExceptionMark exception={exception} />}
         </span>
         <span className="flex shrink-0 items-center gap-2">
           <Badge tone="gold">{points}</Badge>
@@ -587,6 +629,7 @@ function TraitRow({
           </span>
         )}
         <GrantedBy trait={trait} />
+        {exception && <ExceptionMark exception={exception} />}
       </span>
       {trait.rating !== null && (
         <span className="flex shrink-0 items-center gap-2">

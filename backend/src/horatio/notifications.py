@@ -126,7 +126,14 @@ def approval_items(
     for approval, about in rows:
         character = about.name
         troupe = troupes[approval.troupe_id]
-        if approval.id in disciplines:
+        if approval.kind == "exception" and approval.id in disciplines:
+            name, bought = disciplines[approval.id]
+            detail = f": {bought.detail}" if bought.detail else ""
+            summary = (
+                f"{character} asks for {name}{detail} {bought.from_rating} → {bought.to_rating}"
+                " by exception"
+            )
+        elif approval.id in disciplines:
             name, bought = disciplines[approval.id]
             detail = f": {bought.detail}" if bought.detail else ""
             summary = (

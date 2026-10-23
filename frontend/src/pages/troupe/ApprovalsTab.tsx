@@ -10,22 +10,40 @@ import { describeDifference, settlementLabel } from "../../settlements";
 import { joining, type XpChoice } from "./xpRange";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
+type Kind = "home_troupe_change" | "discipline" | "review" | "exception";
+
+const KINDS: Record<Kind, string> = {
+  home_troupe_change: "Home troupe requests",
+  discipline: "Disciplines",
+  review: "Rule reviews",
+  exception: "Exceptions",
+};
 
 export function ApprovalsTab({ troupeId }: { troupeId: string }) {
   const [state, setState] = useState<State>("pending");
+  const [kind, setKind] = useState<Kind | "">("");
   const queue = useQuery({
-    queryKey: ["approvals", troupeId, state],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/approvals", { params: { path: { troupe_id: troupeId }, query: { state } } })),
+    queryKey: ["approvals", troupeId, state, kind],
+    queryFn: () =>
+      unwrap(api.GET("/api/troupes/{troupe_id}/approvals", { params: { path: { troupe_id: troupeId }, query: { state, kind: kind || undefined } } })),
   });
 
   return (
     <>
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-wrap gap-2">
         {(["pending", "approved", "declined"] as State[]).map((s) => (
           <Button key={s} variant={s === state ? "secondary" : "ghost"} onClick={() => setState(s)} className="capitalize">
             {s}
           </Button>
         ))}
+        <Select aria-label="Kind" value={kind} onChange={(e) => setKind(e.target.value as Kind | "")} className="w-auto">
+          <option value="">Every kind</option>
+          {(Object.keys(KINDS) as Kind[]).map((k) => (
+            <option key={k} value={k}>
+              {KINDS[k]}
+            </option>
+          ))}
+        </Select>
       </div>
       {queue.isPending ? (
         <Loading />
@@ -47,12 +65,13 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   const [note, setNote] = useState("");
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [xp, setXp] = useState<XpChoice & { extra_reason: string }>({ self_entered: "keep", top_up: null, above_ceiling: "keep", extra: 0, extra_reason: "" });
-  const decide = useAction((approve: boolean) =>
+  const decide = useAction(({ approve, atCost = false }: { approve: boolean; atCost?: boolean }) =>
     unwrap(
       api.POST(approve ? "/api/approvals/{approval_id}/approve" : "/api/approvals/{approval_id}/decline", {
         params: { path: { approval_id: approval.id } },
         body: {
           note,
+          at_cost: atCost,
           settlements: Object.entries(overrides).map(([item_id, settlement]) => ({
             item_id,
             settlement: settlement as "keep_price",
@@ -65,6 +84,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   const pending = approval.status === "pending";
   const joining = approval.kind === "home_troupe_change";
   const d = approval.discipline;
+  const ex = approval.exception;
 
   return (
     <Card
@@ -74,10 +94,42 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           {approval.character_name}
         </Link>
       }
-      actions={<Badge tone={joining ? "gold" : "mist"}>{joining ? "asking to make this home" : approval.kind === "discipline" ? "discipline" : approval.kind === "review" ? "rule review" : "sheet changes"}</Badge>}
+      actions={
+        <Badge tone={joining || ex ? "gold" : "mist"}>
+          {joining
+            ? "asking to make this home"
+            : approval.kind === "discipline"
+              ? "discipline"
+              : approval.kind === "review"
+                ? "rule review"
+                : approval.kind === "exception"
+                  ? ex?.free
+                    ? "exception, free"
+                    : "exception"
+                  : "sheet changes"}
+        </Badge>
+      }
     >
       {approval.player_note && <p className="mb-3 text-sm italic">"{approval.player_note}"</p>}
-      {d && (
+      {d && ex && (
+        <div className="mb-3 flex flex-col gap-1 text-sm">
+          <p>
+            {d.name}
+            {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating},{" "}
+            {ex.free
+              ? `asked for free${ex.normal_cost != null ? ` (at normal cost, ${ex.normal_cost} XP)` : " (it has no normal cost)"}.`
+              : `for ${d.cost} XP.`}
+          </p>
+          {ex.breaks.length > 0 && <p className="text-blood-bright">Against the rules: {ex.breaks.join(" ")}</p>}
+          {pending && (
+            <p className="text-mist">
+              It is on the sheet, waiting on you. Approving keeps it, and the sheet stops flagging these rules for it; declining takes it back
+              {ex.free ? "" : " and refunds the XP"}.
+            </p>
+          )}
+        </div>
+      )}
+      {d && !ex && (
         <p className="mb-3 text-sm">
           {d.name}
           {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating}, for {d.cost} XP.{" "}
@@ -116,11 +168,16 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
             <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
           </Field>
           <ErrorText error={decide.error} />
-          <div className="mt-3 flex gap-2">
-            <Button onClick={() => decide.mutate(true)} disabled={decide.isPending}>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button onClick={() => decide.mutate({ approve: true })} disabled={decide.isPending}>
               Approve
             </Button>
-            <Button variant="danger" onClick={() => decide.mutate(false)} disabled={decide.isPending}>
+            {ex?.free && (
+              <Button variant="secondary" onClick={() => decide.mutate({ approve: true, atCost: true })} disabled={decide.isPending}>
+                Approve, at normal cost
+              </Button>
+            )}
+            <Button variant="danger" onClick={() => decide.mutate({ approve: false })} disabled={decide.isPending}>
               Decline
             </Button>
           </div>

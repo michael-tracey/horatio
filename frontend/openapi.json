@@ -1082,6 +1082,14 @@
       },
       "CartLineOut": {
         "properties": {
+          "breaks": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Breaks",
+            "type": "array"
+          },
           "cost": {
             "anyOf": [
               {
@@ -2566,6 +2574,11 @@
       },
       "Decision": {
         "properties": {
+          "at_cost": {
+            "default": false,
+            "title": "At Cost",
+            "type": "boolean"
+          },
           "note": {
             "default": "",
             "title": "Note",
@@ -3105,6 +3118,154 @@
         "title": "EmailHelp",
         "type": "object"
       },
+      "ExceptionAskOut": {
+        "description": "A trait asked for by exception: the rules it breaks, why, and whether free.",
+        "properties": {
+          "breaks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Breaks",
+            "type": "array"
+          },
+          "free": {
+            "title": "Free",
+            "type": "boolean"
+          },
+          "normal_cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normal Cost"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "breaks",
+          "reason",
+          "free",
+          "normal_cost"
+        ],
+        "title": "ExceptionAskOut",
+        "type": "object"
+      },
+      "ExceptionIn": {
+        "description": "A change asked of the home troupe's staff as an exception to the rules.",
+        "properties": {
+          "free": {
+            "default": false,
+            "title": "Free",
+            "type": "boolean"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ExceptionIn",
+        "type": "object"
+      },
+      "ExceptionOut": {
+        "description": "A trait held by exception (horatio.trait_exceptions).",
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "breaks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Breaks",
+            "type": "array"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "free": {
+            "title": "Free",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "waiting",
+              "approved",
+              "given"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "trait_id": {
+            "format": "uuid",
+            "title": "Trait Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trait_id",
+          "category",
+          "name",
+          "detail",
+          "rating",
+          "free",
+          "reason",
+          "breaks",
+          "status",
+          "by",
+          "at"
+        ],
+        "title": "ExceptionOut",
+        "type": "object"
+      },
       "ExpendableOut": {
         "properties": {
           "counter_id": {
@@ -3493,6 +3654,100 @@
           "notes"
         ],
         "title": "GameOut",
+        "type": "object"
+      },
+      "GiveIn": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "despite": {
+            "default": false,
+            "title": "Despite",
+            "type": "boolean"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "free": {
+            "default": false,
+            "title": "Free",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "trial": {
+            "default": false,
+            "title": "Trial",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "rating",
+          "reason"
+        ],
+        "title": "GiveIn",
+        "type": "object"
+      },
+      "GiveOut": {
+        "properties": {
+          "breaks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Breaks",
+            "type": "array"
+          },
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "given": {
+            "title": "Given",
+            "type": "boolean"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetOut"
+          }
+        },
+        "required": [
+          "given",
+          "cost",
+          "breaks",
+          "refused",
+          "sheet"
+        ],
+        "title": "GiveOut",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -7959,6 +8214,16 @@
               }
             ]
           },
+          "exception": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExceptionAskOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -8611,6 +8876,16 @@
             "title": "Detail",
             "type": "string"
           },
+          "exception": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExceptionIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "from_rating": {
             "anyOf": [
               {
@@ -8765,6 +9040,14 @@
             "format": "uuid",
             "title": "Character Id",
             "type": "string"
+          },
+          "exceptions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExceptionOut"
+            },
+            "title": "Exceptions",
+            "type": "array"
           },
           "home_troupe_id": {
             "anyOf": [
@@ -13008,6 +13291,60 @@
         "summary": "Submit",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/give": {
+      "post": {
+        "description": "A storyteller or assistant storyteller of a player's character's home troupe\ngives it a trait, or raises one: free, despite the rules, or both, always with\na reason. Nothing waits on approval; the player is told.",
+        "operationId": "give_api_characters__character_id__give_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GiveOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give",
+        "tags": [
+          "sheets"
         ]
       }
     },
@@ -18582,6 +18919,7 @@
     },
     "/api/troupes/{troupe_id}/approvals": {
       "get": {
+        "description": "The troupe's requests in one state, oldest first: of one kind, if given.",
         "operationId": "troupe_approvals_api_troupes__troupe_id__approvals_get",
         "parameters": [
           {
@@ -18608,6 +18946,28 @@
               ],
               "title": "State",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "home_troupe_change",
+                    "discipline",
+                    "review",
+                    "exception"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
             }
           }
         ],

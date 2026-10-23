@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { added, costText, describe as describeLine, loadCart, ordered, pick, plannedRating, setRating, swap, toChange, unpick, type CartLine } from "./cart";
+import { added, askException, costText, describe as describeLine, loadCart, ordered, pick, plannedRating, setRating, swap, toChange, unpick, type CartLine } from "./cart";
 
 const brawl = { category: "skills", name: "Brawl", detail: "", rating: 2 };
 
@@ -61,6 +61,23 @@ describe("ordered", () => {
 describe("toChange", () => {
   it("sends a rating with the one it was made from", () => {
     expect(toChange(setRating([], brawl, 3)[0]!)).toEqual({ kind: "set", category: "skills", name: "Brawl", detail: "", rating: 3, from_rating: 2, teacher: "" });
+  });
+
+  it("sends a line asked as an exception with why, and whether free", () => {
+    const exception = { reason: "A plot reward", free: true };
+    expect(toChange(setRating([], { ...brawl, exception }, 3)[0]!)).toMatchObject({ rating: 3, exception });
+  });
+});
+
+describe("askException", () => {
+  it("asks staff for one line of the cart, kept as it is raised further", () => {
+    const lines = setRating([], brawl, 3);
+    const exception = { reason: "Taught by the Prince", free: false };
+    const asked = askException(lines, lines[0]!, exception);
+    expect(asked[0]).toMatchObject({ kind: "set", to: 3, exception });
+    expect(setRating(asked, brawl, 4)[0]).toMatchObject({ to: 4, exception });
+    // Lowered back below where it was saved, it is no longer asked.
+    expect(setRating(asked, brawl, 1)[0]).not.toHaveProperty("exception");
   });
 });
 

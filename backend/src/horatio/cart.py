@@ -12,6 +12,10 @@ What a change costs, and whether it can be made at all (the XP, the troupe's
 limits, traits chosen only during creation), is judged as it is made. The
 sheet's checks are judged once, on the sheet the whole cart ends with: a cart
 may add a technique before raising the discipline it needs.
+
+A line can be asked as an exception (horatio.trait_exceptions): the checks its
+trait breaks on the finished sheet are set aside for it rather than refusing
+it, and it waits on the home troupe's staff; asked free, it costs nothing.
 """
 
 from collections.abc import Callable, Sequence
@@ -21,9 +25,10 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import creation, sheets
+from horatio import creation, sheets, trait_exceptions
 from horatio.models import Approval, Character, CharacterTrait, User
 from horatio.sheets import TraitKey
+from horatio.trait_exceptions import Ask
 
 
 @dataclass(frozen=True)
@@ -37,6 +42,8 @@ class SetRating:
     # The rating the cart was made from: refused if the sheet has moved on since.
     from_rating: int | None = None
     teacher: str = ""
+    # Asked of the home troupe's staff as an exception to the rules it breaks.
+    exception: Ask | None = None
 
 
 @dataclass(frozen=True)
@@ -79,6 +86,8 @@ class Outcome:
     refused: str | None = None
     # It went through but waits on the home troupe, like a discipline dot.
     needs_approval: bool = False
+    # Asked as an exception: the checks it breaks, set aside if staff approve.
+    breaks: tuple[str, ...] = ()
 
 
 def held_rating(db: Session, character: Character, change: SetRating) -> int:
@@ -93,9 +102,15 @@ def held_rating(db: Session, character: Character, change: SetRating) -> int:
     return rating or 0
 
 
-def make(db: Session, user: User, character: Character, change: Change) -> None:
-    """Make one change, exactly as its own endpoint does."""
+def make(db: Session, user: User, character: Character, change: Change) -> sheets.Change | None:
+    """Make one change, exactly as its own endpoint does; one asked as an exception
+    as the player cannot alone."""
     if isinstance(change, SetRating):
+        asked = change.exception
+        if asked is not None:
+            trait_exceptions.can_ask(character)
+            if change.rating is None or change.rating <= held_rating(db, character, change):
+                raise sheets.unprocessable("An exception is for adding a trait or raising one.")
         if change.from_rating is not None:
             now = held_rating(db, character, change)
             if now != change.from_rating:
@@ -104,7 +119,7 @@ def make(db: Session, user: User, character: Character, change: Change) -> None:
                     "the sheet has changed since this went in the cart."
                 )
         with sheets.checked(db, character, user, rules=False):
-            sheets.set_trait(
+            return sheets.set_trait(
                 db,
                 user,
                 character,
@@ -113,6 +128,8 @@ def make(db: Session, user: User, character: Character, change: Change) -> None:
                 change.detail,
                 change.rating,
                 teacher=change.teacher,
+                free=asked.reason if asked and asked.free else None,
+                by_exception="asked" if asked else None,
             )
     elif isinstance(change, Swap):
         with sheets.checked(db, character, user, rules=False):
@@ -126,6 +143,7 @@ def make(db: Session, user: User, character: Character, change: Change) -> None:
             )
     else:
         creation.remove_pick(db, user, character, change.category, change.name, change.detail)
+    return None
 
 
 def would_cost(db: Session, character: Character, change: Change) -> int | None:
@@ -152,7 +170,7 @@ def waiting(db: Session, character: Character) -> int:
             .where(
                 Approval.character_id == character.id,
                 Approval.status == "pending",
-                Approval.kind.in_(("discipline", "review")),
+                Approval.kind.in_(sheets.HELD_KINDS),
             )
         )
         or 0
@@ -221,13 +239,15 @@ def apply_changes(
     start = sheets.sheet_state(db, character)
     outcomes: list[Outcome] = []
     steps: list[Step] = []
-    for change in changes:
+    # What each line given free would have cost.
+    normal_costs: dict[int, int | None] = {}
+    for i, change in enumerate(changes):
         balance = sheets.xp_balance(db, character)
         held = waiting(db, character)
         traits_before = held_traits(db, character)
         savepoint = db.begin_nested()
         try:
-            make(db, user, character, change)
+            made = make(db, user, character, change)
             db.flush()
         except HTTPException as error:
             savepoint.rollback()
@@ -237,6 +257,8 @@ def apply_changes(
             steps.append(Step())
             continue
         savepoint.commit()
+        if made is not None:
+            normal_costs[i] = made.normal_cost if made.quote is None else made.quote.cost
         outcomes.append(
             Outcome(
                 cost=balance - sheets.xp_balance(db, character),
@@ -246,14 +268,31 @@ def apply_changes(
         steps.append(step(traits_before, held_traits(db, character)))
     if character.kind != "pc":
         return outcomes
-    refused, reviewed = sheets.broken_since(db, user, character, start, creation_only=False)
+    asking = {
+        (c.category, c.name, c.detail): i
+        for i, c in enumerate(changes)
+        if isinstance(c, SetRating) and c.exception and outcomes[i].refused is None
+    }
+    judged = sheets.broken_since(db, user, character, start, creation_only=False, excepting=asking)
     problems: dict[int, list[sheets.Problem]] = {}
-    for problem in refused:
+    for problem in judged.refused:
         problems.setdefault(culprit(problem, steps), []).append(problem)
     for i, found in problems.items():
         reasons = [outcomes[i].refused, sheets.refusal(found)]
         outcomes[i] = replace(outcomes[i], refused=" ".join(r for r in reasons if r))
-    for problem in reviewed:
+    for problem in judged.reviewed:
         i = culprit(problem, steps)
         outcomes[i] = replace(outcomes[i], needs_approval=True)
+    for key, i in asking.items():
+        asked = changes[i]
+        assert isinstance(asked, SetRating) and asked.exception is not None
+        broken = judged.excepted.get(key, [])
+        if trait_exceptions.ask(
+            db, user, character, key, asked.exception, broken, start, normal_costs.get(i)
+        ):
+            outcomes[i] = replace(
+                outcomes[i],
+                needs_approval=True,
+                breaks=tuple(c["message"] for c in trait_exceptions.checks_of(broken)),
+            )
     return outcomes

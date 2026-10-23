@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import pictures, sheets, social_age, xp_range
+from horatio import pictures, sheets, social_age, trait_exceptions, xp_range
 from horatio.api.sheets import ApprovalOut, approval_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
@@ -50,6 +50,16 @@ class DisciplineOut(BaseModel):
     teacher: str
 
 
+class ExceptionAskOut(BaseModel):
+    """A trait asked for by exception: the rules it breaks, why, and whether free."""
+
+    breaks: list[str]
+    reason: str
+    free: bool
+    # What it costs at the normal price, where the rules price it.
+    normal_cost: int | None
+
+
 class XpReviewOut(BaseModel):
     """A joining character's XP against the troupe's floor and ceiling: as it
     stands while the request waits, and what was done once it is decided."""
@@ -74,8 +84,11 @@ class QueuedApproval(ApprovalOut):
     # The character's picture (horatio.pictures) and clan, for its placeholder.
     picture: str | None
     clan: str | None
-    # For a discipline: the dots bought and what they cost.
+    # For a discipline: the dots bought and what they cost. For a change held for
+    # review or asked by exception, the same.
     discipline: DisciplineOut | None
+    # For an exception: the rules it breaks, why, and whether it is asked free.
+    exception: ExceptionAskOut | None = None
     # For a home troupe change: each difference and how it is to be settled.
     reconciliation: list[ReconciliationOut]
     # For a player character's home troupe change: its XP against the floor and ceiling.
@@ -111,6 +124,8 @@ class XpDecision(BaseModel):
 
 class Decision(BaseModel):
     note: str = ""
+    # Exceptions asked free only: approve, but charge the XP at the normal price.
+    at_cost: bool = False
     # Home troupe changes only: settle these differences differently from the player's proposal.
     settlements: list[SettlementOverride] = []
     xp: XpDecision | None = None
@@ -161,8 +176,22 @@ def xp_review_out(db: DbSession, approval: Approval, character: Character) -> Xp
     return XpReviewOut(**xp_range.review(db, character, troupe, change.top_up).as_record())
 
 
+def exception_out(db: DbSession, approval: Approval) -> ExceptionAskOut | None:
+    if approval.kind != "exception":
+        return None
+    asked = trait_exceptions.asked_for(db, approval)
+    if asked is None:
+        return None
+    return ExceptionAskOut(
+        breaks=[c["message"] for c in asked.checks],
+        reason=asked.reason,
+        free=asked.free,
+        normal_cost=asked.normal_cost,
+    )
+
+
 def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
-    if approval.kind not in ("discipline", "review"):
+    if approval.kind not in sheets.HELD_KINDS:
         return None
     found = db.execute(
         select(DisciplinePurchase, TraitDefinition.name)
@@ -186,19 +215,22 @@ def troupe_approvals(
     db: DbSession,
     user: CurrentUser,
     state: Literal["pending", "approved", "declined", "withdrawn"] = "pending",
+    kind: Literal["home_troupe_change", "discipline", "review", "exception"] | None = None,
 ) -> list[QueuedApproval]:
+    """The troupe's requests in one state, oldest first: of one kind, if given."""
     troupe = db.get(Troupe, troupe_id)
     if troupe is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     require_troupe_action(db, user, troupe, TroupeAction.APPROVE_CHANGES)
-    rows = list(
-        db.execute(
-            select(Approval, Character)
-            .join(Character, Approval.character_id == Character.id)
-            .where(Approval.troupe_id == troupe.id, Approval.status == state)
-            .order_by(Approval.id)
-        )
+    query = (
+        select(Approval, Character)
+        .join(Character, Approval.character_id == Character.id)
+        .where(Approval.troupe_id == troupe.id, Approval.status == state)
+        .order_by(Approval.id)
     )
+    if kind is not None:
+        query = query.where(Approval.kind == kind)
+    rows = list(db.execute(query))
     standing = social_age.standings(db, list({c.id for _, c in rows}))
     return [
         QueuedApproval(
@@ -207,6 +239,7 @@ def troupe_approvals(
             picture=pictures.picture_url(c.id, c.picture_id),
             clan=standing[c.id].clan,
             discipline=discipline_out(db, a),
+            exception=exception_out(db, a),
             reconciliation=reconciliation_out(db, a),
             xp=xp_review_out(db, a, c),
         )
@@ -230,6 +263,7 @@ def decide(
         body.note,
         {o.item_id: o.settlement for o in body.settlements},
         xp_range.Decision(**body.xp.model_dump()) if body.xp else None,
+        at_cost=body.at_cost,
     )
     db.commit()
     return approval_out(approval)

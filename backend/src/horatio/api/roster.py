@@ -174,6 +174,12 @@ MESSAGES: dict[str, str] = {
     "approval.approved.discipline": "{actor} approved {character}'s {name} {rating}.",
     "approval.declined.discipline": "{actor} declined {character}'s {name} {rating}; refunded.",
     "approval.withdrawn.discipline": "{actor} withdrew {character}'s {name} {rating}; refunded.",
+    "approval.request.exception": "{actor} asked for {name} {rating} for {character} by"
+    " exception: {reason}",
+    "approval.approved.exception": "{actor} approved {character}'s {name} {rating} by exception.",
+    "approval.declined.exception": "{actor} declined {character}'s {name} {rating} by exception;"
+    " refunded.",
+    "approval.withdrawn.exception": "{actor} withdrew {character}'s {name} {rating}; refunded.",
     "approval.request.home_troupe_change": "{actor} asked to make this {character}'s home.",
     "approval.approved.home_troupe_change": "{actor} accepted {character}; this is its home.",
     "approval.approved": "{actor} approved {character}.",
@@ -241,6 +247,7 @@ MESSAGES: dict[str, str] = {
     "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",
     "sheet.choose": "{actor} chose {name} as {character}'s {category}.",
     "sheet.change": "{actor} changed {character}'s {category}: {from_name} → {name} ({cost} XP).",
+    "sheet.give": "{actor} gave {character} {name} {rating} by exception ({cost} XP): {reason}",
     "creation.pick": "{actor} picked {name} {rating} for {character}.",
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
     "creation.set_category": "{actor} set {character}'s starting {category}: {picks}.",
@@ -299,6 +306,8 @@ def purchase_message(data: dict[str, Any]) -> str:
         verb = "raised" if after > before else "lowered"
         change = f"{verb} {{character}}'s {name} from {before} to {after}"
     price = f" ({cost} XP)" if cost > 0 else f" ({-cost} XP back)" if cost < 0 else ""
+    if data.get("free"):
+        price = " (free by exception)"
     return f"{{actor}} {change}{price}."
 
 

@@ -91,6 +91,35 @@ class CharacterTrait(Record):
     note: Mapped[str] = mapped_column(default="", server_default="")
 
 
+class TraitException(Record):
+    """A trait held by exception (horatio.trait_exceptions): asked of the home
+    troupe's staff from the cart, or given by them. It sets aside the checks it
+    names for that one trait, up to the rating it was given at, and goes when the
+    trait does."""
+
+    __tablename__ = "trait_exceptions"
+
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    character_trait_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("character_traits.id", ondelete="CASCADE"), index=True
+    )
+    rating: Mapped[int]
+    # The checks it sets aside, as {"key", "message"}: each as it read when the
+    # exception was asked for or given.
+    checks: Mapped[list[dict[str, str]]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Given at no XP cost: the dots are free dots.
+    free: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # What the dots cost at the normal price when asked for, if they have one.
+    normal_cost: Mapped[int | None]
+    reason: Mapped[str]
+    requested_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # The approval an asked-for exception waits on; none for one staff gave.
+    approval_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("approvals.id"), unique=True)
+    # Who gave it or approved it, and when; none while it waits.
+    given_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    given_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class SheetVersion(Record):
     """One sheet as one troupe approved it, frozen. That troupe's approved sheet is its latest."""
 

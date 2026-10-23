@@ -7,9 +7,12 @@
 import { useSyncExternalStore } from "react";
 import type { components } from "../../api/schema";
 
+/** A change asked of the home troupe's staff as an exception to the rules: why, and whether at no XP cost. */
+export type Exception = { reason: string; free: boolean };
+
 export type CartLine =
   /** A rating from `from` (as saved) to `to`: a raise, a lower, a new trait (from 0) or a removal (to 0). */
-  | { kind: "set"; category: string; name: string; detail: string; from: number; to: number; teacher?: string; fixed?: boolean }
+  | { kind: "set"; category: string; name: string; detail: string; from: number; to: number; teacher?: string; fixed?: boolean; exception?: Exception }
   | { kind: "swap"; category: string; from_name: string; to_name: string }
   | { kind: "pick"; category: string; name: string; detail: string; rating: number }
   | { kind: "unpick"; category: string; name: string; detail: string };
@@ -36,7 +39,11 @@ export function ordered(lines: CartLine[]): CartLine[] {
 }
 
 /** Set a trait's rating in the cart. Back to where it was saved, it leaves the cart. */
-export function setRating(lines: CartLine[], trait: Trait & { rating: number; teacher?: string; fixed?: boolean }, to: number): CartLine[] {
+export function setRating(
+  lines: CartLine[],
+  trait: Trait & { rating: number; teacher?: string; fixed?: boolean; exception?: Exception },
+  to: number,
+): CartLine[] {
   const found = lines.find((l): l is Extract<CartLine, { kind: "set" }> => l.kind === "set" && same(l, trait));
   const from = found?.from ?? trait.rating;
   const rest = lines.filter((l) => l !== found);
@@ -50,8 +57,15 @@ export function setRating(lines: CartLine[], trait: Trait & { rating: number; te
     to,
     ...((trait.teacher ?? found?.teacher) ? { teacher: trait.teacher ?? found?.teacher } : {}),
     ...((trait.fixed ?? found?.fixed) ? { fixed: true } : {}),
+    // Asked as an exception: it stays asked at the new rating, which is judged again when spent.
+    ...((trait.exception ?? found?.exception) && to > from ? { exception: trait.exception ?? found?.exception } : {}),
   };
   return found ? lines.map((l) => (l === found ? line : l)) : [...lines, line];
+}
+
+/** Ask staff for a line the rules refuse, as an exception. */
+export function askException(lines: CartLine[], line: CartLine, exception: Exception): CartLine[] {
+  return lines.map((l) => (l === line && l.kind === "set" ? { ...l, exception } : l));
 }
 
 /** Swap a trait for another in the cart; swapping it again replaces the first. */
@@ -76,7 +90,16 @@ export function unpick(lines: CartLine[], trait: Trait): CartLine[] {
 export function toChange(line: CartLine): CartChange {
   switch (line.kind) {
     case "set":
-      return { kind: "set", category: line.category, name: line.name, detail: line.detail, rating: line.to, from_rating: line.from, teacher: line.teacher ?? "" };
+      return {
+        kind: "set",
+        category: line.category,
+        name: line.name,
+        detail: line.detail,
+        rating: line.to,
+        from_rating: line.from,
+        teacher: line.teacher ?? "",
+        ...(line.exception ? { exception: line.exception } : {}),
+      };
     case "swap":
       return line;
     case "pick":
