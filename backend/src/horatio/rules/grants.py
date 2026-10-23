@@ -28,8 +28,9 @@ source trait's detail says which, as "Resources" or "Performance: Singing".
 `choose = "any"` allows any trait in the target's categories.
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, Literal
 
 from horatio.rules.checks import matches
@@ -125,8 +126,12 @@ def effects(
     grants: Sequence[GrantData], sheet: Sequence[SheetTrait], rule_set: RuleSetData
 ) -> Effects:
     found = Effects()
+    # Each grant is only held through its source trait.
+    by_name: dict[tuple[str, str], list[SheetTrait]] = {}
+    for trait in sheet:
+        by_name.setdefault((trait.category, trait.name), []).append(trait)
     for grant in grants:
-        for trait in sheet:
+        for trait in by_name.get((grant.source["category"], grant.source["name"]), ()):
             if not holds_source(trait, grant.source):
                 continue
             if grant.when is not None and not matches(grant.when, sheet, trait):
@@ -194,8 +199,27 @@ def effects(
     return found
 
 
+@dataclass(frozen=True)
+class Priced:
+    """What a sheet's grants do to prices."""
+
+    in_clan: Set[tuple[str, str, str | None]]
+    cost_percent: Mapping[tuple[str, str, str | None], int]
+
+
+def priced(rule_set: RuleSetData, sheet: Sequence[SheetTrait]) -> Priced:
+    """What the sheet's grants price as in-clan, and at what percent: worked out
+    once for each sheet, as pricing asks it of every trait it prices."""
+
+    def work_out() -> Priced:
+        found = effects(rule_set.grants, sheet, rule_set)
+        return Priced(frozenset(found.in_clan_priced), MappingProxyType(dict(found.cost_percent)))
+
+    return rule_set.remembered(("priced", tuple(sheet)), work_out)
+
+
 def matching(
-    keys: Mapping[tuple[str, str, str | None], Any] | set[tuple[str, str, str | None]],
+    keys: Mapping[tuple[str, str, str | None], Any] | Set[tuple[str, str, str | None]],
     trait: SheetTrait,
 ) -> tuple[str, str, str | None] | None:
     """The entry for `trait`: its detail exactly, or any detail."""

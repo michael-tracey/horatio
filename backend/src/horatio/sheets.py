@@ -544,13 +544,33 @@ def unavailable(
     touching = [
         c
         for c in checks
-        if c.category == category_key or any(key[0] == category_key for key in c.looks_at())
+        if c.category == category_key or any(key[0] == category_key for key in c.looks_at)
     ]
     rated = rule_set.categories[category_key].rated
+    # Where the trial only adds a trait, only the checks about it, or that look at
+    # it or its whole category, can change; each by its place in `touching`, so
+    # they are tried in the same order.
+    about_any = [i for i, c in enumerate(touching) if c.name is None]
+    about_named: dict[str, list[int]] = {}
+    looking: dict[tuple[str, str | None], list[int]] = {}
+    for i, check in enumerate(touching):
+        if check.name is not None:
+            about_named.setdefault(check.name, []).append(i)
+        for key in check.looks_at:
+            looking.setdefault(key, []).append(i)
     reasons: dict[str, str] = {}
     for category, name in rule_set.traits:
         if category != category_key or name in held:
             continue
+        trying = touching
+        if rated:
+            places = {
+                *about_any,
+                *about_named.get(name, ()),
+                *looking.get((category, name), ()),
+                *looking.get((category, None), ()),
+            }
+            trying = [touching[i] for i in sorted(places)]
         rating = (fixed_rating(rules, sheet, category, name) or 1) if rated else None
         # The detail is chosen when the trait is added, so a trait refused only for
         # lacking one (Performance needs a field, p. 92) is tried again with one.
@@ -572,7 +592,7 @@ def unavailable(
             )
             new = [
                 v
-                for v in violations(touching if same_clan else checks, trial, trial_context)
+                for v in violations(trying if same_clan else checks, trial, trial_context)
                 if blocking(v, character) and v.key not in before
             ]
             if not new:
@@ -916,7 +936,7 @@ def problem(violation: Violation) -> Problem:
         subject.category,
         subject.name,
         subject.detail,
-        violation.check.looks_at(),
+        violation.check.looks_at,
     )
 
 
