@@ -148,6 +148,8 @@ class PlayView(BaseModel):
     generation: int
     blood_per_turn: int
     blood: Tracker
+    # Blood started at half: the character fed short last downtime.
+    half_blood: bool = False
     willpower: Tracker
     health: Health
     morality: Morality | None
@@ -383,6 +385,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         generation=limits.generation,
         blood_per_turn=limits.blood_per_turn,
         blood=Tracker(value=state["blood"], most=limits.blood, start=limits.starting_blood),
+        half_blood=limits.half_blood,
         willpower=Tracker(value=state["willpower"], most=limits.willpower, start=limits.willpower),
         health=Health(
             levels=[HealthLevel(name=n, boxes=b) for n, b in limits.health],

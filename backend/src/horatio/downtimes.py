@@ -21,7 +21,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, influence, responses
+from horatio import audit, feeding, influence, responses
 from horatio.models import (
     AllowanceAdjustment,
     Answer,
@@ -36,6 +36,7 @@ from horatio.models import (
     User,
     XpEntry,
 )
+from horatio.rules import feeding as feeding_rules
 from horatio.rules.allowance import allowance
 from horatio.rules.model import SheetTrait
 from horatio.rules.store import read_troupe_rules
@@ -187,6 +188,8 @@ def create_cycle(
         closes_at=closes_at,
         grace_ends_at=grace_ends_at,
         completion_xp=troupe.downtime_xp if completion_xp is None else completion_xp,
+        # Each clan's feeding carries on from the last cycle until staff change it.
+        feeding_difficulty=dict(previous.feeding_difficulty) if previous else {},
     )
     db.add(cycle)
     db.flush()
@@ -281,7 +284,9 @@ def fill_allowance(
     db: Session, participant: CycleParticipant, character: Character, troupe: Troupe
 ) -> None:
     rules = read_troupe_rules(db, character.splat, troupe.id)
-    totals, lines = allowance(rules, allowance_sheet(db, character))
+    sheet = allowance_sheet(db, character)
+    totals, lines = allowance(rules, sheet)
+    participant.feeding = feeding_rules.basis(rules, sheet)
     participant.allowance = totals
     participant.allowance_breakdown = [
         {"action_kind": line.action_kind, "source": line.source, "amount": line.amount}
@@ -604,8 +609,10 @@ def save_answers(
     cycle: DowntimeCycle,
     participant: CycleParticipant,
     specs: Sequence[AnswerSpec],
+    feeding_answer: feeding.FeedingAnswer | None = None,
 ) -> Submission:
-    """Replace the character's answers. Blank answers are dropped."""
+    """Replace the character's answers, and its Feeding section when given one.
+    Blank answers are dropped. Feeding actions come out of the general actions."""
     ensure_can_submit(cycle, participant)
     allowance_now = effective_allowance(db, participant)
     shown = {q.id: q for q in visible_questions(db, cycle, character, allowance_now)}
@@ -615,7 +622,23 @@ def save_answers(
     existing = {(a.question_id, a.slot): a for a in before_now}
     standings: dict[influence.InfluenceType, influence.Standing] | None = None
 
-    used: dict[str, int] = {}
+    feeding_before = feeding.answer_of(submission)
+    if feeding_answer is None:
+        feeding_answer = feeding_before
+    else:
+        feeding.check_answer(
+            db,
+            cycle,
+            character,
+            feeding.participant_basis(db, participant, character, cycle),
+            feeding_answer,
+        )
+    used: dict[str, int] = {"general": feeding_answer.actions}
+    if feeding_answer.actions > allowance_now.get("general", 0):
+        raise unprocessable(
+            f"That is more feeding actions than the {allowance_now.get('general', 0)} "
+            "downtime actions this character has."
+        )
     per_question: dict[uuid.UUID, int] = {}
     seen: set[tuple[uuid.UUID, int]] = set()
     kept = [s for s in specs if s.body.strip()]
@@ -648,9 +671,11 @@ def save_answers(
                 )
             used[kind] = used.get(kind, 0) + 1
             if used[kind] > allowance_now.get(kind, 0):
+                fed = feeding_answer.actions if kind == "general" else 0
                 raise unprocessable(
                     f"That is more {kind.replace('_', ' ')} actions than the "
-                    f"{allowance_now.get(kind, 0)} this character has."
+                    f"{allowance_now.get(kind, 0)} this character has"
+                    + (f", with {fed} spent feeding." if fed else ".")
                 )
 
     if submission is None:
@@ -672,6 +697,13 @@ def save_answers(
         responses.drop_unwritten_responses(
             db, {a.id for key, a in existing.items() if key not in seen}
         )
+        if (
+            submission.feeding_result is not None
+            and feeding_answer.stored() != feeding_before.stored()
+        ):
+            raise conflict(
+                "A storyteller has already answered your feeding; it can no longer change."
+            )
     for key, answer in existing.items():
         if key not in seen:
             db.delete(answer)
@@ -685,6 +717,7 @@ def save_answers(
             db.add(answer)
         answer.body = spec.body.strip()
         answer.structured = spec.structured or {}
+    submission.feeding = feeding_answer.stored()
     db.flush()
     responses.sync_responses(db, submission)
     return submission

@@ -2827,3 +2827,119 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   await p.getByRole("button", { name: "Notifications, 1 waiting" }).click();
   await expect(p.getByText("exc-lead gave Wren Calm Heart 1, free: Raised by a True Brujah")).toBeVisible();
 });
+
+test("feeding in a downtime: Herd given to another character, both answered, and half Blood at the next game", async ({ browser }) => {
+  const custodian = await person(browser, "feed-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "feed-lead");
+  const giver = await person(browser, "feed-giver");
+  const receiver = await person(browser, "feed-receiver");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupeName = `Hungry Night ${run}`;
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+
+  // Agnes (Toreador, Herd 2) and Bram (Brujah, no Herd), both at home in the troupe.
+  const build = async (page: Page, name: string, clan: string, backgrounds: [string, number][]) => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: clan, rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds,
+      disciplines: clan === "Toreador" ? [["Auspex", 2], ["Celerity", 1], ["Presence", 1]] : [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const agnes = await build(giver.page, "Agnes", "Toreador", [["Fame", 3], ["Herd", 2], ["Generation", 1]]);
+  const bram = await build(receiver.page, "Bram", "Brujah", [["Fame", 3], ["Resources", 2], ["Generation", 1]]);
+
+  // The lead makes a cycle, and Brujah need 2 this time.
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Lean month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+  const l = lead.page;
+  await l.goto(`/cycles/${cycle.id}/feeding`);
+  await l.getByLabel("Feeding for Brujah").fill("2");
+  await l.getByLabel("Reason for Brujah").fill("riots downtown");
+  await l.getByRole("listitem").filter({ hasText: "Brujah" }).getByRole("button", { name: "Save" }).click();
+  await expect(l.getByText("Needs 2: Brujah 2 (riots downtown)")).toBeVisible();
+
+  // Agnes keeps one dot of Herd for her own feeding and gives the other to Bram.
+  const a = giver.page;
+  await a.goto(`/characters/${agnes}/downtime`);
+  const feeding = a.locator("section").filter({ has: a.getByRole("heading", { name: "Feeding" }) });
+  await expect(feeding.getByText("You need 1 feeding this cycle: Toreador 1.")).toBeVisible();
+  await feeding.getByLabel("Use for my feeding").fill("1");
+  await feeding.getByRole("button", { name: "Give Herd to another character" }).click();
+  await expect(feeding.getByLabel("Give to…")).toHaveValue(bram);
+  await expect(feeding.getByText("2 of 2 dots shared out")).toBeVisible();
+  await expect(feeding.getByRole("status")).toHaveText("Feeding 0 + your Herd 1 = 1 of 1 needed ✓");
+  await a.screenshot(shots("downtime-feeding"));
+  await a.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(a.getByText("submitted", { exact: true })).toBeVisible();
+
+  // Bram sees the gift in his tally: 1 of the 2 he needs. Nothing stops him submitting.
+  const b = receiver.page;
+  await b.goto(`/characters/${bram}/downtime`);
+  const his = b.locator("section").filter({ has: b.getByRole("heading", { name: "Feeding" }) });
+  await expect(his.getByText("You need 2 feeding this cycle: Brujah 2 (riots downtown).")).toBeVisible();
+  await expect(his.getByText("Agnes gave you 1 Herd.")).toBeVisible();
+  await expect(his.getByRole("status")).toHaveText("Feeding 0 + 1 from Agnes = 1 of 2 needed: you'll come to game at half Blood unless staff say otherwise.");
+  await his.getByLabel("Where and how").fill("The back rooms of the Rack");
+  await b.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(b.getByText("submitted", { exact: true })).toBeVisible();
+
+  // The tally suggests Full for Agnes and Half for Bram; the lead answers both.
+  await l.reload();
+  const agnesCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Agnes" }) });
+  const bramCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Bram" }) });
+  await expect(agnesCard.getByText("0 feeding actions · Herd: 1 for my feeding, 1 to Bram")).toBeVisible();
+  await expect(agnesCard.getByRole("radio", { name: "Full Blood next game" })).toBeChecked();
+  await agnesCard.getByLabel("Flavour (optional)").fill("Your admirers keep you well fed.");
+  await agnesCard.getByRole("button", { name: "Answer" }).click();
+  await expect(agnesCard.getByText(/How it was worked out: needed 1 \(Toreador 1\)/)).toBeVisible();
+  await expect(bramCard.getByRole("radio", { name: "Half Blood next game" })).toBeChecked();
+  await bramCard.getByRole("button", { name: "Answer" }).click();
+  await expect(bramCard.getByText("How it was worked out: needed 2 (Brujah 2 (riots downtown)). Feeding actions 0; Herd from Agnes 1. Total 1.")).toBeVisible();
+  await l.screenshot(shots("cycle-feeding"));
+  await send(l, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: false });
+  const delivered = await send(l, "POST", `/api/cycles/${cycle.id}/deliver`);
+  expect(delivered.delivered).toBe(2);
+
+  // Each player reads the answer, with the working folded away beneath it.
+  await a.goto(`/characters/${agnes}/results`);
+  await expect(a.getByText("Full Blood next game.")).toBeVisible();
+  await b.goto(`/characters/${bram}/results`);
+  await expect(b.getByText("Half Blood next game.")).toBeVisible();
+  const working = b.getByText("Feeding actions 0; Herd from Agnes 1. Total 1.", { exact: false });
+  await expect(working).toBeHidden();
+  await b.getByText("How it was worked out").click();
+  await expect(working).toBeVisible();
+
+  // Bram's next game starts at half Blood, rounded up; Agnes's at full.
+  await b.goto(`/play/characters/${bram}`);
+  await expect(b.getByLabel("Blood: 5 of 10")).toBeVisible();
+  await expect(b.getByText("Half Blood: fed short last downtime")).toBeVisible();
+  await b.screenshot(shots("play-half-blood"));
+  await a.goto(`/play/characters/${agnes}`);
+  await expect(a.getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(a.getByText("Half Blood: fed short last downtime")).toHaveCount(0);
+});

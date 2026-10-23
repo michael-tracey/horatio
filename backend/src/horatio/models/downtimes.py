@@ -35,6 +35,12 @@ class DowntimeCycle(Record):
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Experience each character gets for submitting its downtime; 0 for none.
     completion_xp: Mapped[int] = mapped_column(default=2, server_default="2")
+    # Feeding actions each clan needs this cycle (horatio.feeding), copied from
+    # the last cycle: {"Gangrel": {"amount": 2, "reason": "..."}}. A clan not
+    # named needs the rule book's 1.
+    feeding_difficulty: Mapped[dict[str, dict[str, Any]]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
+    )
 
 
 class Question(Record):
@@ -77,6 +83,10 @@ class CycleParticipant(Record):
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
     allowance: Mapped[dict[str, int]] = mapped_column(JSONB)
     allowance_breakdown: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    # What the sheet said about feeding when it joined (horatio.feeding): its
+    # clan, the traits that change feeding, and its Herd. Null for participants
+    # from before feeding was tracked, worked out from the sheet as it stands.
+    feeding: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     # Null when added as the cycle opened.
     added_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -102,6 +112,20 @@ class AllowanceAdjustment(Record):
     owed_action_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("owed_actions.id", ondelete="CASCADE"), index=True
     )
+
+
+class FeedingAdjustment(Record):
+    """A storyteller's change to how many feeding actions one character needs in
+    one cycle, with a reason (horatio.feeding)."""
+
+    __tablename__ = "feeding_adjustments"
+
+    participant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cycle_participants.id"), index=True
+    )
+    delta: Mapped[int]
+    reason: Mapped[str]
+    adjusted_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
 
 
 class OwedAction(Record):
@@ -132,7 +156,13 @@ class OwedAction(Record):
 
 class Submission(Record):
     __tablename__ = "submissions"
-    __table_args__ = (CheckConstraint("status in ('draft', 'submitted')", name="status"),)
+    __table_args__ = (
+        CheckConstraint("status in ('draft', 'submitted')", name="status"),
+        CheckConstraint(
+            "feeding_result is null or feeding_result in ('full', 'half', 'other')",
+            name="feeding_result",
+        ),
+    )
 
     participant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("cycle_participants.id"), unique=True
@@ -140,6 +170,17 @@ class Submission(Record):
     status: Mapped[str] = mapped_column(default="draft", server_default="draft")
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     late: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The Feeding section (horatio.feeding): feeding actions spent and where, and
+    # how the character's Herd is shared out, gifts to other characters included.
+    feeding: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # The storytellers' answer: full or half Blood next game, or something else.
+    feeding_result: Mapped[str | None]
+    # A line of flavour with a full or half answer, or the answer itself for other.
+    feeding_reply: Mapped[str] = mapped_column(default="", server_default="")
+    # How the answer was worked out, as the player is shown it.
+    feeding_working: Mapped[str] = mapped_column(default="", server_default="")
+    feeding_answered_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    feeding_answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Answer(Record):

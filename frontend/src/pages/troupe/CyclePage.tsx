@@ -9,6 +9,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, P
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { DeliveryTab } from "./DeliveryTab";
+import { FeedingTab } from "./FeedingTab";
 import { LogInfluenceButton } from "./LogInfluence";
 
 export function CyclePage() {
@@ -38,6 +39,7 @@ export function CyclePage() {
           { to: base, label: "Overview", end: true },
           { to: `${base}/form`, label: "Form" },
           { to: `${base}/participants`, label: "Participants" },
+          { to: `${base}/feeding`, label: "Feeding" },
           { to: `${base}/responses`, label: "Responses" },
           ...(c.status === "closed" || c.status === "complete" ? [{ to: `${base}/delivery`, label: "Delivery" }] : []),
         ]}
@@ -46,6 +48,7 @@ export function CyclePage() {
         <Route index element={<Overview cycle={c} />} />
         <Route path="form" element={<FormEditor cycle={c} />} />
         <Route path="participants" element={<Participants cycle={c} />} />
+        <Route path="feeding" element={<FeedingTab cycle={c} />} />
         <Route path="responses" element={<Responses cycle={c} />} />
         <Route path="delivery" element={<DeliveryTab cycleId={c.id} troupeId={c.troupe_id} />} />
       </Routes>

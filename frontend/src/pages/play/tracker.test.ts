@@ -13,6 +13,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     generation: 1,
     blood_per_turn: 1,
     blood: { value: 10, most: 10, start: 10 },
+    half_blood: false,
     willpower: { value: 6, most: 6, start: 6 },
     health: {
       levels: [

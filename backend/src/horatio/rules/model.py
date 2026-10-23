@@ -132,6 +132,20 @@ class AllowanceRuleData:
 
 
 @dataclass(frozen=True)
+class FeedingModifierData:
+    """How a trait changes what a character must do to feed between games
+    (horatio.feeding): `amount` more feeding actions needed, how much each dot
+    of Herd counts for (0 for none, 2 for double), or always half Blood."""
+
+    category: str
+    trait: str
+    amount: int = 0
+    herd_factor: int = 1
+    always_half: bool = False
+    page: str | None = None
+
+
+@dataclass(frozen=True)
 class CreationRuleData:
     """What a new character gets free in a category (CONTEXT.md: Creation Rule):
     `picks` picks at `rating`, or a budget of `points` (merits and flaws)."""
@@ -170,6 +184,8 @@ class RuleSetData:
     traits: Mapping[tuple[str, str], TraitData]
     action_kinds: Mapping[str, ActionKindData] = field(default_factory=dict)
     allowance_rules: Sequence[AllowanceRuleData] = ()
+    # Traits that change how much a character must feed between games.
+    feeding_modifiers: Sequence[FeedingModifierData] = ()
     creation_rules: Sequence[CreationRuleData] = ()
     starting_traits: Sequence[StartingTraitData] = ()
     # Titles a troupe can give (CONTEXT.md: Title); troupes can add their own.

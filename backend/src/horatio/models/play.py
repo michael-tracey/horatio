@@ -33,6 +33,8 @@ class PlayGame(Record):
     ended_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     # The trackers after the latest tap, worked out from the log (horatio.play).
     state: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Blood starts at half, rounded up: the character fed short last downtime.
+    half_blood: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class PlayEvent(Record):

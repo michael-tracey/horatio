@@ -226,6 +226,10 @@ MESSAGES: dict[str, str] = {
     "downtime.participant_added": "{actor} added {character} to a downtime cycle.",
     "downtime.participant_removed": "{actor} removed {character} from a downtime cycle.",
     "downtime.allowance_adjusted": "{actor} adjusted {character}'s actions: {reason}",
+    "downtime.feeding_difficulty_set": "{actor} set {clan} feeding to {amount} this cycle:"
+    " {reason}",
+    "downtime.feeding_adjusted": "{actor} adjusted {character}'s feeding by {delta}: {reason}",
+    "downtime.feeding_answered": "{actor} answered {character}'s feeding: {result}.",
     "npc.created": "{actor} made an NPC, {character}.",
     "npc.deleted": "{actor} deleted the NPC {character}.",
     "title.given": "{actor} gave {character} the title {title}.",
