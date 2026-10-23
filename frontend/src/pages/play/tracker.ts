@@ -39,6 +39,8 @@ export function tapId(): string {
 /** A new tap, stamped with when it happened here and the game it was made in. */
 export function makeTap(
   what: {
+    /** Chosen ahead, for a tap that must never be made twice (feeding's Blood). */
+    id?: string;
     kind: Tap["kind"];
     tracker?: string;
     amount?: number;
@@ -51,7 +53,7 @@ export function makeTap(
   now: Date = new Date(),
 ): Tap {
   return {
-    id: tapId(),
+    id: what.id ?? tapId(),
     happened_at: now.toISOString(),
     game_id: gameId ?? null,
     kind: what.kind,

@@ -46,3 +46,39 @@
     color: black;
   }
 }
+
+/* Feeding's finish on the Play View: blood rises from the bottom, then the
+   result shows. With "reduce motion" set, the blood fades in instead. */
+@keyframes feed-rise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes feed-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.feed-rise {
+  animation: feed-rise 1.8s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+.feed-fade {
+  animation: feed-fade 0.6s ease-out both;
+}
+.feed-after {
+  animation: feed-fade 0.5s ease-out 1.4s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .feed-rise {
+    animation: feed-fade 0.6s ease-out both;
+  }
+  .feed-after {
+    animation-delay: 0s;
+  }
+}

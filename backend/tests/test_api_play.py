@@ -66,6 +66,8 @@ def test_a_new_game_starts_where_the_sheet_does(troupe: Troupe, agnes: str) -> N
     # No Generation dots count as Generation 1: 10 blood, 1 a turn.
     assert state["blood"] == {"value": 10, "most": 10, "start": 10}
     assert state["blood_per_turn"] == 1
+    # Herd 2: feeding at a game takes 5 minutes for 2 blood.
+    assert state["herd"] == 2
     assert state["willpower"] == {"value": 6, "most": 6, "start": 6}
     assert [(h["name"], h["boxes"]) for h in state["health"]["levels"]] == [
         ("Healthy", 3),
@@ -365,3 +367,18 @@ def test_npcs_are_at_game_and_reset_with_everyone(troupe: Troupe, agnes: str) ->
     reset = troupe.lead.client.post(f"/troupes/{troupe.id}/play/reset")
     assert reset.json() == {"reset": 2}
     assert view(troupe.storyteller, lucien)["game"]["number"] == 2
+
+
+def test_feeding_at_a_game_is_a_blood_tap_with_a_note(troupe: Troupe, agnes: str) -> None:
+    """Feed on the Play View (#153) records its blood as an ordinary tap, capped at
+    the most; a character without Herd has a Herd of 0."""
+    send(troupe.player, agnes, tap("blood", -3, at=1))
+    state = send(troupe.storyteller, agnes, tap("blood", 2, at=20, note="Fed (Herd 2)"))
+    assert state["blood"]["value"] == 9
+    assert state["log"][0]["text"] == "Blood 7 → 9"
+    assert state["log"][0]["note"] == "Fed (Herd 2)"
+    state = send(troupe.player, agnes, tap("blood", 2, at=30, note="Fed (Herd 2)"))
+    assert state["log"][0]["text"] == "Blood 9 → 10"
+
+    no_herd = new_character(troupe, troupe.player, "Mara")
+    assert view(troupe.player, no_herd)["herd"] == 0

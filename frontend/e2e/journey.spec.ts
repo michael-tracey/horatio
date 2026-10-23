@@ -2067,6 +2067,201 @@ test("the Play View opens as the settings say", async ({ browser }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
+/**
+ * Stand-ins for what feeding's finish uses, so a test can see it happen: the
+ * sound (oscillators made), a vibration and a notification, granted.
+ */
+async function watchFeeding(page: Page) {
+  await page.context().addInitScript(() => {
+    const seen = { sounds: 0, buzzes: 0, notes: [] as string[] };
+    (window as unknown as { seen: typeof seen }).seen = seen;
+    const Audio = window.AudioContext;
+    if (Audio) {
+      const make = Audio.prototype.createOscillator;
+      Audio.prototype.createOscillator = function () {
+        seen.sounds++;
+        return make.call(this);
+      };
+    }
+    Object.defineProperty(navigator, "vibrate", { value: () => ((seen.buzzes++), true), configurable: true });
+    class Note {
+      static permission = "granted";
+      static requestPermission = async () => "granted";
+      constructor(title: string) {
+        seen.notes.push(title);
+      }
+    }
+    Object.defineProperty(window, "Notification", { value: Note, configurable: true, writable: true });
+  });
+}
+
+const seen = (page: Page) => page.evaluate(() => (window as unknown as { seen: { sounds: number; buzzes: number; notes: string[] } }).seen);
+
+/** Hide or show the page, as locking the phone or switching apps does. */
+async function setShown(page: Page, shown: boolean) {
+  await page.evaluate((shown) => {
+    Object.defineProperty(document, "visibilityState", { value: shown ? "visible" : "hidden", configurable: true });
+    Object.defineProperty(document, "hidden", { value: !shown, configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  }, shown);
+}
+
+test("Feed on the Play View: 15 minutes for 2 Blood, kept through a reload, cancelled, and capped at the most", async ({ browser }) => {
+  const { page } = await person(browser, "feed-player");
+  await watchFeeding(page);
+  await page.clock.install();
+  await page.getByLabel("Name").fill("Ottilie");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const characterId = new URL(page.url()).pathname.split("/")[2]!;
+
+  // No Herd: 10 Blood, 3 spent.
+  await page.goto(`/play/characters/${characterId}`);
+  await page.getByLabel("Quick notes").uncheck();
+  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
+  await expect(page.getByLabel("Blood: 7 of 10")).toBeVisible();
+
+  // The sheet says what will happen; its Cancel changes nothing.
+  await page.getByRole("button", { name: "Feed", exact: true }).click();
+  const sheet = page.getByRole("dialog", { name: "Feed" });
+  await expect(sheet).toContainText("Feed — 15 minutes, +2 Blood.");
+  await expect(sheet).toContainText("Tell a storyteller or narrator you're feeding first.");
+  await page.screenshot(shots("feed-sheet"));
+  await sheet.getByRole("button", { name: "Cancel" }).click();
+  await expect(sheet).toHaveCount(0);
+
+  // Started, it counts down, and a reload keeps the time.
+  await page.getByRole("button", { name: "Feed", exact: true }).click();
+  await sheet.getByRole("button", { name: "Start" }).click();
+  const timer = page.getByRole("dialog", { name: "Feeding" });
+  await expect(timer.getByRole("timer")).toHaveText(/^(15:00|14:5\d)$/);
+  await page.clock.fastForward("05:00");
+  await expect(timer.getByRole("timer")).toHaveText(/^(10:00|09:5\d)$/);
+  await page.reload();
+  await expect(timer.getByRole("timer")).toHaveText(/^(10:00|09:5\d)$/);
+  await page.screenshot(shots("feed-timer"));
+
+  // Cancel stops it and changes nothing, even after a reload.
+  await timer.getByRole("button", { name: "Cancel" }).click();
+  await expect(timer).toHaveCount(0);
+  await expect(page.getByLabel("Blood: 7 of 10")).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Blood: 7 of 10")).toBeVisible();
+  await expect(timer).toHaveCount(0);
+  await expect(page.getByText("“Fed”")).toHaveCount(0);
+
+  // The whole 15 minutes: blood rises, a sound and a buzz, and +2 Blood.
+  await page.getByRole("button", { name: "Feed", exact: true }).click();
+  await sheet.getByRole("button", { name: "Start" }).click();
+  await page.clock.fastForward("15:00");
+  const fed = page.getByRole("dialog", { name: "You fed" });
+  await expect(fed).toContainText("You fed.+2 Blood: Blood 7 → 9.");
+  await expect(fed.getByTestId("feed-fill")).toHaveAttribute("data-motion", "fill");
+  expect((await seen(page)).sounds).toBeGreaterThan(0);
+  expect((await seen(page)).buzzes).toBe(1);
+  await page.waitForTimeout(2000);
+  await page.screenshot(shots("feed-done"));
+  await fed.getByRole("button", { name: "Done" }).click();
+  await expect(fed).toHaveCount(0);
+  await expect(page.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(page.getByText("Blood 7 → 9")).toBeVisible();
+  await expect(page.getByText("“Fed”")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("Saved");
+
+  // Turned off on the timer, the sound stays off. Blood can't go above the most.
+  await page.getByRole("button", { name: "Feed", exact: true }).click();
+  await sheet.getByRole("button", { name: "Start" }).click();
+  await timer.getByLabel("Sound").uncheck();
+  await page.reload();
+  await expect(timer.getByLabel("Sound")).not.toBeChecked();
+  await page.clock.fastForward("15:00");
+  await expect(fed).toContainText("+1 Blood, now full: Blood 9 → 10.");
+  expect((await seen(page)).sounds).toBe(0); // a fresh page since the reload, and no sound made
+  await fed.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("Saved");
+});
+
+test("Feed with Herd: 5 minutes for Blood equal to Herd, waiting while the phone is locked, added once, with Undo", async ({ browser }) => {
+  const custodian = await person(browser, "feed-custodian");
+  makeCustodian(custodian.email);
+  // Reduced motion: the finish fades in rather than filling the screen.
+  const lead = await person(browser, "feed-lead", { reducedMotion: "reduce" });
+  const troupeName = `Court of Thirst ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // An NPC with Herd 3, played by the lead: staff start Feed for a character too.
+  const p = lead.page;
+  await watchFeeding(p);
+  await p.clock.install();
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Benedek", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category: "backgrounds", name: "Herd", rating: 3, detail: "" } });
+  expect(rated.status(), await rated.text()).toBe(200);
+
+  await p.goto(`/play/characters/${npc}`);
+  await p.getByLabel("Quick notes").uncheck();
+  for (let i = 0; i < 4; i++) await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
+  await expect(p.getByLabel("Blood: 6 of 10")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  await p.getByRole("button", { name: "Feed", exact: true }).click();
+  const sheet = p.getByRole("dialog", { name: "Feed" });
+  await expect(sheet).toContainText("Feed — 5 minutes, +3 Blood (Herd 3).");
+  await sheet.getByRole("button", { name: "Start" }).click();
+  const timer = p.getByRole("dialog", { name: "Feeding" });
+  await expect(timer.getByRole("timer")).toHaveText(/^(05:00|04:5\d)$/);
+
+  // The phone locked for two minutes: the time is still right when it is back.
+  await setShown(p, false);
+  await p.clock.fastForward("02:00");
+  await setShown(p, true);
+  await expect(timer.getByRole("timer")).toHaveText(/^(03:00|02:5\d)$/);
+
+  // Locked when the time is up: a notification, and the Blood waits.
+  await setShown(p, false);
+  await p.clock.fastForward("03:00");
+  await expect.poll(async () => (await seen(p)).notes).toEqual(["Feeding is done"]);
+  await expect(timer.getByRole("timer")).toHaveText("00:00");
+  const fed = p.getByRole("dialog", { name: "You fed" });
+  await expect(fed).toHaveCount(0);
+  const blood = async () => (await (await p.request.get(`/api/characters/${npc}/play`)).json()).blood.value;
+  expect(await blood()).toBe(6);
+
+  // Back to the page: the result, faded in, and the Blood added.
+  await setShown(p, true);
+  await expect(fed).toContainText("You fed.+3 Blood (Herd 3): Blood 6 → 9.");
+  await expect(fed.getByTestId("feed-fill")).toHaveAttribute("data-motion", "fade");
+  await p.screenshot(shots("feed-done-reduced-motion"));
+  // Never twice: a reload shows the same result, and other devices see it once.
+  await expect.poll(blood).toBe(9);
+  await p.reload();
+  await expect(fed).toContainText("+3 Blood (Herd 3): Blood 6 → 9.");
+  await p.waitForTimeout(500);
+  expect(await blood()).toBe(9);
+  const log = (await (await p.request.get(`/api/characters/${npc}/play`)).json()).log as { note: string }[];
+  expect(log.filter((e) => e.note === "Fed (Herd 3)")).toHaveLength(1);
+
+  // Undo takes it back, as any tap.
+  await fed.getByRole("button", { name: "Undo" }).click();
+  await expect(fed).toHaveCount(0);
+  await expect(p.getByLabel("Blood: 6 of 10")).toBeVisible();
+  await expect(p.getByText("Undid: Blood 6 → 9")).toBeVisible();
+  await expect.poll(blood).toBe(6);
+});
+
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "profile-custodian");

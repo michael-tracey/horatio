@@ -6990,6 +6990,11 @@
           "health": {
             "$ref": "#/components/schemas/Health"
           },
+          "herd": {
+            "default": 0,
+            "title": "Herd",
+            "type": "integer"
+          },
           "influence": {
             "default": [],
             "items": {
