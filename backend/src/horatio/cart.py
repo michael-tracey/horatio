@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from horatio import creation, sheets
 from horatio.models import Approval, Character, CharacterTrait, User
+from horatio.rules.model import SheetTrait
 from horatio.sheets import TraitKey
 
 
@@ -79,6 +80,54 @@ class Outcome:
     refused: str | None = None
     # It went through but waits on the home troupe, like a discipline dot.
     needs_approval: bool = False
+
+
+def planned(sheet: Sequence[SheetTrait], changes: Sequence[Change]) -> list[SheetTrait]:
+    """The sheet as the changes would leave it, worked out without making them, for
+    asking what the character could take next. Only the ratings and swaps are
+    followed: not what the changes cost, whether they would be refused, or what a
+    new merit's grants would give. Taking a creation pick back is left out, as the
+    pick's dots may be bought ones too."""
+    traits = list(sheet)
+
+    def at(category: str, name: str, detail: str | None = None) -> int | None:
+        return next(
+            (
+                i
+                for i, t in enumerate(traits)
+                if t.category == category
+                and t.name == name
+                and (detail is None or t.detail == detail)
+            ),
+            None,
+        )
+
+    for change in changes:
+        if isinstance(change, SetRating | Pick):
+            i = at(change.category, change.name, change.detail)
+            if isinstance(change, SetRating) and change.rating == 0:
+                if i is not None:
+                    del traits[i]
+            elif i is None:
+                traits.append(
+                    SheetTrait(
+                        category=change.category,
+                        name=change.name,
+                        rating=change.rating,
+                        detail=change.detail,
+                    )
+                )
+            elif change.rating is not None:
+                held = traits[i]
+                rating = change.rating
+                if isinstance(change, Pick):
+                    rating = max(rating, held.rating or 0)
+                traits[i] = replace(held, rating=rating, free_rating=min(held.free_rating, rating))
+        elif isinstance(change, Swap):
+            i = at(change.category, change.from_name)
+            if i is not None:
+                traits[i] = replace(traits[i], name=change.to_name)
+    return traits
 
 
 def held_rating(db: Session, character: Character, change: SetRating) -> int:

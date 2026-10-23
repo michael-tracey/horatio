@@ -1181,7 +1181,13 @@ export interface paths {
          */
         get: operations["unavailable_api_characters__character_id__unavailable_get"];
         put?: never;
-        post?: never;
+        /**
+         * Unavailable After
+         * @description For each category, the traits the character cannot take, and why, with the
+         *     sheet as the cart's changes would leave it: a discipline dot in the cart opens
+         *     the techniques that need it straight away. Nothing is saved.
+         */
+        post: operations["unavailable_after_api_characters__character_id__unavailable_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7323,6 +7329,13 @@ export interface components {
             /** Reset */
             reset: number;
         };
+        /** UnavailableIn */
+        UnavailableIn: {
+            /** Categories */
+            categories: string[];
+            /** Changes */
+            changes?: (components["schemas"]["SetChangeIn"] | components["schemas"]["SwapChangeIn"] | components["schemas"]["PickChangeIn"] | components["schemas"]["UnpickChangeIn"])[];
+        };
         /** Unpick */
         Unpick: {
             /** Category */
@@ -9919,6 +9932,45 @@ export interface operations {
                 content: {
                     "application/json": {
                         [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unavailable_after_api_characters__character_id__unavailable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnavailableIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: {
+                            [key: string]: string;
+                        };
                     };
                 };
             };
