@@ -92,7 +92,7 @@ class Context:
     in_clan: frozenset[str] = frozenset()
     # Truly native only: in_clan without the paths a merit prices as in-clan.
     native: frozenset[str] = frozenset()
-    # Primary paths the player named, where the clan has no in-clan path.
+    # The primary paths: the ones the player named, else the clan's in-clan path.
     primary: frozenset[str] = frozenset()
     # Each trait's catalogue type, such as "Clan" for a clan merit.
     kinds: Mapping[tuple[str, str], str] = field(default_factory=dict[tuple[str, str], str])
@@ -294,7 +294,7 @@ def matches(
                 for t in sheet
                 if t.category == test["category"]
                 and t.name.startswith(test.get("name_prefix", ""))
-                and (t.name in context.native or t.name in context.primary)
+                and t.name in context.primary
                 and t.name != subject.name
             ]
             ok = bool(primaries) and (subject.rating or 0) > max(primaries)

@@ -132,9 +132,12 @@ class ExceptionOut(BaseModel):
 
 class PrimaryPathOut(BaseModel):
     discipline: str
-    # The clan's in-clan path, or the one the player named; None until named.
+    # The one the player named, else the clan's in-clan path; None until named.
     path: str | None
+    # Whether that is the clan's in-clan path.
     native: bool
+    # The clan's in-clan path of the discipline, if the character holds it.
+    default: str | None
     # The paths held, highest first, to name one from.
     options: list[str]
 
@@ -344,7 +347,13 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
         ),
         pending_approvals=[approval_out(a) for a in pending],
         primary_paths=[
-            PrimaryPathOut(discipline=p.discipline, path=p.path, native=p.native, options=p.options)
+            PrimaryPathOut(
+                discipline=p.discipline,
+                path=p.path,
+                native=p.native,
+                default=p.default,
+                options=p.options,
+            )
             for p in sheets.primary_paths(db, character)
         ],
         exceptions=exceptions_out(db, character),

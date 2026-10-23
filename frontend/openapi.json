@@ -8038,6 +8038,17 @@
       },
       "PrimaryPathOut": {
         "properties": {
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
           "discipline": {
             "title": "Discipline",
             "type": "string"
@@ -8069,6 +8080,7 @@
           "discipline",
           "path",
           "native",
+          "default",
           "options"
         ],
         "title": "PrimaryPathOut",

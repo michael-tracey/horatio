@@ -1,5 +1,5 @@
-"""A character whose clan has no in-clan path names its primary path of
-Thaumaturgy, and no other path may go above it (MET: VTM p. 187)."""
+"""A character names its primary path of Thaumaturgy, and no other path may go
+above it; a clan's in-clan path is primary until another is named (MET: VTM p. 172, 187)."""
 
 import uuid
 from collections.abc import Callable
@@ -67,6 +67,7 @@ def test_the_sheet_asks_for_a_primary_path(troupe: Troupe, learned: str) -> None
             "discipline": "Thaumaturgy",
             "path": None,
             "native": False,
+            "default": None,
             "options": [CORRUPTION, FLAMES],
         }
     ]
@@ -111,17 +112,78 @@ def test_unnaming(troupe: Troupe, learned: str) -> None:
     assert take(troupe.player, learned, "disciplines", FLAMES, 3).status_code == 200
 
 
-def test_a_clan_with_an_in_clan_path_has_it_as_primary(troupe: Troupe) -> None:
+BLOOD = "Thaumaturgy: Path of Blood"
+
+
+def test_a_clan_with_an_in_clan_path_has_it_as_primary_by_default(troupe: Troupe) -> None:
     tremere = rich(troupe, "Tremere")
-    take(troupe.player, tremere, "disciplines", "Thaumaturgy: Path of Blood", 1)
+    take(troupe.player, tremere, "disciplines", BLOOD, 1)
 
     assert primary(troupe, tremere) == [
         {
             "discipline": "Thaumaturgy",
-            "path": "Thaumaturgy: Path of Blood",
+            "path": BLOOD,
             "native": True,
-            "options": [],
+            "default": BLOOD,
+            "options": [BLOOD],
         }
     ]
-    refused = name(troupe, tremere, "Thaumaturgy: Path of Blood")
+
+
+@pytest.fixture
+def tremere(troupe: Troupe) -> str:
+    """A Tremere with Path of Blood 1 and Path of Corruption 2, the primary path
+    not yet named: Corruption was named to reach 2 dots, then un-named."""
+    character_id = rich(troupe, "Tremere")
+    assert take(troupe.player, character_id, "disciplines", BLOOD, 1).status_code == 200
+    taken = take(troupe.player, character_id, "merits", "Thaumaturgic Expertise", 1, CORRUPTION)
+    assert taken.status_code == 200, taken.text
+    assert take(troupe.player, character_id, "disciplines", CORRUPTION, 1).status_code == 200
+    assert name(troupe, character_id, CORRUPTION).status_code == 200
+    assert take(troupe.player, character_id, "disciplines", CORRUPTION, 2).status_code == 200
+    assert name(troupe, character_id, None).status_code == 200
+    return character_id
+
+
+def flagged(troupe: Troupe, character_id: str) -> list[str]:
+    sheet = troupe.player.client.get(f"/characters/{character_id}/sheet").json()
+    return [p["message"] for p in sheet["problems"] if "primary path" in p["message"]]
+
+
+def test_the_in_clan_path_is_primary_until_another_is_named(troupe: Troupe, tremere: str) -> None:
+    assert primary(troupe, tremere)[0]["path"] == BLOOD
+    assert flagged(troupe, tremere)
+
+
+def test_a_tremere_can_name_the_path_that_reached_two_dots_first(
+    troupe: Troupe, tremere: str
+) -> None:
+    named = name(troupe, tremere, CORRUPTION)
+
+    assert named.status_code == 200, named.text
+    path = named.json()["primary_paths"][0]
+    assert (path["path"], path["native"], path["default"]) == (CORRUPTION, False, BLOOD)
+    assert not flagged(troupe, tremere)
+    refused = take(troupe.player, tremere, "disciplines", BLOOD, 3)
     assert refused.status_code == 409
+    assert "primary path" in refused.json()["detail"]
+    log = [e["message"] for e in troupe.player.client.get(f"/characters/{tremere}/log").json()]
+    assert f"player named {CORRUPTION} Agnes's primary path of Thaumaturgy." in log
+
+
+def test_the_in_clan_path_cannot_be_named_below_a_higher_path(troupe: Troupe, tremere: str) -> None:
+    refused = name(troupe, tremere, BLOOD)
+
+    assert refused.status_code == 409
+    assert refused.json()["detail"].startswith(f"{CORRUPTION} is higher")
+
+
+def test_naming_the_in_clan_path_again_returns_to_the_default(troupe: Troupe, tremere: str) -> None:
+    name(troupe, tremere, CORRUPTION)
+    assert take(troupe.player, tremere, "disciplines", BLOOD, 2).status_code == 200
+
+    back = name(troupe, tremere, BLOOD)
+
+    assert back.status_code == 200, back.text
+    assert back.json()["primary_paths"][0]["path"] == BLOOD
+    assert back.json()["primary_paths"][0]["native"] is True
