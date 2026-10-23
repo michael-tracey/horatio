@@ -10,7 +10,7 @@ import { filled, linksOf, newPlayersText, type LinkKind } from "./profile";
 /**
  * A troupe's profile: its portrait, links, schedule, venue, setting, new players
  * and age and content notes, each part shown only when it has something in it.
- * The About tab shows it to anyone signed in; the public page (/t/…) to anyone
+ * The Profile tab shows it to anyone signed in; the public page (/t/…) to anyone
  * at all when the troupe has made it public. `signedIn` decides whether staff
  * link to their own pages, which only people signed in can open.
  */

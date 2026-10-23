@@ -49,7 +49,8 @@ describe("troupe profiles", () => {
 
   it("starts the editor from what is saved", () => {
     const form = editable({ ...bare, public: true, contact: bare.lead, links: { ...bare.links, discord: "https://discord.gg/x" } });
-    expect(form.public).toBe(true);
+    // The switch saves that on its own, so the editor leaves it as it is.
+    expect(form.public).toBeUndefined();
     expect(form.contact_id).toBe("u1");
     expect(form.links).toEqual({ website: "", discord: "https://discord.gg/x", facebook: "", instagram: "", join: "" });
   });

@@ -49,6 +49,7 @@ from horatio.api import (
     troupe_requests,
     troupes,
     unsubscribe,
+    waiting,
     xp_awards,
     xp_range,
 )
@@ -131,6 +132,7 @@ for module in (
     unsubscribe,
     system,
     play,
+    waiting,
 ):
     api.include_router(module.router)
 

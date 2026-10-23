@@ -194,6 +194,32 @@ def test_a_public_profile_shows_to_anyone_but_never_the_street_address(
     assert visitor.get(f"{profile['portrait'].removeprefix('/api')}/512.webp").status_code == 404
 
 
+def test_the_public_switch_changes_only_who_sees_the_profile(
+    troupe: Troupe, visitor: TestClient
+) -> None:
+    assert save(troupe).status_code == 200
+    switched = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/profile/public", json={"public": True}
+    )
+    assert switched.status_code == 200, switched.text
+    assert switched.json()["public"] is True
+    assert switched.json()["schedule"] == PROFILE["schedule"]
+    assert visitor.get(f"/troupes/{troupe.id}/profile").status_code == 200
+
+    # Saving the rest of the profile without saying leaves it public.
+    body = {**PROFILE, "schedule": "Every other Friday"}
+    saved = troupe.storyteller.client.put(f"/troupes/{troupe.id}/profile", json=body)
+    assert saved.json()["public"] is True
+
+    # Only storytellers switch it.
+    for person in (troupe.assistant, troupe.player):
+        refused = person.client.put(f"/troupes/{troupe.id}/profile/public", json={"public": False})
+        assert refused.status_code == 403
+    off = troupe.lead.client.put(f"/troupes/{troupe.id}/profile/public", json={"public": False})
+    assert off.json()["public"] is False
+    assert visitor.get(f"/troupes/{troupe.id}/profile").status_code == 404
+
+
 def test_people_not_signed_in_change_nothing(
     troupe: Troupe, visitor: TestClient, kept: Path
 ) -> None:

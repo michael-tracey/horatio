@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, Route, Routes, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { InfluenceChoicesOut, InfluenceEntryIn, InfluenceEntryOut } from "../../api/types";
-import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTabs, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { TYPE_NAMES } from "../../influence";
@@ -15,10 +15,34 @@ import { WhoPicker } from "./WhoPicker";
 
 const PAGE = 100;
 
-/** Every influence action taken in the troupe, for its storytellers and assistants. Players never see it. */
+/**
+ * Every influence action taken in the troupe, for its storytellers and
+ * assistants, and the effects targeted actions have made. Players never see it.
+ */
 export function InfluenceLogTab({ troupeId }: { troupeId: string }) {
+  const base = `/troupes/${troupeId}/influence`;
+  return (
+    <>
+      <PageTabs
+        label="Influence log"
+        tabs={[
+          { to: base, label: "Log", end: true },
+          { to: `${base}/effects`, label: "Effects and blocks" },
+        ]}
+      />
+      <Routes>
+        <Route index element={<Log troupeId={troupeId} />} />
+        <Route path="effects" element={<EffectsCard troupeId={troupeId} />} />
+      </Routes>
+    </>
+  );
+}
+
+function Log({ troupeId }: { troupeId: string }) {
   const dates = useDates();
-  const [filters, setFilters] = useState<LogFilters>(NO_FILTERS);
+  // ?needs=details, from the Waiting on you box, starts with only those.
+  const [params] = useSearchParams();
+  const [filters, setFilters] = useState<LogFilters>(() => (params.get("needs") === "details" ? { ...NO_FILTERS, needsDetails: true } : NO_FILTERS));
   const [limit, setLimit] = useState(PAGE);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
@@ -115,8 +139,11 @@ export function InfluenceLogTab({ troupeId }: { troupeId: string }) {
             <Input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} />
           </Field>
         </div>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={filters.needsDetails} onChange={(e) => set({ needsDetails: e.target.checked })} />
+          Only those that need details
+        </label>
       </Card>
-      <EffectsCard troupeId={troupeId} />
       {toMerge.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => merge.mutate(toMerge.map((e) => e.id))} disabled={merge.isPending}>

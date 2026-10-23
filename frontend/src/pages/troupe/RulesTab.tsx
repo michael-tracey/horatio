@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Route, Routes } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CheckOut } from "../../api/types";
-import { Badge, Card, ErrorText, Input, Loading, Select, SubTabs } from "../../components/ui";
+import { Badge, Card, ErrorText, Input, Loading, PageTabs, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AllowancesSection } from "./AllowancesSection";
 import { pageText } from "./bookPage";
@@ -71,7 +71,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
   const base = `/troupes/${troupeId}/rules`;
   return (
     <>
-      <SubTabs
+      <PageTabs
         label="House rules"
         tabs={[
           { to: base, label: "Checks", end: true },
