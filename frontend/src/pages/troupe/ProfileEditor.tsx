@@ -1,53 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
-import type { TroupeOut, TroupeProfileIn, TroupeProfileOut } from "../../api/types";
+import type { TroupeProfileIn, TroupeProfileOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { Dialog } from "../../components/Dialog";
-import { Button, Card, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
+import { Button, Card, ErrorText, Field, Input, Notice, Select, Textarea } from "../../components/ui";
 import type { Crop } from "../../components/crop";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { Cropper } from "../character/Picture";
-import { editable, hasProfile, LINKS, publicPath } from "./profile";
-import { TroupeProfileView } from "./TroupeProfile";
+import { editable, LINKS } from "./profile";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
 
-/**
- * The troupe's profile on its About tab, for anyone signed in, and for its
- * storytellers a button to edit it there.
- */
-export function TroupeProfileSection({ troupe }: { troupe: TroupeOut }) {
-  const [editing, setEditing] = useState(false);
-  const profile = useQuery({
-    queryKey: ["troupe-profile", troupe.id],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/profile", { params: { path: { troupe_id: troupe.id } } })),
-  });
-  if (profile.isPending) return <Loading />;
-  if (profile.error) return <ErrorText error={profile.error} />;
-  const p = profile.data;
-
-  if (editing) return <ProfileEditor profile={p} onDone={() => setEditing(false)} />;
-  return (
-    <section aria-label="Profile" className="flex flex-col gap-3">
-      {p.can_edit && (
-        <div className="flex flex-wrap items-center justify-end gap-3 text-sm">
-          <span className="text-mist">{p.public ? "Anyone can see this profile, even people not signed in." : "Only people signed in can see this profile."}</span>
-          <Button variant="secondary" onClick={() => setEditing(true)}>
-            Edit profile
-          </Button>
-        </div>
-      )}
-      {p.can_edit && !hasProfile(p) && <Notice>Nothing on the profile yet: add a portrait, links, when and where the troupe plays, and more.</Notice>}
-      <TroupeProfileView profile={p} signedIn />
-    </section>
-  );
-}
-
-/** Everything on the profile, for the troupe's storytellers to change. */
-function ProfileEditor({ profile, onDone }: { profile: TroupeProfileOut; onDone: () => void }) {
+/** Everything on the profile, for the troupe's storytellers to change. Whether it
+ * is public is the Profile tab's switch, which saves on its own. */
+export function ProfileEditor({ profile, onDone }: { profile: TroupeProfileOut; onDone: () => void }) {
   const path = { params: { path: { troupe_id: profile.id } } };
   const [form, setForm] = useState<TroupeProfileIn>(() => editable(profile));
   const staff = useQuery({
@@ -61,7 +30,6 @@ function ProfileEditor({ profile, onDone }: { profile: TroupeProfileOut; onDone:
   const set = (changes: Partial<TroupeProfileIn>) => setForm((f) => ({ ...f, ...changes }));
   const venue = form.venue!;
   const setting = form.setting!;
-  const address = `${window.location.origin}${publicPath(profile.id)}`;
 
   return (
     <Card title="Edit the profile">
@@ -74,19 +42,6 @@ function ProfileEditor({ profile, onDone }: { profile: TroupeProfileOut; onDone:
             save.mutate(undefined);
           }}
         >
-          <Part title="Who sees it">
-            <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" className="mt-1" checked={form.public} onChange={(e) => set({ public: e.target.checked })} />
-              <span>
-                Show this troupe's profile to anyone, even people not signed in
-                <span className="block text-xs text-mist">
-                  Off, only people signed in see it. On, it is also a page anyone can open, to share when recruiting: <span className="break-all">{address}</span>. The
-                  venue's street address only ever shows to people signed in.
-                </span>
-              </span>
-            </label>
-          </Part>
-
           <Part title="Links">
             <div className="grid gap-3 sm:grid-cols-2">
               {LINKS.map(({ kind, label, placeholder }) => (

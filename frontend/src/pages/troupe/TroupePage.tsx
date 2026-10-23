@@ -13,6 +13,7 @@ import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlayTab } from "./PlayTab";
+import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { RulesTab } from "./RulesTab";
@@ -69,6 +70,7 @@ export function TroupePage() {
             label: "Troupe",
             tabs: [
               { to: base, label: "About", end: true },
+              { to: `${base}/profile`, label: "Profile" },
               ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
               ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
             ],
@@ -105,6 +107,7 @@ export function TroupePage() {
       />
       <Routes>
         <Route index element={<OverviewTab troupe={t} can={can} />} />
+        <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
@@ -113,13 +116,13 @@ export function TroupePage() {
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
         {can.running && <Route path="rules/*" element={<RulesTab troupeId={t.id} canEdit={can.storyteller} />} />}
-        {can.running && <Route path="specializations" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
+        {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
         {can.running && <Route path="connectors" element={<ConnectorsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}
         {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} canLog={can.running} />} />}
-        {can.running && <Route path="influence" element={<InfluenceLogTab troupeId={t.id} />} />}
+        {can.running && <Route path="influence/*" element={<InfluenceLogTab troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
       </Routes>
     </>

@@ -82,8 +82,8 @@ class Profile(BaseModel):
 
 
 class TroupeProfileIn(Profile):
-    # Show the profile to anyone, even people not signed in.
-    public: bool = False
+    # Show the profile to anyone, even people not signed in; None leaves it as it is.
+    public: bool | None = None
     # Who new players should contact: one of the troupe's staff, or None.
     contact_id: uuid.UUID | None = None
 
@@ -272,18 +272,40 @@ def edit_profile(
     )
     troupe.profile = _stripped(trimmed).model_dump(mode="json")
     troupe.contact_id = body.contact_id
-    if body.public != troupe.public:
-        troupe.public = body.public
-        record(
-            db,
-            user,
-            "troupe.public",
-            troupe_id=troupe.id,
-            state="public" if body.public else "for people signed in only",
-        )
+    if body.public is not None:
+        make_public(db, user, troupe, body.public)
     record(db, user, "troupe.profile_changed", troupe_id=troupe.id)
     db.commit()
     return profile_out(db, user, troupe)
+
+
+class PublicIn(BaseModel):
+    public: bool
+
+
+@router.put("/profile/public")
+def set_public(
+    troupe_id: uuid.UUID, body: PublicIn, db: DbSession, user: CurrentUser
+) -> TroupeProfileOut:
+    """Show the profile to anyone, or only to people signed in, without touching
+    the rest of it: the Profile tab's switch, which saves at once."""
+    troupe = editable(db, user, troupe_id)
+    make_public(db, user, troupe, body.public)
+    db.commit()
+    return profile_out(db, user, troupe)
+
+
+def make_public(db: Session, user: User, troupe: Troupe, public: bool) -> None:
+    if public == troupe.public:
+        return
+    troupe.public = public
+    record(
+        db,
+        user,
+        "troupe.public",
+        troupe_id=troupe.id,
+        state="public" if public else "for people signed in only",
+    )
 
 
 def _stripped(profile: Profile) -> Profile:

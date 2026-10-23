@@ -46,10 +46,10 @@ export function hasProfile(p: TroupeProfileOut): boolean {
   );
 }
 
-/** The profile as the editor starts it: what is saved, ready to change. */
+/** The profile as the editor starts it: what is saved, ready to change. Whether
+ * it is public is the Profile tab's switch, which saves on its own. */
 export function editable(p: TroupeProfileOut): TroupeProfileIn {
   return {
-    public: p.public,
     contact_id: p.contact?.id ?? null,
     links: Object.fromEntries(LINKS.map(({ kind }) => [kind, p.links[kind] ?? ""])) as ProfileLinks,
     schedule: p.schedule,

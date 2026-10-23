@@ -11,9 +11,11 @@ export type LogFilters = {
   /** Days, "2026-07-11", from and to (both included). */
   from: string;
   to: string;
+  /** Only entries still waiting for their details. */
+  needsDetails: boolean;
 };
 
-export const NO_FILTERS: LogFilters = { type: "", specialization: "", who: "", action: "", from: "", to: "" };
+export const NO_FILTERS: LogFilters = { type: "", specialization: "", who: "", action: "", from: "", to: "", needsDetails: false };
 
 /** The day after "2026-07-11": "2026-07-12". */
 export function nextDay(day: string): string {
@@ -32,6 +34,7 @@ export function logQuery(filters: LogFilters, dates: Dates) {
     action: filters.action || undefined,
     since: filters.from ? dates.fromInput(`${filters.from}T00:00`).toISOString() : undefined,
     until: filters.to ? dates.fromInput(`${nextDay(filters.to)}T00:00`).toISOString() : undefined,
+    needs_details: filters.needsDetails || undefined,
   };
 }
 

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { StartingCategoryOut, StartingRule } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
@@ -38,7 +39,17 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
         </ul>
       </Card>
       <ExperienceDefaults troupeId={troupeId} canEdit={canEdit} />
-      <XpRangeCard troupeId={troupeId} canEdit={canEdit} />
+      <XpRangeCard
+        troupeId={troupeId}
+        canEdit={false}
+        link={
+          canEdit && (
+            <Link to={`/troupes/${troupeId}`} className="text-sm text-mist underline hover:text-parchment">
+              Set them on About
+            </Link>
+          )
+        }
+      />
       <StartingBlood troupeId={troupeId} canEdit={canEdit} />
     </div>
   );

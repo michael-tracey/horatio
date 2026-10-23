@@ -230,7 +230,10 @@ export function GroupedTabs({ label, groups }: { label: string; groups: { label:
   );
 }
 
-/** Smaller tabs inside a tab, for its parts. */
+/**
+ * The second level: a section's pages, as pills, under its group in
+ * `GroupedTabs`. For the parts of one page, inside it, use `PageTabs`.
+ */
 export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]; className?: string }) {
   return (
     <nav aria-label={label} className={cx("mb-5 flex flex-wrap gap-2", className)}>
@@ -252,6 +255,36 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
           </span>
         </NavLink>
       ))}
+    </nav>
+  );
+}
+
+/**
+ * The third level: the parts of one page, set inside it. A small segmented
+ * control, quieter than the pills above it, so the two never read as one row
+ * wrapped. On a phone it scrolls sideways rather than wrapping.
+ */
+export function PageTabs({ label, tabs, className }: { label: string; tabs: Tab[]; className?: string }) {
+  return (
+    // A className of its own replaces the margin below (Tailwind does not let a later margin class win).
+    <nav aria-label={label} className={cx("max-w-full overflow-x-auto", className ?? "mb-5")}>
+      <div className="inline-flex gap-0.5 rounded-md border border-ash bg-night p-0.5">
+        {tabs.map((t) => (
+          <NavLink
+            key={t.to}
+            to={t.to}
+            end={t.end}
+            className={({ isActive }) =>
+              cx("rounded px-2.5 py-1 text-xs whitespace-nowrap", isActive ? "bg-ash text-gold" : "text-mist hover:text-parchment")
+            }
+          >
+            <span className="inline-flex items-center gap-1.5">
+              {t.label}
+              {t.count !== undefined && <CountBubble count={t.count} label="waiting" />}
+            </span>
+          </NavLink>
+        ))}
+      </div>
     </nav>
   );
 }
