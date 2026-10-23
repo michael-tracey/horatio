@@ -2539,6 +2539,8 @@ test("a troupe's Profile tab switches it public at once, About sets its XP range
   // About: the lead sets the XP floor and ceiling by hand, with Award XP beside them.
   await l.getByRole("link", { name: "About", exact: true }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}$`));
+  // The Profile tab's form can linger a moment after the URL changes, with the description in it.
+  await expect(l.getByRole("textbox", { name: "Description" })).toHaveCount(0);
   await expect(l.getByText("A court that meets where the roads cross.")).toBeVisible();
   await expect(l.locator("main").getByRole("link", { name: "Award XP", exact: true })).toBeVisible();
   await l.getByRole("button", { name: "Set by hand" }).click();
