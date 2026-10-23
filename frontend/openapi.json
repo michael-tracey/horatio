@@ -359,6 +359,16 @@
             },
             "title": "Answers",
             "type": "array"
+          },
+          "feeding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedingIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -1511,6 +1521,131 @@
         "title": "CharacterEffectOut",
         "type": "object"
       },
+      "CharacterFeedingOut": {
+        "properties": {
+          "adjustments": {
+            "items": {
+              "$ref": "#/components/schemas/FeedingAdjustmentOut"
+            },
+            "title": "Adjustments",
+            "type": "array"
+          },
+          "answer": {
+            "$ref": "#/components/schemas/FeedingIn"
+          },
+          "answered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answered At"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "delivered": {
+            "title": "Delivered",
+            "type": "boolean"
+          },
+          "herd": {
+            "title": "Herd",
+            "type": "integer"
+          },
+          "need": {
+            "$ref": "#/components/schemas/FeedingNeedOut"
+          },
+          "participant_id": {
+            "format": "uuid",
+            "title": "Participant Id",
+            "type": "string"
+          },
+          "received": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivedOut"
+            },
+            "title": "Received",
+            "type": "array"
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "enum": [
+                  "full",
+                  "half",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "submission_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submission Status"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tally": {
+            "$ref": "#/components/schemas/TallyOut"
+          },
+          "working": {
+            "title": "Working",
+            "type": "string"
+          }
+        },
+        "required": [
+          "participant_id",
+          "character_id",
+          "character_name",
+          "clan",
+          "need",
+          "herd",
+          "adjustments",
+          "submission_status",
+          "answer",
+          "summary",
+          "received",
+          "tally",
+          "result",
+          "reply",
+          "working",
+          "answered_at",
+          "delivered"
+        ],
+        "title": "CharacterFeedingOut",
+        "type": "object"
+      },
       "CharacterOut": {
         "properties": {
           "building_troupe_id": {
@@ -1756,6 +1891,55 @@
           "to_name"
         ],
         "title": "ChoiceChange",
+        "type": "object"
+      },
+      "ClanFeedingIn": {
+        "properties": {
+          "amount": {
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "ClanFeedingIn",
+        "type": "object"
+      },
+      "ClanFeedingOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clan",
+          "amount",
+          "reason",
+          "characters"
+        ],
+        "title": "ClanFeedingOut",
         "type": "object"
       },
       "ClanLogoOut": {
@@ -2434,6 +2618,30 @@
           }
         },
         "title": "CycleClose",
+        "type": "object"
+      },
+      "CycleFeedingOut": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterFeedingOut"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanFeedingOut"
+            },
+            "title": "Clans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "clans",
+          "characters"
+        ],
+        "title": "CycleFeedingOut",
         "type": "object"
       },
       "CycleOut": {
@@ -3337,6 +3545,163 @@
         "title": "ExpendableOut",
         "type": "object"
       },
+      "FeedingAdjustmentIn": {
+        "properties": {
+          "delta": {
+            "maximum": 10.0,
+            "minimum": -10.0,
+            "title": "Delta",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "delta",
+          "reason"
+        ],
+        "title": "FeedingAdjustmentIn",
+        "type": "object"
+      },
+      "FeedingAdjustmentOut": {
+        "properties": {
+          "delta": {
+            "title": "Delta",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "delta",
+          "reason"
+        ],
+        "title": "FeedingAdjustmentOut",
+        "type": "object"
+      },
+      "FeedingAnswerIn": {
+        "properties": {
+          "reply": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reply",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "enum": [
+                  "full",
+                  "half",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "FeedingAnswerIn",
+        "type": "object"
+      },
+      "FeedingIn": {
+        "description": "The Feeding section of the form.",
+        "properties": {
+          "actions": {
+            "default": 0,
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Actions",
+            "type": "integer"
+          },
+          "gifts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/GiftIn"
+            },
+            "title": "Gifts",
+            "type": "array"
+          },
+          "herd_other": {
+            "default": 0,
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Herd Other",
+            "type": "integer"
+          },
+          "herd_other_text": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Herd Other Text",
+            "type": "string"
+          },
+          "herd_own": {
+            "default": 0,
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Herd Own",
+            "type": "integer"
+          },
+          "herd_saved": {
+            "default": 0,
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Herd Saved",
+            "type": "integer"
+          },
+          "where": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "title": "FeedingIn",
+        "type": "object"
+      },
+      "FeedingNeedOut": {
+        "properties": {
+          "always_half": {
+            "title": "Always Half",
+            "type": "boolean"
+          },
+          "herd_factor": {
+            "title": "Herd Factor",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/NeedLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "needed": {
+            "title": "Needed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "needed",
+          "lines",
+          "herd_factor",
+          "always_half"
+        ],
+        "title": "FeedingNeedOut",
+        "type": "object"
+      },
       "FilterCondition": {
         "additionalProperties": false,
         "description": "One condition of a character filter; see horatio.character_filter.",
@@ -3654,6 +4019,27 @@
           "notes"
         ],
         "title": "GameOut",
+        "type": "object"
+      },
+      "GiftIn": {
+        "properties": {
+          "amount": {
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "amount"
+        ],
+        "title": "GiftIn",
         "type": "object"
       },
       "GiveIn": {
@@ -5854,6 +6240,16 @@
             "title": "Cycle Name",
             "type": "string"
           },
+          "feeding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MyFeedingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "grace_ends_at": {
             "format": "date-time",
             "title": "Grace Ends At",
@@ -5899,6 +6295,99 @@
           "completion_xp_awarded"
         ],
         "title": "MyDowntime",
+        "type": "object"
+      },
+      "MyFeedingOut": {
+        "properties": {
+          "answer": {
+            "$ref": "#/components/schemas/FeedingIn"
+          },
+          "herd": {
+            "title": "Herd",
+            "type": "integer"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "need": {
+            "$ref": "#/components/schemas/FeedingNeedOut"
+          },
+          "received": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivedOut"
+            },
+            "title": "Received",
+            "type": "array"
+          },
+          "recipients": {
+            "items": {
+              "$ref": "#/components/schemas/RecipientOut"
+            },
+            "title": "Recipients",
+            "type": "array"
+          }
+        },
+        "required": [
+          "need",
+          "herd",
+          "answer",
+          "received",
+          "recipients",
+          "locked"
+        ],
+        "title": "MyFeedingOut",
+        "type": "object"
+      },
+      "NeedLineOut": {
+        "description": "One reason in a character's feeding number: its clan's number, a trait, or\na storyteller's adjustment.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "clan",
+              "trait",
+              "adjustment"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "amount",
+          "kind",
+          "note",
+          "page",
+          "text"
+        ],
+        "title": "NeedLineOut",
         "type": "object"
       },
       "NewCharacter": {
@@ -6986,6 +7475,11 @@
           "generation": {
             "title": "Generation",
             "type": "integer"
+          },
+          "half_blood": {
+            "default": false,
+            "title": "Half Blood",
+            "type": "boolean"
           },
           "health": {
             "$ref": "#/components/schemas/Health"
@@ -8414,6 +8908,54 @@
           }
         },
         "title": "ReadIds",
+        "type": "object"
+      },
+      "ReceivedOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "submitted": {
+            "title": "Submitted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "amount",
+          "submitted"
+        ],
+        "title": "ReceivedOut",
+        "type": "object"
+      },
+      "RecipientOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name"
+        ],
+        "title": "RecipientOut",
         "type": "object"
       },
       "ReconciliationOut": {
@@ -9881,6 +10423,55 @@
           "note"
         ],
         "title": "TallyLineOut",
+        "type": "object"
+      },
+      "TallyOut": {
+        "properties": {
+          "enough": {
+            "title": "Enough",
+            "type": "boolean"
+          },
+          "needed": {
+            "title": "Needed",
+            "type": "integer"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/TallyPartOut"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "needed",
+          "parts",
+          "total",
+          "enough"
+        ],
+        "title": "TallyOut",
+        "type": "object"
+      },
+      "TallyPartOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "amount"
+        ],
+        "title": "TallyPartOut",
         "type": "object"
       },
       "TapIn": {
@@ -16184,6 +16775,112 @@
         ]
       }
     },
+    "/api/cycles/{cycle_id}/feeding": {
+      "get": {
+        "operationId": "read_feeding_api_cycles__cycle_id__feeding_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleFeedingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Feeding",
+        "tags": [
+          "feeding"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/feeding/clans/{clan}": {
+      "put": {
+        "description": "Set how many feeding actions a clan needs this cycle, with the reason.",
+        "operationId": "set_clan_feeding_api_cycles__cycle_id__feeding_clans__clan__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "clan",
+            "required": true,
+            "schema": {
+              "title": "Clan",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanFeedingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleFeedingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Clan Feeding",
+        "tags": [
+          "feeding"
+        ]
+      }
+    },
     "/api/cycles/{cycle_id}/open": {
       "post": {
         "operationId": "open_cycle_api_cycles__cycle_id__open_post",
@@ -16484,6 +17181,134 @@
         "summary": "Adjust Allowance",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/participants/{participant_id}/feeding-adjustments": {
+      "post": {
+        "description": "Change one character's feeding number for this cycle, with a reason.",
+        "operationId": "adjust_feeding_api_cycles__cycle_id__participants__participant_id__feeding_adjustments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "participant_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Participant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedingAdjustmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleFeedingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Adjust Feeding",
+        "tags": [
+          "feeding"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/participants/{participant_id}/feeding-answer": {
+      "put": {
+        "description": "Full Blood next game, half Blood, or something else.",
+        "operationId": "answer_feeding_api_cycles__cycle_id__participants__participant_id__feeding_answer_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "participant_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Participant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedingAnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleFeedingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Feeding",
+        "tags": [
+          "feeding"
         ]
       }
     },

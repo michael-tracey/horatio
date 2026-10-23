@@ -21,7 +21,13 @@ from horatio.models import (
     TraitDefinition,
 )
 from horatio.rules.checks import check_from_dict, check_to_dict
-from horatio.rules.files import check_allowance_rule, check_cost_rule, check_creation_rules
+from horatio.rules.files import (
+    check_allowance_rule,
+    check_cost_rule,
+    check_creation_rules,
+    feeding_modifier_from_dict,
+    feeding_modifier_to_dict,
+)
 from horatio.rules.grants import grant_from_dict, grant_to_dict
 from horatio.rules.model import (
     ActionKindData,
@@ -78,6 +84,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
     rule_set.titles = list(data.titles)
     rule_set.checks = [check_to_dict(c) for c in data.checks]
     rule_set.grants = [grant_to_dict(g) for g in data.grants]
+    rule_set.feeding_modifiers = [feeding_modifier_to_dict(m) for m in data.feeding_modifiers]
     rule_set.creation_only = [dict(c) for c in data.creation_only]
     session.flush()
 
@@ -611,6 +618,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         titles=tuple(rule_set.titles),
         checks=tuple(check_from_dict(c) for c in rule_set.checks),
         grants=tuple(grant_from_dict(g) for g in rule_set.grants),
+        feeding_modifiers=tuple(feeding_modifier_from_dict(m) for m in rule_set.feeding_modifiers),
         creation_only=tuple(rule_set.creation_only),
         banked_xp=rule_set.banked_xp,
         categories={

@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, delivery
+from horatio import audit, delivery, feeding
 from horatio.models import (
     Answer,
     Character,
@@ -298,7 +298,8 @@ def delivered(db: Session, submission_id: uuid.UUID) -> bool:
 
 
 def compose(db: Session, cycle: DowntimeCycle, character: Character, submission: Submission) -> str:
-    """The message a player receives: each answered question, what they did, and the result."""
+    """The message a player receives: the answer to their feeding, then each answered
+    question, what they did, and the result."""
     rows = db.execute(
         select(Question, Answer, Response)
         .join(Answer, Answer.question_id == Question.id)
@@ -307,6 +308,9 @@ def compose(db: Session, cycle: DowntimeCycle, character: Character, submission:
         .order_by(Question.position, Answer.slot)
     )
     parts = [f"**Downtime results for {character.name} ({cycle.name})**"]
+    fed = feeding.compose(db, submission)
+    if fed is not None:
+        parts.append(fed)
     for question, answer, response in rows:
         parts.append(
             f"**{question.prompt}**\n*Your action:* {answer.body}\n*Result:* {response.body}"
@@ -342,12 +346,13 @@ def deliver_cycle(
             .where(Answer.submission_id == submission.id, Response.status == "written")
             .limit(1)
         )
-        if has_written is None:
+        if has_written is None and submission.feeding_result is None:
             continue
         message = compose(db, cycle, character, submission)
         queued += delivery.queue(db, staff, connectors, cycle, character, submission, message)
         if delivered(db, submission.id):
             continue
+        feeding.mark_half_blood(db, character, submission)
         db.add(
             Delivery(
                 submission_id=submission.id,

@@ -25,6 +25,10 @@ class RuleSet(Record):
     checks: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
     # Traits that give other traits (horatio.rules.grants), as written in the files.
     grants: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Traits that change feeding between games (horatio.feeding), as in the file.
+    feeding_modifiers: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
     # Traits chosen at creation only, as {category, name?, name_prefix?}.
     creation_only: Mapped[list[dict[str, str]]] = mapped_column(
         JSONB, default=list, server_default="[]"

@@ -10,7 +10,8 @@ Willpower) shows at once.
 
 A reset ends the game, keeping it and its log, and starts the next one, in
 which every tracker is back where the sheet starts it: blood full (or the
-home troupe's starting amount, a house rule), Willpower at its rating, health
+home troupe's starting amount, a house rule, or half if the character fed
+short last downtime: horatio.feeding), Willpower at its rating, health
 clear, Morality at the sheet's, no Beast traits, and each limited use back.
 """
 
@@ -72,6 +73,8 @@ class Limits:
     morality: int
     morality_name: str | None
     expendables: tuple[Expendable, ...] = ()
+    # Blood starts at half, rounded up: the character fed short last downtime.
+    half_blood: bool = False
     # Names for counters since removed, so old logs still read.
     removed: Mapping[str, str] = field(default_factory=dict[str, str])
 
@@ -213,11 +216,15 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     ]
     # Attacks and Boosts holding on the character move its Influences counters.
     expendables = influence_effects.play_uses(db, character, expendables)
+    # A game not started yet starts at half if the last downtime said so.
+    half = game.half_blood if game is not None else character.half_blood_next_game
+    usual = blood if house is None else min(house, blood)
     return Limits(
         generation=generation,
         blood=blood,
         blood_per_turn=per_turn,
-        starting_blood=blood if house is None else min(house, blood),
+        starting_blood=-(-blood // 2) if half else usual,
+        half_blood=half,
         willpower=ratings.get(("willpower_sources", "Willpower"), 0),
         health=tuple((level, ratings.get(("health_levels", level), 0)) for level in HEALTH_LEVELS),
         morality=(path.trait.rating or 0) if path else 0,
@@ -331,7 +338,13 @@ def start_game(db: Session, character: Character) -> PlayGame:
     if found is not None:
         return found
     last = db.scalar(select(func.max(PlayGame.number)).where(PlayGame.character_id == character.id))
-    game = PlayGame(character_id=character.id, number=(last or 0) + 1, state={})
+    game = PlayGame(
+        character_id=character.id,
+        number=(last or 0) + 1,
+        state={},
+        half_blood=character.half_blood_next_game,
+    )
+    character.half_blood_next_game = False
     db.add(game)
     db.flush()
     return game

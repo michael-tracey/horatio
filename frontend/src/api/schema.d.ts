@@ -1449,6 +1449,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/feeding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Feeding */
+        get: operations["read_feeding_api_cycles__cycle_id__feeding_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/feeding/clans/{clan}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Clan Feeding
+         * @description Set how many feeding actions a clan needs this cycle, with the reason.
+         */
+        put: operations["set_clan_feeding_api_cycles__cycle_id__feeding_clans__clan__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}/open": {
         parameters: {
             query?: never;
@@ -1529,6 +1566,46 @@ export interface paths {
         put?: never;
         /** Adjust Allowance */
         post: operations["adjust_allowance_api_cycles__cycle_id__participants__participant_id__adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/participants/{participant_id}/feeding-adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adjust Feeding
+         * @description Change one character's feeding number for this cycle, with a reason.
+         */
+        post: operations["adjust_feeding_api_cycles__cycle_id__participants__participant_id__feeding_adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/participants/{participant_id}/feeding-answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Answer Feeding
+         * @description Full Blood next game, half Blood, or something else.
+         */
+        put: operations["answer_feeding_api_cycles__cycle_id__participants__participant_id__feeding_answer_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3610,6 +3687,7 @@ export interface components {
         AnswersIn: {
             /** Answers */
             answers: components["schemas"]["AnswerIn"][];
+            feeding?: components["schemas"]["FeedingIn"] | null;
         };
         /** ApprovalOut */
         ApprovalOut: {
@@ -4034,6 +4112,46 @@ export interface components {
              */
             type: "elite" | "underworld";
         };
+        /** CharacterFeedingOut */
+        CharacterFeedingOut: {
+            /** Adjustments */
+            adjustments: components["schemas"]["FeedingAdjustmentOut"][];
+            answer: components["schemas"]["FeedingIn"];
+            /** Answered At */
+            answered_at: string | null;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Clan */
+            clan: string;
+            /** Delivered */
+            delivered: boolean;
+            /** Herd */
+            herd: number;
+            need: components["schemas"]["FeedingNeedOut"];
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** Received */
+            received: components["schemas"]["ReceivedOut"][];
+            /** Reply */
+            reply: string;
+            /** Result */
+            result: ("full" | "half" | "other") | null;
+            /** Submission Status */
+            submission_status: string | null;
+            /** Summary */
+            summary: string;
+            tally: components["schemas"]["TallyOut"];
+            /** Working */
+            working: string;
+        };
         /** CharacterOut */
         CharacterOut: {
             /** Building Troupe Id */
@@ -4109,6 +4227,27 @@ export interface components {
             from_name: string;
             /** To Name */
             to_name: string;
+        };
+        /** ClanFeedingIn */
+        ClanFeedingIn: {
+            /** Amount */
+            amount: number;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** ClanFeedingOut */
+        ClanFeedingOut: {
+            /** Amount */
+            amount: number;
+            /** Characters */
+            characters: number;
+            /** Clan */
+            clan: string;
+            /** Reason */
+            reason: string;
         };
         /** ClanLogoOut */
         ClanLogoOut: {
@@ -4332,6 +4471,13 @@ export interface components {
              * @default true
              */
             add_to_ceiling: boolean;
+        };
+        /** CycleFeedingOut */
+        CycleFeedingOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterFeedingOut"][];
+            /** Clans */
+            clans: components["schemas"]["ClanFeedingOut"][];
         };
         /** CycleOut */
         CycleOut: {
@@ -4647,6 +4793,82 @@ export interface components {
             /** Uses */
             uses: number;
         };
+        /** FeedingAdjustmentIn */
+        FeedingAdjustmentIn: {
+            /** Delta */
+            delta: number;
+            /** Reason */
+            reason: string;
+        };
+        /** FeedingAdjustmentOut */
+        FeedingAdjustmentOut: {
+            /** Delta */
+            delta: number;
+            /** Reason */
+            reason: string;
+        };
+        /** FeedingAnswerIn */
+        FeedingAnswerIn: {
+            /**
+             * Reply
+             * @default
+             */
+            reply: string;
+            /** Result */
+            result: ("full" | "half" | "other") | null;
+        };
+        /**
+         * FeedingIn
+         * @description The Feeding section of the form.
+         */
+        FeedingIn: {
+            /**
+             * Actions
+             * @default 0
+             */
+            actions: number;
+            /**
+             * Gifts
+             * @default []
+             */
+            gifts: components["schemas"]["GiftIn"][];
+            /**
+             * Herd Other
+             * @default 0
+             */
+            herd_other: number;
+            /**
+             * Herd Other Text
+             * @default
+             */
+            herd_other_text: string;
+            /**
+             * Herd Own
+             * @default 0
+             */
+            herd_own: number;
+            /**
+             * Herd Saved
+             * @default 0
+             */
+            herd_saved: number;
+            /**
+             * Where
+             * @default
+             */
+            where: string;
+        };
+        /** FeedingNeedOut */
+        FeedingNeedOut: {
+            /** Always Half */
+            always_half: boolean;
+            /** Herd Factor */
+            herd_factor: number;
+            /** Lines */
+            lines: components["schemas"]["NeedLineOut"][];
+            /** Needed */
+            needed: number;
+        };
         /**
          * FilterCondition
          * @description One condition of a character filter; see horatio.character_filter.
@@ -4790,6 +5012,16 @@ export interface components {
             started_at: string;
             /** Taps */
             taps: number;
+        };
+        /** GiftIn */
+        GiftIn: {
+            /** Amount */
+            amount: number;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
         };
         /** GiveIn */
         GiveIn: {
@@ -5611,6 +5843,7 @@ export interface components {
             cycle_id: string;
             /** Cycle Name */
             cycle_name: string;
+            feeding?: components["schemas"]["MyFeedingOut"] | null;
             /**
              * Grace Ends At
              * Format: date-time
@@ -5627,6 +5860,41 @@ export interface components {
             questions: components["schemas"]["QuestionOut"][];
             /** Status */
             status: string;
+        };
+        /** MyFeedingOut */
+        MyFeedingOut: {
+            answer: components["schemas"]["FeedingIn"];
+            /** Herd */
+            herd: number;
+            /** Locked */
+            locked: boolean;
+            need: components["schemas"]["FeedingNeedOut"];
+            /** Received */
+            received: components["schemas"]["ReceivedOut"][];
+            /** Recipients */
+            recipients: components["schemas"]["RecipientOut"][];
+        };
+        /**
+         * NeedLineOut
+         * @description One reason in a character's feeding number: its clan's number, a trait, or
+         *     a storyteller's adjustment.
+         */
+        NeedLineOut: {
+            /** Amount */
+            amount: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "clan" | "trait" | "adjustment";
+            /** Note */
+            note: string;
+            /** Page */
+            page: string | null;
+            /** Source */
+            source: string;
+            /** Text */
+            text: string;
         };
         /** NewCharacter */
         NewCharacter: {
@@ -6060,6 +6328,11 @@ export interface components {
             game: components["schemas"]["GameOut"] | null;
             /** Generation */
             generation: number;
+            /**
+             * Half Blood
+             * @default false
+             */
+            half_blood: boolean;
             health: components["schemas"]["Health"];
             /**
              * Influence
@@ -6591,6 +6864,30 @@ export interface components {
         ReadIds: {
             /** Ids */
             ids?: string[] | null;
+        };
+        /** ReceivedOut */
+        ReceivedOut: {
+            /** Amount */
+            amount: number;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Submitted */
+            submitted: boolean;
+        };
+        /** RecipientOut */
+        RecipientOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Name */
+            name: string;
         };
         /** ReconciliationOut */
         ReconciliationOut: {
@@ -7139,6 +7436,24 @@ export interface components {
             note: string;
             /** Rating */
             rating: number;
+        };
+        /** TallyOut */
+        TallyOut: {
+            /** Enough */
+            enough: boolean;
+            /** Needed */
+            needed: number;
+            /** Parts */
+            parts: components["schemas"]["TallyPartOut"][];
+            /** Total */
+            total: number;
+        };
+        /** TallyPartOut */
+        TallyPartOut: {
+            /** Amount */
+            amount: number;
+            /** Label */
+            label: string;
         };
         /**
          * TapIn
@@ -10731,6 +11046,73 @@ export interface operations {
             };
         };
     };
+    read_feeding_api_cycles__cycle_id__feeding_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleFeedingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_clan_feeding_api_cycles__cycle_id__feeding_clans__clan__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+                clan: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClanFeedingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleFeedingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     open_cycle_api_cycles__cycle_id__open_post: {
         parameters: {
             query?: never;
@@ -10913,6 +11295,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ParticipantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adjust_feeding_api_cycles__cycle_id__participants__participant_id__feeding_adjustments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedingAdjustmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleFeedingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_feeding_api_cycles__cycle_id__participants__participant_id__feeding_answer_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedingAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleFeedingOut"];
                 };
             };
             /** @description Validation Error */

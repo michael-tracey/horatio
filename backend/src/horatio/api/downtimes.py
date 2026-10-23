@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import downtimes, influence, pictures, social_age, xp_range
+from horatio import downtimes, feeding, influence, pictures, social_age, xp_range
 from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
@@ -23,6 +23,7 @@ from horatio.models import (
     XpEntry,
 )
 from horatio.permissions import TroupeAction, require_troupe_action
+from horatio.rules import feeding as feeding_rules
 
 router = APIRouter(tags=["downtimes"])
 
@@ -120,6 +121,72 @@ class AdjustmentIn(BaseModel):
     reason: str = Field(min_length=1)
 
 
+class NeedLineOut(BaseModel):
+    """One reason in a character's feeding number: its clan's number, a trait, or
+    a storyteller's adjustment."""
+
+    source: str
+    amount: int
+    kind: Literal["clan", "trait", "adjustment"]
+    note: str
+    page: str | None
+    # As the form shows it: "Gangrel 1", "Disease Carrier +1".
+    text: str
+
+
+class FeedingNeedOut(BaseModel):
+    needed: int
+    lines: list[NeedLineOut]
+    # What each dot of Herd counts for: 0 when the character cannot use Herd.
+    herd_factor: int
+    # No feeding brings the character to full Blood.
+    always_half: bool
+
+
+class GiftIn(BaseModel):
+    character_id: uuid.UUID
+    amount: int = Field(ge=0, le=20)
+
+
+class FeedingIn(BaseModel):
+    """The Feeding section of the form."""
+
+    # Downtime actions spent feeding, out of the general actions.
+    actions: int = Field(default=0, ge=0, le=20)
+    where: str = Field(default="", max_length=500)
+    # How the character's Herd dots are shared out; never more than its rating.
+    herd_own: int = Field(default=0, ge=0, le=20)
+    gifts: list[GiftIn] = []
+    herd_saved: int = Field(default=0, ge=0, le=20)
+    herd_other: int = Field(default=0, ge=0, le=20)
+    herd_other_text: str = Field(default="", max_length=500)
+
+
+class ReceivedOut(BaseModel):
+    character_id: uuid.UUID
+    character_name: str
+    amount: int
+    # The giver has submitted; until then the gift may change.
+    submitted: bool
+
+
+class RecipientOut(BaseModel):
+    character_id: uuid.UUID
+    name: str
+
+
+class MyFeedingOut(BaseModel):
+    need: FeedingNeedOut
+    # The character's Herd rating when the cycle opened.
+    herd: int
+    answer: FeedingIn
+    received: list[ReceivedOut]
+    # Who Herd can be given to: everyone else taking part.
+    recipients: list[RecipientOut]
+    # A storyteller has answered it, so it can no longer change.
+    locked: bool
+
+
 class AnswerIn(BaseModel):
     question_id: uuid.UUID
     slot: int = 1
@@ -129,6 +196,8 @@ class AnswerIn(BaseModel):
 
 class AnswersIn(BaseModel):
     answers: list[AnswerIn]
+    # The Feeding section; left out, it stays as it was.
+    feeding: FeedingIn | None = None
 
 
 class AnswerOut(AnswerIn):
@@ -153,6 +222,8 @@ class MyDowntime(BaseModel):
     # For each influence type the form asks about: the character's rating,
     # specialisations and the actions it can name.
     influence: list[InfluenceStandingOut] = []
+    # The Feeding section, for a character that feeds.
+    feeding: MyFeedingOut | None = None
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -215,6 +286,85 @@ def participant_out(db: DbSession, p: CycleParticipant) -> ParticipantOut:
         submission_status=submission.status if submission else None,
         submitted_late=submission.late if submission else False,
         completion_xp_awarded=completion_awarded(db, p),
+    )
+
+
+def need_out(need: feeding_rules.Need) -> FeedingNeedOut:
+    return FeedingNeedOut(
+        needed=need.needed,
+        lines=[
+            NeedLineOut(
+                source=line.source,
+                amount=line.amount,
+                kind=line.kind,  # type: ignore[arg-type]  # one of the three
+                note=line.note,
+                page=line.page,
+                text=line.text,
+            )
+            for line in need.lines
+        ],
+        herd_factor=need.herd_factor,
+        always_half=need.always_half,
+    )
+
+
+def feeding_in(answer: feeding.FeedingAnswer) -> FeedingIn:
+    return FeedingIn(
+        actions=answer.actions,
+        where=answer.where,
+        herd_own=answer.herd_own,
+        gifts=[GiftIn(character_id=g.character_id, amount=g.amount) for g in answer.gifts],
+        herd_saved=answer.herd_saved,
+        herd_other=answer.herd_other,
+        herd_other_text=answer.herd_other_text,
+    )
+
+
+def feeding_answer(body: FeedingIn) -> feeding.FeedingAnswer:
+    return feeding.FeedingAnswer(
+        actions=body.actions,
+        where=body.where,
+        herd_own=body.herd_own,
+        gifts=[feeding.Gift(g.character_id, g.amount) for g in body.gifts],
+        herd_saved=body.herd_saved,
+        herd_other=body.herd_other,
+        herd_other_text=body.herd_other_text,
+    )
+
+
+def received_out(found: list[feeding.Received]) -> list[ReceivedOut]:
+    return [
+        ReceivedOut(
+            character_id=r.character_id,
+            character_name=r.character_name,
+            amount=r.amount,
+            submitted=r.submitted,
+        )
+        for r in found
+    ]
+
+
+def my_feeding_out(
+    db: DbSession,
+    character: Character,
+    cycle: DowntimeCycle,
+    participant: CycleParticipant,
+    submission: Submission | None,
+) -> MyFeedingOut | None:
+    basis = feeding.participant_basis(db, participant, character, cycle)
+    need = feeding.need(db, cycle, participant, basis)
+    if need is None:
+        return None
+    return MyFeedingOut(
+        need=need_out(need),
+        herd=int(basis.get("herd", 0)),
+        answer=feeding_in(feeding.answer_of(submission)),
+        received=received_out(feeding.received(db, cycle, character.id)),
+        recipients=[
+            RecipientOut(character_id=i, name=n)
+            for i, n in feeding.recipients(db, cycle, character)
+        ],
+        locked=submission is not None and submission.feeding_result is not None,
     )
 
 
@@ -436,6 +586,7 @@ def my_downtime_out(
         completion_xp=cycle.completion_xp,
         completion_xp_awarded=completion_awarded(db, participant),
         influence=[standing_out(s) for t, s in standings.items() if t in asked],
+        feeding=my_feeding_out(db, character, cycle, participant, submission),
     )
 
 
@@ -457,6 +608,7 @@ def save_answers(
         cycle,
         participant,
         [downtimes.AnswerSpec(**a.model_dump()) for a in body.answers],
+        feeding_answer(body.feeding) if body.feeding is not None else None,
     )
     db.commit()
     return my_downtime_out(db, character, cycle, participant)

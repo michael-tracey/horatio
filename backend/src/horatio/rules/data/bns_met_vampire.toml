@@ -908,13 +908,48 @@ trait = "Hunted"
 scheme = "fixed"
 amount = -2
 
+# ---------------------------------------------------------------------------
+# Feeding between games (horatio.feeding). A character spends one downtime
+# action feeding, or comes to the next game at half Blood, rounded up
+# (Downtime chapter, "Feeding"); each dot of Herd stands in for one feeding
+# action, and spare dots can be given to others (p. 102). Storytellers set
+# how many each clan needs each cycle, which covers hard territory and the
+# clan weaknesses the rules data has no text for.
+#
+# These are the traits whose text in the rules data changes that: `amount`
+# more feeding actions, `herd_factor` for what each dot of Herd counts for
+# (0 for nothing), and `always_half` for a character no feeding brings to
+# full. `page` is left out where the rules data has no page for the trait.
+
 # Disease Carrier: an extra action to feed without killing (p. 262).
-[[allowance_rules]]
-action_kind = "general"
+[[feeding_modifiers]]
 category = "flaws"
 trait = "Disease Carrier"
-scheme = "fixed"
-amount = -1
+amount = 1
+page = "262"
+
+# Carrion Comfort: feeds only on the dead or carrion-eaters, so no Herd, and an
+# extra action to feed or half Blood.
+[[feeding_modifiers]]
+category = "flaws"
+trait = "Baali: Carrion Comfort"
+amount = 1
+herd_factor = 0
+page = "Vol. 2, p. 281"
+
+# Methuselah's Thirst: always enters a game at half Blood, whatever downtime is
+# spent, and cannot benefit from Herd.
+[[feeding_modifiers]]
+category = "flaws"
+trait = "Methuselah's Thirst"
+herd_factor = 0
+always_half = true
+
+# Efficient Digestion: Herd is twice as effective.
+[[feeding_modifiers]]
+category = "merits"
+trait = "Efficient Digestion"
+herd_factor = 2
 
 # ---------------------------------------------------------------------------
 # Character creation, as Yorick seeded it: picks give that many free dots to

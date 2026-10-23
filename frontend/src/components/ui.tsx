@@ -369,27 +369,48 @@ export function Rating({
 }
 
 /** Downtime results arrive with **bold** and *italic* marks, as Discord would show them. */
+function RichLines({ text }: { text: string }) {
+  return (
+    <>
+      {text.split("\n").map((line, j) => (
+        <span key={j}>
+          {j > 0 && <br />}
+          {line.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, k) =>
+            part.startsWith("**") ? (
+              <strong key={k} className="text-gold">{part.slice(2, -2)}</strong>
+            ) : part.startsWith("*") && part.length > 2 ? (
+              <em key={k} className="text-mist">{part.slice(1, -1)}</em>
+            ) : (
+              <span key={k}>{part}</span>
+            ),
+          )}
+        </span>
+      ))}
+    </>
+  );
+}
+
+/** Text with **bold** and *italic*. A paragraph "▸ Summary: the rest" folds away under its summary. */
 export function RichText({ text }: { text: string }) {
   return (
     <div className="space-y-3 text-sm leading-relaxed">
-      {text.split("\n\n").map((para, i) => (
-        <p key={i}>
-          {para.split("\n").map((line, j) => (
-            <span key={j}>
-              {j > 0 && <br />}
-              {line.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, k) =>
-                part.startsWith("**") ? (
-                  <strong key={k} className="text-gold">{part.slice(2, -2)}</strong>
-                ) : part.startsWith("*") && part.length > 2 ? (
-                  <em key={k} className="text-mist">{part.slice(1, -1)}</em>
-                ) : (
-                  <span key={k}>{part}</span>
-                ),
-              )}
-            </span>
-          ))}
-        </p>
-      ))}
+      {text.split("\n\n").map((para, i) => {
+        const folded = para.match(/^▸ ([^:]+): ([\s\S]*)$/);
+        if (folded)
+          return (
+            <details key={i}>
+              <summary className="cursor-pointer text-mist">{folded[1]}</summary>
+              <p className="mt-1">
+                <RichLines text={folded[2]!} />
+              </p>
+            </details>
+          );
+        return (
+          <p key={i}>
+            <RichLines text={para} />
+          </p>
+        );
+      })}
     </div>
   );
 }

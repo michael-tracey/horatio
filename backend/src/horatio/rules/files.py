@@ -16,6 +16,7 @@ from horatio.rules.model import (
     CategoryData,
     CostRuleData,
     CreationRuleData,
+    FeedingModifierData,
     RuleSetData,
     StartingTraitData,
     TraitData,
@@ -63,6 +64,40 @@ def check_allowance_rule(
         raise ValueError(f"{where}: name both a category and a trait, or neither")
     if rule.category is not None and (rule.category, rule.trait) not in rule_set.traits:
         raise ValueError(f"{where}: no {rule.category} trait {rule.trait!r}")
+
+
+def feeding_modifier_from_dict(raw: dict[str, Any]) -> FeedingModifierData:
+    return FeedingModifierData(
+        category=raw["category"],
+        trait=raw["trait"],
+        amount=raw.get("amount", 0),
+        herd_factor=raw.get("herd_factor", 1),
+        always_half=raw.get("always_half", False),
+        page=raw.get("page"),
+    )
+
+
+def feeding_modifier_to_dict(modifier: FeedingModifierData) -> dict[str, Any]:
+    raw: dict[str, Any] = {"category": modifier.category, "trait": modifier.trait}
+    if modifier.amount:
+        raw["amount"] = modifier.amount
+    if modifier.herd_factor != 1:
+        raw["herd_factor"] = modifier.herd_factor
+    if modifier.always_half:
+        raw["always_half"] = True
+    if modifier.page is not None:
+        raw["page"] = modifier.page
+    return raw
+
+
+def check_feeding_modifier(modifier: FeedingModifierData, rule_set: RuleSetData) -> None:
+    where = f"feeding modifier for {modifier.trait}"
+    if (modifier.category, modifier.trait) not in rule_set.traits:
+        raise ValueError(f"{where}: no {modifier.category} trait {modifier.trait!r}")
+    if modifier.herd_factor < 0:
+        raise ValueError(f"{where}: herd_factor cannot be negative")
+    if not (modifier.amount or modifier.herd_factor != 1 or modifier.always_half):
+        raise ValueError(f"{where}: changes nothing")
 
 
 def check_creation_rules(rules: Iterable[CreationRuleData], rule_set: RuleSetData) -> None:
@@ -313,6 +348,7 @@ def load_rule_set(path: Path) -> RuleSetData:
     for kind in action_kinds.values():
         check_named_actions(path.name, kind)
     allowance_rules = [allowance_rule_from_dict(r) for r in raw.get("allowance_rules", [])]
+    feeding_modifiers = [feeding_modifier_from_dict(r) for r in raw.get("feeding_modifiers", [])]
     rule_set = RuleSetData(
         key=raw["key"],
         splat=raw["splat"],
@@ -324,6 +360,7 @@ def load_rule_set(path: Path) -> RuleSetData:
         traits=traits,
         action_kinds=action_kinds,
         allowance_rules=allowance_rules,
+        feeding_modifiers=feeding_modifiers,
         creation_rules=[
             CreationRuleData(
                 category=r["category"],
@@ -347,6 +384,8 @@ def load_rule_set(path: Path) -> RuleSetData:
     )
     for allowance_rule in allowance_rules:
         check_allowance_rule(allowance_rule, rule_set)
+    for modifier in feeding_modifiers:
+        check_feeding_modifier(modifier, rule_set)
     check_creation_rules(rule_set.creation_rules, rule_set)
     for starting in rule_set.starting_traits:
         check_starting_trait(starting, rule_set)

@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
-import type { AnswerIn, InfluenceStandingOut, MyDowntime, QuestionOut } from "../../api/types";
+import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestionOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { chosenAction, offered, reachable, reachNote } from "../../influence";
 import { DISCOVERY_BLOCK, LOOKUP_LEVEL, LOOKUP_NOTE } from "../../influenceLookups";
 import { BlockTarget } from "./BlockTarget";
+import { FeedingCard } from "./FeedingCard";
 
 type Draft = Record<string, { body: string; structured?: Record<string, unknown> }[]>;
 
@@ -46,14 +47,20 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
     },
   });
   const [draft, setDraft] = useState<Draft>({});
+  const [feeding, setFeeding] = useState<FeedingIn | null>(null);
   const dates = useDates();
   useEffect(() => {
-    if (downtime.data) setDraft(toDraft(downtime.data));
+    if (downtime.data) {
+      setDraft(toDraft(downtime.data));
+      setFeeding(downtime.data.feeding?.answer ?? null);
+    }
   }, [downtime.data]);
 
-  const save = useAction(() => unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: { answers: toAnswers(draft) } })));
+  // The Feeding section goes with the answers once it has been loaded.
+  const body = () => ({ answers: toAnswers(draft), feeding: downtime.data?.feeding && feeding ? feeding : null });
+  const save = useAction(() => unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: body() })));
   const submit = useAction(async () => {
-    await unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: { answers: toAnswers(draft) } }));
+    await unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: body() }));
     return unwrap(api.POST("/api/characters/{character_id}/downtime/submit", path));
   });
 
@@ -62,12 +69,17 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   const d = downtime.data;
   if (!d) return <Empty>There is no open downtime for this character. Downtimes come from its home troupe.</Empty>;
 
+  // Feeding actions come out of the general actions.
+  const fed = d.feeding && feeding ? (feeding.actions ?? 0) : 0;
   const used = (kind: string) =>
-    d.questions.filter((q) => q.action_kind === kind).reduce((n, q) => n + (draft[q.id]?.length ?? 0), 0);
+    d.questions.filter((q) => q.action_kind === kind).reduce((n, q) => n + (draft[q.id]?.length ?? 0), 0) + (kind === "general" ? fed : 0);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
       <div className="flex flex-col gap-4">
+        {d.feeding && feeding && (
+          <FeedingCard feeding={d.feeding} value={feeding} onChange={setFeeding} actionsLeft={(d.allowance.general ?? 0) - used("general")} />
+        )}
         {d.questions.map((q) => (
           <QuestionCard
             key={q.id}

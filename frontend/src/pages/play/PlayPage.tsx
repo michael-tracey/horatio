@@ -87,7 +87,7 @@ export function PlayPage() {
               tracker="blood"
               value={shown.blood.value}
               most={shown.blood.most}
-              hint={`${shown.blood_per_turn} a turn`}
+              hint={`${shown.blood_per_turn} a turn${shown.half_blood ? " · Half Blood: fed short last downtime" : ""}`}
               record={record}
             />
             <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} />
