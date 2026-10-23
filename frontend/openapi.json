@@ -10987,6 +10987,54 @@
         "title": "TroupeReset",
         "type": "object"
       },
+      "UnavailableIn": {
+        "properties": {
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Categories",
+            "type": "array"
+          },
+          "changes": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "pick": "#/components/schemas/PickChangeIn",
+                  "set": "#/components/schemas/SetChangeIn",
+                  "swap": "#/components/schemas/SwapChangeIn",
+                  "unpick": "#/components/schemas/UnpickChangeIn"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SetChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/SwapChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/PickChangeIn"
+                },
+                {
+                  "$ref": "#/components/schemas/UnpickChangeIn"
+                }
+              ]
+            },
+            "maxItems": 100,
+            "title": "Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "categories"
+        ],
+        "title": "UnavailableIn",
+        "type": "object"
+      },
       "Unpick": {
         "properties": {
           "category": {
@@ -15281,6 +15329,65 @@
           }
         },
         "summary": "Unavailable",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "post": {
+        "description": "For each category, the traits the character cannot take, and why, with the\nsheet as the cart's changes would leave it: a discipline dot in the cart opens\nthe techniques that need it straight away. Nothing is saved.",
+        "operationId": "unavailable_after_api_characters__character_id__unavailable_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnavailableIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response Unavailable After Api Characters  Character Id  Unavailable Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unavailable After",
         "tags": [
           "sheets"
         ]

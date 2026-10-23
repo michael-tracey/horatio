@@ -1,6 +1,7 @@
 import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, unwrap } from "./api/client";
 import type { Me, Preferences } from "./api/types";
+import type { components } from "./api/schema";
 
 /** The signed-in user, or null when signed out. */
 export function useMe() {
@@ -117,6 +118,27 @@ export function useUnavailable(characterId: string, category: string, enabled = 
     enabled: enabled && !!category,
     // Keep showing the last answer while ticks change, rather than flashing everything open.
     placeholderData: (previous) => previous,
+  });
+}
+
+/**
+ * For each category, the traits the character cannot take and why, with the sheet
+ * as the cart's changes would leave it: a discipline dot in the cart opens the
+ * techniques that need it.
+ */
+export function usePlannedUnavailable(characterId: string, categories: string[], changes: components["schemas"]["CartIn"]["changes"], enabled = true) {
+  return useQuery({
+    queryKey: ["unavailable", characterId, "planned", categories, changes],
+    queryFn: () =>
+      unwrap(
+        api.POST("/api/characters/{character_id}/unavailable", {
+          params: { path: { character_id: characterId } },
+          body: { categories, changes },
+        }),
+      ),
+    enabled: enabled && categories.length > 0,
+    // While the cart changes, keep the last answer for the same categories rather than flashing everything open.
+    placeholderData: (previous, query) => (JSON.stringify(query?.queryKey[3]) === JSON.stringify(categories) ? previous : undefined),
   });
 }
 

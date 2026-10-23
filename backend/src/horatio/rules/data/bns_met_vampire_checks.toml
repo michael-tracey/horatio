@@ -318,6 +318,20 @@ forbids = { generation = 3, count = { category = "elder_disciplines", gte = 2 } 
 message = "A Pretender Elder can learn only one elder power."
 page = "101"
 
+# Generation decides who learns techniques and who elder powers (p. 101): a Pretender
+# Elder (3) does both, at a price; the cost rules price them, these keep the sheet to it.
+[[checks]]
+category = "elder_disciplines"
+forbids = { generation = { lt = 3 } }
+message = "A Neonate's or Ancilla's blood is too thin for elder powers."
+page = "101"
+
+[[checks]]
+category = "techniques"
+forbids = { generation = { gte = 4 } }
+message = "A Master or Luminary Elder cannot learn techniques."
+page = "101"
+
 # --- chosen at creation only ---------------------------------------------------
 # These reflect the Embrace and cannot be added, removed or changed once
 # creation is finished (pp. 100, 107, 235–236, 246, 263, 265).
@@ -1840,18 +1854,22 @@ page = "Vol. 2 Issue 1, p. 83"
 [[checks]]
 category = "rituals"
 name_prefix = "Thaumaturgy: "
-forbids = { self = { rating = 1 }, not = { has_any = [
-  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 1 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 1 },
+forbids = { self = { rating = 1 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 1 },
+  ] },
+  { has = { category = "merits", name = "Sorcerous Dabbler" } },
+  { has_all = [{ category = "merits", name = "Scholomonariue" }, { category = "disciplines", name = "Auspex", rating = 1 }] },
 ] } }
 message = "A level 1 Thaumaturgy ritual needs a path of Thaumaturgy at 1 or more."
 page = "187"
@@ -1859,18 +1877,22 @@ page = "187"
 [[checks]]
 category = "rituals"
 name_prefix = "Thaumaturgy: "
-forbids = { self = { rating = 2 }, not = { has_any = [
-  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 2 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 2 },
+forbids = { self = { rating = 2 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 2 },
+  ] },
+  { has = { category = "merits", name = "Sorcerous Dabbler" } },
+  { has_all = [{ category = "merits", name = "Scholomonariue" }, { category = "disciplines", name = "Auspex", rating = 2 }] },
 ] } }
 message = "A level 2 Thaumaturgy ritual needs a path of Thaumaturgy at 2 or more."
 page = "187"
@@ -1878,18 +1900,21 @@ page = "187"
 [[checks]]
 category = "rituals"
 name_prefix = "Thaumaturgy: "
-forbids = { self = { rating = 3 }, not = { has_any = [
-  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 3 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 3 },
+forbids = { self = { rating = 3 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 3 },
+  ] },
+  { has_all = [{ category = "merits", name = "Scholomonariue" }, { category = "disciplines", name = "Auspex", rating = 3 }] },
 ] } }
 message = "A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more."
 page = "187"
@@ -1897,18 +1922,21 @@ page = "187"
 [[checks]]
 category = "rituals"
 name_prefix = "Thaumaturgy: "
-forbids = { self = { rating = 4 }, not = { has_any = [
-  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 4 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 4 },
+forbids = { self = { rating = 4 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 4 },
+  ] },
+  { has_all = [{ category = "merits", name = "Scholomonariue" }, { category = "disciplines", name = "Auspex", rating = 4 }] },
 ] } }
 message = "A level 4 Thaumaturgy ritual needs a path of Thaumaturgy at 4 or more."
 page = "187"
@@ -1916,18 +1944,21 @@ page = "187"
 [[checks]]
 category = "rituals"
 name_prefix = "Thaumaturgy: "
-forbids = { self = { rating = 5 }, not = { has_any = [
-  { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 5 },
-  { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 5 },
+forbids = { self = { rating = 5 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 5 },
+  ] },
+  { has_all = [{ category = "merits", name = "Scholomonariue" }, { category = "disciplines", name = "Auspex", rating = 5 }] },
 ] } }
 message = "A level 5 Thaumaturgy ritual needs a path of Thaumaturgy at 5 or more."
 page = "187"
@@ -1935,13 +1966,16 @@ page = "187"
 [[checks]]
 category = "rituals"
 name_prefix = "Necromancy: "
-forbids = { self = { rating = 1 }, not = { has_any = [
-  { category = "disciplines", name = "Necromancy: Ash Path", rating = 1 },
-  { category = "disciplines", name = "Necromancy: Bone Path", rating = 1 },
-  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 1 },
-  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 1 },
-  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 1 },
-  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 1 },
+forbids = { self = { rating = 1 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Necromancy: Ash Path", rating = 1 },
+    { category = "disciplines", name = "Necromancy: Bone Path", rating = 1 },
+    { category = "disciplines", name = "Necromancy: Mortis Path", rating = 1 },
+    { category = "disciplines", name = "Necromancy: Path of Grief", rating = 1 },
+    { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 1 },
+    { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 1 },
+  ] },
+  { has_all = [{ category = "merits", name = "Memento Mori" }, { category = "disciplines", name = "Dementation", rating = 1 }] },
 ] } }
 message = "A level 1 Necromancy ritual needs a path of Necromancy at 1 or more."
 page = "172"
@@ -1949,13 +1983,16 @@ page = "172"
 [[checks]]
 category = "rituals"
 name_prefix = "Necromancy: "
-forbids = { self = { rating = 2 }, not = { has_any = [
-  { category = "disciplines", name = "Necromancy: Ash Path", rating = 2 },
-  { category = "disciplines", name = "Necromancy: Bone Path", rating = 2 },
-  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 2 },
-  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 2 },
-  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 2 },
-  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 2 },
+forbids = { self = { rating = 2 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Necromancy: Ash Path", rating = 2 },
+    { category = "disciplines", name = "Necromancy: Bone Path", rating = 2 },
+    { category = "disciplines", name = "Necromancy: Mortis Path", rating = 2 },
+    { category = "disciplines", name = "Necromancy: Path of Grief", rating = 2 },
+    { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 2 },
+    { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 2 },
+  ] },
+  { has_all = [{ category = "merits", name = "Memento Mori" }, { category = "disciplines", name = "Dementation", rating = 2 }] },
 ] } }
 message = "A level 2 Necromancy ritual needs a path of Necromancy at 2 or more."
 page = "172"
@@ -1963,13 +2000,16 @@ page = "172"
 [[checks]]
 category = "rituals"
 name_prefix = "Necromancy: "
-forbids = { self = { rating = 3 }, not = { has_any = [
-  { category = "disciplines", name = "Necromancy: Ash Path", rating = 3 },
-  { category = "disciplines", name = "Necromancy: Bone Path", rating = 3 },
-  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 3 },
-  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 3 },
-  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 3 },
-  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 3 },
+forbids = { self = { rating = 3 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Necromancy: Ash Path", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Bone Path", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Mortis Path", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Path of Grief", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 3 },
+    { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 3 },
+  ] },
+  { has_all = [{ category = "merits", name = "Memento Mori" }, { category = "disciplines", name = "Dementation", rating = 3 }] },
 ] } }
 message = "A level 3 Necromancy ritual needs a path of Necromancy at 3 or more."
 page = "172"
@@ -1977,13 +2017,16 @@ page = "172"
 [[checks]]
 category = "rituals"
 name_prefix = "Necromancy: "
-forbids = { self = { rating = 4 }, not = { has_any = [
-  { category = "disciplines", name = "Necromancy: Ash Path", rating = 4 },
-  { category = "disciplines", name = "Necromancy: Bone Path", rating = 4 },
-  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 4 },
-  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 4 },
-  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 4 },
-  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 4 },
+forbids = { self = { rating = 4 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Necromancy: Ash Path", rating = 4 },
+    { category = "disciplines", name = "Necromancy: Bone Path", rating = 4 },
+    { category = "disciplines", name = "Necromancy: Mortis Path", rating = 4 },
+    { category = "disciplines", name = "Necromancy: Path of Grief", rating = 4 },
+    { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 4 },
+    { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 4 },
+  ] },
+  { has_all = [{ category = "merits", name = "Memento Mori" }, { category = "disciplines", name = "Dementation", rating = 4 }] },
 ] } }
 message = "A level 4 Necromancy ritual needs a path of Necromancy at 4 or more."
 page = "172"
@@ -1991,13 +2034,16 @@ page = "172"
 [[checks]]
 category = "rituals"
 name_prefix = "Necromancy: "
-forbids = { self = { rating = 5 }, not = { has_any = [
-  { category = "disciplines", name = "Necromancy: Ash Path", rating = 5 },
-  { category = "disciplines", name = "Necromancy: Bone Path", rating = 5 },
-  { category = "disciplines", name = "Necromancy: Mortis Path", rating = 5 },
-  { category = "disciplines", name = "Necromancy: Path of Grief", rating = 5 },
-  { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 5 },
-  { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 5 },
+forbids = { self = { rating = 5 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Necromancy: Ash Path", rating = 5 },
+    { category = "disciplines", name = "Necromancy: Bone Path", rating = 5 },
+    { category = "disciplines", name = "Necromancy: Mortis Path", rating = 5 },
+    { category = "disciplines", name = "Necromancy: Path of Grief", rating = 5 },
+    { category = "disciplines", name = "Necromancy: Path of Soul Bonding", rating = 5 },
+    { category = "disciplines", name = "Necromancy: Sepulchre Path", rating = 5 },
+  ] },
+  { has_all = [{ category = "merits", name = "Memento Mori" }, { category = "disciplines", name = "Dementation", rating = 5 }] },
 ] } }
 message = "A level 5 Necromancy ritual needs a path of Necromancy at 5 or more."
 page = "172"
@@ -2006,30 +2052,68 @@ page = "172"
 [[checks]]
 category = "rituals"
 name_prefix = "Thaumaturgy: "
-forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " } }, not = { has = { category = "merits", name = "Ritual Master" }, clan_family = ["Tremere"] } }
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " } }, not = { any_of = [
+  { has = { category = "merits", name = "Ritual Master" }, clan_family = ["Tremere"] },
+  { has = { category = "merits", name = "Sorcerous Dabbler" }, not = { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } } },
+  { has = { category = "merits", name = "Scholomonariue" } },
+] } }
 message = "A thaumaturge knows no more rituals than their dots of Thaumaturgy."
 page = "187"
 
 [[checks]]
 category = "rituals"
 name_prefix = "Thaumaturgy: "
-forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " }, per_dot = 2 } }
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " }, per_dot = 2 }, not = { any_of = [
+  { has = { category = "merits", name = "Sorcerous Dabbler" }, not = { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } } },
+  { has = { category = "merits", name = "Scholomonariue" } },
+] } }
 message = "Ritual Master gives two Thaumaturgy rituals per dot of Thaumaturgy, no more."
 page = "Vol. 2 Issue 1, p. 41"
 
 [[checks]]
 category = "rituals"
 name_prefix = "Necromancy: "
-forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " } }, not = { has = { category = "merits", name = "Ritual Master" }, clan_family = ["Giovanni"] } }
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " } }, not = { any_of = [
+  { has = { category = "merits", name = "Ritual Master" }, clan_family = ["Giovanni"] },
+  { has = { category = "merits", name = "Memento Mori" } },
+] } }
 message = "A necromancer knows no more rituals than their dots of Necromancy."
 page = "172"
 
 [[checks]]
 category = "rituals"
 name_prefix = "Necromancy: "
-forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " }, per_dot = 2 } }
+forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " }, per_dot = 2 }, not = { has = { category = "merits", name = "Memento Mori" } } }
 message = "Ritual Master gives two Necromancy rituals per dot of Necromancy, no more."
 page = "Vol. 2 Issue 1, p. 34"
+
+# Merits that open rituals without a path (Volume 2 Issue 1, pp. 37, 44, and the Anarch
+# merit Sorcerous Dabbler): each stands in for the path above, with a limit of its own.
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { has = { category = "merits", name = "Sorcerous Dabbler" }, not = { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } }, count = { category = "rituals", name_prefix = "Thaumaturgy: ", gte = 4 } }
+message = "Sorcerous Dabbler opens three level 1 or two level 2 Thaumaturgy rituals, no more."
+
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { self = { rating = 2 }, has = { category = "merits", name = "Sorcerous Dabbler" }, not = { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } }, count = { category = "rituals", name_prefix = "Thaumaturgy: ", gte = 3 } }
+message = "Sorcerous Dabbler opens three level 1 or two level 2 Thaumaturgy rituals, no more."
+
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { has = { category = "merits", name = "Scholomonariue" }, more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Auspex" } } }
+message = "Scholomonariue gives one Thaumaturgy ritual per dot of Auspex."
+page = "Vol. 2 Issue 1, p. 44"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { has = { category = "merits", name = "Memento Mori" }, more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Dementation" } } }
+message = "Memento Mori gives one Necromancy ritual per dot of Dementation."
+page = "Vol. 2 Issue 1, p. 37"
 
 # Abyss Mysticism (Volume 2, pp. 98-99): rituals need Walk the Abyss and are no
 # higher than the mystic's Obtenebration; there is no limit on how many.

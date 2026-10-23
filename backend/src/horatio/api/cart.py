@@ -1,14 +1,16 @@
-"""Spending a cart of sheet changes: all of them in one transaction, or none."""
+"""Spending a cart of sheet changes: all of them in one transaction, or none. And
+what the sheet the cart would leave could take next."""
 
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from horatio import cart, sheets
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.permissions import visible_character
 from horatio.trait_exceptions import Ask
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["sheets"])
@@ -149,3 +151,29 @@ def spend_cart(character_id: uuid.UUID, body: CartIn, db: DbSession, user: Curre
             for o in outcomes
         ],
     )
+
+
+class UnavailableIn(BaseModel):
+    categories: list[str] = Field(min_length=1, max_length=20)
+    # The cart's changes, as they would be spent.
+    changes: list[CartChangeIn] = Field(default_factory=list[CartChangeIn], max_length=100)
+
+
+@router.post("/unavailable")
+def unavailable_after(
+    character_id: uuid.UUID, body: UnavailableIn, db: DbSession, user: CurrentUser
+) -> dict[str, dict[str, str]]:
+    """For each category, the traits the character cannot take, and why, with the
+    sheet as the cart's changes would leave it: a discipline dot in the cart opens
+    the techniques that need it straight away. Nothing is saved."""
+    character = visible_character(db, user, character_id)
+    rules = sheets.rules_for(db, character)
+    unknown = next((c for c in body.categories if c not in rules.rule_set.categories), None)
+    if unknown is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No category {unknown!r}.")
+    sheet = [r.as_rules_trait() for r in sheets.sheet_rows(db, character)]
+    planned = cart.planned(sheet, [to_change(c) for c in body.changes])
+    return {
+        category: sheets.unavailable(db, character, category, planned=planned)
+        for category in dict.fromkeys(body.categories)
+    }

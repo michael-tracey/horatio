@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TraitOut } from "../../api/types";
-import { applyFilter, filterChoices, quickPicks } from "./traitFilter";
+import { applyFilter, byKind, countOf, filterChoices, quickPicks, takeable } from "./traitFilter";
 
 const merit = (name: string, kind: string | null, requirement: string | null) =>
   ({ category: "merits", name, kind, requirement }) as unknown as TraitOut;
@@ -64,5 +64,26 @@ describe("what this character can take", () => {
     const barred = { "Absent Sway": "Absent Sway is only for Toreador." };
     expect(names(applyFilter(MERITS, "can", barred))).not.toContain("Absent Sway");
     expect(names(applyFilter(MERITS, "can", barred))).toContain("Paragon");
+  });
+});
+
+describe("powers", () => {
+  const power = (name: string) => ({ category: "techniques", name, kind: null, requirement: null }) as unknown as TraitOut;
+  const TECHNIQUES = [power("Fearful Blow"), power("Rapid Reflexes"), power("Telepathic Communication")];
+
+  it("are not narrowed by kind, unlike merits", () => {
+    expect(byKind(TECHNIQUES)).toBe(false);
+    expect(byKind(MERITS)).toBe(true);
+  });
+
+  it("can be taken when neither barred nor held", () => {
+    const barred = { "Rapid Reflexes": "Rapid Reflexes needs Celerity 2." };
+    const held = [{ name: "Fearful Blow", detail: "" }];
+    expect(names(takeable(TECHNIQUES, barred, held))).toEqual(["Telepathic Communication"]);
+  });
+
+  it("are counted in words", () => {
+    expect(countOf(1, "Elder Disciplines")).toBe("1 Elder Discipline");
+    expect(countOf(3, "Techniques")).toBe("3 Techniques");
   });
 });
