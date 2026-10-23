@@ -2957,6 +2957,40 @@
         "title": "DeliveryStatus",
         "type": "object"
       },
+      "Derangements": {
+        "description": "Derangement traits, which Reset leaves as they are (horatio.play).",
+        "properties": {
+          "held": {
+            "title": "Held",
+            "type": "boolean"
+          },
+          "least": {
+            "title": "Least",
+            "type": "integer"
+          },
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value",
+          "most",
+          "start",
+          "least",
+          "held"
+        ],
+        "title": "Derangements",
+        "type": "object"
+      },
       "DetailChange": {
         "properties": {
           "category": {
@@ -7455,6 +7489,9 @@
             ],
             "title": "Clan"
           },
+          "derangements": {
+            "$ref": "#/components/schemas/Derangements"
+          },
           "expendables": {
             "items": {
               "$ref": "#/components/schemas/ExpendableOut"
@@ -7551,6 +7588,7 @@
           "health",
           "morality",
           "beast",
+          "derangements",
           "expendables",
           "game",
           "log"
@@ -15111,7 +15149,7 @@
     },
     "/api/characters/{character_id}/play/reset": {
       "post": {
-        "description": "Reset for the next game: the game ends, kept with its log, and every tracker\ngoes back where the sheet starts it.",
+        "description": "Reset for the next game: the game ends, kept with its log, and every tracker\ngoes back where the sheet starts it, but for Derangement traits, which stay.",
         "operationId": "reset_play_api_characters__character_id__play_reset_post",
         "parameters": [
           {

@@ -77,6 +77,8 @@ def test_a_new_game_starts_where_the_sheet_does(troupe: Troupe, agnes: str) -> N
     assert state["health"]["marks"] == []
     assert state["morality"] == {"name": "Humanity", "value": 5, "rating": 5}
     assert state["beast"] == {"value": 0, "most": 5, "start": 0}
+    # No derangement on the sheet, so the Play View leaves them out.
+    assert state["derangements"] == {"value": 0, "most": 3, "start": 0, "least": 0, "held": False}
     assert [(e["name"], e["uses"], e["left"]) for e in state["expendables"]] == [("Herd", 2, 2)]
     assert state["game"] is None
     assert state["log"] == []
@@ -382,3 +384,92 @@ def test_feeding_at_a_game_is_a_blood_tap_with_a_note(troupe: Troupe, agnes: str
 
     no_herd = new_character(troupe, troupe.player, "Mara")
     assert view(troupe.player, no_herd)["herd"] == 0
+
+
+def reset(person: Person, character_id: str) -> dict[str, Any]:
+    response = person.client.post(f"/characters/{character_id}/play/reset", json={})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_derangement_traits_stay_through_a_reset(troupe: Troupe, agnes: str) -> None:
+    """Derangement traits (MET: VtM core, p. 267) carry from game to game (#161):
+    marked for a resisted trigger, at most 3, and cleared by a severe response."""
+    flaw = buy(troupe.player, agnes, "flaws", "Derangement", 2, detail="Phobia: water")
+    assert flaw.status_code == 200, flaw.text
+    assert view(troupe.player, agnes)["derangements"]["held"]
+
+    send(troupe.player, agnes, tap("derangements", 1, at=1), tap("blood", -2, at=2))
+    state = send(troupe.storyteller, agnes, tap("derangements", 1, at=3, note="resisted"))
+    assert state["derangements"]["value"] == 2
+    assert texts(state)[0] == "Derangement traits 1 → 2"
+
+    state = reset(troupe.player, agnes)
+    assert state["game"]["number"] == 2
+    assert state["blood"]["value"] == 10
+    assert state["derangements"] == {"value": 2, "most": 3, "start": 2, "least": 0, "held": True}
+
+    # Never more than 3; Undo takes a tap back across the carry as well.
+    first, second = tap("derangements", 1, at=10), tap("derangements", 1, at=11)
+    state = send(troupe.player, agnes, first, second)
+    assert texts(state)[:2] == ["Derangement traits 3 → 3", "Derangement traits 2 → 3"]
+    for undone, left in ((second, 3), (first, 2)):
+        undo = tap(at=12, kind="undo", tracker="", amount=0, undoes=undone["id"])
+        assert send(troupe.player, agnes, undo)["derangements"]["value"] == left
+
+    # A severe response clears them all, and the next game starts there too.
+    state = send(troupe.player, agnes, tap("derangements", -3, at=20, note="Severe response"))
+    assert state["derangements"]["value"] == 0
+    assert reset(troupe.player, agnes)["derangements"]["value"] == 0
+
+
+def test_a_malkavian_always_has_one_derangement_trait(troupe: Troupe, session: Session) -> None:
+    """A Malkavian's clan weakness is a derangement, and resetting her Derangement
+    traits leaves 1 (MET: VtM core, pp. 57, 267). Reset for the next game too."""
+    lucie = new_character(troupe, troupe.player, "Lucie", clan="Malkavian")
+    make_home_troupe_member(session, troupe, lucie)
+    assert view(troupe.player, lucie)["derangements"] == {
+        "value": 1,
+        "most": 3,
+        "start": 1,
+        "least": 1,
+        "held": True,
+    }
+
+    state = send(troupe.player, lucie, tap("derangements", -1), tap("derangements", 2, at=1))
+    assert state["derangements"]["value"] == 3
+    state = reset(troupe.storyteller, lucie)
+    assert state["derangements"]["value"] == 3
+    state = send(troupe.player, lucie, tap("derangements", -3, at=5, note="Severe response"))
+    assert state["derangements"]["value"] == 1
+    assert texts(state)[0] == "Derangement traits 3 → 1"
+
+
+def test_clans_with_a_derangement_show_the_tracker(troupe: Troupe, session: Session) -> None:
+    """Ravnos and Assamite Viziers have a derangement from their clan (pp. 76, 44);
+    other clans need the flaw, or Dementation."""
+    for clan, held in (("Ravnos", True), ("Assamite: Vizier", True), ("Brujah", False)):
+        character_id = new_character(troupe, troupe.player, clan, clan=clan)
+        found = view(troupe.player, character_id)["derangements"]
+        assert (found["held"], found["least"]) == (held, 0), clan
+        if clan == "Brujah":
+            make_home_troupe_member(session, troupe, character_id)
+            bought = buy(troupe.player, character_id, "disciplines", "Dementation", 1)
+            assert bought.status_code == 200, bought.text
+            assert view(troupe.player, character_id)["derangements"]["held"]
+
+
+def test_a_late_derangement_tap_moves_the_next_game(troupe: Troupe, agnes: str) -> None:
+    """A phone offline at the end of a game sends its Derangement trait after the
+    reset: it lands in its own game, and the game after starts from it."""
+    game_one = send(troupe.player, agnes, tap("derangements", 1))["game"]["id"]
+    reset(troupe.storyteller, agnes)
+    send(troupe.player, agnes, tap("derangements", 1, at=60))
+    assert view(troupe.player, agnes)["log"][0]["text"] == "Derangement traits 1 → 2"
+
+    state = send(troupe.player, agnes, tap("derangements", 1, at=50, game_id=game_one))
+
+    assert state["derangements"] == {"value": 3, "most": 3, "start": 2, "least": 0, "held": False}
+    assert state["log"][0]["text"] == "Derangement traits 2 → 3"
+    log = troupe.player.client.get(f"/characters/{agnes}/play/games/{game_one}").json()
+    assert texts(log) == ["Derangement traits 1 → 2", "Derangement traits 0 → 1"]

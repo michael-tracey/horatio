@@ -924,7 +924,7 @@ export interface paths {
         /**
          * Reset Play
          * @description Reset for the next game: the game ends, kept with its log, and every tracker
-         *     goes back where the sheet starts it.
+         *     goes back where the sheet starts it, but for Derangement traits, which stay.
          */
         post: operations["reset_play_api_characters__character_id__play_reset_post"];
         delete?: never;
@@ -4604,6 +4604,22 @@ export interface components {
             /** Participants */
             participants: components["schemas"]["ParticipantDeliveries"][];
         };
+        /**
+         * Derangements
+         * @description Derangement traits, which Reset leaves as they are (horatio.play).
+         */
+        Derangements: {
+            /** Held */
+            held: boolean;
+            /** Least */
+            least: number;
+            /** Most */
+            most: number;
+            /** Start */
+            start: number;
+            /** Value */
+            value: number;
+        };
         /** DetailChange */
         DetailChange: {
             /** Category */
@@ -6323,6 +6339,7 @@ export interface components {
             character_name: string;
             /** Clan */
             clan: string | null;
+            derangements: components["schemas"]["Derangements"];
             /** Expendables */
             expendables: components["schemas"]["ExpendableOut"][];
             game: components["schemas"]["GameOut"] | null;

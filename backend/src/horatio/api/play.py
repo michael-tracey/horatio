@@ -61,6 +61,16 @@ class Morality(BaseModel):
     rating: int
 
 
+class Derangements(Tracker):
+    """Derangement traits, which Reset leaves as they are (horatio.play)."""
+
+    # The fewest the character can have: 1 for a Malkavian.
+    least: int
+    # The sheet has a derangement, so the Play View shows them; it shows them too
+    # while any are marked.
+    held: bool
+
+
 class ExpendableOut(BaseModel):
     key: str
     name: str
@@ -157,6 +167,7 @@ class PlayView(BaseModel):
     health: Health
     morality: Morality | None
     beast: Tracker
+    derangements: Derangements
     expendables: list[ExpendableOut]
     # What the character can do with each type of influence it has, for the
     # details of a spend. Empty when there is no troupe to log spends in.
@@ -411,6 +422,13 @@ def play_view(db: Session, character: Character) -> PlayView:
         if limits.morality_name
         else None,
         beast=Tracker(value=state["beast"], most=play.BEAST_TRAITS, start=0),
+        derangements=Derangements(
+            value=state["derangements"],
+            most=play.DERANGEMENT_TRAITS,
+            start=limits.derangements,
+            least=limits.derangements_least,
+            held=limits.deranged,
+        ),
         expendables=[
             ExpendableOut(
                 key=e.key,
@@ -488,7 +506,7 @@ def reset_play(
     character_id: uuid.UUID, body: ResetIn, db: DbSession, user: CurrentUser
 ) -> PlayView:
     """Reset for the next game: the game ends, kept with its log, and every tracker
-    goes back where the sheet starts it."""
+    goes back where the sheet starts it, but for Derangement traits, which stay."""
     character = sheets.lock_character(db, visible_character(db, user, character_id).id)
     game = play.current_game(db, character)
     if game is not None and (body.game_id is None or body.game_id == game.id):

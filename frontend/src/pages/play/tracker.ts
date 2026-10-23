@@ -18,7 +18,7 @@ export type ShownEntry = PlayLogEntry & { pending?: boolean };
 
 export type Shown = Omit<PlayView, "log"> & { log: ShownEntry[] };
 
-const FIXED = ["blood", "willpower", "morality", "beast"] as const;
+const FIXED = ["blood", "willpower", "morality", "beast", "derangements"] as const;
 type Fixed = (typeof FIXED)[number];
 
 function isFixed(tracker: string): tracker is Fixed {
@@ -91,6 +91,7 @@ export function trackerName(view: PlayView, tracker: string): string {
     health: "Health",
     morality: view.morality?.name ?? "Morality",
     beast: "Beast traits",
+    derangements: "Derangement traits",
   };
   if (names[tracker]) return names[tracker];
   const found = view.expendables.find((e) => e.key === tracker);
@@ -108,13 +109,15 @@ function most(view: PlayView, tracker: string): number | undefined {
       return view.morality?.rating;
     case "beast":
       return view.beast.most;
+    case "derangements":
+      return view.derangements.most;
     case "health":
       return view.health.levels.reduce((sum, l) => sum + l.boxes, 0);
   }
   return view.expendables.find((e) => e.key === tracker)?.uses;
 }
 
-const clamp = (value: number, top: number) => Math.max(0, Math.min(value, top));
+const clamp = (value: number, top: number, least = 0) => Math.max(least, Math.min(value, top));
 
 /**
  * Apply one change to `view` (changed in place), as the server does, and say
@@ -141,7 +144,8 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
   if (isFixed(tracker)) {
     const t = tracker === "morality" ? view.morality! : view[tracker];
     const before = t.value;
-    t.value = clamp(before + amount, top);
+    // A Malkavian never has fewer than 1 Derangement trait.
+    t.value = clamp(before + amount, top, tracker === "derangements" ? view.derangements.least : 0);
     return [before, t.value];
   }
   const found = view.expendables.find((e) => e.key === tracker)!;
@@ -169,6 +173,7 @@ function copy(view: PlayView): Shown {
     blood: { ...view.blood },
     willpower: { ...view.willpower },
     beast: { ...view.beast },
+    derangements: { ...view.derangements },
     morality: view.morality ? { ...view.morality } : null,
     health: { ...view.health, marks: [...view.health.marks] },
     expendables: view.expendables.map((e) => ({ ...e })),

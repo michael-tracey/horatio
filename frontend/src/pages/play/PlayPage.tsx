@@ -7,6 +7,7 @@ import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
+import { Derangements, showsDerangements } from "./Derangements";
 import { Feed, FeedButton } from "./Feed";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
@@ -118,6 +119,7 @@ export function PlayPage() {
                 record={record}
                 small
               />
+              <Derangements view={shown} record={record} tap={tap} />
             </div>
           </div>
           <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={setQuickNotes} online={sync.online} onChange={accept} />
@@ -790,7 +792,7 @@ function GameLog({ view, undo, onDetails }: { view: Shown; undo: (entry: ShownEn
   );
 }
 
-function ResetGame({ view, sync, onReset }: { view: PlayView; sync: Sync; onReset: (view: PlayView) => Promise<void> }) {
+function ResetGame({ view, sync, onReset }: { view: Shown; sync: Sync; onReset: (view: PlayView) => Promise<void> }) {
   const [asking, setAsking] = useState(false);
   const reset = useAction(async () => {
     const data = await unwrap(
@@ -805,8 +807,8 @@ function ResetGame({ view, sync, onReset }: { view: PlayView; sync: Sync; onRese
       {asking ? (
         <div className="flex flex-col gap-2">
           <p className="text-sm">
-            Put every tracker back for the next game? Blood to {view.blood.start}, Willpower to {view.willpower.start}, health clear and every use back. This
-            game's log is kept.
+            Put every tracker back for the next game? Blood to {view.blood.start}, Willpower to {view.willpower.start}, health clear and every use back.
+            {showsDerangements(view) && ` Derangement traits stay at ${view.derangements.value}.`} This game's log is kept.
           </p>
           <div className="flex gap-2">
             <Button variant="danger" className="min-h-12 flex-1" disabled={reset.isPending || !ready} onClick={() => reset.mutate(undefined)}>
