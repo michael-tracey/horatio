@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
-import { useAction, useUnavailable } from "../../hooks";
+import { useAction } from "../../hooks";
+import type { CartLine } from "./cart";
+import { foundElsewhere, shownChips, useBarred, useChoices } from "./choices";
 import { QuickPicks } from "./creation/DotGrid";
 import { FIELD_PLACEHOLDER } from "./fields";
-import { applyFilter, filterChoices, quickPicks } from "./traitFilter";
+import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
 
 const SHOWN = 40;
 
@@ -13,15 +15,18 @@ const SHOWN = 40;
 export type NewTrait = { category: string; name: string; detail: string; rating: number; teacher: string; fixed: boolean };
 
 /**
- * Add a trait to one part of the sheet: pick from a searchable list of the
- * part's categories, see what it costs, and put it in the cart. Traits the
- * rules would refuse are greyed out with the reason.
+ * Add a trait to one part of the sheet: pick a category from its chips, then from
+ * a searchable list of what the character can take there (or everything), see
+ * what it costs, and put it in the cart. Traits the rules would refuse are greyed
+ * out with the reason. What the character can take counts the cart.
  */
 export function AddTraitPanel({
   character,
   catalogue,
   categories,
   held,
+  lines,
+  initial,
   onAdd,
   onClose,
 }: {
@@ -30,10 +35,14 @@ export function AddTraitPanel({
   /** Category keys this part of the sheet adds to. */
   categories: string[];
   held: SheetTraitOut[];
+  /** The cart, which the lists are judged with. */
+  lines: CartLine[];
+  /** The category to open on; the first if not given. */
+  initial?: string;
   onAdd: (trait: NewTrait) => void;
   onClose: () => void;
 }) {
-  const [category, setCategory] = useState(categories[0] ?? "");
+  const [category, setCategory] = useState(initial ?? categories[0] ?? "");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("can");
   const [name, setName] = useState("");
@@ -42,18 +51,26 @@ export function AddTraitPanel({
   const [quote, setQuote] = useState<number | null>(null);
   const [teacher, setTeacher] = useState("");
   const cat = catalogue.categories.find((c) => c.key === category);
-  const unavailable = useUnavailable(character.id, category).data ?? {};
-  // What no choice could allow, for "What this character can take"; a merit refused
-  // only because of one already held stays listed, greyed with the reason.
-  const barred = useUnavailable(character.id, category, true, { asIf: "empty" }).data;
-
-  const all = useMemo(() => catalogue.traits.filter((t) => t.category === category), [catalogue, category]);
-  const filterable = all.some((t) => t.kind || t.requirement);
+  const choices = useChoices(character.id, catalogue, categories, held, lines);
+  const current = choices.find((c) => c.key === category);
+  const unavailable = current?.refused ?? {};
+  const all = current?.traits ?? [];
+  const filterable = byKind(all);
   const mine = new Set(held.filter((h) => h.category === category && !h.detail).map((h) => h.name));
   const q = query.trim().toLowerCase();
-  const matching = (filterable ? applyFilter(all, filter, barred ?? unavailable) : all).filter(
-    (t) => !mine.has(t.name) && (!q || t.name.toLowerCase().includes(q)),
-  );
+  const barred = useBarred(character.id, current);
+  const shown = applyFilter(all, filter, barred).filter((t) => !mine.has(t.name));
+  const matching = shown.filter((t) => !q || t.name.toLowerCase().includes(q));
+  // What "can take" leaves out, a tap away: greyed with the reason under Everything.
+  const leftOut =
+    filter === "can" && current?.ready ? all.filter((t) => !mine.has(t.name) && (!q || t.name.toLowerCase().includes(q))).length - matching.length : 0;
+  // Nothing here: perhaps it lives in another category.
+  const elsewhere = matching.length === 0 ? foundElsewhere(choices, category, query, held).slice(0, 5) : [];
+  const switchTo = (key: string, can = true) => {
+    setCategory(key);
+    setName("");
+    setFilter(can ? "can" : "all");
+  };
   const trait = all.find((t) => t.name === name);
   const fixed = trait?.fixed_rating ?? null;
   // Skills bought once per field, such as Performance: Singing (MET: VTM p. 92).
@@ -79,66 +96,56 @@ export function AddTraitPanel({
 
   return (
     <div className="mb-4 flex flex-col gap-3 rounded-md border border-ash bg-night/40 p-3">
+      {categories.length > 1 && (
+        <CategoryChips
+          label="Categories"
+          tabs={shownChips(choices, category).map((c) => ({ key: c.key, label: c.name, count: c.ready ? c.canTake.length : undefined }))}
+          value={category}
+          onChange={(key) => switchTo(key)}
+        />
+      )}
       <div className="flex flex-wrap gap-2">
-        {categories.length > 1 && (
-          <Select
-            aria-label="Category"
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              setName("");
-              setFilter("can");
-            }}
-            className="w-auto"
-          >
-            {categories.map((key) => (
-              <option key={key} value={key}>
-                {catalogue.categories.find((c) => c.key === key)?.name ?? key}
-              </option>
-            ))}
-          </Select>
-        )}
         {filterable && <QuickPicks picks={quickPicks(all, held)} filter={filter} onFilter={setFilter} title={cat?.name ?? ""} />}
-        {filterable && (
-          <Select aria-label="Show" value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
-            {filterChoices(all, true).map((choice) => (
-              <option key={choice.value} value={choice.value}>
-                {choice.label}
-              </option>
-            ))}
-          </Select>
-        )}
+        <Select aria-label="Show" value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
+          {filterChoices(all, true).map((choice) => (
+            <option key={choice.value} value={choice.value}>
+              {choice.label}
+            </option>
+          ))}
+        </Select>
         <Input
           aria-label={`Search ${cat?.name ?? ""}`}
-          placeholder={`Search ${matching.length} ${cat?.name.toLowerCase() ?? ""}…`}
+          placeholder={`Search ${countOf(shown.length, cat?.name ?? "")}${filter === "can" ? " you can take" : ""}…`}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="min-w-40 flex-1"
         />
       </div>
       <ul className="flex max-h-72 flex-col overflow-y-auto">
-        {matching.slice(0, SHOWN).map((t) => {
-          const barred = unavailable[t.name];
-          return (
-            <li key={t.name}>
-              <button
-                type="button"
-                disabled={!!barred}
-                onClick={() => choose(t)}
-                className={`flex w-full flex-col rounded px-2 py-1.5 text-left text-sm ${t.name === name ? "bg-ash/60" : "hover:bg-ash/40"} ${barred ? "opacity-50" : ""}`}
-              >
-                <span>
-                  {t.name}
-                  {t.fixed_rating ? <span className="text-gold"> ({t.fixed_rating})</span> : null}
-                  {t.requirement && <span className="ml-2 text-xs text-mist">{t.requirement}</span>}
-                </span>
-                {barred && <span className="text-xs text-blood-bright">{barred}</span>}
-              </button>
-            </li>
-          );
-        })}
-        {matching.length === 0 && <li className="px-2 text-sm text-mist">Nothing matches.</li>}
+        {matching.slice(0, SHOWN).map((t) => (
+          <TraitChoice key={t.name} trait={t} chosen={t.name === name} refused={unavailable[t.name]} onChoose={() => choose(t)} />
+        ))}
+        {elsewhere.map((found) => (
+          <li key={`${found.category.key}/${found.trait.name}`}>
+            <button
+              type="button"
+              onClick={() => switchTo(found.category.key, found.canTake)}
+              className="w-full rounded px-2 py-1.5 text-left text-sm text-mist hover:bg-ash/40 hover:text-parchment"
+            >
+              Found in {found.category.name}: <span className="text-parchment">{found.trait.name}</span>
+            </button>
+          </li>
+        ))}
+        {matching.length === 0 && elsewhere.length === 0 && leftOut === 0 && <li className="px-2 text-sm text-mist">Nothing matches.</li>}
         {matching.length > SHOWN && <li className="px-2 text-xs text-mist">Search to see all {matching.length}.</li>}
+        {leftOut > 0 && (
+          <li className="px-2 py-1.5 text-xs text-mist">
+            {matching.length > 0 ? `${leftOut} more you can't take: ` : `None you can take. ${leftOut} you can't: `}
+            <button type="button" onClick={() => setFilter("all")} className="text-gold underline hover:text-parchment">
+              show
+            </button>
+          </li>
+        )}
       </ul>
       {trait && (
         <form
@@ -197,5 +204,67 @@ export function AddTraitPanel({
         </form>
       )}
     </div>
+  );
+}
+
+/** One trait in the list: chosen, or greyed with why the rules refuse it. */
+function TraitChoice({ trait, chosen, refused, onChoose }: { trait: TraitOut; chosen: boolean; refused?: string; onChoose: () => void }) {
+  return (
+    <li>
+      <button
+        type="button"
+        disabled={!!refused}
+        onClick={onChoose}
+        className={`flex w-full flex-col rounded px-2 py-1.5 text-left text-sm ${chosen ? "bg-ash/60" : "hover:bg-ash/40"} ${refused ? "opacity-50" : ""}`}
+      >
+        <span>
+          {trait.name}
+          {trait.fixed_rating ? <span className="text-gold"> ({trait.fixed_rating})</span> : null}
+          {trait.requirement && <span className="ml-2 text-xs text-mist">{trait.requirement}</span>}
+        </span>
+        {refused && <span className="text-xs text-blood-bright">{refused}</span>}
+      </button>
+    </li>
+  );
+}
+
+/**
+ * The part's categories as chips, each with how many the character can take
+ * there. Drawn like SubTabs, and taking a label and tabs as it does, but
+ * choosing in place rather than following a link.
+ */
+function CategoryChips({
+  label,
+  tabs,
+  value,
+  onChange,
+}: {
+  label: string;
+  tabs: { key: string; label: string; count?: number }[];
+  value: string;
+  onChange: (key: string) => void;
+}) {
+  return (
+    <nav aria-label={label} className="flex flex-wrap gap-2">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          aria-pressed={t.key === value}
+          onClick={() => onChange(t.key)}
+          className={`rounded-full border px-3 py-1 text-sm whitespace-nowrap ${
+            t.key === value ? "border-gold/60 bg-gold/10 text-parchment" : "border-ash text-mist hover:text-parchment"
+          }`}
+        >
+          {t.label}
+          {t.count ? (
+            <>
+              {" "}
+              <span className="text-gold">{t.count}</span>
+            </>
+          ) : null}
+        </button>
+      ))}
+    </nav>
   );
 }

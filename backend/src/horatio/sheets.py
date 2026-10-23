@@ -39,10 +39,12 @@ from horatio.models import (
     User,
     XpEntry,
 )
-from horatio.rules.checks import Context, Violation, violations
+from horatio.rules.checks import Context, Violation, traits_in, violations
+from horatio.rules.conditions import describe as describe_condition
 from horatio.rules.grants import Effects, choices, effects, raised_by
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import (
+    NotAllowed,
     PricingError,
     Quote,
     fixed_rating,
@@ -299,10 +301,18 @@ def find_definition(
     return found[0], found[1]
 
 
-def check_context(db: Session, character: Character, sheet: Sequence[SheetTrait]) -> Context:
+def check_context(
+    db: Session,
+    character: Character,
+    sheet: Sequence[SheetTrait],
+    priced: Iterable[tuple[str, str, str | None]] | None = None,
+) -> Context:
+    """What checks know beyond the sheet. `priced` is what the sheet's grants price
+    as in-clan, where the caller has it already."""
     rules = rules_for(db, character)
     # Paths a merit prices as in-clan (Thaumaturgic Expertise) count as in-clan here.
-    priced = effects(rules.rule_set.grants, sheet, rules.rule_set).in_clan_priced
+    if priced is None:
+        priced = effects(rules.rule_set.grants, sheet, rules.rule_set).in_clan_priced
     native = frozenset(SPLATS[character.splat].in_clan(rules, sheet))
     return Context(
         accepted=character.home_troupe_id is not None,
@@ -431,18 +441,22 @@ def unavailable(
     category_key: str,
     as_if: str = "sheet",
     picks: Sequence[str] = (),
+    planned: Sequence[SheetTrait] | None = None,
 ) -> dict[str, str]:
     """For each trait in a category the character does not hold, why a check would
-    refuse it, if one would. A merit or flaw is tried at its point value, anything
-    else at 1 dot.
+    refuse it, or the troupe's costs say it cannot be bought, if either would. A
+    merit or flaw is tried at its point value, a ritual at its level, anything else
+    at 1 dot.
 
     `as_if` "picks" first puts `picks` in place of the category's creation picks (the
     wizard's ticks before they are saved); "empty" first takes everything in the
-    category away, leaving what no choice there could make allowed."""
+    category away, leaving what no choice there could make allowed. Neither looks
+    at costs, as creation picks are free. `planned` is the sheet to judge in place
+    of the saved one: as a cart's changes would leave it."""
     rules = rules_for(db, character)
     rule_set = rules.rule_set
     rows = sheet_rows(db, character)
-    sheet = [r.as_rules_trait() for r in rows]
+    sheet = [r.as_rules_trait() for r in rows] if planned is None else list(planned)
     if as_if == "empty":
         sheet = [t for t in sheet if t.category != category_key]
     elif as_if == "picks":
@@ -466,7 +480,21 @@ def unavailable(
     held = {t.name for t in sheet if t.category == category_key}
     checks = rules.checks()
     context = check_context(db, character, sheet)
+    # Trying a trait no grant gives from or looks at leaves the grants as they are,
+    # so their answer for the sheet serves every such trial (grants are slow to redo).
+    grants = rule_set.grants
+    priced = effects(grants, sheet, rule_set).in_clan_priced
+    moves_grants = {(g.source["category"], g.source["name"]) for g in grants} | {
+        key for g in grants for key in traits_in(g.when)
+    }
     before = {v.key for v in violations(checks, sheet, context)}
+    # Nor can a trial break a check that neither is about the category nor looks at
+    # it, unless it changes what is in-clan; so only these need trying again.
+    touching = [
+        c
+        for c in checks
+        if c.category == category_key or any(key[0] == category_key for key in c.looks_at())
+    ]
     rated = rule_set.categories[category_key].rated
     reasons: dict[str, str] = {}
     for category, name in rule_set.traits:
@@ -481,9 +509,19 @@ def unavailable(
                 category=category, name=name, detail=detail, rating=rating, free_rating=0
             )
             trial = [t for t in sheet if rated or t.category != category] + [candidate]
+            trial_context = check_context(
+                db,
+                character,
+                trial,
+                None if {(category, name), (category, None)} & moves_grants else priced,
+            )
+            same_clan = (trial_context.in_clan, trial_context.native) == (
+                context.in_clan,
+                context.native,
+            )
             new = [
                 v
-                for v in violations(checks, trial, check_context(db, character, trial))
+                for v in violations(touching if same_clan else checks, trial, trial_context)
                 if blocking(v, character) and v.key not in before
             ]
             if not new:
@@ -492,7 +530,41 @@ def unavailable(
             # The trait's own problem first: "Talisman is already…" when trying Spellslinger.
             own = [v for v in new if v.subject.name == name]
             reasons[name] = (own or new)[0].message
+        elif as_if == "sheet" and rating is not None:
+            refused = not_for_sale(rules, sheet, category, name, rating)
+            if refused is not None:
+                reasons[name] = refused
     return reasons
+
+
+def not_for_sale(
+    rules: TroupeRules, sheet: Sequence[SheetTrait], category: str, name: str, rating: int
+) -> str | None:
+    """Why the troupe's costs say the character cannot buy this trait, if they do:
+    a Luminary Discipline out-of-clan, say. Read from the rules that would let it
+    be bought, where there is just one."""
+    try:
+        trait_cost(rules, sheet, SheetTrait(category=category, name=name, rating=rating))
+    except NotAllowed:
+        pass
+    except PricingError:
+        return None
+    else:
+        return None
+    category_name = rules.rule_set.categories[category].name
+    allowing = [
+        r
+        for r in [*rules.house_rules, *rules.rule_set.cost_rules]
+        if r.category == category and r.trait in (None, name) and r.scheme != "not_allowed"
+    ]
+    words = (
+        describe_condition(allowing[0].condition, SPLATS[rules.splat].fact_words)
+        if len(allowing) == 1
+        else None
+    )
+    if words:
+        return f"{category_name} can be bought only {words}."
+    return f"{category_name} cannot be bought by this character."
 
 
 def sheet_effects(db: Session, character: Character) -> Effects:

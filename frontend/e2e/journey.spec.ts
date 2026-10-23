@@ -1158,7 +1158,7 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
 
   // Archaic, then Computer, which an Archaic character cannot have: Archaic's line is refused, and nothing can be spent.
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Category").selectOption({ label: "Flaws" });
+  await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Flaws/ }).click();
   await p.getByLabel("Search Flaws").fill("Archaic");
   await p.getByRole("button", { name: /^Archaic/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
@@ -2488,6 +2488,120 @@ test("Crafts, Performance and Science take a field in the wizard, kept through B
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   for (const skill of ["Performance: Singing", "Performance: Dance", "Science: Chemistry", "Crafts: Woodwork"])
     await expect(part("Skills").getByText(skill, { exact: true })).toBeVisible();
+});
+
+/** A finished vampire built through the API, with self-entered XP to spend. */
+async function builtVampire(p: Page, name: string, clan: string, build: Record<string, [string, number][]>, raises: [string, string, number][] = []) {
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: clan, rating: null });
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+  await send("POST", `/api/characters/${id}/xp/self-entered`, { amount: 200, reason: "Played elsewhere" });
+  for (const [category, trait, rating] of raises) await send("PUT", `/api/characters/${id}/traits`, { category, name: trait, rating });
+  return id as string;
+}
+
+const ATTRIBUTES_AND_FOCUSES: Record<string, [string, number][]> = {
+  attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+  focus_physicals: [["Strength", 1]],
+  focus_mentals: [["Wits", 1]],
+  focus_socials: [["Charisma", 1]],
+  skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+};
+
+test("the sheet points to the techniques and elder powers a character can take", async ({ browser }) => {
+  const { page: p } = await person(browser, "finder-player");
+  // A Pretender Elder (Generation 3) with Celerity 5: one elder power, and techniques at 20 XP.
+  const id = await builtVampire(
+    p,
+    "Wren",
+    "Brujah",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] },
+    [["disciplines", "Celerity", 5]],
+  );
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const disciplines = part("Disciplines");
+  const chips = p.getByRole("navigation", { name: "Categories" });
+
+  // One quiet line says what is open, and opens the Add panel there.
+  await expect(disciplines.getByText(/Elder Disciplines? open to you\.$/)).toBeVisible();
+  await p.screenshot(shots("open-to-you"));
+  await disciplines.getByRole("button", { name: /^\d+ Elder Disciplines?$/ }).click();
+  await expect(chips.getByRole("button", { name: /^Elder Disciplines/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(chips.getByRole("button", { name: /^Techniques/ })).toBeVisible();
+  // Rituals need a ritual discipline, which a Brujah has not got.
+  await expect(chips.getByRole("button", { name: /^Rituals/ })).toHaveCount(0);
+  // What this character can take, by default: Celerity's elder powers, not Animalism's.
+  await expect(p.getByLabel("Show")).toHaveValue("can");
+  await expect(p.getByPlaceholder(/you can take…$/)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Celerity: Projectile" })).toBeVisible();
+  await expect(p.getByRole("button", { name: /^Animalism: / })).toHaveCount(0);
+  await expect(p.getByText(/^\d+ more you can't take:/)).toBeVisible();
+  await p.getByLabel("Show").selectOption({ label: "Everything" });
+  await expect(p.getByRole("button", { name: /^Animalism: / }).first()).toBeDisabled();
+  await expect(p.getByText("An elder power needs all 5 dots of its discipline first.", { exact: false }).first()).toBeVisible();
+  await p.screenshot(shots("elder-powers"));
+
+  // A power's name finds it in whichever category it lives.
+  await p.getByLabel("Search Elder Disciplines").fill("Fearful");
+  await p.getByRole("button", { name: "Found in Techniques: Fearful Blow" }).click();
+  await expect(chips.getByRole("button", { name: /^Techniques/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByRole("button", { name: /^Fearful Blow/ })).toBeDisabled();
+  await expect(p.getByText("Fearful Blow needs Potence 2 and Presence 2.", { exact: false })).toBeVisible();
+
+  // Dots in the cart open the technique straight away, before spending.
+  await p.getByRole("button", { name: "Raise Potence" }).click();
+  await p.getByRole("button", { name: "Raise Presence" }).click();
+  await p.getByLabel("Show").selectOption({ label: "What this character can take" });
+  await p.getByRole("button", { name: /^Fearful Blow/ }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  await expect(cart.getByRole("listitem").filter({ hasText: "Add Fearful Blow" })).toContainText("20 XP");
+
+  // A Pretender Elder learns one elder power: with one in the cart, none are left to take.
+  await disciplines.getByRole("button", { name: "Add" }).click();
+  await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
+  await p.getByRole("button", { name: "Celerity: Projectile" }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await disciplines.getByRole("button", { name: "Add" }).click();
+  await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
+  await expect(chips.getByRole("button", { name: "Elder Disciplines", exact: true })).toBeVisible();
+  await expect(p.getByText(/^None you can take\. \d+ you can't:/)).toBeVisible();
+  await p.getByRole("button", { name: "show", exact: true }).click();
+  await expect(p.getByLabel("Show")).toHaveValue("all");
+  await expect(p.getByText("A Pretender Elder can learn only one elder power.", { exact: false }).first()).toBeVisible();
+});
+
+test("only a character with a ritual discipline sees rituals, up to its path's level", async ({ browser }) => {
+  const { page: p } = await person(browser, "finder-ritualist");
+  const id = await builtVampire(p, "Odile", "Tremere", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Thaumaturgy: Path of Blood", 2], ["Auspex", 1], ["Dominate", 1]],
+  });
+  const rules = await (await p.request.get("/api/rules/vampire")).json();
+  const ritual = (level: number) => rules.traits.find((t: { category: string; name: string; fixed_rating: number }) => t.category === "rituals" && t.name.startsWith("Thaumaturgy: ") && t.fixed_rating === level).name as string;
+  await p.goto(`/characters/${id}`);
+  const disciplines = p.locator("section").filter({ has: p.getByRole("heading", { name: "Disciplines", exact: true }) });
+  const chips = p.getByRole("navigation", { name: "Categories" });
+
+  await expect(disciplines.getByRole("button", { name: /^\d+ Rituals$/ })).toBeVisible();
+  await disciplines.getByRole("button", { name: /^\d+ Rituals$/ }).click();
+  await expect(chips.getByRole("button", { name: /^Rituals/ })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Search Rituals").fill(ritual(2));
+  await expect(p.getByRole("button", { name: new RegExp(`^${ritual(2)}`) })).toBeEnabled();
+  await p.getByLabel("Search Rituals").fill(ritual(3));
+  // Left out of what the character can take, but a tap away, with the reason.
+  await expect(p.getByText("None you can take. 1 you can't:")).toBeVisible();
+  await p.getByRole("button", { name: "show", exact: true }).click();
+  await expect(p.getByText("A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more.", { exact: false })).toBeVisible();
 });
 
 test("a troupe's Profile tab switches it public at once, About sets its XP range, and Waiting on you leads to the work", async ({ browser }) => {

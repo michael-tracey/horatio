@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type {
@@ -24,11 +24,13 @@ import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
 import { AddTraitPanel } from "./AddTraitPanel";
+import { openToYou, useChoices } from "./choices";
 import { PrintAndBadge } from "./Badge";
-import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart, type Cart } from "./cart";
+import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart, type Cart, type CartLine } from "./cart";
 import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
 import { rulesTroupe } from "./rules";
 import { fieldSkills } from "./fields";
+import { byKind, countOf } from "./traitFilter";
 import {
   SetField,
   SpecializationRow,
@@ -104,6 +106,43 @@ export function addableByGroup(catalogue: CatalogueOut | undefined) {
   return groups;
 }
 
+/**
+ * One quiet line pointing to the categories of a part the character holds nothing
+ * in but could take something from: "3 Techniques and 1 Elder Discipline open to
+ * you." Each opens the Add panel there.
+ */
+function OpenToYou({
+  character,
+  catalogue,
+  categories,
+  held,
+  lines,
+  onOpen,
+}: {
+  character: CharacterOut;
+  catalogue: CatalogueOut;
+  categories: string[];
+  held: SheetTraitOut[];
+  lines: CartLine[];
+  onOpen: (category: string) => void;
+}) {
+  const open = openToYou(useChoices(character.id, catalogue, categories, held, lines));
+  if (open.length === 0) return null;
+  return (
+    <p className="mt-2 text-sm text-mist">
+      {open.map((c, i) => (
+        <Fragment key={c.key}>
+          {i > 0 && (i === open.length - 1 ? " and " : ", ")}
+          <button type="button" onClick={() => onOpen(c.key)} className="text-gold underline hover:text-parchment">
+            {countOf(c.canTake.length, c.name)}
+          </button>
+        </Fragment>
+      ))}{" "}
+      open to you.
+    </p>
+  );
+}
+
 function useCreation(character: CharacterOut) {
   return useQuery({
     queryKey: ["creation", character.id],
@@ -132,6 +171,8 @@ export function SheetTab({
   const creation = useCreation(character);
   const needsField = fieldSkills(catalogue.data);
   const [adding, setAdding] = useState<string | null>(null);
+  // The category the Add panel opens on, when the sheet points to one.
+  const [opening, setOpening] = useState<string | undefined>();
   const kinds = useSpecializations(character.id);
   // Changes wait in the cart until Spend XP; only the player has one.
   const cart = useCart(character.id);
@@ -214,6 +255,13 @@ export function SheetTab({
     (g) => groups.has(g) || (canAdd && (addable.get(g)?.length ?? 0) > 0),
   );
   const single = (group: string) => (groups.get(group)?.size ?? 0) === 1;
+  // A part of powers learned by meeting what they need (disciplines and their
+  // techniques, elder powers, rituals), rather than chosen by kind like merits:
+  // it points to the categories a player would otherwise not know were open.
+  const pointsTo = (group: string) => {
+    const keys = addable.get(group) ?? [];
+    return keys.length > 1 && keys.every((key) => !byKind(catalogue.data?.traits.filter((t) => t.category === key) ?? []));
+  };
   // Small parts (a few traits in one category) sit side by side; the rest span the width.
   const wide = (group: string) => {
     const categories = groups.get(group);
@@ -290,7 +338,10 @@ export function SheetTab({
                   <Button
                     variant="ghost"
                     aria-expanded={adding === group}
-                    onClick={() => setAdding(adding === group ? null : group)}
+                    onClick={() => {
+                      setAdding(adding === group ? null : group);
+                      setOpening(undefined);
+                    }}
                   >
                     {adding === group ? "Close" : "Add"}
                   </Button>
@@ -299,10 +350,13 @@ export function SheetTab({
             >
               {adding === group && catalogue.data && (
                 <AddTraitPanel
+                  key={opening}
                   character={character}
                   catalogue={catalogue.data}
                   categories={addable.get(group) ?? []}
                   held={[...s.traits, ...adds]}
+                  lines={lines}
+                  initial={opening}
                   onAdd={(trait) => cart.update((l) => setRating(l, { ...trait, rating: 0 }, trait.rating))}
                   onClose={() => setAdding(null)}
                 />
@@ -371,6 +425,19 @@ export function SheetTab({
                   </div>
                 ))}
               </div>
+              {canAdd && catalogue.data && pointsTo(group) && (
+                <OpenToYou
+                  character={character}
+                  catalogue={catalogue.data}
+                  categories={addable.get(group) ?? []}
+                  held={[...s.traits, ...adds]}
+                  lines={lines}
+                  onOpen={(key) => {
+                    setAdding(group);
+                    setOpening(key);
+                  }}
+                />
+              )}
             </Card>,
             group === healthAfter && health,
           ])}

@@ -47,3 +47,20 @@ export function quickPicks(traits: TraitOut[], sheet: { category: string; name: 
   if (sect && applyFilter(traits, `kind:${sect}`).length) picks.push({ value: `kind:${sect}`, label: sect });
   return picks;
 }
+
+/** Whether a list is narrowed by kind or by clan: merits and flaws. */
+export const byKind = (traits: TraitOut[]) => traits.some((t) => t.kind || t.requirement);
+
+/**
+ * The traits a character can take: not barred, and not already held. A trait held
+ * with a detail (a skill bought once per field) can be taken again.
+ */
+export function takeable(traits: TraitOut[], barred: Record<string, string>, held: { name: string; detail: string }[]): TraitOut[] {
+  const mine = new Set(held.filter((h) => !h.detail).map((h) => h.name));
+  return applyFilter(traits, "can", barred).filter((t) => !mine.has(t.name));
+}
+
+/** "1 Technique", "3 Techniques": a count of a category's traits. */
+export function countOf(count: number, category: string): string {
+  return `${count} ${count === 1 ? category.replace(/s$/, "") : category}`;
+}

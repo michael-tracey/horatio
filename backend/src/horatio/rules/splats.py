@@ -44,13 +44,18 @@ def vampire_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait])
     return disciplines
 
 
+# Powers named after their discipline ("Celerity: Projectile"), in-clan when it is.
+VAMPIRE_ELDER_POWERS = frozenset({"elder_disciplines", "luminary_disciplines"})
+
+
 def vampire_is_in_clan(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> bool:
     """An in-clan entry matches the trait's name, or its name with its detail: so
-    "Celerity" matches any Celerity, but "Thaumaturgy: Path of Blood" only that path."""
-    return any(
-        entry in (trait.name, trait.full_name)
-        for entry in vampire_in_clan_disciplines(rules, sheet)
-    )
+    "Celerity" matches any Celerity, but "Thaumaturgy: Path of Blood" only that path.
+    An elder or luminary power matches its discipline."""
+    names = {trait.name, trait.full_name}
+    if trait.category in VAMPIRE_ELDER_POWERS:
+        names.add(trait.name.split(":")[0].strip())
+    return any(entry in names for entry in vampire_in_clan_disciplines(rules, sheet))
 
 
 def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Facts:
