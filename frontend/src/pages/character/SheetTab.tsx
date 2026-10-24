@@ -1040,9 +1040,9 @@ function CreationPanel({
 type PrimaryPath = SheetOut["primary_paths"][number];
 
 /**
- * Which path of a discipline is primary: no other may go above it. A clan with
- * an in-clan path has it as primary; otherwise the player names the first path
- * that reached 2 dots, which must be the highest (MET: VTM p. 187).
+ * Which path of a discipline is primary: no other may go above it. A clan's
+ * in-clan path is primary until the player names another; otherwise the player
+ * names the first path that reached 2 dots, which must be the highest (MET: VTM p. 187).
  */
 function PrimaryPathRow({ characterId, primary, locked }: { characterId: string; primary: PrimaryPath; locked: boolean }) {
   const name = useAction((path: string | null) =>
@@ -1057,7 +1057,7 @@ function PrimaryPathRow({ characterId, primary, locked }: { characterId: string;
   return (
     <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
       <span className="text-mist">Primary path of {primary.discipline}:</span>
-      {primary.native || locked ? (
+      {locked ? (
         <span className="text-parchment">
           {primary.path ? short(primary.path) : "not named"}
           {primary.native && <span className="text-mist"> (in-clan)</span>}
@@ -1069,15 +1069,16 @@ function PrimaryPathRow({ characterId, primary, locked }: { characterId: string;
           onChange={(e) => name.mutate(e.target.value || null)}
           className="min-h-8 w-auto py-1 text-sm"
         >
-          <option value="">Not named</option>
+          {!primary.default && <option value="">Not named</option>}
           {primary.options.map((o) => (
             <option key={o} value={o}>
               {short(o)}
+              {o === primary.default ? " (in-clan)" : ""}
             </option>
           ))}
         </Select>
       )}
-      {!primary.native && !primary.path && (
+      {!primary.path && (
         <span className="text-xs text-mist">Name the first path that reached 2 dots; no other path can go above it.</span>
       )}
       <ErrorText error={name.error} />

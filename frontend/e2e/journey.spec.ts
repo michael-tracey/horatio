@@ -2801,6 +2801,41 @@ test("only a character with a ritual discipline sees rituals, up to its path's l
   await expect(p.getByText("A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more.", { exact: false })).toBeVisible();
 });
 
+test("a Tremere names Path of Corruption as the primary path, once it is the first to 2 dots", async ({ browser }) => {
+  const { page: p } = await person(browser, "primary-tremere");
+  const id = await builtVampire(p, "Lucita", "Tremere", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Thaumaturgy: Path of Blood", 1], ["Dominate", 1]],
+  });
+  const put = async (category: string, name: string, rating: number, detail = "") => {
+    const response = await p.request.fetch(`/api/characters/${id}/traits`, { method: "PUT", headers: { "X-Horatio": "1" }, data: { category, name, rating, detail } });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+  };
+  const corruption = "Thaumaturgy: Path of Corruption";
+  await put("merits", "Thaumaturgic Expertise", 1, corruption);
+  await put("disciplines", corruption, 1);
+  await p.goto(`/characters/${id}`);
+
+  // The in-clan path is primary until another is named.
+  const picker = p.getByLabel("Primary path of Thaumaturgy");
+  await expect(picker).toHaveValue("Thaumaturgy: Path of Blood");
+  await expect(picker.getByRole("option", { name: "Path of Blood (in-clan)" })).toBeAttached();
+  await picker.selectOption({ label: "Path of Corruption" });
+  await expect(picker).toHaveValue(corruption);
+
+  // Named, it can reach 2 dots first, and nothing is flagged for it.
+  await put("disciplines", corruption, 2);
+  await p.reload();
+  await expect(p.getByLabel("Primary path of Thaumaturgy")).toHaveValue(corruption);
+  await expect(p.getByText("No path of Thaumaturgy can go above the primary path.")).toHaveCount(0);
+  await p.screenshot(shots("primary-path-named"));
+
+  // Path of Blood is no longer the highest, so it cannot be named back yet.
+  await p.getByLabel("Primary path of Thaumaturgy").selectOption({ label: "Path of Blood (in-clan)" });
+  await expect(p.getByText("Thaumaturgy: Path of Corruption is higher", { exact: false })).toBeVisible();
+});
+
 test("a troupe's Profile tab switches it public at once, About sets its XP range, and Waiting on you leads to the work", async ({ browser }) => {
   const custodian = await person(browser, "tidy-custodian");
   makeCustodian(custodian.email);

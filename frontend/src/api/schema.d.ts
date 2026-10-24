@@ -6566,6 +6566,8 @@ export interface components {
         };
         /** PrimaryPathOut */
         PrimaryPathOut: {
+            /** Default */
+            default: string | null;
             /** Discipline */
             discipline: string;
             /** Native */
