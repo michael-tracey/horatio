@@ -1047,6 +1047,30 @@ test("a Caitiff chooses their in-clan disciplines while creating", async ({ brow
   await expect(page.getByRole("checkbox", { name: "Dominate" })).toHaveCount(0);
 });
 
+test("a player makes up an archetype in the creation wizard, and it shows on the sheet and the printed sheet", async ({ browser }) => {
+  const { page } = await person(browser, "penitent");
+  await page.getByLabel("Name").fill("Dismas");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const id = page.url().match(/characters\/([0-9a-f-]{36})/)![1];
+  await page.getByLabel("Archetype", { exact: true }).selectOption("Other…");
+  // It waits for a name before it can be saved.
+  await expect(page.getByRole("button", { name: "Save archetype" })).toBeDisabled();
+  await page.getByLabel("Archetype's name").fill("The Penitent Thief");
+  await page.getByLabel("What it means for the character").fill("Steals only to give back.");
+  await page.getByRole("button", { name: "Save archetype" }).click();
+  // The name given stands in the page title, with the description beside it…
+  const shown = page.getByText("The Penitent Thief", { exact: true });
+  await expect(shown).toBeVisible();
+  await expect(shown.locator("..")).toHaveAttribute("title", /Steals only to give back\./);
+  // …and survives a reload.
+  await page.reload();
+  await expect(page.getByLabel("Archetype's name")).toHaveValue("The Penitent Thief");
+  // The printed sheet gives the name too.
+  await page.goto(`/print/characters/${id}`);
+  await expect(page.getByText("The Penitent Thief", { exact: true })).toBeVisible();
+});
+
 test("a merit taken in the creation wizard gives the traits it grants", async ({ browser }) => {
   const { page: p } = await person(browser, "creep");
   await p.getByLabel("Name").fill("Grub");

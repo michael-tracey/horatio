@@ -342,6 +342,12 @@ category = "archetype"
 name = "Untrustworthy"
 
 [[traits]]
+category = "archetype"
+name = "Other…"
+description = "An archetype of your own, made with the Storyteller; the detail names it, and the note says what it means for the character."
+page_reference = "86"
+
+[[traits]]
 category = "backgrounds"
 name = "Allies"
 description = "Mortals who help you because they want to, each with their own talents. They can act on your behalf between games."

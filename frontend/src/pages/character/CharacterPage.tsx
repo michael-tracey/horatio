@@ -6,6 +6,7 @@ import type { CharacterOut } from "../../api/types";
 import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { CreationWizard } from "./creation/Wizard";
+import { choiceName } from "./creation/logic";
 import { abilities } from "../troupe/roles";
 import { DowntimeTab } from "./DowntimeTab";
 import { InfluenceTab } from "./InfluenceTab";
@@ -185,8 +186,8 @@ function Identity({ character, lead }: { character: CharacterOut; lead: string }
     <span className="flex flex-wrap items-center gap-x-2">
       <span className="capitalize">{lead}</span>
       {choices.map((t) => (
-        <span key={t.id} title={t.category_name}>
-          · <span className="text-parchment/90">{t.name}</span>
+        <span key={t.id} title={t.note ? `${t.category_name}: ${t.note}` : t.category_name}>
+          · <span className="text-parchment/90">{choiceName(t)}</span>
         </span>
       ))}
     </span>
