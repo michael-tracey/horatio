@@ -3315,3 +3315,98 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await expect(a.getByLabel("Blood: 10 of 10")).toBeVisible();
   await expect(a.getByText("Half Blood: fed short last downtime")).toHaveCount(0);
 });
+
+test("a coterie's shared Haven: staff set it up, a player logs a use, and the other sharer reads it in the log", async ({ browser }) => {
+  const custodian = await person(browser, "share-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "share-lead");
+  const first = await person(browser, "share-first");
+  const second = await person(browser, "share-second");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Shared Roof ${run}`, lead_handle: lead.handle });
+
+  // Agnes and Bram, both at home in the troupe.
+  const build = async (page: Page, name: string) => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const agnes = await build(first.page, "Agnes");
+  const bram = await build(second.page, "Bram");
+
+  // The lead sets up the coterie's Haven: Agnes puts in 2 dots, Bram 1.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("link", { name: "People", exact: true }).click();
+  await l.getByRole("link", { name: "Shared backgrounds" }).click();
+  await l.getByRole("button", { name: "Set up a shared background" }).click();
+  const setUp = l.getByRole("form", { name: "Set up a shared background" });
+  await setUp.getByLabel("Name").fill("The coterie's Haven");
+  await expect(setUp.getByLabel("Background")).toHaveValue("Haven");
+  await setUp.getByLabel("What it gives (optional)").fill("Security, Guards");
+  await setUp.getByLabel("Character 1", { exact: true }).selectOption({ label: "Agnes" });
+  await setUp.getByLabel("Dots 1", { exact: true }).fill("2");
+  await setUp.getByRole("button", { name: "Add a character" }).click();
+  await setUp.getByLabel("Character 2", { exact: true }).selectOption({ label: "Bram" });
+  await setUp.getByRole("button", { name: "Set up" }).click();
+  await expect(l.getByRole("heading", { name: "The coterie's Haven" })).toBeVisible();
+  await expect(l.getByText("3 of 5 dots")).toBeVisible();
+  await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots, Bram 1 dot.");
+  await expect(l.getByText(/A record only: nothing logged here changes a rating/)).toBeVisible();
+
+  // Agnes's player finds it on her page, and logs drawing on it.
+  const a = first.page;
+  await a.goto(`/characters/${agnes}`);
+  await a.locator("main").getByRole("link", { name: "Shared backgrounds" }).click();
+  await expect(a.getByRole("heading", { name: "The coterie's Haven" })).toBeVisible();
+  await expect(a.getByRole("button", { name: "Log dots" })).toHaveCount(0);
+  await a.getByRole("button", { name: "Log a use" }).click();
+  const use = a.getByRole("form", { name: "Log a use" });
+  await expect(use.getByLabel("Who drew on it")).toHaveValue(agnes);
+  await use.getByLabel("What for").fill("Hiding from the hunters for the day");
+  await use.getByRole("button", { name: "Log use" }).click();
+  const log = a.getByRole("list", { name: "The coterie's Haven log" });
+  await expect(log.getByRole("listitem").first()).toContainText("Agnes drew on it");
+  await expect(log.getByRole("listitem").first()).toContainText("Hiding from the hunters for the day");
+  await a.screenshot(shots("shared-background"));
+
+  // Bram's player reads it in the same log, but cannot take Agnes's use off it.
+  const b = second.page;
+  await b.goto(`/characters/${bram}/shared`);
+  const his = b.getByRole("list", { name: "The coterie's Haven log" });
+  await expect(his.getByRole("listitem").first()).toContainText("Hiding from the hunters for the day");
+  await expect(his.getByRole("listitem").first()).toContainText("logged by share-first");
+  await expect(his.getByRole("listitem").first().getByRole("button", { name: "Delete" })).toHaveCount(0);
+
+  // The lead logs Bram taking his dot out; the total follows the log.
+  await l.reload();
+  await expect(l.getByRole("list", { name: "The coterie's Haven log" }).getByRole("listitem").first()).toContainText("Agnes drew on it");
+  await l.getByRole("button", { name: "Log dots" }).click();
+  const dots = l.getByRole("form", { name: "Log dots" });
+  await dots.getByLabel("Dots", { exact: true }).selectOption("Taken out");
+  await dots.getByLabel("Who").selectOption({ label: "Bram (1 dot)" });
+  await dots.getByLabel("Note (optional)").fill("Left the coterie");
+  await dots.getByRole("button", { name: "Log dots" }).click();
+  await expect(l.getByText("2 of 5 dots")).toBeVisible();
+  await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
+});

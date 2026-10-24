@@ -295,6 +295,19 @@ MESSAGES: dict[str, str] = {
     "influence.block_recorded": "{actor} recorded an influence block: {what}.",
     "influence.effect_removed": "{actor} took back an influence effect: {what}.",
     "influence.detailed_at_game": "{actor} gave the details of {entry} at a game: {who}, {what}.",
+    "shared_background.created": "{actor} set up {shared}, a shared {background}.",
+    "shared_background.changed": "{actor} changed the shared background {shared}: {fields}.",
+    "shared_background.deleted": "{actor} deleted the shared background {shared} and its log.",
+    "shared_background.logged.contribution": "{actor} logged {character} putting {dots} into"
+    " {shared}.",
+    "shared_background.logged.withdrawal": "{actor} logged {character} taking {dots} out of"
+    " {shared}.",
+    "shared_background.logged.use": "{actor} logged {character} drawing on {shared}.",
+    "shared_background.unlogged.contribution": "{actor} took {character} putting {dots} into"
+    " {shared} off its log.",
+    "shared_background.unlogged.withdrawal": "{actor} took {character} taking {dots} out of"
+    " {shared} off its log.",
+    "shared_background.unlogged.use": "{actor} took {character}'s use of {shared} off its log.",
 }
 
 
