@@ -28,7 +28,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, func, select, true
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications, xp_range
+from horatio import audit, notifications, repricing, xp_range
 from horatio.models import (
     Approval,
     Character,
@@ -47,7 +47,7 @@ from horatio.models import (
 from horatio.rules.checks import Context, Violation, traits_in, violations
 from horatio.rules.conditions import describe as describe_condition
 from horatio.rules.grants import Effects, choices, effects, raised_by
-from horatio.rules.model import SheetTrait, TroupeRules
+from horatio.rules.model import RuleSetData, SheetTrait, TroupeRules
 from horatio.rules.pricing import (
     NotAllowed,
     PricingError,
@@ -882,18 +882,55 @@ def hold_for_review(
     return True
 
 
+def selects(selector: Mapping[str, str], category: str, name: str) -> bool:
+    """Whether a `creation_only` entry in the rules data is about this trait."""
+    return (
+        selector["category"] == category
+        and (not selector.get("name") or selector["name"] == name)
+        and name.startswith(selector.get("name_prefix", ""))
+    )
+
+
+def locks_at(
+    rule_set: RuleSetData, category: str, name: str
+) -> Literal["finished", "accepted"] | None:
+    """When a trait chosen at creation only stops changing: once creation is
+    "finished", or, for one marked `until = "accepted"`, once a first home troupe
+    has "accepted" the character. None for any other trait."""
+    found = [s for s in rule_set.creation_only if selects(s, category, name)]
+    if not found:
+        return None
+    return "accepted" if all(s.get("until") == "accepted" for s in found) else "finished"
+
+
+def ever_accepted(db: Session, character: Character) -> bool:
+    """Whether a home troupe has ever accepted the character: it has entered play.
+    Leaving that troupe, or moving to another, changes nothing."""
+    if character.home_troupe_id is not None:
+        return True
+    found = select(SheetVersion.id).where(SheetVersion.character_id == character.id).limit(1)
+    return db.scalar(found) is not None
+
+
+def open_until_accepted(db: Session, character: Character, category: str, name: str) -> bool:
+    """A trait chosen at creation only, but open until acceptance, that the player
+    can still change with XP: creation is finished and no troupe has accepted the
+    character yet (MET: VTM p. 99, Generation)."""
+    return (
+        character.kind == "pc"
+        and character.creation_completed_at is not None
+        and locks_at(rules_for(db, character).rule_set, category, name) == "accepted"
+        and not ever_accepted(db, character)
+    )
+
+
 def creation_only_traits(db: Session, character: Character) -> dict[TraitKey, int | None]:
     """The character's traits that are chosen at creation only, with their ratings."""
     selectors = rules_for(db, character).rule_set.creation_only
     return {
         r.key: r.trait.rating
         for r in sheet_rows(db, character)
-        if any(
-            s["category"] == r.category.key
-            and (not s.get("name") or s["name"] == r.definition.name)
-            and r.definition.name.startswith(s.get("name_prefix", ""))
-            for s in selectors
-        )
+        if any(selects(s, r.category.key, r.definition.name) for s in selectors)
     }
 
 
@@ -1016,15 +1053,28 @@ def broken_since(
                         key,
                     )
                 )
-    if creation_only and character.creation_completed_at is not None:
+    if creation_only:
         fixed_after = creation_only_traits(db, character)
         changed = {
             key
             for key in before.fixed.keys() | fixed_after.keys()
             if before.fixed.get(key, 0) != fixed_after.get(key, 0)
         }
+        finished = character.creation_completed_at is not None
+        accepted = ever_accepted(db, character) if changed else False
         for key in sorted(changed):
-            refused.append(Problem(f"{key[1]} can only be chosen during character creation.", *key))
+            locked = locks_at(rule_set, key[0], key[1])
+            if locked == "accepted" and accepted:
+                refused.append(
+                    Problem(
+                        f"{key[1]} can't change once a home troupe has accepted the character.",
+                        *key,
+                    )
+                )
+            elif locked == "finished" and finished:
+                refused.append(
+                    Problem(f"{key[1]} can only be chosen during character creation.", *key)
+                )
     if checks:
         for trait, grant in sheet_effects(db, character).unchosen:
             # A trait held before its grant needed a choice is left be until changed.
@@ -1147,6 +1197,12 @@ class Change:
     trait: CharacterTrait | None
     # Given free: what it would have cost, where the rules price it.
     normal_cost: int | None = None
+    # Earlier purchases it repriced (horatio.repricing), each with its own XP line.
+    repriced: tuple[repricing.Repriced, ...] = ()
+
+    @property
+    def repricing_cost(self) -> int:
+        return sum(r.cost for r in self.repriced)
 
 
 # How a change is made by exception (horatio.trait_exceptions): "asked" of the home
@@ -1355,6 +1411,13 @@ def set_trait(
             CharacterTrait.detail == detail,
         )
     )
+    # Generation before acceptance: still creation, so earlier buys follow it.
+    reopened = open_until_accepted(db, character, category.key, definition.name)
+    if reopened and existing is not None and rating is not None and rating < existing.free_rating:
+        raise conflict(
+            f"{name} was chosen at {existing.free_rating} in character creation: "
+            "only the dots bought with XP since can be taken back."
+        )
     priced: Quote | None
     try:
         priced, current_rating = quote_change(db, character, category_key, name, detail, rating)
@@ -1389,8 +1452,26 @@ def set_trait(
             f"{name} is waiting for the home troupe's approval. Withdraw that to change it."
         )
     cost = 0 if free is not None or quote is None else quote.cost
-    if cost > 0 and xp_balance(db, character) < cost:
-        raise conflict(f"That costs {cost} XP, and the character has {xp_balance(db, character)}.")
+    repriced: list[repricing.Repriced] = []
+    if reopened and rating != current_rating:
+        rows = sheet_rows(db, character)
+        sheet = [r.as_rules_trait() for r in rows]
+        repriced = repricing.repricing(
+            db,
+            rules_for(db, character),
+            character.id,
+            sheet,
+            repricing.with_rating(sheet, category.key, definition.name, detail, rating),
+            {r.key: r.trait.free_rating for r in rows},
+            definition.id,
+        )
+    total = cost + sum(r.cost for r in repriced)
+    if total > 0 and xp_balance(db, character) < total:
+        raise conflict(
+            f"That costs {total} XP"
+            + (", with earlier buys repriced" if repriced else "")
+            + f", and the character has {xp_balance(db, character)}."
+        )
 
     trait = existing
     if trait is None:
@@ -1428,6 +1509,7 @@ def set_trait(
                 else {},
             )
         )
+    repricing.record(db, player, character.id, repriced, f"{name} {current_rating} → {rating}")
     if rating == 0 and trait.free_rating == 0:
         db.delete(trait)
         trait = None
@@ -1490,8 +1572,13 @@ def set_trait(
         )
         notifications.approval_waiting(db, approval)
     if free is not None:
-        return Change(quote=None, trait=trait, normal_cost=priced.cost if priced else None)
-    return Change(quote=quote, trait=trait)
+        return Change(
+            quote=None,
+            trait=trait,
+            normal_cost=priced.cost if priced else None,
+            repriced=tuple(repriced),
+        )
+    return Change(quote=quote, trait=trait, repriced=tuple(repriced))
 
 
 def change_choice(
@@ -1760,10 +1847,13 @@ def withdraw(db: Session, player: User, approval: Approval) -> Approval:
 def earned_and_spent(entries: Iterable[tuple[str, int]]) -> tuple[int, int]:
     """XP earned and spent from (kind, amount) pairs. A correction changes what an
     award gave, and a cap what was earned before joining a troupe, so they count
-    toward earned whichever way they go."""
+    toward earned whichever way they go; a reprice changes what a purchase cost,
+    so it counts toward spent."""
     earned = spent = 0
     for kind, amount in entries:
-        if kind in ("correction", "cap") or amount > 0:
+        if kind == "reprice":
+            spent -= amount
+        elif kind in ("correction", "cap") or amount > 0:
             earned += amount
         else:
             spent -= amount

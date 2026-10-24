@@ -330,6 +330,8 @@ def load_rule_set(path: Path) -> RuleSetData:
             raise ValueError(f"{path.name}: creation_only names unknown category")
         if selector.get("name") and (selector["category"], selector["name"]) not in traits:
             raise ValueError(f"{path.name}: creation_only names unknown trait {selector['name']!r}")
+        if selector.get("until", "accepted") != "accepted":
+            raise ValueError(f"{path.name}: creation_only until can only be 'accepted'")
     checks = load_checks(path.name, raw_checks, traits, categories)
     raw_grants = list(raw.get("grants", []))
     for grant_file in raw.get("grant_files", []):

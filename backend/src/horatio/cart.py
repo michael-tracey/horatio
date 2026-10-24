@@ -13,6 +13,10 @@ limits, traits chosen only during creation), is judged as it is made. The
 sheet's checks are judged once, on the sheet the whole cart ends with: a cart
 may add a technique before raising the discipline it needs.
 
+Changing Generation before a home troupe accepts the character reprices what
+was bought since creation (horatio.repricing): the line's cost includes it,
+and says which purchases it repriced.
+
 A line can be asked as an exception (horatio.trait_exceptions): the checks its
 trait breaks on the finished sheet are set aside for it rather than refusing
 it, and it waits on the home troupe's staff; asked free, it costs nothing.
@@ -25,7 +29,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import creation, sheets, trait_exceptions
+from horatio import creation, repricing, sheets, trait_exceptions
 from horatio.models import Approval, Character, CharacterTrait, User
 from horatio.rules.model import SheetTrait
 from horatio.sheets import TraitKey
@@ -89,6 +93,8 @@ class Outcome:
     needs_approval: bool = False
     # Asked as an exception: the checks it breaks, set aside if staff approve.
     breaks: tuple[str, ...] = ()
+    # Earlier purchases it repriced, in its cost.
+    repriced: tuple[repricing.Repriced, ...] = ()
 
 
 def planned(sheet: Sequence[SheetTrait], changes: Sequence[Change]) -> list[SheetTrait]:
@@ -312,6 +318,7 @@ def apply_changes(
             Outcome(
                 cost=balance - sheets.xp_balance(db, character),
                 needs_approval=waiting(db, character) > held,
+                repriced=made.repriced if made is not None else (),
             )
         )
         steps.append(step(traits_before, held_traits(db, character)))

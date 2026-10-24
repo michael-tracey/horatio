@@ -192,6 +192,7 @@ class QuoteOut(BaseModel):
 
 
 class ChangeOut(BaseModel):
+    # XP it spent (negative: refunded), earlier buys it repriced included.
     cost: int
     sheet: SheetOut
 
@@ -206,7 +207,8 @@ class XpEntryOut(BaseModel):
     detail: str | None
     from_rating: int | None
     to_rating: int | None
-    # A correction: the award (or self-entered XP) it corrects.
+    # A correction: the award (or self-entered XP) it corrects. A reprice: the
+    # purchase it reprices.
     corrects_id: uuid.UUID | None = None
     # An award that has been corrected: what it gives now.
     corrected_to: int | None = None
@@ -451,7 +453,8 @@ def change_trait(
             body.teacher,
         )
     db.commit()
-    return ChangeOut(cost=change.quote.cost if change.quote else 0, sheet=sheet_out(db, character))
+    cost = (change.quote.cost if change.quote else 0) + change.repricing_cost
+    return ChangeOut(cost=cost, sheet=sheet_out(db, character))
 
 
 @router.put("/primary-path")
@@ -522,7 +525,7 @@ def xp_history(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> lis
     )
     corrected: dict[uuid.UUID, int] = {}
     for e, _ in rows:
-        if e.corrects_id is not None:
+        if e.kind == "correction" and e.corrects_id is not None:
             corrected[e.corrects_id] = corrected.get(e.corrects_id, 0) + e.amount
     may_correct = home_troupe_awarding(db, user, character) is not None
     own = self_entering(db, user, character)

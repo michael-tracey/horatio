@@ -4077,6 +4077,11 @@ export interface components {
             needs_approval: boolean;
             /** Refused */
             refused: string | null;
+            /**
+             * Repriced
+             * @default []
+             */
+            repriced: components["schemas"]["RepricedOut"][];
         };
         /** CartOut */
         CartOut: {
@@ -5769,6 +5774,17 @@ export interface components {
              */
             user_id: string;
         };
+        /**
+         * LockedOut
+         * @description A trait accepting the character fixes, such as Generation, at the rating it
+         *     is accepted at.
+         */
+        LockedOut: {
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number | null;
+        };
         /** LogAnswerIn */
         LogAnswerIn: {
             /** Purpose */
@@ -6957,6 +6973,11 @@ export interface components {
             id: string;
             /** Kind */
             kind: string;
+            /**
+             * Locks
+             * @default []
+             */
+            locks: components["schemas"]["LockedOut"][];
             /** Picture */
             picture: string | null;
             /** Player Note */
@@ -7066,6 +7087,16 @@ export interface components {
         RemovedOut: {
             /** Note */
             note: string | null;
+        };
+        /**
+         * RepricedOut
+         * @description An earlier purchase a Generation change reprices.
+         */
+        RepricedOut: {
+            /** Cost */
+            cost: number;
+            /** Purchase */
+            purchase: string;
         };
         /** ResetFor */
         ResetFor: {

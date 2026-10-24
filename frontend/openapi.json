@@ -1125,6 +1125,14 @@
               }
             ],
             "title": "Refused"
+          },
+          "repriced": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RepricedOut"
+            },
+            "title": "Repriced",
+            "type": "array"
           }
         },
         "required": [
@@ -5694,6 +5702,32 @@
         "title": "LiveReset",
         "type": "object"
       },
+      "LockedOut": {
+        "description": "A trait accepting the character fixes, such as Generation, at the rating it\nis accepted at.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          }
+        },
+        "required": [
+          "name",
+          "rating"
+        ],
+        "title": "LockedOut",
+        "type": "object"
+      },
       "LogAnswerIn": {
         "properties": {
           "purpose": {
@@ -8778,6 +8812,14 @@
             "title": "Kind",
             "type": "string"
           },
+          "locks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LockedOut"
+            },
+            "title": "Locks",
+            "type": "array"
+          },
           "picture": {
             "anyOf": [
               {
@@ -9119,6 +9161,25 @@
           "note"
         ],
         "title": "RemovedOut",
+        "type": "object"
+      },
+      "RepricedOut": {
+        "description": "An earlier purchase a Generation change reprices.",
+        "properties": {
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "purchase": {
+            "title": "Purchase",
+            "type": "string"
+          }
+        },
+        "required": [
+          "purchase",
+          "cost"
+        ],
+        "title": "RepricedOut",
         "type": "object"
       },
       "ResetFor": {

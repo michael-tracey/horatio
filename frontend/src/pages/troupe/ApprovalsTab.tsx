@@ -137,6 +137,12 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           <span className="text-mist">The XP is spent; declining refunds it and takes the dots back.</span>
         </p>
       )}
+      {joining && approval.locks.length > 0 && (
+        <p className="mb-3 text-sm">
+          Accepting at {approval.locks.map((l) => `${l.name} ${l.rating ?? ""}`.trim()).join(", ")}.{" "}
+          <span className="text-mist">Accepting locks it: after that the player can't change it.</span>
+        </p>
+      )}
       {joining && (
         <div className="mb-3 flex flex-col gap-2">
           {approval.reconciliation.length === 0 && <p className="text-sm text-mist">Nothing to reconcile.</p>}

@@ -204,10 +204,11 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
 
 
 def paid_for(db: Session, character: Character) -> Mapping[tuple[uuid.UUID, str], int]:
-    """XP the character has paid for each (trait, detail), net of refunds and settlements."""
+    """XP the character has paid for each (trait, detail), net of refunds, repricing
+    and settlements."""
     purchases = db.execute(
         select(XpEntry.trait_definition_id, XpEntry.detail, func.sum(XpEntry.amount))
-        .where(XpEntry.character_id == character.id, XpEntry.kind == "purchase")
+        .where(XpEntry.character_id == character.id, XpEntry.kind.in_(("purchase", "reprice")))
         .group_by(XpEntry.trait_definition_id, XpEntry.detail)
     )
     settlements = db.execute(

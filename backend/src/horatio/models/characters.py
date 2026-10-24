@@ -148,9 +148,11 @@ class XpEntry(Record):
         # A fee is XP spent on something other than dots, such as changing a focus.
         # A self-entered entry is XP a player added to a character with no home
         # troupe; a cap is XP above a troupe's ceiling taken away as it became home.
+        # A reprice is the difference in what a purchase costs when Generation
+        # changes before acceptance (horatio.repricing).
         CheckConstraint(
             "kind in ('award', 'purchase', 'settlement', 'fee', 'correction',"
-            " 'self_entered', 'cap')",
+            " 'self_entered', 'cap', 'reprice')",
             name="kind",
         ),
         CheckConstraint(
@@ -165,6 +167,9 @@ class XpEntry(Record):
         ),
         CheckConstraint(
             "kind <> 'correction' or corrects_id is not null", name="correction_names_its_award"
+        ),
+        CheckConstraint(
+            "kind <> 'reprice' or corrects_id is not null", name="reprice_names_its_purchase"
         ),
     )
 
@@ -188,5 +193,5 @@ class XpEntry(Record):
         ForeignKey("reconciliation_items.id")
     )
     # For a correction: the award (or self-entered entry) it corrects, by `amount`
-    # (the difference).
+    # (the difference). For a reprice: the purchase it reprices.
     corrects_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("xp_entries.id"), index=True)
