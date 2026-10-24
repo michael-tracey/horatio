@@ -67,6 +67,8 @@ EXTRA = [
     ("allies_specializations", "Custom"),
     ("influence_elite_specializations", "Custom"),
     ("influence_underworld_specializations", "Custom"),
+    # Kineticism (Vol. 2, p. 72) is not in Yorick; the Inceptor merit lets a Caitiff pick it.
+    ("extra_in_clan_disciplines", "Kineticism"),
 ]
 
 # Where Yorick's values were one troupe's home rules rather than the book's, the

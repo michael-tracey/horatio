@@ -529,6 +529,16 @@ page = "92"
 category = "extra_in_clan_disciplines"
 requires = { any_of = [
   { clan = ["Caitiff"], self = { names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"] } },
+  { clan = ["Caitiff"], has = { category = "merits", name = "Inceptor" }, self = { names = [
+    "Kineticism", "Thaumaturgy: Green Path", "Thaumaturgy: Lure of Flames",
+    "Thaumaturgy: Movement of the Mind", "Thaumaturgy: Path of Blood",
+    "Thaumaturgy: Path of Caelestikinesis", "Thaumaturgy: Path of Conjuring",
+    "Thaumaturgy: Path of Corruption", "Thaumaturgy: Path of Elemental Mastery",
+    "Thaumaturgy: Path of Neptune's Might", "Thaumaturgy: Path of Technomancy",
+    "Thaumaturgy: Path of Weather Mastery", "Necromancy: Ash Path", "Necromancy: Bone Path",
+    "Necromancy: Mortis Path", "Necromancy: Path of Grief", "Necromancy: Path of Soul Bonding",
+    "Necromancy: Sepulchre Path"
+  ] } },
   { has = { category = "merits", name = "Vestiges of Greatness" }, self = { names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence", "Dementation", "Protean", "Serpentis", "Quietus", "Obtenebration", "Vicissitude", "Chimerstry"] } },
   { has = { category = "merits", name = "Additional Common Discipline" }, self = { names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"] } },
   { has = { category = "merits", name = "Additional Uncommon Discipline" }, self = { names = ["Protean", "Dementation", "Serpentis", "Quietus"] } },
@@ -543,6 +553,65 @@ requires = { any_of = [
 ] }
 message = "Extra in-clan disciplines come from being Caitiff or from a merit, and only from its list."
 page = "246"
+
+# Inceptor: Kineticism, or one Necromancy or Thaumaturgy path, is one of the Caitiff's
+# three (Volume 2 Issue 1, p. 46). It is a pseudo-discipline, with no rituals.
+[[checks]]
+category = "extra_in_clan_disciplines"
+name = "Kineticism"
+forbids = { any_of = [
+  { count = { category = "extra_in_clan_disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } },
+  { count = { category = "extra_in_clan_disciplines", name_prefix = "Necromancy: ", gte = 1 } },
+] }
+message = "Inceptor gives Kineticism or one path, not both."
+page = "Vol. 2 Issue 1, p. 46"
+
+[[checks]]
+category = "extra_in_clan_disciplines"
+name_prefix = "Thaumaturgy: "
+forbids = { any_of = [
+  { count = { category = "extra_in_clan_disciplines", name_prefix = "Thaumaturgy: ", gte = 2 } },
+  { count = { category = "extra_in_clan_disciplines", name_prefix = "Necromancy: ", gte = 1 } },
+  { has = { category = "extra_in_clan_disciplines", name = "Kineticism" } },
+] }
+message = "Inceptor gives Kineticism or one path, not more."
+page = "Vol. 2 Issue 1, p. 46"
+
+[[checks]]
+category = "extra_in_clan_disciplines"
+name_prefix = "Necromancy: "
+forbids = { any_of = [
+  { count = { category = "extra_in_clan_disciplines", name_prefix = "Necromancy: ", gte = 2 } },
+  { count = { category = "extra_in_clan_disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } },
+  { has = { category = "extra_in_clan_disciplines", name = "Kineticism" } },
+] }
+message = "Inceptor gives Kineticism or one path, not more."
+page = "Vol. 2 Issue 1, p. 46"
+
+# Kineticism is learned only through Inceptor, so only as an in-clan discipline
+# (Volume 2, p. 72).
+[[checks]]
+category = "disciplines"
+name = "Kineticism"
+requires = { in_clan = true }
+message = "Kineticism is learned only by a Caitiff with Inceptor."
+page = "Vol. 2, p. 72"
+
+# A path Inceptor gives is no blood magic: with no other path of its kind, no rituals
+# (Volume 2 Issue 1, p. 46).
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { count = { category = "extra_in_clan_disciplines", name_prefix = "Thaumaturgy: ", gte = 1 }, not = { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 2 } } }
+message = "A path from Inceptor is no blood magic: it cannot be used to learn rituals."
+page = "Vol. 2 Issue 1, p. 46"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { count = { category = "extra_in_clan_disciplines", name_prefix = "Necromancy: ", gte = 1 }, not = { count = { category = "disciplines", name_prefix = "Necromancy: ", gte = 2 } } }
+message = "A path from Inceptor is no blood magic: it cannot be used to learn rituals."
+page = "Vol. 2 Issue 1, p. 46"
 
 [[checks]]
 category = "extra_in_clan_disciplines"
@@ -2047,6 +2116,33 @@ forbids = { self = { rating = 5 }, not = { any_of = [
 ] } }
 message = "A level 5 Necromancy ritual needs a path of Necromancy at 5 or more."
 page = "172"
+
+# One ritual of each level before one of the next: a level 2 ritual needs a level 1
+# one of its magic, and so on (pp. 180, 202; Volume 2, pp. 98, 132, 162). A Sorcerous
+# Dabbler without Thaumaturgy chooses all their rituals at once, at one level.
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { self = { rating = { gte = 2 } }, not = { any_of = [
+  { one_below = { category = "rituals", name_prefix = "Thaumaturgy: " } },
+  { has = { category = "merits", name = "Sorcerous Dabbler" }, not = { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } } },
+] } }
+message = "A thaumaturge learns a ritual of each level before one of the next."
+page = "202"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { self = { rating = { gte = 2 } }, not = { one_below = { category = "rituals", name_prefix = "Necromancy: " } } }
+message = "A necromancer learns a ritual of each level before one of the next."
+page = "180"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Abyssal: "
+forbids = { self = { rating = { gte = 2 } }, not = { one_below = { category = "rituals", name_prefix = "Abyssal: " } } }
+message = "An Abyss Mystic learns a ritual of each level before one of the next."
+page = "Vol. 2, p. 98"
 
 # No more rituals than dots of that magic's paths (p. 187).
 [[checks]]
