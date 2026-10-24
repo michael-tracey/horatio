@@ -903,6 +903,10 @@ def locks_at(
     return "accepted" if all(s.get("until") == "accepted" for s in found) else "finished"
 
 
+def fixed_once_accepted(name: str) -> str:
+    return f"{name} can't change once a home troupe has accepted the character."
+
+
 def ever_accepted(db: Session, character: Character) -> bool:
     """Whether a home troupe has ever accepted the character: it has entered play.
     Leaving that troupe, or moving to another, changes nothing."""
@@ -1065,12 +1069,7 @@ def broken_since(
         for key in sorted(changed):
             locked = locks_at(rule_set, key[0], key[1])
             if locked == "accepted" and accepted:
-                refused.append(
-                    Problem(
-                        f"{key[1]} can't change once a home troupe has accepted the character.",
-                        *key,
-                    )
-                )
+                refused.append(Problem(fixed_once_accepted(key[1]), *key))
             elif locked == "finished" and finished:
                 refused.append(
                     Problem(f"{key[1]} can only be chosen during character creation.", *key)
@@ -1413,6 +1412,15 @@ def set_trait(
     )
     # Generation before acceptance: still creation, so earlier buys follow it.
     reopened = open_until_accepted(db, character, category.key, definition.name)
+    # After it, fixed: said before what it would cost. Staff may still give it.
+    if (
+        by_exception is None
+        and character.kind == "pc"
+        and (rating or 0) != ((existing.rating or 0) if existing else 0)
+        and locks_at(rules_for(db, character).rule_set, category.key, definition.name) == "accepted"
+        and ever_accepted(db, character)
+    ):
+        raise conflict(fixed_once_accepted(name))
     if reopened and existing is not None and rating is not None and rating < existing.free_rating:
         raise conflict(
             f"{name} was chosen at {existing.free_rating} in character creation: "
