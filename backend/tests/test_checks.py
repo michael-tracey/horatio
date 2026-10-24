@@ -115,5 +115,5 @@ def test_what_a_check_looks_at() -> None:
         requires={"generation": {"lte": 3}},
     )
 
-    assert technique.looks_at() == {("disciplines", "Potence"), ("disciplines", "Presence")}
-    assert merit.looks_at() == {("clan", None), ("flaws", None), ("backgrounds", "Generation")}
+    assert technique.looks_at == {("disciplines", "Potence"), ("disciplines", "Presence")}
+    assert merit.looks_at == {("clan", None), ("flaws", None), ("backgrounds", "Generation")}

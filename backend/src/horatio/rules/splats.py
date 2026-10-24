@@ -1,6 +1,6 @@
 """What each splat's cost-rule conditions can test, and how those facts are worked out."""
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence, Set
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -48,33 +48,55 @@ def vampire_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait])
 VAMPIRE_ELDER_POWERS = frozenset({"elder_disciplines", "luminary_disciplines"})
 
 
-def vampire_is_in_clan(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> bool:
+@dataclass(frozen=True)
+class VampireSheet:
+    """What a vampire's sheet says for every trait priced on it."""
+
+    generation: int
+    # The clan or bloodline exactly ("Brujah: True Brujah").
+    clan: str
+    in_clan: frozenset[str]
+    # What its grants price as in-clan (Thaumaturgic Expertise's extra path).
+    priced_in_clan: Set[tuple[str, str, str | None]]
+
+
+def vampire_sheet(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> VampireSheet:
+    """Worked out once for each sheet, as pricing asks it of every trait it prices."""
+    from horatio.rules.grants import priced
+
+    def work_out() -> VampireSheet:
+        return VampireSheet(
+            generation=vampire_generation(sheet),
+            clan=next((t.name for t in sheet if t.category == "clan"), ""),
+            in_clan=frozenset(vampire_in_clan_disciplines(rules, sheet)),
+            priced_in_clan=priced(rules.rule_set, sheet).in_clan,
+        )
+
+    return rules.rule_set.remembered(("vampire", tuple(sheet)), work_out)
+
+
+def in_clan_names(trait: SheetTrait) -> set[str]:
     """An in-clan entry matches the trait's name, or its name with its detail: so
     "Celerity" matches any Celerity, but "Thaumaturgy: Path of Blood" only that path.
     An elder or luminary power matches its discipline."""
     names = {trait.name, trait.full_name}
     if trait.category in VAMPIRE_ELDER_POWERS:
         names.add(trait.name.split(":")[0].strip())
-    return any(entry in names for entry in vampire_in_clan_disciplines(rules, sheet))
+    return names
 
 
 def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Facts:
-    clan = next((t.name for t in sheet if t.category == "clan"), "")
+    from horatio.rules.grants import matching
+
+    found = vampire_sheet(rules, sheet)
     return {
-        "generation": vampire_generation(sheet),
-        "in_clan": vampire_is_in_clan(rules, sheet, trait) or priced_in_clan(rules, sheet, trait),
+        "generation": found.generation,
+        "in_clan": not in_clan_names(trait).isdisjoint(found.in_clan)
+        or matching(found.priced_in_clan, trait) is not None,
         # The clan or bloodline exactly ("Brujah: True Brujah"), and its clan ("Brujah").
-        "clan": clan,
-        "clan_family": clan.split(":")[0].strip(),
+        "clan": found.clan,
+        "clan_family": found.clan.split(":")[0].strip(),
     }
-
-
-def priced_in_clan(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> bool:
-    """A grant prices the trait as in-clan (Thaumaturgic Expertise's extra path)."""
-    from horatio.rules.grants import effects, matching
-
-    found = effects(rules.rule_set.grants, sheet, rules.rule_set)
-    return matching(found.in_clan_priced, trait) is not None
 
 
 SPLATS: dict[str, Splat] = {
