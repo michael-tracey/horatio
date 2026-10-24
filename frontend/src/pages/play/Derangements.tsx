@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button, Input } from "../../components/ui";
 import { TEMPORARY, tapId, type makeTap, type Shown } from "./tracker";
-import { TrackerWarning } from "./TrackerWarning";
+import { ShownWarning } from "./TrackerWarning";
 import { derangementWarning } from "./warnings";
 
 type Tap = (what: Parameters<typeof makeTap>[0]) => void;
@@ -80,11 +80,7 @@ export function Derangements({ view, record, tap }: { view: Shown; record: Recor
         ))}
       </div>
       {warning ? (
-        <TrackerWarning level={warning.level} title={warning.title} source={warning.source}>
-          {warning.lines.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </TrackerWarning>
+        <ShownWarning warning={warning} />
       ) : (
         <p className="mt-2 text-xs text-mist">Mark one for each trigger resisted.{least ? " Malkavians always have 1." : ""} Kept through Reset.</p>
       )}
