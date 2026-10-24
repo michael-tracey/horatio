@@ -4740,17 +4740,21 @@ export interface components {
         };
         /**
          * Derangements
-         * @description Derangement traits, which Reset leaves as they are (horatio.play).
+         * @description Derangement traits and the derangements behind them, which Reset leaves as
+         *     they are (horatio.play). The Play View shows them for a character with the
+         *     Derangement flaw or a temporary derangement held, and while any are marked.
          */
         Derangements: {
-            /** Held */
-            held: boolean;
+            /** Flaws */
+            flaws: string[];
             /** Least */
             least: number;
             /** Most */
             most: number;
             /** Start */
             start: number;
+            /** Temporary */
+            temporary: components["schemas"]["TemporaryDerangement"][];
             /** Value */
             value: number;
         };
@@ -7784,6 +7788,7 @@ export interface components {
             amount: number;
             /** Damage */
             damage?: ("normal" | "aggravated") | null;
+            derangement?: components["schemas"]["TemporaryDerangementIn"] | null;
             /** Game Id */
             game_id?: string | null;
             /**
@@ -7819,6 +7824,30 @@ export interface components {
         Taps: {
             /** Taps */
             taps: components["schemas"]["TapIn"][];
+        };
+        /** TemporaryDerangement */
+        TemporaryDerangement: {
+            /** Held */
+            held: boolean;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Source */
+            source: string;
+        };
+        /**
+         * TemporaryDerangementIn
+         * @description A temporary derangement a tap adds.
+         */
+        TemporaryDerangementIn: {
+            /** Name */
+            name: string;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
         };
         /** TestPool */
         TestPool: {

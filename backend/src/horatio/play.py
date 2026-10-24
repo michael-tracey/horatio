@@ -14,7 +14,8 @@ home troupe's starting amount, a house rule, or half if the character fed
 short last downtime: horatio.feeding), Willpower at its rating, health
 clear, Morality at the sheet's, no Beast traits, and each limited use back.
 Derangement traits are the exception: nothing in the rules clears them between
-games, so each game starts them where the last one left them.
+games, so each game starts them where the last one left them. So are temporary
+derangements, which the player adds and removes themselves.
 """
 
 import uuid
@@ -28,7 +29,15 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, aliased
 
 from horatio import audit, influence_effects, play_influence, sheets
-from horatio.models import Character, PlayCounter, PlayEvent, PlayGame, Troupe, User
+from horatio.models import (
+    Character,
+    PlayCounter,
+    PlayDerangement,
+    PlayEvent,
+    PlayGame,
+    Troupe,
+    User,
+)
 from horatio.rules.feeding import clan_family
 
 # Most blood, and blood a turn, by Generation dots (MET: VTM pp. 100-101).
@@ -40,10 +49,8 @@ BEAST_TRAITS = 5
 # (MET: VtM core, pp. 266-267); never more than 3 (p. 94). Malkavians always
 # have 1 (p. 57).
 DERANGEMENT_TRAITS = 3
-# Clans whose weakness is a derangement: Malkavian (p. 57), Ravnos (p. 76), and
-# the Assamite Viziers (p. 44).
-DERANGED_CLANS = ("Malkavian", "Ravnos")
-DERANGED_BLOODLINES = ("Assamite: Vizier",)
+# A temporary derangement's taps: +1 adds it, -1 removes it.
+TEMPORARY = "derangement:"
 HEALTH_LEVELS = ("Healthy", "Injured", "Incapacitated")
 TRACKERS = ("blood", "willpower", "health", "morality", "beast", "derangements")
 DAMAGE = ("normal", "aggravated")
@@ -73,6 +80,19 @@ class Expendable:
 
 
 @dataclass(frozen=True)
+class Temporary:
+    """A temporary derangement the player added on the Play View."""
+
+    key: str
+    name: str
+    source: str
+
+    @property
+    def label(self) -> str:
+        return f"{self.name}, from {self.source}" if self.source else self.name
+
+
+@dataclass(frozen=True)
 class Limits:
     """What the sheet allows each tracker, and where a game starts it."""
 
@@ -93,8 +113,11 @@ class Limits:
     # the fewest the character can have: 1 for a Malkavian.
     derangements: int = 0
     derangements_least: int = 0
-    # The sheet has a derangement: the flaw, one from the clan, or Dementation's.
-    deranged: bool = False
+    # The Derangement flaws on the sheet, by their detail ("Phobia: water").
+    flaws: tuple[str, ...] = ()
+    # Temporary derangements ever added, and those held as the game starts.
+    temporary: tuple[Temporary, ...] = ()
+    held: Mapping[str, int] = field(default_factory=dict[str, int])
 
     @property
     def health_boxes(self) -> int:
@@ -112,6 +135,8 @@ class Limits:
         }
         if tracker in fixed:
             return fixed[tracker]
+        if tracker.startswith(TEMPORARY):
+            return 1 if any(t.key == tracker for t in self.temporary) else None
         return next((e.uses for e in self.expendables if e.key == tracker), None)
 
     def least(self, tracker: str) -> int:
@@ -125,6 +150,7 @@ class Limits:
             "morality": self.morality,
             "beast": 0,
             "derangements": self.derangements,
+            "held": {t.key: self.held.get(t.key, 0) for t in self.temporary},
             "uses": {e.key: e.uses for e in self.expendables},
         }
 
@@ -140,6 +166,7 @@ class Limits:
         if tracker in names:
             return names[tracker]
         found = next((e.label for e in self.expendables if e.key == tracker), None)
+        found = found or next((t.label for t in self.temporary if t.key == tracker), None)
         if found:
             return found
         if tracker in self.removed:
@@ -157,8 +184,31 @@ def counter_key(counter_id: uuid.UUID) -> str:
     return f"counter:{counter_id}"
 
 
+def temporary_key(derangement_id: uuid.UUID) -> str:
+    return f"{TEMPORARY}{derangement_id}"
+
+
+def temporary_id(tracker: str) -> uuid.UUID | None:
+    """The temporary derangement a tracker names, or None for another tracker."""
+    if not tracker.startswith(TEMPORARY):
+        return None
+    try:
+        return uuid.UUID(tracker.removeprefix(TEMPORARY))
+    except ValueError:
+        return None
+
+
+def carries(tracker: str) -> bool:
+    """A tracker kept from game to game, through Reset."""
+    return tracker == "derangements" or tracker.startswith(TEMPORARY)
+
+
 def known_tracker(tracker: str) -> bool:
-    return tracker in TRACKERS or tracker.startswith(("trait:", "counter:"))
+    return (
+        tracker in TRACKERS
+        or tracker.startswith(("trait:", "counter:"))
+        or temporary_id(tracker) is not None
+    )
 
 
 def uses_per_game(spec: Any, rating: int | None, ratings: Mapping[tuple[str, str], int]) -> int:
@@ -175,20 +225,21 @@ def uses_per_game(spec: Any, rating: int | None, ratings: Mapping[tuple[str, str
     return 0
 
 
-def derangements_before(
+def carried(
     db: Session, character: Character, game: PlayGame | None, least: int
-) -> int:
-    """Derangement traits as `game` starts (or the next game, for None): where
-    the game before it left them, which is every earlier game's taps on them,
-    in order, as nothing clears them between games."""
+) -> tuple[int, dict[str, int]]:
+    """Derangement traits, and the temporary derangements held, as `game` starts
+    (or the next game, for None): where the game before it left them, which is
+    every earlier game's taps on them, in order, as nothing clears them between
+    games."""
     undo = aliased(PlayEvent)
     query = (
-        select(PlayEvent.amount)
+        select(PlayEvent.tracker, PlayEvent.amount)
         .join(PlayGame, PlayEvent.game_id == PlayGame.id)
         .where(
             PlayGame.character_id == character.id,
             PlayEvent.kind == "change",
-            PlayEvent.tracker == "derangements",
+            (PlayEvent.tracker == "derangements") | PlayEvent.tracker.startswith(TEMPORARY),
             ~select(undo.id).where(undo.undoes_id == PlayEvent.id).exists(),
         )
         .order_by(PlayGame.number, PlayEvent.happened_at, PlayEvent.id)
@@ -196,28 +247,42 @@ def derangements_before(
     if game is not None:
         query = query.where(PlayGame.number < game.number)
     value = least
-    for amount in db.scalars(query):
-        value = max(least, min(value + amount, DERANGEMENT_TRAITS))
-    return value
+    held: dict[str, int] = {}
+    for tracker, amount in db.execute(query):
+        if tracker == "derangements":
+            value = max(least, min(value + amount, DERANGEMENT_TRAITS))
+        else:
+            held[tracker] = max(0, min(held.get(tracker, 0) + amount, 1))
+    return value, held
 
 
-def deranged(rows: Sequence[sheets.SheetRow]) -> tuple[bool, int]:
-    """Whether the sheet has a derangement, and the fewest Derangement traits it
-    can have: the Derangement flaw, a clan whose weakness is one, or Dementation,
-    which brings one with its first dot (MET: VtM core, p. 129)."""
-    clans = [r.definition.name for r in rows if r.category.key == "clan"]
-    malkavian = any(clan_family(c) == "Malkavian" for c in clans)
-    held = (
-        any(clan_family(c) in DERANGED_CLANS or c in DERANGED_BLOODLINES for c in clans)
-        or any(r.category.key == "flaws" and r.definition.name == "Derangement" for r in rows)
-        or any(
-            r.category.key == "disciplines"
-            and r.definition.name == "Dementation"
-            and (r.trait.rating or 0) > 0
-            for r in rows
+def derangement_flaws(rows: Sequence[sheets.SheetRow]) -> tuple[str, ...]:
+    """The Derangement flaws on the sheet, each by its detail. Only these show the
+    Derangement traits tracker of themselves; a clan weakness or Dementation's
+    derangement is added on the Play View as a temporary one."""
+    return tuple(
+        r.trait.detail or r.definition.name
+        for r in rows
+        if r.category.key == "flaws" and r.definition.name == "Derangement"
+    )
+
+
+def malkavian(rows: Sequence[sheets.SheetRow]) -> bool:
+    """Malkavians always have 1 Derangement trait (MET: VtM core, p. 57)."""
+    return any(
+        r.category.key == "clan" and clan_family(r.definition.name) == "Malkavian" for r in rows
+    )
+
+
+def temporary_derangements(db: Session, character: Character) -> tuple[Temporary, ...]:
+    return tuple(
+        Temporary(key=temporary_key(d.id), name=d.name, source=d.source)
+        for d in db.scalars(
+            select(PlayDerangement)
+            .where(PlayDerangement.character_id == character.id)
+            .order_by(PlayDerangement.created_at, PlayDerangement.name, PlayDerangement.id)
         )
     )
-    return held, 1 if malkavian else 0
 
 
 def home_troupe(db: Session, character: Character) -> Troupe | None:
@@ -288,7 +353,8 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     # A game not started yet starts at half if the last downtime said so.
     half = game.half_blood if game is not None else character.half_blood_next_game
     usual = blood if house is None else min(house, blood)
-    held, least = deranged(rows)
+    least = 1 if malkavian(rows) else 0
+    traits, held = carried(db, character, game, least)
     return Limits(
         generation=generation,
         blood=blood,
@@ -301,9 +367,11 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         morality_name=path.definition.name if path else None,
         expendables=tuple(expendables),
         removed={counter_key(c.id): c.name for c in counters if c.removed_at is not None},
-        derangements=derangements_before(db, character, game, least),
+        derangements=traits,
         derangements_least=least,
-        deranged=held,
+        flaws=derangement_flaws(rows),
+        temporary=temporary_derangements(db, character),
+        held=held,
     )
 
 
@@ -327,6 +395,10 @@ def apply(state: dict[str, Any], limits: Limits, event: PlayEvent) -> tuple[int,
                     break
                 del marks[len(marks) - 1 - marks[::-1].index(damage)]
         return before, len(marks)
+    if event.tracker.startswith(TEMPORARY):
+        before = state["held"].get(event.tracker, 0)
+        state["held"][event.tracker] = max(0, min(before + event.amount, most))
+        return before, state["held"][event.tracker]
     if event.tracker in TRACKERS:
         before = state[event.tracker]
         state[event.tracker] = max(limits.least(event.tracker), min(before + event.amount, most))
@@ -384,6 +456,8 @@ def describe(event: PlayEvent, limits: Limits, target: PlayEvent | None = None) 
     if event.kind == "undo":
         return f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"
     name = limits.name(event.tracker)
+    if event.tracker.startswith(TEMPORARY):
+        return f"Temporary derangement {'added' if event.amount > 0 else 'removed'}: {name}"
     if event.tracker == "health":
         verb = "took" if event.amount > 0 else "healed"
         text = f"Health: {verb} {abs(event.amount)} {event.damage or 'normal'}"
@@ -456,6 +530,36 @@ class Tap:
     undoes: uuid.UUID | None = None
     # An influence spend's details; None when the player skipped them.
     influence: play_influence.Details | None = None
+    # Adding a temporary derangement: its name and where it came from.
+    derangement: tuple[str, str] | None = None
+
+
+def name_temporary(db: Session, character: Character, actor: User, tap: Tap) -> None:
+    """Keep the name of a temporary derangement a tap adds for the first time. A
+    tap on one that was never added, or on another character's, is refused."""
+    derangement_id = temporary_id(tap.tracker)
+    if derangement_id is None:
+        return
+    found = db.get(PlayDerangement, derangement_id)
+    if found is not None:
+        if found.character_id != character.id:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "That derangement is another character's."
+            )
+        return
+    if tap.amount < 0 or tap.derangement is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such derangement.")
+    name, source = tap.derangement
+    db.add(
+        PlayDerangement(
+            id=derangement_id,
+            character_id=character.id,
+            name=name.strip(),
+            source=source.strip(),
+            created_by_id=actor.id,
+        )
+    )
+    db.flush()
 
 
 def undone_already(db: Session, event: PlayEvent) -> bool:
@@ -506,6 +610,8 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         else:
             game = start_game(db, character)
             games[game.id] = game
+        if tap.kind == "change":
+            name_temporary(db, character, actor, tap)
         event = PlayEvent(
             game_id=game.id,
             client_id=tap.id,
@@ -526,7 +632,7 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
             play_influence.spend(db, character, actor, event, tap.influence)
         existing[tap.id] = (event, character.id)
         touched[game.id] = game
-        if (target or event).tracker == "derangements":
+        if carries((target or event).tracker):
             carried = game.number if carried is None else min(carried, game.number)
     for game in touched.values():
         refresh(db, game, limits(db, character, game))

@@ -27,7 +27,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     },
     morality: { name: "Humanity", value: 5, rating: 5 },
     beast: { value: 0, most: 5, start: 0 },
-    derangements: { value: 0, most: 3, start: 0, least: 0, held: false },
+    derangements: { value: 0, most: 3, start: 0, least: 0, flaws: [], temporary: [] },
     expendables: [{ key: "trait:backgrounds/Herd/", name: "Herd", detail: "", group: "Backgrounds", uses: 2, left: 2, counter_id: null, owed: 0 }],
     influence: [],
     game: null,
@@ -106,8 +106,21 @@ describe("withPending", () => {
     expect(shown.derangements.value).toBe(3);
     expect(shown.log.map((e) => e.text)).toEqual(["Derangement traits 2 → 3", "Derangement traits 0 → 2"]);
 
-    const malkavian = view({ derangements: { value: 3, most: 3, start: 3, least: 1, held: true } });
+    const malkavian = view({ derangements: { value: 3, most: 3, start: 3, least: 1, flaws: [], temporary: [] } });
     expect(withPending(malkavian, [change("derangements", -3, 1)]).derangements.value).toBe(1);
+  });
+
+  it("adds a temporary derangement offline, and removes one the server has", () => {
+    const fire = makeTap({ kind: "change", tracker: "derangement:d1", amount: 1, derangement: { name: "Phobia: fire", source: "Voice of Madness" } }, "g1", at(1));
+    const added = withPending(view(), [fire]);
+    expect(added.derangements.temporary).toEqual([{ key: "derangement:d1", name: "Phobia: fire", source: "Voice of Madness", held: true }]);
+    expect(added.log[0]!.text).toBe("Temporary derangement added: Phobia: fire, from Voice of Madness");
+
+    const saved = view({ derangements: { value: 0, most: 3, start: 0, least: 0, flaws: [], temporary: [{ key: "derangement:d2", name: "Paranoia", source: "", held: true }] } });
+    const removed = withPending(saved, [change("derangement:d2", -1, 2)]);
+    expect(removed.derangements.temporary[0]!.held).toBe(false);
+    expect(removed.log[0]!.text).toBe("Temporary derangement removed: Paranoia");
+    expect(saved.derangements.temporary[0]!.held).toBe(true);
   });
 
   it("marks health in order and heals the kind asked for", () => {

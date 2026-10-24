@@ -2979,11 +2979,14 @@
         "type": "object"
       },
       "Derangements": {
-        "description": "Derangement traits, which Reset leaves as they are (horatio.play).",
+        "description": "Derangement traits and the derangements behind them, which Reset leaves as\nthey are (horatio.play). The Play View shows them for a character with the\nDerangement flaw or a temporary derangement held, and while any are marked.",
         "properties": {
-          "held": {
-            "title": "Held",
-            "type": "boolean"
+          "flaws": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Flaws",
+            "type": "array"
           },
           "least": {
             "title": "Least",
@@ -2997,6 +3000,13 @@
             "title": "Start",
             "type": "integer"
           },
+          "temporary": {
+            "items": {
+              "$ref": "#/components/schemas/TemporaryDerangement"
+            },
+            "title": "Temporary",
+            "type": "array"
+          },
           "value": {
             "title": "Value",
             "type": "integer"
@@ -3007,7 +3017,8 @@
           "most",
           "start",
           "least",
-          "held"
+          "flaws",
+          "temporary"
         ],
         "title": "Derangements",
         "type": "object"
@@ -10981,6 +10992,16 @@
             ],
             "title": "Damage"
           },
+          "derangement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TemporaryDerangementIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "game_id": {
             "anyOf": [
               {
@@ -11070,6 +11091,56 @@
           "taps"
         ],
         "title": "Taps",
+        "type": "object"
+      },
+      "TemporaryDerangement": {
+        "properties": {
+          "held": {
+            "title": "Held",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "source",
+          "held"
+        ],
+        "title": "TemporaryDerangement",
+        "type": "object"
+      },
+      "TemporaryDerangementIn": {
+        "description": "A temporary derangement a tap adds.",
+        "properties": {
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TemporaryDerangementIn",
         "type": "object"
       },
       "TestPool": {

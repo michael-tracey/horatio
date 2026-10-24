@@ -61,14 +61,34 @@ class Morality(BaseModel):
     rating: int
 
 
+class TemporaryDerangement(BaseModel):
+    # Its tracker in taps: "derangement:<id>".
+    key: str
+    name: str
+    source: str
+    # Held now; one removed is kept for the old logs.
+    held: bool
+
+
 class Derangements(Tracker):
-    """Derangement traits, which Reset leaves as they are (horatio.play)."""
+    """Derangement traits and the derangements behind them, which Reset leaves as
+    they are (horatio.play). The Play View shows them for a character with the
+    Derangement flaw or a temporary derangement held, and while any are marked."""
 
     # The fewest the character can have: 1 for a Malkavian.
     least: int
-    # The sheet has a derangement, so the Play View shows them; it shows them too
-    # while any are marked.
-    held: bool
+    # The Derangement flaws on the sheet, by their detail.
+    flaws: list[str]
+    # Those added on the Play View, oldest first.
+    temporary: list[TemporaryDerangement]
+
+
+class TemporaryDerangementIn(BaseModel):
+    """A temporary derangement a tap adds."""
+
+    name: str = Field(min_length=1, max_length=80)
+    # Where it came from: "Voice of Madness", a quest's consequence.
+    source: str = Field(default="", max_length=120)
 
 
 class ExpendableOut(BaseModel):
@@ -210,6 +230,9 @@ class TapIn(BaseModel):
     # Spending Influences: the action's details. Left out when the player skips
     # them; the spend is logged all the same, as needing details.
     influence: InfluenceDetailsIn | None = None
+    # Adding a temporary derangement ("derangement:<id>", +1) for the first time:
+    # its name and where it came from.
+    derangement: TemporaryDerangementIn | None = None
 
     @model_validator(mode="after")
     def complete(self) -> Self:
@@ -427,7 +450,13 @@ def play_view(db: Session, character: Character) -> PlayView:
             most=play.DERANGEMENT_TRAITS,
             start=limits.derangements,
             least=limits.derangements_least,
-            held=limits.deranged,
+            flaws=list(limits.flaws),
+            temporary=[
+                TemporaryDerangement(
+                    key=t.key, name=t.name, source=t.source, held=bool(state["held"].get(t.key))
+                )
+                for t in limits.temporary
+            ],
         ),
         expendables=[
             ExpendableOut(
@@ -493,6 +522,7 @@ def record_taps(character_id: uuid.UUID, body: Taps, db: DbSession, user: Curren
                 note=t.note,
                 undoes=t.undoes,
                 influence=t.influence.details() if t.influence else None,
+                derangement=(t.derangement.name, t.derangement.source) if t.derangement else None,
             )
             for t in body.taps
         ],

@@ -1,4 +1,4 @@
-import type { InfluenceDetailsIn, PlayLogEntry, PlayView, TapIn } from "../../api/types";
+import type { InfluenceDetailsIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
 import { TYPE_NAMES } from "../../influence";
 
 /**
@@ -48,6 +48,8 @@ export function makeTap(
     note?: string;
     undoes?: string | null;
     influence?: InfluenceDetailsIn | null;
+    /** Adding a temporary derangement: its name and where it came from. */
+    derangement?: TemporaryDerangementIn | null;
   },
   gameId: string | null | undefined,
   now: Date = new Date(),
@@ -63,6 +65,7 @@ export function makeTap(
     note: what.note?.trim() ?? "",
     undoes: what.undoes ?? null,
     influence: what.influence ?? null,
+    derangement: what.derangement ?? null,
   };
 }
 
@@ -83,6 +86,14 @@ export function spendText(view: PlayView, tracker: string, amount: number, detai
   return details.purpose?.trim() ? `${name}: ${said}, ${details.purpose.trim()}` : `${name}: ${said}`;
 }
 
+/** A temporary derangement's tracker in taps: +1 adds it, −1 removes it. */
+export const TEMPORARY = "derangement:";
+
+/** A temporary derangement as the log names it: "Phobia: fire, from Voice of Madness". */
+export function temporaryLabel(t: { name: string; source: string }): string {
+  return t.source ? `${t.name}, from ${t.source}` : t.name;
+}
+
 /** What a tracker is called, as the log names it. */
 export function trackerName(view: PlayView, tracker: string): string {
   const names: Record<string, string> = {
@@ -95,7 +106,9 @@ export function trackerName(view: PlayView, tracker: string): string {
   };
   if (names[tracker]) return names[tracker];
   const found = view.expendables.find((e) => e.key === tracker);
-  return found ? (found.detail ? `${found.name}: ${found.detail}` : found.name) : tracker;
+  if (found) return found.detail ? `${found.name}: ${found.detail}` : found.name;
+  const temporary = view.derangements.temporary.find((t) => t.key === tracker);
+  return temporary ? temporaryLabel(temporary) : tracker;
 }
 
 /** The highest a tracker goes on this sheet; undefined for one it lacks. */
@@ -114,6 +127,7 @@ function most(view: PlayView, tracker: string): number | undefined {
     case "health":
       return view.health.levels.reduce((sum, l) => sum + l.boxes, 0);
   }
+  if (tracker.startsWith(TEMPORARY)) return view.derangements.temporary.some((t) => t.key === tracker) ? 1 : undefined;
   return view.expendables.find((e) => e.key === tracker)?.uses;
 }
 
@@ -148,6 +162,12 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
     t.value = clamp(before + amount, top, tracker === "derangements" ? view.derangements.least : 0);
     return [before, t.value];
   }
+  if (tracker.startsWith(TEMPORARY)) {
+    const temporary = view.derangements.temporary.find((t) => t.key === tracker)!;
+    const before = temporary.held ? 1 : 0;
+    temporary.held = clamp(before + amount, top) > 0;
+    return [before, temporary.held ? 1 : 0];
+  }
   const found = view.expendables.find((e) => e.key === tracker)!;
   const before = found.left;
   found.left = clamp(before + amount, top);
@@ -164,6 +184,7 @@ export function describe(view: PlayView, tap: Pick<Tap, "kind" | "tracker" | "am
     return change ? `${text} (${change[0]} → ${change[1]} marked)` : text;
   }
   const name = trackerName(view, tap.tracker);
+  if (tap.tracker.startsWith(TEMPORARY)) return `Temporary derangement ${tap.amount > 0 ? "added" : "removed"}: ${name}`;
   return change ? `${name} ${change[0]} → ${change[1]}` : `${name} ${tap.amount > 0 ? "+" : "−"}${Math.abs(tap.amount)}`;
 }
 
@@ -173,7 +194,7 @@ function copy(view: PlayView): Shown {
     blood: { ...view.blood },
     willpower: { ...view.willpower },
     beast: { ...view.beast },
-    derangements: { ...view.derangements },
+    derangements: { ...view.derangements, temporary: view.derangements.temporary.map((t) => ({ ...t })) },
     morality: view.morality ? { ...view.morality } : null,
     health: { ...view.health, marks: [...view.health.marks] },
     expendables: view.expendables.map((e) => ({ ...e })),
@@ -206,6 +227,10 @@ export function withPending(view: PlayView, pending: Tap[]): Shown {
       const was = target ? entries.find((e) => e.id === target.id)?.text : saved?.text;
       text = was ? `Undid: ${was}` : "Undid a tap";
     } else {
+      // A temporary derangement added on this device, not yet on the server.
+      if (tap.derangement && !shown.derangements.temporary.some((t) => t.key === tap.tracker)) {
+        shown.derangements.temporary.push({ key: tap.tracker, name: tap.derangement.name, source: tap.derangement.source ?? "", held: false });
+      }
       if (tap.kind === "change" && !undone.has(tap.id)) change = applyChange(shown, tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null);
       else if (tap.kind === "change") change = applyChange(copy(shown), tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null);
       text = describe(shown, tap, change);

@@ -3316,7 +3316,7 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await expect(a.getByText("Half Blood: fed short last downtime")).toHaveCount(0);
 });
 
-test("Derangement traits on the Play View: marked and undone, seen on another device, and kept through Reset", async ({ browser }) => {
+test("Derangement traits on the Play View: a temporary derangement added, warnings to the edge, kept through Reset, and removed", async ({ browser }) => {
   const custodian = await person(browser, "derange-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "derange-lead");
@@ -3329,8 +3329,8 @@ test("Derangement traits on the Play View: marked and undone, seen on another de
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
-  // Two NPCs the lead runs: a Malkavian, whose clan weakness is a derangement,
-  // and a Toreador with none.
+  // Two NPCs the lead runs, neither with the Derangement flaw: a Malkavian, whose
+  // clan weakness is a derangement, and a Toreador.
   const p = lead.page;
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
@@ -3348,25 +3348,41 @@ test("Derangement traits on the Play View: marked and undone, seen on another de
   const ophelia = await npc("Ophelia", "Malkavian");
   const lucien = await npc("Lucien", "Toreador");
 
+  // No Derangement flaw on the sheet: no tracker, only a way to add one.
   await p.goto(`/play/characters/${lucien}`);
   await expect(p.getByLabel("Blood: 10 of 10")).toBeVisible();
   await expect(p.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Add a temporary derangement…" })).toBeVisible();
 
-  // A Malkavian always has 1, so it can't be removed.
+  // The Malkavian's clan derangement is added by hand, as a temporary one.
   await p.goto(`/play/characters/${ophelia}`);
   await p.getByLabel("Quick notes").uncheck();
+  await expect(p.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Add a temporary derangement…" }).click();
+  const adding = p.getByRole("dialog", { name: "Temporary derangement" });
+  await adding.getByLabel("Derangement").fill("Paranoia: the Prince");
+  await adding.getByLabel("Where it came from (optional)").fill("Malkavian clan weakness");
+  await adding.getByRole("button", { name: "Add" }).click();
+  await expect(p.getByText("Temporary derangement added: Paranoia: the Prince, from Malkavian clan weakness")).toBeVisible();
+
+  // A Malkavian always has 1, so it can't be removed.
   const traits = p.getByRole("region", { name: "Derangement traits" });
   await expect(traits.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
   await expect(traits).toContainText("Malkavians always have 1.");
+  await expect(traits.getByRole("listitem").filter({ hasText: "Paranoia: the Prince" })).toContainText("Temporary, from Malkavian clan weakness");
   await expect(traits.getByRole("button", { name: "Remove a Derangement trait", exact: true }).last()).toBeDisabled();
   await expect(traits.getByRole("button", { name: "Severe response" })).toBeDisabled();
 
-  // Two triggers resisted: three, the edge of a psychotic break.
+  // Two triggers resisted: a warning at 2, and at 3 how a psychotic break plays out.
   const mark = traits.getByRole("button", { name: "Mark a Derangement trait", exact: true }).last();
   await mark.click();
+  await expect(traits.getByRole("note", { name: "One trait from the edge" })).toContainText("MET: VtM core, p. 267");
   await mark.click();
   await expect(traits.getByLabel("Derangement traits: 3 of 3")).toBeVisible();
-  await expect(traits).toContainText("Three: the next trigger brings a psychotic break.");
+  const edge = traits.getByRole("note", { name: "On the edge of a psychotic break" });
+  await expect(edge).toContainText("A severe response lasts five minutes.");
+  await expect(edge).toContainText("to 1, as a Malkavian always keeps 1");
+  // A warning only: the tap goes through, and nothing is blocked.
   await expect(p.getByText("Derangement traits 2 → 3")).toBeVisible();
   await expect(p.getByRole("status")).toHaveText("Saved");
   await p.screenshot(shots("play-derangements"));
@@ -3380,8 +3396,9 @@ test("Derangement traits on the Play View: marked and undone, seen on another de
   const other = custodian.page;
   await other.goto(`/play/characters/${ophelia}`);
   await expect(other.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+  await expect(other.getByText("Paranoia: the Prince", { exact: true })).toBeVisible();
 
-  // Reset for the next game puts Blood back but leaves Derangement traits.
+  // Reset for the next game puts Blood back but leaves Derangement traits and the derangement.
   await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
   await expect(p.getByLabel("Blood: 9 of 10")).toBeVisible();
   await expect(p.getByRole("status")).toHaveText("Saved");
@@ -3393,6 +3410,7 @@ test("Derangement traits on the Play View: marked and undone, seen on another de
   await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
   await p.reload();
   await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+  await expect(traits.getByText("Paranoia: the Prince", { exact: true })).toBeVisible();
 
   // A severe response clears them, down to the Malkavian's 1.
   await traits.getByRole("button", { name: "Severe response" }).click();
@@ -3402,6 +3420,15 @@ test("Derangement traits on the Play View: marked and undone, seen on another de
   await expect(p.getByRole("status")).toHaveText("Saved");
   await other.reload();
   await expect(other.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
+
+  // Removed by the player when it's over: the tracker goes, back to a way to add one.
+  await traits.getByRole("button", { name: "Remove Paranoia: the Prince" }).click();
+  await expect(p.getByText("Temporary derangement removed: Paranoia: the Prince, from Malkavian clan weakness")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Add a temporary derangement…" })).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await other.reload();
+  await expect(other.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
 });
 
 test("a coterie's shared Haven: staff set it up, a player logs a use, and the other sharer reads it in the log", async ({ browser }) => {
