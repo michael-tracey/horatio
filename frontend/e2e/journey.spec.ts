@@ -1484,7 +1484,7 @@ test("a player renames their character once in three months, and the custodian a
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
-  await expect(p.getByText("visiting")).toBeVisible();
+  await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
   await p.getByRole("button", { name: "More for Agnes Moreau" }).click();
   await p.getByRole("menuitem", { name: "Rename…" }).click();
   await p.getByLabel("New name").fill("Agnes Duval");
@@ -1916,7 +1916,12 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
-  await expect(p.getByText("visiting")).toBeVisible();
+  await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
+  // Home troupe comes first, then the visiting troupes, each with what it means.
+  await expect(p.locator("main section h2")).toHaveText(["Home troupe", "Visiting troupes"]);
+  const card = (title: string) => p.locator("main section").filter({ has: p.getByRole("heading", { name: title }) });
+  await expect(card("Home troupe").getByText("The one troupe that holds this character's sheet.")).toBeVisible();
+  await expect(card("Visiting troupes").getByText("A troupe this character plays in without its home there.")).toBeVisible();
 
   // The list opens as soon as the box is clicked: the troupe's player first.
   await lead.page.getByRole("link", { name: "Troupes" }).click();
