@@ -9,6 +9,7 @@ import type {
   ExceptionOut,
   SheetOut,
   SheetTraitOut,
+  TraitOut,
 } from "../../api/types";
 import {
   Badge,
@@ -21,12 +22,14 @@ import {
   Rating,
   Select,
 } from "../../components/ui";
+import { TraitInfo } from "../../components/TraitInfo";
 import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
 import { AddTraitPanel } from "./AddTraitPanel";
 import { openToYou, useChoices } from "./choices";
 import { PrintAndBadge } from "./Badge";
+import { CategoryInfo, PartInfo } from "./Info";
 import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart, type Cart, type CartLine } from "./cart";
 import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
 import { ExceptionMark, ExceptionsCard } from "./Exceptions";
@@ -53,7 +56,7 @@ function useSheet(characterId: string) {
   });
 }
 
-function useCatalogue(character: CharacterOut) {
+export function useCatalogue(character: CharacterOut) {
   return useQuery({
     queryKey: ["catalogue", character.splat, rulesTroupe(character)],
     queryFn: () =>
@@ -294,6 +297,8 @@ export function SheetTab({
     catalogue.data?.traits.find(
       (c) => c.category === t.category && c.name === t.name,
     )?.fixed_rating ?? null;
+  const aboutOf = (t: SheetTraitOut) =>
+    catalogue.data?.traits.find((c) => c.category === t.category && c.name === t.name);
   const derived = new Set(
     catalogue.data?.categories.filter((c) => c.derived).map((c) => c.key),
   );
@@ -352,6 +357,7 @@ export function SheetTab({
               dense
               className={wide(group) ? "md:col-span-2" : undefined}
               title={group}
+              info={<PartInfo part={group} catalogue={catalogue.data} />}
               actions={
                 canAdd && (addable.get(group)?.length ?? 0) > 0 ? (
                   <Button
@@ -411,9 +417,10 @@ export function SheetTab({
                 ].map(([category, traits]) => (
                   <div key={category}>
                     {category.toLowerCase() !== group.toLowerCase() && (
-                      <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">
-                        {category}
-                      </h3>
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <h3 className="font-sans text-xs tracking-wide text-mist uppercase">{category}</h3>
+                        <CategoryInfo category={traits[0]!.category} name={category} catalogue={catalogue.data} />
+                      </div>
                     )}
                     {/* A long list of one kind (skills) flows into two columns. */}
                     <ul className={wide(group) && single(group) ? "gap-x-6 sm:columns-2 [&>li]:break-inside-avoid" : "flex flex-col"}>
@@ -423,6 +430,7 @@ export function SheetTab({
                           trait={t}
                           locked={locked || derived.has(t.category)}
                           points={pointsOf(t)}
+                          about={aboutOf(t)}
                           exception={exceptionOf(t)}
                           planned={plannedRating(lines, t)}
                           swappedTo={swappedTo(lines, t.category, t.name)}
@@ -588,12 +596,15 @@ function TraitRow({
   swap,
   onSwap,
   points = null,
+  about,
   planned = null,
   swappedTo = null,
   exception,
 }: {
   trait: SheetTraitOut;
   locked: boolean;
+  /** The catalogue's entry for the trait: its description and page open under the row. */
+  about?: TraitOut;
   /** Held by exception: asked of staff, or given by them. */
   exception?: ExceptionOut;
   /** A merit or flaw's fixed point value: shown instead of dots. */
@@ -614,14 +625,20 @@ function TraitRow({
   if (points !== null) {
     const removing = planned === 0;
     return (
-      <li className="flex min-h-7 items-center justify-between gap-2 text-sm">
-        <span className="min-w-0">
-          <span className={removing ? "line-through" : adding ? "text-gold" : undefined}>{trait.name}</span>
-          {trait.detail && <span className="text-mist">: {trait.detail}</span>}
-          {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
-          <GrantedBy trait={trait} points />
-          {exception && <ExceptionMark exception={exception} />}
-        </span>
+      <li className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
+        <TraitInfo
+          name={<span className={removing ? "line-through" : adding ? "text-gold" : undefined}>{trait.name}</span>}
+          after={
+            <>
+              {trait.detail && <span className="text-mist">: {trait.detail}</span>}
+              {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
+              <GrantedBy trait={trait} points />
+              {exception && <ExceptionMark exception={exception} />}
+            </>
+          }
+          description={about?.description}
+          page={about?.page_reference}
+        />
         <span className="flex shrink-0 items-center gap-2">
           <Badge tone="gold">{points}</Badge>
           {!locked && removing && (
@@ -647,10 +664,12 @@ function TraitRow({
   if (swap && !locked) {
     return (
       <li className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span>
-          {trait.name}
-          {swappedTo && <span className="text-gold"> → {swappedTo}</span>}
-        </span>
+        <TraitInfo
+          name={trait.name}
+          after={swappedTo && <span className="text-gold"> → {swappedTo}</span>}
+          description={about?.description}
+          page={about?.page_reference}
+        />
         {swapping ? (
           <span className="flex items-center gap-1">
             <Select
@@ -686,18 +705,24 @@ function TraitRow({
   }
   const current = planned ?? trait.rating ?? 0;
   return (
-    <li className="flex min-h-7 items-center justify-between gap-2 text-sm">
-      <span className="min-w-0">
-        <span className={pending || adding ? "text-gold" : undefined}>{trait.name}</span>
-        {trait.detail && <span className="text-mist">: {trait.detail}</span>}
-        {pending && (
-          <span className="ml-2">
-            <Badge tone="gold">awaiting approval</Badge>
-          </span>
-        )}
-        <GrantedBy trait={trait} />
-        {exception && <ExceptionMark exception={exception} />}
-      </span>
+    <li className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
+      <TraitInfo
+        name={<span className={pending || adding ? "text-gold" : undefined}>{trait.name}</span>}
+        after={
+          <>
+            {trait.detail && <span className="text-mist">: {trait.detail}</span>}
+            {pending && (
+              <span className="ml-2">
+                <Badge tone="gold">awaiting approval</Badge>
+              </span>
+            )}
+            <GrantedBy trait={trait} />
+            {exception && <ExceptionMark exception={exception} />}
+          </>
+        }
+        description={about?.description}
+        page={about?.page_reference}
+      />
       {trait.rating !== null && (
         <span className="flex shrink-0 items-center gap-2">
           <Rating value={trait.rating} pendingFrom={trait.pending_from} planned={planned} of={pipsOf(trait.category)} />

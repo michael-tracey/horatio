@@ -17,7 +17,8 @@ import { RenameCharacter } from "./Rename";
 import { CharacterPicture } from "./Picture";
 import { ResultsTab } from "./ResultsTab";
 import { CharacterShared } from "../troupe/SharedBackground";
-import { SheetTab } from "./SheetTab";
+import { ChoiceInfo } from "./Info";
+import { SheetTab, useCatalogue } from "./SheetTab";
 import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
 
@@ -190,13 +191,15 @@ function Identity({ character, lead }: { character: CharacterOut; lead: string }
     queryKey: ["sheet", character.id],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", { params: { path: { character_id: character.id } } })),
   });
+  const catalogue = useCatalogue(character);
   const choices = (sheet.data?.traits ?? []).filter((t) => t.rating === null);
   return (
     <span className="flex flex-wrap items-center gap-x-2">
       <span className="capitalize">{lead}</span>
       {choices.map((t) => (
-        <span key={t.id} title={t.note ? `${t.category_name}: ${t.note}` : t.category_name}>
+        <span key={t.id}>
           · <span className="text-parchment/90">{choiceName(t)}</span>
+          <ChoiceInfo choice={t} shown={choiceName(t)} catalogue={catalogue.data} />
         </span>
       ))}
     </span>

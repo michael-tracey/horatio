@@ -36,12 +36,15 @@ export function Button({
 
 export function Card({
   title,
+  info,
   actions,
   children,
   className,
   dense,
 }: {
   title?: ReactNode;
+  /** An `InfoButton` for the title, set beside it. */
+  info?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -52,7 +55,12 @@ export function Card({
     <section className={cx("rounded-lg border border-ash bg-dusk", dense ? "p-3 sm:p-4" : "p-4 sm:p-5", className)}>
       {(title || actions) && (
         <header className={cx("flex flex-wrap items-center justify-between gap-2", dense ? "mb-2" : "mb-3")}>
-          {title && <h2 className={dense ? "text-base text-gold" : "text-lg text-gold"}>{title}</h2>}
+          {title && (
+            <div className="flex items-center gap-2">
+              <h2 className={dense ? "text-base text-gold" : "text-lg text-gold"}>{title}</h2>
+              {info}
+            </div>
+          )}
           {actions}
         </header>
       )}

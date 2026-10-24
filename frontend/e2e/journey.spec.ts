@@ -1059,10 +1059,11 @@ test("a player makes up an archetype in the creation wizard, and it shows on the
   await page.getByLabel("Archetype's name").fill("The Penitent Thief");
   await page.getByLabel("What it means for the character").fill("Steals only to give back.");
   await page.getByRole("button", { name: "Save archetype" }).click();
-  // The name given stands in the page title, with the description beside it…
-  const shown = page.getByText("The Penitent Thief", { exact: true });
-  await expect(shown).toBeVisible();
-  await expect(shown.locator("..")).toHaveAttribute("title", /Steals only to give back\./);
+  // The name given stands in the page title, with the description in the ⓘ beside it…
+  await expect(page.getByText("The Penitent Thief", { exact: true })).toBeVisible();
+  const info = page.getByRole("button", { name: "About The Penitent Thief" });
+  await info.click();
+  await expect(page.locator(`[id="${await info.getAttribute("aria-controls")}"]`)).toContainText("Steals only to give back.");
   // …and survives a reload.
   await page.reload();
   await expect(page.getByLabel("Archetype's name")).toHaveValue("The Penitent Thief");
@@ -3409,4 +3410,71 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   await dots.getByRole("button", { name: "Log dots" }).click();
   await expect(l.getByText("2 of 5 dots")).toBeVisible();
   await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
+});
+
+test("the sheet says what a trait does, under its name, and what a heading is, in an ⓘ", async ({ browser }) => {
+  const { page: p } = await person(browser, "annotator");
+  await p.getByLabel("Name").fill("Marginalia");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+  const put = async (url: string, data: object) => {
+    const response = await p.request.put(url, { headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBe(200);
+  };
+  await put(`/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  await put(`/api/characters/${id}/creation/categories/skills`, { picks: [{ name: "Brawl", rating: 2 }] });
+  await put(`/api/characters/${id}/creation/categories/backgrounds`, { picks: [{ name: "Generation", rating: 1 }] });
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const fits = async (name: string) => {
+    const box = (await p.getByText(name).boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(p.viewportSize()!.width);
+  };
+
+  // A skill opens to its description under the row, and closes again; the dots stay where they were.
+  const brawl = part("Skills").getByRole("button", { name: "Brawl", exact: true });
+  const about = p.getByText("Fighting with your body: fists, feet, grapples and claws.");
+  await expect(brawl).toHaveAttribute("aria-expanded", "false");
+  await expect(about).toHaveCount(0);
+  await brawl.click();
+  await expect(brawl).toHaveAttribute("aria-expanded", "true");
+  await expect(about).toBeVisible();
+  await expect(part("Skills").getByLabel("2 dots")).toBeVisible();
+  await p.screenshot(shots("trait-info"));
+  // A background with a book page gives it; several stay open together.
+  const generation = part("Backgrounds").getByRole("button", { name: "Generation", exact: true });
+  await generation.click();
+  await expect(p.getByText("MET: VTM p. 100")).toBeVisible();
+  await expect(about).toBeVisible();
+  await brawl.click();
+  await expect(brawl).toHaveAttribute("aria-expanded", "false");
+  await expect(about).toHaveCount(0);
+
+  // A heading's ⓘ opens a small popover, closed by pressing it again, pressing outside, or Escape.
+  const skills = part("Skills").getByRole("button", { name: "About Skills" });
+  const words = p.getByText("What the character has learned to do");
+  await skills.click();
+  await expect(words).toBeVisible();
+  await fits("What the character has learned to do");
+  await skills.click();
+  await expect(words).toHaveCount(0);
+  await skills.click();
+  await p.keyboard.press("Escape");
+  await expect(words).toHaveCount(0);
+  await expect(skills).toBeFocused();
+  await skills.click();
+  await expect(words).toBeVisible();
+  await p.getByRole("heading", { name: "Marginalia" }).click();
+  await expect(words).toHaveCount(0);
+
+  // So does a choice in the page title, with the clan's in-clan disciplines.
+  const clan = p.getByRole("button", { name: "About Brujah" });
+  await clan.click();
+  await expect(p.getByText("In-clan disciplines: Celerity, Potence, Presence.")).toBeVisible();
+  await fits("In-clan disciplines: Celerity, Potence, Presence.");
+  await p.screenshot(shots("clan-info"));
+  await p.keyboard.press("Escape");
+  await expect(p.getByText("In-clan disciplines: Celerity, Potence, Presence.")).toHaveCount(0);
 });
