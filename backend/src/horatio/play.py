@@ -13,6 +13,8 @@ which every tracker is back where the sheet starts it: blood full (or the
 home troupe's starting amount, a house rule, or half if the character fed
 short last downtime: horatio.feeding), Willpower at its rating, health
 clear, Morality at the sheet's, no Beast traits, and each limited use back.
+Derangement traits are the exception: nothing in the rules clears them between
+games, so each game starts them where the last one left them.
 """
 
 import uuid
@@ -23,17 +25,27 @@ from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from horatio import audit, influence_effects, play_influence, sheets
 from horatio.models import Character, PlayCounter, PlayEvent, PlayGame, Troupe, User
+from horatio.rules.feeding import clan_family
 
 # Most blood, and blood a turn, by Generation dots (MET: VTM pp. 100-101).
 BLOOD_BY_GENERATION = ((10, 1), (10, 1), (12, 2), (15, 3), (20, 4), (30, 5))
 # The example sheet's Beast trait track; at five a dot of Morality is lost (p. 290).
 BEAST_TRAITS = 5
+# Derangement traits: one marked each time a derangement's trigger is resisted,
+# all cleared by a severe response, which the third makes the next trigger bring
+# (MET: VtM core, pp. 266-267); never more than 3 (p. 94). Malkavians always
+# have 1 (p. 57).
+DERANGEMENT_TRAITS = 3
+# Clans whose weakness is a derangement: Malkavian (p. 57), Ravnos (p. 76), and
+# the Assamite Viziers (p. 44).
+DERANGED_CLANS = ("Malkavian", "Ravnos")
+DERANGED_BLOODLINES = ("Assamite: Vizier",)
 HEALTH_LEVELS = ("Healthy", "Injured", "Incapacitated")
-TRACKERS = ("blood", "willpower", "health", "morality", "beast")
+TRACKERS = ("blood", "willpower", "health", "morality", "beast", "derangements")
 DAMAGE = ("normal", "aggravated")
 # A device whose clock runs ahead cannot put a tap in the future.
 CLOCK_SLACK = timedelta(minutes=1)
@@ -77,6 +89,12 @@ class Limits:
     half_blood: bool = False
     # Names for counters since removed, so old logs still read.
     removed: Mapping[str, str] = field(default_factory=dict[str, str])
+    # Derangement traits where the game starts (where the last one ended), and
+    # the fewest the character can have: 1 for a Malkavian.
+    derangements: int = 0
+    derangements_least: int = 0
+    # The sheet has a derangement: the flaw, one from the clan, or Dementation's.
+    deranged: bool = False
 
     @property
     def health_boxes(self) -> int:
@@ -90,10 +108,14 @@ class Limits:
             "health": self.health_boxes,
             "morality": self.morality,
             "beast": BEAST_TRAITS,
+            "derangements": DERANGEMENT_TRAITS,
         }
         if tracker in fixed:
             return fixed[tracker]
         return next((e.uses for e in self.expendables if e.key == tracker), None)
+
+    def least(self, tracker: str) -> int:
+        return self.derangements_least if tracker == "derangements" else 0
 
     def start(self) -> dict[str, Any]:
         return {
@@ -102,6 +124,7 @@ class Limits:
             "health": [],
             "morality": self.morality,
             "beast": 0,
+            "derangements": self.derangements,
             "uses": {e.key: e.uses for e in self.expendables},
         }
 
@@ -112,6 +135,7 @@ class Limits:
             "health": "Health",
             "morality": self.morality_name or "Morality",
             "beast": "Beast traits",
+            "derangements": "Derangement traits",
         }
         if tracker in names:
             return names[tracker]
@@ -149,6 +173,51 @@ def uses_per_game(spec: Any, rating: int | None, ratings: Mapping[tuple[str, str
     if isinstance(spec, Mapping):
         return ratings.get((str(spec.get("category")), str(spec.get("name"))), 0)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
     return 0
+
+
+def derangements_before(
+    db: Session, character: Character, game: PlayGame | None, least: int
+) -> int:
+    """Derangement traits as `game` starts (or the next game, for None): where
+    the game before it left them, which is every earlier game's taps on them,
+    in order, as nothing clears them between games."""
+    undo = aliased(PlayEvent)
+    query = (
+        select(PlayEvent.amount)
+        .join(PlayGame, PlayEvent.game_id == PlayGame.id)
+        .where(
+            PlayGame.character_id == character.id,
+            PlayEvent.kind == "change",
+            PlayEvent.tracker == "derangements",
+            ~select(undo.id).where(undo.undoes_id == PlayEvent.id).exists(),
+        )
+        .order_by(PlayGame.number, PlayEvent.happened_at, PlayEvent.id)
+    )
+    if game is not None:
+        query = query.where(PlayGame.number < game.number)
+    value = least
+    for amount in db.scalars(query):
+        value = max(least, min(value + amount, DERANGEMENT_TRAITS))
+    return value
+
+
+def deranged(rows: Sequence[sheets.SheetRow]) -> tuple[bool, int]:
+    """Whether the sheet has a derangement, and the fewest Derangement traits it
+    can have: the Derangement flaw, a clan whose weakness is one, or Dementation,
+    which brings one with its first dot (MET: VtM core, p. 129)."""
+    clans = [r.definition.name for r in rows if r.category.key == "clan"]
+    malkavian = any(clan_family(c) == "Malkavian" for c in clans)
+    held = (
+        any(clan_family(c) in DERANGED_CLANS or c in DERANGED_BLOODLINES for c in clans)
+        or any(r.category.key == "flaws" and r.definition.name == "Derangement" for r in rows)
+        or any(
+            r.category.key == "disciplines"
+            and r.definition.name == "Dementation"
+            and (r.trait.rating or 0) > 0
+            for r in rows
+        )
+    )
+    return held, 1 if malkavian else 0
 
 
 def home_troupe(db: Session, character: Character) -> Troupe | None:
@@ -219,6 +288,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     # A game not started yet starts at half if the last downtime said so.
     half = game.half_blood if game is not None else character.half_blood_next_game
     usual = blood if house is None else min(house, blood)
+    held, least = deranged(rows)
     return Limits(
         generation=generation,
         blood=blood,
@@ -231,6 +301,9 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         morality_name=path.definition.name if path else None,
         expendables=tuple(expendables),
         removed={counter_key(c.id): c.name for c in counters if c.removed_at is not None},
+        derangements=derangements_before(db, character, game, least),
+        derangements_least=least,
+        deranged=held,
     )
 
 
@@ -256,7 +329,7 @@ def apply(state: dict[str, Any], limits: Limits, event: PlayEvent) -> tuple[int,
         return before, len(marks)
     if event.tracker in TRACKERS:
         before = state[event.tracker]
-        state[event.tracker] = max(0, min(before + event.amount, most))
+        state[event.tracker] = max(limits.least(event.tracker), min(before + event.amount, most))
         return before, state[event.tracker]
     before = state["uses"].get(event.tracker, most)
     state["uses"][event.tracker] = max(0, min(before + event.amount, most))
@@ -410,6 +483,8 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         g.id: g for g in db.scalars(select(PlayGame).where(PlayGame.character_id == character.id))
     }
     touched: dict[uuid.UUID, PlayGame] = {}
+    # The earliest game whose Derangement traits these taps change.
+    carried: int | None = None
     latest = datetime.now(UTC) + CLOCK_SLACK
     for tap in taps:
         if tap.id in existing:
@@ -451,6 +526,14 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
             play_influence.spend(db, character, actor, event, tap.influence)
         existing[tap.id] = (event, character.id)
         touched[game.id] = game
+        if (target or event).tracker == "derangements":
+            carried = game.number if carried is None else min(carried, game.number)
     for game in touched.values():
         refresh(db, game, limits(db, character, game))
+    # Derangement traits carry from game to game, so a late tap in a game already
+    # over moves where each game after it started them.
+    if carried is not None:
+        for game in games.values():
+            if game.number > carried and game.id not in touched:
+                refresh(db, game, limits(db, character, game))
     db.flush()

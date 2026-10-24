@@ -3316,6 +3316,94 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await expect(a.getByText("Half Blood: fed short last downtime")).toHaveCount(0);
 });
 
+test("Derangement traits on the Play View: marked and undone, seen on another device, and kept through Reset", async ({ browser }) => {
+  const custodian = await person(browser, "derange-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "derange-lead");
+  const troupeName = `Court of Bedlam ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // Two NPCs the lead runs: a Malkavian, whose clan weakness is a derangement,
+  // and a Toreador with none.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const npc = async (name: string, clan: string) => {
+    const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(made.status(), await made.text()).toBe(201);
+    const id: string = (await made.json()).id;
+    const rated = await p.request.put(`/api/characters/${id}/npc/ratings`, { headers, data: { category: "clan", name: clan, rating: null, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+    return id;
+  };
+  const ophelia = await npc("Ophelia", "Malkavian");
+  const lucien = await npc("Lucien", "Toreador");
+
+  await p.goto(`/play/characters/${lucien}`);
+  await expect(p.getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
+
+  // A Malkavian always has 1, so it can't be removed.
+  await p.goto(`/play/characters/${ophelia}`);
+  await p.getByLabel("Quick notes").uncheck();
+  const traits = p.getByRole("region", { name: "Derangement traits" });
+  await expect(traits.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
+  await expect(traits).toContainText("Malkavians always have 1.");
+  await expect(traits.getByRole("button", { name: "Remove a Derangement trait", exact: true }).last()).toBeDisabled();
+  await expect(traits.getByRole("button", { name: "Severe response" })).toBeDisabled();
+
+  // Two triggers resisted: three, the edge of a psychotic break.
+  const mark = traits.getByRole("button", { name: "Mark a Derangement trait", exact: true }).last();
+  await mark.click();
+  await mark.click();
+  await expect(traits.getByLabel("Derangement traits: 3 of 3")).toBeVisible();
+  await expect(traits).toContainText("Three: the next trigger brings a psychotic break.");
+  await expect(p.getByText("Derangement traits 2 → 3")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await p.screenshot(shots("play-derangements"));
+  // Undo takes one back, as any tap.
+  await p.getByRole("button", { name: "Undo Derangement traits 2 → 3" }).click();
+  await expect(p.getByText("Undid: Derangement traits 2 → 3")).toBeVisible();
+  await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // Another device (the custodian's) sees the same.
+  const other = custodian.page;
+  await other.goto(`/play/characters/${ophelia}`);
+  await expect(other.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+
+  // Reset for the next game puts Blood back but leaves Derangement traits.
+  await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
+  await expect(p.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await p.getByRole("button", { name: "Reset for next game…" }).click();
+  await expect(p.getByText("Derangement traits stay at 2.")).toBeVisible();
+  await p.getByRole("button", { name: "Reset for next game", exact: true }).click();
+  await expect(p.getByText("Game 2")).toBeVisible();
+  await expect(p.getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+  await p.reload();
+  await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+
+  // A severe response clears them, down to the Malkavian's 1.
+  await traits.getByRole("button", { name: "Severe response" }).click();
+  await expect(traits.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
+  await expect(p.getByText("Derangement traits 2 → 1")).toBeVisible();
+  await expect(p.getByText("“Severe response”")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await other.reload();
+  await expect(other.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
+});
+
 test("a coterie's shared Haven: staff set it up, a player logs a use, and the other sharer reads it in the log", async ({ browser }) => {
   const custodian = await person(browser, "share-custodian");
   makeCustodian(custodian.email);
