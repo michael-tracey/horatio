@@ -3410,3 +3410,33 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   await expect(l.getByText("2 of 5 dots")).toBeVisible();
   await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
 });
+
+test("a skill's specialisations sit in its own list item, in the sheet's two columns and on a phone", async ({ browser }) => {
+  const { page: p } = await person(browser, "stay-together");
+  const id = await builtVampire(p, "Marguerite", "Toreador", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+    skills: ATTRIBUTES_AND_FOCUSES.skills.map(([name, rating]) => [name === "Medicine" ? "Academics" : name, rating]),
+  });
+  await p.goto(`/characters/${id}`);
+  const skills = p.locator("section").filter({ has: p.getByRole("heading", { name: "Skills", exact: true }) });
+  const academics = skills.locator("li[data-trait='Academics']");
+  for (const width of [1280, 390]) {
+    await p.setViewportSize({ width, height: 900 });
+    // Name one specialisation for Academics.
+    if (width === 1280) {
+      await academics.getByRole("button", { name: "Add to Academics Specializations" }).click();
+      await academics.getByLabel("Name a Academics Specializations").fill("Medieval");
+      await academics.getByRole("button", { name: "Add", exact: true }).click();
+    }
+    // The skill, its specialisations and their Add button all sit in the one item.
+    await expect(academics.getByText("Academics", { exact: true }).first()).toBeVisible();
+    await expect(academics.getByText("Academics Specializations 1/1")).toBeVisible();
+    await expect(academics.getByRole("button", { name: "Remove Medieval" })).toBeVisible();
+    await expect(academics.getByRole("listitem")).toHaveCount(0); // one item for the whole trait
+    // And the item is kept whole across a column break.
+    await expect(academics).toHaveCSS("break-inside", "avoid");
+  }
+  await p.screenshot(shots("specializations-stay-together"));
+});

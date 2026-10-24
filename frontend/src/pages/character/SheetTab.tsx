@@ -407,58 +407,65 @@ export function SheetTab({
                 ))}
               <div className={wide(group) && !single(group) ? "grid gap-x-6 gap-y-2 sm:grid-cols-2" : "flex flex-col gap-2"}>
                 {[
-                  ...(groups.get(group) ?? new Map<string, SheetTraitOut[]>()),
-                ].map(([category, traits]) => (
-                  <div key={category}>
-                    {category.toLowerCase() !== group.toLowerCase() && (
-                      <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">
-                        {category}
-                      </h3>
-                    )}
-                    {/* A long list of one kind (skills) flows into two columns. */}
-                    <ul className={wide(group) && single(group) ? "gap-x-6 sm:columns-2 [&>li]:break-inside-avoid" : "flex flex-col"}>
-                      {traits.map((t) => [
-                        <TraitRow
-                          key={t.id}
-                          trait={t}
-                          locked={locked || derived.has(t.category)}
-                          points={pointsOf(t)}
-                          exception={exceptionOf(t)}
-                          planned={plannedRating(lines, t)}
-                          swappedTo={swappedTo(lines, t.category, t.name)}
-                          onChange={(rating) =>
-                            cart.update((l) =>
-                              setRating(l, { ...t, rating: t.rating ?? 0, fixed: pointsOf(t) !== null }, rating),
-                            )
-                          }
-                          swap={
-                            character.creation_complete && catalogue.data
-                              ? swapOptions(t, s.traits, catalogue.data)
-                              : null
-                          }
-                          onSwap={(to) => cart.update((l) => swap(l, t.category, t.name, to))}
-                        />,
-                        kindOf(t) && (
-                          <SpecializationRow
-                            key={`${t.id}/specs`}
-                            character={character}
-                            kind={kindOf(t)!}
-                            editable={mine && !locked && s.status !== "retired"}
-                          />
-                        ),
-                        mine &&
-                          !locked &&
-                          !inCart(t) &&
-                          t.category === "skills" &&
-                          needsField.has(t.name) &&
-                          !t.detail && (
-                            <SetField
-                              key={`${t.id}/field`}
-                              character={character}
-                              trait={t}
-                            />
-                          ),
-                      ])}
+                    ...(groups.get(group) ?? new Map<string, SheetTraitOut[]>()),
+                  ].map(([category, traits]) => (
+                    <div key={category}>
+                      {category.toLowerCase() !== group.toLowerCase() && (
+                        <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">
+                          {category}
+                        </h3>
+                      )}
+                      {/* A long list of one kind (skills) flows into two columns. */}
+                      <ul className={wide(group) && single(group) ? "gap-x-6 sm:columns-2" : "flex flex-col"}>
+                        {traits.map((t) => (
+                          // One item per trait, so a column break can't fall between a trait and what hangs under it.
+                          <li key={t.id} data-trait={t.name} className="break-inside-avoid">
+                            <div>
+                              {[
+                              <TraitRow
+                                key={t.id}
+                                trait={t}
+                                locked={locked || derived.has(t.category)}
+                                points={pointsOf(t)}
+                                exception={exceptionOf(t)}
+                                planned={plannedRating(lines, t)}
+                                swappedTo={swappedTo(lines, t.category, t.name)}
+                                onChange={(rating) =>
+                                  cart.update((l) =>
+                                    setRating(l, { ...t, rating: t.rating ?? 0, fixed: pointsOf(t) !== null }, rating),
+                                  )
+                                }
+                                swap={
+                                  character.creation_complete && catalogue.data
+                                    ? swapOptions(t, s.traits, catalogue.data)
+                                    : null
+                                }
+                                onSwap={(to) => cart.update((l) => swap(l, t.category, t.name, to))}
+                              />,
+                              kindOf(t) && (
+                                <SpecializationRow
+                                  key={`${t.id}/specs`}
+                                  character={character}
+                                  kind={kindOf(t)!}
+                                  editable={mine && !locked && s.status !== "retired"}
+                                />
+                              ),
+                              mine &&
+                                !locked &&
+                                !inCart(t) &&
+                                t.category === "skills" &&
+                                needsField.has(t.name) &&
+                                !t.detail && (
+                                  <SetField
+                                    key={`${t.id}/field`}
+                                    character={character}
+                                    trait={t}
+                                  />
+                                ),
+                            ]}
+                          </div>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 ))}
@@ -614,7 +621,7 @@ function TraitRow({
   if (points !== null) {
     const removing = planned === 0;
     return (
-      <li className="flex min-h-7 items-center justify-between gap-2 text-sm">
+      <div className="flex min-h-7 items-center justify-between gap-2 text-sm">
         <span className="min-w-0">
           <span className={removing ? "line-through" : adding ? "text-gold" : undefined}>{trait.name}</span>
           {trait.detail && <span className="text-mist">: {trait.detail}</span>}
@@ -641,12 +648,12 @@ function TraitRow({
               </button>
             )}
         </span>
-      </li>
+      </div>
     );
   }
   if (swap && !locked) {
     return (
-      <li className="flex flex-wrap items-center justify-between gap-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span>
           {trait.name}
           {swappedTo && <span className="text-gold"> → {swappedTo}</span>}
@@ -681,12 +688,12 @@ function TraitRow({
             Change
           </Button>
         )}
-      </li>
+      </div>
     );
   }
   const current = planned ?? trait.rating ?? 0;
   return (
-    <li className="flex min-h-7 items-center justify-between gap-2 text-sm">
+    <div className="flex min-h-7 items-center justify-between gap-2 text-sm">
       <span className="min-w-0">
         <span className={pending || adding ? "text-gold" : undefined}>{trait.name}</span>
         {trait.detail && <span className="text-mist">: {trait.detail}</span>}
@@ -728,7 +735,7 @@ function TraitRow({
           )}
         </span>
       )}
-    </li>
+    </div>
   );
 }
 
