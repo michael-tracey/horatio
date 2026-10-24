@@ -2286,6 +2286,124 @@ test("Feed with Herd: 5 minutes for Blood equal to Herd, waiting while the phone
   await expect.poll(blood).toBe(6);
 });
 
+test("a storyteller pins three NPCs in a Scene view, taps for two, and each full Play View agrees", async ({ browser }) => {
+  const custodian = await person(browser, "scene-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "scene-lead");
+  const troupeName = `Court of Masks ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // Three NPCs, made straight through the API.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const npcs: Record<string, string> = {};
+  for (const name of ["Alder", "Brant", "Cassia"]) {
+    const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(made.status(), await made.text()).toBe(201);
+    npcs[name] = (await made.json()).id;
+  }
+  const state = async (name: string) => (await p.request.get(`/api/characters/${npcs[name]}/play`)).json();
+
+  // From the At game tab to an empty scene.
+  await p.getByRole("link", { name: "People", exact: true }).click();
+  await p.getByRole("link", { name: "At game" }).click();
+  await p.getByRole("link", { name: "Open the Scene view" }).click();
+  await expect(p.getByRole("heading", { name: "Scene", exact: true })).toBeVisible();
+  await expect(p.getByText("Nobody is in the scene yet.")).toBeVisible();
+
+  // Pinned by searching: typing narrows the list, and a pinned one is not offered again.
+  const search = p.getByRole("combobox", { name: "Add to the scene" });
+  await search.fill("al");
+  await expect(p.getByRole("option")).toHaveCount(1);
+  await p.getByRole("option", { name: /Alder/ }).click();
+  await search.fill("bra");
+  await p.getByRole("option", { name: /Brant/ }).click();
+  await search.click();
+  await expect(p.getByRole("option", { name: /Alder/ })).toHaveCount(0);
+  await p.getByRole("option", { name: /Cassia/ }).click();
+  const card = (name: string) => p.getByRole("article", { name });
+  await expect(p.getByRole("article")).toHaveCount(3);
+  await expect(card("Cassia").getByLabel("Blood: 10 of 10")).toBeVisible();
+
+  // The scene is kept on the device.
+  await p.reload();
+  await expect(p.getByRole("article")).toHaveCount(3);
+  await expect(card("Brant")).toBeVisible();
+
+  // Taps for two of them: Blood and Health.
+  const alder = card("Alder");
+  await alder.getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await alder.getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await alder.getByRole("button", { name: "+ Normal" }).click();
+  await expect(alder.getByLabel("Blood: 8 of 10")).toBeVisible();
+  await expect(alder.getByLabel(/^Health: 1 of \d+ marked$/)).toBeVisible();
+  const brant = card("Brant");
+  await brant.getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await brant.getByRole("button", { name: "+ Aggravated" }).click();
+  await expect(brant.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(alder.getByRole("status")).toHaveText("Saved");
+  await expect(brant.getByRole("status")).toHaveText("Saved");
+  await expect(card("Cassia").getByLabel("Blood: 10 of 10")).toBeVisible();
+  await p.screenshot(shots("scene"));
+
+  // The server has the taps, and the full Play View of each shows the same.
+  await expect.poll(async () => (await state("Alder")).blood.value).toBe(8);
+  expect((await state("Alder")).health.marks).toEqual(["normal"]);
+  expect((await state("Brant")).health.marks).toEqual(["aggravated"]);
+  expect((await state("Cassia")).log).toHaveLength(0);
+  await alder.getByRole("link", { name: "Open the full Play View of Alder" }).click();
+  await expect(p.getByLabel("Blood: 8 of 10")).toBeVisible();
+  await expect(p.getByLabel("normal damage")).toHaveCount(1);
+  await expect(p.getByText("Blood 10 → 9")).toBeVisible();
+  await p.goto(`/play/characters/${npcs.Brant}`);
+  await expect(p.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(p.getByLabel("aggravated damage")).toHaveCount(1);
+  await expect(p.getByLabel("normal damage")).toHaveCount(0);
+  // A tap on the full Play View is on the card, and Undo on the card takes back the newest tap.
+  const before = (await state("Cassia")).willpower;
+  await p.goto(`/play/characters/${npcs.Cassia}`);
+  await p.getByLabel("Quick notes").uncheck();
+  await p.getByRole("button", { name: "Spend Willpower", exact: true }).last().click();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await p.goto(`/play/troupes/${troupeId}/scene`);
+  const cassia = card("Cassia");
+  await expect(cassia.getByLabel(`Willpower: ${before.value - 1} of ${before.most}`)).toBeVisible();
+  await cassia.getByRole("button", { name: /^Undo Willpower/ }).click();
+  await expect(cassia.getByLabel(`Willpower: ${before.value} of ${before.most}`)).toBeVisible();
+  await expect(cassia.getByRole("status")).toHaveText("Saved");
+  await expect.poll(async () => (await state("Cassia")).willpower.value).toBe(before.value);
+  await cassia.getByRole("button", { name: /^Log/ }).click();
+  await expect(cassia.getByText(/^Undid: Willpower/)).toBeVisible();
+
+  // Reset on a card puts that character back, and only that one.
+  await brant.getByRole("button", { name: /^Reset/ }).click();
+  await brant.getByRole("button", { name: "Reset for next game…" }).click();
+  await brant.getByRole("button", { name: "Reset for next game", exact: true }).click();
+  await expect(brant.getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(brant.getByLabel(/^Health: 0 of \d+ marked$/)).toBeVisible();
+  await expect(alder.getByLabel("Blood: 8 of 10")).toBeVisible();
+
+  // Removing one takes it off the page and off the device, not out of the troupe.
+  await cassia.getByRole("button", { name: "Remove Cassia from the scene" }).click();
+  await expect(p.getByRole("article")).toHaveCount(2);
+  await p.reload();
+  await expect(p.getByRole("article")).toHaveCount(2);
+  await expect(card("Cassia")).toHaveCount(0);
+  await search.click();
+  await expect(p.getByRole("option", { name: /Cassia/ })).toBeVisible();
+  await expect.poll(async () => (await state("Alder")).blood.value).toBe(8);
+});
+
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "profile-custodian");

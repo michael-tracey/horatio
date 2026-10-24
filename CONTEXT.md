@@ -69,6 +69,10 @@ _Avoid_: Primary, player character (in names)
 A character a troupe's storytellers or assistant storytellers make and keep for that troupe. It belongs to the troupe, needs no approval, takes no part in downtimes, and can be built quickly by setting ratings directly.
 _Avoid_: Secondary, antecedence
 
+**Scene**:
+Several characters of one troupe put on one page of the Play View, side by side, by staff running a scene. Each card has the same taps, Undo and log as the character's own Play View. Which characters are in it is kept on the device, one scene per troupe.
+_Avoid_: Encounter, group view
+
 **Title**:
 A position a character holds in one troupe, such as Prince or Primogen, given by that troupe's storytellers or assistant storytellers. A title means nothing outside its troupe.
 _Avoid_: Rank, office, court position

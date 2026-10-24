@@ -7,8 +7,8 @@ import { useAction } from "../../hooks";
 
 /**
  * The troupe at a game: each character's blood, Willpower and health as their
- * Play View has them, a way into each one (and its log), and one reset for
- * everyone after the game.
+ * Play View has them, a way into each one (and its log), the Scene view for
+ * running several at once, and one reset for everyone after the game.
  */
 export function PlayTab({ troupeId }: { troupeId: string }) {
   const path = { params: { path: { troupe_id: troupeId } } };
@@ -29,6 +29,17 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
   if (list.error) return <ErrorText error={list.error} />;
   return (
     <div className="flex flex-col gap-6">
+      <Card title="Scene view">
+        <p className="mb-3 text-sm text-mist">
+          Put several NPCs on one page, side by side, to run a scene: tap Blood, Willpower, health and Beast traits for each, with Undo and the log. It is kept on this device.
+        </p>
+        <Link
+          to={`/play/troupes/${troupeId}/scene`}
+          className="inline-flex min-h-10 items-center rounded-md bg-blood px-4 text-sm font-medium text-parchment hover:bg-blood-bright"
+        >
+          Open the Scene view
+        </Link>
+      </Card>
       <Card title="At game">
         <p className="mb-3 text-sm text-mist">
           What each character has spent this game, from their Play View. Open one to tap for them, run an NPC, or read what they spent and why.
