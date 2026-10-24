@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut } from "../../../api/types";
-import { Button, Card, ErrorText, Field, Loading, Notice, Select } from "../../../components/ui";
+import { Button, Card, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../../components/ui";
 import { useAction, useUnavailable } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
 import { useCart } from "../cart";
@@ -13,7 +13,7 @@ import { quickPicks } from "../traitFilter";
 import { DotGrid, PointsList } from "./DotGrid";
 import { fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
-import { fieldProblems, identityChoices, keyed, traitOf, type Allowed, type Picks } from "./logic";
+import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, traitOf, type Allowed, type Picks } from "./logic";
 
 type Step = { key: string; title: string; categories: string[]; intro?: string };
 
@@ -285,6 +285,8 @@ function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut;
       }),
     ),
   );
+  // "Other…" waits for its name and description before it is saved.
+  const [makingOwn, setMakingOwn] = useState(false);
   const choices = identityChoices(catalogue, sheet);
   return (
     <div className="flex flex-col gap-4">
@@ -294,8 +296,13 @@ function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut;
         {choices.map((c) => (
           <Field key={c.key} label={c.name}>
             <Select
-              value={sheet.traits.find((t) => t.category === c.key)?.name ?? ""}
-              onChange={(e) => e.target.value && choose.mutate({ category: c.key, name: e.target.value })}
+              value={c.key === "archetype" && makingOwn ? CUSTOM_ARCHETYPE : (sheet.traits.find((t) => t.category === c.key)?.name ?? "")}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const own = c.key === "archetype" && e.target.value === CUSTOM_ARCHETYPE;
+                if (c.key === "archetype") setMakingOwn(own);
+                if (!own) choose.mutate({ category: c.key, name: e.target.value });
+              }}
             >
               <option value="">Choose…</option>
               {catalogue.traits
@@ -308,8 +315,43 @@ function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut;
         ))}
       </div>
       <ErrorText error={choose.error} />
+      {(makingOwn || sheet.traits.some((t) => t.category === "archetype" && t.name === CUSTOM_ARCHETYPE)) && (
+        <OwnArchetype character={character} sheet={sheet} onSaved={() => setMakingOwn(false)} />
+      )}
       {clanOf(sheet) === "Caitiff" && <ExtraInClan character={character} sheet={sheet} catalogue={catalogue} />}
     </div>
+  );
+}
+
+/** An archetype of the player's own (p. 86): a name, and what it means for the character. */
+function OwnArchetype({ character, sheet, onSaved }: { character: CharacterOut; sheet: SheetOut; onSaved: () => void }) {
+  const held = sheet.traits.find((t) => t.category === "archetype" && t.name === CUSTOM_ARCHETYPE);
+  const [name, setName] = useState(held?.detail ?? "");
+  const [meaning, setMeaning] = useState(held?.note ?? "");
+  const save = useAction(() =>
+    unwrap(
+      api.PUT("/api/characters/{character_id}/traits", {
+        params: { path: { character_id: character.id } },
+        body: { category: "archetype", name: CUSTOM_ARCHETYPE, detail: name.trim(), note: meaning.trim(), rating: null, teacher: "" },
+      }),
+    ),
+  );
+  return (
+    <fieldset className="flex flex-col gap-3 rounded-md border border-ash p-3">
+      <legend className="px-1 text-sm text-parchment">Your own archetype</legend>
+      <Field label="Archetype's name">
+        <Input maxLength={200} value={name} onChange={(e) => setName(e.target.value)} />
+      </Field>
+      <Field label="What it means for the character">
+        <Textarea rows={3} maxLength={1000} value={meaning} onChange={(e) => setMeaning(e.target.value)} />
+      </Field>
+      <ErrorText error={save.error} />
+      <div>
+        <Button disabled={!name.trim() || save.isPending} onClick={() => save.mutate(undefined, { onSuccess: onSaved })}>
+          Save archetype
+        </Button>
+      </div>
+    </fieldset>
   );
 }
 

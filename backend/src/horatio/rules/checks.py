@@ -65,6 +65,7 @@ vampire's Generation, on Backgrounds).
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Any, Literal, cast
 
 from horatio.rules.conditions import OPERATORS
@@ -92,7 +93,7 @@ class Context:
     in_clan: frozenset[str] = frozenset()
     # Truly native only: in_clan without the paths a merit prices as in-clan.
     native: frozenset[str] = frozenset()
-    # Primary paths the player named, where the clan has no in-clan path.
+    # The primary paths: the ones the player named, else the clan's in-clan path.
     primary: frozenset[str] = frozenset()
     # Each trait's catalogue type, such as "Clan" for a clan merit.
     kinds: Mapping[tuple[str, str], str] = field(default_factory=dict[tuple[str, str], str])
@@ -128,6 +129,7 @@ class CheckData:
             return False
         return self.detail is None or trait.detail == self.detail
 
+    @cached_property
     def looks_at(self) -> frozenset[tuple[str, str | None]]:
         """The traits the check's conditions look at, as (category, name), with no
         name for a whole category: a technique's disciplines, Archaic's skills."""
@@ -294,7 +296,7 @@ def matches(
                 for t in sheet
                 if t.category == test["category"]
                 and t.name.startswith(test.get("name_prefix", ""))
-                and (t.name in context.native or t.name in context.primary)
+                and t.name in context.primary
                 and t.name != subject.name
             ]
             ok = bool(primaries) and (subject.rating or 0) > max(primaries)
@@ -345,14 +347,21 @@ def violations(
     checks: Sequence[CheckData], sheet: Sequence[SheetTrait], context: Context = NO_CONTEXT
 ) -> list[Violation]:
     """Every check the sheet breaks, once per trait it is about."""
-    # Each check only looks at its own category's traits (the wizard asks this for
-    # every merit in the catalogue).
+    # Each check only looks at its own category's traits, or its own trait's where
+    # it names one (the wizard asks this for every merit in the catalogue).
     by_category: dict[str, list[SheetTrait]] = {}
+    by_name: dict[tuple[str, str], list[SheetTrait]] = {}
     for trait in sheet:
         by_category.setdefault(trait.category, []).append(trait)
+        by_name.setdefault((trait.category, trait.name), []).append(trait)
     found: list[Violation] = []
     for check in checks:
-        for trait in by_category.get(check.category, ()):
+        about = (
+            by_category.get(check.category, ())
+            if check.name is None
+            else by_name.get((check.category, check.name), ())
+        )
+        for trait in about:
             if not check.about(trait):
                 continue
             broken = (

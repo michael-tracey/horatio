@@ -340,9 +340,16 @@ def check_context(
         accepted=character.home_troupe_id is not None,
         in_clan=native | {f"{name}: {detail}" if detail else name for _, name, detail in priced},
         native=native,
-        primary=frozenset(character.primary_paths.values()),
+        primary=primary_set(character, native),
         kinds=rules.rule_set.kinds,
     )
+
+
+def primary_set(character: Character, native: frozenset[str]) -> frozenset[str]:
+    """The paths that are primary: the ones the player named, and for each other
+    discipline the clan's in-clan path, which is primary until another is named."""
+    named = character.primary_paths
+    return frozenset(named.values()) | {n for n in native if n.split(": ")[0] not in named}
 
 
 def path_disciplines(rules: TroupeRules) -> list[str]:
@@ -360,9 +367,12 @@ def path_disciplines(rules: TroupeRules) -> list[str]:
 @dataclass(frozen=True)
 class PrimaryPath:
     discipline: str
-    # The primary path: the clan's in-clan one, or the one the player named.
+    # The primary path: the one the player named, else the clan's in-clan one.
     path: str | None
+    # Whether that is the clan's in-clan path.
     native: bool
+    # The clan's in-clan path of the discipline, if the character holds it.
+    default: str | None
     # Where the player names it: the paths held, highest first.
     options: list[str]
 
@@ -387,15 +397,14 @@ def primary_paths(db: Session, character: Character) -> list[PrimaryPath]:
         if not held:
             continue
         in_clan_path = next((t.name for t in held if t.name in native), None)
-        if in_clan_path is not None:
-            found.append(PrimaryPath(discipline, in_clan_path, native=True, options=[]))
-            continue
         named = character.primary_paths.get(discipline)
+        path = named if named in {t.name for t in held} else in_clan_path
         found.append(
             PrimaryPath(
                 discipline,
-                named if named in {t.name for t in held} else None,
-                native=False,
+                path,
+                native=path is not None and path == in_clan_path,
+                default=in_clan_path,
                 options=[t.name for t in held],
             )
         )
@@ -405,15 +414,14 @@ def primary_paths(db: Session, character: Character) -> list[PrimaryPath]:
 def name_primary_path(
     db: Session, user: User, character: Character, discipline: str, path: str | None
 ) -> None:
-    """Name the character's primary path of a discipline, where its clan has no
-    in-clan path; None un-names it. The primary is the first path to reach 2 dots,
-    so no other path may be higher than it (MET: VTM p. 187)."""
+    """Name the character's primary path of a discipline; None un-names it, and the
+    clan's in-clan path, if any, is primary again. The primary is the first path to
+    reach 2 dots, so no other path may be higher than it (MET: VTM p. 187); a clan's
+    in-clan path is only the default (p. 172, p. 187)."""
     current = {p.discipline: p for p in primary_paths(db, character)}
     if discipline not in path_disciplines(rules_for(db, character)):
         raise unprocessable(f"{discipline} has no primary path.")
     chosen = current.get(discipline)
-    if chosen is not None and chosen.native:
-        raise conflict(f"{chosen.path} is the primary path, as the clan's in-clan path.")
     if path is not None:
         if chosen is None or path not in chosen.options:
             raise unprocessable(f"Name a path of {discipline} the character has.")
@@ -424,6 +432,8 @@ def name_primary_path(
                 f"{higher} is higher; no path can go above the primary path, "
                 "so name the highest (p. 187)."
             )
+    if chosen is not None and path == chosen.default:
+        path = None
     named = {k: v for k, v in character.primary_paths.items() if k != discipline}
     character.primary_paths = {**named, discipline: path} if path else named
     db.flush()
@@ -544,13 +554,33 @@ def unavailable(
     touching = [
         c
         for c in checks
-        if c.category == category_key or any(key[0] == category_key for key in c.looks_at())
+        if c.category == category_key or any(key[0] == category_key for key in c.looks_at)
     ]
     rated = rule_set.categories[category_key].rated
+    # Where the trial only adds a trait, only the checks about it, or that look at
+    # it or its whole category, can change; each by its place in `touching`, so
+    # they are tried in the same order.
+    about_any = [i for i, c in enumerate(touching) if c.name is None]
+    about_named: dict[str, list[int]] = {}
+    looking: dict[tuple[str, str | None], list[int]] = {}
+    for i, check in enumerate(touching):
+        if check.name is not None:
+            about_named.setdefault(check.name, []).append(i)
+        for key in check.looks_at:
+            looking.setdefault(key, []).append(i)
     reasons: dict[str, str] = {}
     for category, name in rule_set.traits:
         if category != category_key or name in held:
             continue
+        trying = touching
+        if rated:
+            places = {
+                *about_any,
+                *about_named.get(name, ()),
+                *looking.get((category, name), ()),
+                *looking.get((category, None), ()),
+            }
+            trying = [touching[i] for i in sorted(places)]
         rating = (fixed_rating(rules, sheet, category, name) or 1) if rated else None
         # The detail is chosen when the trait is added, so a trait refused only for
         # lacking one (Performance needs a field, p. 92) is tried again with one.
@@ -572,7 +602,7 @@ def unavailable(
             )
             new = [
                 v
-                for v in violations(touching if same_clan else checks, trial, trial_context)
+                for v in violations(trying if same_clan else checks, trial, trial_context)
                 if blocking(v, character) and v.key not in before
             ]
             if not new:
@@ -916,7 +946,7 @@ def problem(violation: Violation) -> Problem:
         subject.category,
         subject.name,
         subject.detail,
-        violation.check.looks_at(),
+        violation.check.looks_at,
     )
 
 
@@ -1048,6 +1078,11 @@ def checked(
         savepoint.rollback()
         raise conflict(refusal(refused))
     savepoint.commit()
+
+
+# The archetype a player makes up (p. 86): its detail is the name they give it, and
+# its note says what it means for the character.
+CUSTOM_ARCHETYPE = ("archetype", "Other…")
 
 
 def replace_choice(
@@ -1296,6 +1331,8 @@ def set_trait(
 
     if not category.rated:
         quote_change(db, character, category_key, name, detail, rating)  # validates
+        if (category.key, name) == CUSTOM_ARCHETYPE and not detail.strip():
+            raise unprocessable("Name the archetype.")
         trait = replace_choice(db, character, definition, category, detail)
         if note is not None:
             trait.note = note

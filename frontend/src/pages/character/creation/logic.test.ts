@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
 import { fieldSkills } from "../fields";
-import { canTap, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, tap, togglePoints, traitOf } from "./logic";
+import { canTap, choiceName, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, tap, togglePoints, traitOf } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
@@ -155,5 +155,17 @@ describe("more than one field of a skill", () => {
     } as unknown as CatalogueOut;
     expect([...fieldSkills(catalogue)]).toEqual(["Crafts"]);
     expect(fieldSkills(undefined).size).toBe(0);
+  });
+});
+
+describe("choiceName", () => {
+  it("names a custom archetype by what its player called it", () => {
+    expect(choiceName({ category: "archetype", name: "Other…", detail: "The Penitent Thief" })).toBe("The Penitent Thief");
+  });
+
+  it("keeps the listed name otherwise, or when no name was given", () => {
+    expect(choiceName({ category: "archetype", name: "Fighter", detail: "" })).toBe("Fighter");
+    expect(choiceName({ category: "archetype", name: "Other…", detail: " " })).toBe("Other…");
+    expect(choiceName({ category: "merits", name: "Other…", detail: "x" })).toBe("Other…");
   });
 });

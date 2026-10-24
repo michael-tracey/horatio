@@ -17,6 +17,7 @@ const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then(
 const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then((m) => ({ default: m.CustodianPage })));
 const CyclePage = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.CyclePage })));
 const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ default: m.PlayPage })));
+const ScenePage = lazy(() => import("./pages/play/ScenePage").then((m) => ({ default: m.ScenePage })));
 const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })));
 const PublicTroupePage = lazy(() => import("./pages/PublicTroupePage").then((m) => ({ default: m.PublicTroupePage })));
 const PrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.PrintPage })));
@@ -50,6 +51,7 @@ export function App() {
         <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
         <Route path="/print/characters/:characterId/badge" element={<CharacterBadgePage />} />
         <Route path="/play/characters/:characterId" element={<PlayPage />} />
+        <Route path="/play/troupes/:troupeId/scene" element={<ScenePage />} />
       </Route>
       <Route element={<Layout />}>
         <Route path="/sign-in" element={<SignInPage />} />

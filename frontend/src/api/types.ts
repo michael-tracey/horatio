@@ -108,3 +108,6 @@ export type OwnEntryOut = Schemas["OwnEntryOut"];
 export type BlockSourceOut = Schemas["BlockSourceOut"];
 export type InfluenceSpendOut = Schemas["InfluenceSpendOut"];
 export type InfluenceDetailsIn = Schemas["InfluenceDetailsIn"];
+export type SharedBackgroundOut = Schemas["SharedBackgroundOut"];
+export type SharedEntryOut = Schemas["SharedEntryOut"];
+export type SharedChoicesOut = Schemas["SharedChoicesOut"];

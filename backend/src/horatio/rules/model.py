@@ -5,10 +5,10 @@ with one troupe's house rules applied (CONTEXT.md: Troupe Rules); a character
 with no home troupe plays by a `TroupeRules` with no house rules.
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Hashable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, get_args
 
 if TYPE_CHECKING:
     from horatio.rules.checks import CheckData
@@ -18,6 +18,10 @@ Scheme = Literal["per_dot", "progressive", "table", "fixed", "free", "not_allowe
 SCHEMES: tuple[str, ...] = get_args(Scheme)
 
 DEFAULT_MAX_RATING = 20
+
+T = TypeVar("T")
+# Answers a rule set remembers before it forgets them all and starts again.
+MEMO_SIZE = 512
 
 
 @dataclass(frozen=True)
@@ -199,6 +203,22 @@ class RuleSetData:
     # Unspent creation XP kept when a first home troupe accepts the character;
     # None keeps it all.
     banked_xp: int | None = None
+
+    @cached_property
+    def memo(self) -> dict[Hashable, Any]:
+        """Answers worked out from these rules and a sheet (see `remembered`)."""
+        return {}
+
+    def remembered(self, key: Hashable, work_out: Callable[[], T]) -> T:
+        """The answer for `key`, worked out once and kept as long as these rules
+        are (a database session): what a sheet's grants price, say, which judging
+        a category asks again for every trait in it. Only for answers that are
+        plain values, as every caller gets the same one."""
+        if key not in self.memo:
+            if len(self.memo) >= MEMO_SIZE:
+                self.memo.clear()
+            self.memo[key] = work_out()
+        return self.memo[key]
 
     @cached_property
     def kinds(self) -> Mapping[tuple[str, str], str]:

@@ -1056,6 +1056,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/shared-backgrounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Shared
+         * @description The shared backgrounds the character has put dots in, that the reader sees.
+         */
+        get: operations["character_shared_api_characters__character_id__shared_backgrounds_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/sheet": {
         parameters: {
             query?: never;
@@ -2301,6 +2321,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shared-background-entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlog Entry */
+        delete: operations["unlog_entry_api_shared_background_entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shared-backgrounds/{shared_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read */
+        get: operations["read_api_shared_backgrounds__shared_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove
+         * @description Delete it and its whole log.
+         */
+        delete: operations["remove_api_shared_backgrounds__shared_id__delete"];
+        options?: never;
+        head?: never;
+        /** Change */
+        patch: operations["change_api_shared_backgrounds__shared_id__patch"];
+        trace?: never;
+    };
+    "/api/shared-backgrounds/{shared_id}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log Entry
+         * @description Log dots put in or taken out (staff), or a use (staff, or the character's
+         *     player).
+         */
+        post: operations["log_entry_api_shared_backgrounds__shared_id__entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system": {
         parameters: {
             query?: never;
@@ -3264,6 +3344,50 @@ export interface paths {
         put?: never;
         /** Roll Table */
         post: operations["roll_table_api_troupes__troupe_id__random_tables__name__roll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/shared-backgrounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Shared
+         * @description Every shared background in the troupe, by name, for its staff.
+         */
+        get: operations["troupe_shared_api_troupes__troupe_id__shared_backgrounds_get"];
+        put?: never;
+        /**
+         * Create
+         * @description Set up a shared background, with the characters sharing it and their dots.
+         */
+        post: operations["create_api_troupes__troupe_id__shared_backgrounds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/shared-backgrounds/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Choices
+         * @description What a shared background can be, and the characters who can share it.
+         */
+        get: operations["choices_api_troupes__troupe_id__shared_backgrounds_choices_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4315,6 +4439,16 @@ export interface components {
             test_mode: boolean;
             /** Unavailable */
             unavailable: string | null;
+        };
+        /** ContributionIn */
+        ContributionIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Dots */
+            dots: number;
         };
         /** CostCategoryOut */
         CostCategoryOut: {
@@ -6583,6 +6717,8 @@ export interface components {
         };
         /** PrimaryPathOut */
         PrimaryPathOut: {
+            /** Default */
+            default: string | null;
             /** Discipline */
             discipline: string;
             /** Native */
@@ -7159,6 +7295,165 @@ export interface components {
              * @enum {string}
              */
             settlement: "keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund" | "pay_for_dots" | "remove_dots" | "add_free_dots";
+        };
+        /** SharedBackgroundChange */
+        SharedBackgroundChange: {
+            /** Background */
+            background?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** SharedBackgroundIn */
+        SharedBackgroundIn: {
+            /** Background */
+            background: string;
+            /** Contributions */
+            contributions: components["schemas"]["ContributionIn"][];
+            /** Name */
+            name: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+        };
+        /** SharedBackgroundOut */
+        SharedBackgroundOut: {
+            /** Background */
+            background: string;
+            /** Can Manage */
+            can_manage: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Entries */
+            entries: components["schemas"]["SharedEntryOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Most */
+            most: number;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+            /** Put In */
+            put_in: number;
+            /** Sharers */
+            sharers: components["schemas"]["SharerOut"][];
+            /** Total */
+            total: number;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** SharedCharacterChoice */
+        SharedCharacterChoice: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /** SharedChoicesOut */
+        SharedChoicesOut: {
+            /** Backgrounds */
+            backgrounds: string[];
+            /** Characters */
+            characters: components["schemas"]["SharedCharacterChoice"][];
+            /** Most */
+            most: number;
+            /** Page */
+            page: string;
+        };
+        /** SharedEntryIn */
+        SharedEntryIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Dots */
+            dots?: number | null;
+            /** Happened At */
+            happened_at?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contribution" | "withdrawal" | "use";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Purpose
+             * @default
+             */
+            purpose: string;
+        };
+        /** SharedEntryOut */
+        SharedEntryOut: {
+            /** Can Delete */
+            can_delete: boolean;
+            /** Character Id */
+            character_id: string | null;
+            /** Dots */
+            dots: number | null;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contribution" | "withdrawal" | "use";
+            /**
+             * Logged At
+             * Format: date-time
+             */
+            logged_at: string;
+            /** Logged By Name */
+            logged_by_name: string | null;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
+            /** Purpose */
+            purpose: string;
+        };
+        /** SharerOut */
+        SharerOut: {
+            /** Can Log Use */
+            can_log_use: boolean;
+            /** Character Id */
+            character_id: string | null;
+            /** Dots */
+            dots: number;
+            /** Name */
+            name: string;
         };
         /** SheetOut */
         SheetOut: {
@@ -10220,6 +10515,37 @@ export interface operations {
             };
         };
     };
+    character_shared_api_characters__character_id__shared_backgrounds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBackgroundOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_sheet_api_characters__character_id__sheet_get: {
         parameters: {
             query?: never;
@@ -12723,6 +13049,165 @@ export interface operations {
             };
         };
     };
+    unlog_entry_api_shared_background_entries__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_api_shared_backgrounds__shared_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shared_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBackgroundOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_api_shared_backgrounds__shared_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shared_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_api_shared_backgrounds__shared_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shared_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SharedBackgroundChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBackgroundOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_entry_api_shared_backgrounds__shared_id__entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shared_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SharedEntryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBackgroundOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     system_api_system_get: {
         parameters: {
             query?: never;
@@ -14834,6 +15319,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Roll"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_shared_api_troupes__troupe_id__shared_backgrounds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBackgroundOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_troupes__troupe_id__shared_backgrounds_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SharedBackgroundIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBackgroundOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    choices_api_troupes__troupe_id__shared_backgrounds_choices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedChoicesOut"];
                 };
             };
             /** @description Validation Error */

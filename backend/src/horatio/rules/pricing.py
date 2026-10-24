@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from horatio.rules.conditions import clause_count, holds
-from horatio.rules.grants import effects, matching
+from horatio.rules.grants import matching, priced
 from horatio.rules.model import CostRuleData, SheetTrait, TroupeRules
 from horatio.rules.splats import SPLATS
 
@@ -143,11 +143,11 @@ def trait_cost(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrai
     if trait.rating == trait.free_rating:
         return Quote(cost=0, rule=rule)
     cost = price(rule, trait.rating) - price(rule, trait.free_rating)
-    found = effects(rules.rule_set.grants, sheet, rules.rule_set)
-    key = matching(found.cost_percent, trait)
+    percent = priced(rules.rule_set, sheet).cost_percent
+    key = matching(percent, trait)
     if key is not None:
         # Rounded up, as the book does for half costs.
-        cost = -((-cost * found.cost_percent[key]) // 100)
+        cost = -((-cost * percent[key]) // 100)
     return Quote(cost=cost, rule=rule)
 
 

@@ -17,6 +17,7 @@ import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { RulesTab } from "./RulesTab";
+import { SharedBackgroundsTab } from "./SharedBackgroundsTab";
 import { SpecializationsTab } from "./SpecializationsTab";
 import { StaffTab } from "./StaffTab";
 import { TablesTab } from "./TablesTab";
@@ -83,6 +84,7 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
+              ...(can.running ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
               ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
             ],
           },
@@ -114,6 +116,7 @@ export function TroupePage() {
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
+        {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
         {can.running && <Route path="rules/*" element={<RulesTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}

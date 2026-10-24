@@ -47,6 +47,7 @@ from horatio.models.rules import (
     TraitCategory,
     TraitDefinition,
 )
+from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
 from horatio.models.troupes import (
     CharacterTitle,
     ScheduledGame,
@@ -101,6 +102,8 @@ __all__ = [
     "RuleSet",
     "ScheduledGame",
     "Session",
+    "SharedBackground",
+    "SharedBackgroundEntry",
     "SheetVersion",
     "StartingTrait",
     "TraitCategory",

@@ -1047,6 +1047,30 @@ test("a Caitiff chooses their in-clan disciplines while creating", async ({ brow
   await expect(page.getByRole("checkbox", { name: "Dominate" })).toHaveCount(0);
 });
 
+test("a player makes up an archetype in the creation wizard, and it shows on the sheet and the printed sheet", async ({ browser }) => {
+  const { page } = await person(browser, "penitent");
+  await page.getByLabel("Name").fill("Dismas");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const id = page.url().match(/characters\/([0-9a-f-]{36})/)![1];
+  await page.getByLabel("Archetype", { exact: true }).selectOption("Other…");
+  // It waits for a name before it can be saved.
+  await expect(page.getByRole("button", { name: "Save archetype" })).toBeDisabled();
+  await page.getByLabel("Archetype's name").fill("The Penitent Thief");
+  await page.getByLabel("What it means for the character").fill("Steals only to give back.");
+  await page.getByRole("button", { name: "Save archetype" }).click();
+  // The name given stands in the page title, with the description beside it…
+  const shown = page.getByText("The Penitent Thief", { exact: true });
+  await expect(shown).toBeVisible();
+  await expect(shown.locator("..")).toHaveAttribute("title", /Steals only to give back\./);
+  // …and survives a reload.
+  await page.reload();
+  await expect(page.getByLabel("Archetype's name")).toHaveValue("The Penitent Thief");
+  // The printed sheet gives the name too.
+  await page.goto(`/print/characters/${id}`);
+  await expect(page.getByText("The Penitent Thief", { exact: true })).toBeVisible();
+});
+
 test("a merit taken in the creation wizard gives the traits it grants", async ({ browser }) => {
   const { page: p } = await person(browser, "creep");
   await p.getByLabel("Name").fill("Grub");
@@ -2262,6 +2286,124 @@ test("Feed with Herd: 5 minutes for Blood equal to Herd, waiting while the phone
   await expect.poll(blood).toBe(6);
 });
 
+test("a storyteller pins three NPCs in a Scene view, taps for two, and each full Play View agrees", async ({ browser }) => {
+  const custodian = await person(browser, "scene-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "scene-lead");
+  const troupeName = `Court of Masks ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // Three NPCs, made straight through the API.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const npcs: Record<string, string> = {};
+  for (const name of ["Alder", "Brant", "Cassia"]) {
+    const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(made.status(), await made.text()).toBe(201);
+    npcs[name] = (await made.json()).id;
+  }
+  const state = async (name: string) => (await p.request.get(`/api/characters/${npcs[name]}/play`)).json();
+
+  // From the At game tab to an empty scene.
+  await p.getByRole("link", { name: "People", exact: true }).click();
+  await p.getByRole("link", { name: "At game" }).click();
+  await p.getByRole("link", { name: "Open the Scene view" }).click();
+  await expect(p.getByRole("heading", { name: "Scene", exact: true })).toBeVisible();
+  await expect(p.getByText("Nobody is in the scene yet.")).toBeVisible();
+
+  // Pinned by searching: typing narrows the list, and a pinned one is not offered again.
+  const search = p.getByRole("combobox", { name: "Add to the scene" });
+  await search.fill("al");
+  await expect(p.getByRole("option")).toHaveCount(1);
+  await p.getByRole("option", { name: /Alder/ }).click();
+  await search.fill("bra");
+  await p.getByRole("option", { name: /Brant/ }).click();
+  await search.click();
+  await expect(p.getByRole("option", { name: /Alder/ })).toHaveCount(0);
+  await p.getByRole("option", { name: /Cassia/ }).click();
+  const card = (name: string) => p.getByRole("article", { name });
+  await expect(p.getByRole("article")).toHaveCount(3);
+  await expect(card("Cassia").getByLabel("Blood: 10 of 10")).toBeVisible();
+
+  // The scene is kept on the device.
+  await p.reload();
+  await expect(p.getByRole("article")).toHaveCount(3);
+  await expect(card("Brant")).toBeVisible();
+
+  // Taps for two of them: Blood and Health.
+  const alder = card("Alder");
+  await alder.getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await alder.getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await alder.getByRole("button", { name: "+ Normal" }).click();
+  await expect(alder.getByLabel("Blood: 8 of 10")).toBeVisible();
+  await expect(alder.getByLabel(/^Health: 1 of \d+ marked$/)).toBeVisible();
+  const brant = card("Brant");
+  await brant.getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await brant.getByRole("button", { name: "+ Aggravated" }).click();
+  await expect(brant.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(alder.getByRole("status")).toHaveText("Saved");
+  await expect(brant.getByRole("status")).toHaveText("Saved");
+  await expect(card("Cassia").getByLabel("Blood: 10 of 10")).toBeVisible();
+  await p.screenshot(shots("scene"));
+
+  // The server has the taps, and the full Play View of each shows the same.
+  await expect.poll(async () => (await state("Alder")).blood.value).toBe(8);
+  expect((await state("Alder")).health.marks).toEqual(["normal"]);
+  expect((await state("Brant")).health.marks).toEqual(["aggravated"]);
+  expect((await state("Cassia")).log).toHaveLength(0);
+  await alder.getByRole("link", { name: "Open the full Play View of Alder" }).click();
+  await expect(p.getByLabel("Blood: 8 of 10")).toBeVisible();
+  await expect(p.getByLabel("normal damage")).toHaveCount(1);
+  await expect(p.getByText("Blood 10 → 9")).toBeVisible();
+  await p.goto(`/play/characters/${npcs.Brant}`);
+  await expect(p.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(p.getByLabel("aggravated damage")).toHaveCount(1);
+  await expect(p.getByLabel("normal damage")).toHaveCount(0);
+  // A tap on the full Play View is on the card, and Undo on the card takes back the newest tap.
+  const before = (await state("Cassia")).willpower;
+  await p.goto(`/play/characters/${npcs.Cassia}`);
+  await p.getByLabel("Quick notes").uncheck();
+  await p.getByRole("button", { name: "Spend Willpower", exact: true }).last().click();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await p.goto(`/play/troupes/${troupeId}/scene`);
+  const cassia = card("Cassia");
+  await expect(cassia.getByLabel(`Willpower: ${before.value - 1} of ${before.most}`)).toBeVisible();
+  await cassia.getByRole("button", { name: /^Undo Willpower/ }).click();
+  await expect(cassia.getByLabel(`Willpower: ${before.value} of ${before.most}`)).toBeVisible();
+  await expect(cassia.getByRole("status")).toHaveText("Saved");
+  await expect.poll(async () => (await state("Cassia")).willpower.value).toBe(before.value);
+  await cassia.getByRole("button", { name: /^Log/ }).click();
+  await expect(cassia.getByText(/^Undid: Willpower/)).toBeVisible();
+
+  // Reset on a card puts that character back, and only that one.
+  await brant.getByRole("button", { name: /^Reset/ }).click();
+  await brant.getByRole("button", { name: "Reset for next game…" }).click();
+  await brant.getByRole("button", { name: "Reset for next game", exact: true }).click();
+  await expect(brant.getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(brant.getByLabel(/^Health: 0 of \d+ marked$/)).toBeVisible();
+  await expect(alder.getByLabel("Blood: 8 of 10")).toBeVisible();
+
+  // Removing one takes it off the page and off the device, not out of the troupe.
+  await cassia.getByRole("button", { name: "Remove Cassia from the scene" }).click();
+  await expect(p.getByRole("article")).toHaveCount(2);
+  await p.reload();
+  await expect(p.getByRole("article")).toHaveCount(2);
+  await expect(card("Cassia")).toHaveCount(0);
+  await search.click();
+  await expect(p.getByRole("option", { name: /Cassia/ })).toBeVisible();
+  await expect.poll(async () => (await state("Alder")).blood.value).toBe(8);
+});
+
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "profile-custodian");
@@ -2801,6 +2943,41 @@ test("only a character with a ritual discipline sees rituals, up to its path's l
   await expect(p.getByText("A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more.", { exact: false })).toBeVisible();
 });
 
+test("a Tremere names Path of Corruption as the primary path, once it is the first to 2 dots", async ({ browser }) => {
+  const { page: p } = await person(browser, "primary-tremere");
+  const id = await builtVampire(p, "Lucita", "Tremere", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Thaumaturgy: Path of Blood", 1], ["Dominate", 1]],
+  });
+  const put = async (category: string, name: string, rating: number, detail = "") => {
+    const response = await p.request.fetch(`/api/characters/${id}/traits`, { method: "PUT", headers: { "X-Horatio": "1" }, data: { category, name, rating, detail } });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+  };
+  const corruption = "Thaumaturgy: Path of Corruption";
+  await put("merits", "Thaumaturgic Expertise", 1, corruption);
+  await put("disciplines", corruption, 1);
+  await p.goto(`/characters/${id}`);
+
+  // The in-clan path is primary until another is named.
+  const picker = p.getByLabel("Primary path of Thaumaturgy");
+  await expect(picker).toHaveValue("Thaumaturgy: Path of Blood");
+  await expect(picker.getByRole("option", { name: "Path of Blood (in-clan)" })).toBeAttached();
+  await picker.selectOption({ label: "Path of Corruption" });
+  await expect(picker).toHaveValue(corruption);
+
+  // Named, it can reach 2 dots first, and nothing is flagged for it.
+  await put("disciplines", corruption, 2);
+  await p.reload();
+  await expect(p.getByLabel("Primary path of Thaumaturgy")).toHaveValue(corruption);
+  await expect(p.getByText("No path of Thaumaturgy can go above the primary path.")).toHaveCount(0);
+  await p.screenshot(shots("primary-path-named"));
+
+  // Path of Blood is no longer the highest, so it cannot be named back yet.
+  await p.getByLabel("Primary path of Thaumaturgy").selectOption({ label: "Path of Blood (in-clan)" });
+  await expect(p.getByText("Thaumaturgy: Path of Corruption is higher", { exact: false })).toBeVisible();
+});
+
 test("a troupe's Profile tab switches it public at once, About sets its XP range, and Waiting on you leads to the work", async ({ browser }) => {
   const custodian = await person(browser, "tidy-custodian");
   makeCustodian(custodian.email);
@@ -3143,7 +3320,7 @@ test("Derangement traits on the Play View: marked and undone, seen on another de
   const custodian = await person(browser, "derange-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "derange-lead");
-  const troupeName = `Court of Mirrors ${run}`;
+  const troupeName = `Court of Bedlam ${run}`;
   await custodian.page.reload();
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
@@ -3225,4 +3402,99 @@ test("Derangement traits on the Play View: marked and undone, seen on another de
   await expect(p.getByRole("status")).toHaveText("Saved");
   await other.reload();
   await expect(other.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
+});
+
+test("a coterie's shared Haven: staff set it up, a player logs a use, and the other sharer reads it in the log", async ({ browser }) => {
+  const custodian = await person(browser, "share-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "share-lead");
+  const first = await person(browser, "share-first");
+  const second = await person(browser, "share-second");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Shared Roof ${run}`, lead_handle: lead.handle });
+
+  // Agnes and Bram, both at home in the troupe.
+  const build = async (page: Page, name: string) => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const agnes = await build(first.page, "Agnes");
+  const bram = await build(second.page, "Bram");
+
+  // The lead sets up the coterie's Haven: Agnes puts in 2 dots, Bram 1.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("link", { name: "People", exact: true }).click();
+  await l.getByRole("link", { name: "Shared backgrounds" }).click();
+  await l.getByRole("button", { name: "Set up a shared background" }).click();
+  const setUp = l.getByRole("form", { name: "Set up a shared background" });
+  await setUp.getByLabel("Name").fill("The coterie's Haven");
+  await expect(setUp.getByLabel("Background")).toHaveValue("Haven");
+  await setUp.getByLabel("What it gives (optional)").fill("Security, Guards");
+  await setUp.getByLabel("Character 1", { exact: true }).selectOption({ label: "Agnes" });
+  await setUp.getByLabel("Dots 1", { exact: true }).fill("2");
+  await setUp.getByRole("button", { name: "Add a character" }).click();
+  await setUp.getByLabel("Character 2", { exact: true }).selectOption({ label: "Bram" });
+  await setUp.getByRole("button", { name: "Set up" }).click();
+  await expect(l.getByRole("heading", { name: "The coterie's Haven" })).toBeVisible();
+  await expect(l.getByText("3 of 5 dots")).toBeVisible();
+  await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots, Bram 1 dot.");
+  await expect(l.getByText(/A record only: nothing logged here changes a rating/)).toBeVisible();
+
+  // Agnes's player finds it on her page, and logs drawing on it.
+  const a = first.page;
+  await a.goto(`/characters/${agnes}`);
+  await a.locator("main").getByRole("link", { name: "Shared backgrounds" }).click();
+  await expect(a.getByRole("heading", { name: "The coterie's Haven" })).toBeVisible();
+  await expect(a.getByRole("button", { name: "Log dots" })).toHaveCount(0);
+  await a.getByRole("button", { name: "Log a use" }).click();
+  const use = a.getByRole("form", { name: "Log a use" });
+  await expect(use.getByLabel("Who drew on it")).toHaveValue(agnes);
+  await use.getByLabel("What for").fill("Hiding from the hunters for the day");
+  await use.getByRole("button", { name: "Log use" }).click();
+  const log = a.getByRole("list", { name: "The coterie's Haven log" });
+  await expect(log.getByRole("listitem").first()).toContainText("Agnes drew on it");
+  await expect(log.getByRole("listitem").first()).toContainText("Hiding from the hunters for the day");
+  await a.screenshot(shots("shared-background"));
+
+  // Bram's player reads it in the same log, but cannot take Agnes's use off it.
+  const b = second.page;
+  await b.goto(`/characters/${bram}/shared`);
+  const his = b.getByRole("list", { name: "The coterie's Haven log" });
+  await expect(his.getByRole("listitem").first()).toContainText("Hiding from the hunters for the day");
+  await expect(his.getByRole("listitem").first()).toContainText("logged by share-first");
+  await expect(his.getByRole("listitem").first().getByRole("button", { name: "Delete" })).toHaveCount(0);
+
+  // The lead logs Bram taking his dot out; the total follows the log.
+  await l.reload();
+  await expect(l.getByRole("list", { name: "The coterie's Haven log" }).getByRole("listitem").first()).toContainText("Agnes drew on it");
+  await l.getByRole("button", { name: "Log dots" }).click();
+  const dots = l.getByRole("form", { name: "Log dots" });
+  await dots.getByLabel("Dots", { exact: true }).selectOption("Taken out");
+  await dots.getByLabel("Who").selectOption({ label: "Bram (1 dot)" });
+  await dots.getByLabel("Note (optional)").fill("Left the coterie");
+  await dots.getByRole("button", { name: "Log dots" }).click();
+  await expect(l.getByText("2 of 5 dots")).toBeVisible();
+  await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
 });

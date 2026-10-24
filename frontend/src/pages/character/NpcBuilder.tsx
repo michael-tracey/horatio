@@ -5,7 +5,7 @@ import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/t
 import { Badge, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { PrintAndBadge } from "./Badge";
-import { identityChoices } from "./creation/logic";
+import { CUSTOM_ARCHETYPE, identityChoices } from "./creation/logic";
 import { MORALITY, heldMorality, moralityLabel, moralityOptions, moveMorality, willpowerAndHealth } from "./morality";
 
 type Change = { category: string; name: string; rating: number | null };
@@ -93,7 +93,7 @@ function Identity({ sheet, catalogue, onChange }: { sheet: SheetOut; catalogue: 
             >
               <option value="">Choose…</option>
               {catalogue.traits
-                .filter((t) => t.category === c.key)
+                .filter((t) => t.category === c.key && t.name !== CUSTOM_ARCHETYPE)
                 .map((t) => (
                   <option key={t.name}>{t.name}</option>
                 ))}

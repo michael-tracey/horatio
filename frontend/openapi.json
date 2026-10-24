@@ -2111,6 +2111,27 @@
         "title": "ConnectorOut",
         "type": "object"
       },
+      "ContributionIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "dots": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Dots",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "dots"
+        ],
+        "title": "ContributionIn",
+        "type": "object"
+      },
       "CostCategoryOut": {
         "properties": {
           "group": {
@@ -8076,6 +8097,17 @@
       },
       "PrimaryPathOut": {
         "properties": {
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
           "discipline": {
             "title": "Discipline",
             "type": "string"
@@ -8107,6 +8139,7 @@
           "discipline",
           "path",
           "native",
+          "default",
           "options"
         ],
         "title": "PrimaryPathOut",
@@ -9632,6 +9665,412 @@
         "title": "SettlementOverride",
         "type": "object"
       },
+      "SharedBackgroundChange": {
+        "properties": {
+          "background": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "SharedBackgroundChange",
+        "type": "object"
+      },
+      "SharedBackgroundIn": {
+        "properties": {
+          "background": {
+            "title": "Background",
+            "type": "string"
+          },
+          "contributions": {
+            "items": {
+              "$ref": "#/components/schemas/ContributionIn"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Contributions",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "background",
+          "contributions"
+        ],
+        "title": "SharedBackgroundIn",
+        "type": "object"
+      },
+      "SharedBackgroundOut": {
+        "properties": {
+          "background": {
+            "title": "Background",
+            "type": "string"
+          },
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/SharedEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "put_in": {
+            "title": "Put In",
+            "type": "integer"
+          },
+          "sharers": {
+            "items": {
+              "$ref": "#/components/schemas/SharerOut"
+            },
+            "title": "Sharers",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "troupe_name",
+          "name",
+          "background",
+          "notes",
+          "total",
+          "put_in",
+          "most",
+          "sharers",
+          "entries",
+          "can_manage",
+          "created_at"
+        ],
+        "title": "SharedBackgroundOut",
+        "type": "object"
+      },
+      "SharedCharacterChoice": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "title": "SharedCharacterChoice",
+        "type": "object"
+      },
+      "SharedChoicesOut": {
+        "properties": {
+          "backgrounds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Backgrounds",
+            "type": "array"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/SharedCharacterChoice"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          }
+        },
+        "required": [
+          "backgrounds",
+          "page",
+          "most",
+          "characters"
+        ],
+        "title": "SharedChoicesOut",
+        "type": "object"
+      },
+      "SharedEntryIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "dots": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dots"
+          },
+          "happened_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Happened At"
+          },
+          "kind": {
+            "enum": [
+              "contribution",
+              "withdrawal",
+              "use"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "purpose": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "character_id"
+        ],
+        "title": "SharedEntryIn",
+        "type": "object"
+      },
+      "SharedEntryOut": {
+        "properties": {
+          "can_delete": {
+            "title": "Can Delete",
+            "type": "boolean"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "dots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dots"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "contribution",
+              "withdrawal",
+              "use"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "logged_at": {
+            "format": "date-time",
+            "title": "Logged At",
+            "type": "string"
+          },
+          "logged_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logged By Name"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "happened_at",
+          "character_id",
+          "name",
+          "dots",
+          "purpose",
+          "note",
+          "logged_by_name",
+          "logged_at",
+          "can_delete"
+        ],
+        "title": "SharedEntryOut",
+        "type": "object"
+      },
+      "SharerOut": {
+        "properties": {
+          "can_log_use": {
+            "title": "Can Log Use",
+            "type": "boolean"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "dots": {
+            "title": "Dots",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "dots",
+          "can_log_use"
+        ],
+        "title": "SharerOut",
+        "type": "object"
+      },
       "SheetOut": {
         "properties": {
           "character_id": {
@@ -10772,6 +11211,7 @@
           "note": {
             "anyOf": [
               {
+                "maxLength": 1000,
                 "type": "string"
               },
               {
@@ -15532,6 +15972,54 @@
         ]
       }
     },
+    "/api/characters/{character_id}/shared-backgrounds": {
+      "get": {
+        "description": "The shared backgrounds the character has put dots in, that the reader sees.",
+        "operationId": "character_shared_api_characters__character_id__shared_backgrounds_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SharedBackgroundOut"
+                  },
+                  "title": "Response Character Shared Api Characters  Character Id  Shared Backgrounds Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Shared",
+        "tags": [
+          "shared backgrounds"
+        ]
+      }
+    },
     "/api/characters/{character_id}/sheet": {
       "get": {
         "operationId": "read_sheet_api_characters__character_id__sheet_get",
@@ -19303,6 +19791,225 @@
         ]
       }
     },
+    "/api/shared-background-entries/{entry_id}": {
+      "delete": {
+        "operationId": "unlog_entry_api_shared_background_entries__entry_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unlog Entry",
+        "tags": [
+          "shared backgrounds"
+        ]
+      }
+    },
+    "/api/shared-backgrounds/{shared_id}": {
+      "delete": {
+        "description": "Delete it and its whole log.",
+        "operationId": "remove_api_shared_backgrounds__shared_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shared_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shared Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove",
+        "tags": [
+          "shared backgrounds"
+        ]
+      },
+      "get": {
+        "operationId": "read_api_shared_backgrounds__shared_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shared_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shared Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBackgroundOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read",
+        "tags": [
+          "shared backgrounds"
+        ]
+      },
+      "patch": {
+        "operationId": "change_api_shared_backgrounds__shared_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shared_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shared Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedBackgroundChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBackgroundOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change",
+        "tags": [
+          "shared backgrounds"
+        ]
+      }
+    },
+    "/api/shared-backgrounds/{shared_id}/entries": {
+      "post": {
+        "description": "Log dots put in or taken out (staff), or a use (staff, or the character's\nplayer).",
+        "operationId": "log_entry_api_shared_backgrounds__shared_id__entries_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shared_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shared Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedEntryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBackgroundOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Log Entry",
+        "tags": [
+          "shared backgrounds"
+        ]
+      }
+    },
     "/api/system": {
       "get": {
         "operationId": "system_api_system_get",
@@ -22746,6 +23453,150 @@
         "summary": "Roll Table",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/shared-backgrounds": {
+      "get": {
+        "description": "Every shared background in the troupe, by name, for its staff.",
+        "operationId": "troupe_shared_api_troupes__troupe_id__shared_backgrounds_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SharedBackgroundOut"
+                  },
+                  "title": "Response Troupe Shared Api Troupes  Troupe Id  Shared Backgrounds Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Shared",
+        "tags": [
+          "shared backgrounds"
+        ]
+      },
+      "post": {
+        "description": "Set up a shared background, with the characters sharing it and their dots.",
+        "operationId": "create_api_troupes__troupe_id__shared_backgrounds_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedBackgroundIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBackgroundOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create",
+        "tags": [
+          "shared backgrounds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/shared-backgrounds/choices": {
+      "get": {
+        "description": "What a shared background can be, and the characters who can share it.",
+        "operationId": "choices_api_troupes__troupe_id__shared_backgrounds_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedChoicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choices",
+        "tags": [
+          "shared backgrounds"
         ]
       }
     },
