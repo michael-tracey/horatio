@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
@@ -39,6 +39,7 @@ export function DotGrid({
   details = {},
   onDetail,
   unavailable = {},
+  marks = {},
 }: {
   title: string;
   showTitle?: boolean;
@@ -55,6 +56,9 @@ export function DotGrid({
   onDetail?: (name: string, detail: string) => void;
   /** Traits the rules do not allow this character, and why. */
   unavailable?: Record<string, string>;
+  /** Picks kept where they no longer fit, and what to do (a starting dot on a
+   * discipline that is no longer in-clan): marked on their row, never dropped. */
+  marks?: Record<string, string>;
 }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const toggle = (name: string) => {
@@ -87,6 +91,7 @@ export function DotGrid({
     const rating = picks[key] ?? 0;
     const label = copy ? null : tag?.(trait);
     const barred = rating || copy ? undefined : unavailable[trait.name];
+    const marked = rating && !copy ? marks[trait.name] : undefined;
     const about = !copy && trait.description ? `about-${title}-${trait.name}`.replace(/\W+/g, "-") : undefined;
     const shown = open.has(trait.name);
     const fielded = trait.needs_field && onDetail && (rating > 0 || copy);
@@ -165,6 +170,7 @@ export function DotGrid({
           </span>
         </div>
         {barred && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{barred}</p>}
+        {marked && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{marked} Clear it and place it on another.</p>}
         {problems[key] && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{problems[key].message}</p>}
         {about && (
           <p id={about} hidden={!shown} className="mt-1 pl-6 text-xs leading-relaxed text-mist">
@@ -240,6 +246,7 @@ export function PointsList({
   quick = [],
   details = {},
   onDetail,
+  why,
 }: {
   title: string;
   traits: TraitOut[];
@@ -255,6 +262,8 @@ export function PointsList({
   /** The choice made for picks that grant something chosen (Personal Cult: which background). */
   details?: Record<string, string>;
   onDetail?: (name: string, detail: string) => void;
+  /** More on why a trait is refused: the earlier pick it is refused for. */
+  why?: (name: string) => ReactNode;
 }) {
   const filterable = traits.some((t) => t.kind || t.requirement);
   const [filter, setFilter] = useState("can");
@@ -317,6 +326,7 @@ export function PointsList({
                   <span className="text-parchment">{t.name}</span> <span className="text-gold">({points})</span>
                   {t.requirement && <span className="ml-2 text-xs text-mist">{t.requirement}</span>}
                   {barred && <span className="mt-0.5 block text-xs text-blood-bright">{barred}</span>}
+                  {barred && why?.(t.name) && <span className="mt-0.5 block text-xs text-mist">{why(t.name)}</span>}
                   {chosen && t.choices && onDetail && (
                     <Select
                       aria-label={`${t.name}: which?`}

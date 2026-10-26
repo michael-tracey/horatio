@@ -1154,6 +1154,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/refusals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Refusals
+         * @description As `GET /unavailable`, with the traits held elsewhere on the sheet that each
+         *     refusal is because of, so the wizard can point to the step that holds them.
+         */
+        get: operations["refusals_api_characters__character_id__refusals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/retainers": {
         parameters: {
             query?: never;
@@ -6781,6 +6802,11 @@ export interface components {
         PickedTrait: {
             /** Detail */
             detail: string;
+            /**
+             * Fits
+             * @default true
+             */
+            fits: boolean;
             /** Name */
             name: string;
             /** Pick */
@@ -7012,6 +7038,8 @@ export interface components {
             category_name: string;
             /** Kind */
             kind: string;
+            /** Options */
+            options?: string[] | null;
             /** Rating */
             rating: number;
             /** Remaining */
@@ -7223,6 +7251,11 @@ export interface components {
         ProblemOut: {
             /** Category */
             category: string;
+            /**
+             * Looks At
+             * @default []
+             */
+            looks_at: components["schemas"]["TraitRefOut"][];
             /** Message */
             message: string;
             /** Name */
@@ -7522,6 +7555,16 @@ export interface components {
             settlement: string | null;
             /** Trait */
             trait: string;
+        };
+        /**
+         * RefusalOut
+         * @description Why a trait cannot be taken.
+         */
+        RefusalOut: {
+            /** Because */
+            because: components["schemas"]["TraitRefOut"][];
+            /** Message */
+            message: string;
         };
         /** RemovedOut */
         RemovedOut: {
@@ -8467,6 +8510,13 @@ export interface components {
             page_reference: string | null;
             /** Requirement */
             requirement?: string | null;
+        };
+        /** TraitRefOut */
+        TraitRefOut: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string | null;
         };
         /** TroupeChanges */
         TroupeChanges: {
@@ -11317,6 +11367,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refusals_api_characters__character_id__refusals_get: {
+        parameters: {
+            query: {
+                category: string;
+                as_if?: "sheet" | "picks" | "empty";
+                picks?: string[] | null;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["RefusalOut"];
+                    };
                 };
             };
             /** @description Validation Error */

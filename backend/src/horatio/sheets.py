@@ -499,6 +499,16 @@ def blocking(violation: Violation, character: Character) -> bool:
 FIELD_TO_BE_CHOSEN = "(to be chosen)"
 
 
+@dataclass(frozen=True)
+class Refusal:
+    """Why a trait cannot be taken, and the traits held elsewhere on the sheet that
+    the refusing check looks at, as (category, name): Archaic's Computer on Skills,
+    or the clan a clan merit is not for."""
+
+    message: str
+    because: tuple[tuple[str, str], ...] = ()
+
+
 def unavailable(
     db: Session,
     character: Character,
@@ -507,6 +517,20 @@ def unavailable(
     picks: Sequence[str] = (),
     planned: Sequence[SheetTrait] | None = None,
 ) -> dict[str, str]:
+    """For each trait in a category the character does not hold, why it cannot be
+    taken (`refusals`, by message alone)."""
+    found = refusals(db, character, category_key, as_if, picks, planned)
+    return {name: refusal.message for name, refusal in found.items()}
+
+
+def refusals(
+    db: Session,
+    character: Character,
+    category_key: str,
+    as_if: str = "sheet",
+    picks: Sequence[str] = (),
+    planned: Sequence[SheetTrait] | None = None,
+) -> dict[str, Refusal]:
     """For each trait in a category the character does not hold, why a check would
     refuse it, or the troupe's costs say it cannot be bought, if either would. A
     merit or flaw is tried at its point value, a ritual at its level, anything else
@@ -571,7 +595,20 @@ def unavailable(
             about_named.setdefault(check.name, []).append(i)
         for key in check.looks_at:
             looking.setdefault(key, []).append(i)
-    reasons: dict[str, str] = {}
+    reasons: dict[str, Refusal] = {}
+
+    def because(violation: Violation) -> tuple[tuple[str, str], ...]:
+        looks = violation.check.looks_at
+        return tuple(
+            dict.fromkeys(
+                (t.category, t.full_name)
+                for t in sheet
+                if t.category != category_key
+                and t.rating != 0
+                and ((t.category, t.name) in looks or (t.category, None) in looks)
+            )
+        )
+
     for category, name in rule_set.traits:
         if category != category_key or name in held:
             continue
@@ -613,11 +650,12 @@ def unavailable(
         if new:
             # The trait's own problem first: "Talisman is already…" when trying Spellslinger.
             own = [v for v in new if v.subject.name == name]
-            reasons[name] = (own or new)[0].message
+            first = (own or new)[0]
+            reasons[name] = Refusal(first.message, because(first))
         elif as_if == "sheet" and rating is not None:
             refused = not_for_sale(rules, sheet, category, name, rating)
             if refused is not None:
-                reasons[name] = refused
+                reasons[name] = Refusal(refused)
     return reasons
 
 

@@ -1188,9 +1188,134 @@ test("a Caitiff chooses their in-clan disciplines while creating", async ({ brow
     await expect(page.getByRole("checkbox", { name })).toBeChecked();
   }
   await expect(page.getByText("In-clan disciplines (3 of 3)")).toBeVisible();
-  // Uncommon disciplines are never offered; once three are chosen, nothing else is.
+  // Uncommon disciplines are not offered without a merit that opens them.
   await expect(page.getByRole("checkbox", { name: "Protean" })).toHaveCount(0);
-  await expect(page.getByRole("checkbox", { name: "Dominate" })).toHaveCount(0);
+  // With three chosen, another is still offered: tapping it asks which to swap out.
+  await page.getByRole("checkbox", { name: "Dominate" }).click();
+  await page.getByRole("group", { name: "Make room for Dominate" }).getByRole("button", { name: "Swap Auspex for Dominate" }).click();
+  await expect(page.getByRole("checkbox", { name: "Dominate" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Auspex" })).not.toBeChecked();
+  await expect(page.getByText("In-clan disciplines (3 of 3)")).toBeVisible();
+});
+
+/** A vampire in character creation built through the API: its clan, the in-clan
+ * disciplines it chooses, and the creation picks of `build`. */
+async function creatingVampire(p: Page, name: string, clan: string, inClan: string[], build: Record<string, [string, number][]> = {}) {
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: clan, rating: null });
+  for (const discipline of inClan) await send("PUT", `/api/characters/${id}/traits`, { category: "extra_in_clan_disciplines", name: discipline, rating: 1 });
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([trait, rating]) => ({ name: trait, rating })) });
+  return id as string;
+}
+
+test("a Caitiff takes Vestiges of Greatness on Merits, swaps Celerity for Dementation on Concept, and is shown the starting dots to move", async ({ browser }) => {
+  const { page: p } = await person(browser, "vestiges-late");
+  const id = await creatingVampire(p, "Patchwork", "Caitiff", ["Auspex", "Celerity", "Potence"], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Auspex", 1], ["Potence", 1]],
+  });
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Search Merits").fill("Vestiges");
+  await p.getByRole("checkbox", { name: /^Vestiges of Greatness/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  // Review says what the merit opened on Concept, and links there.
+  const settle = p.getByRole("region", { name: "Still to settle" });
+  await expect(settle).toContainText("Vestiges of Greatness: choose one of your in-clan disciplines from Dementation");
+  await settle.getByRole("link", { name: "Go to Concept" }).click();
+  await expect(p.getByText("Two from the common ones and one from the uncommon ones (Vestiges of Greatness).")).toBeVisible();
+  await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText("Vestiges of Greatness: choose one");
+
+  // Three are held, but the uncommon ones are open, not greyed out: tapping one offers a swap.
+  await p.getByRole("checkbox", { name: "Dementation" }).click();
+  await p.getByRole("group", { name: "Make room for Dementation" }).getByRole("button", { name: "Swap Celerity for Dementation" }).click();
+  await expect(p.getByRole("checkbox", { name: "Dementation" })).toBeChecked();
+  await expect(p.getByRole("checkbox", { name: "Celerity" })).not.toBeChecked();
+  await expect(p.getByText("Vestiges of Greatness: choose one")).toHaveCount(0);
+
+  // The starting dots on Celerity are kept, not dropped: Concept and the stepper say they need moving.
+  await expect(p.getByText("Your starting dots in Celerity need moving: it is no longer in-clan.")).toBeVisible();
+  await expect(p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Disciplines \(needs a look\)/ })).toBeVisible();
+  await p.getByRole("link", { name: "Go to Disciplines" }).click();
+  await expect(p.getByRole("heading", { name: "Disciplines", exact: true })).toBeVisible();
+  await expect(p.getByText("Your starting dots in Celerity need moving: it is no longer in-clan. Clear it and place it on another.")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Celerity 2" })).toHaveAttribute("aria-pressed", "true");
+  await p.getByRole("button", { name: "Clear Celerity" }).click();
+  await p.getByRole("button", { name: "Dementation 2" }).click();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible();
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+});
+
+test("a Caitiff takes Vestiges of Greatness from Concept, and a second uncommon discipline is refused", async ({ browser }) => {
+  const { page: p } = await person(browser, "vestiges-early");
+  const id = await creatingVampire(p, "Threadbare", "Caitiff", ["Auspex", "Celerity", "Potence"]);
+  await p.goto(`/characters/${id}/create/concept`);
+  const fromMerits = p.getByRole("region", { name: "From merits" });
+  const vestiges = fromMerits.getByRole("switch", { name: /^Vestiges of Greatness/ });
+  // Each switch waits for the server, so it is tapped, then found on.
+  await vestiges.click();
+  await expect(vestiges).toBeChecked();
+  await expect(fromMerits.getByText("3 of 7 points")).toBeVisible();
+  await expect(p.getByText("Two from the common ones and one from the uncommon ones (Vestiges of Greatness).")).toBeVisible();
+  await p.getByRole("checkbox", { name: "Dementation" }).click();
+  await p.getByRole("group", { name: "Make room for Dementation" }).getByRole("button", { name: "Swap Potence for Dementation" }).click();
+  await expect(p.getByRole("checkbox", { name: "Dementation" })).toBeChecked();
+
+  // A second from the uncommon list is refused: the only swap offered is for the first.
+  await p.getByRole("checkbox", { name: "Protean" }).click();
+  const room = p.getByRole("group", { name: "Make room for Protean" });
+  await expect(room).toContainText("Vestiges of Greatness gives one in-clan discipline from the uncommon list, not more.");
+  await expect(room.getByRole("button", { name: /^Swap / })).toHaveText(["Swap Dementation for Protean"]);
+  await room.getByRole("button", { name: "Cancel" }).click();
+
+  // The Merits step shows the merit as taken, from the same points. (The stepper holds
+  // the way there until Backgrounds has Generation.)
+  await p.goto(`/characters/${id}/create/merits`);
+  await expect(p.getByRole("checkbox", { name: /^Vestiges of Greatness/ })).toBeChecked();
+  await expect(p.getByText("3 of 7 points")).toBeVisible();
+});
+
+test("a Brujah takes Additional Uncommon Discipline from Concept and chooses Protean", async ({ browser }) => {
+  const { page: p } = await person(browser, "aud-brujah");
+  const id = await creatingVampire(p, "Roadkill", "Brujah", []);
+  await p.goto(`/characters/${id}/create/concept`);
+  await expect(p.getByText("In-clan now: Celerity, Potence and Presence.")).toBeVisible();
+  const fromMerits = p.getByRole("region", { name: "From merits" });
+  // Caitiff merits are not offered to a Brujah.
+  await expect(fromMerits.getByRole("switch", { name: /^Vestiges of Greatness/ })).toHaveCount(0);
+  await fromMerits.getByRole("switch", { name: /^Additional Uncommon Discipline/ }).click();
+  await expect(fromMerits.getByRole("switch", { name: /^Additional Uncommon Discipline/ })).toBeChecked();
+  await expect(p.getByText("One extra in-clan discipline from the uncommon ones (Additional Uncommon Discipline).")).toBeVisible();
+  await expect(p.getByText("Additional Uncommon Discipline: choose the in-clan discipline it adds.")).toBeVisible();
+  // Only the merit's list is offered.
+  await expect(p.getByRole("checkbox", { name: "Auspex" })).toHaveCount(0);
+  await p.getByRole("checkbox", { name: "Protean" }).click();
+  await expect(p.getByRole("checkbox", { name: "Protean" })).toBeChecked();
+  await expect(p.getByText("In-clan now: Celerity, Potence, Presence and Protean.")).toBeVisible();
+  await expect(p.getByText("Additional Uncommon Discipline: choose the in-clan discipline it adds.")).toHaveCount(0);
+
+  // On Merits, a merit refused for the clan says so, and links back to Concept.
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Show Merits").selectOption("Everything");
+  await p.getByLabel("Search Merits").fill("Inceptor");
+  const inceptor = p.locator("li").filter({ hasText: /^Inceptor/ });
+  await expect(inceptor).toContainText("Refused while you are Brujah (Concept)");
+  await inceptor.getByRole("link", { name: "Concept" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
 });
 
 test("a player makes up an archetype in the creation wizard, and it shows on the sheet and the printed sheet", async ({ browser }) => {

@@ -192,6 +192,66 @@ def test_caitiff_choose_three_common_in_clan_disciplines(troupe: Troupe) -> None
     assert (fourth.status_code, uncommon.status_code) == (409, 409)
 
 
+def test_a_starting_dot_left_out_of_clan_is_kept_and_marked_until_it_moves(
+    troupe: Troupe,
+) -> None:
+    character_id = caitiff_build(troupe, thin_blooded=False)
+    player = troupe.player
+    for name, rating in (("Celerity", 2), ("Auspex", 1), ("Potence", 1)):
+        assert pick(player, character_id, "disciplines", name, rating).status_code == 200
+    assert pick(player, character_id, "merits", "Vestiges of Greatness", 3).status_code == 200
+
+    # Celerity is swapped for Dementation, in one go.
+    swapped = player.client.post(
+        f"/characters/{character_id}/cart",
+        json={
+            "changes": [
+                {"kind": "set", "category": "extra_in_clan_disciplines", "name": n, "rating": r}
+                for n, r in (("Celerity", 0), ("Dementation", 1))
+            ]
+        },
+    )
+    assert swapped.json()["applied"] is True, swapped.text
+
+    def disciplines() -> list[dict[str, Any]]:
+        state = player.client.get(f"/characters/{character_id}/creation").json()
+        return [p for p in state["pools"] if p["category"] == "disciplines"]
+
+    # The dot on Celerity is kept, marked as no longer fitting; the pools offer Dementation.
+    at_two = next(p for p in disciplines() if p["rating"] == 2)
+    assert at_two["traits"] == [{"name": "Celerity", "detail": "", "pick": 2, "fits": False}]
+    assert at_two["options"] == ["Auspex", "Dementation", "Potence"]
+    # Finishing refuses it, until it moves.
+    refused = player.client.post(f"/characters/{character_id}/creation/complete")
+    assert refused.status_code == 409
+    assert "Celerity" in refused.json()["detail"]
+
+    def save(picks: list[tuple[str, int]]) -> Any:
+        return player.client.put(
+            f"/characters/{character_id}/creation/categories/disciplines",
+            json={"picks": [{"name": n, "rating": r} for n, r in picks]},
+        )
+
+    # The step saves with it kept where it was, but nothing new goes out of clan.
+    assert save([("Celerity", 2), ("Auspex", 1), ("Potence", 1)]).status_code == 200
+    assert save([("Celerity", 1), ("Auspex", 2), ("Potence", 1)]).status_code == 422
+    assert save([("Dementation", 2), ("Auspex", 1), ("Potence", 1)]).status_code == 200
+    assert all(t["fits"] for p in disciplines() for t in p["traits"])
+    finished = player.client.post(f"/characters/{character_id}/creation/complete")
+    assert finished.status_code == 200, finished.text
+
+
+def test_a_refused_merit_names_the_earlier_pick_it_is_refused_for(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Brujah", finished=False)
+
+    refusals = troupe.player.client.get(
+        f"/characters/{character_id}/refusals", params={"category": "merits"}
+    ).json()
+
+    assert refusals["Inceptor"]["because"] == [{"category": "clan", "name": "Brujah"}]
+    assert "Caitiff" in refusals["Inceptor"]["message"]
+
+
 def test_a_clan_does_not_take_extra_in_clan_disciplines_without_a_merit(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player, clan="Brujah")
 

@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
-import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut } from "../../../api/types";
+import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut, TraitRefOut } from "../../../api/types";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../../components/ui";
-import { useAction, useUnavailable } from "../../../hooks";
+import { useAction, useRefusals, useUnavailable } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
 import { useCart } from "../cart";
 import { FinishCreation } from "../CartPanel";
@@ -14,8 +14,21 @@ import { DotGrid, PointsList } from "./DotGrid";
 import { fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
 import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, traitOf, type Allowed, type Picks } from "./logic";
+import { FromMerits } from "./FromMerits";
+import { EXTRA_IN_CLAN, IN_CLAN_MERITS, inClanChoices } from "./inClan";
+import { InClanPicker } from "./InClanPicker";
+import { brokenChecks, stepFor, stepNotices, strayPicks, type NoticeSource, type StepNotice, type StepRef } from "./notices";
 
-type Step = { key: string; title: string; categories: string[]; intro?: string };
+/** A step: the categories it places picks in, and those it decides without picks. */
+type Step = StepRef & { intro?: string };
+
+/** Where cross-step notices come from (notices.ts): a step that needs a new kind adds its source here. */
+const NOTICE_SOURCES: NoticeSource[] = [inClanChoices, strayPicks, brokenChecks];
+
+/** Merits and flaws that change a step, offered on it as well as on Merits & flaws (#192). */
+const FROM_MERITS: Record<string, { category: string; name: string }[]> = {
+  concept: IN_CLAN_MERITS.map((name) => ({ category: "merits", name })),
+};
 
 /** Wizard steps, in the order a player builds a character. Any category with
  * creation picks that no step names gets a step of its own before merits. */
@@ -28,7 +41,7 @@ const ORDER: Step[] = [
   { key: "merits", title: "Merits & flaws", categories: ["merits", "flaws"], intro: "Each comes from its own budget of points. Both are optional." },
 ];
 
-function buildSteps(creation: CreationOut): Step[] {
+function buildSteps(creation: CreationOut, catalogue: CatalogueOut): Step[] {
   const present = new Set(creation.pools.map((p) => p.category));
   const known = new Set(ORDER.flatMap((s) => s.categories));
   const steps = ORDER.map((s) => ({ ...s, categories: s.categories.filter((c) => present.has(c)) })).filter((s) => s.categories.length);
@@ -37,7 +50,9 @@ function buildSteps(creation: CreationOut): Step[] {
     .map((c) => ({ key: c, title: creation.pools.find((p) => p.category === c)!.category_name, categories: [c] }));
   const merits = steps.findIndex((s) => s.key === "merits");
   steps.splice(merits === -1 ? steps.length : merits, 0, ...extra);
-  return [{ key: "concept", title: "Concept", categories: [] }, ...steps, { key: "review", title: "Review", categories: [] }];
+  // Concept decides the unrated choices (clan, sect…) and the extra in-clan disciplines.
+  const decides = [...catalogue.categories.filter((c) => !c.rated).map((c) => c.key), EXTRA_IN_CLAN];
+  return [{ key: "concept", title: "Concept", categories: [], decides }, ...steps, { key: "review", title: "Review", categories: [] }];
 }
 
 /** The picks already saved, and the detail saved with each (a merit's choice, a
@@ -76,7 +91,8 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
     return <ErrorText error={creation.error ?? sheet.error ?? catalogue.error} />;
   }
 
-  const steps = buildSteps(creation.data);
+  const steps = buildSteps(creation.data, catalogue.data);
+  const notices = stepNotices({ creation: creation.data, sheet: sheet.data, steps }, NOTICE_SOURCES);
   const index = Math.max(0, steps.findIndex((s) => s.key === stepKey));
   // The first step that still needs something (a vampire's Generation): no going past it.
   const needs = creation.data.needs;
@@ -105,6 +121,14 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
                 className={`block rounded px-3 py-1.5 text-sm whitespace-nowrap ${i === index ? "bg-dusk text-gold" : "text-mist hover:text-parchment"}`}
               >
                 {i + 1}. {s.title}
+                {notices.some((n) => n.on.includes(s.key)) && (
+                  <>
+                    <span aria-hidden className="ml-1.5 text-blood-bright" title="Something here needs a look">
+                      •
+                    </span>
+                    <span className="sr-only"> (needs a look)</span>
+                  </>
+                )}
               </Link>
               )}
             </li>
@@ -121,6 +145,7 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
         onBack={index > 0 ? () => go(index - 1) : undefined}
         onNext={index < steps.length - 1 ? () => go(index + 1) : undefined}
         steps={steps}
+        notices={notices}
       />
     </div>
   );
@@ -135,6 +160,7 @@ function StepView({
   onBack,
   onNext,
   steps,
+  notices,
 }: {
   character: CharacterOut;
   step: Step;
@@ -144,6 +170,7 @@ function StepView({
   onBack?: () => void;
   onNext?: () => void;
   steps: Step[];
+  notices: StepNotice[];
 }) {
   // Keyed by content, so a refetch that brings back the same saved picks (as the last
   // step's save does) doesn't wipe taps on this step that aren't saved yet.
@@ -190,17 +217,23 @@ function StepView({
 
   const traitsOf = (category: string) => catalogue.traits.filter((t) => t.category === category);
   const nameOf = (category: string) => catalogue.categories.find((c) => c.key === category)?.name ?? category;
-  const clan = sheet.traits.find((t) => t.category === "clan")?.name;
-  const inClan = new Set([
-    ...(catalogue.traits.find((t) => t.category === "clan" && t.name === clan)?.in_clan ?? []),
-    ...sheet.traits.filter((t) => t.category === "extra_in_clan_disciplines").map((t) => t.name),
-  ]);
+  // This step's notices, but for what it already holds the wizard to (its needs, below).
+  const here = notices.filter((n) => n.on.includes(step.key) && !needs.some((need) => need.message === n.message));
+  // Picks kept on traits they no longer fit, by category then trait: marked where they are.
+  const strays: Record<string, Record<string, string>> = {};
+  for (const n of here) if (n.trait && n.fix === step.key) (strays[n.trait.category] ??= {})[n.trait.name] = n.message;
 
   return (
     <Card title={step.title} className="min-w-0">
       {step.intro && <p className="mb-4 text-sm text-mist">{step.intro}</p>}
-      {step.key === "concept" && <ConceptStep character={character} sheet={sheet} catalogue={catalogue} />}
-      {step.key === "review" && <ReviewStep character={character} creation={creation} catalogue={catalogue} steps={steps} />}
+      {step.key !== "review" && <StepNotices character={character} notices={here} step={step} steps={steps} />}
+      {step.key === "concept" && <ConceptStep character={character} creation={creation} sheet={sheet} catalogue={catalogue} />}
+      {step.key === "review" && <ReviewStep character={character} creation={creation} catalogue={catalogue} steps={steps} notices={notices} />}
+      {FROM_MERITS[step.key] && step.key !== "concept" && (
+        <div className="mb-6">
+          <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS[step.key]!} />
+        </div>
+      )}
       {/* Held while saving: the save reloads the picks, which would drop a tap made meanwhile. */}
       <fieldset disabled={save.isPending} className="flex min-w-0 flex-col gap-8">
         {step.categories.map((category) => {
@@ -221,13 +254,21 @@ function StepView({
                 quick={quickPicks(traitsOf(category), sheet.traits)}
                 details={details[category] ?? {}}
                 onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
+                steps={steps}
+                step={step}
               />
             );
           }
           let traits = traitsOf(category);
-          // Picks restricted to in-clan disciplines offer only those.
-          if (pools.some((p) => p.restriction === "in_clan")) traits = traits.filter((t) => inClan.has(t.name));
-          if (traits.length === 0 && pools.some((p) => p.restriction === "in_clan")) {
+          // Picks restricted to some traits (in-clan disciplines) offer only those the
+          // server says fit now, and any already placed that no longer do (marked).
+          const restricted = pools.find((p) => p.options);
+          if (restricted) {
+            const fit = new Set(restricted.options);
+            const placed = new Set(Object.keys(mine).map(traitOf));
+            traits = traits.filter((t) => fit.has(t.name) || placed.has(t.name));
+          }
+          if (traits.length === 0 && restricted?.restriction === "in_clan") {
             return (
               <Notice key={category}>
                 Starting {nameOf(category).toLowerCase()} must be in-clan. Choose a clan on the Concept step first.
@@ -247,6 +288,7 @@ function StepView({
               onChange={set}
               details={details[category] ?? {}}
               onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
+              marks={strays[category]}
               sections={
                 traits.some((t) => t.attribute)
                   ? { order: ["Physical", "Social", "Mental"], of: (t: TraitOut) => t.attribute }
@@ -276,7 +318,7 @@ function StepView({
   );
 }
 
-function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut; sheet: SheetOut; catalogue: CatalogueOut }) {
+function ConceptStep({ character, creation, sheet, catalogue }: { character: CharacterOut; creation: CreationOut; sheet: SheetOut; catalogue: CatalogueOut }) {
   const choose = useAction((body: { category: string; name: string }) =>
     unwrap(
       api.PUT("/api/characters/{character_id}/traits", {
@@ -318,9 +360,23 @@ function ConceptStep({ character, sheet, catalogue }: { character: CharacterOut;
       {(makingOwn || sheet.traits.some((t) => t.category === "archetype" && t.name === CUSTOM_ARCHETYPE)) && (
         <OwnArchetype character={character} sheet={sheet} onSaved={() => setMakingOwn(false)} />
       )}
-      {clanOf(sheet) === "Caitiff" && <ExtraInClan character={character} sheet={sheet} catalogue={catalogue} />}
+      {clanOf(sheet) && <InClanNow creation={creation} />}
+      {clanOf(sheet) && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
+      {clanOf(sheet) && <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS.concept!} />}
     </div>
   );
+}
+
+/** The disciplines in-clan now, as the server works them out: the clan's, or those a
+ * merit sets in their place, and the extra ones. Starting dots go on these. */
+function InClanNow({ creation }: { creation: CreationOut }) {
+  const options = creation.pools.find((p) => p.restriction === "in_clan")?.options;
+  if (!options?.length) return null;
+  return <p className="text-sm text-mist">In-clan now: {listed(options)}.</p>;
+}
+
+function listed(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
 }
 
 /** An archetype of the player's own (p. 86): a name, and what it means for the character. */
@@ -359,53 +415,18 @@ function clanOf(sheet: SheetOut): string | undefined {
   return sheet.traits.find((t) => t.category === "clan")?.name;
 }
 
-/** A Caitiff has no clan disciplines: the player picks three, from the common ones (p. 246). */
-function ExtraInClan({ character, sheet, catalogue }: { character: CharacterOut; sheet: SheetOut; catalogue: CatalogueOut }) {
-  const unavailable = useUnavailable(character.id, "extra_in_clan_disciplines").data ?? {};
-  const held = new Set(sheet.traits.filter((t) => t.category === "extra_in_clan_disciplines").map((t) => t.name));
-  const toggle = useAction((body: { name: string; on: boolean }) =>
-    unwrap(
-      api.PUT("/api/characters/{character_id}/traits", {
-        params: { path: { character_id: character.id } },
-        body: { category: "extra_in_clan_disciplines", name: body.name, detail: "", rating: body.on ? 1 : 0, teacher: "" },
-      }),
-    ),
-  );
-  const options = catalogue.traits.filter(
-    (t) => t.category === "extra_in_clan_disciplines" && (held.has(t.name) || !(t.name in unavailable)) && !t.name.includes(":"),
-  );
-  return (
-    <fieldset className="flex flex-col gap-2 rounded-md border border-ash p-3">
-      <legend className="px-1 text-sm text-parchment">In-clan disciplines ({held.size} of 3)</legend>
-      <p className="text-xs text-mist">Caitiff choose their three in-clan disciplines from the common ones.</p>
-      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
-        {options.map((t) => (
-          <label key={t.name} className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={held.has(t.name)}
-              disabled={toggle.isPending || (!held.has(t.name) && held.size >= 3)}
-              onChange={(e) => toggle.mutate({ name: t.name, on: e.target.checked })}
-            />
-            {t.name}
-          </label>
-        ))}
-      </div>
-      <ErrorText error={toggle.error} />
-    </fieldset>
-  );
-}
-
 function ReviewStep({
   character,
   creation,
   catalogue,
   steps,
+  notices,
 }: {
   character: CharacterOut;
   creation: CreationOut;
   catalogue: CatalogueOut;
   steps: Step[];
+  notices: StepNotice[];
 }) {
   const navigate = useNavigate();
   // Picks placed on the Sheet tab wait in the cart; finishing asks what to do with them.
@@ -422,6 +443,34 @@ function ReviewStep({
 
   return (
     <div className="flex flex-col gap-4">
+      {notices.length > 0 && (
+        <section aria-label="Still to settle" className="flex flex-col gap-1">
+          <h3 className="text-sm text-gold">Still to settle</h3>
+          <ul className="flex flex-col gap-1 text-sm">
+            {notices.map((n) => {
+              const at = steps.find((s) => s.key === n.fix);
+              return (
+                <li key={n.key} className="flex gap-2">
+                  <span aria-hidden className="text-blood-bright">
+                    •
+                  </span>
+                  <span>
+                    {n.message}
+                    {at && (
+                      <>
+                        {" "}
+                        <Link className="text-gold underline" to={`/characters/${character.id}/create/${at.key}`}>
+                          Go to {at.title}
+                        </Link>
+                      </>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       <ul className="flex flex-col gap-2 text-sm">
         {creation.pools.map((p) => {
           const done = p.kind === "points" || p.remaining === 0;
@@ -482,12 +531,67 @@ function ReviewStep({
   );
 }
 
-/** A points list that greys out what the rules do not allow this character. */
-/** A merits or flaws list whose greying follows the ticks as they change, before the step is saved. */
-function CheckedPointsList({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof PointsList>[0]) {
-  const unavailable = useUnavailable(characterId, category, true, { asIf: "picks", picks: Object.keys(props.picks).sort() });
+/** This step's cross-step notices, each linking to where it is put right. */
+function StepNotices({ character, notices, step, steps }: { character: CharacterOut; notices: StepNotice[]; step: Step; steps: Step[] }) {
+  if (!notices.length) return null;
+  return (
+    <div aria-label="Changed by other steps" role="group" className="mb-6 flex flex-col gap-2">
+      {notices.map((n) => {
+        const at = n.fix !== step.key ? steps.find((s) => s.key === n.fix) : undefined;
+        return (
+          <Notice key={n.key}>
+            {n.message}
+            {at && (
+              <>
+                {" "}
+                <Link className="text-gold underline" to={`/characters/${character.id}/create/${at.key}`}>
+                  Go to {at.title}
+                </Link>
+              </>
+            )}
+          </Notice>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * A merits or flaws list whose greying follows the ticks as they change, before the
+ * step is saved. A refusal because of a pick on an earlier step names that pick and
+ * links to its step (rule 5 of #192).
+ */
+function CheckedPointsList({
+  characterId,
+  category,
+  steps,
+  step,
+  ...props
+}: { characterId: string; category: string; steps: Step[]; step: Step } & Parameters<typeof PointsList>[0]) {
+  const refusals = useRefusals(characterId, category, true, { asIf: "picks", picks: Object.keys(props.picks).sort() }).data ?? {};
   const barred = useUnavailable(characterId, category, true, { asIf: "empty" });
-  return <PointsList {...props} unavailable={unavailable.data ?? {}} barred={barred.data} />;
+  const unavailable = Object.fromEntries(Object.entries(refusals).map(([name, r]) => [name, r.message]));
+  const before = steps.indexOf(step);
+  const why = (name: string): ReactNode => {
+    const earlier = new Map<Step, TraitRefOut[]>();
+    for (const t of refusals[name]?.because ?? []) {
+      const at = stepFor(steps, t.category) as Step | undefined;
+      if (!at || !t.name || steps.indexOf(at) >= before) continue;
+      earlier.set(at, [...(earlier.get(at) ?? []), t]);
+    }
+    if (!earlier.size) return null;
+    return [...earlier].map(([at, refs], i) => (
+      <Fragment key={at.key}>
+        {i > 0 && "; "}
+        Refused while you {refs.every((t) => t.category === "clan") ? "are" : "have"} {listed(refs.map((t) => t.name!))} (
+        <Link className="text-gold underline" to={`/characters/${characterId}/create/${at.key}`}>
+          {at.title}
+        </Link>
+        )
+      </Fragment>
+    ));
+  };
+  return <PointsList {...props} unavailable={unavailable} barred={barred.data} why={why} />;
 }
 
 function CheckedDotGrid({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof DotGrid>[0]) {
