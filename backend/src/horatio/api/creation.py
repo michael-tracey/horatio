@@ -25,6 +25,9 @@ class PickedTrait(BaseModel):
     fits: bool = True
     # What leaves it without a free dot, if that is why it does not fit (Inept).
     because: list[TraitRefOut] = []
+    # The traits that make this trait free without the pick (Personal Cult for Herd), so
+    # the pick can go elsewhere. Empty when the pick is still worth its dots.
+    freed_by: list[TraitRefOut] = []
 
 
 class WithoutDot(BaseModel):
@@ -54,6 +57,16 @@ class PoolOut(BaseModel):
     # it): the traits held that took it away, such as Thin Blooded.
     because: list[TraitRefOut] = []
     traits: list[PickedTrait]
+
+
+class GivenOut(BaseModel):
+    """A trait held without a creation pick, because a merit gives it: it cannot take one."""
+
+    category: str
+    name: str
+    detail: str
+    rating: int
+    because: list[TraitRefOut]
 
 
 class PathStart(BaseModel):
@@ -87,6 +100,8 @@ class CreationOut(BaseModel):
     # Paths whose Morality starts lower than Humanity's 5, for the merits bought now.
     path_starts: list[PathStart] = []
     budget_changes: list[BudgetChange] = []
+    # Traits in the categories that take picks which merits give, with no pick of their own.
+    given: list[GivenOut] = []
     # What the sheet must have before the wizard moves on from a step.
     needs: list[StepNeed]
 
@@ -123,6 +138,7 @@ def refs(found: Iterable[tuple[str, str]]) -> list[TraitRefOut]:
 def creation_out(db: DbSession, character: Character) -> CreationOut:
     catalogue = creation.rules_for(db, character).rule_set.categories
     fits = creation.fitting(db, character)
+    freed = creation.freed_picks(db, character)
     needs = [
         StepNeed(step=v.check.step, message=v.message)
         for v in sheets.sheet_violations(db, character)
@@ -154,23 +170,32 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
                     because=refs(fits.without_dot(p, r.definition.name, r.trait.detail))
                     if p.restriction
                     else [],
+                    freed_by=refs(freed.get(r.key, [])),
                 )
                 for r in p.traits
             ],
         )
 
+    placed = creation.pools_with_strays(db, character)
     return CreationOut(
         complete=character.creation_completed_at is not None,
         needs=list({(n.step, n.message): n for n in needs}.values()),
-        pools=[
-            pool_out(p)
-            for p in sorted(
-                creation.pools_with_strays(db, character), key=lambda p: (p.category, -p.rating)
-            )
-        ],
+        pools=[pool_out(p) for p in sorted(placed, key=lambda p: (p.category, -p.rating))],
         budget_changes=[
             BudgetChange(category=category, because=refs(because))
             for category, because in creation.budget_changes(db, character).items()
+        ],
+        given=[
+            GivenOut(
+                category=g.category,
+                name=g.name,
+                detail=g.detail,
+                rating=g.rating,
+                because=refs(g.because),
+            )
+            for g in creation.given_traits(
+                db, character, sorted({p.category for p in placed if p.kind == "picks"})
+            )
         ],
         path_starts=[
             PathStart(

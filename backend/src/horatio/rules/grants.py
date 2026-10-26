@@ -150,8 +150,10 @@ class Effects:
     converts: dict[tuple[str, str], str] = field(default_factory=dict)
     # The source trait of each conversion: (category, from name) -> (category, name).
     converted_by: dict[tuple[str, str], tuple[str, str]] = field(default_factory=dict)
-    # Which source traits each granted trait owes its dots to.
+    # Which source traits each granted trait owes its dots to: their names with details,
+    # and as (category, name).
     sources: dict[TraitKey, list[str]] = field(default_factory=dict)
+    givers: dict[TraitKey, list[tuple[str, str]]] = field(default_factory=dict)
     # Source traits whose detail does not say what they grant.
     unchosen: list[tuple[SheetTrait, GrantData]] = field(default_factory=list)
 
@@ -370,6 +372,7 @@ def effects(
                     amount = pick.amount if "places" in (grant.picks or {}) else 1
                     found.free_up_to[key] = max(found.free_up_to.get(key, 0), amount)
                     found.sources.setdefault(key, []).append(label)
+                    found.givers.setdefault(key, []).append((trait.category, trait.name))
                 continue
             if grant.kind == "convert":
                 assert grant.convert_from is not None
@@ -456,6 +459,7 @@ def effects(
             else:
                 found.free_up_to[key] = max(found.free_up_to.get(key, 0), grant.amount)
             found.sources.setdefault(key, []).append(label)
+            found.givers.setdefault(key, []).append((trait.category, trait.name))
     return found
 
 

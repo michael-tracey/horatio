@@ -93,30 +93,31 @@ amount = 1
 page = "137"
 
 # --- extra focuses ----------------------------------------------------------------
+# A focus a merit gives is on top of the usual one per attribute (p. 90). If the
+# character already has that focus, it is not given twice, so these are free dots up to
+# 1, as Extrasensory Perceptions' is (a pick on the same focus is spent for nothing).
 
 [[grants]]
 source = { category = "merits", name = "Angelic Visage" }
-kind = "add"
+kind = "free_up_to"
 target = { category = "focus_socials", name = "Charisma" }
 amount = 1
 page = "241"
 
 [[grants]]
 source = { category = "merits", name = "Expanded Consciousness" }
-kind = "add"
+kind = "free_up_to"
 target = { category = "focus_mentals", choose = "any" }
 amount = 1
 page = "241"
 
 [[grants]]
 source = { category = "merits", name = "Versatile" }
-kind = "add"
+kind = "free_up_to"
 target = { categories = ["focus_physicals", "focus_socials", "focus_mentals"], choose = "any" }
 amount = 1
 page = "253"
 
-# A focus a merit gives on top of the usual one per attribute (p. 90); if the
-# character already has that focus, it is not given twice.
 [[grants]]
 source = { category = "merits", name = "Extrasensory Perceptions" }
 kind = "free_up_to"

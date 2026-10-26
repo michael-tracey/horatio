@@ -2639,6 +2639,14 @@
             "title": "Complete",
             "type": "boolean"
           },
+          "given": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/GivenOut"
+            },
+            "title": "Given",
+            "type": "array"
+          },
           "needs": {
             "items": {
               "$ref": "#/components/schemas/StepNeed"
@@ -5140,6 +5148,43 @@
           "sheet"
         ],
         "title": "GiveOut",
+        "type": "object"
+      },
+      "GivenOut": {
+        "description": "A trait held without a creation pick, because a merit gives it: it cannot take one.",
+        "properties": {
+          "because": {
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Because",
+            "type": "array"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "detail",
+          "rating",
+          "because"
+        ],
+        "title": "GivenOut",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -8381,6 +8426,14 @@
             "default": true,
             "title": "Fits",
             "type": "boolean"
+          },
+          "freed_by": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Freed By",
+            "type": "array"
           },
           "name": {
             "title": "Name",
@@ -18598,7 +18651,7 @@
     },
     "/api/characters/{character_id}/refusals": {
       "get": {
-        "description": "As `GET /unavailable`, with the traits held elsewhere on the sheet that each\nrefusal is because of, so the wizard can point to the step that holds them.",
+        "description": "As `GET /unavailable`, with the traits held elsewhere on the sheet that each\nrefusal is because of, so the wizard can point to the step that holds them. With\n`rating`, every trait of a rated category is tried at that many dots, those held\ntoo: where a pick of that rating clashes (Generation 3 with Thin Blooded).",
         "operationId": "refusals_api_characters__character_id__refusals_get",
         "parameters": [
           {
@@ -18652,6 +18705,24 @@
                 }
               ],
               "title": "Picks"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rating",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rating"
             }
           }
         ],

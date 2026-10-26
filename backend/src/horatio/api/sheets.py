@@ -668,14 +668,17 @@ def refusals(
     user: CurrentUser,
     as_if: Literal["sheet", "picks", "empty"] = "sheet",
     picks: Annotated[list[str] | None, Query()] = None,
+    rating: Annotated[int | None, Query(ge=1, le=10)] = None,
 ) -> dict[str, RefusalOut]:
     """As `GET /unavailable`, with the traits held elsewhere on the sheet that each
-    refusal is because of, so the wizard can point to the step that holds them."""
+    refusal is because of, so the wizard can point to the step that holds them. With
+    `rating`, every trait of a rated category is tried at that many dots, those held
+    too: where a pick of that rating clashes (Generation 3 with Thin Blooded)."""
     character = visible_character(db, user, character_id)
     rules = sheets.rules_for(db, character)
     if category not in rules.rule_set.categories:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No category {category!r}.")
-    found = sheets.refusals(db, character, category, as_if, picks or [])
+    found = sheets.refusals(db, character, category, as_if, picks or [], at=rating)
     return {
         name: RefusalOut(
             message=r.message,

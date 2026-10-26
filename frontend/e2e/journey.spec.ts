@@ -1477,6 +1477,306 @@ test("a Tremere takes Thaumaturgic Expertise from the Disciplines step, and the 
   await expect(p.getByRole("button", { name: "Thaumaturgy: Path of Conjuring 1" })).toBeEnabled();
 });
 
+test("Versatile asks for its extra focus on Focuses, and a pick on the focus it names is free to place again", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-versatile");
+  const id = await creatingVampire(p, "Many Hands", "Brujah", [], ATTRIBUTES_AND_FOCUSES);
+  await p.goto(`/characters/${id}/create/focuses`);
+  const fromMerits = p.getByRole("region", { name: "From merits" });
+  const versatile = fromMerits.getByRole("switch", { name: /^Versatile/ });
+  // It cannot be taken until it is told which focus.
+  await expect(versatile).toBeDisabled();
+  // Wits is the Mental focus already picked, so the merit would give nothing: the pick is free to place again.
+  await fromMerits.getByLabel("Versatile: which?").selectOption("Wits");
+  await versatile.click();
+  await expect(versatile).toBeChecked();
+  const notices = p.getByRole("group", { name: "Changed by other steps" });
+  await expect(notices).toContainText("Versatile makes Wits free: your pick on Wits can go elsewhere.");
+  await expect(p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Focuses \(needs a look\)/ })).toBeVisible();
+
+  // Another focus is the extra one: held, with no pick to place on it.
+  await versatile.click();
+  await expect(versatile).not.toBeChecked();
+  await fromMerits.getByLabel("Versatile: which?").selectOption("Perception");
+  await versatile.click();
+  await expect(versatile).toBeChecked();
+  await expect(p.getByText("Versatile gives you Perception free.")).toBeVisible();
+  await expect(notices).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Perception 1" })).toBeDisabled();
+
+  // Merits shows it as taken, from the same points.
+  await p.goto(`/characters/${id}/create/merits`);
+  await expect(p.getByRole("checkbox", { name: /^Versatile/ })).toBeChecked();
+  await expect(p.getByText("3 of 7 points")).toBeVisible();
+});
+
+test("Extrasensory Perceptions, taken from Focuses, shows Perception as held there", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-senses");
+  const id = await creatingVampire(p, "Sharp Nose", "Nosferatu: Creeps", [], ATTRIBUTES_AND_FOCUSES);
+  await p.goto(`/characters/${id}/create/focuses`);
+  const fromMerits = p.getByRole("region", { name: "From merits" });
+  await fromMerits.getByRole("switch", { name: /^Extrasensory Perceptions/ }).click();
+  await expect(fromMerits.getByRole("switch", { name: /^Extrasensory Perceptions/ })).toBeChecked();
+  await expect(p.getByText("Extrasensory Perceptions gives you Perception free.")).toBeVisible();
+  // The usual Mental pick is still Wits, and no pick goes on the given focus.
+  await expect(p.getByRole("button", { name: "Wits 1" })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByRole("button", { name: "Perception 1" })).toBeDisabled();
+  await expect(p.getByRole("group", { name: "Changed by other steps" })).toHaveCount(0);
+});
+
+test("Personal Cult frees a Herd pick, which goes elsewhere, and the character finishes with Herd 5 free", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-cult");
+  const id = await creatingVampire(p, "Temple Keeper", "Followers of Set", [], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Obfuscate", 2], ["Presence", 1], ["Serpentis", 1]],
+  });
+  await p.goto(`/characters/${id}/create/backgrounds`);
+  const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
+  await fromMerits.getByLabel("Personal Cult: which?").selectOption("Herd");
+  await fromMerits.getByRole("switch", { name: /^Personal Cult/ }).click();
+  await expect(fromMerits.getByRole("switch", { name: /^Personal Cult/ })).toBeChecked();
+
+  // The pick on Herd is kept, marked on its row, the stepper and the notice, and linked.
+  const message = "Personal Cult makes Herd free: your pick on Herd can go elsewhere.";
+  await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText(message);
+  await expect(p.getByText(`${message} Clear it and place it on another.`)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Herd 3" })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Backgrounds \(needs a look\)/ })).toBeVisible();
+
+  // Review lists it too.
+  await p.goto(`/characters/${id}/create/review`);
+  await expect(p.getByRole("region", { name: "Still to settle" })).toContainText(message);
+  await p.getByRole("region", { name: "Still to settle" }).getByRole("link", { name: "Go to Backgrounds" }).click();
+
+  // The pick goes to Fame, and Herd is shown as held free.
+  await tapMid(p, "Clear Herd");
+  await tapMid(p, "Fame 3");
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Disciplines", exact: true })).toBeVisible({ timeout: 15_000 });
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Backgrounds/ }).click();
+  await expect(p.getByText("Personal Cult gives you Herd 5 free.")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Herd 3" })).toBeDisabled();
+  await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
+
+  await p.goto(`/characters/${id}/create/review`);
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  const herd = (await (await p.request.get(`/api/characters/${id}/sheet`)).json()).traits.find((t: { name: string }) => t.name === "Herd");
+  expect([herd.rating, herd.free_rating]).toEqual([5, 5]);
+});
+
+test("Seasoned Traveler frees a pick on Survival, which goes to another skill", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-traveler");
+  const skills: [string, number][] = [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Survival", 1], ["Melee", 1]];
+  const id = await creatingVampire(p, "Road Dog", "Gangrel", [], { ...ATTRIBUTES_AND_FOCUSES, skills });
+  await p.goto(`/characters/${id}/create/skills`);
+  const fromMerits = p.getByRole("region", { name: "From merits" });
+  await fromMerits.getByLabel("Seasoned Traveler: which?").selectOption("Survival");
+  await fromMerits.getByRole("switch", { name: /^Seasoned Traveler/ }).click();
+  await expect(fromMerits.getByRole("switch", { name: /^Seasoned Traveler/ })).toBeChecked();
+  await expect(p.getByText("Seasoned Traveler makes Survival free: your pick on Survival can go elsewhere. Clear it and place it on another.")).toBeVisible();
+
+  // Moved to Medicine, it is held free at 3 and nothing is left to settle.
+  await tapMid(p, "Clear Survival");
+  await tapMid(p, "Medicine 1");
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible({ timeout: 15_000 });
+  await p.goto(`/characters/${id}/create/skills`);
+  await expect(p.getByText("Seasoned Traveler gives you Survival 3 free.")).toBeVisible();
+  await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
+});
+
+test("Archaic names the Computer pick it clashes with on Merits, and Computer names Archaic on Skills", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-archaic");
+  const skills: [string, number][] = [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Computer", 1], ["Melee", 1]];
+  const id = await creatingVampire(p, "Old Ways", "Brujah", [], { ...ATTRIBUTES_AND_FOCUSES, skills });
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Show Flaws").selectOption("Everything");
+  await p.getByLabel("Search Flaws").fill("Archaic");
+  const archaic = p.locator("li").filter({ hasText: /^Archaic/ });
+  await expect(archaic).toContainText("An Archaic character cannot have Computer, Drive, Science or Security.");
+  await expect(archaic).toContainText("Refused while you have Computer (Skills)");
+  await expect(archaic.getByRole("checkbox")).toBeDisabled();
+  await archaic.getByRole("link", { name: "Skills" }).click();
+  await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible();
+
+  // Computer goes to Medicine, and Archaic can be taken.
+  await tapMid(p, "Clear Computer");
+  await tapMid(p, "Medicine 1");
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible({ timeout: 15_000 });
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Search Flaws").fill("Archaic");
+  await p.getByRole("checkbox", { name: /^Archaic/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  // Skills now says what bars Computer, and links to the flaw.
+  await p.goto(`/characters/${id}/create/skills`);
+  const computer = p.locator("li").filter({ has: p.getByRole("button", { name: "Computer 1" }) });
+  await expect(computer).toContainText("An Archaic character cannot have Computer, Drive, Science or Security.");
+  await expect(computer).toContainText("Because of Archaic");
+  await expect(p.getByRole("button", { name: "Computer 1" })).toBeDisabled();
+  await computer.getByRole("link", { name: "Merits & flaws" }).click();
+  await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible();
+  await expect(p.getByRole("checkbox", { name: /^Archaic/ })).toBeChecked();
+});
+
+test("Childlike bars Physical 7 on Attributes, and Methuselah's Thirst bars Herd on Backgrounds, each naming the flaw", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-clash");
+  const id = await creatingVampire(p, "Small Hours", "Brujah", []);
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Search Flaws").fill("Childlike");
+  await p.getByRole("checkbox", { name: /^Childlike/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  await p.goto(`/characters/${id}/create/attributes`);
+  const physical = p.locator("li").filter({ has: p.getByRole("button", { name: "Physical 7" }) });
+  await expect(physical).toContainText("Not at 7: A Childlike character's Physical attribute cannot go above 5.");
+  await expect(physical).toContainText("Because of Childlike");
+  await expect(p.getByRole("button", { name: "Physical 7" })).toBeDisabled();
+  await expect(p.getByRole("button", { name: "Physical 5" })).toBeEnabled();
+  await expect(p.getByRole("button", { name: "Mental 7" })).toBeEnabled();
+  await physical.getByRole("link", { name: "Merits & flaws" }).click();
+  await expect(p.getByRole("checkbox", { name: /^Childlike/ })).toBeChecked();
+
+  // Swapped for Methuselah's Thirst, it is Herd that is barred, on Backgrounds.
+  await p.getByRole("checkbox", { name: /^Childlike/ }).uncheck();
+  await p.getByLabel("Search Flaws").fill("Methuselah");
+  await p.getByRole("checkbox", { name: /^Methuselah's Thirst/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+  await p.goto(`/characters/${id}/create/backgrounds`);
+  const herd = p.locator("li").filter({ has: p.getByRole("button", { name: "Herd 1" }) });
+  await expect(herd).toContainText("A character with Methuselah's Thirst cannot benefit from Herd.");
+  await expect(herd).toContainText("Because of Methuselah's Thirst");
+  await expect(p.getByRole("button", { name: "Herd 1" })).toBeDisabled();
+  await herd.getByRole("link", { name: "Merits & flaws" }).click();
+  await expect(p.getByRole("checkbox", { name: /^Methuselah's Thirst/ })).toBeChecked();
+});
+
+test("Lesser Generation on Backgrounds follows the Generation picked, and bars the dots it cannot go with", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-lesser");
+  const id = await creatingVampire(p, "Hand Me Down", "Brujah", [], { backgrounds: [["Fame", 3], ["Resources", 1], ["Generation", 2]] });
+  await p.goto(`/characters/${id}/create/backgrounds`);
+  const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
+  // What each one is, from the catalogue, and why one is refused for the Generation picked.
+  await expect(fromMerits.getByRole("switch", { name: /^Lesser Generation 1/ })).toBeEnabled();
+  await expect(fromMerits).toContainText("Neonate is of the 12th Generation, Ancilla is of the 10th Generation.");
+  await expect(fromMerits.getByRole("switch", { name: /^Lesser Generation 2/ })).toBeDisabled();
+  await expect(fromMerits).toContainText("Lesser Generation 2 is only for Neonate characters.");
+  await expect(fromMerits).toContainText("Because of Generation");
+  // Thin Blooded is for a Caitiff, so it is not offered to a Brujah.
+  await expect(fromMerits.getByRole("switch", { name: /^Thin Blooded/ })).toHaveCount(0);
+
+  await fromMerits.getByRole("switch", { name: /^Lesser Generation 1/ }).click();
+  await expect(fromMerits.getByRole("switch", { name: /^Lesser Generation 1/ })).toBeChecked();
+  // An Ancilla can have it; a third dot of Generation is an elder's, which it cannot go with.
+  const generation = p.locator("li").filter({ has: p.getByRole("button", { name: "Generation 1" }) });
+  await expect(generation).toContainText("Not at 3: Lesser Generation 1 is only for Neonate or Ancilla characters.");
+  await expect(generation).toContainText("Because of Lesser Generation 1");
+  await expect(p.getByRole("button", { name: "Generation 3" })).toBeDisabled();
+  await expect(p.getByRole("button", { name: "Generation 2" })).toBeEnabled();
+});
+
+test("Thin Blooded on Backgrounds bars Generation above 1, and a Caitiff cannot have 3", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-thinbl");
+  const id = await creatingVampire(p, "Watery Blood", "Caitiff", ["Auspex", "Celerity", "Potence"], { backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]] });
+  await p.goto(`/characters/${id}/create/backgrounds`);
+  const generation = p.locator("li").filter({ has: p.getByRole("button", { name: "Generation 1" }) });
+  await expect(generation).toContainText("Not at 3: Caitiff cannot have more than 2 dots of Generation.");
+  await expect(generation).toContainText("Because of Caitiff (Concept)");
+  await expect(p.getByRole("button", { name: "Generation 2" })).toBeEnabled();
+
+  const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
+  await fromMerits.getByRole("switch", { name: /^Thin Blooded/ }).click();
+  await expect(fromMerits.getByRole("switch", { name: /^Thin Blooded/ })).toBeChecked();
+  await expect(fromMerits).toContainText("Neonate is of the 14th or 15th Generation and always Caitiff.");
+  await expect(generation).toContainText("Not at 2 or 3");
+  await expect(generation).toContainText("Because of Thin Blooded");
+  await expect(p.getByRole("button", { name: "Generation 2" })).toBeDisabled();
+  await expect(p.getByRole("button", { name: "Generation 1" })).toBeEnabled();
+  // Lesser Generation cannot go with it.
+  await expect(fromMerits.getByRole("switch", { name: /^Lesser Generation 1/ })).toBeDisabled();
+  await expect(fromMerits).toContainText("Lesser Generation and Thin Blooded cannot be held together.");
+});
+
+test("a Ventrue takes Royalty in the wizard, is sent to Backgrounds, and places 4, 3 and 2 there", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-royal");
+  const id = await creatingVampire(p, "Crowned", "Ventrue", [], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Search Merits").fill("Royalty");
+  await p.getByRole("checkbox", { name: /^Ventrue Royalty/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  // Nothing is chosen yet: Review lists it, linking to where the gift lands.
+  const settle = p.getByRole("region", { name: "Still to settle" });
+  await expect(settle).toContainText("Ventrue Royalty: choose the backgrounds it gives.");
+  await settle.getByRole("link", { name: "Go to Backgrounds" }).click();
+  await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText("Ventrue Royalty: choose the backgrounds it gives.");
+  const royalty = p.getByRole("group", { name: "Free traits from Ventrue Royalty" });
+  await royalty.getByLabel("4 dots in").selectOption("Contacts");
+  await royalty.getByLabel("3 dots in").selectOption("Haven");
+  await royalty.getByLabel("2 dots in").selectOption("Herd");
+  await royalty.getByRole("button", { name: "Save choices" }).click();
+  await expect(p.getByRole("group", { name: "Changed by other steps" })).toHaveCount(0);
+  await expect(p.getByText("Ventrue Royalty gives you Contacts 4 free.")).toBeVisible();
+  await expect(p.getByText("Ventrue Royalty gives you Haven 3 free.")).toBeVisible();
+  await expect(p.getByText("Ventrue Royalty gives you Herd 2 free.")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Herd 1" })).toBeDisabled();
+  await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
+
+  // Merits shows the same choices, and they change freely until a troupe accepts the character.
+  await p.goto(`/characters/${id}/create/merits`);
+  const there = p.getByRole("group", { name: "Free traits from Ventrue Royalty" });
+  await expect(there.getByLabel("4 dots in")).toHaveValue("Contacts");
+  await there.getByLabel("4 dots in").selectOption("Allies");
+  await there.getByRole("button", { name: "Save changes" }).click();
+  await expect(p.getByRole("button", { name: "Save changes" })).toBeDisabled();
+
+  await p.goto(`/characters/${id}/create/review`);
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  const sheet = await (await p.request.get(`/api/characters/${id}/sheet`)).json();
+  const dots = Object.fromEntries(sheet.traits.filter((t: { category: string }) => t.category === "backgrounds").map((t: { name: string; rating: number; free_rating: number }) => [t.name, [t.rating, t.free_rating]]));
+  expect(dots).toMatchObject({ Allies: [4, 4], Haven: [3, 3], Herd: [2, 2] });
+});
+
+test("a Cappadocian takes Chosen of Cappadocius in the wizard and chooses its specialisations on Skills", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-cappa");
+  const id = await creatingVampire(p, "Grave Scholar", "Cappadocians", [], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Fortitude", 1], ["Necromancy: Mortis Path", 1]],
+  });
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Search Merits").fill("Chosen of Cappadocius");
+  await p.getByRole("checkbox", { name: /^Chosen of Cappadocius/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+  const settle = p.getByRole("region", { name: "Still to settle" });
+  await expect(settle).toContainText("Chosen of Cappadocius: choose the lore specializations, languages and academics specializations it gives.");
+  await settle.getByRole("link", { name: "Go to Skills" }).click();
+
+  const chosen = p.getByRole("group", { name: "Free traits from Chosen of Cappadocius" });
+  for (const heading of ["Lore Specializations", "Languages", "Academics Specializations"]) {
+    for (const choice of [1, 2]) await chosen.getByLabel(`${heading}, choice ${choice}`).selectOption({ index: choice });
+  }
+  await chosen.getByRole("button", { name: "Save choices" }).click();
+  await expect(p.getByRole("group", { name: "Changed by other steps" })).toHaveCount(0);
+  const sheet = await (await p.request.get(`/api/characters/${id}/sheet`)).json();
+  const given = sheet.traits.filter((t: { category: string; granted_rating: number }) => t.category.endsWith("_specializations") && t.granted_rating > 0);
+  expect(given).toHaveLength(6);
+});
+
 test("a player makes up an archetype in the creation wizard, and it shows on the sheet and the printed sheet", async ({ browser }) => {
   const { page } = await person(browser, "penitent");
   await page.getByLabel("Name").fill("Dismas");

@@ -2,7 +2,10 @@ import { useState } from "react";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, PoolOut, SheetOut, TraitOut } from "../../../api/types";
 import { Badge, ErrorText, Select } from "../../../components/ui";
-import { useAction, useRefusals, useUnavailable } from "../../../hooks";
+import { useAction, useRefusals } from "../../../hooks";
+import { FreeChoicesStep } from "./FreeChoicesStep";
+import { Because } from "./Because";
+import type { StepRef } from "./notices";
 
 export type FromMeritsProps = {
   character: CharacterOut;
@@ -13,6 +16,9 @@ export type FromMeritsProps = {
   traits: { category: string; name: string }[];
   /** The choices to offer for some of them, in place of the catalogue's (Inept: the in-clan disciplines). */
   choices?: Record<string, string[]>;
+  /** The wizard's steps, and this one: a refusal names the traits it is because of, linking to their steps. */
+  steps?: StepRef[];
+  step?: StepRef;
 };
 
 /**
@@ -21,7 +27,7 @@ export type FromMeritsProps = {
  * flaws shows it as taken. What the character can take, and why not, is the
  * server's to say: what nothing could allow (another clan's merit) is left out.
  */
-export function FromMerits({ character, creation, sheet, catalogue, traits, choices }: FromMeritsProps) {
+export function FromMerits({ character, creation, sheet, catalogue, traits, choices, steps, step }: FromMeritsProps) {
   const categories = [...new Set(traits.map((t) => t.category))];
   const pools = categories
     .map((category) => creation.pools.find((p) => p.category === category && p.kind === "points"))
@@ -38,6 +44,8 @@ export function FromMerits({ character, creation, sheet, catalogue, traits, choi
           pool={pool}
           sheet={sheet}
           choices={choices}
+          steps={steps}
+          step={step}
           traits={traits
             .filter((t) => t.category === pool.category)
             .map((t) => catalogue.traits.find((c) => c.category === t.category && c.name === t.name))
@@ -54,15 +62,19 @@ function FromBudget({
   sheet,
   traits: catalogued,
   choices: offered,
+  steps,
+  step,
 }: {
   character: CharacterOut;
   pool: PoolOut;
   sheet: SheetOut;
   traits: TraitOut[];
   choices?: Record<string, string[]>;
+  steps?: StepRef[];
+  step?: StepRef;
 }) {
   const traits = catalogued.map((t) => (offered?.[t.name] ? { ...t, choices: offered[t.name] } : t));
-  const barred = useUnavailable(character.id, pool.category, true, { asIf: "empty" });
+  const barred = useRefusals(character.id, pool.category, true, { asIf: "empty" });
   const refusals = useRefusals(character.id, pool.category).data ?? {};
   // A choice the merit asks for (Bonds of Stolen Vitae: which discipline), before it is taken.
   const [choices, setChoices] = useState<Record<string, string>>({});
@@ -81,7 +93,14 @@ function FromBudget({
     return unwrap(api.PUT("/api/characters/{character_id}/traits", { ...path, body: { category: pool.category, name: trait.name, detail, rating: 0, teacher: "" } }));
   });
   if (!barred.data) return null;
-  const shown = traits.filter((t) => held(t.name) || !(t.name in barred.data));
+  // What nothing could allow (another clan's merit) is left out; what a pick on this step
+  // could put right (a Generation that Thin Blooded is refused for) is shown, with why.
+  const here = new Set(step?.categories ?? []);
+  const fixable = (name: string) => {
+    const why = barred.data![name];
+    return !!why && why.because.length > 0 && why.because.every((b) => here.has(b.category));
+  };
+  const shown = traits.filter((t) => held(t.name) || !(t.name in barred.data!) || fixable(t.name));
   if (!shown.length) return null;
   const kind = pool.category === "flaws" ? "flaw" : "merit";
   return (
@@ -96,7 +115,8 @@ function FromBudget({
         {shown.map((t) => {
           const mine = held(t.name);
           const points = t.fixed_rating ?? 1;
-          const refused = mine ? undefined : refusals[t.name]?.message;
+          const refusal = mine ? undefined : (refusals[t.name] ?? (fixable(t.name) ? barred.data![t.name] : undefined));
+          const refused = refusal?.message;
           const short = !mine && points > pool.remaining;
           const unchosen = !mine && !!t.choices?.length && !choices[t.name];
           const id = `from-${pool.category}-${t.name}`.replace(/\W+/g, "-");
@@ -143,7 +163,13 @@ function FromBudget({
                   ))}
                 </Select>
               )}
-              {refused && <p className="ml-6 text-xs text-blood-bright">{refused}</p>}
+              {refused && (
+                <p className="ml-6 text-xs text-blood-bright">
+                  {refused}
+                  {steps && step && <Because characterId={character.id} refs={refusal!.because} steps={steps} step={step} />}
+                </p>
+              )}
+              {mine && <FreeChoicesHere character={character} sheet={sheet} category={pool.category} name={t.name} />}
               {!refused && short && (
                 <p className="ml-6 text-xs text-mist">
                   Needs {points} points; {pool.remaining} left.
@@ -156,4 +182,11 @@ function FromBudget({
       <ErrorText error={change.error} />
     </div>
   );
+}
+
+/** The free traits a held merit gives, chosen under it. */
+function FreeChoicesHere({ character, sheet, category, name }: { character: CharacterOut; sheet: SheetOut; category: string; name: string }) {
+  const trait = sheet.traits.find((t) => t.category === category && t.name === name && (t.free_choices ?? []).length > 0);
+  if (!trait) return null;
+  return <FreeChoicesStep character={character} trait={trait} />;
 }

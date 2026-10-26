@@ -4,13 +4,16 @@ import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut, TraitRefOut } from "../../../api/types";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../../components/ui";
-import { useAction, useRefusals, useUnavailable } from "../../../hooks";
+import { useAction, useRatingRefusals, useRefusals, useUnavailable } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
 import { useCart } from "../cart";
 import { FinishCreation } from "../CartPanel";
 import { rulesTroupe } from "../rules";
 import { quickPicks } from "../traitFilter";
-import { DotGrid, PointsList } from "./DotGrid";
+import { DotGrid, PointsList, type Held, type RatingBar } from "./DotGrid";
+import { Because } from "./Because";
+import { FreeChoicesStep, withFreeChoices } from "./FreeChoicesStep";
+import { BACKGROUND_MERITS, FOCUS_MERITS, SKILL_MERITS, freedPicks, givenIn, unchosenFree } from "./gifts";
 import { fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
 import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, traitOf, type Allowed, type Picks } from "./logic";
@@ -24,11 +27,14 @@ import { brokenChecks, listed, overBudget, stepFor, stepNotices, strayPicks, typ
 type Step = StepRef & { intro?: string };
 
 /** Where cross-step notices come from (notices.ts): a step that needs a new kind adds its source here. */
-const NOTICE_SOURCES: NoticeSource[] = [inClanChoices, strayPicks, overBudget, brokenChecks];
+const NOTICE_SOURCES: NoticeSource[] = [inClanChoices, strayPicks, overBudget, freedPicks, unchosenFree, brokenChecks];
 
 /** Merits and flaws that change a step, offered on it as well as on Merits & flaws (#192). */
 const FROM_MERITS: Record<string, { category: string; name: string }[]> = {
   concept: IN_CLAN_MERITS.map((name) => ({ category: "merits", name })),
+  focuses: FOCUS_MERITS,
+  skills: SKILL_MERITS,
+  backgrounds: BACKGROUND_MERITS,
   disciplines: DISCIPLINES_FROM_MERITS,
 };
 
@@ -36,7 +42,7 @@ const FROM_MERITS: Record<string, { category: string; name: string }[]> = {
  * creation picks that no step names gets a step of its own before merits. */
 const ORDER: Step[] = [
   { key: "attributes", title: "Attributes", categories: ["attributes"], intro: "Rank Physical, Social and Mental: tap 7, 5 or 3 for each. Tapping a taken rating swaps them." },
-  { key: "focuses", title: "Focuses", categories: ["focus_physicals", "focus_mentals", "focus_socials"], intro: "Choose one focus for each attribute." },
+  { key: "focuses", title: "Focuses", categories: ["focus_physicals", "focus_mentals", "focus_socials"], intro: "Choose one focus for each attribute. Some merits give more; they show below." },
   { key: "skills", title: "Skills", categories: ["skills"], intro: "Tap the dot for each skill's rating. The counters show what is left." },
   { key: "backgrounds", title: "Backgrounds", categories: ["backgrounds"] },
   { key: "disciplines", title: "Disciplines", categories: ["disciplines"] },
@@ -46,10 +52,14 @@ const ORDER: Step[] = [
 function buildSteps(creation: CreationOut, catalogue: CatalogueOut): Step[] {
   const present = new Set(creation.pools.map((p) => p.category));
   const known = new Set(ORDER.flatMap((s) => s.categories));
-  const steps = ORDER.map((s) => ({ ...s, categories: s.categories.filter((c) => present.has(c)) })).filter((s) => s.categories.length);
+  // A category of specialisations is shown under the skill or background it is for, so a free one (Chosen of Cappadocius) lands there.
+  const specialising = (s: Step) => catalogue.categories.filter((c) => c.specializes && s.categories.includes(c.specializes.category ?? "")).map((c) => c.key);
+  const steps = ORDER.map((s) => ({ ...s, categories: s.categories.filter((c) => present.has(c)) }))
+    .filter((s) => s.categories.length)
+    .map((s) => ({ ...s, decides: specialising(s) }));
   const extra = [...present]
     .filter((c) => !known.has(c))
-    .map((c) => ({ key: c, title: creation.pools.find((p) => p.category === c)!.category_name, categories: [c] }));
+    .map((c) => ({ key: c, title: creation.pools.find((p) => p.category === c)!.category_name, categories: [c], decides: [] as string[] }));
   const merits = steps.findIndex((s) => s.key === "merits");
   steps.splice(merits === -1 ? steps.length : merits, 0, ...extra);
   // Concept decides the unrated choices (clan, sect…) and the extra in-clan disciplines.
@@ -246,6 +256,8 @@ function StepView({
             catalogue={catalogue}
             traits={FROM_MERITS[step.key]!}
             choices={step.key === "disciplines" ? { [INEPT]: ineptChoices(creation) } : undefined}
+            steps={steps}
+            step={step}
           />
         </div>
       )}
@@ -254,6 +266,7 @@ function StepView({
           <InClanNow creation={creation} />
         </div>
       )}
+      {step.key === "merits" && <FreeTraitsToChoose character={character} sheet={sheet} />}
       {/* Held while saving: the save reloads the picks, which would drop a tap made meanwhile. */}
       <fieldset disabled={save.isPending} className="flex min-w-0 flex-col gap-8">
         {step.categories.map((category) => {
@@ -312,6 +325,9 @@ function StepView({
               onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
               marks={strays[category]}
               barredFor={withoutDot}
+              held={givenIn(creation, category)}
+              steps={steps}
+              step={step}
               sections={
                 traits.some((t) => t.attribute)
                   ? { order: ["Physical", "Social", "Mental"], of: (t: TraitOut) => t.attribute }
@@ -626,14 +642,68 @@ function CheckedPointsList({
   return <PointsList {...props} unavailable={unavailable} barred={barred.data} why={why} />;
 }
 
+/** The merits taken that give free traits the player chooses, with the fields to choose them. */
+function FreeTraitsToChoose({ character, sheet }: { character: CharacterOut; sheet: SheetOut }) {
+  const merits = withFreeChoices(sheet);
+  if (!merits.length) return null;
+  return (
+    <section aria-label="Free traits to choose" className="mb-6 flex flex-col gap-3 rounded-md border border-ash p-3">
+      <h3 className="text-sm text-parchment">Free traits to choose</h3>
+      {merits.map((t) => (
+        <div key={`${t.category}/${t.name}/${t.detail}`} className="flex flex-col gap-1.5">
+          <p className="text-sm text-parchment">{t.name}</p>
+          <FreeChoicesStep character={character} trait={t} />
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** Where a pick of some rating can clash, so the dots are checked at each rating (Childlike's Physical, Thin Blooded's Generation). */
+const CHECKED_BY_RATING = ["attributes", "skills", "backgrounds"];
+
 function CheckedDotGrid({
   characterId,
   category,
   barredFor = {},
+  steps,
+  step,
   ...props
-}: { characterId: string; category: string; barredFor?: Record<string, string> } & Parameters<typeof DotGrid>[0]) {
-  const unavailable = useUnavailable(characterId, category);
-  return <DotGrid {...props} unavailable={{ ...unavailable.data, ...barredFor }} />;
+}: { characterId: string; category: string; barredFor?: Record<string, string>; held?: Record<string, Held>; steps: Step[]; step: Step } & Parameters<typeof DotGrid>[0]) {
+  const byRating = CHECKED_BY_RATING.includes(category);
+  const ratings = Object.keys(props.allowed).map(Number);
+  const named = useRefusals(characterId, category, !byRating).data ?? {};
+  const atRating = useRatingRefusals(characterId, category, byRating ? ratings : [], byRating);
+  // Barred at every rating it can be picked at: barred outright. At some: those dots only.
+  const refusals: typeof named = byRating ? {} : named;
+  const bars: Record<string, RatingBar[]> = {};
+  if (byRating) {
+    const note = (name: string, rating: number) => {
+      const r = atRating[rating]![name]!;
+      return { message: r.message, because: r.because };
+    };
+    for (const name of new Set(ratings.flatMap((r) => Object.keys(atRating[r] ?? {})))) {
+      const at = ratings.filter((r) => atRating[r]?.[name]).sort((a, b) => a - b);
+      if (at.length === ratings.length) {
+        refusals[name] = atRating[at[0]!]![name]!;
+        continue;
+      }
+      const groups = new Map<string, number[]>();
+      for (const r of at) groups.set(note(name, r).message, [...(groups.get(note(name, r).message) ?? []), r]);
+      bars[name] = [...groups].map(([message, rs]) => ({
+        ratings: rs,
+        note: (
+          <>
+            {message}
+            <Because characterId={characterId} refs={note(name, rs[0]!).because} steps={steps} step={step} />
+          </>
+        ),
+      }));
+    }
+  }
+  const unavailable = { ...Object.fromEntries(Object.entries(refusals).map(([name, r]) => [name, r.message])), ...barredFor };
+  const why = (name: string) => (refusals[name] ? <Because characterId={characterId} refs={refusals[name].because} steps={steps} step={step} /> : null);
+  return <DotGrid {...props} unavailable={unavailable} why={why} barredAt={bars} />;
 }
 
 /** Change which troupe's rules the character is built by, until a troupe accepts it. */
