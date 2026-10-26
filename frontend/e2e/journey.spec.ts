@@ -1023,6 +1023,52 @@ test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the li
   await expect(p.getByText("No NPCs of that kind.")).toBeVisible();
 });
 
+test("storytellers build a Stock NPC from the NPCs tab and see the book's stat block", async ({ browser }) => {
+  const custodian = await person(browser, "stockb-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "stockb-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Moss ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  const p = lead.page;
+  await p.goto(`/troupes/${troupeId}/npcs`);
+  await p.getByLabel("Name").fill("Gnashes-the-Moon");
+  await p.getByLabel("Kind", { exact: true }).selectOption("werewolf");
+  await p.getByRole("radio", { name: "Stock" }).click();
+  await p.getByLabel("Rating").fill("3");
+  await p.getByRole("button", { name: "Make Stock NPC" }).click();
+  await p.getByRole("listitem", { name: "Gnashes-the-Moon" }).getByRole("link", { name: "Gnashes-the-Moon" }).click();
+  await expect(p.getByRole("heading", { name: "Gnashes-the-Moon" })).toBeVisible();
+
+  const add = async (choice: string) => {
+    await p.getByLabel("Add a specialization").selectOption(choice);
+    await p.getByRole("button", { name: "Add", exact: true }).click();
+  };
+  await add("skill:Brawl");
+  await add("power:Celerity");
+  const block = p.getByRole("list", { name: "Stat block" });
+  await expect(block.getByText("Test pool 6 in most challenges")).toBeVisible();
+  await expect(block.getByText("Brawl 11")).toBeVisible();
+  await expect(block.getByText("Celerity up to 3")).toBeVisible();
+  await expect(block.getByText("Rage 10, up to 3 a turn")).toBeVisible();
+  await expect(block.getByText("6 health")).toBeVisible();
+  await expect(block.getByText("No Willpower: no retests unless it overbids")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Werewolf rules card" })).toBeVisible();
+  await p.screenshot(shots("stock-npc-builder"));
+
+  // The rating holds the count; a discipline off the werewolf's list is refused.
+  await add("power:Dominate");
+  await expect(p.getByText("Werewolf Stock NPCs cannot specialize in Dominate.")).toBeVisible();
+  await expect(p.getByRole("listitem", { name: "Dominate" })).toHaveCount(0);
+  await add("skill:Stealth");
+  await expect(p.getByRole("heading", { name: "Specializations (3 of 3)" })).toBeVisible();
+  await add("skill:Melee");
+  await expect(p.getByText("as many specializations as its rating")).toBeVisible();
+  await expect(p.getByRole("listitem", { name: "Melee" })).toHaveCount(0);
+});
+
 test("storytellers give an NPC powers, and one out of order is marked until it is in order", async ({ browser }) => {
   const custodian = await person(browser, "powers-cust");
   makeCustodian(custodian.email);
