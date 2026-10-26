@@ -1205,7 +1205,9 @@ export interface paths {
         /**
          * Refusals
          * @description As `GET /unavailable`, with the traits held elsewhere on the sheet that each
-         *     refusal is because of, so the wizard can point to the step that holds them.
+         *     refusal is because of, so the wizard can point to the step that holds them. With
+         *     `rating`, every trait of a rated category is tried at that many dots, those held
+         *     too: where a pick of that rating clashes (Generation 3 with Thin Blooded).
          */
         get: operations["refusals_api_characters__character_id__refusals_get"];
         put?: never;
@@ -4853,6 +4855,11 @@ export interface components {
             budget_changes: components["schemas"]["BudgetChange"][];
             /** Complete */
             complete: boolean;
+            /**
+             * Given
+             * @default []
+             */
+            given: components["schemas"]["GivenOut"][];
             /** Needs */
             needs: components["schemas"]["StepNeed"][];
             /**
@@ -5827,6 +5834,22 @@ export interface components {
             /** Refused */
             refused: string | null;
             sheet: components["schemas"]["SheetOut"];
+        };
+        /**
+         * GivenOut
+         * @description A trait held without a creation pick, because a merit gives it: it cannot take one.
+         */
+        GivenOut: {
+            /** Because */
+            because: components["schemas"]["TraitRefOut"][];
+            /** Category */
+            category: string;
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -7069,6 +7092,11 @@ export interface components {
              * @default true
              */
             fits: boolean;
+            /**
+             * Freed By
+             * @default []
+             */
+            freed_by: components["schemas"]["TraitRefOut"][];
             /** Name */
             name: string;
             /** Pick */
@@ -11933,6 +11961,7 @@ export interface operations {
                 category: string;
                 as_if?: "sheet" | "picks" | "empty";
                 picks?: string[] | null;
+                rating?: number | null;
             };
             header?: never;
             path: {

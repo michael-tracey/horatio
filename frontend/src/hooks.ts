@@ -1,7 +1,10 @@
-import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsMutating, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { api, ApiError, unwrap } from "./api/client";
 import type { Me, Preferences } from "./api/types";
 import type { components } from "./api/schema";
+
+type RefusalOut = components["schemas"]["RefusalOut"];
 
 /** The signed-in user, or null when signed out. */
 export function useMe() {
@@ -131,6 +134,27 @@ export function useRefusals(characterId: string, category: string, enabled = tru
     enabled: enabled && !!category,
     placeholderData: (previous) => previous,
   });
+}
+
+/**
+ * As useRefusals, for a pick at each of `ratings`: every trait of a rated category tried at
+ * that many dots, those held too. Where a pick of one rating clashes and another does not
+ * (Generation 3 for a Thin Blooded vampire; Physical 7 for a Childlike one).
+ */
+export function useRatingRefusals(characterId: string, category: string, ratings: number[], enabled = true) {
+  const results = useQueries({
+    queries: ratings.map((rating) => ({
+      queryKey: ["refusals", characterId, category, "rating", rating],
+      queryFn: () => unwrap(api.GET("/api/characters/{character_id}/refusals", { params: { path: { character_id: characterId }, query: { category, rating } } })),
+      enabled: enabled && !!category,
+      placeholderData: (previous: Record<string, RefusalOut> | undefined) => previous,
+    })),
+  });
+  const key = JSON.stringify([ratings, results.map((r) => r.data)]);
+  return useMemo(() => {
+    const [asked, found] = JSON.parse(key) as [number[], (Record<string, RefusalOut> | null)[]];
+    return Object.fromEntries(asked.map((rating, i) => [rating, found[i] ?? {}])) as Record<number, Record<string, RefusalOut>>;
+  }, [key]);
 }
 
 /**

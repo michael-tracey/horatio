@@ -531,6 +531,7 @@ def refusals(
     as_if: str = "sheet",
     picks: Sequence[str] = (),
     planned: Sequence[SheetTrait] | None = None,
+    at: int | None = None,
 ) -> dict[str, Refusal]:
     """For each trait in a category the character does not hold, why a check would
     refuse it, or the troupe's costs say it cannot be bought, if either would. A
@@ -541,7 +542,11 @@ def refusals(
     wizard's ticks before they are saved); "empty" first takes everything in the
     category away, leaving what no choice there could make allowed. Neither looks
     at costs, as creation picks are free. `planned` is the sheet to judge in place
-    of the saved one: as a cart's changes would leave it."""
+    of the saved one: as a cart's changes would leave it.
+
+    With `at`, each trait of a rated category is tried at that rating, those held too
+    (in place of what they are now): where a pick of that many dots clashes, such as
+    Generation 3 for a Thin Blooded vampire."""
     rules = rules_for(db, character)
     rule_set = rules.rule_set
     rows = sheet_rows(db, character)
@@ -598,20 +603,27 @@ def refusals(
             looking.setdefault(key, []).append(i)
     reasons: dict[str, Refusal] = {}
 
-    def because(violation: Violation) -> tuple[tuple[str, str], ...]:
+    def because(violation: Violation, name: str) -> tuple[tuple[str, str], ...]:
         looks = violation.check.looks_at
-        return tuple(
-            dict.fromkeys(
-                (t.category, t.full_name)
-                for t in sheet
-                if t.category != category_key
-                and t.rating != 0
-                and ((t.category, t.name) in looks or (t.category, None) in looks)
-            )
-        )
+        subject = violation.subject
+        found = [
+            (t.category, t.full_name)
+            for t in sheet
+            if t.category != category_key
+            and t.rating != 0
+            and ((t.category, t.name) in looks or (t.category, None) in looks)
+        ]
+        # The trait the check is about, held elsewhere, bars this one too (Archaic bars
+        # Computer): it is the cause, though the check does not look at it.
+        if subject.name != name and any(
+            t.category == subject.category and t.name == subject.name and t.category != category_key
+            for t in sheet
+        ):
+            found.append((subject.category, subject.full_name))
+        return tuple(dict.fromkeys(found))
 
     for category, name in rule_set.traits:
-        if category != category_key or name in held:
+        if category != category_key or (name in held and at is None):
             continue
         trying = touching
         if rated:
@@ -622,7 +634,7 @@ def refusals(
                 *looking.get((category, None), ()),
             }
             trying = [touching[i] for i in sorted(places)]
-        rating = (fixed_rating(rules, sheet, category, name) or 1) if rated else None
+        rating = (at or fixed_rating(rules, sheet, category, name) or 1) if rated else None
         # The detail is chosen when the trait is added, so a trait refused only for
         # lacking one (Performance needs a field, p. 92) is tried again with one.
         new: list[Violation] = []
@@ -630,7 +642,12 @@ def refusals(
             candidate = SheetTrait(
                 category=category, name=name, detail=detail, rating=rating, free_rating=0
             )
-            trial = [t for t in sheet if rated or t.category != category] + [candidate]
+            trial = [
+                t
+                for t in sheet
+                if (rated or t.category != category)
+                and not (at is not None and t.category == category and t.name == name)
+            ] + [candidate]
             trial_context = check_context(
                 db,
                 character,
@@ -652,8 +669,11 @@ def refusals(
             # The trait's own problem first: "Talisman is already…" when trying Spellslinger.
             own = [v for v in new if v.subject.name == name]
             first = (own or new)[0]
-            reasons[name] = Refusal(first.message, because(first))
-        elif as_if == "sheet" and rating is not None:
+            # Every holder is named, not only the first check's: a Thin Blooded flaw for a
+            # Brujah is refused for the Generation and for the clan.
+            holders = dict.fromkeys(h for v in new for h in because(v, name))
+            reasons[name] = Refusal(first.message, tuple(holders))
+        elif as_if == "sheet" and rating is not None and at is None:
             refused = not_for_sale(rules, sheet, category, name, rating)
             if refused is not None:
                 reasons[name] = Refusal(refused)

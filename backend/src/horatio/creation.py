@@ -181,6 +181,54 @@ def budget_changes(db: Session, character: Character) -> dict[str, list[tuple[st
     return {category: found for category, found in changes.items() if found}
 
 
+def freed_picks(
+    db: Session, character: Character
+) -> dict[tuple[str, str, str], list[tuple[str, str]]]:
+    """The creation picks a trait now gives for free, by (category, name, detail), and the
+    traits that give it: a pick on Herd while Personal Cult makes Herd free to 5. The
+    pick is spent on dots the character has without it, so it can go elsewhere."""
+    found = sheet_effects(db, character)
+    freed: dict[tuple[str, str, str], list[tuple[str, str]]] = {}
+    for row in sheet_rows(db, character):
+        pick = row.trait.creation_pick
+        if pick is None or row.category.key == "merits" or row.category.key == "flaws":
+            continue
+        if found.free_up_to.get(row.key, 0) >= pick:
+            freed[row.key] = list(dict.fromkeys(found.givers.get(row.key, [])))
+    return freed
+
+
+@dataclass
+class Given:
+    """A trait the character holds with no creation pick of its own: its dots come
+    from a merit (Extrasensory Perceptions' Perception focus, Diva's Fame 2)."""
+
+    category: str
+    name: str
+    detail: str
+    rating: int
+    because: list[tuple[str, str]]
+
+
+def given_traits(db: Session, character: Character, categories: Sequence[str]) -> list[Given]:
+    """The traits in these categories that merits give, which a pick cannot go on."""
+    found = sheet_effects(db, character)
+    return [
+        Given(
+            row.category.key,
+            row.definition.name,
+            row.trait.detail,
+            row.trait.granted_rating,
+            list(dict.fromkeys(found.givers.get(row.key, []))),
+        )
+        for row in sheet_rows(db, character)
+        if row.category.key in categories
+        and row.trait.creation_pick is None
+        and row.trait.granted_rating > 0
+        and (row.trait.rating or 0) > 0
+    ]
+
+
 def pools_with_strays(db: Session, character: Character) -> list[Pool]:
     rules = rules_for(db, character).creation_rules()
     rows = sheet_rows(db, character)

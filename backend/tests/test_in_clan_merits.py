@@ -478,7 +478,7 @@ def test_the_starting_disciplines_follow_merits_that_change_what_is_in_clan(
 
     assert at(2)["options"] == ["Auspex", "Potence"]
     assert at(2)["traits"] == [
-        {"name": "Dominate", "detail": "", "pick": 2, "fits": False, "because": []}
+        {"name": "Dominate", "detail": "", "pick": 2, "fits": False, "because": [], "freed_by": []}
     ]
 
 

@@ -21,6 +21,12 @@ function useFiltered(traits: TraitOut[], picks: Picks) {
 /** Holds the counters in view while a long list scrolls under them (on a phone, the page). */
 const STICKY = "sticky top-0 z-10 -mx-2 bg-dusk/95 px-2 py-2 backdrop-blur";
 
+/** Ratings at which a trait cannot be picked, and why: Generation 2 for a Thin Blooded vampire. */
+export type RatingBar = { ratings: number[]; note: ReactNode };
+
+/** A trait a merit gives, held without a pick: the dots it has, and a line saying whose they are. */
+export type Held = { rating: number; text: string };
+
 /**
  * Every trait in a category, each with a row of dots. Tap a dot to set that
  * rating; tap it again, or Clear, to take it back. Only ratings with picks can
@@ -40,6 +46,9 @@ export function DotGrid({
   onDetail,
   unavailable = {},
   marks = {},
+  why,
+  barredAt = {},
+  held = {},
 }: {
   title: string;
   showTitle?: boolean;
@@ -59,6 +68,12 @@ export function DotGrid({
   /** Picks kept where they no longer fit, and what to do (a starting dot on a
    * discipline that is no longer in-clan): marked on their row, never dropped. */
   marks?: Record<string, string>;
+  /** More on why a trait is refused: the traits it is because of, and where they are. */
+  why?: (name: string) => ReactNode;
+  /** Ratings a trait cannot be picked at, by trait: the dots are greyed and the reason shown. */
+  barredAt?: Record<string, RatingBar[]>;
+  /** Traits merits give, held without a pick (a focus, Diva's Fame 2): shown filled, and no pick goes on them. */
+  held?: Record<string, Held>;
 }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const toggle = (name: string) => {
@@ -91,6 +106,8 @@ export function DotGrid({
     const rating = picks[key] ?? 0;
     const label = copy ? null : tag?.(trait);
     const barred = rating || copy ? undefined : unavailable[trait.name];
+    const gift = rating || copy ? undefined : held[trait.name];
+    const bars = copy ? [] : (barredAt[trait.name] ?? []);
     const marked = rating && !copy ? marks[trait.name] : undefined;
     const about = !copy && trait.description ? `about-${title}-${trait.name}`.replace(/\W+/g, "-") : undefined;
     const shown = open.has(trait.name);
@@ -133,8 +150,9 @@ export function DotGrid({
           <span className="flex shrink-0 items-center gap-0.5">
             {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
               const pickable = dot in allowed;
-              const enabled = pickable && !barred && canTap(picks, allowed, key, dot);
-              const filled = dot <= rating;
+              const clashes = picks[key] !== dot && bars.some((b) => b.ratings.includes(dot));
+              const enabled = pickable && !barred && !gift && !clashes && canTap(picks, allowed, key, dot);
+              const filled = dot <= (rating || gift?.rating || 0);
               return (
                 <button
                   key={dot}
@@ -169,7 +187,18 @@ export function DotGrid({
             </button>
           </span>
         </div>
-        {barred && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{barred}</p>}
+        {barred && (
+          <p className="mt-0.5 pl-6 text-xs text-blood-bright">
+            {barred}
+            {why?.(trait.name)}
+          </p>
+        )}
+        {gift && <p className="mt-0.5 pl-6 text-xs text-gold">{gift.text}</p>}
+        {bars.map((bar) => (
+          <p key={bar.ratings.join(",")} className="mt-0.5 pl-6 text-xs text-blood-bright">
+            Not at {bar.ratings.join(" or ")}: {bar.note}
+          </p>
+        ))}
         {marked && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{marked} Clear it and place it on another.</p>}
         {problems[key] && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{problems[key].message}</p>}
         {about && (

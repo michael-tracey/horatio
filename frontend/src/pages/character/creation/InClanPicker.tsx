@@ -21,7 +21,8 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   const choice = inClanChoice(sheet);
   // What nothing chosen here could allow is not offered at all.
   const barred = useUnavailable(character.id, EXTRA_IN_CLAN, true, { asIf: "empty" }).data;
-  const refused = useUnavailable(character.id, EXTRA_IN_CLAN).data ?? {};
+  const refusals = useUnavailable(character.id, EXTRA_IN_CLAN).data;
+  const refused = refusals ?? {};
   const [wanted, setWanted] = useState<string | null>(null);
   const path = { params: { path: { character_id: character.id } } };
   const toggle = useAction((body: { name: string; on: boolean }) =>
@@ -54,7 +55,9 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
     setWanted(null);
   });
 
-  if (!barred) return null;
+  // Not shown until the server has said what it refuses: a tap before then would be
+  // sent as a plain choice, and fail, instead of offering the swaps.
+  if (!barred || !refusals) return null;
   const options = catalogue.traits.filter((t) => t.category === EXTRA_IN_CLAN && (chosen.includes(t.name) || given.has(t.name) || !(t.name in barred)));
   if (!options.length && !choice.chooses) return null;
   const busy = toggle.isPending || swapIn.isPending;

@@ -24,11 +24,11 @@ function sheet(traits: SheetTraitOut[], problems: SheetOut["problems"] = []): Sh
   return { traits, problems } as SheetOut;
 }
 
-const creation = (pools: PoolOut[], needs: CreationOut["needs"] = []): CreationOut => ({ complete: false, pools, needs, path_starts: [], budget_changes: [] });
+const creation = (pools: PoolOut[], needs: CreationOut["needs"] = []): CreationOut => ({ complete: false, pools, needs, path_starts: [], budget_changes: [], given: [] });
 
 describe("strayPicks", () => {
   it("marks a starting dot on a discipline that is no longer in-clan, on Concept and on Disciplines", () => {
-    const pools = [pool({ rating: 2, restriction: "in_clan", traits: [{ name: "Celerity", detail: "", pick: 2, fits: false, because: [] }] })];
+    const pools = [pool({ rating: 2, restriction: "in_clan", traits: [{ name: "Celerity", detail: "", pick: 2, fits: false, because: [], freed_by: [] }] })];
 
     expect(strayPicks({ creation: creation(pools), sheet: sheet([]), steps: STEPS })).toEqual([
       {
@@ -43,7 +43,7 @@ describe("strayPicks", () => {
 
   it("names what leaves a discipline without a free dot, and sends the player to it", () => {
     const inept = { category: "flaws", name: "Inept" };
-    const pools = [pool({ rating: 1, restriction: "in_clan", traits: [{ name: "Presence", detail: "", pick: 1, fits: false, because: [inept] }] })];
+    const pools = [pool({ rating: 1, restriction: "in_clan", traits: [{ name: "Presence", detail: "", pick: 1, fits: false, because: [inept], freed_by: [] }] })];
 
     expect(strayPicks({ creation: creation(pools), sheet: sheet([]), steps: STEPS })).toEqual([
       {
@@ -57,7 +57,7 @@ describe("strayPicks", () => {
   });
 
   it("says nothing of picks that fit", () => {
-    const pools = [pool({ restriction: "in_clan", traits: [{ name: "Auspex", detail: "", pick: 1, fits: true, because: [] }] })];
+    const pools = [pool({ restriction: "in_clan", traits: [{ name: "Auspex", detail: "", pick: 1, fits: true, because: [], freed_by: [] }] })];
 
     expect(strayPicks({ creation: creation(pools), sheet: sheet([]), steps: STEPS })).toEqual([]);
   });
@@ -68,7 +68,7 @@ describe("overBudget", () => {
 
   it("keeps a dot at a rating the rules no longer give, and says what took it away", () => {
     const pools = [
-      pool({ rating: 2, allowed: 0, used: 1, remaining: -1, because: thin, traits: [{ name: "Celerity", detail: "", pick: 2, fits: true, because: [] }] }),
+      pool({ rating: 2, allowed: 0, used: 1, remaining: -1, because: thin, traits: [{ name: "Celerity", detail: "", pick: 2, fits: true, because: [], freed_by: [] }] }),
       pool({ rating: 1, allowed: 2, used: 2, remaining: 0 }),
     ];
 

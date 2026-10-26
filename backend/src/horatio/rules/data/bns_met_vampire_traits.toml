@@ -1690,13 +1690,15 @@ properties = { rating = 3, type = "Clan", requirement = "Lasombra" }
 category = "flaws"
 name = "Lesser Generation 1"
 description = "Neonate is of the 12th Generation, Ancilla is of the 10th Generation. Flaw cannot be taken by any Elders."
-properties = { rating = 1, type = "General" }
+page_reference = "263"
+properties = { rating = 1, type = "General", requirement = "Neonate or Ancilla" }
 
 [[traits]]
 category = "flaws"
 name = "Lesser Generation 2"
 description = "Neonate is of the 13th Generation. Flaw cannot be taken by Elders."
-properties = { rating = 2, type = "General" }
+page_reference = "263"
+properties = { rating = 2, type = "General", requirement = "Neonate" }
 
 [[traits]]
 category = "flaws"

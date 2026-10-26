@@ -123,7 +123,19 @@ export const brokenChecks: NoticeSource = ({ creation, sheet, steps }) => {
     if (problem.strength !== "refuse" && problem.strength !== "complete") continue;
     const on = inOrder(steps, [stepFor(steps, problem.category)?.key, ...(problem.looks_at ?? []).map((t) => stepFor(steps, t.category)?.key)]);
     if (!on.length || found.has(problem.message) || needs.has(problem.message)) continue;
-    found.set(problem.message, { key: `check/${problem.message}`, message: problem.message, on, fix: on[0]! });
+    // A clash (a check that refuses) names the pick it is with: "Archaic and Computer
+    // clash: …". A need the player must meet (Vestiges: choose one) keeps its own words.
+    const clashing = sheet.traits.filter(
+      (t) =>
+        problem.strength === "refuse" &&
+        (t.rating ?? 0) > 0 &&
+        !(t.category === problem.category && t.name === problem.name) &&
+        (problem.looks_at ?? []).some((l) => l.category === t.category && (l.name == null || l.name === t.name)) &&
+        stepFor(steps, t.category)?.key !== stepFor(steps, problem.category)?.key,
+    );
+    const names = [...new Set(clashing.map((t) => t.name))];
+    const message = names.length ? `${problem.name} and ${listed(names)} clash: ${problem.message}` : problem.message;
+    found.set(problem.message, { key: `check/${problem.message}`, message, on, fix: on[0]! });
   }
   return [...found.values()];
 };
