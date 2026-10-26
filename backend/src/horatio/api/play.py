@@ -4,10 +4,10 @@ the staff who can see the sheet use it alike; each tap says who made it."""
 
 import uuid
 from datetime import UTC, datetime
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,10 +24,12 @@ from horatio.models import (
     PlayCounter,
     PlayEvent,
     PlayGame,
+    PoolModifier,
     Troupe,
     User,
 )
 from horatio.permissions import TroupeAction, require_troupe_action, visible_character
+from horatio.pool_modifiers import ModifierOut, modifiers_out
 
 router = APIRouter(tags=["play"])
 
@@ -262,6 +264,42 @@ class ResetIn(BaseModel):
 class CounterIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     uses: int = Field(ge=1, le=99)
+
+
+# Which pools a modifier changes: every pool, every attack, every defence, the
+# pools made on an attribute, or one pool by its key.
+POOLS_PATTERN = r"^(all|attack|defense|Physical|Social|Mental|pool:[\w' :-]+)$"
+Pools = Annotated[str, StringConstraints(pattern=POOLS_PATTERN)]
+
+
+class ModifierIn(BaseModel):
+    label: str = Field(min_length=1, max_length=80)
+    amount: int = Field(ge=-9, le=9)
+    pools: Pools
+    when: str = Field(default="", max_length=80)
+    on: bool = True
+
+    @model_validator(mode="after")
+    def not_nothing(self) -> Self:
+        if self.amount == 0:
+            raise ValueError("A modifier needs an amount other than 0.")
+        return self
+
+
+class ModifierChange(BaseModel):
+    """Whatever of a modifier is changing; the rest stays."""
+
+    label: str | None = Field(default=None, min_length=1, max_length=80)
+    amount: int | None = Field(default=None, ge=-9, le=9)
+    pools: Pools | None = None
+    when: str | None = Field(default=None, max_length=80)
+    on: bool | None = None
+
+    @model_validator(mode="after")
+    def not_nothing(self) -> Self:
+        if self.amount == 0:
+            raise ValueError("A modifier needs an amount other than 0.")
+        return self
 
 
 class TroupePlayEntry(BaseModel):
@@ -506,6 +544,87 @@ def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
         traits=sheet_traits(db, character),
         retainers=listed(db, retainers.read(db, character), user),
     )
+
+
+@router.get("/characters/{character_id}/play/modifiers")
+def read_modifiers(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[ModifierOut]:
+    """The player's own modifiers to the character's test pools, on or off."""
+    return modifiers_out(db, visible_character(db, user, character_id))
+
+
+@router.post("/characters/{character_id}/play/modifiers")
+def add_modifier(
+    character_id: uuid.UUID, body: ModifierIn, db: DbSession, user: CurrentUser
+) -> list[ModifierOut]:
+    """Note a modifier. The player and the staff who can see the sheet may, as for taps."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    db.add(
+        PoolModifier(
+            character_id=character.id,
+            label=body.label.strip(),
+            amount=body.amount,
+            pools=body.pools,
+            when=body.when.strip(),
+            on=body.on,
+            created_by_id=user.id,
+        )
+    )
+    audit.record(
+        db,
+        user,
+        "play.modifier_added",
+        character_id=character.id,
+        label=body.label,
+        amount=body.amount,
+        pools=body.pools,
+    )
+    db.commit()
+    return modifiers_out(db, character)
+
+
+def own_modifier(db: Session, character: Character, modifier_id: uuid.UUID) -> PoolModifier:
+    modifier = db.get(PoolModifier, modifier_id)
+    if modifier is None or modifier.character_id != character.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such modifier.")
+    return modifier
+
+
+@router.patch("/characters/{character_id}/play/modifiers/{modifier_id}")
+def change_modifier(
+    character_id: uuid.UUID,
+    modifier_id: uuid.UUID,
+    body: ModifierChange,
+    db: DbSession,
+    user: CurrentUser,
+) -> list[ModifierOut]:
+    """Switch a modifier on or off, or edit it."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    modifier = own_modifier(db, character, modifier_id)
+    changes = body.model_dump(exclude_none=True)
+    for field, value in changes.items():
+        setattr(modifier, field, value.strip() if isinstance(value, str) else value)
+    audit.record(
+        db,
+        user,
+        "play.modifier_changed",
+        character_id=character.id,
+        label=modifier.label,
+        **changes,
+    )
+    db.commit()
+    return modifiers_out(db, character)
+
+
+@router.delete("/characters/{character_id}/play/modifiers/{modifier_id}")
+def remove_modifier(
+    character_id: uuid.UUID, modifier_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> list[ModifierOut]:
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    modifier = own_modifier(db, character, modifier_id)
+    audit.record(db, user, "play.modifier_removed", character_id=character.id, label=modifier.label)
+    db.delete(modifier)
+    db.commit()
+    return modifiers_out(db, character)
 
 
 @router.post("/characters/{character_id}/play/taps")

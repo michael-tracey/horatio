@@ -558,3 +558,64 @@ def test_a_late_derangement_tap_moves_the_next_game(troupe: Troupe, agnes: str) 
     assert state["log"][0]["text"] == "Derangement traits 2 → 3"
     log = troupe.player.client.get(f"/characters/{agnes}/play/games/{game_one}").json()
     assert texts(log) == ["Derangement traits 1 → 2", "Derangement traits 0 → 1"]
+
+
+def test_pool_modifiers_are_kept_and_switched_at_the_table(troupe: Troupe, agnes: str) -> None:
+    base = f"/characters/{agnes}/play/modifiers"
+    added = troupe.player.client.post(
+        base, json={"label": "Fame", "amount": 2, "pools": "Social", "when": "against mortals"}
+    )
+    assert added.status_code == 200, added.text
+    [fame] = added.json()
+    assert (fame["label"], fame["amount"], fame["pools"], fame["when"], fame["on"]) == (
+        "Fame",
+        2,
+        "Social",
+        "against mortals",
+        True,
+    )
+
+    # Staff who can tap can switch it off and edit it.
+    off = troupe.storyteller.client.patch(f"{base}/{fame['id']}", json={"on": False})
+    assert [(m["on"], m["amount"]) for m in off.json()] == [(False, 2)]
+    edited = troupe.player.client.patch(f"{base}/{fame['id']}", json={"amount": 3, "on": True})
+    assert [(m["on"], m["amount"], m["label"]) for m in edited.json()] == [(True, 3, "Fame")]
+
+    # Kept through a Reset.
+    assert troupe.player.client.post(f"/characters/{agnes}/play/reset", json={}).status_code == 200
+    assert [m["label"] for m in troupe.player.client.get(base).json()] == ["Fame"]
+
+    gone = troupe.player.client.delete(f"{base}/{fame['id']}")
+    assert gone.json() == []
+
+
+def test_pool_modifiers_need_something_sensible(troupe: Troupe, agnes: str) -> None:
+    base = f"/characters/{agnes}/play/modifiers"
+    for bad in (
+        {"label": "Fame", "amount": 0, "pools": "all"},
+        {"label": "Fame", "amount": 2, "pools": "everything"},
+        {"label": "", "amount": 2, "pools": "all"},
+    ):
+        assert troupe.player.client.post(base, json=bad).status_code == 422
+    ok = troupe.player.client.post(
+        base, json={"label": "Lame", "amount": -2, "pools": "pool:dodge"}
+    )
+    assert ok.status_code == 200
+    assert (
+        troupe.player.client.patch(f"{base}/{ok.json()[0]['id']}", json={"amount": 0}).status_code
+        == 422
+    )
+
+
+def test_who_can_change_pool_modifiers(troupe: Troupe, agnes: str) -> None:
+    base = f"/characters/{agnes}/play/modifiers"
+    body = {"label": "Fame", "amount": 2, "pools": "all"}
+    added = troupe.assistant.client.post(base, json=body)
+    assert added.status_code == 200, added.text
+    modifier = added.json()[0]["id"]
+    for person in (troupe.narrator, troupe.stranger):
+        assert person.client.get(base).status_code == 404
+        assert person.client.post(base, json=body).status_code == 404
+        assert person.client.patch(f"{base}/{modifier}", json={"on": False}).status_code == 404
+        assert person.client.delete(f"{base}/{modifier}").status_code == 404
+    assert [m["on"] for m in troupe.player.client.get(base).json()] == [True]

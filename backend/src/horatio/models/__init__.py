@@ -34,7 +34,13 @@ from horatio.models.influence_blocks import InfluenceBlock
 from horatio.models.influence_effects import InfluenceEffect
 from horatio.models.notifications import EmailNotice, Notification
 from horatio.models.people import AuthIdentity, FormerHandle, PasswordReset, Session, User
-from horatio.models.play import PlayCounter, PlayDerangement, PlayEvent, PlayGame
+from horatio.models.play import (
+    PlayCounter,
+    PlayDerangement,
+    PlayEvent,
+    PlayGame,
+    PoolModifier,
+)
 from horatio.models.retainers import Retainer
 from horatio.models.rules import (
     ActionKind,
@@ -81,6 +87,7 @@ __all__ = [
     "OwedAction",
     "PasswordReset",
     "PlayCounter",
+    "PoolModifier",
     "PlayDerangement",
     "PlayEvent",
     "PlayGame",

@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
-import type { DisciplinePowers, PlayReference, TestPool } from "../../api/types";
+import type { DisciplinePowers, PlayReference, PoolModifier, TestPool } from "../../api/types";
 import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
 import { RetainerLines } from "../character/Retainers";
+import { ModifiersPanel } from "./Modifiers";
 import { breakdown, grouped, total } from "./pools";
+import { useModifiers } from "./useModifiers";
 
 type Trait = PlayReference["traits"][number];
 
@@ -59,15 +61,15 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
   );
 }
 
-function PoolRow({ pool, willpower }: { pool: TestPool; willpower: number }) {
+function PoolRow({ pool, willpower, modifiers }: { pool: TestPool; willpower: number; modifiers: PoolModifier[] }) {
   return (
     <li className="border-b border-ash/60 py-2 last:border-0">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-parchment">{pool.name}</span>
-        <strong className="font-display text-2xl leading-none text-parchment">{total(pool, willpower)}</strong>
+        <strong className="font-display text-2xl leading-none text-parchment">{total(pool, willpower, modifiers)}</strong>
       </div>
       <p className="text-xs text-mist">
-        {breakdown(pool, willpower)}
+        {breakdown(pool, willpower, modifiers)}
         {pool.versus && <> · against {pool.versus}</>}
       </p>
       {pool.variants.length > 0 && (
@@ -78,7 +80,7 @@ function PoolRow({ pool, willpower }: { pool: TestPool; willpower: number }) {
                 {v.when}
                 <span className="text-xs"> ({v.parts.map((p) => `${p.value >= 0 ? "+" : "−"}${Math.abs(p.value)} ${p.label}`).join(", ")})</span>
               </span>
-              <strong className="text-gold">{v.total + (total(pool, willpower) - pool.total)}</strong>
+              <strong className="text-gold">{v.total + (total(pool, willpower, modifiers) - pool.total)}</strong>
             </li>
           ))}
         </ul>
@@ -118,7 +120,8 @@ function Discipline({ discipline }: { discipline: DisciplinePowers }) {
  * Test pools worked out from the sheet, with what changes them, and what each
  * power does. Defence counts current Willpower, so it follows the tracker.
  */
-export function PoolsTab({ reference, willpower }: { reference: PlayReference; willpower: number }) {
+export function PoolsTab({ reference, willpower, characterId }: { reference: PlayReference; willpower: number; characterId: string }) {
+  const modifiers = useModifiers(characterId);
   return (
     <div className="flex flex-col gap-3">
       <div className="grid gap-3 md:grid-cols-2">
@@ -126,12 +129,13 @@ export function PoolsTab({ reference, willpower }: { reference: PlayReference; w
           <Panel key={group} title={group} aside={group === "Defence" ? <span className="text-xs text-mist">Willpower now: {willpower}</span> : undefined}>
             <ul>
               {pools.map((p) => (
-                <PoolRow key={p.key} pool={p} willpower={willpower} />
+                <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={modifiers.modifiers} />
               ))}
             </ul>
           </Panel>
         ))}
       </div>
+      <ModifiersPanel pools={reference.pools} modifiers={modifiers} />
       {reference.notes.length > 0 && (
         <Panel title="Also">
           <ul className="list-disc pl-5 text-sm text-mist">

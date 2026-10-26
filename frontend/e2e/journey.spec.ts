@@ -1731,6 +1731,22 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(initiative.getByText("7", { exact: true })).toBeVisible();
   await expect(p.getByRole("listitem").filter({ hasText: /^Dodge/ }).getByText("7", { exact: true }).first()).toBeVisible();
   await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
+  // The player's own modifier: Social pools go up while it is on, with Fame in the breakdown.
+  const social = p.getByRole("listitem").filter({ hasText: /^Resisting Social powers/ });
+  await expect(social).not.toContainText("Fame");
+  await p.getByLabel("Your own modifier").fill("Fame");
+  await p.getByLabel("Amount").fill("2");
+  await p.getByLabel("Applies to").selectOption("Social");
+  await p.getByLabel("When (a note)").fill("against mortals");
+  await p.getByRole("button", { name: "Add modifier" }).click();
+  await expect(social).toContainText("Fame 2");
+  await expect(p.getByText("+2 Social pools, against mortals")).toBeVisible();
+  // Switched off, it drops back and waits at the foot of the tab.
+  await p.getByLabel("Fame on").uncheck();
+  await expect(social).not.toContainText("Fame");
+  await expect(p.getByRole("heading", { name: "Switched off" })).toBeVisible();
+  await p.getByLabel("Fame on").check();
+  await expect(social).toContainText("Fame 2");
   await p.screenshot(shots("play-pools"));
   await p.getByRole("tab", { name: "Sheet" }).click();
   await expect(p.getByRole("heading", { name: "Attributes" })).toBeVisible();
@@ -1783,6 +1799,13 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByText("Game 2")).toBeVisible();
   await p.getByRole("button", { name: /Game 1 ·/ }).click();
   await expect(p.getByText("“fed at the club”")).toBeVisible();
+
+  // The modifier is still there after the Reset, and prints beside the pools it changes while it is on.
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(p.getByLabel("Fame on")).toBeChecked();
+  await p.goto(`/print/characters/${npc}`);
+  await expect(p.getByText("(+2 Fame)", { exact: true })).toBeVisible();
+  await p.goBack();
 
   // With ratings as pips in Settings, the Sheet and Pools tabs show pips too:
   // Physical 5 of ten, Celerity 2, and its powers' levels.
