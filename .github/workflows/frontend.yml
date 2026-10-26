@@ -56,11 +56,14 @@ jobs:
         working-directory: backend
       - run: npm ci && npm run build && npx playwright install --with-deps chromium
         working-directory: frontend
+      # Keep-alive as e2e-local.sh sets it: Playwright reuses idle connections with
+      # no timeout of its own, and one uvicorn drops at 5 s fails with ECONNRESET.
       - name: Start Horatio
         working-directory: backend
         run: |
           mkdir -p "$RUNNER_TEMP/uploads"
-          HORATIO_FRONTEND_DIST=$GITHUB_WORKSPACE/frontend/dist HORATIO_UPLOAD_DIR=$RUNNER_TEMP/uploads uv run uvicorn horatio.app:app --port 8766 &
+          HORATIO_FRONTEND_DIST=$GITHUB_WORKSPACE/frontend/dist HORATIO_UPLOAD_DIR=$RUNNER_TEMP/uploads \
+            uv run uvicorn horatio.app:app --port 8766 --timeout-keep-alive 300 > "$RUNNER_TEMP/horatio.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/horatio.pid"
           for i in $(seq 1 30); do curl -sf localhost:8766/api/health && break; sleep 1; done
       - run: npx playwright test
@@ -76,3 +79,10 @@ jobs:
       - name: Stop Horatio
         if: always()
         run: kill "$(cat "$RUNNER_TEMP/horatio.pid")" 2>/dev/null || true
+      # The API's own log, for a failure the browser's side does not explain.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-api-log
+          path: ${{ runner.temp }}/horatio.log
+          retention-days: 7
