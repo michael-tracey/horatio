@@ -227,8 +227,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
 
   // Accepted, Agnes keeps only 5 of her unspent creation XP. Her storytellers award her some.
-  await lead.page.getByRole("link", { name: "People", exact: true }).click();
-  await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
+  await lead.page.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   const agnesRow = lead.page.getByRole("listitem").filter({ has: lead.page.getByRole("link", { name: "Agnes", exact: true }) });
   await expect(agnesRow.getByText(/ · (Neonate|Ancilla|Elder)$/)).toBeVisible();
   await expect(agnesRow.locator('img[src*="/pictures/"]')).toBeVisible();
@@ -267,8 +266,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("awaiting approval")).toHaveCount(0);
 
   // The troupe's characters and log show what happened.
-  await lead.page.getByRole("link", { name: "People", exact: true }).click();
-  await lead.page.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
+  await lead.page.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await expect(lead.page.getByText("home", { exact: true })).toBeVisible();
   // Ticked characters print together, in a new tab.
   await expect(lead.page.getByRole("button", { name: "Print selected (0)" })).toBeDisabled();
@@ -279,6 +277,26 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(printed.getByText("1 sheet", { exact: true })).toBeVisible();
   await expect(printed.getByText("Agnes", { exact: true }).first()).toBeVisible();
   await printed.close();
+
+  // The troupe page has Characters and Players groups: NPCs and At game sit under Characters,
+  // and Players lists the player with their character, linking to their profile.
+  const sections = lead.page.getByRole("navigation", { name: "Troupe sections" });
+  await expect(sections.getByRole("link", { name: "Players", exact: true })).toBeVisible();
+  await expect(sections.getByRole("link", { name: "People", exact: true })).toHaveCount(0);
+  const characterTabs = lead.page.getByRole("navigation", { name: "Characters", exact: true });
+  for (const tab of ["NPCs", "At game", "Award XP", "Approvals"]) await expect(characterTabs.getByRole("link", { name: tab })).toBeVisible();
+  await sections.getByRole("link", { name: "Players", exact: true }).click();
+  const playerRow = lead.page.getByRole("listitem").filter({ has: lead.page.getByRole("link", { name: /^player @/ }) }).first();
+  await expect(playerRow.getByRole("link", { name: "Agnes", exact: true })).toBeVisible();
+  await expect(playerRow.getByText("Home", { exact: true })).toBeVisible();
+  await lead.page.getByLabel("Search players").fill("nobody by this name");
+  await expect(lead.page.getByText("No players match.")).toBeVisible();
+  await lead.page.getByLabel("Search players").fill("agnes");
+  await lead.page.screenshot(shots("players"));
+  await playerRow.getByRole("link", { name: /^player @/ }).click();
+  await expect(lead.page).toHaveURL(/\/players\//);
+  await lead.page.goBack();
+  await sections.getByRole("link", { name: "Characters", exact: true }).click();
 
   // Game badges. The custodian adds a logo for Agnes's clan (Horatio ships none)…
   await custodian.page.getByRole("link", { name: "Custodian", exact: true }).click();
@@ -747,7 +765,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
 
   // The lead sees the self-entered XP apart, and what is above the ceiling, and removes it.
-  await l.getByRole("link", { name: "People", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await l.getByRole("link", { name: /Approvals/ }).click();
   await expect(l.getByLabel("Self-entered XP: 30")).toBeVisible();
   await l.getByLabel("Above the ceiling by 10 XP").selectOption({ label: "Remove the 10 XP above the ceiling" });
@@ -867,7 +885,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   const p = lead.page;
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
-  await p.getByRole("link", { name: "People", exact: true }).click();
+  await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "NPCs", exact: true }).click();
   await expect(p.getByRole("heading", { name: "New NPC" })).toBeVisible();
   await p.getByLabel("Name").fill("Prince Vasquez");
@@ -910,8 +928,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   // Titles are given on the troupe's Characters tab.
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
-  await p.getByRole("link", { name: "People", exact: true }).click();
-  await p.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
+  await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await p.getByRole("button", { name: "Give Prince Vasquez a title" }).click();
   await p.getByRole("dialog").getByLabel("Title").fill("Prince");
   await p.screenshot(shots("give-title"));
@@ -2299,8 +2316,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
     if (occult) expect((await rate("skills", "Occult", occult)).status()).toBe(200);
   }
 
-  await p.getByRole("link", { name: "People", exact: true }).click();
-  await p.locator("main").getByRole("link", { name: "Characters", exact: true }).click();
+  await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await expect(p.getByText("3 of 3 characters")).toBeVisible();
   await expect(p.getByRole("button", { name: "Remove “Is active”" })).toBeVisible(); // retired characters are hidden by default
 
@@ -3456,7 +3472,7 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   const state = async (name: string) => (await p.request.get(`/api/characters/${npcs[name]}/play`)).json();
 
   // From the At game tab to an empty scene.
-  await p.getByRole("link", { name: "People", exact: true }).click();
+  await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await p.getByRole("link", { name: "At game" }).click();
   await p.getByRole("link", { name: "Open the Scene view" }).click();
   await expect(p.getByRole("heading", { name: "Scene", exact: true })).toBeVisible();
@@ -4779,7 +4795,7 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   // The lead sets up the coterie's Haven: Agnes puts in 2 dots, Bram 1.
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("link", { name: "People", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await l.getByRole("link", { name: "Shared backgrounds" }).click();
   await l.getByRole("button", { name: "Set up a shared background" }).click();
   const setUp = l.getByRole("form", { name: "Set up a shared background" });

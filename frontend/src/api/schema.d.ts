@@ -8147,6 +8147,8 @@ export interface components {
             player_id: string | null;
             /** Player Name */
             player_name: string;
+            /** Retired */
+            retired: boolean;
             /** Social Age */
             social_age: string;
             /** Titles */
