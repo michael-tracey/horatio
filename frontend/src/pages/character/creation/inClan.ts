@@ -87,7 +87,9 @@ export function whenTapped(name: string, refused: Record<string, string>): "choo
 }
 
 /** In-clan disciplines still to choose: on Concept, and on Merits when a merit there added the choice. */
-export const inClanChoices: NoticeSource = ({ sheet, steps }) => {
+export const inClanChoices: NoticeSource = ({ sheet, steps, ghoul }) => {
+  // A ghoul chooses none: its in-clan disciplines are its domitor's.
+  if (ghoul) return [];
   const { chooses, chosen, adding, caitiff } = inClanChoice(sheet);
   const left = chooses - chosen.length;
   if (left <= 0) return [];

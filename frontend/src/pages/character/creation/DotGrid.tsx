@@ -4,7 +4,7 @@ import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
 import { detailNeed } from "../fields";
-import { canTap, clear, fieldProblems, keysOf, left, traitOf, nextCopy, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
+import { canTap, canTapDots, clear, fieldProblems, keysOf, left, traitOf, nextCopy, spent, tap, tapDots, togglePoints, type Allowed, type Picks } from "./logic";
 
 // Long lists get a search box.
 const SEARCH_FROM = 12;
@@ -32,7 +32,8 @@ export type Held = { rating: number; text: string };
  * Every trait in a category, each with a row of dots. Tap a dot to set that
  * rating; tap it again, or Clear, to take it back. Only ratings with picks can
  * be tapped, and a rating with none left greys out (in a ranking, such as
- * attributes, tapping a taken rating swaps instead).
+ * attributes, tapping a taken rating swaps instead). With a `budget`, the dots
+ * are shared out from it instead, as many on a trait as it likes.
  */
 export function DotGrid({
   title,
@@ -50,6 +51,7 @@ export function DotGrid({
   why,
   barredAt = {},
   held = {},
+  budget,
 }: {
   title: string;
   showTitle?: boolean;
@@ -75,6 +77,9 @@ export function DotGrid({
   barredAt?: Record<string, RatingBar[]>;
   /** Traits merits give, held without a pick (a focus, Diva's Fame 2): shown filled, and no pick goes on them. */
   held?: Record<string, Held>;
+  /** Dots to share out in place of picks at each rating (a ghoul's 5 discipline dots),
+   * up to `max` on one trait; those left are saved for later. */
+  budget?: { dots: number; max: number };
 }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const toggle = (name: string) => {
@@ -85,7 +90,9 @@ export function DotGrid({
   const ratings = Object.keys(allowed)
     .map(Number)
     .sort((a, b) => b - a);
-  const maxDots = Math.max(...ratings);
+  const maxDots = budget ? budget.max : Math.max(...ratings);
+  const pickableAt = (dot: number) => (budget ? dot <= budget.max : dot in allowed);
+  const tappable = (key: string, dot: number) => (budget ? canTapDots(picks, budget.dots, key, dot) : canTap(picks, allowed, key, dot));
   const { query, setQuery, shown } = useFiltered(traits, picks);
   const groups: [string | null, TraitOut[]][] = sections
     ? [...sections.order, "Other"]
@@ -151,9 +158,9 @@ export function DotGrid({
           </span>
           <span className="flex shrink-0 items-center gap-0.5">
             {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
-              const pickable = dot in allowed;
+              const pickable = pickableAt(dot);
               const clashes = picks[key] !== dot && bars.some((b) => b.ratings.includes(dot));
-              const enabled = pickable && !barred && !gift && !clashes && canTap(picks, allowed, key, dot);
+              const enabled = pickable && !barred && !gift && !clashes && tappable(key, dot);
               const filled = dot <= (rating || gift?.rating || 0);
               return (
                 <button
@@ -164,7 +171,7 @@ export function DotGrid({
                   disabled={!enabled}
                   onClick={() => {
                     if (!rating && need) setFocus(key);
-                    onChange(tap(picks, allowed, key, dot));
+                    onChange(budget ? tapDots(picks, budget.dots, key, dot) : tap(picks, allowed, key, dot));
                   }}
                   className={[
                     "grid h-8 w-7 place-items-center rounded text-lg leading-none",
@@ -198,7 +205,7 @@ export function DotGrid({
         {gift && <p className="mt-0.5 pl-6 text-xs text-gold">{gift.text}</p>}
         {bars.map((bar) => (
           <p key={bar.ratings.join(",")} className="mt-0.5 pl-6 text-xs text-blood-bright">
-            Not at {bar.ratings.join(" or ")}: {bar.note}
+            Not at {bar.ratings.length > 1 ? `${bar.ratings.slice(0, -1).join(", ")} or ${bar.ratings.at(-1)}` : bar.ratings[0]}: {bar.note}
           </p>
         ))}
         {marked && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{marked} Clear it and place it on another.</p>}
@@ -240,18 +247,22 @@ export function DotGrid({
     <section aria-label={title} className="flex flex-col gap-3">
       <div className={`flex flex-wrap items-center justify-between gap-2 ${STICKY}`}>
         {showTitle ? <h3 className="text-base text-gold">{title}</h3> : <span />}
-        <ul className="flex flex-wrap gap-1.5" aria-label={`${title} picks left`}>
-          {ratings.map((r) => {
-            const n = left(picks, allowed, r);
-            return (
-              <li key={r}>
-                <Badge tone={n > 0 ? "gold" : n < 0 ? "blood" : "mist"}>
-                  {n < 0 ? `${-n} too many at ${r}` : `${n} at ${r} left`}
-                </Badge>
-              </li>
-            );
-          })}
-        </ul>
+        {budget ? (
+          <DotsLeft title={title} budget={budget.dots} used={spent(picks)} />
+        ) : (
+          <ul className="flex flex-wrap gap-1.5" aria-label={`${title} picks left`}>
+            {ratings.map((r) => {
+              const n = left(picks, allowed, r);
+              return (
+                <li key={r}>
+                  <Badge tone={n > 0 ? "gold" : n < 0 ? "blood" : "mist"}>
+                    {n < 0 ? `${-n} too many at ${r}` : `${n} at ${r} left`}
+                  </Badge>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
       {traits.length >= SEARCH_FROM && (
         <Input aria-label={`Search ${title}`} placeholder="Search…" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -263,6 +274,25 @@ export function DotGrid({
         </div>
       ))}
     </section>
+  );
+}
+
+/** How much of a budget of dots is placed, and what is saved for later. */
+function DotsLeft({ title, budget, used }: { title: string; budget: number; used: number }) {
+  const saved = budget - used;
+  return (
+    <ul className="flex flex-wrap gap-1.5" aria-label={`${title} dots placed`}>
+      <li>
+        <Badge tone={saved < 0 ? "blood" : "mist"}>
+          {used} of {budget} placed
+        </Badge>
+      </li>
+      {saved > 0 && (
+        <li>
+          <Badge tone="gold">{saved} saved for later</Badge>
+        </li>
+      )}
+    </ul>
   );
 }
 

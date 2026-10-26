@@ -533,6 +533,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/domitor/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Domitor Choices
+         * @description The vampires, PCs and NPCs, that the ghoul's player can see and bind it to,
+         *     whose names hold `q`: the first 20 by name.
+         */
+        get: operations["domitor_choices_api_characters__character_id__domitor_choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/downtime": {
         parameters: {
             query?: never;
@@ -5669,6 +5690,25 @@ export interface components {
             /** Whose */
             whose: ("own" | "other") | null;
             window: components["schemas"]["WindowOut"];
+        };
+        /**
+         * DomitorChoiceOut
+         * @description A vampire a ghoul could be bound to.
+         */
+        DomitorChoiceOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string;
+            /** In Clan */
+            in_clan: string[];
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
         };
         /**
          * DomitorIn
@@ -11657,6 +11697,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DomitorOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    domitor_choices_api_characters__character_id__domitor_choices_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomitorChoiceOut"][];
                 };
             };
             /** @description Validation Error */

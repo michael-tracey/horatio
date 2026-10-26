@@ -14,21 +14,25 @@ export function BuildFor({
   onChange,
   disabled,
   newCharacter = false,
+  splat,
 }: {
   value: string | null;
   onChange: (troupeId: string | null) => void;
   disabled?: boolean;
   /** Say what XP a new character starts with: the troupe's XP floor, or the rule set's. */
   newCharacter?: boolean;
+  /** Offer only the troupes that take characters of this splat (a ghoul's). */
+  splat?: string;
 }) {
   const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
   const troupe = troupes.data?.find((t) => t.id === value);
+  const offered = troupes.data?.filter((t) => !splat || t.id === value || t.allowed_splats.includes(splat));
   const start = !newCharacter ? "" : troupe ? ` It starts with ${troupe.xp_floor} XP, ${troupe.name}'s XP floor.` : " It starts with 30 XP.";
   return (
     <Field label="Build for" hint={`A troupe's own rules apply while you build; you can still change this until a troupe accepts the character.${start}`}>
       <Select value={value ?? GENERIC} disabled={disabled} onChange={(e) => onChange(e.target.value || null)}>
         <option value={GENERIC}>Generic rules (in my vault)</option>
-        {troupes.data?.map((t) => (
+        {offered?.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
           </option>

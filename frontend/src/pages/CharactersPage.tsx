@@ -6,13 +6,20 @@ import { Avatar } from "../components/Avatar";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Select } from "../components/ui";
 import { useAction } from "../hooks";
 import { BuildFor } from "./character/BuildFor";
+import { splatsFor, useSplats } from "./character/splats";
 
 export function CharactersPage() {
   const navigate = useNavigate();
   const characters = useQuery({ queryKey: ["characters"], queryFn: () => unwrap(api.GET("/api/characters")) });
   const [name, setName] = useState("");
-  const [splat, setSplat] = useState("vampire");
+  const [wanted, setSplat] = useState("vampire");
   const [buildFor, setBuildFor] = useState<string | null>(null);
+  // Only the splats the troupe built for takes; with none, every one.
+  const splats = useSplats();
+  const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
+  const troupe = troupes.data?.find((t) => t.id === buildFor);
+  const offered = splatsFor(splats.data ?? [], troupe);
+  const splat = offered.some((s) => s.splat === wanted) ? wanted : (offered[0]?.splat ?? wanted);
   const create = useAction(async () => {
     const character = await unwrap(api.POST("/api/characters", { body: { name, splat, building_troupe_id: buildFor } }));
     navigate(`/characters/${character.id}/create`);
@@ -61,12 +68,17 @@ export function CharactersPage() {
             <Field label="Name">
               <Input required value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
-            <Field label="Splat">
+            <BuildFor value={buildFor} onChange={setBuildFor} newCharacter />
+            <Field label="Splat" hint={troupe && offered.length === 1 ? `${troupe.name} takes ${offered[0]!.label.toLowerCase()} characters only.` : undefined}>
               <Select value={splat} onChange={(e) => setSplat(e.target.value)}>
-                <option value="vampire">Vampire</option>
+                {offered.map((s) => (
+                  <option key={s.splat} value={s.splat}>
+                    {s.label}
+                  </option>
+                ))}
               </Select>
             </Field>
-            <BuildFor value={buildFor} onChange={setBuildFor} newCharacter />
+            <ErrorText error={splats.error} />
             <ErrorText error={create.error} />
             <Button type="submit" disabled={create.isPending}>
               Create

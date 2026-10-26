@@ -782,6 +782,7 @@ def refusals(
         # The detail is chosen when the trait is added, so a trait refused only for
         # lacking one (Performance needs a field, p. 92) is tried again with one.
         new: list[Violation] = []
+        bare: list[Violation] = []
         for detail in ("", FIELD_TO_BE_CHOSEN):
             candidate = SheetTrait(
                 category=category, name=name, detail=detail, rating=rating, free_rating=0
@@ -810,6 +811,14 @@ def refusals(
             ]
             if not new:
                 break
+            if not detail:
+                bare = new
+        # Refused with a detail too: said of the trait as named, not of "(to be chosen)".
+        if new:
+            again = {(n.check.key, n.subject.category, n.subject.name) for n in new}
+            new = [
+                v for v in bare if (v.check.key, v.subject.category, v.subject.name) in again
+            ] or new
         if new:
             # The trait's own problem first: "Talisman is already…" when trying Spellslinger.
             own = [v for v in new if v.subject.name == name]

@@ -51,6 +51,8 @@ import { IdentityPanel } from "./Identities";
 import { RetainersPanel } from "./Retainers";
 import { PowerChoices } from "./PowerChoices";
 import { InfluenceEffects } from "./InfluenceEffects";
+import { DomitorCard } from "./Domitor";
+import { useHasDomitor } from "./splats";
 
 function useSheet(characterId: string) {
   return useQuery({
@@ -199,6 +201,7 @@ export function SheetTab({
   const shopping = mine && character.kind === "pc";
   const prices = useCartPrices(character.id, shopping ? cart.lines : []);
   useLeaveWarning(shopping && cart.lines.length > 0);
+  const hasDomitor = useHasDomitor(character.splat);
 
   if (sheet.isPending) return <Loading />;
   if (sheet.error) return <ErrorText error={sheet.error} />;
@@ -537,6 +540,10 @@ export function SheetTab({
       </div>
       <aside className="flex flex-col gap-3">
         <PrintAndBadge character={character} badge={badge} />
+        {/* Its player binds a ghoul to another domitor until a home troupe accepts it. */}
+        {hasDomitor && (
+          <DomitorCard character={character} sheet={s} catalogue={catalogue.data} canChange={!locked && character.kind === "pc" && character.home_troupe_id === null} />
+        )}
         <InfluenceEffects characterId={character.id} />
         <Card dense title="Experience">
           <dl className="grid grid-cols-3 gap-2 text-center">

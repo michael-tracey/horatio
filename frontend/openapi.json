@@ -4240,6 +4240,44 @@
         "title": "DiscoveryBlockOut",
         "type": "object"
       },
+      "DomitorChoiceOut": {
+        "description": "A vampire a ghoul could be bound to.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "in_clan": {
+            "items": {
+              "type": "string"
+            },
+            "title": "In Clan",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "clan",
+          "in_clan"
+        ],
+        "title": "DomitorChoiceOut",
+        "type": "object"
+      },
       "DomitorIn": {
         "description": "A ghoul's domitor: a vampire PC or NPC in Horatio, or one that is not, by name\nand clan (\"Brujah: True Brujah\" for a bloodline).",
         "properties": {
@@ -18492,6 +18530,64 @@
           }
         },
         "summary": "Change Domitor",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/domitor/choices": {
+      "get": {
+        "description": "The vampires, PCs and NPCs, that the ghoul's player can see and bind it to,\nwhose names hold `q`: the first 20 by name.",
+        "operationId": "domitor_choices_api_characters__character_id__domitor_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DomitorChoiceOut"
+                  },
+                  "title": "Response Domitor Choices Api Characters  Character Id  Domitor Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Domitor Choices",
         "tags": [
           "characters"
         ]

@@ -20,7 +20,7 @@ import uuid
 from enum import StrEnum
 
 from fastapi import HTTPException, status
-from sqlalchemy import exists, select
+from sqlalchemy import ColumnElement, and_, exists, or_, select, true
 from sqlalchemy.orm import Session
 
 from horatio.models import Character, Troupe, TroupeMembership, TroupeStaff, User
@@ -144,6 +144,26 @@ def can_view_character(db: Session, user: User, character: Character) -> bool:
         TroupeStaff.role.in_(running),
     )
     return bool(db.scalar(select(is_lead | is_staff)))
+
+
+def viewable_characters(user: User) -> ColumnElement[bool]:
+    """The characters `user` can see, as `can_view_character` says, as a condition on
+    Character: to list them."""
+    if user.is_custodian:
+        return true()
+    running = [r.value for r in TROUPE_POLICY[TroupeAction.VIEW_MEMBER_CHARACTERS]]
+    led = select(Troupe.id).where(Troupe.lead_user_id == user.id, Troupe.archived_at.is_(None))
+    staffed = select(TroupeStaff.troupe_id).where(
+        TroupeStaff.user_id == user.id, TroupeStaff.role.in_(running)
+    )
+    in_their_troupes = select(TroupeMembership.character_id).where(
+        TroupeMembership.left_at.is_(None),
+        or_(TroupeMembership.troupe_id.in_(led), TroupeMembership.troupe_id.in_(staffed)),
+    )
+    return or_(
+        and_(Character.kind == "pc", Character.player_id == user.id),
+        Character.id.in_(in_their_troupes),
+    )
 
 
 def is_staff_for(db: Session, user: User, character: Character) -> bool:
