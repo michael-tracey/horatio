@@ -2377,7 +2377,7 @@ test("the custodian filters People by the troupe a player's active character is 
   const beta = await person(browser, "tpf-beta");
   const visitor = await person(browser, "tpf-visitor");
   const northName = `Court of Frost ${run}`;
-  const southName = `Court of Embers ${run}`;
+  const southName = `Court of Ashfall ${run}`;
 
   const send = async (p: Page, method: "POST" | "PUT", url: string, data: object) => {
     const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
@@ -4517,7 +4517,7 @@ test("a player says they committed diablerie, staff approve it, and then record 
   const lead = await person(browser, "dia-lead");
   const player = await person(browser, "dia-player");
   const headers = { "X-Horatio": "1" };
-  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Cinders ${run}`, lead_handle: lead.handle } });
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Sorrows ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
   const troupeId = (await made.json()).id;
 

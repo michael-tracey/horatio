@@ -17,7 +17,9 @@ describe("the e2e journey's names", () => {
   });
 
   it("names each troupe in one test only", () => {
-    const troupes = [...spec.matchAll(/(?:troupeName = |fill\()`([^`$]+)\$\{run\}`/g)].map((m) => m[1]!.trim());
+    // Any name made unique by `run` alone, however it is passed: `troupeName = `,
+    // `const southName = `, `fill(`, or straight into a request body.
+    const troupes = [...spec.matchAll(/`([A-Z][^`$]*)\$\{run\}`/g)].map((m) => m[1]!.trim());
     expect(repeats(troupes)).toEqual([]);
   });
 });
