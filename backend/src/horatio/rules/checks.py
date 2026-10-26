@@ -52,6 +52,10 @@ Condition vocabulary (every key in one table must hold):
                                     `together` ([[a, b], ...]). A check's message can
                                     name the other trait as {other}. A merit another
                                     trait gives never counts.
+    excess_over_generation = { category, above }
+                                    the dots rated above `above`, added up across
+                                    the sheet's traits in that category, are more
+                                    than the Generation rating (attributes: p. 102)
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
@@ -82,7 +86,7 @@ Condition = Mapping[str, Any]
 CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count",
      "one_below", "parent", "self", "copies", "in_clan", "accepted", "more_than_dots",
-     "above_in_clan", "same_value", "any_of", "not"}
+     "above_in_clan", "same_value", "excess_over_generation", "any_of", "not"}
 )  # fmt: skip
 
 
@@ -146,6 +150,7 @@ IMPLIED_TRAIT: dict[str, tuple[str, str | None]] = {
     "clan_family": ("clan", None),
     "generation": ("backgrounds", "Generation"),
     "on_path": ("paths", None),
+    "excess_over_generation": ("backgrounds", "Generation"),
 }
 
 
@@ -312,6 +317,14 @@ def matches(
                 and t.name != subject.name
             ]
             ok = bool(primaries) and (subject.rating or 0) > max(primaries)
+        elif key == "excess_over_generation":
+            excess = sum(
+                max((t.rating or 0) - test["above"], 0)
+                for t in sheet
+                if t.category == test["category"]
+            )
+            # Without a Generation background, a character is Generation 1 (as in pricing).
+            ok = excess > max(generation_of(sheet), 1)
         elif key == "same_value":
             ok = clashing(test, sheet, subject, context) is not None
         elif key == "any_of":

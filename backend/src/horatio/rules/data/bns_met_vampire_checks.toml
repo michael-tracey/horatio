@@ -2583,3 +2583,15 @@ forbids = { more_than_dots = { count = { category = "influence_underworld_specia
 strength = "note"
 message = "Each dot of Influences: The Underworld gives one area."
 page = "103"
+
+# --- Attributes ----------------------------------------------------------------------
+
+# Each attribute tops out at 10; each dot of Generation gives one point to raise one
+# attribute's maximum by 1, wherever the player likes (pp. 101-102). So the dots above
+# 10, across Physical, Social and Mental, may not outnumber the Generation rating.
+# Every attribute above 10 is flagged, as the points aren't assigned to any one.
+[[checks]]
+category = "attributes"
+forbids = { self = { rating = { gt = 10 } }, excess_over_generation = { category = "attributes", above = 10 } }
+message = "Attributes can go above 10 by only as many dots, in all, as the Generation rating: one dot of Generation gives one point to raise an attribute's maximum."
+page = "102"
