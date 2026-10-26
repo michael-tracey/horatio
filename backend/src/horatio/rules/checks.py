@@ -47,6 +47,7 @@ Condition vocabulary (every key in one table must hold):
                                     native in-clan disciplines (Inept's discipline)
     accepted = true                 a home troupe has accepted the character
     finished = true                 the character's creation is finished
+    npc = true                      the character is an NPC, built by staff
     more_than_dots = { count = { category, name_prefix }, dots = { category, name_prefix },
                        per_dot? }
                                     the sheet holds more traits of the first kind
@@ -104,7 +105,7 @@ Condition = Mapping[str, Any]
 CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count",
      "one_below", "parent", "self", "copies", "in_clan", "detail_in_clan", "accepted",
-     "finished", "more_than_dots",
+     "finished", "npc", "more_than_dots",
      "above_in_clan", "same_value", "excess_over_generation", "any_of", "not",
      "kind", "tagged", "dots", "domitor_clan", "domitor_has"}
 )  # fmt: skip
@@ -118,6 +119,8 @@ class Context:
     accepted: bool = False
     # The character's creation is finished.
     finished: bool = False
+    # The character is an NPC, which staff build as they like (horatio.npcs).
+    npc: bool = False
     # The character's in-clan disciplines, by name ("Celerity") or full name
     # ("Thaumaturgy: Path of Blood").
     in_clan: frozenset[str] = frozenset()
@@ -336,6 +339,8 @@ def matches(
             ok = context.accepted == test
         elif key == "finished":
             ok = context.finished == test
+        elif key == "npc":
+            ok = context.npc == test
         elif key == "more_than_dots":
             counted, dotted = test["count"], test["dots"]
             held = sum(

@@ -15,17 +15,18 @@ page = "296"
 
 # --- disciplines ------------------------------------------------------------------
 
+# Staff build an NPC ghoul as they like, as any NPC.
 [[checks]]
 key = "ghoul/disciplines/five-dots"
 category = "disciplines"
-forbids = { dots = { category = "disciplines", gt = 5 } }
+forbids = { dots = { category = "disciplines", gt = 5 }, not = { npc = true } }
 message = "A ghoul never has more than 5 dots of disciplines."
 page = "297"
 
 # Only the domitor's in-clan disciplines, and only powers the domitor has (p. 296).
 # Without a linked domitor, staff check the powers. Once a home troupe accepts the
 # ghoul its staff answer for them, as when a new domitor's ghoul keeps its dots
-# (p. 297).
+# (p. 297); an NPC is accepted from the start.
 [[checks]]
 key = "ghoul/disciplines/in-clan"
 category = "disciplines"

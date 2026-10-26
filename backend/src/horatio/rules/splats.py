@@ -156,13 +156,24 @@ def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetT
 
 # --- Ghoul ------------------------------------------------------------------
 # A ghoul has no clan of its own: its sheet holds its domitor's clan and bloodline
-# (MET: VTM p. 296), so its in-clan disciplines are its domitor's clan's.
+# (MET: VTM p. 296), so its in-clan disciplines are its domitor's clan's. A Caitiff
+# domitor has none from its clan, but three it chose (p. 246): the ghoul's sheet
+# holds those too, set from the domitor (horatio.domitors).
+
+DOMITOR_IN_CLAN = "domitor_in_clan_disciplines"
+
+
+def ghoul_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> list[str]:
+    """The domitor's clan's in-clan disciplines, and a Caitiff domitor's three."""
+    return clan_in_clan_disciplines(rules, sheet) + [
+        t.name for t in sheet if t.category == DOMITOR_IN_CLAN and (t.rating or 0) > 0
+    ]
 
 
 def ghoul_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Facts:
     def work_out() -> tuple[frozenset[str], str]:
         clan = next((t.name for t in sheet if t.category == "clan"), "")
-        return frozenset(clan_in_clan_disciplines(rules, sheet)), clan
+        return frozenset(ghoul_in_clan_disciplines(rules, sheet)), clan
 
     in_clan, clan = rules.rule_set.remembered(("ghoul", tuple(sheet)), work_out)
     return {
@@ -188,7 +199,7 @@ SPLATS: dict[str, Splat] = {
     "ghoul": Splat(
         fact_names=frozenset({"in_clan", "clan", "clan_family"}),
         facts=ghoul_facts,
-        in_clan=clan_in_clan_disciplines,
+        in_clan=ghoul_in_clan_disciplines,
         fact_words={
             "in_clan": ("in-clan", "out-of-clan"),
             "clan": "{}",

@@ -7,8 +7,9 @@
 #   - no clan of its own: its sheet holds its domitor's clan and bloodline, and it
 #     pays for them as a vampire would, rarity and bloodline merits included;
 #   - no Generation, at creation or after;
-#   - 5 dots of disciplines, all in its domitor's in-clan disciplines and in powers
-#     its domitor has; dots it cannot place at creation can be saved for later;
+#   - 5 dots of disciplines, all in its domitor's in-clan disciplines (a Caitiff
+#     domitor's are the three it chose) and in powers its domitor has; dots it
+#     cannot place at creation can be saved for later;
 #   - no clan merits but those its domitor's clan and bloodline need, no Morality
 #     merits, and nothing about the vampiric condition;
 #   - its own XP costs (below); disciplines cannot be bought with XP;
@@ -18,7 +19,8 @@
 # cannot have (`leave_out`).
 #
 # Facts a Ghoul cost rule's condition can test:
-#   in_clan      whether this trait is one of the domitor's clan's in-clan disciplines
+#   in_clan      whether this trait is one of the domitor's clan's in-clan disciplines,
+#                or for a Caitiff domitor, one of the three it chose
 #   clan         the clan or bloodline exactly ("Brujah: True Brujah")
 #   clan_family  the clan ("Brujah")
 
@@ -45,7 +47,8 @@ borrow = { action_kinds = "bns_met_vampire.toml", allowance_rules = "bns_met_vam
 
 # Traits a ghoul cannot have, left out of the files above along with the checks
 # and grants about them: Generation (p. 296); Humanity and the Paths, techniques and
-# elder powers (p. 297); and the extra in-clan disciplines vampire merits give.
+# elder powers (p. 297); and the extra in-clan disciplines a vampire chooses or
+# merits give (a Caitiff domitor's three have a category of their own, below).
 leave_out = [
   { category = "backgrounds", name = "Generation" },
   { category = "paths" },
@@ -160,6 +163,16 @@ name = "Disciplines"
 group = "Disciplines"
 max_rating = 5
 
+# A Caitiff domitor's in-clan disciplines are the three it chose (p. 246), so they
+# are the ghoul's too. Set with the domitor (horatio.domitors), never bought; the
+# names are those a vampire's extra in-clan disciplines can have.
+[[categories]]
+key = "domitor_in_clan_disciplines"
+name = "Domitor's In-Clan Disciplines"
+group = "Disciplines"
+derived = true
+traits_of = "extra_in_clan_disciplines"
+
 [[categories]]
 key = "rituals"
 name = "Rituals"
@@ -255,6 +268,10 @@ rate = 1
 [[cost_rules]]
 category = "disciplines"
 scheme = "not_allowed"
+
+[[cost_rules]]
+category = "domitor_in_clan_disciplines"
+scheme = "free"
 
 [[cost_rules]]
 category = "rituals"
