@@ -7,6 +7,7 @@ import { useAction, useUnavailable } from "../../../hooks";
 import { EXTRA_IN_CLAN, inClanChoice, inClanOptions, sheetKey, whenTapped } from "./inClan";
 import { movePick, strayMoves } from "./disciplines";
 import { traitOf, type Picks } from "./logic";
+import { rulesTroupe } from "../rules";
 
 const swap = (from: string, to: string) => [
   { kind: "set" as const, category: EXTRA_IN_CLAN, name: from, detail: "", rating: 0, teacher: "" },
@@ -26,7 +27,7 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   // What nothing chosen here could allow is not offered at all. Both are asked for the
   // sheet as it is now: an answer from before a merit was taken (Vestiges of
   // Greatness, which opens the uncommon ones) is never offered as now's.
-  const now = sheetKey(sheet);
+  const now = `${sheetKey(sheet)}/${rulesTroupe(character) ?? ""}`;
   const barring = useUnavailable(character.id, EXTRA_IN_CLAN, true, { asIf: "empty" }, now);
   const refusing = useUnavailable(character.id, EXTRA_IN_CLAN, true, undefined, now);
   const barred = barring.data;
