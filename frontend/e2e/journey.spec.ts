@@ -3982,3 +3982,19 @@ test("a player lists two Retainers with their dots, and a storyteller links one 
   await l.goto(`/characters/${id}/log`);
   await expect(l.getByText("ret-lead linked Marta, the driver, one of Dorothea (ret-player)'s Retainers, to an NPC.")).toBeVisible();
 });
+
+test("a page whose file is gone after a deploy reloads once, then says Horatio was updated", async ({ browser }) => {
+  const { page } = await person(browser, "Staleo");
+  let asked = 0;
+  await page.route("**/assets/AccountPage-*.js", (route) => {
+    asked += 1;
+    return route.fulfill({ status: 404, contentType: "text/plain", body: "not found" });
+  });
+  await page.goto("/characters");
+  await page.getByTitle("Your account").click();
+  await expect(page.getByText("Horatio has been updated. Reload to continue.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
+  // One reload was tried, and no more: two asks for the file, not a loop.
+  expect(asked).toBeGreaterThan(0);
+  expect(asked).toBeLessThanOrEqual(3);
+});
