@@ -9,7 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import pictures, sheets, titles
+from horatio import pictures, retainers, sheets, titles
+from horatio.api.retainers import RetainerOut, listed
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, SheetVersion, TraitCategory, TraitDefinition, Troupe, User
 from horatio.permissions import visible_character
@@ -51,6 +52,8 @@ class PrintedSheet(BaseModel):
     accepted_at: datetime | None
     accepted_by: str | None
     traits: list[PrintedTrait]
+    # Its Retainers, listed under the background.
+    retainers: list[RetainerOut]
 
 
 @router.get("/print")
@@ -137,5 +140,6 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         accepted_at=version.approved_at if version else None,
         accepted_by=db.get_one(User, version.approved_by).display_name if version else None,
         traits=traits,
+        retainers=listed(db, retainers.read(db, character), None),
         picture=pictures.picture_url(character.id, character.picture_id),
     )

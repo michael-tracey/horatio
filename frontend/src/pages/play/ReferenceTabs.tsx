@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { DisciplinePowers, PlayReference, TestPool } from "../../api/types";
 import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
+import { RetainerLines } from "../character/Retainers";
 import { breakdown, grouped, total } from "./pools";
 
 type Trait = PlayReference["traits"][number];
@@ -40,12 +41,15 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
         <Panel key={name} title={name}>
           <ul className="text-sm">
             {traits.map((t) => (
-              <li key={`${t.category}/${t.name}/${t.detail}`} className="flex items-baseline justify-between gap-3 border-b border-ash/60 py-1 last:border-0">
+              <li key={`${t.category}/${t.name}/${t.detail}`} className="border-b border-ash/60 py-1 last:border-0">
+                <div className="flex items-baseline justify-between gap-3">
                 <span>
                   {t.detail ? `${t.name}: ${t.detail}` : t.name}
                   {brackets(t, reference.traits).length > 0 && <span className="text-mist"> ({brackets(t, reference.traits).join(", ")})</span>}
                 </span>
                 {t.rating !== null && <Rating value={t.rating} of={pipsOf(t.category)} className="shrink-0 font-display text-base text-gold" />}
+                </div>
+                {t.category === "backgrounds" && t.name === "Retainers" && reference.retainers.length > 0 && <RetainerLines retainers={reference.retainers} />}
               </li>
             ))}
           </ul>

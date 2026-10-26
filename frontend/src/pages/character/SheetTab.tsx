@@ -42,6 +42,7 @@ import {
   SpecializationRow,
   useSpecializations,
 } from "./Specializations";
+import { RetainersPanel } from "./Retainers";
 import { InfluenceEffects } from "./InfluenceEffects";
 
 function useSheet(characterId: string) {
@@ -450,6 +451,13 @@ export function SheetTab({
                                 }
                                 onSwap={(to) => cart.update((l) => swap(l, t.category, t.name, to))}
                               />,
+                              !inCart(t) && t.category === "backgrounds" && t.name === "Retainers" && (
+                                <RetainersPanel
+                                  key={`${t.id}/retainers`}
+                                  character={character}
+                                  merits={[...new Set(s.traits.filter((x) => x.category === "merits" && x.rating !== 0).map((x) => x.name))]}
+                                />
+                              ),
                               kindOf(t) && (
                                 <SpecializationRow
                                   key={`${t.id}/specs`}

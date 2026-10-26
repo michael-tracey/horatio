@@ -26,6 +26,7 @@ from horatio.models import (
     HomeTroupeChange,
     ReconciliationItem,
     Response,
+    Retainer,
     SheetVersion,
     Submission,
     TraitException,
@@ -88,6 +89,8 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     )
     db.execute(delete(TroupeMembership).where(TroupeMembership.character_id == cid))
     db.execute(delete(SheetVersion).where(SheetVersion.character_id == cid))
+    db.execute(delete(Retainer).where(Retainer.character_id == cid))
+    db.execute(update(Retainer).where(Retainer.npc_id == cid).values(npc_id=None))
     db.execute(delete(CharacterTrait).where(CharacterTrait.character_id == cid))
     db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))

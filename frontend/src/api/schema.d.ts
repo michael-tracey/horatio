@@ -1036,6 +1036,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/retainers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Retainers */
+        get: operations["read_retainers_api_characters__character_id__retainers_get"];
+        /**
+         * Save Retainers
+         * @description Replace the list. The player edits names, descriptions, dots and losses;
+         *     staff do the same and alone link an NPC.
+         */
+        put: operations["save_retainers_api_characters__character_id__retainers_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/retire": {
         parameters: {
             query?: never;
@@ -6458,6 +6480,8 @@ export interface components {
             other_powers: components["schemas"]["OtherPower"][];
             /** Pools */
             pools: components["schemas"]["TestPool"][];
+            /** Retainers */
+            retainers: components["schemas"]["RetainerOut"][];
             /** Traits */
             traits: components["schemas"]["PlayTrait"][];
         };
@@ -6764,6 +6788,8 @@ export interface components {
             picture: string | null;
             /** Player Name */
             player_name: string;
+            /** Retainers */
+            retainers: components["schemas"]["RetainerOut"][];
             /** Splat */
             splat: string;
             /** Titles */
@@ -7164,6 +7190,73 @@ export interface components {
             delivered_at: string | null;
             /** Message */
             message: string;
+        };
+        /** RetainerIn */
+        RetainerIn: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Dots */
+            dots: number;
+            /**
+             * From Merit
+             * @default
+             */
+            from_merit: string;
+            /** Id */
+            id?: string | null;
+            /** Lost */
+            lost?: string | null;
+            /** Lost On */
+            lost_on?: string | null;
+            /** Name */
+            name: string;
+            /** Npc Id */
+            npc_id?: string | null;
+        };
+        /** RetainerOut */
+        RetainerOut: {
+            /** Description */
+            description: string;
+            /** Dots */
+            dots: number;
+            /** From Merit */
+            from_merit: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lost */
+            lost: string | null;
+            /** Lost On */
+            lost_on: string | null;
+            /** Name */
+            name: string;
+            /** Npc Id */
+            npc_id: string | null;
+            /** Npc Name */
+            npc_name: string | null;
+        };
+        /** RetainersIn */
+        RetainersIn: {
+            /** Retainers */
+            retainers: components["schemas"]["RetainerIn"][];
+        };
+        /** RetainersOut */
+        RetainersOut: {
+            /** Can Edit */
+            can_edit: boolean;
+            /** Can Link */
+            can_link: boolean;
+            /** Rating */
+            rating: number;
+            /** Retainers */
+            retainers: components["schemas"]["RetainerOut"][];
+            /** Total */
+            total: number;
         };
         /**
          * Role
@@ -10531,6 +10624,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_retainers_api_characters__character_id__retainers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_retainers_api_characters__character_id__retainers_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetainersIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainersOut"];
                 };
             };
             /** @description Validation Error */
