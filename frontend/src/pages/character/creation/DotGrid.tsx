@@ -309,6 +309,7 @@ export function PointsList({
   details = {},
   onDetail,
   why,
+  under,
 }: {
   title: string;
   traits: TraitOut[];
@@ -326,6 +327,8 @@ export function PointsList({
   onDetail?: (name: string, detail: string) => void;
   /** More on why a trait is refused: the earlier pick it is refused for. */
   why?: (name: string) => ReactNode;
+  /** What a ticked one asks for next, shown under it (Vestiges of Greatness: its in-clan choice). */
+  under?: (name: string) => ReactNode;
 }) {
   const filterable = traits.some((t) => t.kind || t.requirement);
   const [filter, setFilter] = useState("can");
@@ -407,6 +410,7 @@ export function PointsList({
                   <HouseSummary summary={t.house?.summary} />
                 </span>
               </label>
+              {chosen && under?.(t.name)}
             </li>
           );
         })}

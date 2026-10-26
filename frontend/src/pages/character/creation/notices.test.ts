@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CreationOut, PoolOut, SheetOut, SheetTraitOut } from "../../../api/types";
-import { inClanChoice, inClanChoices, inClanOptions, whenTapped } from "./inClan";
-import { disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
+import { inClanChoice, inClanChoices, inClanOpen, inClanOptions, makesInClanChoice, sheetKey, whenTapped } from "./inClan";
+import { disciplinesIntro, ineptChoices, movePick, strayMoves, withoutDotReasons } from "./disciplines";
 import { brokenChecks, overBudget, stepNotices, strayPicks, type StepRef } from "./notices";
 
 const STEPS: StepRef[] = [
@@ -135,8 +135,14 @@ describe("brokenChecks", () => {
 
   it("shows a check on the steps of what it is about and what it looks at, fixed on the earliest", () => {
     expect(brokenChecks({ creation: creation([]), sheet: sheet([], [vestiges]), steps: STEPS })).toEqual([
-      { key: `check/${vestiges.message}`, message: vestiges.message, on: ["concept", "merits"], fix: "concept" },
+      { key: `check/${vestiges.message}`, message: vestiges.message, on: ["concept", "merits"], fix: "concept", inClan: true },
     ]);
+  });
+
+  it("marks only a check that wants an in-clan choice as one, for the steps that offer it to say so", () => {
+    const clash = { category: "skills", name: "Archaic", strength: "refuse", message: "Archaic and Computer clash.", looks_at: [{ category: "skills", name: "Computer" }] };
+
+    expect(brokenChecks({ creation: creation([]), sheet: sheet([], [clash]), steps: STEPS })[0]).not.toHaveProperty("inClan");
   });
 
   it("leaves a step's own need, and notes, to the step", () => {
@@ -191,7 +197,7 @@ describe("inClanChoices", () => {
     const traits = [trait("clan", "Brujah", { rating: null }), trait("merits", "Additional Uncommon Discipline", { rating: 5 })];
 
     expect(inClanChoices({ creation: creation([]), sheet: sheet(traits), steps: STEPS })).toEqual([
-      { key: "in-clan/choose", message: "Additional Uncommon Discipline: choose the in-clan discipline it adds.", on: ["concept", "merits"], fix: "concept" },
+      { key: "in-clan/choose", message: "Additional Uncommon Discipline: choose the in-clan discipline it adds.", on: ["concept", "merits"], fix: "concept", inClan: true },
     ]);
   });
 
@@ -309,5 +315,104 @@ describe("stepNotices", () => {
     const twice = () => [{ key: "a", message: "Same.", on: ["concept"], fix: "concept" }];
 
     expect(stepNotices({ creation: creation([]), sheet: sheet([]), steps: STEPS }, [twice, twice])).toHaveLength(1);
+  });
+});
+
+describe("inClanOpen", () => {
+  const caitiff = trait("clan", "Caitiff", { rating: null });
+  const three = ["Celerity", "Fortitude", "Obfuscate"].map((n) => trait("extra_in_clan_disciplines", n));
+  const vestiges = trait("merits", "Vestiges of Greatness", { rating: 3 });
+  const wantsUncommon = {
+    category: "merits",
+    name: "Vestiges of Greatness",
+    strength: "complete",
+    message: "Vestiges of Greatness: choose one…",
+    looks_at: [{ category: "extra_in_clan_disciplines", name: null }],
+  };
+
+  it("is open while a Caitiff has fewer than three", () => {
+    expect(inClanOpen(sheet([caitiff, ...three.slice(0, 2)]))).toBe(true);
+    expect(inClanOpen(sheet([caitiff, ...three]))).toBe(false);
+  });
+
+  it("is open with three common ones under Vestiges of Greatness, until one is from the uncommon list", () => {
+    expect(inClanOpen(sheet([caitiff, ...three, vestiges], [wantsUncommon]))).toBe(true);
+    expect(inClanOpen(sheet([caitiff, ...three.slice(0, 2), trait("extra_in_clan_disciplines", "Protean"), vestiges]))).toBe(false);
+  });
+
+  it("is open while a merit's extra one is not chosen", () => {
+    const brujah = trait("clan", "Brujah", { rating: null });
+    expect(inClanOpen(sheet([brujah, trait("merits", "Additional Uncommon Discipline", { rating: 5 })]))).toBe(true);
+  });
+
+  it("is not open for another merit's check", () => {
+    const other = { ...wantsUncommon, name: "Versatile" };
+    expect(inClanOpen(sheet([caitiff, ...three, trait("merits", "Versatile")], [other]))).toBe(false);
+  });
+});
+
+describe("makesInClanChoice", () => {
+  it("knows the book's merits, and a troupe's own that adds an in-clan discipline", () => {
+    expect(["Vestiges of Greatness", "Inceptor", "Additional Common Discipline", "Additional Uncommon Discipline", "Pliable Blood", "Bonds of Stolen Vitae"].every((name) => makesInClanChoice({ name }))).toBe(true);
+    expect(makesInClanChoice({ name: "Blood of the Moon", house: { in_clan: ["Protean"] } })).toBe(true);
+    expect(makesInClanChoice({ name: "Versatile" })).toBe(false);
+  });
+});
+
+describe("sheetKey", () => {
+  it("changes when a merit is taken, and not when the same traits come back in another order", () => {
+    const a = [trait("clan", "Caitiff", { rating: null }), trait("extra_in_clan_disciplines", "Celerity")];
+    const before = sheetKey(sheet(a));
+
+    expect(sheetKey(sheet([...a].reverse()))).toBe(before);
+    expect(sheetKey(sheet([...a, trait("merits", "Vestiges of Greatness", { rating: 3 })]))).not.toBe(before);
+    expect(sheetKey(sheet([a[0]!, trait("extra_in_clan_disciplines", "Celerity", { rating: 0 })]))).not.toBe(before);
+  });
+});
+
+describe("strayMoves", () => {
+  const picked = (name: string, pick: number, fits = true, because: { category: string; name: string }[] = []) => ({ name, detail: "", pick, fits, because, freed_by: [] });
+
+  it("offers the dot on a discipline swapped out to the in-clan one with none", () => {
+    const options = ["Celerity", "Fortitude", "Protean"];
+    const pools = [
+      pool({ rating: 2, allowed: 1, restriction: "in_clan", options, traits: [picked("Celerity", 2)] }),
+      pool({ rating: 1, allowed: 2, restriction: "in_clan", options, traits: [picked("Fortitude", 1), picked("Obfuscate", 1, false)] }),
+    ];
+
+    expect(strayMoves(creation(pools))).toEqual([{ from: "Obfuscate", rating: 1, to: ["Protean"] }]);
+  });
+
+  it("leaves a dot that Inept takes the free dot from to be placed by hand", () => {
+    const inept = { category: "flaws", name: "Inept" };
+    const pools = [pool({ rating: 1, restriction: "in_clan", options: ["Auspex"], traits: [picked("Presence", 1, false, [inept])] })];
+
+    expect(strayMoves(creation(pools))).toEqual([]);
+  });
+
+  it("does not offer a discipline that takes no free dot", () => {
+    const pools = [
+      pool({
+        rating: 1,
+        restriction: "in_clan",
+        options: ["Auspex", "Protean"],
+        without_dot: [{ name: "Protean", because: [] }],
+        traits: [picked("Obfuscate", 1, false)],
+      }),
+    ];
+
+    expect(strayMoves(creation(pools))).toEqual([{ from: "Obfuscate", rating: 1, to: ["Auspex"] }]);
+  });
+});
+
+describe("movePick", () => {
+  it("moves the pick to the new discipline at its rating", () => {
+    expect(movePick({ Celerity: 2, Fortitude: 1, Obfuscate: 1 }, "Obfuscate", "Protean")).toEqual({ Celerity: 2, Fortitude: 1, Protean: 1 });
+  });
+
+  it("leaves the picks alone if there is nothing to move, or the new one has a pick", () => {
+    const picks = { Celerity: 2, Fortitude: 1 };
+    expect(movePick(picks, "Obfuscate", "Protean")).toBe(picks);
+    expect(movePick(picks, "Celerity", "Fortitude")).toBe(picks);
   });
 });

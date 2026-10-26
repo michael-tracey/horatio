@@ -112,11 +112,16 @@ export function useNotifications(enabled: boolean) {
   });
 }
 
-/** Traits in a category the character cannot take, and why (the rule set's checks). */
-export function useUnavailable(characterId: string, category: string, enabled = true, as?: UnavailableAs) {
+/**
+ * Traits in a category the character cannot take, and why (the rule set's checks).
+ * `of` keys the answer to the sheet it is for (inClan's `sheetKey`): once the sheet
+ * changes, the answer from before is only a placeholder (`isPlaceholderData`) until
+ * the new one comes, never shown as now's from the cache.
+ */
+export function useUnavailable(characterId: string, category: string, enabled = true, as?: UnavailableAs, of?: string) {
   const query = { category, as_if: as?.asIf, picks: as?.picks };
   return useQuery({
-    queryKey: ["unavailable", characterId, category, as?.asIf ?? "sheet", as?.picks ?? []],
+    queryKey: ["unavailable", characterId, category, as?.asIf ?? "sheet", as?.picks ?? [], ...(of ? [of] : [])],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/unavailable", { params: { path: { character_id: characterId }, query } })),
     enabled: enabled && !!category,
     // Keep showing the last answer while ticks change, rather than flashing everything open.
