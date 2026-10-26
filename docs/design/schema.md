@@ -200,7 +200,9 @@ the generic one.
 `kind` (`General` | `Clan` | `Sabbat`), `availability` (`staff`: only staff
 apply it; `building`: characters built for the troupe take it like a book
 merit), `creation_only`, `description`, `requirement`, `effects` (JSONB effect
-blocks, each naming the engine kind it maps to; empty for description only),
+blocks, each naming the engine kind it maps to, turned into grants and checks
+by `horatio.rules.house_effects` when the troupe's rules are read; empty for
+description only),
 `archived_at` (no new picks; holders keep it), `trait_definition_id`. Unique on
 (`troupe_id`, `splat`, `category`, `name`), and no name the book has. Each has
 its own `trait_definitions` row with `troupe_id` set, which sheets, purchases

@@ -251,6 +251,24 @@ describe("the in-clan picker", () => {
     expect(`${fourth.chosen.length} of ${fourth.chooses}`).toBe("3 of 4");
   });
 
+  it("with a troupe's own merit that adds one, opens one more slot and says its list", () => {
+    const house = {
+      house_trait_id: "h",
+      troupe_id: "t",
+      troupe_name: "Night Court",
+      label: "House merit of Night Court",
+      page: "House rule — Night Court",
+      availability: "building",
+      archived: false,
+      summary: "Adds one in-clan discipline, chosen from Auspex or Presence.",
+      in_clan: ["Auspex", "Presence"],
+    };
+    const brujah = inClanChoice(sheet([trait("clan", "Brujah", { rating: null }), trait("merits", "Wide Blood", { rating: 3, house })]));
+    expect(`${brujah.chosen.length} of ${brujah.chooses}`).toBe("0 of 1");
+    expect(brujah.adding).toBe("Wide Blood");
+    expect(brujah.lines).toEqual(["One extra in-clan discipline from Auspex or Presence (Wide Blood)."]);
+  });
+
   it("with Bonds of Stolen Vitae, shows the one its detail chose as held", () => {
     const bonds = trait("extra_in_clan_disciplines", "Protean", { granted_rating: 1, granted_by: ["Bonds of Stolen Vitae"] });
     const choice = inClanChoice(sheet([trait("clan", "Gargoyles", { rating: null }), trait("merits", "Bonds of Stolen Vitae", { rating: 2, detail: "Protean" }), bonds]));

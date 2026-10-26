@@ -20,18 +20,19 @@ Archiving one stops new picks, and those who hold it keep it; deleting one is on
 for one nobody holds. Changing one changes it for everyone who holds it, as it is
 the troupe's rule; XP already spent stays as it was.
 
-What one does is its description for now: the storytellers rule on it at the
-table. `HouseTrait.effects` holds the effect blocks to come, each naming the engine
-kind it maps to (a grant, a check, a pool modifier), so that the rules can merge
-them with the trait as they merge its points and type.
+What one does on the sheet is its effect blocks (`HouseTrait.effects`, turned into
+grants and checks by horatio.rules.house_effects), beside its description; with
+none, the storytellers rule on its description at the table. A change to its blocks
+applies to every holder at once: the dots its grants give follow it, as they follow
+a merit from the book, and XP already spent is not worked out again.
 """
 
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -49,8 +50,9 @@ from horatio.models import (
     User,
     XpEntry,
 )
-from horatio.rules.model import house_label, house_page
-from horatio.rules.store import changes_rules, forget_rules, house_properties
+from horatio.rules.house_effects import Compiled, compile_effects, merged, normalised
+from horatio.rules.model import HouseTraitData, TraitData, TroupeRules, house_label, house_page
+from horatio.rules.store import changes_rules, forget_rules, house_properties, read_troupe_rules
 from horatio.sheets import conflict, unprocessable
 
 Category = Literal["merits", "flaws"]
@@ -71,6 +73,8 @@ class Spec:
     description: str = ""
     requirement: str = ""
     splat: str = "vampire"
+    # Its effect blocks (horatio.rules.house_effects), as stored.
+    effects: tuple[Mapping[str, Any], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -84,6 +88,10 @@ class Mark:
     page: str
     availability: str
     archived: bool
+    # What its effect blocks do, in words; and the disciplines it lets the character
+    # add in-clan.
+    summary: str = ""
+    in_clan: tuple[str, ...] = ()
 
 
 def noun(category: str) -> str:
@@ -137,6 +145,79 @@ def check_spec(db: Session, troupe: Troupe, spec: Spec, house: HouseTrait | None
         raise conflict(f"{troupe.name} already has a {noun(same.category)} called {same.name}.")
 
 
+@dataclass(frozen=True)
+class Trial:
+    """The troupe's rules without a house trait, and with it as staff are making it."""
+
+    without: TroupeRules
+    with_it: TroupeRules
+    draft: HouseTraitData
+    compiled: Compiled
+
+
+def trial(db: Session, troupe: Troupe, spec: Spec, house: HouseTrait | None) -> Trial:
+    """The troupe's rules as they would be with `spec` saved (in place of `house`),
+    and as they would be without it, for checking its blocks and trying them on a
+    sheet before saving."""
+    rules = read_troupe_rules(db, spec.splat, troupe.id)
+    base = rules.unmerged or rules.rule_set
+    others = [h for h in rules.house_traits if house is None or h.id != house.id]
+    traits = dict(base.traits)
+    if house is not None and house.splat == spec.splat:
+        traits.pop((house.category, house.name), None)
+    without_set, without_house = merged(replace(base, traits=traits), others)
+    shape = HouseTrait(
+        points=spec.points,
+        kind=spec.kind,
+        availability=spec.availability,
+        requirement=spec.requirement,
+        archived_at=house.archived_at if house is not None else None,
+    )
+    traits[(spec.category, spec.name)] = TraitData(
+        category=spec.category,
+        name=spec.name,
+        description=spec.description or None,
+        page_reference=house_page(troupe.name),
+        properties=house_properties(shape),
+    )
+    draft = HouseTraitData(
+        id=house.id if house is not None else uuid.UUID(int=0),
+        troupe_id=troupe.id,
+        troupe_name=troupe.name,
+        category=spec.category,
+        name=spec.name,
+        points=spec.points,
+        kind=spec.kind,
+        availability=spec.availability,
+        creation_only=spec.creation_only,
+        archived=shape.archived_at is not None,
+        description=spec.description,
+        requirement=spec.requirement,
+        effects=spec.effects,
+    )
+    with_traits = replace(base, traits=traits)
+    with_set, with_house = merged(with_traits, [*others, draft])
+    return Trial(
+        without=replace(rules, rule_set=without_set, house_traits=without_house, unmerged=None),
+        with_it=replace(rules, rule_set=with_set, house_traits=with_house, unmerged=None),
+        draft=next(h for h in with_house if h.id == draft.id),
+        compiled=compile_effects(draft, with_traits),
+    )
+
+
+def check_effects(db: Session, troupe: Troupe, spec: Spec, house: HouseTrait | None) -> None:
+    """Refuse blocks the rules cannot use, saying which and why."""
+    if not spec.effects:
+        return
+    problems = trial(db, troupe, spec, house).compiled.problems
+    if problems:
+        raise unprocessable(" ".join(f"Effect {p.index + 1}: {p.message}" for p in problems))
+
+
+def stored(effects: tuple[Mapping[str, Any], ...]) -> list[dict[str, Any]]:
+    return [normalised(b) for b in effects]
+
+
 def holders(db: Session, house: HouseTrait) -> list[Character]:
     """The characters whose sheets hold it, by name."""
     return list(
@@ -164,6 +245,7 @@ def keep_definition(db: Session, house: HouseTrait, troupe: Troupe) -> None:
 @changes_rules
 def create(db: Session, staff: User, troupe: Troupe, spec: Spec) -> HouseTrait:
     check_spec(db, troupe, spec, None)
+    check_effects(db, troupe, spec, None)
     category = category_row(db, spec.splat, spec.category)
     # One deleted before keeps its definition for the XP history that names it.
     definition = db.scalar(
@@ -188,6 +270,7 @@ def create(db: Session, staff: User, troupe: Troupe, spec: Spec) -> HouseTrait:
         creation_only=spec.creation_only,
         description=spec.description,
         requirement=spec.requirement,
+        effects=stored(spec.effects),
         trait_definition_id=definition.id,
     )
     db.add(house)
@@ -215,9 +298,12 @@ AVAILABILITY_WORDS = {
 
 @changes_rules
 def change(db: Session, staff: User, troupe: Troupe, house: HouseTrait, spec: Spec) -> HouseTrait:
-    """Change it for everyone who holds it. Their ratings follow its points; what
-    they spent on it stays as it was."""
+    """Change it for everyone who holds it. Their ratings follow its points, and
+    what its grants give follows its blocks (dots now free refunded, dots no longer
+    given taken back, as for a merit from the book); what they spent on it stays as
+    it was."""
     check_spec(db, troupe, spec, house)
+    check_effects(db, troupe, spec, house)
     held = holders(db, house)
     if held and (spec.category, spec.splat) != (house.category, house.splat):
         raise conflict(
@@ -237,6 +323,7 @@ def change(db: Session, staff: User, troupe: Troupe, house: HouseTrait, spec: Sp
             ("description", spec.description),
             ("requirement", spec.requirement),
             ("splat", spec.splat),
+            ("effects", stored(spec.effects)),
         )
         if getattr(house, field) != value
     ]
@@ -249,8 +336,15 @@ def change(db: Session, staff: User, troupe: Troupe, house: HouseTrait, spec: Sp
     house.description = spec.description
     house.requirement = spec.requirement
     house.splat = spec.splat
+    house.effects = stored(spec.effects)
     keep_definition(db, house, troupe)
     db.flush()
+    if "effects" in changed or "name" in changed:
+        # Its grants are held through its name, and give what its blocks now say.
+        forget_rules(db)
+        for character in held:
+            sheets.apply_grants(db, staff, character)
+        db.flush()
     if "points" in changed:
         # Rules read afresh, so holders are held at the new points.
         forget_rules(db)
@@ -326,7 +420,7 @@ def marks(db: Session, definition_ids: list[uuid.UUID]) -> dict[uuid.UUID, Mark]
     if not definition_ids:
         return {}
     return {
-        h.trait_definition_id: mark(h, name)
+        h.trait_definition_id: mark(h, name, effects_of(db, h))
         for h, name in db.execute(
             select(HouseTrait, Troupe.name)
             .join(Troupe, HouseTrait.troupe_id == Troupe.id)
@@ -335,7 +429,16 @@ def marks(db: Session, definition_ids: list[uuid.UUID]) -> dict[uuid.UUID, Mark]
     }
 
 
-def mark(house: HouseTrait, troupe_name: str) -> Mark:
+def effects_of(db: Session, house: HouseTrait) -> HouseTraitData | None:
+    """The house trait as its troupe's rules read it, with what its blocks do."""
+    if not house.effects:
+        return None
+    return read_troupe_rules(db, house.splat, house.troupe_id).house_trait(
+        house.category, house.name
+    )
+
+
+def mark(house: HouseTrait, troupe_name: str, read: HouseTraitData | None = None) -> Mark:
     return Mark(
         house_trait_id=house.id,
         troupe_id=house.troupe_id,
@@ -344,6 +447,8 @@ def mark(house: HouseTrait, troupe_name: str) -> Mark:
         page=house_page(troupe_name),
         availability=house.availability,
         archived=house.archived_at is not None,
+        summary=read.summary if read is not None else "",
+        in_clan=read.in_clan if read is not None else (),
     )
 
 

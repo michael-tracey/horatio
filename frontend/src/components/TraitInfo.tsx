@@ -34,17 +34,20 @@ export function TraitInfo({
   description,
   more,
   page,
+  summary,
 }: {
   name: ReactNode;
   after?: ReactNode;
   description?: string | null;
   more?: ReactNode;
   page?: string | null;
+  /** A house merit's "what it does", from its effects: under the description. */
+  summary?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const pageText = pageLabel(page);
-  const says = Boolean(description || more);
+  const says = Boolean(description || more || summary);
   return (
     <>
       <span className="min-w-0">
@@ -67,6 +70,7 @@ export function TraitInfo({
       {says && open && (
         <div id={id} className="order-last col-span-full basis-full pb-1 pl-5 text-xs leading-relaxed text-mist">
           {description && <p>{description}</p>}
+          {summary && <p className="text-gold">What it does: {summary}</p>}
           {more}
           {pageText && <p className="mt-0.5">{pageText}</p>}
         </div>

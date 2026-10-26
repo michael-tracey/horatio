@@ -31,6 +31,7 @@ from horatio.rules.files import (
     feeding_modifier_to_dict,
 )
 from horatio.rules.grants import grant_from_dict, grant_to_dict
+from horatio.rules.house_effects import merged
 from horatio.rules.model import (
     ActionKindData,
     AllowanceRuleData,
@@ -699,6 +700,9 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is None],
         starting_traits=[starting_data(r) for r in starting_rows if r.troupe_id is None],
     )
+    # The house traits' effects, as grants and checks beside the book's.
+    unmerged = data
+    data, house_data = merged(data, house_data)
     return TroupeRules(
         rule_set=data,
         house_rules=house_costs,
@@ -717,6 +721,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         if troupe_id is not None
         else {},
         house_traits=house_data,
+        unmerged=unmerged if data is not unmerged else None,
     )
 
 

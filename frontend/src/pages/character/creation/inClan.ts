@@ -28,6 +28,14 @@ const ADDS_ONE: Record<string, string> = {
 
 const holds = (sheet: SheetOut, name: string) => sheet.traits.some((t) => t.category === "merits" && t.name === name && (t.rating ?? 0) > 0);
 
+/** A troupe's own merit held that adds one in-clan discipline, as Additional Common Discipline does, and from where. */
+function houseAdding(sheet: SheetOut): [string, string] | undefined {
+  const merit = sheet.traits.find((t) => t.category === "merits" && (t.rating ?? 0) > 0 && (t.house?.in_clan?.length ?? 0) > 0);
+  if (!merit) return undefined;
+  const list = merit.house!.in_clan!;
+  return [merit.name, `from ${list.length > 1 ? `${list.slice(0, -1).join(", ")} or ${list.at(-1)}` : list[0]}`];
+}
+
 /** What another trait gives here (Web of Knives' Potence) is held, not chosen. */
 export function isGiven(trait: SheetTraitOut): boolean {
   return trait.granted_rating > 0 && trait.granted_rating >= (trait.rating ?? 0);
@@ -49,7 +57,9 @@ export type InClanChoice = {
 export function inClanChoice(sheet: SheetOut): InClanChoice {
   const caitiff = sheet.traits.some((t) => t.category === "clan" && t.name === "Caitiff");
   const held = sheet.traits.filter((t) => t.category === EXTRA_IN_CLAN && (t.rating ?? 0) > 0);
-  const adding = Object.keys(ADDS_ONE).find((m) => holds(sheet, m));
+  const house = houseAdding(sheet);
+  const adding = Object.keys(ADDS_ONE).find((m) => holds(sheet, m)) ?? house?.[0];
+  const from = adding && (ADDS_ONE[adding] ?? house?.[1]);
   const lines: string[] = [];
   if (caitiff) {
     lines.push(
@@ -59,7 +69,7 @@ export function inClanChoice(sheet: SheetOut): InClanChoice {
     );
     if (holds(sheet, "Inceptor")) lines.push("One of them can be Kineticism, or one path of Thaumaturgy or Necromancy (Inceptor).");
   }
-  if (adding) lines.push(`${caitiff ? "And a fourth" : "One extra in-clan discipline"} ${ADDS_ONE[adding]} (${adding}).`);
+  if (adding) lines.push(`${caitiff ? "And a fourth" : "One extra in-clan discipline"} ${from} (${adding}).`);
   return {
     chooses: (caitiff ? 3 : 0) + (adding ? 1 : 0),
     chosen: held.filter((t) => !isGiven(t)),

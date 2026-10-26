@@ -3,20 +3,64 @@ change, archive and delete them; its running staff apply them to its characters,
 and remove them."""
 
 import uuid
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import house_traits, sheets
+from horatio import house_preview, house_traits, sheets
 from horatio.api.downtimes import staff_troupe
 from horatio.api.sheets import SheetOut, sheet_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, CharacterTrait, HouseTrait, Troupe
 from horatio.permissions import TroupeAction, require_troupe_action, visible_character
+from horatio.rules.house_effects import DEFAULTS, normalised
 from horatio.rules.model import house_label, house_page
 
 router = APIRouter(tags=["house traits"])
+
+
+class EffectBlock(BaseModel):
+    """One thing a house merit or flaw does on the sheet (horatio.rules.house_effects).
+    Each kind reads only its own fields."""
+
+    # free_up_to: the first `amount` dots of `names` (one, or the player's choice of
+    # one) are free; free_choices: the player picks `count` of `names`, each with
+    # `amount` free; add: each of `names` goes up or down by `amount` (health
+    # levels); raise_max: `names` (none: the whole category) go `amount` higher;
+    # cost_percent, price_in_clan, price_out_of_clan: what `names` cost; extra_in_clan:
+    # one more in-clan discipline from `names`; requires, forbids: a clan, a sect or a
+    # trait at a rating (`test`), with a check's `strength`.
+    kind: Literal[
+        "free_up_to",
+        "free_choices",
+        "add",
+        "raise_max",
+        "cost_percent",
+        "price_in_clan",
+        "price_out_of_clan",
+        "extra_in_clan",
+        "requires",
+        "forbids",
+    ]
+    category: str = Field(default="", max_length=100)
+    names: list[str] = Field(default_factory=list[str], max_length=60)
+    amount: int = 0
+    count: int = 1
+    # One field of the trait (Performance: Singing), for a raise or a price.
+    detail: str = Field(default="", max_length=100)
+    test: Literal["clan", "sect", "trait"] = "trait"
+    # For a check on a trait: which, and at least what rating.
+    name: str = Field(default="", max_length=100)
+    rating: int | None = None
+    # As a check's: "refuse", "complete" (by the end of creation), "review" (or staff
+    # approve it), "note".
+    strength: Literal["refuse", "complete", "review", "note"] = "refuse"
+
+
+def block_out(stored: dict[str, Any]) -> EffectBlock:
+    return EffectBlock.model_validate({**DEFAULTS, **stored})
 
 
 class HouseTraitIn(BaseModel):
@@ -32,6 +76,8 @@ class HouseTraitIn(BaseModel):
     description: str = Field(default="", max_length=4000)
     requirement: str = Field(default="", max_length=200)
     splat: str = "vampire"
+    # What it does on the sheet; none: what its description says, ruled at the table.
+    effects: list[EffectBlock] = Field(default_factory=list[EffectBlock], max_length=20)
 
     def to_spec(self) -> house_traits.Spec:
         return house_traits.Spec(
@@ -44,6 +90,7 @@ class HouseTraitIn(BaseModel):
             description=self.description.strip(),
             requirement=self.requirement.strip(),
             splat=self.splat,
+            effects=tuple(normalised(b.model_dump()) for b in self.effects),
         )
 
 
@@ -65,6 +112,9 @@ class HouseTraitOut(BaseModel):
     page: str
     # How many characters hold it.
     holders: int
+    effects: list[EffectBlock]
+    # What the effects do, in words: shown under its description.
+    summary: str
 
 
 class HolderOut(BaseModel):
@@ -78,6 +128,7 @@ class ArchiveIn(BaseModel):
 
 
 def out(db: DbSession, house: HouseTrait, troupe: Troupe) -> HouseTraitOut:
+    read = house_traits.effects_of(db, house)
     return HouseTraitOut(
         id=house.id,
         troupe_id=house.troupe_id,
@@ -94,6 +145,8 @@ def out(db: DbSession, house: HouseTrait, troupe: Troupe) -> HouseTraitOut:
         label=house_label(house.category, troupe.name),
         page=house_page(troupe.name),
         holders=len(house_traits.holders(db, house)),
+        effects=[block_out(b) for b in house.effects],
+        summary=read.summary if read is not None else "",
     )
 
 
@@ -145,6 +198,75 @@ def change_house_trait(
     house_traits.change(db, user, troupe, house, body.to_spec())
     db.commit()
     return out(db, house, troupe)
+
+
+class PreviewIn(BaseModel):
+    trait: HouseTraitIn
+    # The one being changed; none for a new one.
+    house_trait_id: uuid.UUID | None = None
+    # One of the troupe's characters to try it on; none for a new character.
+    character_id: uuid.UUID | None = None
+
+
+class BlockProblemOut(BaseModel):
+    # Which block, counted from 0.
+    index: int
+    message: str
+
+
+class CheckPreviewOut(BaseModel):
+    text: str
+    met: bool
+    strength: str
+
+
+class SampleOut(BaseModel):
+    character_id: uuid.UUID
+    name: str
+    kind: str
+
+
+class PreviewOut(BaseModel):
+    """ "A character with this would…": what it does on a sample sheet."""
+
+    # "a new character", or the character's name.
+    sample: str
+    # Where the player chooses, what they were taken to choose: "Herd".
+    choosing: str
+    summary: str
+    changes: list[str]
+    checks: list[CheckPreviewOut]
+    problems: list[BlockProblemOut]
+    # The troupe's characters it can be tried on.
+    samples: list[SampleOut]
+
+
+@router.post("/troupes/{troupe_id}/house-traits/preview")
+def preview_house_trait(
+    troupe_id: uuid.UUID, body: PreviewIn, db: DbSession, user: CurrentUser
+) -> PreviewOut:
+    """Try a house merit or flaw, as it is being made, on a sample sheet: what its
+    effects would change there, and which blocks cannot be used and why. Nothing is
+    saved."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    house = (
+        troupe_house_trait(db, troupe, body.house_trait_id)
+        if body.house_trait_id is not None
+        else None
+    )
+    spec = body.trait.to_spec()
+    house_traits.check_spec(db, troupe, spec, house)
+    character = house_preview.sample_character(db, body.character_id)
+    found = house_preview.preview(db, troupe, spec, house, character)
+    return PreviewOut(
+        sample=found.sample,
+        choosing=found.choosing,
+        summary=found.summary,
+        changes=found.changes,
+        checks=[CheckPreviewOut(text=c.text, met=c.met, strength=c.strength) for c in found.checks],
+        problems=[BlockProblemOut(index=i, message=m) for i, m in found.problems],
+        samples=[SampleOut(character_id=c.id, name=c.name, kind=c.kind) for c in found.samples],
+    )
 
 
 @router.get("/troupes/{troupe_id}/house-traits/{house_trait_id}/holders")
@@ -204,6 +326,8 @@ class OfferOut(BaseModel):
     availability: str
     description: str
     label: str
+    # What its effects do, in words.
+    summary: str
     # The character holds it already.
     held: bool
 
@@ -262,6 +386,7 @@ def character_house_traits(
             availability=h.availability,
             description=h.description,
             label=house_label(h.category, troupe.name),
+            summary=read.summary if (read := house_traits.effects_of(db, h)) else "",
             held=h.trait_definition_id in held,
         )
         for h in house_traits.offered_to(db, character)

@@ -49,7 +49,7 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
       after={
         <>
           {shown.length > 0 && <span className="text-mist"> ({shown.join(", ")})</span>}
-          {t.house && <HouseMark label={t.house} short />}
+          {t.house && <HouseMark label={t.house} summary={t.house_summary} short />}
         </>
       }
       description={discipline ? [discipline.pool && `${discipline.pool} against ${discipline.versus}.`, discipline.note ?? t.description].filter(Boolean).join(" ") : t.description}
@@ -74,6 +74,7 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
           ))
         ) : null
       }
+      summary={t.house_summary}
       page={t.page_reference}
     />
   );
