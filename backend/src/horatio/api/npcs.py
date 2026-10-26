@@ -151,6 +151,8 @@ class StatBlockOut(BaseModel):
 
 class StockNpcOut(BaseModel):
     character_id: uuid.UUID
+    # The troupe it belongs to, whose NPCs tab has its builder.
+    troupe_id: uuid.UUID | None
     npc_kind: str
     kind: NpcKindOut
     custom_kind: CustomKind | None
@@ -206,6 +208,7 @@ def stock_out(db: DbSession, npc: Character) -> StockNpcOut:
     assert npc.npc_kind is not None
     return StockNpcOut(
         character_id=npc.id,
+        troupe_id=npc.owner_troupe_id,
         npc_kind=npc.npc_kind,
         kind=kind_out(npcs.kind_of(npc)),
         custom_kind=CustomKind.model_validate(npc.npc_custom_kind) if npc.npc_custom_kind else None,

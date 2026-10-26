@@ -8,6 +8,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     character_name: "Agnes",
     player_name: "Jane",
     kind: "pc",
+    blood_name: "Blood",
     clan: "Brujah",
     sect: "Camarilla",
     generation: 1,
@@ -95,6 +96,13 @@ describe("withPending", () => {
     expect(shown.expendables[0]!.left).toBe(1);
     expect(shown.log.map((e) => e.text)).toEqual(["Herd 2 → 1", "Blood 10 → 9"]);
     expect(shown.log.every((e) => e.pending)).toBe(true);
+  });
+
+  it("names a Stock NPC's resource as its kind does, in Blood's place", () => {
+    const shown = withPending(view({ blood_name: "Rage" }), [change("blood", -3, 1)]);
+
+    expect(shown.blood.value).toBe(7);
+    expect(shown.log[0]!.text).toBe("Rage 10 → 7");
   });
 
   it("never goes below nothing or above the most", () => {

@@ -114,3 +114,6 @@ export function usePlay(characterId: string) {
   const sync: Sync = { online, waiting: queue.length, sending, error };
   return { view, shown, tap, sync, accept };
 }
+
+/** What `usePlay` gives: a Play View, its taps and how they are syncing. */
+export type Play = ReturnType<typeof usePlay>;

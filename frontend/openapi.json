@@ -10025,6 +10025,11 @@
           "blood": {
             "$ref": "#/components/schemas/Tracker"
           },
+          "blood_name": {
+            "default": "Blood",
+            "title": "Blood Name",
+            "type": "string"
+          },
           "blood_per_turn": {
             "title": "Blood Per Turn",
             "type": "integer"
@@ -10120,6 +10125,21 @@
               }
             ]
           },
+          "npc_form": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sheeted",
+                  "stock"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
           "player_name": {
             "title": "Player Name",
             "type": "string"
@@ -10150,6 +10170,16 @@
               }
             ],
             "title": "Sect"
+          },
+          "stock": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StockNpcOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "willpower": {
             "$ref": "#/components/schemas/Tracker"
@@ -14497,10 +14527,23 @@
           },
           "stats": {
             "$ref": "#/components/schemas/StatBlockOut"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
           }
         },
         "required": [
           "character_id",
+          "troupe_id",
           "npc_kind",
           "kind",
           "custom_kind",
@@ -14513,7 +14556,7 @@
         "type": "object"
       },
       "StockPin": {
-        "description": "A Stock NPC in the scene. It has no Play View yet, so its card is its name\nand NPC rating (issue #215).",
+        "description": "A Stock NPC in the scene, whose card is the Stock one (issue #215): its\ntrackers come from its Play View, as anyone's do.",
         "properties": {
           "character_id": {
             "format": "uuid",

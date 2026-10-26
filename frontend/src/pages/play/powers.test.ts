@@ -31,6 +31,7 @@ function view(powers: PowerSwitch[], marks: string[] = []): PlayView {
     character_name: "Ursula",
     player_name: "Jane",
     kind: "pc",
+    blood_name: "Blood",
     clan: "Gangrel",
     sect: null,
     generation: 1,

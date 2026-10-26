@@ -17,8 +17,9 @@ import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
 import { incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
-import { usePlay, type Sync } from "./usePlay";
+import { usePlay, type Play, type Sync } from "./usePlay";
 import { useReference } from "./useReference";
+import { StockPlay } from "./StockPlay";
 import { ShownWarning } from "./TrackerWarning";
 import { beastWarning } from "./warnings";
 import { useWakeLock } from "./wakeLock";
@@ -52,10 +53,17 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
  */
 export function PlayPage() {
   const { characterId = "" } = useParams();
+  const play = usePlay(characterId);
+  // Chosen once, by form: a Stock NPC has its own, simpler Play View (issue #215).
+  if (play.view.data?.npc_form === "stock") return <StockPlay characterId={characterId} play={play} />;
+  return <SheetedPlay characterId={characterId} play={play} />;
+}
+
+function SheetedPlay({ characterId, play }: { characterId: string; play: Play }) {
   const [params, setParams] = useSearchParams();
   const prefs = usePreferences();
   const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? prefs.play_tab;
-  const { view, shown, tap, sync, accept } = usePlay(characterId);
+  const { view, shown, tap, sync, accept } = play;
   const { reference, error: referenceError } = useReference(characterId);
   // Quick notes start as the settings say; the switch changes them for this visit.
   const [quickNotes, setQuickNotes] = useState(prefs.quick_notes);
@@ -341,7 +349,7 @@ function TapButton({ label, children, onClick, disabled, tone = "plain" }: { lab
  * Boxes to the tracker's most, filled up to its value. Tapping a filled box
  * spends one, an empty box restores one; the buttons do the same.
  */
-function BoxTracker({
+export function BoxTracker({
   title,
   tracker,
   value,
@@ -417,7 +425,7 @@ function BoxTracker({
  * form's extra levels follow the sheet's own, outlined in gold, and go (with the
  * damage in them) when the form ends.
  */
-function HealthTracker({ view, record }: { view: PlayView; record: RecordTap }) {
+export function HealthTracker({ view, record }: { view: PlayView; record: RecordTap }) {
   const marks = view.health.marks;
   const total = healthMost(view);
   const all = boxes(view).map((box, i) => ({ ...box, mark: marks[i] }));
@@ -764,7 +772,7 @@ function DetailsLater({ view, entry, onDone, onChange }: { view: Shown; entry: S
   );
 }
 
-function Notes({ add }: { add: (note: string) => void }) {
+export function Notes({ add }: { add: (note: string) => void }) {
   const [note, setNote] = useState("");
   return (
     <form
@@ -813,7 +821,7 @@ export function LogEntries({ log, onDetails }: { log: ShownEntry[]; onDetails?: 
   );
 }
 
-function GameLog({ view, undo, onDetails }: { view: Shown; undo: (entry: ShownEntry) => void; onDetails?: (entry: ShownEntry) => void }) {
+export function GameLog({ view, undo, onDetails }: { view: Shown; undo: (entry: ShownEntry) => void; onDetails?: (entry: ShownEntry) => void }) {
   const last = latestUndoable(view.log);
   // Undoing a spend takes its entry off the influence log; if staff have changed it there, ask first.
   const [checking, setChecking] = useState<ShownEntry | null>(null);
@@ -872,7 +880,8 @@ export function ResetGame({ view, sync, onReset }: { view: Shown; sync: Sync; on
       {asking ? (
         <div className="flex flex-col gap-2">
           <p className="text-sm">
-            Put every tracker back for the next game? Blood to {view.blood.start}, Willpower to {view.willpower.start}, health clear and every use back.
+            Put every tracker back for the next game? {view.blood_name} to {view.blood.start}
+            {view.willpower.most > 0 && `, Willpower to ${view.willpower.start}`}, health clear and every use back.
             {showsDerangements(view) && ` Derangement traits stay at ${view.derangements.value}.`} This game's log is kept.
           </p>
           <div className="flex gap-2">
@@ -896,7 +905,7 @@ export function ResetGame({ view, sync, onReset }: { view: Shown; sync: Sync; on
 }
 
 /** Games already over, each with its log, kept for the next downtime. */
-function PastGames({ characterId, current }: { characterId: string; current: string | undefined }) {
+export function PastGames({ characterId, current }: { characterId: string; current: string | undefined }) {
   const games = useQuery({
     queryKey: ["play-games", characterId, current],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/play/games", { params: { path: { character_id: characterId } } })),

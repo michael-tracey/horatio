@@ -8037,6 +8037,11 @@ export interface components {
         PlayView: {
             beast: components["schemas"]["Tracker"];
             blood: components["schemas"]["Tracker"];
+            /**
+             * Blood Name
+             * @default Blood
+             */
+            blood_name: string;
             /** Blood Per Turn */
             blood_per_turn: number;
             /**
@@ -8080,6 +8085,8 @@ export interface components {
             /** Log */
             log: components["schemas"]["LogEntryOut"][];
             morality: components["schemas"]["Morality"] | null;
+            /** Npc Form */
+            npc_form?: ("sheeted" | "stock") | null;
             /** Player Name */
             player_name: string;
             /**
@@ -8094,6 +8101,7 @@ export interface components {
             retainers: components["schemas"]["RetainerTrackOut"][];
             /** Sect */
             sect: string | null;
+            stock?: components["schemas"]["StockNpcOut"] | null;
             willpower: components["schemas"]["Tracker"];
         };
         /** PlayerCharacter */
@@ -9805,11 +9813,13 @@ export interface components {
             /** Specializations */
             specializations: components["schemas"]["Specialization"][];
             stats: components["schemas"]["StatBlockOut"];
+            /** Troupe Id */
+            troupe_id: string | null;
         };
         /**
          * StockPin
-         * @description A Stock NPC in the scene. It has no Play View yet, so its card is its name
-         *     and NPC rating (issue #215).
+         * @description A Stock NPC in the scene, whose card is the Stock one (issue #215): its
+         *     trackers come from its Play View, as anyone's do.
          */
         StockPin: {
             /**
