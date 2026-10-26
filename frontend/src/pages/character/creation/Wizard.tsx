@@ -563,6 +563,8 @@ function ReviewStep({
         <Notice>Place every pick to finish. Merit and flaw points are optional.</Notice>
       ) : unfielded.length > 0 ? (
         <Notice>Everything is placed. Give each skill above its field to finish.</Notice>
+      ) : notices.some((n) => !n.canWait) ? (
+        <Notice>Everything is placed. Settle what is listed above to finish.</Notice>
       ) : (
         <Notice>Everything is placed. After finishing, new dots come from experience.</Notice>
       )}

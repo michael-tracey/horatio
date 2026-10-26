@@ -19,6 +19,7 @@ from horatio.rules.pricing import NotAllowed, trait_cost
 from horatio.rules.splats import SPLATS, vampire_in_clan_disciplines
 from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_creation import FULL_BUILD, creating, pick
+from tests.test_api_creation_rules import give_xp
 from tests.test_api_grants import take
 
 
@@ -493,3 +494,185 @@ def test_a_merit_that_gives_a_discipline_in_clan_opens_its_starting_dots(troupe:
     assert "Fortitude" not in options()
     assert pick(player, character_id, "merits", "Iron Scales", 2).status_code == 200
     assert "Fortitude" in options()
+
+
+# --- merits whose point is an in-clan discipline the player chooses (#216) -----------------
+
+COMMON_THREE = ["Auspex", "Celerity", "Potence"]
+
+
+def cart(player: Person, character_id: str, changes: list[dict[str, Any]], dry_run: bool) -> Any:
+    out = player.client.post(
+        f"/characters/{character_id}/cart", json={"changes": changes, "dry_run": dry_run}
+    )
+    assert out.status_code == 200, out.text
+    return out.json()
+
+
+def swap(player: Person, character_id: str, out: str, to: str, dry_run: bool = False) -> Any:
+    """What the Concept step's in-clan picker sends to swap one choice for another."""
+    change = {"kind": "set", "category": "extra_in_clan_disciplines", "detail": "", "teacher": ""}
+    return cart(
+        player,
+        character_id,
+        [{**change, "name": out, "rating": 0}, {**change, "name": to, "rating": 1}],
+        dry_run,
+    )
+
+
+def ready_to_finish(troupe: Troupe, clan: str, in_clan: Sequence[str]) -> str:
+    """A character with every pick placed: the usual build, its in-clan choices, and
+    starting dots on three of its in-clan disciplines."""
+    character_id = creating(troupe, clan=clan)
+    player = troupe.player
+    for name in in_clan:
+        assert take(player, character_id, "extra_in_clan_disciplines", name).status_code == 200
+    build(player, character_id, skip="disciplines")
+    options = next(
+        p["options"]
+        for p in player.client.get(f"/characters/{character_id}/creation").json()["pools"]
+        if p["category"] == "disciplines"
+    )
+    for name, rating in zip(sorted(options), (2, 1, 1), strict=False):
+        assert pick(player, character_id, "disciplines", name, rating).status_code == 200, name
+    return character_id
+
+
+def finish(player: Person, character_id: str) -> Any:
+    return player.client.post(f"/characters/{character_id}/creation/complete")
+
+
+def move_dot(player: Person, character_id: str, out: str, to: str) -> None:
+    """Moves the starting dots on a discipline swapped out, as the Disciplines step does."""
+    state = player.client.get(f"/characters/{character_id}/creation").json()
+    picks = [
+        {"name": to if t["name"] == out else t["name"], "rating": p["rating"]}
+        for p in state["pools"]
+        if p["category"] == "disciplines"
+        for t in p["traits"]
+    ]
+    moved = player.client.put(
+        f"/characters/{character_id}/creation/categories/disciplines", json={"picks": picks}
+    )
+    assert moved.status_code == 200, moved.text
+
+
+@pytest.mark.parametrize(
+    ("merit", "to"),
+    [
+        ("Vestiges of Greatness", "Dementation"),
+        ("Inceptor", "Kineticism"),
+        ("Inceptor", "Necromancy: Mortis Path"),
+    ],
+)
+def test_a_caitiff_merit_that_changes_one_of_the_three_blocks_finishing_until_swapped_in(
+    troupe: Troupe, merit: str, to: str
+) -> None:
+    character_id = ready_to_finish(troupe, "Caitiff", COMMON_THREE)
+    player = troupe.player
+    assert pick(player, character_id, "merits", merit, 3).status_code == 200
+
+    refused = finish(player, character_id)
+    assert refused.status_code == 409
+    assert f"{merit}: choose" in refused.json()["detail"]
+    # All three are chosen, so the new one is refused alone, but swaps in for any of them.
+    alone = take(player, character_id, "extra_in_clan_disciplines", to)
+    assert alone.status_code == 409
+    assert "Caitiff choose three" in alone.json()["detail"]
+    for out in COMMON_THREE:
+        tried = swap(player, character_id, out, to, dry_run=True)
+        assert all(line["refused"] is None for line in tried["lines"]), (out, tried)
+
+    assert swap(player, character_id, "Auspex", to)["applied"]
+    # The starting dot on Auspex is kept until it moves (the Disciplines step).
+    assert "Auspex" in finish(player, character_id).json()["detail"]
+    if not to.startswith("Necromancy: "):
+        move_dot(player, character_id, "Auspex", to)
+        assert finish(player, character_id).status_code == 200
+
+
+def test_vestiges_refuses_a_second_uncommon_swap(troupe: Troupe) -> None:
+    character_id = ready_to_finish(troupe, "Caitiff", COMMON_THREE)
+    player = troupe.player
+    assert pick(player, character_id, "merits", "Vestiges of Greatness", 3).status_code == 200
+    assert swap(player, character_id, "Auspex", "Dementation")["applied"]
+
+    lines = swap(player, character_id, "Celerity", "Protean", dry_run=True)["lines"]
+    assert any(VESTIGES_MESSAGE in (line["refused"] or "") for line in lines)
+    # In place of the first, it is allowed.
+    lines = swap(player, character_id, "Dementation", "Protean", dry_run=True)["lines"]
+    assert all(line["refused"] is None for line in lines)
+
+
+@pytest.mark.parametrize(
+    ("clan", "in_clan", "merit", "points", "to", "not_on_its_list"),
+    [
+        ("Brujah", [], "Additional Common Discipline", 4, "Auspex", "Protean"),
+        ("Brujah", [], "Additional Uncommon Discipline", 5, "Protean", "Auspex"),
+        ("Nosferatu", [], "Pliable Blood", 3, "Dementation", "Animalism"),
+        ("Caitiff", COMMON_THREE, "Additional Common Discipline", 4, "Dominate", "Kineticism"),
+        ("Caitiff", COMMON_THREE, "Additional Uncommon Discipline", 5, "Quietus", "Vicissitude"),
+    ],
+)
+def test_a_merit_that_adds_an_in_clan_discipline_blocks_finishing_until_it_is_chosen(
+    troupe: Troupe,
+    clan: str,
+    in_clan: list[str],
+    merit: str,
+    points: int,
+    to: str,
+    not_on_its_list: str,
+) -> None:
+    character_id = ready_to_finish(troupe, clan, in_clan)
+    player = troupe.player
+    assert pick(player, character_id, "merits", merit, points).status_code == 200
+
+    refused = finish(player, character_id)
+    assert refused.status_code == 409
+    assert f"{merit}: choose the in-clan discipline it adds." in refused.json()["detail"]
+    assert (
+        take(player, character_id, "extra_in_clan_disciplines", not_on_its_list).status_code == 409
+    )
+
+    assert take(player, character_id, "extra_in_clan_disciplines", to).status_code == 200
+    # The one it adds starts without a free dot, so nothing moves.
+    assert finish(player, character_id).status_code == 200, finish(player, character_id).text
+
+
+def test_a_merit_that_adds_one_bought_after_creation_is_not_held_back(troupe: Troupe) -> None:
+    character_id = ready_to_finish(troupe, "Brujah", [])
+    player = troupe.player
+    assert finish(player, character_id).status_code == 200
+    give_xp(troupe, character_id, 20)
+    merit = {"kind": "set", "category": "merits", "name": "Additional Common Discipline"}
+
+    bought = cart(player, character_id, [{**merit, "detail": "", "rating": 4}], dry_run=True)
+
+    assert [line["refused"] for line in bought["lines"]] == [None]
+
+
+def test_bonds_of_stolen_vitae_is_taken_with_its_discipline_chosen(troupe: Troupe) -> None:
+    character_id = ready_to_finish(troupe, "Gargoyles", [])
+    player = troupe.player
+
+    unchosen = pick(player, character_id, "merits", "Bonds of Stolen Vitae", 2)
+    assert unchosen.status_code == 409
+    assert "Say which for Bonds of Stolen Vitae" in unchosen.json()["detail"]
+    chosen = player.client.put(
+        f"/characters/{character_id}/creation/picks",
+        json={
+            "category": "merits",
+            "name": "Bonds of Stolen Vitae",
+            "rating": 2,
+            "detail": "Protean",
+        },
+    )
+    assert chosen.status_code == 200, chosen.text
+
+    assert "Protean" in in_clan_now(player, character_id)
+    assert finish(player, character_id).status_code == 200
+
+
+def in_clan_now(player: Person, character_id: str) -> list[str]:
+    pools = player.client.get(f"/characters/{character_id}/creation").json()["pools"]
+    return next(p["options"] for p in pools if p["category"] == "disciplines")

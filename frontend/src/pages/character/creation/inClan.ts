@@ -70,14 +70,32 @@ export function inClanChoice(sheet: SheetOut): InClanChoice {
   };
 }
 
+/**
+ * The disciplines the picker offers: those held, and every one the server does not
+ * bar whatever is chosen (`barred`, worked out as if none were). One the rules refuse
+ * only as things stand (a fourth for a Caitiff, a second from Vestiges' list) is
+ * offered, and tapping it asks what to swap out (`whenTapped`).
+ */
+export function inClanOptions(names: string[], choice: InClanChoice, barred: Record<string, string>): string[] {
+  const held = new Set([...choice.chosen, ...choice.given].map((t) => t.name));
+  return names.filter((name) => held.has(name) || !(name in barred));
+}
+
+/** What tapping an unticked discipline does: chosen at once, or, where the rules refuse it now, the swaps that make room. */
+export function whenTapped(name: string, refused: Record<string, string>): "choose" | "swap" {
+  return name in refused ? "swap" : "choose";
+}
+
 /** In-clan disciplines still to choose: on Concept, and on Merits when a merit there added the choice. */
 export const inClanChoices: NoticeSource = ({ sheet, steps }) => {
   const { chooses, chosen, adding, caitiff } = inClanChoice(sheet);
   const left = chooses - chosen.length;
   if (left <= 0) return [];
-  const message =
-    adding && (!caitiff || left === 1)
-      ? `${adding}: choose the in-clan discipline it adds.`
-      : `Choose ${left}${left < chooses ? " more" : ""} in-clan ${left === 1 ? "discipline" : "disciplines"}.`;
+  const merit = adding && (!caitiff || left === 1);
+  // The merit's own check says the same, with its page: that one is shown (brokenChecks).
+  if (merit && sheet.problems.some((p) => p.category === "merits" && p.name === adding)) return [];
+  const message = merit
+    ? `${adding}: choose the in-clan discipline it adds.`
+    : `Choose ${left}${left < chooses ? " more" : ""} in-clan ${left === 1 ? "discipline" : "disciplines"}.`;
   return [{ key: "in-clan/choose", message, on: inOrder(steps, ["concept", adding ? "merits" : undefined]), fix: "concept" }];
 };

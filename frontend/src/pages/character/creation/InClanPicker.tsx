@@ -4,7 +4,7 @@ import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut } from "../../../api/types";
 import { Button, ErrorText } from "../../../components/ui";
 import { useAction, useUnavailable } from "../../../hooks";
-import { EXTRA_IN_CLAN, inClanChoice } from "./inClan";
+import { EXTRA_IN_CLAN, inClanChoice, inClanOptions, whenTapped } from "./inClan";
 
 const swap = (from: string, to: string) => [
   { kind: "set" as const, category: EXTRA_IN_CLAN, name: from, detail: "", rating: 0, teacher: "" },
@@ -20,8 +20,10 @@ const swap = (from: string, to: string) => [
 export function InClanPicker({ character, sheet, catalogue }: { character: CharacterOut; sheet: SheetOut; catalogue: CatalogueOut }) {
   const choice = inClanChoice(sheet);
   // What nothing chosen here could allow is not offered at all.
-  const barred = useUnavailable(character.id, EXTRA_IN_CLAN, true, { asIf: "empty" }).data;
-  const refusals = useUnavailable(character.id, EXTRA_IN_CLAN).data;
+  const barring = useUnavailable(character.id, EXTRA_IN_CLAN, true, { asIf: "empty" });
+  const refusing = useUnavailable(character.id, EXTRA_IN_CLAN);
+  const barred = barring.data;
+  const refusals = refusing.data;
   const refused = refusals ?? {};
   const [wanted, setWanted] = useState<string | null>(null);
   const path = { params: { path: { character_id: character.id } } };
@@ -55,11 +57,14 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
     setWanted(null);
   });
 
-  // Not shown until the server has said what it refuses: a tap before then would be
-  // sent as a plain choice, and fail, instead of offering the swaps.
-  if (!barred || !refusals) return null;
-  const options = catalogue.traits.filter((t) => t.category === EXTRA_IN_CLAN && (chosen.includes(t.name) || given.has(t.name) || !(t.name in barred)));
-  if (!options.length && !choice.chooses) return null;
+  // The choices wait until the server has said what it refuses: a tap before then would
+  // be sent as a plain choice, and fail, instead of offering the swaps. Meanwhile, and
+  // if asking fails, the picker still shows, so a merit's notice never points at nothing.
+  const loaded = !!barred && !!refusals;
+  const names = catalogue.traits.filter((t) => t.category === EXTRA_IN_CLAN).map((t) => t.name);
+  const options = loaded ? inClanOptions(names, choice, barred) : [];
+  if (loaded && !options.length && !choice.chooses) return null;
+  if (!loaded && !choice.chooses) return null;
   const busy = toggle.isPending || swapIn.isPending;
   return (
     <fieldset className="flex flex-col gap-2 rounded-md border border-ash p-3">
@@ -71,25 +76,31 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
           {line}
         </p>
       ))}
+      {!loaded &&
+        (barring.error || refusing.error ? (
+          <ErrorText error={barring.error ?? refusing.error} />
+        ) : (
+          <p className="text-sm text-mist">Checking which you can choose…</p>
+        ))}
       <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
-        {options.map((t) => {
-          const from = given.get(t.name);
-          const held = chosen.includes(t.name) || !!from;
+        {options.map((name) => {
+          const from = given.get(name);
+          const held = chosen.includes(name) || !!from;
           return (
-            <label key={t.name} className="flex items-center gap-2 text-sm">
+            <label key={name} className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={held}
                 disabled={busy || !!from}
                 onChange={(e) => {
-                  if (!e.target.checked) return toggle.mutate({ name: t.name, on: false });
-                  if (t.name in refused) return setWanted(t.name);
+                  if (!e.target.checked) return toggle.mutate({ name, on: false });
+                  if (whenTapped(name, refused) === "swap") return setWanted(name);
                   setWanted(null);
-                  toggle.mutate({ name: t.name, on: true });
+                  toggle.mutate({ name, on: true });
                 }}
               />
               <span>
-                {t.name}
+                {name}
                 {from && <span className="text-xs text-mist"> (from {from.join(", ")})</span>}
               </span>
             </label>
@@ -110,7 +121,9 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
                 ))}
               </div>
             </>
-          ) : swaps.isFetching ? null : (
+          ) : swaps.isFetching ? null : swaps.error ? (
+            <ErrorText error={swaps.error} />
+          ) : (
             <p className="text-mist">No swap makes room for it. Untick one to choose another.</p>
           )}
           <div>

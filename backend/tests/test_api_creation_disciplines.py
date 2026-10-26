@@ -214,6 +214,13 @@ def test_inept_needs_an_in_clan_discipline_to_finish(troupe: Troupe) -> None:
 
     assert refused.status_code == 409
     assert "Inept: choose one of your in-clan disciplines" in refused.json()["detail"]
+    # The Merits step saves it again naming an in-clan one, and the build finishes.
+    renamed = player.client.put(
+        f"/characters/{character_id}/creation/categories/flaws",
+        json={"picks": [{"name": "Inept", "rating": 3, "detail": "Presence"}]},
+    )
+    assert renamed.status_code == 200, renamed.text
+    assert finish(player, character_id).status_code == 200
 
 
 def test_inept_without_a_discipline_is_refused(troupe: Troupe) -> None:

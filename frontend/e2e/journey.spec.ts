@@ -1289,6 +1289,92 @@ test("a Caitiff takes Vestiges of Greatness from Concept, and a second uncommon 
   await expect(p.getByText("3 of 7 points")).toBeVisible();
 });
 
+test("a Caitiff chooses three common disciplines on Concept, takes Vestiges of Greatness, swaps one for Protean and finishes", async ({ browser }) => {
+  const { page: p } = await person(browser, "vestiges-swap");
+  const id = await creatingVampire(p, "Odd Lot", "Caitiff", [], {
+    attributes: [["Mental", 7], ["Physical", 5], ["Social", 3]],
+    focus_physicals: [["Dexterity", 1]],
+    focus_mentals: [["Perception", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Drive", 4], ["Dodge", 3], ["Firearms", 3], ["Brawl", 2], ["Melee", 2], ["Survival", 2], ["Animal Ken", 1], ["Athletics", 1], ["Security", 1], ["Stealth", 1]],
+    backgrounds: [["Contacts", 3], ["Fame", 2], ["Generation", 1]],
+  });
+  await p.goto(`/characters/${id}/create/concept`);
+  for (const name of ["Celerity", "Fortitude", "Obfuscate"]) {
+    await p.getByRole("checkbox", { name }).click();
+    await expect(p.getByRole("checkbox", { name })).toBeChecked();
+  }
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Disciplines/ }).click();
+  await p.getByRole("button", { name: "Celerity 2" }).click();
+  await p.getByRole("button", { name: "Fortitude 1" }).click();
+  await p.getByRole("button", { name: "Obfuscate 1" }).click();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
+  await p.getByLabel("Search Merits").fill("Vestiges");
+  await p.getByRole("checkbox", { name: /^Vestiges of Greatness/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  // Everything is placed, but Review says the merit still waits on a choice, and where.
+  const settle = p.getByRole("region", { name: "Still to settle" });
+  await expect(settle).toContainText("Vestiges of Greatness: choose one of your in-clan disciplines from Dementation");
+  await expect(p.getByText("Everything is placed. Settle what is listed above to finish.")).toBeVisible();
+  await settle.getByRole("link", { name: "Go to Concept" }).click();
+
+  // The uncommon ones are offered with all three chosen: tapping one offers the swaps.
+  await expect(p.getByText("In-clan disciplines (3 of 3)")).toBeVisible();
+  await p.getByRole("checkbox", { name: "Protean" }).click();
+  const room = p.getByRole("group", { name: "Make room for Protean" });
+  await expect(room.getByRole("button", { name: /^Swap / })).toHaveCount(3);
+  await room.getByRole("button", { name: "Swap Obfuscate for Protean" }).click();
+  await expect(p.getByRole("checkbox", { name: "Protean" })).toBeChecked();
+  await expect(p.getByRole("checkbox", { name: "Obfuscate" })).not.toBeChecked();
+  await expect(p.getByText("Vestiges of Greatness: choose one")).toHaveCount(0);
+
+  // The starting dot on Obfuscate moves to Protean, and the character finishes.
+  await p.getByRole("link", { name: "Go to Disciplines" }).click();
+  await expect(p.getByText("Your starting dot in Obfuscate needs moving: it is no longer in-clan. Clear it and place it on another.")).toBeVisible();
+  await p.getByRole("button", { name: "Clear Obfuscate" }).click();
+  await p.getByRole("button", { name: "Protean 1" }).click();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+});
+
+test("a Brujah takes Additional Uncommon Discipline on Merits, is held back until choosing it on Concept, and finishes", async ({ browser }) => {
+  const { page: p } = await person(browser, "aud-finish");
+  const id = await creatingVampire(p, "Second Skin", "Brujah", [], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Search Merits").fill("Additional Uncommon");
+  await p.getByRole("checkbox", { name: /^Additional Uncommon Discipline/ }).check();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  const settle = p.getByRole("region", { name: "Still to settle" });
+  await expect(settle).toContainText("Additional Uncommon Discipline: choose the in-clan discipline it adds. (p. 248)");
+  await expect(p.getByText("Everything is placed. Settle what is listed above to finish.")).toBeVisible();
+  await settle.getByRole("link", { name: "Go to Concept" }).click();
+
+  // One slot, empty, with only the merit's list.
+  await expect(p.getByText("In-clan disciplines (0 of 1)")).toBeVisible();
+  await expect(p.getByRole("checkbox", { name: "Auspex" })).toHaveCount(0);
+  await p.getByRole("checkbox", { name: "Quietus" }).click();
+  await expect(p.getByRole("checkbox", { name: "Quietus" })).toBeChecked();
+  await expect(p.getByText("In-clan now: Celerity, Potence, Presence and Quietus.")).toBeVisible();
+
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+});
+
 test("a Brujah takes Additional Uncommon Discipline from Concept and chooses Protean", async ({ browser }) => {
   const { page: p } = await person(browser, "aud-brujah");
   const id = await creatingVampire(p, "Roadkill", "Brujah", []);
