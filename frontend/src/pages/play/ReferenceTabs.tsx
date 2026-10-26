@@ -3,9 +3,8 @@ import type { DisciplinePowers, PlayReference, PoolModifier, PowerSwitch, TestPo
 import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
 import { RetainerLines } from "../character/Retainers";
-import { ModifiersPanel } from "./Modifiers";
 import { breakdown, damageText, exceptionalText, grouped, switchedDamage, total } from "./pools";
-import { PowersList } from "./Powers";
+import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
 import { useModifiers } from "./useModifiers";
 
@@ -133,9 +132,9 @@ function Discipline({ discipline }: { discipline: DisciplinePowers }) {
 /**
  * Test pools worked out from the sheet, with what changes them, and what each
  * power does. Defence counts current Willpower, so it follows the tracker.
- * "Forms and powers in use" switches on what the sheet's powers change while
- * active, from the rules, beside the player's own modifiers (issue #200): the
- * pools count whatever is on.
+ * The switches for what the sheet's powers change while active, from the rules,
+ * and the player's own modifiers (issue #200), are in a drawer from a button at
+ * the foot (issue #211): the pools count whatever is on.
  */
 export function PoolsTab({
   reference,
@@ -153,12 +152,7 @@ export function PoolsTab({
   const modifiers = useModifiers(characterId);
   const on = powers.filter((p) => p.on).map((p) => p.key);
   return (
-    <div className="flex flex-col gap-3">
-      <section className="flex flex-col gap-3 rounded-lg border border-ash bg-dusk p-3" aria-label="Forms and powers in use">
-        <h2 className="text-base text-gold">Forms and powers in use</h2>
-        <PowersList powers={powers} tap={tap} />
-        <ModifiersPanel pools={reference.pools} modifiers={modifiers} />
-      </section>
+    <div className="flex flex-col gap-3 pb-20">
       <div className="grid gap-3 md:grid-cols-2">
         {grouped(reference.pools).map(([group, pools]) => (
           <Panel key={group} title={group} aside={group === "Defence" ? <span className="text-xs text-mist">Willpower now: {willpower}</span> : undefined}>
@@ -197,6 +191,7 @@ export function PoolsTab({
           </ul>
         </Panel>
       )}
+      <SwitchesDrawer pools={reference.pools} powers={powers} modifiers={modifiers} tap={tap} />
     </div>
   );
 }
