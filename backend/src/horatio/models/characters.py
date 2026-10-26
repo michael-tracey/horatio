@@ -201,6 +201,34 @@ class Diablerie(Record):
     outcome: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
+class Embrace(Record):
+    """A ghoul's Embrace (MET: VTM pp. 297–299), as its home troupe's staff ran it:
+    the ghoul became a vampire of its sire's clan, or died in it and was retired.
+    `outcome` says what each step did, and the XP it came to."""
+
+    __tablename__ = "embraces"
+    __table_args__ = (CheckConstraint("result in ('vampire', 'died')", name="result"),)
+
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"))
+    # "vampire", or "died" for a character retired in the attempt.
+    result: Mapped[str]
+    embraced_on: Mapped[date] = mapped_column(Date)
+    # The sire: a vampire PC or NPC in Horatio, or one known by name, clan and
+    # Generation only. Kept by name if the linked one is deleted.
+    sire_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"))
+    sire_name: Mapped[str] = mapped_column(default="", server_default="")
+    sire_clan: Mapped[str] = mapped_column(default="", server_default="")
+    # As a number: 10 for the 10th generation.
+    sire_generation: Mapped[int | None]
+    note: Mapped[str] = mapped_column(default="", server_default="")
+    # The Storyteller let the discipline dots the Embrace took be bought back into
+    # XP debt (p. 298): in the procedure, or from the cart, up to 2 dots in all.
+    buy_back_into_debt: Mapped[bool] = mapped_column(default=False, server_default="false")
+    outcome: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    recorded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
 class SheetVersion(Record):
     """One sheet as one troupe approved it, frozen. That troupe's approved sheet is its latest."""
 
@@ -227,10 +255,12 @@ class XpEntry(Record):
         # A self-entered entry is XP a player added to a character with no home
         # troupe; a cap is XP above a troupe's ceiling taken away as it became home.
         # A reprice is the difference in what a purchase costs when Generation
-        # changes before acceptance (horatio.repricing).
+        # changes before acceptance (horatio.repricing), or at a ghoul's Embrace
+        # (horatio.embrace). A debt line is XP debt staff add (negative) or forgive
+        # (positive), with their reason (horatio.xp_debt).
         CheckConstraint(
             "kind in ('award', 'purchase', 'settlement', 'fee', 'correction',"
-            " 'self_entered', 'cap', 'reprice')",
+            " 'self_entered', 'cap', 'reprice', 'debt')",
             name="kind",
         ),
         CheckConstraint(

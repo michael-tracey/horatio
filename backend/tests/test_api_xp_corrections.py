@@ -60,7 +60,13 @@ def test_a_correction_leaves_the_award_and_adds_the_difference(
     assert response.json()["amount"] == -27
     assert response.json()["kind"] == "correction"
 
-    assert xp(troupe.player, homed) == {"balance": 33, "earned": 33, "spent": 0, "unbanked": 0}
+    assert xp(troupe.player, homed) == {
+        "balance": 33,
+        "earned": 33,
+        "spent": 0,
+        "unbanked": 0,
+        "debt": 0,
+    }
     lines = history(troupe.player, homed)
     original = next(e for e in lines if e["id"] == entry)
     assert (original["amount"], original["corrected_to"]) == (30, 3)

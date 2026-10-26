@@ -365,6 +365,25 @@ def test_moving_home_troupes_reconciles_against_what_was_actually_paid(
     assert str(moved.troupe_id) == troupe.id
 
 
+def test_a_character_in_xp_debt_can_move_but_not_deeper_into_it(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    make_home(troupe, troupe.lead, character_id, troupe.id)
+    owed = troupe.lead.client.post(
+        f"/characters/{character_id}/xp/debt",
+        json={"change": "add", "amount": 40, "reason": "Owed"},
+    )
+    assert owed.status_code == 200, owed.text
+    second = second_troupe(troupe)
+
+    make_home(troupe, troupe.storyteller, character_id, second)
+
+    assert (
+        troupe.player.client.get(f"/characters/{character_id}").json()["home_troupe_id"] == second
+    )
+    # Its 5 banked XP paid some; the new troupe's XP floor may top it up, never down.
+    assert sheet(troupe.player, character_id)["xp"]["debt"] <= 40 - 5
+
+
 def test_requesting_the_current_home_troupe_is_refused(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     make_home(troupe, troupe.lead, character_id, troupe.id)
