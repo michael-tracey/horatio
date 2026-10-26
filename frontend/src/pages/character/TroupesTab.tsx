@@ -2,10 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut, XpStandingOut } from "../../api/types";
-import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
+import { Button, Card, Empty, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { describeDifference, settlementLabel } from "../../settlements";
 
+
+const HOME_MEANS =
+  "The one troupe that holds this character's sheet. It accepts the character, awards its XP, approves its discipline purchases, sets what traits cost with its house rules, and runs its downtimes.";
+const VISITING_MEANS =
+  "A troupe this character plays in without its home there. Its storytellers can see the sheet, but approve nothing on it and award it no XP. A character can visit several.";
 
 export function TroupesTab({ character }: { character: CharacterOut }) {
   const path = { params: { path: { character_id: character.id } } };
@@ -28,20 +33,46 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
 
   if (memberships.isPending || troupes.isPending || sheet.isPending) return <Loading />;
   const memberIds = new Set(memberships.data?.map((m) => m.troupe_id));
+  const visits = memberships.data?.filter((m) => !m.home) ?? [];
   const pendingHome = sheet.data?.pending_approvals.find((a) => a.kind === "home_troupe_change") ?? null;
   const pendingTroupe = troupes.data?.find((t) => t.id === pendingHome?.troupe_id);
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <Card title="Troupes">
-        {memberships.data?.length ? (
+      {pendingHome ? (
+        <Card title="Home troupe">
+          <p className="mb-3 text-sm text-mist">{HOME_MEANS}</p>
+          <p className="text-sm">
+            Waiting for {pendingTroupe?.name ?? "the troupe"}'s storytellers to accept this character.
+          </p>
+          <Button variant="secondary" className="mt-3" onClick={() => withdraw.mutate(undefined)}>
+            Withdraw the request
+          </Button>
+          <ErrorText error={withdraw.error} />
+        </Card>
+      ) : (
+        character.creation_complete ? (
+          <HomeTroupe
+            character={character}
+            troupes={troupes.data ?? []}
+            currentHome={character.home_troupe_id}
+            unbanked={sheet.data?.xp.unbanked ?? 0}
+          />
+        ) : (
+          <Card title="Home troupe">
+            <p className="mb-3 text-sm text-mist">{HOME_MEANS}</p>
+            <Notice>Finish character creation on the Sheet tab before choosing a home troupe.</Notice>
+          </Card>
+        )
+      )}
+
+      <Card title="Visiting troupes">
+        <p className="mb-3 text-sm text-mist">{VISITING_MEANS}</p>
+        {visits.length ? (
           <ul className="divide-y divide-ash">
-            {memberships.data.map((m) => (
+            {visits.map((m) => (
               <li key={m.troupe_id} className="flex items-center justify-between gap-2 py-2">
-                <span className="flex flex-wrap items-center gap-2">
-                  {m.troupe_name}
-                  {m.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
-                </span>
+                <span>{m.troupe_name}</span>
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -55,10 +86,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             ))}
           </ul>
         ) : (
-          <Empty>
-            Not in any troupe. A character plays in its one home troupe, and can visit others; joining a troupe as a visitor lets
-            its storytellers see the sheet.
-          </Empty>
+          <Empty>Not visiting any troupe.</Empty>
         )}
         <form
           className="mt-3 flex gap-2"
@@ -84,30 +112,6 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
         <ErrorText error={join.error ?? leave.error} />
       </Card>
 
-      {pendingHome ? (
-        <Card title="Home troupe">
-          <p className="text-sm">
-            Waiting for {pendingTroupe?.name ?? "the troupe"}'s storytellers to accept this character.
-          </p>
-          <Button variant="secondary" className="mt-3" onClick={() => withdraw.mutate(undefined)}>
-            Withdraw the request
-          </Button>
-          <ErrorText error={withdraw.error} />
-        </Card>
-      ) : (
-        character.creation_complete ? (
-          <HomeTroupe
-            character={character}
-            troupes={troupes.data ?? []}
-            currentHome={character.home_troupe_id}
-            unbanked={sheet.data?.xp.unbanked ?? 0}
-          />
-        ) : (
-          <Card title="Home troupe">
-            <Notice>Finish character creation on the Sheet tab before choosing a home troupe.</Notice>
-          </Card>
-        )
-      )}
     </div>
   );
 }
@@ -164,10 +168,8 @@ function HomeTroupe({
 
   return (
     <Card title="Home troupe">
-      <p className="mb-3 text-sm text-mist">
-        Your home troupe runs this character's downtimes, and its house rules set what traits cost. Its storytellers must
-        accept the move.
-      </p>
+      <p className="mb-3 text-sm text-mist">{HOME_MEANS}</p>
+      <p className="mb-3 text-sm">A character has at most one, and its storytellers must accept the move.</p>
       <Field label="Troupe">
         <Select
           value={troupeId}

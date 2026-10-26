@@ -7004,6 +7004,10 @@ category = "influence_underworld_specializations"
 name = "Custom"
 
 [[traits]]
+category = "extra_in_clan_disciplines"
+name = "Kineticism"
+
+[[traits]]
 category = "merits"
 name = "Blood of the Tzimisce"
 description = "The spirits of your land guard you: +3 to all attack test pools while in your haven. Gain 2 free dots of Lore, and your Lore can go 2 higher."

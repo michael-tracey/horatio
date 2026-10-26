@@ -83,3 +83,18 @@ class PlayCounter(Record):
     created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     removed_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+
+
+class PlayDerangement(Record):
+    """A temporary derangement a player or staff added on the Play View, such as one
+    from Voice of Madness. Its id is the one the device gave it, so the taps that
+    add and remove it ("derangement:<id>") can be made offline. Whether the
+    character has it is worked out from those taps (horatio.play)."""
+
+    __tablename__ = "play_derangements"
+
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    name: Mapped[str]
+    # Where it came from: "Voice of Madness", a quest's consequence.
+    source: Mapped[str] = mapped_column(default="", server_default="")
+    created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))

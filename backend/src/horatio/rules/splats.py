@@ -33,13 +33,18 @@ def vampire_generation(sheet: Sequence[SheetTrait]) -> int:
 
 
 def vampire_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> list[str]:
-    """The clan's in-clan disciplines plus any extra in-clan disciplines on the sheet."""
+    """The clan's in-clan disciplines (or the ones a merit sets in their place)
+    plus any extra in-clan disciplines on the sheet."""
+    from horatio.rules.grants import in_clan_replaced
+
+    replaced = in_clan_replaced(rules.rule_set, sheet)
     disciplines: list[str] = []
     for trait in sheet:
-        if trait.category == "clan":
+        if trait.category == "clan" and replaced is None:
             disciplines.extend(
                 rules.rule_set.trait_properties("clan", trait.name).get("in_clan", [])
             )
+    disciplines.extend(replaced or [])
     disciplines.extend(t.name for t in sheet if t.category == "extra_in_clan_disciplines")
     return disciplines
 

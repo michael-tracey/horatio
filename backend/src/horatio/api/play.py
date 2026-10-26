@@ -61,6 +61,36 @@ class Morality(BaseModel):
     rating: int
 
 
+class TemporaryDerangement(BaseModel):
+    # Its tracker in taps: "derangement:<id>".
+    key: str
+    name: str
+    source: str
+    # Held now; one removed is kept for the old logs.
+    held: bool
+
+
+class Derangements(Tracker):
+    """Derangement traits and the derangements behind them, which Reset leaves as
+    they are (horatio.play). The Play View shows them for a character with the
+    Derangement flaw or a temporary derangement held, and while any are marked."""
+
+    # The fewest the character can have: 1 for a Malkavian.
+    least: int
+    # The Derangement flaws on the sheet, by their detail.
+    flaws: list[str]
+    # Those added on the Play View, oldest first.
+    temporary: list[TemporaryDerangement]
+
+
+class TemporaryDerangementIn(BaseModel):
+    """A temporary derangement a tap adds."""
+
+    name: str = Field(min_length=1, max_length=80)
+    # Where it came from: "Voice of Madness", a quest's consequence.
+    source: str = Field(default="", max_length=120)
+
+
 class ExpendableOut(BaseModel):
     key: str
     name: str
@@ -157,6 +187,7 @@ class PlayView(BaseModel):
     health: Health
     morality: Morality | None
     beast: Tracker
+    derangements: Derangements
     expendables: list[ExpendableOut]
     # What the character can do with each type of influence it has, for the
     # details of a spend. Empty when there is no troupe to log spends in.
@@ -199,6 +230,9 @@ class TapIn(BaseModel):
     # Spending Influences: the action's details. Left out when the player skips
     # them; the spend is logged all the same, as needing details.
     influence: InfluenceDetailsIn | None = None
+    # Adding a temporary derangement ("derangement:<id>", +1) for the first time:
+    # its name and where it came from.
+    derangement: TemporaryDerangementIn | None = None
 
     @model_validator(mode="after")
     def complete(self) -> Self:
@@ -411,6 +445,19 @@ def play_view(db: Session, character: Character) -> PlayView:
         if limits.morality_name
         else None,
         beast=Tracker(value=state["beast"], most=play.BEAST_TRAITS, start=0),
+        derangements=Derangements(
+            value=state["derangements"],
+            most=play.DERANGEMENT_TRAITS,
+            start=limits.derangements,
+            least=limits.derangements_least,
+            flaws=list(limits.flaws),
+            temporary=[
+                TemporaryDerangement(
+                    key=t.key, name=t.name, source=t.source, held=bool(state["held"].get(t.key))
+                )
+                for t in limits.temporary
+            ],
+        ),
         expendables=[
             ExpendableOut(
                 key=e.key,
@@ -475,6 +522,7 @@ def record_taps(character_id: uuid.UUID, body: Taps, db: DbSession, user: Curren
                 note=t.note,
                 undoes=t.undoes,
                 influence=t.influence.details() if t.influence else None,
+                derangement=(t.derangement.name, t.derangement.source) if t.derangement else None,
             )
             for t in body.taps
         ],
@@ -488,7 +536,7 @@ def reset_play(
     character_id: uuid.UUID, body: ResetIn, db: DbSession, user: CurrentUser
 ) -> PlayView:
     """Reset for the next game: the game ends, kept with its log, and every tracker
-    goes back where the sheet starts it."""
+    goes back where the sheet starts it, but for Derangement traits, which stay."""
     character = sheets.lock_character(db, visible_character(db, user, character_id).id)
     game = play.current_game(db, character)
     if game is not None and (body.game_id is None or body.game_id == game.id):

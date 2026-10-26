@@ -50,7 +50,7 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
   const missing = held.length < kind.parent_rating;
 
   return (
-    <li className="mb-1 ml-3 border-l border-ash pl-3 text-xs">
+    <div className="mb-1 ml-3 border-l border-ash pl-3 text-xs">
       <span className="flex flex-wrap items-center gap-1.5">
         <span className={missing ? "text-gold" : "text-mist"}>
           {kind.name} {held.length}/{kind.parent_rating}
@@ -115,7 +115,7 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
         </div>
       )}
       <ErrorText error={change.error} />
-    </li>
+    </div>
   );
 }
 
@@ -131,13 +131,13 @@ export function SetField({ character, trait }: { character: CharacterOut; trait:
     ),
   );
   return (
-    <li className="-mt-0.5 mb-1 ml-3 flex flex-wrap items-center gap-1.5 border-l border-blood/60 pl-3 text-xs">
+    <div className="-mt-0.5 mb-1 ml-3 flex flex-wrap items-center gap-1.5 border-l border-blood/60 pl-3 text-xs">
       <span className="text-blood-bright">{fieldNeeded(trait.name)}:</span>
       <Input aria-label={`${trait.name} field`} value={field} onChange={(e) => setField(e.target.value)} placeholder={FIELD_PLACEHOLDER} className="min-h-8 w-40 py-1 text-xs" />
       <Button variant="secondary" className="min-h-8 px-2 py-1 text-xs" disabled={!field.trim() || save.isPending} onClick={() => save.mutate(undefined)}>
         Set
       </Button>
       <ErrorText error={save.error} />
-    </li>
+    </div>
   );
 }

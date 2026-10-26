@@ -413,60 +413,67 @@ export function SheetTab({
                 ))}
               <div className={wide(group) && !single(group) ? "grid gap-x-6 gap-y-2 sm:grid-cols-2" : "flex flex-col gap-2"}>
                 {[
-                  ...(groups.get(group) ?? new Map<string, SheetTraitOut[]>()),
-                ].map(([category, traits]) => (
-                  <div key={category}>
-                    {category.toLowerCase() !== group.toLowerCase() && (
-                      <div className="mb-1 flex items-center gap-1.5">
-                        <h3 className="font-sans text-xs tracking-wide text-mist uppercase">{category}</h3>
-                        <CategoryInfo category={traits[0]!.category} name={category} catalogue={catalogue.data} />
-                      </div>
-                    )}
-                    {/* A long list of one kind (skills) flows into two columns. */}
-                    <ul className={wide(group) && single(group) ? "gap-x-6 sm:columns-2 [&>li]:break-inside-avoid" : "flex flex-col"}>
-                      {traits.map((t) => [
-                        <TraitRow
-                          key={t.id}
-                          trait={t}
-                          locked={locked || derived.has(t.category)}
-                          points={pointsOf(t)}
-                          about={aboutOf(t)}
-                          exception={exceptionOf(t)}
-                          planned={plannedRating(lines, t)}
-                          swappedTo={swappedTo(lines, t.category, t.name)}
-                          onChange={(rating) =>
-                            cart.update((l) =>
-                              setRating(l, { ...t, rating: t.rating ?? 0, fixed: pointsOf(t) !== null }, rating),
-                            )
-                          }
-                          swap={
-                            character.creation_complete && catalogue.data
-                              ? swapOptions(t, s.traits, catalogue.data)
-                              : null
-                          }
-                          onSwap={(to) => cart.update((l) => swap(l, t.category, t.name, to))}
-                        />,
-                        kindOf(t) && (
-                          <SpecializationRow
-                            key={`${t.id}/specs`}
-                            character={character}
-                            kind={kindOf(t)!}
-                            editable={mine && !locked && s.status !== "retired"}
-                          />
-                        ),
-                        mine &&
-                          !locked &&
-                          !inCart(t) &&
-                          t.category === "skills" &&
-                          needsField.has(t.name) &&
-                          !t.detail && (
-                            <SetField
-                              key={`${t.id}/field`}
-                              character={character}
-                              trait={t}
-                            />
-                          ),
-                      ])}
+                    ...(groups.get(group) ?? new Map<string, SheetTraitOut[]>()),
+                  ].map(([category, traits]) => (
+                    <div key={category}>
+                      {category.toLowerCase() !== group.toLowerCase() && (
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <h3 className="font-sans text-xs tracking-wide text-mist uppercase">{category}</h3>
+                          <CategoryInfo category={traits[0]!.category} name={category} catalogue={catalogue.data} />
+                        </div>
+                      )}
+                      {/* A long list of one kind (skills) flows into two columns. */}
+                      <ul className={wide(group) && single(group) ? "gap-x-6 sm:columns-2" : "flex flex-col"}>
+                        {traits.map((t) => (
+                          // One item per trait, so a column break can't fall between a trait and what hangs under it.
+                          <li key={t.id} data-trait={t.name} className="break-inside-avoid">
+                            <div>
+                              {[
+                              <TraitRow
+                                key={t.id}
+                                trait={t}
+                                locked={locked || derived.has(t.category)}
+                                points={pointsOf(t)}
+                                about={aboutOf(t)}
+                                exception={exceptionOf(t)}
+                                planned={plannedRating(lines, t)}
+                                swappedTo={swappedTo(lines, t.category, t.name)}
+                                onChange={(rating) =>
+                                  cart.update((l) =>
+                                    setRating(l, { ...t, rating: t.rating ?? 0, fixed: pointsOf(t) !== null }, rating),
+                                  )
+                                }
+                                swap={
+                                  character.creation_complete && catalogue.data
+                                    ? swapOptions(t, s.traits, catalogue.data)
+                                    : null
+                                }
+                                onSwap={(to) => cart.update((l) => swap(l, t.category, t.name, to))}
+                              />,
+                              kindOf(t) && (
+                                <SpecializationRow
+                                  key={`${t.id}/specs`}
+                                  character={character}
+                                  kind={kindOf(t)!}
+                                  editable={mine && !locked && s.status !== "retired"}
+                                />
+                              ),
+                              mine &&
+                                !locked &&
+                                !inCart(t) &&
+                                t.category === "skills" &&
+                                needsField.has(t.name) &&
+                                !t.detail && (
+                                  <SetField
+                                    key={`${t.id}/field`}
+                                    character={character}
+                                    trait={t}
+                                  />
+                                ),
+                            ]}
+                          </div>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 ))}
@@ -625,7 +632,7 @@ function TraitRow({
   if (points !== null) {
     const removing = planned === 0;
     return (
-      <li className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
+      <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
         <TraitInfo
           name={<span className={removing ? "line-through" : adding ? "text-gold" : undefined}>{trait.name}</span>}
           after={
@@ -658,12 +665,12 @@ function TraitRow({
               </button>
             )}
         </span>
-      </li>
+      </div>
     );
   }
   if (swap && !locked) {
     return (
-      <li className="flex flex-wrap items-center justify-between gap-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <TraitInfo
           name={trait.name}
           after={swappedTo && <span className="text-gold"> → {swappedTo}</span>}
@@ -700,12 +707,12 @@ function TraitRow({
             Change
           </Button>
         )}
-      </li>
+      </div>
     );
   }
   const current = planned ?? trait.rating ?? 0;
   return (
-    <li className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
+    <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
       <TraitInfo
         name={<span className={pending || adding ? "text-gold" : undefined}>{trait.name}</span>}
         after={
@@ -753,7 +760,7 @@ function TraitRow({
           )}
         </span>
       )}
-    </li>
+    </div>
   );
 }
 
