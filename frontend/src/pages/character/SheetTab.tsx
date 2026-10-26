@@ -680,6 +680,7 @@ function TraitRow({
   const which = trait.detail ? `${trait.name}: ${trait.detail}` : trait.name;
   // A troupe's own merit or flaw: "★ House merit of Night Court".
   const houseLabel = trait.house?.label ?? about?.house?.label;
+  const houseSummary = trait.house?.summary || about?.house?.summary;
   if (points !== null) {
     const removing = planned === 0;
     return (
@@ -692,13 +693,14 @@ function TraitRow({
               {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
               <GrantedBy trait={trait} points />
               {exception && <ExceptionMark exception={exception} />}
-              {houseLabel && <HouseMark label={houseLabel} />}
+              {houseLabel && <HouseMark label={houseLabel} summary={houseSummary} />}
               {trait.house?.applied && (
                 <span className="ml-2 text-xs text-mist">given by staff{trait.house.applied.free ? ", free" : ""}</span>
               )}
             </>
           }
           description={about?.description}
+          summary={houseSummary}
           page={about?.page_reference}
         />
         <span className="flex shrink-0 items-center gap-2">

@@ -116,6 +116,10 @@ class HouseMarkOut(BaseModel):
     # "staff" (given by staff only) or "building".
     availability: str
     archived: bool
+    # What its effects do, in words: shown under its description.
+    summary: str = ""
+    # The disciplines it lets the character add in-clan, one of them.
+    in_clan: list[str] = Field(default_factory=list[str])
     # Set when staff applied it; only they remove it.
     applied: AppliedOut | None = None
 
@@ -438,6 +442,8 @@ def house_mark_out(mark: house_traits.Mark, applied: AppliedHouseTrait | None) -
         page=mark.page,
         availability=mark.availability,
         archived=mark.archived,
+        summary=mark.summary,
+        in_clan=list(mark.in_clan),
         applied=AppliedOut(
             free=applied.free,
             counts_toward_limit=applied.counts_toward_limit,

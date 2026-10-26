@@ -812,6 +812,24 @@
         "title": "BlockOut",
         "type": "object"
       },
+      "BlockProblemOut": {
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "message"
+        ],
+        "title": "BlockProblemOut",
+        "type": "object"
+      },
       "BlockSourceOut": {
         "description": "A discovery block an answer added to an entry (horatio.influence_lookups).",
         "properties": {
@@ -2113,6 +2131,29 @@
           "house"
         ],
         "title": "CheckOut",
+        "type": "object"
+      },
+      "CheckPreviewOut": {
+        "properties": {
+          "met": {
+            "title": "Met",
+            "type": "boolean"
+          },
+          "strength": {
+            "title": "Strength",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "met",
+          "strength"
+        ],
+        "title": "CheckPreviewOut",
         "type": "object"
       },
       "ChoiceChange": {
@@ -4398,6 +4439,100 @@
         "title": "DomitorOut",
         "type": "object"
       },
+      "EffectBlock": {
+        "description": "One thing a house merit or flaw does on the sheet (horatio.rules.house_effects).\nEach kind reads only its own fields.",
+        "properties": {
+          "amount": {
+            "default": 0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "category": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Category",
+            "type": "string"
+          },
+          "count": {
+            "default": 1,
+            "title": "Count",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "free_up_to",
+              "free_choices",
+              "add",
+              "raise_max",
+              "cost_percent",
+              "price_in_clan",
+              "price_out_of_clan",
+              "extra_in_clan",
+              "requires",
+              "forbids"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 60,
+            "title": "Names",
+            "type": "array"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "strength": {
+            "default": "refuse",
+            "enum": [
+              "refuse",
+              "complete",
+              "review",
+              "note"
+            ],
+            "title": "Strength",
+            "type": "string"
+          },
+          "test": {
+            "default": "trait",
+            "enum": [
+              "clan",
+              "sect",
+              "trait"
+            ],
+            "title": "Test",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "EffectBlock",
+        "type": "object"
+      },
       "EffectRef": {
         "properties": {
           "active": {
@@ -5898,12 +6033,24 @@
             "title": "House Trait Id",
             "type": "string"
           },
+          "in_clan": {
+            "items": {
+              "type": "string"
+            },
+            "title": "In Clan",
+            "type": "array"
+          },
           "label": {
             "title": "Label",
             "type": "string"
           },
           "page": {
             "title": "Page",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
             "type": "string"
           },
           "troupe_id": {
@@ -5948,6 +6095,13 @@
             "title": "Id",
             "type": "string"
           },
+          "in_clan": {
+            "items": {
+              "type": "string"
+            },
+            "title": "In Clan",
+            "type": "array"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -5955,6 +6109,11 @@
           "offered": {
             "title": "Offered",
             "type": "boolean"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
           },
           "troupe_id": {
             "format": "uuid",
@@ -6007,6 +6166,14 @@
             "maxLength": 4000,
             "title": "Description",
             "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/EffectBlock"
+            },
+            "maxItems": 20,
+            "title": "Effects",
+            "type": "array"
           },
           "kind": {
             "default": "General",
@@ -6073,6 +6240,13 @@
             "title": "Description",
             "type": "string"
           },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/EffectBlock"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
           "holders": {
             "title": "Holders",
             "type": "integer"
@@ -6110,6 +6284,10 @@
             "title": "Splat",
             "type": "string"
           },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
           "troupe_id": {
             "format": "uuid",
             "title": "Troupe Id",
@@ -6131,7 +6309,9 @@
           "archived",
           "label",
           "page",
-          "holders"
+          "holders",
+          "effects",
+          "summary"
         ],
         "title": "HouseTraitOut",
         "type": "object"
@@ -9111,6 +9291,10 @@
           "points": {
             "title": "Points",
             "type": "integer"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
           }
         },
         "required": [
@@ -9122,6 +9306,7 @@
           "availability",
           "description",
           "label",
+          "summary",
           "held"
         ],
         "title": "OfferOut",
@@ -9951,6 +10136,17 @@
               }
             ],
             "title": "House"
+          },
+          "house_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House Summary"
           },
           "in_clan": {
             "anyOf": [
@@ -10842,6 +11038,98 @@
           }
         },
         "title": "Preferences",
+        "type": "object"
+      },
+      "PreviewIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "house_trait_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House Trait Id"
+          },
+          "trait": {
+            "$ref": "#/components/schemas/HouseTraitIn"
+          }
+        },
+        "required": [
+          "trait"
+        ],
+        "title": "PreviewIn",
+        "type": "object"
+      },
+      "PreviewOut": {
+        "description": "\"A character with this would\u2026\": what it does on a sample sheet.",
+        "properties": {
+          "changes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/CheckPreviewOut"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "choosing": {
+            "title": "Choosing",
+            "type": "string"
+          },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/BlockProblemOut"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "sample": {
+            "title": "Sample",
+            "type": "string"
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/SampleOut"
+            },
+            "title": "Samples",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sample",
+          "choosing",
+          "summary",
+          "changes",
+          "checks",
+          "problems",
+          "samples"
+        ],
+        "title": "PreviewOut",
         "type": "object"
       },
       "PrimaryPathChange": {
@@ -12827,6 +13115,30 @@
           "joined_at"
         ],
         "title": "RosterEntry",
+        "type": "object"
+      },
+      "SampleOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind"
+        ],
+        "title": "SampleOut",
         "type": "object"
       },
       "SceneName": {
@@ -27805,6 +28117,60 @@
           }
         },
         "summary": "Add House Trait",
+        "tags": [
+          "house traits"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-traits/preview": {
+      "post": {
+        "description": "Try a house merit or flaw, as it is being made, on a sample sheet: what its\neffects would change there, and which blocks cannot be used and why. Nothing is\nsaved.",
+        "operationId": "preview_house_trait_api_troupes__troupe_id__house_traits_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview House Trait",
         "tags": [
           "house traits"
         ]

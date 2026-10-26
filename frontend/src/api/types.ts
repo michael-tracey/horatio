@@ -142,4 +142,6 @@ export type HouseTraitIn = Schemas["HouseTraitIn"];
 export type HolderOut = Schemas["HolderOut"];
 export type HouseMarkOut = Schemas["HouseMarkOut"];
 export type HouseOut = Schemas["HouseOut"];
+export type EffectBlock = Schemas["EffectBlock"];
+export type HousePreviewOut = Schemas["PreviewOut"];
 export type OfferOut = Schemas["OfferOut"];

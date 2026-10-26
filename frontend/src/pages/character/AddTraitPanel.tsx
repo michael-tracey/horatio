@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
-import { HouseMark } from "../../components/HouseMark";
+import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AskStaff } from "./AskStaff";
@@ -316,8 +316,9 @@ function TraitChoice({
           {trait.name}
           {trait.fixed_rating ? <span className="text-gold"> ({trait.fixed_rating})</span> : null}
           {trait.requirement && <span className="ml-2 text-xs text-mist">{trait.requirement}</span>}
-          {trait.house && <HouseMark label={trait.house.label} />}
+          {trait.house && <HouseMark label={trait.house.label} summary={trait.house.summary} />}
         </span>
+        <HouseSummary summary={trait.house?.summary} />
         {refused && <span className="text-xs text-blood-bright">{refused}</span>}
       </button>
       {refused && onAsk && (

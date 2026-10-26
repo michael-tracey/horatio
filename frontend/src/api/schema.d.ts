@@ -3411,6 +3411,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/house-traits/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview House Trait
+         * @description Try a house merit or flaw, as it is being made, on a sample sheet: what its
+         *     effects would change there, and which blocks cannot be used and why. Nothing is
+         *     saved.
+         */
+        post: operations["preview_house_trait_api_troupes__troupe_id__house_traits_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/house-traits/{house_trait_id}": {
         parameters: {
             query?: never;
@@ -4576,6 +4598,13 @@ export interface components {
              */
             id: string;
         };
+        /** BlockProblemOut */
+        BlockProblemOut: {
+            /** Index */
+            index: number;
+            /** Message */
+            message: string;
+        };
         /**
          * BlockSourceOut
          * @description A discovery block an answer added to an entry (horatio.influence_lookups).
@@ -5018,6 +5047,15 @@ export interface components {
             page: string | null;
             /** Strength */
             strength: string;
+        };
+        /** CheckPreviewOut */
+        CheckPreviewOut: {
+            /** Met */
+            met: boolean;
+            /** Strength */
+            strength: string;
+            /** Text */
+            text: string;
         };
         /** ChoiceChange */
         ChoiceChange: {
@@ -5827,6 +5865,59 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * EffectBlock
+         * @description One thing a house merit or flaw does on the sheet (horatio.rules.house_effects).
+         *     Each kind reads only its own fields.
+         */
+        EffectBlock: {
+            /**
+             * Amount
+             * @default 0
+             */
+            amount: number;
+            /**
+             * Category
+             * @default
+             */
+            category: string;
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "free_up_to" | "free_choices" | "add" | "raise_max" | "cost_percent" | "price_in_clan" | "price_out_of_clan" | "extra_in_clan" | "requires" | "forbids";
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Names */
+            names?: string[];
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Strength
+             * @default refuse
+             * @enum {string}
+             */
+            strength: "refuse" | "complete" | "review" | "note";
+            /**
+             * Test
+             * @default trait
+             * @enum {string}
+             */
+            test: "clan" | "sect" | "trait";
+        };
         /** EffectRef */
         EffectRef: {
             /** Active */
@@ -6475,10 +6566,17 @@ export interface components {
              * Format: uuid
              */
             house_trait_id: string;
+            /** In Clan */
+            in_clan?: string[];
             /** Label */
             label: string;
             /** Page */
             page: string;
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
             /**
              * Troupe Id
              * Format: uuid
@@ -6503,10 +6601,17 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** In Clan */
+            in_clan?: string[];
             /** Label */
             label: string;
             /** Offered */
             offered: boolean;
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
             /**
              * Troupe Id
              * Format: uuid
@@ -6537,6 +6642,8 @@ export interface components {
              * @default
              */
             description: string;
+            /** Effects */
+            effects?: components["schemas"]["EffectBlock"][];
             /**
              * Kind
              * @default General
@@ -6570,6 +6677,8 @@ export interface components {
             creation_only: boolean;
             /** Description */
             description: string;
+            /** Effects */
+            effects: components["schemas"]["EffectBlock"][];
             /** Holders */
             holders: number;
             /**
@@ -6591,6 +6700,8 @@ export interface components {
             requirement: string;
             /** Splat */
             splat: string;
+            /** Summary */
+            summary: string;
             /**
              * Troupe Id
              * Format: uuid
@@ -7675,6 +7786,8 @@ export interface components {
             name: string;
             /** Points */
             points: number;
+            /** Summary */
+            summary: string;
         };
         /** OptionList */
         OptionList: {
@@ -8017,6 +8130,8 @@ export interface components {
             group: string;
             /** House */
             house?: string | null;
+            /** House Summary */
+            house_summary?: string | null;
             /** In Clan */
             in_clan?: string[] | null;
             /** Name */
@@ -8403,6 +8518,34 @@ export interface components {
             text_size: "normal" | "large";
             /** Time Zone */
             time_zone?: string | null;
+        };
+        /** PreviewIn */
+        PreviewIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /** House Trait Id */
+            house_trait_id?: string | null;
+            trait: components["schemas"]["HouseTraitIn"];
+        };
+        /**
+         * PreviewOut
+         * @description "A character with this would…": what it does on a sample sheet.
+         */
+        PreviewOut: {
+            /** Changes */
+            changes: string[];
+            /** Checks */
+            checks: components["schemas"]["CheckPreviewOut"][];
+            /** Choosing */
+            choosing: string;
+            /** Problems */
+            problems: components["schemas"]["BlockProblemOut"][];
+            /** Sample */
+            sample: string;
+            /** Samples */
+            samples: components["schemas"]["SampleOut"][];
+            /** Summary */
+            summary: string;
         };
         /** PrimaryPathChange */
         PrimaryPathChange: {
@@ -9120,6 +9263,18 @@ export interface components {
             titles: string[];
             /** Waiting */
             waiting: boolean;
+        };
+        /** SampleOut */
+        SampleOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
         };
         /** SceneName */
         SceneName: {
@@ -17782,6 +17937,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HouseTraitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_house_trait_api_troupes__troupe_id__house_traits_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewOut"];
                 };
             };
             /** @description Validation Error */

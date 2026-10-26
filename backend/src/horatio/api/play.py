@@ -204,6 +204,8 @@ class PlayTrait(BaseModel):
     in_clan: list[str] | None = None
     # A troupe's own merit or flaw: "House merit of Night Court", shown with a ★.
     house: str | None = None
+    # What its effects do, in words: shown under its description.
+    house_summary: str | None = None
 
 
 class PlayView(BaseModel):
@@ -487,6 +489,9 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             note=row.trait.note,
             in_clan=row.definition.properties.get("in_clan"),
             house=house[row.definition.id].label if row.definition.id in house else None,
+            house_summary=house[row.definition.id].summary or None
+            if row.definition.id in house
+            else None,
         )
         for row in rows
         if row.category.key in rule_set.categories

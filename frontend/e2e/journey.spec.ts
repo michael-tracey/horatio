@@ -785,6 +785,89 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   await expect(l.getByRole("heading", { name: "House merits and flaws", exact: true })).toHaveCount(0);
 });
 
+test("a house merit's effects: the ST builds Old Money from blocks, previews it, and a player taking it gets Resources 2 free", async ({ browser }) => {
+  const custodian = await person(browser, "om-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "om-lead");
+  const player = await person(browser, "om-player");
+  const troupeName = `Hall of Ledgers ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const summary = "The first 2 dots of Resources are free. Needs Resources 1 or more.";
+
+  // The lead makes it from blocks: the first 2 dots of Resources free, and Resources 1 or more needed.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/house-traits`);
+  await l.getByRole("button", { name: "Add a merit or flaw" }).click();
+  await l.getByLabel("Name").fill("Old Money");
+  await l.getByLabel("Points").selectOption("2");
+  await l.getByLabel("Available when building for the troupe").check();
+  await l.getByLabel("Description").fill("The family fortune, still in trust.");
+  await l.getByRole("button", { name: "Add an effect" }).click();
+  await expect(l.getByLabel("Effect 1: what it does")).toHaveValue("free");
+  await l.getByLabel("Effect 1: kind of trait").selectOption("backgrounds");
+  await l.getByLabel("Effect 1: add a trait").selectOption("Resources");
+  await l.getByLabel("Effect 1: free dots").selectOption("2");
+  await l.getByRole("button", { name: "Add an effect" }).click();
+  await l.getByLabel("Effect 2: what it does").selectOption("requires");
+  await l.getByLabel("Effect 2: what it asks about").selectOption("trait");
+  await l.getByLabel("Effect 2: kind of trait").selectOption("backgrounds");
+  await l.getByLabel("Effect 2: trait").selectOption("Resources");
+  await l.getByLabel("Effect 2: at least").selectOption("1");
+
+  // The preview tries it on a new character before it is saved.
+  const preview = l.getByRole("region", { name: "Preview" });
+  await expect(preview).toContainText(`What it does: ${summary}`);
+  await expect(preview).toContainText("Resources: 0 → 2, all free.");
+  await expect(preview).toContainText("Met: Old Money: needs Resources 1 or more.");
+  await l.screenshot(shots("house-effects-preview"));
+  await l.getByRole("button", { name: "Add the merit" }).click();
+  await expect(l.getByRole("listitem").filter({ hasText: "Old Money" })).toContainText(`What it does: ${summary}`);
+
+  // Philippa is built for the troupe, and takes it from the sheet's list.
+  const p = player.page;
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Philippa", building_troupe_id: troupeId });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Merits").fill("Old Money");
+  await expect(p.getByRole("button", { name: /^Old Money/ })).toContainText(`What it does: ${summary}`);
+  await p.getByRole("button", { name: /^Old Money/ }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await p.getByRole("button", { name: "Spend XP" }).click();
+
+  // On the sheet: Resources 2, given by the merit, and the merit marked ★ with what it does.
+  const merits = part("Merits and Flaws");
+  await expect(merits).toContainText(`★House merit of ${troupeName}`);
+  await merits.getByRole("button", { name: "Old Money", exact: true }).click();
+  await expect(merits).toContainText("The family fortune, still in trust.");
+  await expect(merits).toContainText(`What it does: ${summary}`);
+  const resources = part("Backgrounds").locator("div").filter({ hasText: /^Resources/ }).first();
+  await expect(resources).toContainText("+2 from Old Money");
+  await p.screenshot(shots("house-effects-sheet"));
+});
+
 test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
   // A whole character creation, then a home troupe request.
   test.slow();

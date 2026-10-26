@@ -34,7 +34,7 @@ export function HouseTraitsCard({ characterId, sheet }: { characterId: string; s
               <span className="flex flex-wrap items-center justify-between gap-2">
                 <span>
                   {o.name} <span className="text-gold">({o.points})</span>
-                  <HouseMark label={o.label} short />
+                  <HouseMark label={o.label} summary={o.summary} short />
                   {o.availability === "staff" && <span className="ml-1 text-xs text-mist">staff only</span>}
                 </span>
                 {applying !== o.id && (
@@ -55,7 +55,7 @@ export function HouseTraitsCard({ characterId, sheet }: { characterId: string; s
               <span className="flex flex-wrap items-center justify-between gap-2">
                 <span>
                   {t.name}
-                  <HouseMark label={t.house!.label} short />
+                  <HouseMark label={t.house!.label} summary={t.house!.summary} short />
                   <span className="ml-1 text-xs text-mist">
                     {t.house!.applied ? `applied${t.house!.applied.free ? ", free" : ""}` : "taken by the player"}
                   </span>

@@ -6,6 +6,7 @@ import { Dialog } from "../../components/Dialog";
 import { HouseMark } from "../../components/HouseMark";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { EffectsEditor, HousePreview, useHousePreview } from "./HouseEffects";
 
 const AVAILABILITY: Record<HouseTraitIn["availability"], string> = {
   staff: "Given by staff only",
@@ -26,6 +27,7 @@ const EMPTY: Draft = {
   description: "",
   requirement: "",
   splat: "vampire",
+  effects: [],
 };
 
 const draftOf = (h: HouseTraitOut): Draft => ({
@@ -38,6 +40,7 @@ const draftOf = (h: HouseTraitOut): Draft => ({
   description: h.description,
   requirement: h.requirement,
   splat: h.splat,
+  effects: h.effects,
 });
 
 /**
@@ -80,7 +83,13 @@ export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; ca
         <p className="mt-2 text-sm text-mist">
           One given by staff only is applied from a character's sheet, free or charged. One available when building is
           picked and priced like a merit from the book. A change applies to everyone who holds it, and XP already spent
-          stays as it was. For now one does what its description says, for you to rule on at the table.
+          stays as it was.
+        </p>
+        <p className="mt-2 text-sm text-mist">
+          What one does on the sheet is its effects: free dots, a higher maximum, an XP price, an extra in-clan
+          discipline, health levels, or what it requires. Each works as the book merit it copies does, and a line saying
+          what it does shows under its description. One with no effects does what its description says, for you to rule
+          on at the table.
         </p>
       </Card>
 
@@ -147,6 +156,7 @@ export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; ca
                   {h.description}
                 </p>
               )}
+              {h.summary && <p className="text-xs text-gold">What it does: {h.summary}</p>}
             </li>
           ))}
         </ul>
@@ -170,8 +180,15 @@ function HouseTraitEditor({
   const start = editing === "new" ? EMPTY : draftOf(editing);
   const [draft, setDraft] = useState<Draft>(start);
   const [confirming, setConfirming] = useState<HolderOut[] | null>(null);
+  const [sample, setSample] = useState("");
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft({ ...draft, [key]: value });
   const body: HouseTraitIn = { ...draft, creation_only: draft.availability === "building" && draft.creation_only };
+  const catalogue = useQuery({
+    queryKey: ["catalogue", draft.splat, troupeId],
+    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
+  });
+  const preview = useHousePreview(troupeId, body, editing === "new" ? null : editing.id, sample);
+  const problems = new Map((preview.data?.problems ?? []).map((p) => [p.index, p.message] as const));
 
   const save = useAction(async () => {
     if (editing === "new") {
@@ -269,6 +286,15 @@ function HouseTraitEditor({
         <Field label="Description" hint={`What the ${noun} does: players see it wherever it shows.`}>
           <Textarea rows={4} value={draft.description} maxLength={4000} onChange={(e) => set("description", e.target.value)} />
         </Field>
+        <EffectsEditor
+          blocks={draft.effects}
+          catalogue={catalogue.data}
+          self={{ category: draft.category, name: draft.name.trim() }}
+          problems={problems}
+          onChange={(effects) => set("effects", effects)}
+        />
+        <ErrorText error={catalogue.error} />
+        <HousePreview preview={preview.data} error={preview.error} characterId={sample} onCharacter={setSample} />
         <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={!draft.name.trim() || save.isPending || ask.isPending}>
             {editing === "new" ? `Add the ${noun}` : "Save"}

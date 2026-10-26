@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { HouseMark } from "../../../components/HouseMark";
+import { HouseMark, HouseSummary } from "../../../components/HouseMark";
 import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
@@ -387,7 +387,7 @@ export function PointsList({
                 <span className="min-w-0">
                   <span className="text-parchment">{t.name}</span> <span className="text-gold">({points})</span>
                   {t.requirement && <span className="ml-2 text-xs text-mist">{t.requirement}</span>}
-                  {t.house && <HouseMark label={t.house.label} />}
+                  {t.house && <HouseMark label={t.house.label} summary={t.house.summary} />}
                   {barred && <span className="mt-0.5 block text-xs text-blood-bright">{barred}</span>}
                   {barred && why?.(t.name) && <span className="mt-0.5 block text-xs text-mist">{why(t.name)}</span>}
                   {chosen && t.choices && onDetail && (
@@ -404,6 +404,7 @@ export function PointsList({
                     </Select>
                   )}
                   {t.description && <span className="mt-0.5 block text-xs text-mist">{t.description}</span>}
+                  <HouseSummary summary={t.house?.summary} />
                 </span>
               </label>
             </li>

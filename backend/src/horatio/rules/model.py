@@ -197,8 +197,13 @@ class HouseTraitData:
     archived: bool = False
     description: str = ""
     requirement: str = ""
-    # Its effect blocks, as stored (none yet: description only).
+    # Its effect blocks, as stored (horatio.rules.house_effects); none for one that
+    # does only what its description says.
     effects: tuple[Mapping[str, Any], ...] = ()
+    # What the blocks do, in words, and the disciplines one lets the character add
+    # in-clan: worked out when the troupe's rules are read.
+    summary: str = ""
+    in_clan: tuple[str, ...] = ()
 
     @property
     def offered(self) -> bool:
@@ -297,8 +302,12 @@ class TroupeRules:
     # Check key to its house strength ("off" drops the check).
     check_overrides: Mapping[str, str] = field(default_factory=dict)
     # The troupe's own merits and flaws, also in `rule_set.traits` (and, for those
-    # chosen at creation only, in `rule_set.creation_only`).
+    # chosen at creation only, in `rule_set.creation_only`), their effects' grants
+    # and checks in `rule_set.grants` and `rule_set.checks`.
     house_traits: Sequence[HouseTraitData] = ()
+    # The rule set as it is without the house traits' effects, for trying a change
+    # to one (horatio.house_traits.preview). None where there are none.
+    unmerged: RuleSetData | None = None
 
     @property
     def splat(self) -> str:

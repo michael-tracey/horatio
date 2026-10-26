@@ -3,7 +3,7 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 
@@ -49,6 +49,10 @@ class HouseOut(BaseModel):
     creation_only: bool
     # Whether a player can pick it: available when building, and not archived.
     offered: bool
+    # What its effects do, in words: shown under its description.
+    summary: str = ""
+    # The disciplines it lets the character add in-clan, one of them.
+    in_clan: list[str] = Field(default_factory=list[str])
 
 
 class TraitOut(BaseModel):
@@ -197,4 +201,6 @@ def house_out(house: HouseTraitData | None) -> HouseOut | None:
         archived=house.archived,
         creation_only=house.creation_only,
         offered=house.offered,
+        summary=house.summary,
+        in_clan=list(house.in_clan),
     )

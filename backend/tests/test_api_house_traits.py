@@ -395,3 +395,224 @@ def test_a_creation_only_house_merit_cannot_be_bought_afterwards(troupe: Troupe)
 
     assert refused.status_code == 409
     assert "only be chosen during character creation" in refused.json()["detail"]
+
+
+# --- Effects on the sheet (part 2 of #232) -----------------------------------------------------
+
+OLD_MONEY = [
+    {"kind": "free_up_to", "category": "backgrounds", "names": ["Resources"], "amount": 2},
+    {
+        "kind": "requires",
+        "test": "trait",
+        "category": "backgrounds",
+        "name": "Resources",
+        "rating": 1,
+    },
+]
+
+
+def old_money(troupe: Troupe, **fields: Any) -> dict[str, Any]:
+    return made(
+        troupe,
+        name="Old Money",
+        points=2,
+        description="The family fortune.",
+        effects=OLD_MONEY,
+        **fields,
+    )
+
+
+def preview(troupe: Troupe, **body: Any) -> dict[str, Any]:
+    trait = {
+        "category": "merits",
+        "name": "Old Money",
+        "points": 2,
+        "availability": "building",
+        "effects": OLD_MONEY,
+    }
+    response = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/house-traits/preview", json={"trait": trait, **body}
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_a_house_merit_with_effects_says_what_it_does(troupe: Troupe) -> None:
+    house = old_money(troupe)
+
+    summary = "The first 2 dots of Resources are free. Needs Resources 1 or more."
+    assert house["summary"] == summary
+    assert [b["kind"] for b in house["effects"]] == ["free_up_to", "requires"]
+    assert house["effects"][0]["names"] == ["Resources"]
+    assert catalogue(troupe.player, troupe.id)["Old Money"]["house"]["summary"] == summary
+
+
+def test_a_holder_gets_its_free_dots_and_its_summary(troupe: Troupe) -> None:
+    old_money(troupe)
+    character_id = homed(troupe)
+
+    bought = buy(troupe.player, character_id, "merits", "Old Money", 2)
+
+    assert bought.status_code == 200, bought.text
+    resources = trait(troupe.player, character_id, "Resources")
+    assert resources is not None
+    assert (resources["rating"], resources["free_rating"], resources["granted_by"]) == (
+        2,
+        2,
+        ["Old Money"],
+    )
+    held = trait(troupe.player, character_id, "Old Money")
+    assert held is not None
+    assert held["house"]["summary"].startswith("The first 2 dots of Resources are free.")
+
+
+def test_one_taken_through_the_cart_meets_its_own_check_with_its_free_dots(troupe: Troupe) -> None:
+    old_money(troupe)
+    character_id = homed(troupe)
+    merit = rating("merits", "Old Money", 2, detail="")
+
+    tried = spend(troupe.player, character_id, merit, dry_run=True)
+    assert tried.status_code == 200, tried.text
+    assert [line["refused"] for line in tried.json()["lines"]] == [None]
+    bought = spend(troupe.player, character_id, merit)
+
+    assert bought.status_code == 200, bought.text
+    resources = trait(troupe.player, character_id, "Resources")
+    assert resources is not None
+    assert (resources["rating"], resources["free_rating"]) == (2, 2)
+
+
+def test_blocks_the_rules_cannot_use_are_refused_in_plain_words(troupe: Troupe) -> None:
+    refused = make(
+        troupe,
+        effects=[
+            {"kind": "free_up_to", "category": "backgrounds", "names": ["Wealth"], "amount": 2},
+            {"kind": "raise_max", "category": "skills", "names": ["Lore"], "amount": 2},
+            {"kind": "requires", "test": "clan", "names": []},
+        ],
+    )
+
+    assert refused.status_code == 422
+    assert refused.json()["detail"] == (
+        "Effect 1: Wealth is not one of the backgrounds. Effect 3: Choose at least one clan."
+    )
+    assert make(troupe, effects=[{"kind": "pool_bonus"}]).status_code == 422
+
+
+def test_the_preview_shows_what_a_new_character_would_get(troupe: Troupe) -> None:
+    found = preview(troupe)
+
+    assert found["sample"] == "a new character"
+    assert found["summary"] == "The first 2 dots of Resources are free. Needs Resources 1 or more."
+    assert found["changes"] == ["Resources: 0 → 2, all free."]
+    assert found["checks"] == [
+        {"text": "Old Money: needs Resources 1 or more.", "met": True, "strength": "refuse"}
+    ]
+    assert found["problems"] == []
+
+
+def test_the_preview_tries_it_on_one_of_the_troupes_characters(troupe: Troupe) -> None:
+    character_id = homed(troupe)
+    assert buy(troupe.player, character_id, "backgrounds", "Resources", 3).status_code == 200
+    raised = {"kind": "raise_max", "category": "backgrounds", "names": ["Resources"], "amount": 1}
+    priced = {
+        "kind": "cost_percent",
+        "category": "backgrounds",
+        "names": ["Resources"],
+        "amount": 50,
+    }
+    not_rich = {
+        "kind": "forbids",
+        "test": "trait",
+        "category": "backgrounds",
+        "name": "Resources",
+        "rating": 3,
+        "strength": "review",
+    }
+
+    found = preview(
+        troupe,
+        character_id=character_id,
+        trait={
+            "category": "merits",
+            "name": "Old Money",
+            "points": 2,
+            "availability": "building",
+            "effects": [*OLD_MONEY, raised, priced, not_rich],
+        },
+    )
+
+    assert found["sample"] == "Agnes"
+    assert [s["name"] for s in found["samples"]] == ["Agnes"]
+    assert found["changes"][0] == (
+        "Resources: 3 → 3, 2 of them free; the 2 already bought there would be refunded."
+    )
+    assert found["changes"][1] == "Resources: up to 6 (otherwise 5)."
+    assert found["changes"][2].startswith("Resources: dot 4 costs ")
+    assert "(otherwise" in found["changes"][2]
+    assert [c["met"] for c in found["checks"]] == [True, False]
+
+
+def test_the_preview_is_only_tried_on_the_troupes_own_characters(troupe: Troupe) -> None:
+    # Isaure has no home troupe, nor one she is built for.
+    character_id = new_character(troupe, troupe.player, "Isaure")
+
+    refused = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/house-traits/preview",
+        json={
+            "trait": {
+                "category": "merits",
+                "name": "Old Money",
+                "points": 2,
+                "availability": "building",
+            },
+            "character_id": character_id,
+        },
+    )
+
+    assert refused.status_code == 409
+    assert (
+        troupe.assistant.client.post(
+            f"/troupes/{troupe.id}/house-traits/preview",
+            json={
+                "trait": {
+                    "category": "merits",
+                    "name": "Old Money",
+                    "points": 2,
+                    "availability": "building",
+                }
+            },
+        ).status_code
+        == 403
+    )
+
+
+def test_changing_its_effects_changes_every_holder_and_xp_stays(troupe: Troupe) -> None:
+    house = old_money(troupe)
+    first, second = homed(troupe), homed(troupe, "Bram")
+    for character_id in (first, second):
+        assert buy(troupe.player, character_id, "merits", "Old Money", 2).status_code == 200
+    balances = [sheet(troupe.player, c)["xp"]["balance"] for c in (first, second)]
+
+    changed = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/house-traits/{house['id']}",
+        json={
+            "category": "merits",
+            "name": "Old Money",
+            "points": 2,
+            "availability": "building",
+            "effects": [
+                {"kind": "free_up_to", "category": "backgrounds", "names": ["Herd"], "amount": 1},
+            ],
+        },
+    )
+
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["summary"] == "The first dot of Herd is free."
+    for character_id, balance in zip((first, second), balances, strict=True):
+        assert trait(troupe.player, character_id, "Resources") is None
+        herd = trait(troupe.player, character_id, "Herd")
+        assert herd is not None
+        assert (herd["rating"], herd["granted_by"]) == (1, ["Old Money"])
+        assert sheet(troupe.player, character_id)["xp"]["balance"] == balance
+    assert any("(description, effects)" in line for line in troupe_log(troupe.lead, troupe.id))
