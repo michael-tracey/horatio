@@ -70,7 +70,7 @@ A character a troupe's storytellers or assistant storytellers make and keep for 
 _Avoid_: Secondary, antecedence
 
 **Scene**:
-Several characters of one troupe put on one page of the Play View, side by side, by staff running a scene. Each card has the same taps, Undo and log as the character's own Play View. Which characters are in it is kept on the device, one scene per troupe.
+Several characters of one troupe put on one page of the Play View, side by side, by staff running a scene. Each card has the same taps, Undo and log as the character's own Play View. A troupe has as many named scenes as its staff make, kept on the server: every storyteller and assistant storyteller sees them all and can pin in any, and a scene's maker or the lead storyteller renames or removes it. Removing a scene leaves its characters as they are.
 _Avoid_: Encounter, group view
 
 **Title**:

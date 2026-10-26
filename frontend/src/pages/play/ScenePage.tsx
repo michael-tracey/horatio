@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { PoolModifier, RosterEntry, TestPool } from "../../api/types";
+import type { PoolModifier, RosterEntry, SceneOut, TestPool } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
@@ -11,7 +11,8 @@ import { attackGlance, defenceGlance, fightFirst, grouped, topAttacks } from "./
 import { PowersList } from "./Powers";
 import { formsOn, healthMost } from "./powers";
 import { PoolRow } from "./ReferenceTabs";
-import { findPins, loadOpen, loadScene, pin, saveOpen, saveScene, toggleOpen, unpin, type Section } from "./scene";
+import { findPins, loadOpen, saveOpen, toggleOpen, unpin, type Section } from "./scene";
+import { RenameScene, SCENE_REFRESH, useSceneChanges } from "./ScenesPage";
 import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracker";
 import { useModifiers } from "./useModifiers";
 import { usePlay } from "./usePlay";
@@ -23,25 +24,44 @@ function cx(...classes: (string | false | null | undefined)[]): string {
 }
 
 /**
- * Several characters of one troupe on a page, side by side, for a storyteller
- * running a scene. Each card is a character's Play View in small: Blood,
+ * One of a troupe's scenes: several of its characters on a page, side by side,
+ * for the staff running it. Each card is a character's Play View in small: Blood,
  * Willpower, health and Beast traits to tap, Undo and the game's log, and a way
  * into the full Play View. Taps go through the same code and endpoints as the full
- * one, so the two always agree. Which characters are pinned is kept on this device,
- * one scene per troupe.
+ * one, so the two always agree. Who is pinned is kept on the server, so every
+ * storyteller with the scene open sees the same characters (issue #231).
  */
 export function ScenePage() {
-  const { troupeId = "" } = useParams();
+  const { troupeId = "", sceneId = "" } = useParams();
   const prefs = usePreferences();
   const awake = useWakeLock(prefs.keep_awake);
-  const [pinned, setPinned] = useState(() => loadScene(troupeId));
-  // A different troupe is a different scene.
-  const [forTroupe, setForTroupe] = useState(troupeId);
-  if (forTroupe !== troupeId) {
-    setForTroupe(troupeId);
-    setPinned(loadScene(troupeId));
-  }
-  useEffect(() => saveScene(forTroupe, pinned), [forTroupe, pinned]);
+  const client = useQueryClient();
+  const sceneKey = ["scene", sceneId];
+  const scene = useQuery({
+    queryKey: sceneKey,
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/scenes/{scene_id}", { params: { path: { troupe_id: troupeId, scene_id: sceneId } } })),
+    // Pins another storyteller makes show here, as their taps do on each card.
+    refetchInterval: SCENE_REFRESH,
+    refetchOnWindowFocus: true,
+  });
+  // Unpinning shows at once, and the server's answer settles it.
+  const pinning = useMutation({
+    mutationFn: ({ id, on }: { id: string; on: boolean }) => {
+      const where = { params: { path: { troupe_id: troupeId, scene_id: sceneId, character_id: id } } };
+      return unwrap(on ? api.PUT("/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}", where) : api.DELETE("/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}", where));
+    },
+    // A pin waits for the server, which says whether it is a Stock NPC (no Play View to load yet).
+    onMutate: async ({ id, on }) => {
+      if (on) return;
+      await client.cancelQueries({ queryKey: sceneKey });
+      client.setQueryData<SceneOut>(sceneKey, (now) => now && { ...now, characters: unpin(now.characters, id) });
+    },
+    onSuccess: (data) => client.setQueryData(sceneKey, data),
+    onError: () => client.invalidateQueries({ queryKey: sceneKey }),
+    onSettled: () => client.invalidateQueries({ queryKey: ["scenes", troupeId] }),
+  });
+  const changes = useSceneChanges(troupeId);
+  const [renaming, setRenaming] = useState(false);
 
   const troupe = useQuery({
     queryKey: ["troupe", troupeId],
@@ -52,44 +72,86 @@ export function ScenePage() {
     queryKey: ["roster", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", { params: { path: { troupe_id: troupeId } } })),
   });
+  const pinned = scene.data?.characters ?? [];
+  const stock = new Map((scene.data?.stock ?? []).map((s) => [s.character_id, s]));
+  const list = `/play/troupes/${troupeId}/scenes`;
 
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2">
-          <Link to={`/troupes/${troupeId}/play`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
-            ← {troupe.data?.name ?? "Back"}
+          <Link to={list} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
+            ← Scenes{troupe.data ? ` of ${troupe.data.name}` : ""}
           </Link>
-          <span className="flex items-center gap-2">
-            {awake && (
-              <span className="rounded-full border border-ash px-2.5 py-0.5 text-xs whitespace-nowrap text-mist" title="Kept on while the Scene view is open, as your settings ask.">
-                ☀ Screen awake
-              </span>
-            )}
-            <h1 className="text-lg">Scene</h1>
-          </span>
+          {awake && (
+            <span className="rounded-full border border-ash px-2.5 py-0.5 text-xs whitespace-nowrap text-mist" title="Kept on while the Scene view is open, as your settings ask.">
+              ☀ Screen awake
+            </span>
+          )}
         </div>
       </header>
       <main className="mx-auto flex max-w-6xl flex-col gap-3 px-4 pt-3">
-        <AddToScene roster={roster.data ?? []} pinned={pinned} onPin={(id) => setPinned((now) => pin(now, id))} error={roster.error} />
-        {pinned.length === 0 ? (
-          <p className="py-8 text-center text-mist">Nobody is in the scene yet. Find an NPC above to put them here.</p>
+        {!scene.data ? (
+          scene.isPending ? (
+            <p className="py-8 text-center text-mist">Loading…</p>
+          ) : (
+            <>
+              <ErrorText error={scene.error} />
+              <Link to={list} className="text-sm text-mist underline hover:text-parchment">
+                Back to the troupe's scenes
+              </Link>
+            </>
+          )
         ) : (
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {pinned.map((id) => (
-              <li key={id} className="min-w-0">
-                <SceneCard characterId={id} troupeId={troupeId} onRemove={() => setPinned((now) => unpin(now, id))} />
-              </li>
-            ))}
-          </ul>
+          <>
+            {renaming ? (
+              <RenameScene
+                name={scene.data.name}
+                pending={changes.rename.isPending}
+                onSave={async (name) => {
+                  await changes.rename.mutateAsync({ id: sceneId, name });
+                  setRenaming(false);
+                }}
+                onCancel={() => setRenaming(false)}
+                className="max-w-md"
+              />
+            ) : (
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                <h1 className="text-xl text-gold">{scene.data.name}</h1>
+                <span className="text-xs text-mist">{scene.data.mine ? "Your scene" : `${scene.data.created_by_name}'s scene`}</span>
+                {scene.data.can_change && (
+                  <button type="button" className="text-xs text-mist underline hover:text-parchment" onClick={() => setRenaming(true)}>
+                    Rename
+                  </button>
+                )}
+              </div>
+            )}
+            <ErrorText error={changes.rename.error} />
+            <AddToScene roster={roster.data ?? []} pinned={pinned} onPin={(id) => pinning.mutate({ id, on: true })} error={roster.error ?? pinning.error} />
+            {pinned.length === 0 ? (
+              <p className="py-8 text-center text-mist">Nobody is in the scene yet. Find an NPC above to put them here.</p>
+            ) : (
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {pinned.map((id) => {
+                  const remove = () => pinning.mutate({ id, on: false });
+                  const stocked = stock.get(id);
+                  return (
+                    <li key={id} className="min-w-0">
+                      {stocked ? <StockCard pin={stocked} onRemove={remove} /> : <SceneCard characterId={id} back={`?troupe=${troupeId}&scene=${sceneId}`} onRemove={remove} />}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <p className="text-xs text-mist">
+              The scene is kept for the troupe: the other staff running it see who is in it, and can open it themselves. To put everyone back for the next game, use{" "}
+              <Link to={`/troupes/${troupeId}/play`} className="underline hover:text-parchment">
+                At game
+              </Link>
+              , or reset one character on their card.
+            </p>
+          </>
         )}
-        <p className="text-xs text-mist">
-          The scene is kept on this device. To put everyone back for the next game, use{" "}
-          <Link to={`/troupes/${troupeId}/play`} className="underline hover:text-parchment">
-            At game
-          </Link>
-          , or reset one character on their card.
-        </p>
       </main>
     </div>
   );
@@ -287,16 +349,32 @@ function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; w
   );
 }
 
+/** A Stock NPC in the scene: its name and NPC rating, until it has a Play card of its own (issue #215). */
+function StockCard({ pin, onRemove }: { pin: SceneOut["stock"][number]; onRemove: () => void }) {
+  return (
+    <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={pin.name}>
+      <header>
+        <h2 className="truncate text-lg leading-tight text-gold">{pin.name}</h2>
+        <p className="text-xs text-mist">Stock NPC · rating {pin.rating}</p>
+      </header>
+      <p className="text-sm text-mist">Stock NPC: its Play card comes in a later PR.</p>
+      <button type="button" className="self-start text-xs text-mist underline hover:text-parchment" onClick={onRemove} aria-label={`Remove ${pin.name} from the scene`}>
+        Remove from the scene
+      </button>
+    </article>
+  );
+}
+
 /**
  * One character in the scene: the same `usePlay` as the full Play View (so its
  * one query, its refresh and its queue of unsent taps are the same), with the
  * trackers a scene needs.
  */
-function SceneCard({ characterId, troupeId, onRemove }: { characterId: string; troupeId: string; onRemove: () => void }) {
+function SceneCard({ characterId, back, onRemove }: { characterId: string; back: string; onRemove: () => void }) {
   const { view, shown, tap, sync, accept } = usePlay(characterId);
   const { reference } = useReference(characterId);
   const modifiers = useModifiers(characterId);
-  // Which sections are open is kept on this device, per card, like the pins.
+  // Which sections are open is kept on this device, per card: it is about one screen.
   const [open, setOpen] = useState(() => loadOpen(characterId));
   useEffect(() => saveOpen(characterId, open), [characterId, open]);
   const toggle = (next: Section) => setOpen((now) => toggleOpen(now, next));
@@ -355,7 +433,7 @@ function SceneCard({ characterId, troupeId, onRemove }: { characterId: string; t
             {label} {open.includes(section) ? "▴" : "▾"}
           </Button>
         ))}
-        <Link to={`/play/characters/${characterId}?scene=${troupeId}`} className="ml-auto inline-flex min-h-10 items-center text-sm text-mist underline hover:text-parchment" aria-label={`Open the full Play View of ${name}`}>
+        <Link to={`/play/characters/${characterId}${back}`} className="ml-auto inline-flex min-h-10 items-center text-sm text-mist underline hover:text-parchment" aria-label={`Open the full Play View of ${name}`}>
           Full view
         </Link>
       </div>

@@ -1,13 +1,13 @@
 /**
- * The Scene view's pins: which of a troupe's characters a storyteller has put on
- * the page, in the order they were added. Kept in this browser, one scene per
- * troupe, so it survives a reload and is there at the next game.
+ * The Scene view's pins: which of a troupe's characters are on a scene's page, in
+ * the order they were added. Scenes are kept on the server (issue #231); what a
+ * browser kept before that, one scene per troupe, is offered to be saved once.
  */
 
 const key = (troupeId: string) => `horatio.scene.${troupeId}`;
 
-/** The characters pinned for a troupe; none if the browser keeps nothing. */
-export function loadScene(troupeId: string, storage: Storage | undefined = globalThis.localStorage): string[] {
+/** The characters this browser kept for a troupe before scenes were on the server; none if it kept nothing. */
+export function deviceScene(troupeId: string, storage: Storage | undefined = globalThis.localStorage): string[] {
   try {
     const raw = storage?.getItem(key(troupeId));
     const parsed: unknown = raw ? JSON.parse(raw) : [];
@@ -17,12 +17,12 @@ export function loadScene(troupeId: string, storage: Storage | undefined = globa
   }
 }
 
-export function saveScene(troupeId: string, ids: string[], storage: Storage | undefined = globalThis.localStorage): void {
+/** Forget the browser's old scene for a troupe, once it is saved or dismissed. */
+export function forgetDeviceScene(troupeId: string, storage: Storage | undefined = globalThis.localStorage): void {
   try {
-    if (ids.length) storage?.setItem(key(troupeId), JSON.stringify(ids));
-    else storage?.removeItem(key(troupeId));
+    storage?.removeItem(key(troupeId));
   } catch {
-    // Private windows and full storage keep nothing; the scene stays in memory.
+    // Storage that cannot be written cannot keep the old scene either.
   }
 }
 

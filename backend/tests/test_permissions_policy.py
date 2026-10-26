@@ -4,7 +4,13 @@ import pytest
 
 from horatio.permissions import TROUPE_POLICY, Role, TroupeAction, allows
 
-LEAD_ONLY = {TroupeAction.RENAME, TroupeAction.EDIT_DESCRIPTION, TroupeAction.ARCHIVE}
+LEAD_ONLY = {
+    TroupeAction.RENAME,
+    TroupeAction.EDIT_DESCRIPTION,
+    TroupeAction.ARCHIVE,
+    # Another storyteller's scene; each storyteller changes their own (issue #231).
+    TroupeAction.CHANGE_ANY_SCENE,
+}
 STORYTELLERS_ONLY = {
     TroupeAction.MANAGE_STAFF,
     TroupeAction.MANAGE_HOUSE_RULES,
