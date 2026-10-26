@@ -1393,6 +1393,96 @@ test("a merit taken in the creation wizard gives the traits it grants", async ({
   await expect(p.getByRole("button", { name: "Remove Acute Sense" })).toHaveCount(0);
 });
 
+test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, changes them until a troupe accepts the character, and not after", async ({ browser }) => {
+  const custodian = await person(browser, "royal-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "royal-lead");
+  const player = await person(browser, "royal-player");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of the Crown ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  // Cordelia, a finished Ventrue with two dots of Resources bought (3 XP at a Neonate's prices).
+  const p = player.page;
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Cordelia" });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Ventrue", rating: null });
+  const build: Record<string, [string, number][]> = {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Contacts", 2], ["Generation", 1]],
+    disciplines: [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+  await send("PUT", `/api/characters/${id}/traits`, { category: "backgrounds", name: "Resources", rating: 2 });
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  const trait = (name: string) => p.locator(`li[data-trait="${name}"]`);
+  const chosen = p.locator('[data-free-choices="Ventrue Royalty"]');
+
+  // The Add panel asks for the choices as the merit goes in: 4 in Resources, 3 in Herd, 2 in Allies.
+  await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Merits").fill("Ventrue Royalty");
+  await p.getByRole("button", { name: /^Ventrue Royalty/ }).click();
+  await expect(p.getByText("Choose your free backgrounds")).toBeVisible();
+  await expect(p.getByText("Place 4, 3 and 2 dots, each in a different one.")).toBeVisible();
+  await p.getByLabel("4 dots in").selectOption("Resources");
+  await p.getByLabel("3 dots in").selectOption("Herd");
+  await p.getByLabel("2 dots in").selectOption("Allies");
+  // A background can be placed once: Resources is taken.
+  await expect(p.getByLabel("3 dots in").getByRole("option", { name: "Resources" })).toBeDisabled();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Add Ventrue Royalty" })).toContainText("free: Resources 4, Herd 3, Allies 2");
+  await p.getByRole("button", { name: "Spend XP" }).click();
+
+  // The dots are free ones, and the 3 XP paid for Resources is back (2 XP for the merit, less 3).
+  await expect(trait("Resources")).toContainText("+4 from Ventrue Royalty");
+  await expect(trait("Herd")).toContainText("+3 from Ventrue Royalty");
+  await expect(trait("Allies")).toContainText("+2 from Ventrue Royalty");
+  await expect(chosen).toContainText("Resources 4");
+  await expect(chosen).toContainText("Herd 3");
+  await expect(chosen).toContainText("Allies 2");
+  await expect(p.getByText("28", { exact: true })).toBeVisible();
+  await p.screenshot(shots("royalty-placed"));
+
+  // Until a troupe accepts her, the choices change freely: Haven in place of Resources.
+  await p.getByRole("button", { name: "Change the free traits for Ventrue Royalty" }).click();
+  await p.getByLabel("4 dots in").selectOption("Haven");
+  await p.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(trait("Haven")).toContainText("+4 from Ventrue Royalty");
+  await expect(trait("Resources")).toHaveCount(0);
+  await expect(chosen).toContainText("Haven 4");
+
+  // The lead sees what she chose where the request is accepted.
+  await send("POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  const card = l.locator("section").filter({ hasText: "Cordelia" });
+  await expect(card).toContainText("Free traits the player chose");
+  await expect(card).toContainText("Ventrue Royalty: Haven 4, Herd 3, Allies 2");
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+
+  // Once accepted, they are staff's to change.
+  await p.reload();
+  await expect(chosen).toContainText("Haven 4");
+  await expect(chosen).toContainText("can't change once a home troupe has accepted");
+  await expect(p.getByRole("button", { name: "Change the free traits for Ventrue Royalty" })).toHaveCount(0);
+  const refused = await p.request.fetch(`/api/characters/${id}/traits/choices`, {
+    method: "PUT",
+    headers,
+    data: { category: "merits", name: "Ventrue Royalty", detail: "", picks: [] },
+  });
+  expect(refused.status()).toBe(409);
+});
+
 test("changes on the sheet wait in a cart, and only Spend XP makes them, all or none", async ({ browser }) => {
   const { page: p } = await person(browser, "carter");
   await p.getByLabel("Name").fill("Wren");

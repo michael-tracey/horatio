@@ -6,13 +6,28 @@
 
 import { useSyncExternalStore } from "react";
 import type { components } from "../../api/schema";
+import type { FreePick } from "./freeChoices";
 
 /** A change asked of the home troupe's staff as an exception to the rules: why, and whether at no XP cost. */
 export type Exception = { reason: string; free: boolean };
 
 export type CartLine =
   /** A rating from `from` (as saved) to `to`: a raise, a lower, a new trait (from 0) or a removal (to 0). */
-  | { kind: "set"; category: string; name: string; detail: string; from: number; to: number; teacher?: string; fixed?: boolean; exception?: Exception }
+  | {
+      kind: "set";
+      category: string;
+      name: string;
+      detail: string;
+      from: number;
+      to: number;
+      teacher?: string;
+      fixed?: boolean;
+      exception?: Exception;
+      /** For a merit that gives free traits the player chooses: their choices, made with it. */
+      picks?: FreePick[];
+      /** The picks in words, for the cart to show. */
+      picked?: string;
+    }
   | { kind: "swap"; category: string; from_name: string; to_name: string }
   | { kind: "pick"; category: string; name: string; detail: string; rating: number }
   | { kind: "unpick"; category: string; name: string; detail: string };
@@ -41,7 +56,7 @@ export function ordered(lines: CartLine[]): CartLine[] {
 /** Set a trait's rating in the cart. Back to where it was saved, it leaves the cart. */
 export function setRating(
   lines: CartLine[],
-  trait: Trait & { rating: number; teacher?: string; fixed?: boolean; exception?: Exception },
+  trait: Trait & { rating: number; teacher?: string; fixed?: boolean; exception?: Exception; picks?: FreePick[]; picked?: string },
   to: number,
 ): CartLine[] {
   const found = lines.find((l): l is Extract<CartLine, { kind: "set" }> => l.kind === "set" && same(l, trait));
@@ -57,6 +72,7 @@ export function setRating(
     to,
     ...((trait.teacher ?? found?.teacher) ? { teacher: trait.teacher ?? found?.teacher } : {}),
     ...((trait.fixed ?? found?.fixed) ? { fixed: true } : {}),
+    ...((trait.picks ?? found?.picks)?.length ? { picks: trait.picks ?? found?.picks, picked: trait.picked ?? found?.picked } : {}),
     // Asked as an exception: it stays asked at the new rating, which is judged again when spent.
     ...((trait.exception ?? found?.exception) && to > from ? { exception: trait.exception ?? found?.exception } : {}),
   };
@@ -99,6 +115,7 @@ export function toChange(line: CartLine): CartChange {
         from_rating: line.from,
         teacher: line.teacher ?? "",
         ...(line.exception ? { exception: line.exception } : {}),
+        ...(line.picks?.length ? { picks: line.picks } : {}),
       };
     case "swap":
       return line;
@@ -115,7 +132,10 @@ const named = (t: Trait) => (t.detail ? `${t.name}: ${t.detail}` : t.name);
 export function describe(line: CartLine): string {
   switch (line.kind) {
     case "set":
-      if (line.from === 0) return line.fixed ? `Add ${named(line)}` : `Add ${named(line)} ${line.to}`;
+      if (line.from === 0) {
+        const adds = line.fixed ? `Add ${named(line)}` : `Add ${named(line)} ${line.to}`;
+        return line.picked ? `${adds} (free: ${line.picked})` : adds;
+      }
       if (line.to === 0) return `Remove ${named(line)}`;
       return `${named(line)} ${line.from} → ${line.to}`;
     case "swap":

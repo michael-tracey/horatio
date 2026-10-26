@@ -5,7 +5,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from horatio.rules.checks import CheckData, check_from_dict, validate_condition
+from horatio.rules.checks import REQUIREMENT_KEY, CheckData, check_from_dict, validate_condition
 from horatio.rules.conditions import validate
 from horatio.rules.grants import GrantData, grant_from_dict, validate_grant
 from horatio.rules.model import (
@@ -195,7 +195,7 @@ def derived_checks(traits: Mapping[tuple[str, str], TraitData]) -> list[dict[str
             continue
         found.append(
             {
-                "key": f"{category}/{name}/requirement",
+                "key": f"{category}/{name}{REQUIREMENT_KEY}",
                 "category": category,
                 "name": name,
                 "requires": requires,

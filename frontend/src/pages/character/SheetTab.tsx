@@ -34,6 +34,7 @@ import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart
 import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
 import { DiablerieCard } from "./Diablerie";
 import { ExceptionMark, ExceptionsCard } from "./Exceptions";
+import { FreeChoicesRow } from "./FreeChoices";
 import { GivePanel } from "./GivePanel";
 import { rulesTroupe } from "./rules";
 import { fieldSkills } from "./fields";
@@ -220,6 +221,7 @@ export function SheetTab({
             granted_rating: 0,
             granted_by: [],
             note: "",
+            free_choices: [],
           },
         ]
       : [];
@@ -453,6 +455,14 @@ export function SheetTab({
                                 }
                                 onSwap={(to) => cart.update((l) => swap(l, t.category, t.name, to))}
                               />,
+                              !inCart(t) && (t.free_choices?.length ?? 0) > 0 && (
+                                <FreeChoicesRow
+                                  key={`${t.id}/free`}
+                                  character={character}
+                                  trait={t}
+                                  editable={mine && !locked && s.status !== "retired"}
+                                />
+                              ),
                               !inCart(t) && t.category === "backgrounds" && t.name === "Retainers" && (
                                 <RetainersPanel
                                   key={`${t.id}/retainers`}

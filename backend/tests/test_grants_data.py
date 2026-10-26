@@ -5,6 +5,8 @@ import re
 import tomllib
 
 from horatio.rules.files import DATA_DIR, load_rule_set
+from horatio.rules.grants import options
+from horatio.rules.model import SheetTrait
 
 # How the catalogue's descriptions say a trait gives, or counts as, another.
 GIVES = re.compile(
@@ -57,12 +59,39 @@ def test_the_wording_catches_what_the_audit_found() -> None:
         assert not GIVES.search(rules.traits[("merits", name)].description or ""), name
 
 
-def test_rules_only_traits_exist_say_why_and_have_no_grants() -> None:
+def test_rules_only_traits_exist_say_why_and_have_no_grants_unless_partly() -> None:
     rules = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
     granting = {(g.source["category"], g.source["name"]) for g in rules.grants}
 
     for entry in rules_only():
         key = (entry["category"], entry["name"])
         assert key in rules.traits, key
-        assert key not in granting, key
+        # A merit that is `partly` modelled has grants for the part that is, and
+        # says here what is missing.
+        assert (key in granting) == bool(entry.get("partly")), key
         assert entry["page"] and entry["why"], key
+
+
+def test_every_free_choices_grant_offers_something_it_can_be_answered_with() -> None:
+    rules = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+    chosen = [g for g in rules.grants if g.kind == "free_choices"]
+
+    assert {g.source["name"] for g in chosen} == {
+        "Ventrue Royalty",
+        "Chosen of Cappadocius",
+        "Old Habits",
+        "Piece That Remains",
+        "Auspicious",
+        "Shadows of the Past",
+    }
+    for grant in chosen:
+        found = options(grant, rules, [SheetTrait("clan", "Caitiff")])
+        assert found, grant.key
+        assert grant.page, grant.key
+        offered = {o.name for o in found}
+        places = (grant.picks or {}).get("places", ())
+        assert len(offered) >= len(places), grant.key
+        # Everything a grant offers is one trait the grant could give.
+        assert all((o.category, o.name) in rules.traits for o in found), grant.key
+        if grant.target["category"] == "merits":
+            assert all(o.rating for o in found), grant.key

@@ -47,7 +47,7 @@ from horatio.models import (
 from horatio.rules.checks import Context, Violation, traits_in, violations
 from horatio.rules.conditions import describe as describe_condition
 from horatio.rules.grants import Effects, choices, effects, raised_by
-from horatio.rules.model import RuleSetData, SheetTrait, TroupeRules
+from horatio.rules.model import FreeChoice, RuleSetData, SheetTrait, TroupeRules
 from horatio.rules.pricing import (
     NotAllowed,
     PricingError,
@@ -111,6 +111,7 @@ class SheetRow:
             free_rating=self.trait.free_rating,
             detail=self.trait.detail,
             granted_rating=self.trait.granted_rating,
+            choices=tuple(FreeChoice(**c) for c in self.trait.choices),
         )
 
     def snapshot(self) -> dict[str, Any]:

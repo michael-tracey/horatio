@@ -614,6 +614,14 @@ Recorded here for review; each is easy to change.
   sheet change, `sheets.apply_grants` brings it into line with the grants the
   sheet holds, so losing a source takes its dots back exactly; dots the player
   had bought inside a newly free range are refunded as a purchase entry.
+- `character_traits.choices` (JSON): for a merit with a `free_choices` grant
+  (Ventrue Royalty, Chosen of Cappadocius, Old Habits, Piece That Remains,
+  Auspicious, Shadows of the Past), the free traits its player chose, as
+  `{grant, name, detail, amount}` each. They are the player's until a home troupe
+  has accepted the character with the merit on its sheet (`free_choices.py`); a
+  merit taken after that is chosen for once. The grants give them as `free_up_to`
+  does, and removing the merit removes them. A merit given this way is not
+  counted towards the 7-point merit limit, which is for merits bought.
 - Categories carry `usual_max` (skills and backgrounds bought up to 5; grants
   raise it, `max_rating` stays the hard ceiling) and `max_held` (one focus per
   attribute, besides granted ones).

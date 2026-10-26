@@ -184,6 +184,21 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           <span className="text-mist">Accepting locks it: after that the player can't change it.</span>
         </p>
       )}
+      {joining && approval.free_choices.length > 0 && (
+        <div className="mb-3 flex flex-col gap-1" data-free-choices>
+          <h3 className="font-sans text-xs text-mist uppercase">Free traits the player chose</h3>
+          <ul className="text-sm">
+            {approval.free_choices.map((f) => (
+              <li key={f.merit}>
+                {f.merit}:{" "}
+                {f.picks.length === 0 ? <span className="text-gold">nothing chosen yet</span> : f.picks.join(", ")}
+                {f.picks.length > 0 && !f.complete && <span className="text-gold"> (not all chosen)</span>}
+              </li>
+            ))}
+          </ul>
+          {pending && <p className="text-xs text-mist">Accepting confirms them: after that the player can't change them.</p>}
+        </div>
+      )}
       {joining && (
         <div className="mb-3 flex flex-col gap-2">
           {approval.reconciliation.length === 0 && <p className="text-sm text-mist">Nothing to reconcile.</p>}

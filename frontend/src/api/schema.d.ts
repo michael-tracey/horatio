@@ -598,6 +598,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/free-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Free Choices Preview
+         * @description What a merit would let the player choose if the character took it now.
+         */
+        get: operations["free_choices_preview_api_characters__character_id__free_choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/give": {
         parameters: {
             query?: never;
@@ -1302,6 +1322,27 @@ export interface paths {
          * @description Swap a focus (or another swappable choice) for another, for its change cost.
          */
         post: operations["change_choice_api_characters__character_id__traits_change_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/traits/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Free Choices
+         * @description Choose, or change, the free traits a held merit gives (Ventrue Royalty's
+         *     backgrounds), until a home troupe has accepted the character.
+         */
+        put: operations["change_free_choices_api_characters__character_id__traits_choices_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5510,6 +5551,104 @@ export interface components {
             times: number;
         };
         /**
+         * FreeChoicesChange
+         * @description Replace the free traits chosen for a held merit.
+         */
+        FreeChoicesChange: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Picks */
+            picks: components["schemas"]["FreePickIn"][];
+        };
+        /**
+         * FreeChoicesOut
+         * @description What a held merit lets the player choose for free, and what they chose
+         *     (horatio.free_choices).
+         */
+        FreeChoicesOut: {
+            /** Category */
+            category: string;
+            /** Category Name */
+            category_name: string;
+            /** Complete */
+            complete: boolean;
+            /** Count */
+            count: number | null;
+            /** Grant */
+            grant: string;
+            /** Locked */
+            locked: string | null;
+            /** Options */
+            options: components["schemas"]["FreeOptionOut"][];
+            /** Picks */
+            picks: components["schemas"]["FreePickOut"][];
+            /** Places */
+            places: number[] | null;
+            /** Points */
+            points: number | null;
+        };
+        /**
+         * FreeChoicesSummaryOut
+         * @description The free traits a joining character's player chose for a merit, for staff to
+         *     confirm by accepting it.
+         */
+        FreeChoicesSummaryOut: {
+            /** Complete */
+            complete: boolean;
+            /** Merit */
+            merit: string;
+            /** Picks */
+            picks: string[];
+        };
+        /**
+         * FreeOptionOut
+         * @description A trait a merit lets the player choose for free.
+         */
+        FreeOptionOut: {
+            /** Name */
+            name: string;
+            /** Needs Detail */
+            needs_detail: boolean;
+            /** Rating */
+            rating: number | null;
+        };
+        /**
+         * FreePickIn
+         * @description One of the free traits the player chooses for a merit that gives them.
+         */
+        FreePickIn: {
+            /**
+             * Amount
+             * @default 0
+             */
+            amount: number;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Grant */
+            grant: string;
+            /** Name */
+            name: string;
+        };
+        /** FreePickOut */
+        FreePickOut: {
+            /** Amount */
+            amount: number;
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+        };
+        /**
          * GameChoice
          * @description A game on the troupe's schedule, which dates an entry when it started.
          */
@@ -7465,6 +7604,11 @@ export interface components {
             discipline: components["schemas"]["DisciplineOut"] | null;
             exception?: components["schemas"]["ExceptionAskOut"] | null;
             /**
+             * Free Choices
+             * @default []
+             */
+            free_choices: components["schemas"]["FreeChoicesSummaryOut"][];
+            /**
              * Id
              * Format: uuid
              */
@@ -7819,6 +7963,8 @@ export interface components {
             kind: "set";
             /** Name */
             name: string;
+            /** Picks */
+            picks?: components["schemas"]["FreePickIn"][] | null;
             /** Rating */
             rating?: number | null;
             /**
@@ -8091,6 +8237,8 @@ export interface components {
             category_name: string;
             /** Detail */
             detail: string;
+            /** Free Choices */
+            free_choices?: components["schemas"]["FreeChoicesOut"][] | null;
             /** Free Rating */
             free_rating: number;
             /** Granted By */
@@ -10343,6 +10491,40 @@ export interface operations {
             };
         };
     };
+    free_choices_preview_api_characters__character_id__free_choices_get: {
+        parameters: {
+            query: {
+                category: string;
+                name: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeChoicesOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     give_api_characters__character_id__give_post: {
         parameters: {
             query?: never;
@@ -11680,6 +11862,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ChoiceChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_free_choices_api_characters__character_id__traits_choices_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FreeChoicesChange"];
             };
         };
         responses: {

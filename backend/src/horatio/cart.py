@@ -29,9 +29,9 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import creation, repricing, sheets, trait_exceptions
+from horatio import creation, free_choices, repricing, sheets, trait_exceptions
 from horatio.models import Approval, Character, CharacterTrait, User
-from horatio.rules.model import SheetTrait
+from horatio.rules.model import FreeChoice, SheetTrait
 from horatio.sheets import TraitKey
 from horatio.trait_exceptions import Ask
 
@@ -49,6 +49,8 @@ class SetRating:
     teacher: str = ""
     # Asked of the home troupe's staff as an exception to the rules it breaks.
     exception: Ask | None = None
+    # For a merit that gives free traits the player chooses: their choices, made with it.
+    picks: tuple[FreeChoice, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -174,7 +176,7 @@ def make(db: Session, user: User, character: Character, change: Change) -> sheet
                     "the sheet has changed since this went in the cart."
                 )
         with sheets.checked(db, character, user, rules=False):
-            return sheets.set_trait(
+            made = sheets.set_trait(
                 db,
                 user,
                 character,
@@ -186,6 +188,11 @@ def make(db: Session, user: User, character: Character, change: Change) -> sheet
                 free=asked.reason if asked and asked.free else None,
                 by_exception="asked" if asked else None,
             )
+            if change.picks and change.rating:
+                free_choices.set_choices(
+                    db, character, change.category, change.name, change.detail, change.picks
+                )
+            return made
     elif isinstance(change, Swap):
         with sheets.checked(db, character, user, rules=False):
             sheets.change_choice(
