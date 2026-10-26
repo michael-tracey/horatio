@@ -950,7 +950,7 @@ test("storytellers give an NPC powers, and one out of order is marked until it i
   const custodian = await person(browser, "powers-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "powers-lead");
-  const troupeName = `Court of Embers ${run}`;
+  const troupeName = `Court of Kindling ${run}`;
   await custodian.page.reload();
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
