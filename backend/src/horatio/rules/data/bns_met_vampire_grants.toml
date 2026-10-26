@@ -299,6 +299,27 @@ target = { category = "extra_in_clan_disciplines", choose = ["Animalism", "Auspe
 amount = 1
 page = "Vol. 2 Issue 1, p. 53"
 
+# --- in-clan disciplines replaced ----------------------------------------------------
+
+# The merit sets all of the character's in-clan disciplines, in place of the clan's.
+# Nagaraja lose Dominate and the Ash Path; the Graveborne path is in no book the
+# catalogue draws on, so the name stands for it until the path is added.
+[[grants]]
+source = { category = "merits", name = "Blight of the Ever-Hungry" }
+kind = "replace_in_clan"
+target = { category = "disciplines", names = ["Auspex", "Potence", "Necromancy: Path of the Graveborne"] }
+amount = 0
+page = "Vol. 2, p. 62"
+
+# Shadows of the Past also gives up to 3 points of Lasombra merits free, which the
+# player chooses: staff add them by hand.
+[[grants]]
+source = { category = "merits", name = "Shadows of the Past" }
+kind = "replace_in_clan"
+target = { category = "disciplines", names = ["Daimoinon", "Obtenebration", "Dominate"] }
+amount = 0
+page = "Vol. 2, p. 260"
+
 # --- free dots ----------------------------------------------------------------------
 
 [[grants]]
@@ -760,7 +781,7 @@ why = "Two Haven advantages the player chooses, on top of the background's dots.
 category = "merits"
 name = "Inceptor"
 page = "Vol. 2 Issue 1, p. 46"
-why = "Lets a Caitiff choose Kineticism or a path as one of their three in-clan disciplines."
+why = "The player adds Kineticism or one path under Extra In-Clan Disciplines, as one of the Caitiff's three; the checks allow it."
 
 [[rules_only]]
 category = "merits"
@@ -797,12 +818,6 @@ category = "merits"
 name = "Polymorphic Demeanor"
 page = "Vol. 2 Issue 1, p. 42"
 why = "Changes the archetype and one focus for a game, then they return."
-
-[[rules_only]]
-category = "merits"
-name = "Shadows of the Past"
-page = "Vol. 2, p. 260"
-why = "Changes the in-clan disciplines, and up to 3 points of Lasombra merits the player chooses, free."
 
 [[rules_only]]
 category = "merits"

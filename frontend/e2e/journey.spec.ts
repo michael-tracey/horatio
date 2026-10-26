@@ -1484,7 +1484,7 @@ test("a player renames their character once in three months, and the custodian a
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
-  await expect(p.getByText("visiting")).toBeVisible();
+  await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
   await p.getByRole("button", { name: "More for Agnes Moreau" }).click();
   await p.getByRole("menuitem", { name: "Rename…" }).click();
   await p.getByLabel("New name").fill("Agnes Duval");
@@ -1916,7 +1916,12 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
-  await expect(p.getByText("visiting")).toBeVisible();
+  await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
+  // Home troupe comes first, then the visiting troupes, each with what it means.
+  await expect(p.locator("main section h2")).toHaveText(["Home troupe", "Visiting troupes"]);
+  const card = (title: string) => p.locator("main section").filter({ has: p.getByRole("heading", { name: title }) });
+  await expect(card("Home troupe").getByText("The one troupe that holds this character's sheet.")).toBeVisible();
+  await expect(card("Visiting troupes").getByText("A troupe this character plays in without its home there.")).toBeVisible();
 
   // The list opens as soon as the box is clicked: the troupe's player first.
   await lead.page.getByRole("link", { name: "Troupes" }).click();
@@ -2934,12 +2939,15 @@ test("only a character with a ritual discipline sees rituals, up to its path's l
   await expect(disciplines.getByRole("button", { name: /^\d+ Rituals$/ })).toBeVisible();
   await disciplines.getByRole("button", { name: /^\d+ Rituals$/ }).click();
   await expect(chips.getByRole("button", { name: /^Rituals/ })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Search Rituals").fill(ritual(1));
+  await expect(p.getByRole("button", { name: new RegExp(`^${ritual(1)}`) })).toBeEnabled();
+  // A ritual of each level comes before one of the next.
   await p.getByLabel("Search Rituals").fill(ritual(2));
-  await expect(p.getByRole("button", { name: new RegExp(`^${ritual(2)}`) })).toBeEnabled();
-  await p.getByLabel("Search Rituals").fill(ritual(3));
-  // Left out of what the character can take, but a tap away, with the reason.
   await expect(p.getByText("None you can take. 1 you can't:")).toBeVisible();
   await p.getByRole("button", { name: "show", exact: true }).click();
+  await expect(p.getByText("A thaumaturge learns a ritual of each level before one of the next.", { exact: false })).toBeVisible();
+  await p.getByLabel("Search Rituals").fill(ritual(3));
+  // Left out of what the character can take, but a tap away, with the reason.
   await expect(p.getByText("A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more.", { exact: false })).toBeVisible();
 });
 
@@ -3431,6 +3439,70 @@ test("Derangement traits on the Play View: a temporary derangement added, warnin
   await expect(other.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
 });
 
+test("Beast traits on the Play View warn what each one brings, and the Frenzy rules open on request", async ({ browser }) => {
+  const custodian = await person(browser, "frenzy-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "frenzy-lead");
+  const troupeName = `Court of Fangs ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // A Brujah NPC the lead runs at game.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Tobias", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category: "clan", name: "Brujah", rating: null, detail: "" } });
+  expect(rated.status(), await rated.text()).toBe(200);
+
+  await p.goto(`/play/characters/${npc}`);
+  await expect(p.getByLabel("Beast traits: 0 of 5")).toBeVisible();
+  await expect(p.getByRole("note")).toHaveCount(0);
+
+  // Each Beast trait says what now makes a frenzy test, and how to play it.
+  const gain = p.getByRole("button", { name: "Gain a Beast traits point" });
+  await gain.click();
+  const foothold = p.getByRole("note", { name: "The Beast has a foothold" });
+  await expect(foothold).toContainText("You can frenzy now.");
+  await expect(foothold).toContainText("against 11");
+  await expect(foothold).toContainText("MET: VtM core, pp. 301–302; Vol. II Issue 1 update, pp. 97–98");
+  await gain.click();
+  await expect(p.getByRole("note", { name: "The Beast is awake" })).toContainText("a single blow of 3 or more damage (rage)");
+  await gain.click();
+  await gain.click();
+  await expect(p.getByLabel("Beast traits: 4 of 5")).toBeVisible();
+  await expect(p.getByRole("note", { name: "One trait from losing Humanity" })).toContainText("One more Beast trait costs a dot of permanent Humanity.");
+  // A warning only: the fifth goes through.
+  await gain.click();
+  await expect(p.getByLabel("Beast traits: 5 of 5")).toBeVisible();
+  await expect(p.getByRole("note", { name: "A dot of Humanity is lost" })).toBeVisible();
+  await expect(p.getByText("Beast traits 4 → 5")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // The Frenzy rules, closed until asked for.
+  const frenzy = p.getByRole("button", { name: /^Frenzy/ });
+  await expect(frenzy).toHaveAttribute("aria-expanded", "false");
+  await expect(p.getByText("Riding the wave")).toHaveCount(0);
+  await frenzy.click();
+  await expect(frenzy).toHaveAttribute("aria-expanded", "true");
+  await expect(p.getByRole("heading", { name: /Riding the wave/ })).toBeVisible();
+  await expect(p.getByText("Fear ends once you've escaped and hidden quietly for 10 minutes.", { exact: false })).toBeVisible();
+  await p.screenshot(shots("play-frenzy"));
+  await frenzy.click();
+  await expect(frenzy).toHaveAttribute("aria-expanded", "false");
+  await expect(p.getByText("Riding the wave")).toHaveCount(0);
+});
+
 test("a coterie's shared Haven: staff set it up, a player logs a use, and the other sharer reads it in the log", async ({ browser }) => {
   const custodian = await person(browser, "share-custodian");
   makeCustodian(custodian.email);
@@ -3526,66 +3598,32 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
 });
 
-test("Beast traits on the Play View warn what each one brings, and the Frenzy rules open on request", async ({ browser }) => {
-  const custodian = await person(browser, "frenzy-custodian");
-  makeCustodian(custodian.email);
-  const lead = await person(browser, "frenzy-lead");
-  const troupeName = `Court of Fangs ${run}`;
-  await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
-  await custodian.page.getByLabel("Name").fill(troupeName);
-  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
-  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
-  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
-
-  // A Brujah NPC the lead runs at game.
-  const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
-  await p.getByRole("link", { name: troupeName }).click();
-  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
-  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
-  const headers = { "X-Horatio": "1" };
-  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Tobias", wizard: false } });
-  expect(made.status(), await made.text()).toBe(201);
-  const npc = (await made.json()).id;
-  const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category: "clan", name: "Brujah", rating: null, detail: "" } });
-  expect(rated.status(), await rated.text()).toBe(200);
-
-  await p.goto(`/play/characters/${npc}`);
-  await expect(p.getByLabel("Beast traits: 0 of 5")).toBeVisible();
-  await expect(p.getByRole("note")).toHaveCount(0);
-
-  // Each Beast trait says what now makes a frenzy test, and how to play it.
-  const gain = p.getByRole("button", { name: "Gain a Beast traits point" });
-  await gain.click();
-  const foothold = p.getByRole("note", { name: "The Beast has a foothold" });
-  await expect(foothold).toContainText("You can frenzy now.");
-  await expect(foothold).toContainText("against 11");
-  await expect(foothold).toContainText("MET: VtM core, pp. 301–302; Vol. II Issue 1 update, pp. 97–98");
-  await gain.click();
-  await expect(p.getByRole("note", { name: "The Beast is awake" })).toContainText("a single blow of 3 or more damage (rage)");
-  await gain.click();
-  await gain.click();
-  await expect(p.getByLabel("Beast traits: 4 of 5")).toBeVisible();
-  await expect(p.getByRole("note", { name: "One trait from losing Humanity" })).toContainText("One more Beast trait costs a dot of permanent Humanity.");
-  // A warning only: the fifth goes through.
-  await gain.click();
-  await expect(p.getByLabel("Beast traits: 5 of 5")).toBeVisible();
-  await expect(p.getByRole("note", { name: "A dot of Humanity is lost" })).toBeVisible();
-  await expect(p.getByText("Beast traits 4 → 5")).toBeVisible();
-  await expect(p.getByRole("status")).toHaveText("Saved");
-
-  // The Frenzy rules, closed until asked for.
-  const frenzy = p.getByRole("button", { name: /^Frenzy/ });
-  await expect(frenzy).toHaveAttribute("aria-expanded", "false");
-  await expect(p.getByText("Riding the wave")).toHaveCount(0);
-  await frenzy.click();
-  await expect(frenzy).toHaveAttribute("aria-expanded", "true");
-  await expect(p.getByRole("heading", { name: /Riding the wave/ })).toBeVisible();
-  await expect(p.getByText("Fear ends once you've escaped and hidden quietly for 10 minutes.", { exact: false })).toBeVisible();
-  await p.screenshot(shots("play-frenzy"));
-  await frenzy.click();
-  await expect(frenzy).toHaveAttribute("aria-expanded", "false");
-  await expect(p.getByText("Riding the wave")).toHaveCount(0);
+test("a skill's specialisations sit in its own list item, in the sheet's two columns and on a phone", async ({ browser }) => {
+  const { page: p } = await person(browser, "stay-together");
+  const id = await builtVampire(p, "Marguerite", "Toreador", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+    skills: ATTRIBUTES_AND_FOCUSES.skills.map(([name, rating]) => [name === "Medicine" ? "Academics" : name, rating]),
+  });
+  await p.goto(`/characters/${id}`);
+  const skills = p.locator("section").filter({ has: p.getByRole("heading", { name: "Skills", exact: true }) });
+  const academics = skills.locator("li[data-trait='Academics']");
+  for (const width of [1280, 390]) {
+    await p.setViewportSize({ width, height: 900 });
+    // Name one specialisation for Academics.
+    if (width === 1280) {
+      await academics.getByRole("button", { name: "Add to Academics Specializations" }).click();
+      await academics.getByLabel("Name a Academics Specializations").fill("Medieval");
+      await academics.getByRole("button", { name: "Add", exact: true }).click();
+    }
+    // The skill, its specialisations and their Add button all sit in the one item.
+    await expect(academics.getByText("Academics", { exact: true }).first()).toBeVisible();
+    await expect(academics.getByText("Academics Specializations 1/1")).toBeVisible();
+    await expect(academics.getByRole("button", { name: "Remove Medieval" })).toBeVisible();
+    await expect(academics.getByRole("listitem")).toHaveCount(0); // one item for the whole trait
+    // And the item is kept whole across a column break.
+    await expect(academics).toHaveCSS("break-inside", "avoid");
+  }
+  await p.screenshot(shots("specializations-stay-together"));
 });
