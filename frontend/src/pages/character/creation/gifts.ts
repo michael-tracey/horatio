@@ -23,7 +23,7 @@ export const FOCUS_MERITS = merits([
   "Beauty of the Beholder",
 ]);
 
-/** Merits that make dots in a skill free (both spellings of Blood of the Tzimisce are in the data), and Chosen of Cappadocius' specialisations. */
+/** Merits that make dots in a skill free (both spellings of Blood of the Tzimisce are in the data), Chosen of Cappadocius' specialisations, and the skill Skill Aptitude raises. */
 export const SKILL_MERITS = merits([
   "All the Best Toys",
   "Artist's Blessing",
@@ -31,6 +31,7 @@ export const SKILL_MERITS = merits([
   "Blood of Tzimisce",
   "Seasoned Traveler",
   "Chosen of Cappadocius",
+  "Skill Aptitude",
 ]);
 
 /** Merits that make dots in a background free, or place the dots the player chooses (Ventrue Royalty); and the flaws that set the Generation. */
@@ -67,7 +68,8 @@ export const freedPicks: NoticeSource = ({ creation, steps }) =>
 /**
  * A merit that gives free traits the player chooses (Ventrue Royalty's backgrounds,
  * Chosen of Cappadocius' specialisations) with some still to choose. It is shown on the
- * step the gift lands on, which is where it is chosen, and on Merits & flaws.
+ * step the gift lands on, which is where it is chosen, and on Merits & flaws. It does
+ * not hold back finishing, so it says it can wait.
  */
 export const unchosenFree: NoticeSource = ({ sheet, steps }) =>
   sheet.traits.flatMap((t): StepNotice[] => {
@@ -80,9 +82,11 @@ export const unchosenFree: NoticeSource = ({ sheet, steps }) =>
     return [
       {
         key: `free/${t.category}/${t.name}/${t.detail}`,
-        message: `${t.name}: choose the ${listed(open.map((o) => o.category_name.toLowerCase()))} it gives.`,
+        // Finishing does not wait on it: the choice stays open until a home troupe accepts.
+        message: `${t.name}: choose the ${listed(open.map((o) => o.category_name.toLowerCase()))} it gives. This can wait until a home troupe accepts the character.`,
         on,
         fix: lands[0] ?? on[0]!,
+        canWait: true,
       },
     ];
   });

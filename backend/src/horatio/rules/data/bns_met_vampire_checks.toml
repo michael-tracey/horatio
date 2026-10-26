@@ -617,6 +617,18 @@ forbids = { any_of = [
 message = "Inceptor gives Kineticism or one path, not more."
 page = "Vol. 2 Issue 1, p. 46"
 
+[[checks]]
+category = "merits"
+name = "Inceptor"
+requires = { any_of = [
+  { has = { category = "extra_in_clan_disciplines", name = "Kineticism" } },
+  { count = { category = "extra_in_clan_disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } },
+  { count = { category = "extra_in_clan_disciplines", name_prefix = "Necromancy: ", gte = 1 } },
+] }
+strength = "complete"
+message = "Inceptor: choose Kineticism, or one Thaumaturgy or Necromancy path, as one of your in-clan disciplines."
+page = "Vol. 2 Issue 1, p. 46"
+
 # Kineticism is learned only through Inceptor, so only as an in-clan discipline
 # (Volume 2, p. 72).
 [[checks]]
@@ -657,6 +669,45 @@ category = "extra_in_clan_disciplines"
 forbids = { not = { clan = ["Caitiff"] }, count = { category = "extra_in_clan_disciplines", gte = 2 } }
 message = "A merit adds one in-clan discipline."
 page = "248"
+
+# A merit that adds an in-clan discipline needs it chosen, from its list: a fourth for a
+# Caitiff, one extra for anyone else (pp. 242, 248). Finishing creation waits on it. A
+# merit bought after creation is not held to it: its discipline is chosen after it.
+[[checks]]
+category = "merits"
+name = "Additional Common Discipline"
+requires = { any_of = [
+  { finished = true },
+  { clan = ["Caitiff"], count = { category = "extra_in_clan_disciplines", gte = 4 } },
+  { not = { clan = ["Caitiff"] }, count = { category = "extra_in_clan_disciplines", names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"], gte = 1 } },
+] }
+strength = "complete"
+message = "Additional Common Discipline: choose the in-clan discipline it adds."
+page = "248"
+
+[[checks]]
+category = "merits"
+name = "Additional Uncommon Discipline"
+requires = { any_of = [
+  { finished = true },
+  { clan = ["Caitiff"], count = { category = "extra_in_clan_disciplines", gte = 4 } },
+  { not = { clan = ["Caitiff"] }, count = { category = "extra_in_clan_disciplines", names = ["Protean", "Dementation", "Serpentis", "Quietus"], gte = 1 } },
+] }
+strength = "complete"
+message = "Additional Uncommon Discipline: choose the in-clan discipline it adds."
+page = "248"
+
+[[checks]]
+category = "merits"
+name = "Pliable Blood"
+requires = { any_of = [
+  { finished = true },
+  { clan = ["Caitiff"], count = { category = "extra_in_clan_disciplines", gte = 4 } },
+  { not = { clan = ["Caitiff"] }, count = { category = "extra_in_clan_disciplines", names = ["Auspex", "Celerity", "Dementation", "Dominate", "Fortitude", "Presence", "Protean", "Quietus", "Serpentis"], gte = 1 } },
+] }
+strength = "complete"
+message = "Pliable Blood: choose the in-clan discipline it adds."
+page = "242"
 
 # --- blood magic (pp. 112, 187, 239–240, 252–253) -----------------------------------
 

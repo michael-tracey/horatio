@@ -62,7 +62,7 @@ describe("unchosenFree", () => {
 
   it("asks for a merit's free traits where they land, and on Merits", () => {
     expect(unchosenFree({ creation: creation([]), sheet: sheet([royalty({})]), steps: STEPS })).toEqual([
-      { key: "free/merits/Ventrue Royalty/", message: "Ventrue Royalty: choose the backgrounds it gives.", on: ["backgrounds", "merits"], fix: "backgrounds" },
+      { key: "free/merits/Ventrue Royalty/", message: "Ventrue Royalty: choose the backgrounds it gives. This can wait until a home troupe accepts the character.", on: ["backgrounds", "merits"], fix: "backgrounds", canWait: true },
     ]);
   });
 
@@ -73,7 +73,7 @@ describe("unchosenFree", () => {
 
     const [notice] = unchosenFree({ creation: creation([]), sheet: sheet([chosen]), steps: STEPS });
 
-    expect(notice?.message).toBe("Chosen of Cappadocius: choose the lore specializations and languages it gives.");
+    expect(notice?.message).toBe("Chosen of Cappadocius: choose the lore specializations and languages it gives. This can wait until a home troupe accepts the character.");
     expect(notice?.on).toEqual(["skills", "merits"]);
   });
 

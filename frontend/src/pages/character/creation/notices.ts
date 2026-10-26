@@ -24,6 +24,8 @@ export type StepNotice = {
   fix: string;
   /** The trait it is about, on the fix step, for that step to mark. */
   trait?: { category: string; name: string };
+  /** Finishing does not wait on it (a merit's free traits, chosen until a troupe accepts). */
+  canWait?: boolean;
 };
 
 export type NoticeInput = { creation: CreationOut; sheet: SheetOut; steps: StepRef[] };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CreationOut, PoolOut, SheetOut, SheetTraitOut } from "../../../api/types";
-import { inClanChoice, inClanChoices } from "./inClan";
+import { inClanChoice, inClanChoices, inClanOptions, whenTapped } from "./inClan";
 import { disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
 import { brokenChecks, overBudget, stepNotices, strayPicks, type StepRef } from "./notices";
 
@@ -199,6 +199,90 @@ describe("inClanChoices", () => {
     const traits = [trait("clan", "Caitiff", { rating: null }), trait("extra_in_clan_disciplines", "Auspex")];
 
     expect(inClanChoices({ creation: creation([]), sheet: sheet(traits), steps: STEPS })[0]?.message).toBe("Choose 2 more in-clan disciplines.");
+  });
+});
+
+describe("the in-clan picker", () => {
+  const COMMON = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"];
+  const UNCOMMON = ["Chimerstry", "Dementation", "Obtenebration", "Protean", "Quietus", "Serpentis", "Vicissitude"];
+  const INCEPTOR = ["Kineticism", "Necromancy: Mortis Path", "Thaumaturgy: Path of Blood"];
+  const ALL = [...COMMON, ...UNCOMMON, ...INCEPTOR, "Spiritus"];
+  /** What the server bars whatever is chosen: all but `open`. */
+  const barredBut = (open: string[]) => Object.fromEntries(ALL.filter((n) => !open.includes(n)).map((n) => [n, "Not from its list."]));
+  /** What it refuses as things stand: each one not held, for `why`. */
+  const refusedAll = (held: string[], why: string) => Object.fromEntries(ALL.filter((n) => !held.includes(n)).map((n) => [n, why]));
+  const caitiff = trait("clan", "Caitiff", { rating: null });
+  const chosen = (...names: string[]) => names.map((n) => trait("extra_in_clan_disciplines", n));
+  const three = ["Celerity", "Fortitude", "Obfuscate"];
+
+  it("with Vestiges and three common chosen, shows the uncommon ones, with swaps", () => {
+    const choice = inClanChoice(sheet([caitiff, trait("merits", "Vestiges of Greatness", { rating: 3 }), ...chosen(...three)]));
+    const options = inClanOptions(ALL, choice, barredBut([...COMMON, ...UNCOMMON]));
+
+    expect(options).toEqual(expect.arrayContaining(UNCOMMON));
+    expect(options).not.toContain("Kineticism");
+    expect(`${choice.chosen.length} of ${choice.chooses}`).toBe("3 of 3");
+    const refused = refusedAll(three, "Caitiff choose three in-clan disciplines. (p. 246)");
+    expect(UNCOMMON.map((n) => whenTapped(n, refused))).toEqual(UNCOMMON.map(() => "swap"));
+  });
+
+  it("with Inceptor and three chosen, shows Kineticism and the paths, with swaps", () => {
+    const choice = inClanChoice(sheet([caitiff, trait("merits", "Inceptor", { rating: 3 }), ...chosen(...three)]));
+    const options = inClanOptions(ALL, choice, barredBut([...COMMON, ...INCEPTOR]));
+
+    expect(options).toEqual(expect.arrayContaining(INCEPTOR));
+    expect(options).not.toContain("Protean");
+    expect(choice.lines).toContain("One of them can be Kineticism, or one path of Thaumaturgy or Necromancy (Inceptor).");
+    expect(whenTapped("Kineticism", refusedAll(three, "Caitiff choose three in-clan disciplines. (p. 246)"))).toBe("swap");
+  });
+
+  it.each([
+    ["Additional Common Discipline", COMMON],
+    ["Additional Uncommon Discipline", ["Protean", "Dementation", "Serpentis", "Quietus"]],
+    ["Pliable Blood", ["Auspex", "Celerity", "Dementation", "Dominate", "Fortitude", "Presence", "Protean", "Quietus", "Serpentis"]],
+  ])("with %s, opens one more slot, empty, with only its list", (merit, list) => {
+    const brujah = inClanChoice(sheet([trait("clan", "Brujah", { rating: null }), trait("merits", merit, { rating: 4 })]));
+    expect(`${brujah.chosen.length} of ${brujah.chooses}`).toBe("0 of 1");
+    expect(inClanOptions(ALL, brujah, barredBut(list)).sort()).toEqual([...list].sort());
+    // Chosen straight away: nothing refuses it as things stand.
+    expect(whenTapped(list[0]!, {})).toBe("choose");
+
+    const fourth = inClanChoice(sheet([caitiff, trait("merits", merit, { rating: 4 }), ...chosen(...three)]));
+    expect(`${fourth.chosen.length} of ${fourth.chooses}`).toBe("3 of 4");
+  });
+
+  it("with Bonds of Stolen Vitae, shows the one its detail chose as held", () => {
+    const bonds = trait("extra_in_clan_disciplines", "Protean", { granted_rating: 1, granted_by: ["Bonds of Stolen Vitae"] });
+    const choice = inClanChoice(sheet([trait("clan", "Gargoyles", { rating: null }), trait("merits", "Bonds of Stolen Vitae", { rating: 2, detail: "Protean" }), bonds]));
+
+    expect(choice.given.map((t) => t.name)).toEqual(["Protean"]);
+    expect(inClanOptions(ALL, choice, barredBut([]))).toEqual(["Protean"]);
+  });
+
+  it("with one uncommon chosen under Vestiges, offers a swap for the others, which the server refuses but in its place", () => {
+    const held = ["Celerity", "Fortitude", "Protean"];
+    const choice = inClanChoice(sheet([caitiff, trait("merits", "Vestiges of Greatness", { rating: 3 }), ...chosen(...held)]));
+    const refused = refusedAll(held, "Vestiges of Greatness gives one in-clan discipline from the uncommon list, not more. (p. 246)");
+
+    expect(inClanOptions(ALL, choice, barredBut([...COMMON, ...UNCOMMON]))).toContain("Dementation");
+    expect(whenTapped("Dementation", refused)).toBe("swap");
+  });
+});
+
+describe("inClanChoices, with the merit's own check", () => {
+  it("leaves the notice to the check, which has the page", () => {
+    const traits = [trait("clan", "Brujah", { rating: null }), trait("merits", "Additional Uncommon Discipline", { rating: 5 })];
+    const check = {
+      category: "merits",
+      name: "Additional Uncommon Discipline",
+      strength: "complete",
+      message: "Additional Uncommon Discipline: choose the in-clan discipline it adds. (p. 248)",
+      looks_at: [{ category: "extra_in_clan_disciplines", name: null }],
+    };
+    const input = { creation: creation([]), sheet: sheet(traits, [check]), steps: STEPS };
+
+    expect(inClanChoices(input)).toEqual([]);
+    expect(stepNotices(input, [inClanChoices, brokenChecks]).map((n) => [n.message, n.on, n.fix])).toEqual([[check.message, ["concept", "merits"], "concept"]]);
   });
 });
 
