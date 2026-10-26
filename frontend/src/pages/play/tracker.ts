@@ -111,7 +111,7 @@ export function retainerTracker(view: PlayView, tracker: string) {
 /** What a tracker is called, as the log names it. */
 export function trackerName(view: PlayView, tracker: string): string {
   const names: Record<string, string> = {
-    blood: "Blood",
+    blood: view.blood_name,
     willpower: "Willpower",
     health: "Health",
     morality: view.morality?.name ?? "Morality",

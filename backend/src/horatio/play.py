@@ -25,6 +25,11 @@ marked in them, as Vol. 2 has it for levels that are lost (p. 55); damage in the
 sheet's own levels stays, since injuries carry between forms (core p. 114). Blood
 over the usual most goes when Blood of Potency ends (core p. 188). Each game
 starts with everything off.
+
+A Stock NPC (issue #215) has only two trackers, from its stat block
+(horatio.rules.stock): its kind's resource in Blood's place (Rage for a werewolf)
+and its health levels, as one track. It has no Willpower, Morality or Beast
+traits (MET: VTM p. 490), so taps on those change nothing.
 """
 
 import uuid
@@ -37,7 +42,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, aliased
 
-from horatio import audit, influence_effects, play_influence, reference, retainers, sheets
+from horatio import audit, influence_effects, npcs, play_influence, reference, retainers, sheets
 from horatio.models import (
     Character,
     PlayCounter,
@@ -67,6 +72,10 @@ RETAINER = "retainer:"
 HEALTH_LEVELS = ("Healthy", "Injured", "Incapacitated")
 TRACKERS = ("blood", "willpower", "health", "morality", "beast", "derangements")
 DAMAGE = ("normal", "aggravated")
+# A Stock NPC's trackers: its kind's resource, kept as "blood", and its health
+# levels, one track of them (MET: VTM p. 490).
+STOCK_TRACKERS = frozenset({"blood", "health"})
+STOCK_HEALTH = "Health levels"
 # A device whose clock runs ahead cannot put a tap in the future.
 CLOCK_SLACK = timedelta(minutes=1)
 
@@ -154,6 +163,10 @@ class Limits:
     switches: tuple[reference.Switch, ...] = ()
     # Each Retainer's health and Blood.
     retainers: tuple[RetainerTrack, ...] = ()
+    # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
+    blood_name: str = "Blood"
+    # The fixed trackers the character has; a Stock NPC has no Willpower and so on.
+    trackers: frozenset[str] = frozenset(TRACKERS)
 
     def retainer_trackers(self) -> dict[str, int]:
         return {k: most for r in self.retainers for k, most in r.trackers().items()}
@@ -200,7 +213,7 @@ class Limits:
             "derangements": DERANGEMENT_TRAITS,
         }
         if tracker in fixed:
-            return fixed[tracker]
+            return fixed[tracker] if tracker in self.trackers else None
         if tracker.startswith(TEMPORARY):
             return 1 if any(t.key == tracker for t in self.temporary) else None
         if tracker.startswith(RETAINER):
@@ -226,7 +239,7 @@ class Limits:
 
     def name(self, tracker: str) -> str:
         names = {
-            "blood": "Blood",
+            "blood": self.blood_name,
             "willpower": "Willpower",
             "health": "Health",
             "morality": self.morality_name or "Morality",
@@ -373,6 +386,8 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     """The sheet's limits for `game` (or a game not yet started). Influence is one
     pool a month, shared with downtimes (MET: VtM core, p. 510), so its counters
     start lower by what earlier games spent that no cycle has taken off yet."""
+    if character.npc_form == "stock":
+        return stock_limits(db, character)
     rows = sheets.sheet_rows(db, character)
     rule_set = sheets.rules_for(db, character).rule_set
     ratings: dict[tuple[str, str], int] = {}
@@ -463,6 +478,26 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
             )
             for r in retainers.read(db, character)
         ),
+    )
+
+
+def stock_limits(db: Session, character: Character) -> Limits:
+    """A Stock NPC's trackers, from its stat block (MET: VTM p. 490): its kind's
+    resource, full at each game and spent as the kind says, and its health levels
+    (twice its rating for a werewolf or a Blood Brother)."""
+    _, block = npcs.stat_block(db, character)
+    resource = block.resource
+    return Limits(
+        generation=0,
+        blood=resource.size,
+        blood_per_turn=resource.per_turn,
+        starting_blood=resource.size,
+        willpower=0,
+        health=((STOCK_HEALTH, block.health),),
+        morality=0,
+        morality_name=None,
+        blood_name=resource.name,
+        trackers=STOCK_TRACKERS,
     )
 
 

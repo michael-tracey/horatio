@@ -23,6 +23,7 @@ from horatio import (
 )
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceStandingOut, standing_out
+from horatio.api.npcs import StockNpcOut, stock_out
 from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
 from horatio.api.roster import roster
 from horatio.auth.deps import CurrentUser, DbSession
@@ -213,10 +214,17 @@ class PlayView(BaseModel):
     character_name: str
     player_name: str
     kind: str
+    # An NPC's form: "sheeted", or "stock" for a Stock NPC, whose Play View is its
+    # own, simpler one (issue #215). None for a PC.
+    npc_form: Literal["sheeted", "stock"] | None = None
+    # A Stock NPC's stat block, with its kind's rules; None for anyone else.
+    stock: StockNpcOut | None = None
     clan: str | None
     sect: str | None
     generation: int
     blood_per_turn: int
+    # What `blood` is: Blood, or a Stock NPC's kind's resource, such as Rage.
+    blood_name: str = "Blood"
     # The Herd background's rating: feeding at a game takes 5 minutes for that
     # much blood, rather than 15 for 2 (MET: VtM core, p. 102).
     herd: int = 0
@@ -517,10 +525,13 @@ def play_view(db: Session, character: Character) -> PlayView:
             db.get_one(User, character.player_id).display_name if character.kind == "pc" else "NPC"
         ),
         kind=character.kind,
+        npc_form=character.npc_form,  # type: ignore[arg-type]  # checked by the database
+        stock=stock_out(db, character) if character.npc_form == "stock" else None,
         clan=one("clan"),
         sect=one("sect"),
         generation=limits.generation,
         blood_per_turn=limits.blood_per_turn,
+        blood_name=limits.blood_name,
         herd=max(
             (
                 r.trait.rating or 0

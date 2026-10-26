@@ -243,7 +243,7 @@ function Builder({
 }
 
 /** The block the book prints (pp. 490–505), as the server works it out. */
-function StatBlock({ stock }: { stock: StockNpc }) {
+export function StatBlock({ stock }: { stock: StockNpc }) {
   const s = stock.stats;
   return (
     <Card title="Stat block">
@@ -275,7 +275,7 @@ function StatBlock({ stock }: { stock: StockNpc }) {
 }
 
 /** The kind's rules, short, with where the book has them. */
-function RulesCard({ kind }: { kind: NpcKind }) {
+export function RulesCard({ kind }: { kind: NpcKind }) {
   return (
     <Card title={`${kind.name} rules card`}>
       <p className="mb-2 text-xs text-mist">{kindPages(kind)} · Stock NPCs, pp. 489–490</p>

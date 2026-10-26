@@ -96,7 +96,7 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
               <li key={n.id} aria-label={n.name} className="flex flex-wrap items-center gap-3 py-2">
                 <input type="checkbox" aria-label={`Select ${n.name}`} checked={selected.has(n.id)} onChange={() => toggle(n.id)} />
                 {n.npc_form === "stock" ? (
-                  // Its builder; the Stock Play View comes later (issue #215).
+                  // Its builder, in place of a sheet (issue #215).
                   <Link to={`/troupes/${troupeId}/npcs/${n.id}`} className="flex min-w-0 flex-1 items-center gap-3 hover:text-gold">
                     <Avatar name={n.name} picture={n.picture} clan={n.clan} />
                     <span className="truncate">{n.name}</span>
@@ -112,15 +112,13 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
                   <Badge>{FORM_NAMES[(n.npc_form ?? "sheeted") as NpcForm]}</Badge>
                   {n.stock_rating != null && <Badge>Rating {n.stock_rating}</Badge>}
                 </span>
-                {n.npc_form !== "stock" && (
-                  <Link
-                    to={`/play/characters/${n.id}`}
-                    aria-label={`Play ${n.name}`}
-                    className="inline-flex min-h-9 items-center rounded-md bg-blood px-3 text-sm font-medium text-parchment hover:bg-blood-bright"
-                  >
-                    Play
-                  </Link>
-                )}
+                <Link
+                  to={`/play/characters/${n.id}`}
+                  aria-label={`Play ${n.name}`}
+                  className="inline-flex min-h-9 items-center rounded-md bg-blood px-3 text-sm font-medium text-parchment hover:bg-blood-bright"
+                >
+                  Play
+                </Link>
               </li>
             ))}
           </ul>

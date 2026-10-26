@@ -70,8 +70,8 @@ class SceneSummary(BaseModel):
 
 
 class StockPin(BaseModel):
-    """A Stock NPC in the scene. It has no Play View yet, so its card is its name
-    and NPC rating (issue #215)."""
+    """A Stock NPC in the scene, whose card is the Stock one (issue #215): its
+    trackers come from its Play View, as anyone's do."""
 
     character_id: uuid.UUID
     name: str

@@ -1173,8 +1173,8 @@ test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the li
   await expect(wolf.getByText("Werewolf")).toBeVisible();
   await expect(wolf.getByText("Stock", { exact: true })).toBeVisible();
   await expect(wolf.getByText("Rating 3")).toBeVisible();
-  // A Stock NPC has no sheet yet to play from.
-  await expect(p.getByRole("link", { name: "Play Bites-the-Hand" })).toHaveCount(0);
+  // A Stock NPC plays from a Play View of its own.
+  await expect(p.getByRole("link", { name: "Play Bites-the-Hand" })).toBeVisible();
 
   // A sheeted mage goes to its quick build, on the Vampire sheet.
   await p.getByLabel("Name").fill("Sarah Juniper");
@@ -1218,7 +1218,7 @@ test("storytellers build a Stock NPC from the NPCs tab and see the book's stat b
   await p.getByRole("radio", { name: "Stock" }).click();
   await p.getByLabel("Rating").fill("3");
   await p.getByRole("button", { name: "Make Stock NPC" }).click();
-  await p.getByRole("listitem", { name: "Gnashes-the-Moon" }).getByRole("link", { name: "Gnashes-the-Moon" }).click();
+  await p.getByRole("listitem", { name: "Gnashes-the-Moon" }).getByRole("link", { name: "Gnashes-the-Moon", exact: true }).click();
   await expect(p.getByRole("heading", { name: "Gnashes-the-Moon" })).toBeVisible();
 
   const add = async (choice: string) => {
@@ -4153,12 +4153,12 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
     await expect(p.getByRole("article", { name: npc })).toBeVisible();
   }
   await expect(p.getByRole("article")).toHaveCount(1);
-  // A Stock NPC has no Play View yet: its card is its name and rating.
+  // A Stock NPC's card is the Stock one: its kind, rating and Blood.
   await p.goto(scenes["Elysium, ballroom"]!);
   await search(p).fill("Grimsby");
   await p.getByRole("option", { name: /Grimsby/ }).click();
-  await expect(p.getByRole("article", { name: "Grimsby" })).toContainText("Stock NPC · rating 2");
-  await expect(p.getByRole("article", { name: "Grimsby" })).toContainText("its Play card comes in a later PR");
+  await expect(p.getByRole("article", { name: "Grimsby" })).toContainText("Stock NPC · Vampire · rating 2");
+  await expect(p.getByRole("article", { name: "Grimsby" }).getByLabel("Blood: 10 of 10")).toBeVisible();
   await p.goto(scenes["Warehouse ambush"]!);
 
   // The second storyteller has none of their own, and sees all three under All, with who made them.
@@ -4220,6 +4220,80 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   expect(log.map((e) => e.message)).toEqual(
     expect.arrayContaining(["named-lead removed the scene Warehouse ambush.", "named-lead renamed the scene Elysium, ballroom to Elysium, gallery."]),
   );
+});
+
+test("a Stock werewolf in a scene: Rage and health tapped on its card and undone, and its Stock Play View from Full view", async ({ browser }) => {
+  const custodian = await person(browser, "stockplay-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "stockplay-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Howls ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const p = lead.page;
+  const wolf = await p.request.post(`/api/troupes/${troupeId}/npcs`, {
+    headers,
+    data: { name: "Snarls-at-Dusk", npc_kind: "werewolf", npc_form: "stock", stock: { rating: 3, specializations: [{ type: "skill", name: "Brawl" }] } },
+  });
+  expect(wolf.status(), await wolf.text()).toBe(201);
+
+  // A named scene with the werewolf pinned: its card has the stat block at a glance, Rage in Blood's place, and twice its rating in health.
+  await p.goto(`/play/troupes/${troupeId}/scenes`);
+  await p.getByLabel("Name of a new scene").fill("Pit fight");
+  await p.getByRole("button", { name: "New scene" }).click();
+  await expect(p.getByRole("heading", { name: "Pit fight", exact: true })).toBeVisible();
+  const scene = new URL(p.url()).pathname;
+  await p.getByRole("combobox", { name: "Add to the scene" }).fill("Snarls");
+  await p.getByRole("option", { name: /Snarls-at-Dusk/ }).click();
+  const card = p.getByRole("article", { name: "Snarls-at-Dusk" });
+  await expect(card).toContainText("Stock NPC · Werewolf · rating 3");
+  await expect(card).toContainText("Test pool 6 in most challenges");
+  await expect(card).toContainText("Brawl 11");
+  await expect(card.getByLabel("Rage: 10 of 10")).toBeVisible();
+  await expect(card.getByLabel("Health: 0 of 6 marked")).toBeVisible();
+
+  // Rage spent and a wound marked, then the wound undone; the log has them all.
+  await card.getByRole("button", { name: "Spend Rage", exact: true }).click();
+  await card.getByRole("button", { name: "Spend Rage", exact: true }).click();
+  await expect(card.getByLabel("Rage: 8 of 10")).toBeVisible();
+  await card.getByRole("button", { name: "+ Aggravated" }).click();
+  await expect(card.getByLabel("Health: 1 of 6 marked")).toBeVisible();
+  await expect(card.getByRole("status")).toHaveText("Saved");
+  await card.getByRole("button", { name: /^Undo Health/ }).click();
+  await expect(card.getByLabel("Health: 0 of 6 marked")).toBeVisible();
+  await card.getByRole("button", { name: "+ Normal" }).click();
+  await expect(card.getByLabel("Health: 1 of 6 marked")).toBeVisible();
+  await expect(card.getByRole("status")).toHaveText("Saved");
+  await card.getByRole("button", { name: /^Log/ }).click();
+  await expect(card).toContainText("Undid: Health: took 1 aggravated");
+  await expect(card).toContainText("Rage 9 → 8");
+  await p.screenshot(shots("stock-scene-card"));
+
+  // Full view is the Stock Play View: the same Rage and health, the stat block and the werewolf's rules card, and no Willpower.
+  await card.getByRole("link", { name: "Open the full Play View of Snarls-at-Dusk" }).click();
+  await expect(p.getByRole("heading", { name: "Snarls-at-Dusk" })).toBeVisible();
+  await expect(p.getByText("Stock NPC · Werewolf · rating 3")).toBeVisible();
+  await expect(p.getByLabel("Rage: 8 of 10")).toBeVisible();
+  await expect(p.getByLabel("normal damage")).toHaveCount(1);
+  await expect(p.getByLabel("unmarked")).toHaveCount(5);
+  const block = p.getByRole("list", { name: "Stat block" });
+  await expect(block.getByText("Test pool 6 in most challenges")).toBeVisible();
+  await expect(block.getByText("Brawl 11")).toBeVisible();
+  await expect(block.getByText("Rage 10, up to 3 a turn, regains 1 every five turns")).toBeVisible();
+  await expect(block.getByText("No Willpower: no retests unless it overbids")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Werewolf rules card" })).toBeVisible();
+  await expect(p.getByRole("tab", { name: "Tracker" })).toHaveCount(0);
+  await expect(p.getByLabel(/^Willpower/)).toHaveCount(0);
+  // Spent here, it is spent on the card too.
+  await p.getByRole("button", { name: "Spend Rage", exact: true }).last().click();
+  await expect(p.getByLabel("Rage: 7 of 10")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await expect(p.getByText("Rage 8 → 7")).toBeVisible();
+  await p.screenshot(shots("stock-play"));
+
+  await p.getByRole("link", { name: "← Back to the scene" }).click();
+  await expect(p).toHaveURL(new RegExp(`${scene}$`));
+  await expect(p.getByRole("article", { name: "Snarls-at-Dusk" }).getByLabel("Rage: 7 of 10")).toBeVisible();
 });
 
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {

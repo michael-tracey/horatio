@@ -18,6 +18,7 @@ import { useModifiers } from "./useModifiers";
 import { usePlay } from "./usePlay";
 import { useReference } from "./useReference";
 import { useWakeLock } from "./wakeLock";
+import { expandPower } from "../troupe/stockNpcs";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -50,7 +51,7 @@ export function ScenePage() {
       const where = { params: { path: { troupe_id: troupeId, scene_id: sceneId, character_id: id } } };
       return unwrap(on ? api.PUT("/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}", where) : api.DELETE("/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}", where));
     },
-    // A pin waits for the server, which says whether it is a Stock NPC (no Play View to load yet).
+    // A pin waits for the server, which says whether it is a Stock NPC, whose card is its own.
     onMutate: async ({ id, on }) => {
       if (on) return;
       await client.cancelQueries({ queryKey: sceneKey });
@@ -75,6 +76,8 @@ export function ScenePage() {
   const pinned = scene.data?.characters ?? [];
   const stock = new Map((scene.data?.stock ?? []).map((s) => [s.character_id, s]));
   const list = `/play/troupes/${troupeId}/scenes`;
+  // Full view comes back here.
+  const back = `?troupe=${troupeId}&scene=${sceneId}`;
 
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
@@ -137,7 +140,7 @@ export function ScenePage() {
                   const stocked = stock.get(id);
                   return (
                     <li key={id} className="min-w-0">
-                      {stocked ? <StockCard pin={stocked} onRemove={remove} /> : <SceneCard characterId={id} back={`?troupe=${troupeId}&scene=${sceneId}`} onRemove={remove} />}
+                      {stocked ? <StockCard pin={stocked} back={back} onRemove={remove} /> : <SceneCard characterId={id} back={back} onRemove={remove} />}
                     </li>
                   );
                 })}
@@ -349,16 +352,81 @@ function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; w
   );
 }
 
-/** A Stock NPC in the scene: its name and NPC rating, until it has a Play card of its own (issue #215). */
-function StockCard({ pin, onRemove }: { pin: SceneOut["stock"][number]; onRemove: () => void }) {
-  return (
-    <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={pin.name}>
-      <header>
+/**
+ * A Stock NPC in the scene (issue #215): its name, kind and rating, its test pool
+ * and specializations at a glance, and its kind's resource and health levels to
+ * tap. It has the same `usePlay` as its full Play View, the Stock one, so its taps,
+ * Undo and log are everyone's.
+ */
+function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; back: string; onRemove: () => void }) {
+  const characterId = pin.character_id;
+  const { view, shown, tap, sync, accept } = usePlay(characterId);
+  const [open, setOpen] = useState(() => loadOpen(characterId));
+  useEffect(() => saveOpen(characterId, open), [characterId, open]);
+  const toggle = (next: Section) => setOpen((now) => toggleOpen(now, next));
+  const stock = shown?.stock;
+
+  if (!shown || !stock) {
+    return (
+      <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={pin.name}>
         <h2 className="truncate text-lg leading-tight text-gold">{pin.name}</h2>
-        <p className="text-xs text-mist">Stock NPC · rating {pin.rating}</p>
+        {view.isPending ? <p className="text-mist">Loading…</p> : <ErrorText error={view.error} />}
+        <Button variant="secondary" className="self-start" onClick={onRemove}>
+          Remove from the scene
+        </Button>
+      </article>
+    );
+  }
+  const change = (tracker: string, amount: number, damage?: Damage) => tap({ kind: "change", tracker, amount, damage: damage ?? null });
+  const last = latestUndoable(shown.log);
+  const name = shown.character_name;
+  const stats = stock.stats;
+  const specializations = [...stats.skill_pools.map((p) => `${p.name} ${p.pool}`), ...stats.powers.map((p) => expandPower(p.name, p.dots))];
+  return (
+    <article className="flex flex-col gap-3 rounded-lg border border-ash bg-dusk p-3" aria-label={name}>
+      <header className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="truncate text-lg leading-tight text-gold">{name}</h2>
+          <p className="text-xs text-mist">
+            Stock NPC · {stock.kind.name} · rating {stock.rating}
+          </p>
+        </div>
+        <SyncStatus sync={sync} />
       </header>
-      <p className="text-sm text-mist">Stock NPC: its Play card comes in a later PR.</p>
-      <button type="button" className="self-start text-xs text-mist underline hover:text-parchment" onClick={onRemove} aria-label={`Remove ${pin.name} from the scene`}>
+      <Counter title={shown.blood_name} value={shown.blood.value} most={shown.blood.most} fill="border-blood bg-blood" onChange={(n) => change("blood", n)} />
+      <HealthRow view={shown} damage={(kind, amount) => change("health", amount, kind)} />
+      <div className="flex flex-col gap-0.5 text-sm">
+        <p>
+          <span className="text-gold">Test pool </span>
+          {stats.pool} in most challenges
+        </p>
+        <p>
+          <span className="text-gold">Specializations </span>
+          {specializations.length > 0 ? specializations.join(" · ") : <span className="text-mist">none</span>}
+        </p>
+        <p className="text-xs text-mist">No Willpower: no retests unless it overbids</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5 border-t border-ash pt-2">
+        <Button variant="secondary" className="min-h-10 px-3" disabled={!last} aria-label={last ? `Undo ${last.text}` : "Undo"} onClick={() => last && tap({ kind: "undo", undoes: last.id })}>
+          Undo
+        </Button>
+        {SECTIONS.filter(([section]) => section === "log" || section === "reset").map(([section, label]) => (
+          <Button key={section} variant="ghost" className="min-h-10 px-3" aria-expanded={open.includes(section)} onClick={() => toggle(section)}>
+            {label} {open.includes(section) ? "▴" : "▾"}
+          </Button>
+        ))}
+        <Link to={`/play/characters/${characterId}${back}`} className="ml-auto inline-flex min-h-10 items-center text-sm text-mist underline hover:text-parchment" aria-label={`Open the full Play View of ${name}`}>
+          Full view
+        </Link>
+      </div>
+      {open.includes("log") && (
+        <div className="max-h-56 overflow-y-auto">
+          <LogEntries log={shown.log} />
+        </div>
+      )}
+      {open.includes("reset") && <ResetGame view={shown} sync={sync} onReset={accept} />}
+      <ErrorText error={view.error} />
+      <button type="button" className="self-start text-xs text-mist underline hover:text-parchment" onClick={onRemove} aria-label={`Remove ${name} from the scene`}>
         Remove from the scene
       </button>
     </article>
