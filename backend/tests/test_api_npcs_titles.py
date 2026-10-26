@@ -293,3 +293,23 @@ def test_title_and_antecedence_are_not_player_choices_any_more(troupe: Troupe) -
     catalogue = troupe.player.client.get("/rules/vampire").json()
 
     assert not {"title", "antecedence"} & {c["key"] for c in catalogue["categories"]}
+
+
+def test_staff_ask_what_an_npc_cannot_take_and_others_may_not(troupe: Troupe) -> None:
+    npc = make_npc(troupe)
+    rate(troupe.storyteller, npc["id"], "disciplines", "Auspex", 1)
+
+    asked = troupe.assistant.client.get(
+        f"/characters/{npc['id']}/unavailable", params={"category": "techniques"}
+    )
+
+    assert asked.status_code == 200, asked.text
+    assert asked.json()["An Da Shealladh"].startswith(
+        "An Da Shealladh needs Dementation 3 and Auspex 2."
+    )
+    assert (
+        troupe.player.client.get(
+            f"/characters/{npc['id']}/unavailable", params={"category": "techniques"}
+        ).status_code
+        == 404
+    )

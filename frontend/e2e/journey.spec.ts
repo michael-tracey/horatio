@@ -874,8 +874,8 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("button", { name: "Quick build" }).click();
   await expect(p.getByRole("heading", { name: "Prince Vasquez" })).toBeVisible();
 
-  await p.getByLabel("Clan").selectOption("Ventrue");
-  await expect(p.getByLabel("Clan")).toHaveValue("Ventrue");
+  await p.getByLabel("Clan", { exact: true }).selectOption("Ventrue");
+  await expect(p.getByLabel("Clan", { exact: true })).toHaveValue("Ventrue");
   await p.getByRole("button", { name: "Social 7", exact: true }).click(); // attributes: 3 a dot
   await expect(p.getByText("21 XP")).toBeVisible();
   // Each attribute's focus is chosen beside it, one of three; choosing again swaps it.
@@ -944,6 +944,80 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("link", { name: "Play Sheriff Ilse" }).click();
   await expect(p.getByRole("heading", { name: "Sheriff Ilse" })).toBeVisible();
   await expect(p.getByRole("tab", { name: "Tracker" })).toBeVisible();
+});
+
+test("storytellers give an NPC powers, and one out of order is marked until it is in order", async ({ browser }) => {
+  const custodian = await person(browser, "powers-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "powers-lead");
+  const troupeName = `Court of Embers ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  const created = custodian.page.waitForResponse((r) => r.url().endsWith("/api/troupes") && r.request().method() === "POST");
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  const troupeId = (await (await created).json()).id as string;
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  const p = lead.page;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Matriarch Odile", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  for (const [category, name, rating] of [
+    ["clan", "Toreador", null],
+    ["backgrounds", "Generation", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+
+  // Each tap saves and works the marks out again, which takes a while under load.
+  const slowly = expect.configure({ timeout: 20_000 });
+  await p.goto(`/characters/${npc}`);
+  await slowly(p.getByRole("heading", { name: "Techniques", exact: true })).toBeVisible();
+
+  // A technique is found by search and added at once; its disciplines are missing, so it is marked.
+  await p.getByLabel("Search Techniques").fill("Da Shealladh");
+  await p.getByRole("checkbox", { name: "An Da Shealladh" }).click();
+  await slowly(p.getByRole("checkbox", { name: "An Da Shealladh" })).toBeChecked();
+  await p.getByLabel("Search Techniques").fill("");
+  await slowly(p.getByRole("checkbox", { name: "An Da Shealladh" })).toBeChecked();
+  await slowly(p.getByText("Marked: An Da Shealladh needs Dementation 3 and Auspex 2.")).toBeVisible();
+
+  // Adding the disciplines clears the mark.
+  await p.getByLabel("Search Disciplines").fill("Dementation");
+  await p.getByRole("button", { name: "Dementation 3", exact: true }).click();
+  await slowly(p.getByRole("button", { name: "Dementation 3", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Search Disciplines").fill("Auspex");
+  await p.getByRole("button", { name: "Auspex 2", exact: true }).click();
+  await slowly(p.getByRole("button", { name: "Auspex 2", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await slowly(p.getByText("Marked: An Da Shealladh")).toHaveCount(0);
+  await slowly(p.getByRole("checkbox", { name: "An Da Shealladh" })).toBeChecked();
+
+  // An elder power, a ritual (shown with its level) and an extra in-clan discipline.
+  await p.getByLabel("Search Elder & luminary powers").fill("Crimson Fury");
+  await p.getByRole("checkbox", { name: "Animalism: Crimson Fury" }).click();
+  await slowly(p.getByRole("checkbox", { name: "Animalism: Crimson Fury" })).toBeChecked();
+  await slowly(p.getByText("Marked: A Neonate's or Ancilla's blood is too thin for elder powers.")).toBeVisible();
+
+  await p.getByLabel("Search Rituals").fill("Abyssal Ichor");
+  await p.getByRole("checkbox", { name: "Abyssal: Abyssal Ichor" }).click();
+  await slowly(p.getByRole("checkbox", { name: "Abyssal: Abyssal Ichor" })).toBeChecked();
+
+  await p.getByLabel("Search Extra in-clan disciplines").fill("Fortitude");
+  await p.getByRole("checkbox", { name: "Fortitude", exact: true }).click();
+  await slowly(p.getByRole("checkbox", { name: "Fortitude", exact: true })).toBeChecked();
+
+  // They are on the sheet, and stay after a reload; one tap takes a power off.
+  await p.reload();
+  for (const name of ["An Da Shealladh", "Animalism: Crimson Fury", "Abyssal: Abyssal Ichor", "Fortitude"]) {
+    await slowly(p.getByRole("checkbox", { name, exact: true })).toBeChecked();
+  }
+  await p.getByRole("checkbox", { name: "An Da Shealladh" }).click();
+  await slowly(p.getByRole("checkbox", { name: "An Da Shealladh" })).toHaveCount(0);
 });
 
 test("storytellers log influence for PCs, NPCs and names only, and a player reads their character's", async ({ browser }) => {
