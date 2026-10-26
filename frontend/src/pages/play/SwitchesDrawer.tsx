@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { PoolModifier, PowerSwitch, TestPool } from "../../api/types";
+import { Button } from "../../components/ui";
 import { ModifiersPanel } from "./Modifiers";
 import { PowersList } from "./Powers";
 import type { makeTap } from "./tracker";
@@ -30,6 +31,7 @@ export function SwitchesDrawer({
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const summary = useId();
   const button = useRef<HTMLButtonElement>(null);
   const sheet = useRef<HTMLDivElement>(null);
   const close = () => {
@@ -62,17 +64,23 @@ export function SwitchesDrawer({
   return (
     <>
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gold/50 bg-dusk/95 px-4 py-2 backdrop-blur">
-        <button
-          ref={button}
-          type="button"
-          className="mx-auto flex min-h-12 w-full max-w-3xl items-center justify-between gap-3 text-left"
-          aria-expanded={open}
-          aria-controls={id}
-          onClick={() => (open ? close() : setOpen(true))}
-        >
-          <span className="min-w-0 truncate text-sm text-parchment">{inUse(powers, modifiers.modifiers)}</span>
-          <span className="shrink-0 text-xs text-gold">{open ? "Close" : "Forms, powers and modifiers"}</span>
-        </button>
+        <div className="mx-auto flex min-h-12 w-full max-w-3xl items-center justify-between gap-3">
+          <span id={summary} className="min-w-0 truncate text-sm text-parchment">
+            {inUse(powers, modifiers.modifiers)}
+          </span>
+          <Button
+            ref={button}
+            type="button"
+            variant="secondary"
+            className="shrink-0 border-gold/60 text-gold"
+            aria-expanded={open}
+            aria-controls={id}
+            aria-describedby={summary}
+            onClick={() => (open ? close() : setOpen(true))}
+          >
+            Forms, powers and modifiers
+          </Button>
+        </div>
       </div>
       {open && (
         <div
@@ -86,9 +94,9 @@ export function SwitchesDrawer({
           <div className="mx-auto flex max-w-3xl flex-col gap-3">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className="font-display text-gold">Forms and powers in use</h2>
-              <button type="button" className="min-h-10 px-2 text-sm text-mist underline hover:text-parchment" onClick={close}>
+              <Button type="button" variant="secondary" onClick={close}>
                 Close
-              </button>
+              </Button>
             </div>
             <PowersList powers={powers} tap={tap} />
             <ModifiersPanel pools={pools} modifiers={modifiers} />

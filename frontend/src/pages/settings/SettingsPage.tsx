@@ -202,7 +202,7 @@ export function SettingsPage() {
       </Card>
 
       <Card title="At game">
-        <Setting label="Quick notes" hint="The Play View asks what each spend was for.">
+        <Setting label="Quick notes" hint="The Play View asks what each use was for, except Blood, Willpower and healing.">
           <Toggle name="quick_notes" label="Quick notes" />
         </Setting>
         <Setting
