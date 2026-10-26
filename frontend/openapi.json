@@ -7451,6 +7451,13 @@
             "title": "Pools",
             "type": "array"
           },
+          "retainers": {
+            "items": {
+              "$ref": "#/components/schemas/RetainerOut"
+            },
+            "title": "Retainers",
+            "type": "array"
+          },
           "traits": {
             "items": {
               "$ref": "#/components/schemas/PlayTrait"
@@ -7465,7 +7472,8 @@
           "other_powers",
           "notes",
           "blood_per_turn",
-          "traits"
+          "traits",
+          "retainers"
         ],
         "title": "PlayReference",
         "type": "object"
@@ -8242,6 +8250,13 @@
             "title": "Player Name",
             "type": "string"
           },
+          "retainers": {
+            "items": {
+              "$ref": "#/components/schemas/RetainerOut"
+            },
+            "title": "Retainers",
+            "type": "array"
+          },
           "splat": {
             "title": "Splat",
             "type": "string"
@@ -8295,7 +8310,8 @@
           "home",
           "accepted_at",
           "accepted_by",
-          "traits"
+          "traits",
+          "retainers"
         ],
         "title": "PrintedSheet",
         "type": "object"
@@ -9383,6 +9399,223 @@
           "message"
         ],
         "title": "ResultOut",
+        "type": "object"
+      },
+      "RetainerIn": {
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Description",
+            "type": "string"
+          },
+          "dots": {
+            "title": "Dots",
+            "type": "integer"
+          },
+          "from_merit": {
+            "default": "",
+            "maxLength": 100,
+            "title": "From Merit",
+            "type": "string"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "lost": {
+            "anyOf": [
+              {
+                "pattern": "^(released|killed)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lost"
+          },
+          "lost_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lost On"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "npc_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Id"
+          }
+        },
+        "required": [
+          "name",
+          "dots"
+        ],
+        "title": "RetainerIn",
+        "type": "object"
+      },
+      "RetainerOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "dots": {
+            "title": "Dots",
+            "type": "integer"
+          },
+          "from_merit": {
+            "title": "From Merit",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lost": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lost"
+          },
+          "lost_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lost On"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "npc_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Id"
+          },
+          "npc_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Name"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "dots",
+          "description",
+          "from_merit",
+          "lost",
+          "lost_on",
+          "npc_id",
+          "npc_name"
+        ],
+        "title": "RetainerOut",
+        "type": "object"
+      },
+      "RetainersIn": {
+        "properties": {
+          "retainers": {
+            "items": {
+              "$ref": "#/components/schemas/RetainerIn"
+            },
+            "maxItems": 30,
+            "title": "Retainers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "retainers"
+        ],
+        "title": "RetainersIn",
+        "type": "object"
+      },
+      "RetainersOut": {
+        "properties": {
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_link": {
+            "title": "Can Link",
+            "type": "boolean"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "retainers": {
+            "items": {
+              "$ref": "#/components/schemas/RetainerOut"
+            },
+            "title": "Retainers",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating",
+          "total",
+          "retainers",
+          "can_edit",
+          "can_link"
+        ],
+        "title": "RetainersOut",
         "type": "object"
       },
       "Role": {
@@ -16057,6 +16290,101 @@
         "summary": "Quote",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/retainers": {
+      "get": {
+        "operationId": "read_retainers_api_characters__character_id__retainers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetainersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Retainers",
+        "tags": [
+          "retainers"
+        ]
+      },
+      "put": {
+        "description": "Replace the list. The player edits names, descriptions, dots and losses;\nstaff do the same and alone link an NPC.",
+        "operationId": "save_retainers_api_characters__character_id__retainers_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetainersIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetainersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Retainers",
+        "tags": [
+          "retainers"
         ]
       }
     },

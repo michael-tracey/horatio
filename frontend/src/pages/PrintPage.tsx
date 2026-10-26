@@ -179,10 +179,13 @@ function TraitList({
   traits,
   empty = 3,
   specialties = () => [],
+  retainers = [],
 }: {
   traits: Trait[];
   empty?: number;
   specialties?: (t: Trait) => string[];
+  /** Listed under the Retainers background, if it is in `traits`. */
+  retainers?: PrintedSheet["retainers"];
 }) {
   const blanks = Math.max(0, empty - traits.length);
   return (
@@ -201,6 +204,18 @@ function TraitList({
               {t.rating !== null && t.specializes === null && <Dots value={t.rating} />}
             </div>
             {brackets && !inline && <p className="pb-0.5 pl-3 text-[9px] leading-3">{brackets}</p>}
+            {t.category === "backgrounds" && t.name === "Retainers" && retainers.length > 0 && (
+              <ul className="pb-0.5 pl-3 text-[9px] leading-3" aria-label="Retainers">
+                {retainers.map((r) => (
+                  <li key={r.id}>
+                    {r.name} ({r.dots}
+                    {r.from_merit ? `, from ${r.from_merit}` : ""}
+                    {r.lost ? `, ${r.lost}` : ""})
+                    {r.description && ` – ${r.description}`}
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         );
       })}
@@ -316,7 +331,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
 
       <div className="grid grid-cols-3 gap-4">
         <Section title="Backgrounds">
-          <TraitList traits={by(t, "backgrounds")} empty={4} specialties={specialties.of} />
+          <TraitList traits={by(t, "backgrounds")} empty={4} specialties={specialties.of} retainers={sheet.retainers} />
         </Section>
         <Section title="Disciplines">
           <TraitList traits={by(t, "disciplines")} empty={4} />

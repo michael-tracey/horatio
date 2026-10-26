@@ -11,9 +11,10 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, influence_log, play, play_influence, reference, sheets
+from horatio import audit, influence_log, play, play_influence, reference, retainers, sheets
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceStandingOut, standing_out
+from horatio.api.retainers import RetainerOut, listed
 from horatio.api.roster import roster
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.influence import InfluenceType
@@ -489,6 +490,7 @@ class PlayReference(reference.Reference):
     game, which changes only between games, so the page loads it once."""
 
     traits: list[PlayTrait]
+    retainers: list[RetainerOut]
 
 
 @router.get("/characters/{character_id}/play/reference")
@@ -499,7 +501,11 @@ def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
         sheets.rules_for(db, character).rule_set,
         play.limits(db, character).blood_per_turn,
     )
-    return PlayReference(**found.model_dump(), traits=sheet_traits(db, character))
+    return PlayReference(
+        **found.model_dump(),
+        traits=sheet_traits(db, character),
+        retainers=listed(db, retainers.read(db, character), user),
+    )
 
 
 @router.post("/characters/{character_id}/play/taps")

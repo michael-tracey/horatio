@@ -3819,3 +3819,92 @@ test("an attribute stops rising at the limit Generation gives", async ({ browser
   await p.getByRole("button", { name: "Lower Physical" }).click();
   await expect(p.getByRole("button", { name: "Spend XP" })).toBeEnabled();
 });
+
+test("a player lists two Retainers with their dots, and a storyteller links one to an NPC", async ({ browser }) => {
+  const custodian = await person(browser, "ret-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "ret-lead");
+  const owner = await person(browser, "ret-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Retinue Row ${run}`, lead_handle: lead.handle });
+
+  // Dorothea, at home in the troupe with Retainers 3, which staff raise to 4.
+  const { id } = await send(owner.page, "POST", "/api/characters", { splat: "vampire", name: "Dorothea" });
+  await send(owner.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Retainers", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(owner.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(owner.page, "POST", `/api/characters/${id}/creation/complete`);
+  const asked = await send(owner.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(lead.page, "POST", `/api/characters/${id}/give`, { category: "backgrounds", name: "Retainers", rating: 4, free: true, reason: "A fourth dot" });
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Marta Voss", wizard: false });
+
+  // The player lists Marta at 3 and Pike at 1.
+  const p = owner.page;
+  await p.goto(`/characters/${id}`);
+  const row = p.locator("li[data-trait='Retainers']");
+  await row.getByRole("button", { name: "+ List Retainers" }).click();
+  await row.getByLabel("Retainer name").fill("Marta, the driver");
+  await row.getByLabel("Dots for Marta, the driver").selectOption("3");
+  await row.getByLabel("About Marta, the driver").fill("Drives at night");
+  await row.getByRole("button", { name: "+ Add a Retainer" }).click();
+  await row.getByLabel("Retainer name").last().fill("Pike");
+  await row.getByRole("button", { name: "Save Retainers" }).click();
+  await expect(row.getByRole("list", { name: "Retainers" }).getByRole("listitem")).toHaveCount(2);
+  await expect(row.getByText("Marta, the driver")).toBeVisible();
+  await expect(row.getByText("Drives at night")).toBeVisible();
+  await expect(row.getByRole("status")).toHaveCount(0);
+  await expect(row.getByRole("button", { name: /^NPC for/ })).toHaveCount(0);
+
+  // A dot split that does not match the rating warns.
+  await row.getByRole("button", { name: "Edit Retainers" }).click();
+  await row.getByLabel("Remove Pike").click();
+  await row.getByRole("button", { name: "Save Retainers" }).click();
+  await expect(row.getByRole("status")).toHaveText("1 dot of the Retainers background is not given to a Retainer yet.");
+  await row.getByRole("button", { name: "Edit Retainers" }).click();
+  await row.getByRole("button", { name: "+ Add a Retainer" }).click();
+  await row.getByLabel("Retainer name").last().fill("Pike");
+  await row.getByRole("button", { name: "Save Retainers" }).click();
+  await expect(row.getByRole("status")).toHaveCount(0);
+  await p.screenshot(shots("retainers"));
+
+  // Both show on the printed sheet and the Play View.
+  await p.goto(`/print/characters/${id}`);
+  const printed = p.getByRole("list", { name: "Retainers" });
+  await expect(printed.getByText("Marta, the driver (3) – Drives at night")).toBeVisible();
+  await expect(printed.getByText("Pike (1)")).toBeVisible();
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Sheet" }).click();
+  const playing = p.getByRole("list", { name: "Retainers" });
+  await expect(playing.getByText("Marta, the driver")).toBeVisible();
+  await expect(playing.getByText("Pike")).toBeVisible();
+
+  // A storyteller links Marta to the NPC, and the link opens it.
+  const l = lead.page;
+  await l.goto(`/characters/${id}`);
+  const his = l.locator("li[data-trait='Retainers']");
+  await his.getByRole("button", { name: "Edit Retainers" }).click();
+  await his.getByLabel("NPC for Marta, the driver").selectOption({ label: "Marta Voss" });
+  await his.getByRole("button", { name: "Save Retainers" }).click();
+  await his.getByRole("link", { name: "Marta Voss" }).click();
+  await expect(l.getByRole("heading", { name: "Marta Voss" }).first()).toBeVisible();
+
+  // The change is on the character's log.
+  await l.goto(`/characters/${id}/log`);
+  await expect(l.getByText("ret-lead linked Marta, the driver, one of Dorothea (ret-player)'s Retainers, to an NPC.")).toBeVisible();
+});

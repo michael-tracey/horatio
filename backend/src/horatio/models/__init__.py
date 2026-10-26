@@ -35,6 +35,7 @@ from horatio.models.influence_effects import InfluenceEffect
 from horatio.models.notifications import EmailNotice, Notification
 from horatio.models.people import AuthIdentity, FormerHandle, PasswordReset, Session, User
 from horatio.models.play import PlayCounter, PlayDerangement, PlayEvent, PlayGame
+from horatio.models.retainers import Retainer
 from horatio.models.rules import (
     ActionKind,
     AllowanceRule,
@@ -103,6 +104,7 @@ __all__ = [
     "RuleSet",
     "ScheduledGame",
     "Session",
+    "Retainer",
     "SharedBackground",
     "SharedBackgroundEntry",
     "SheetVersion",
