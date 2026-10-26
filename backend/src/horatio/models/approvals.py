@@ -12,13 +12,15 @@ from horatio.models.base import Record
 class Approval(Record):
     """Something waiting on (or decided by) a troupe's storytellers or assistant
     storytellers: a home troupe change, a discipline dot bought in the home
-    troupe, a change held for review, or a trait asked for by exception. One
-    queue for every kind. `sheet_change` is kept only for history."""
+    troupe, a change held for review, a trait asked for by exception, or a
+    diablerie a player says they committed. One queue for every kind. `sheet_change`
+    is kept only for history."""
 
     __tablename__ = "approvals"
     __table_args__ = (
         CheckConstraint(
-            "kind in ('sheet_change', 'home_troupe_change', 'discipline', 'review', 'exception')",
+            "kind in ('sheet_change', 'home_troupe_change', 'discipline', 'review',"
+            " 'exception', 'diablerie')",
             name="kind",
         ),
         CheckConstraint(

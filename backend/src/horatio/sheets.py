@@ -22,7 +22,7 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import HTTPException, status
 from sqlalchemy import delete, func, select, true
@@ -59,6 +59,9 @@ from horatio.rules.pricing import (
 )
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import read_troupe_rules
+
+if TYPE_CHECKING:
+    from horatio.diablerie import Adjust
 
 TraitKey = tuple[str, str, str]  # category, name, detail
 
@@ -1726,9 +1729,11 @@ def decide(
     settlement_overrides: Mapping[uuid.UUID, str] | None = None,
     xp: xp_range.Decision | None = None,
     at_cost: bool = False,
+    diablerie: "Adjust | None" = None,
 ) -> Approval:
     """Approve or decline a request. `at_cost`, for a trait asked for free by
-    exception: approve it, but charge the XP it costs at the normal price."""
+    exception: approve it, but charge the XP it costs at the normal price.
+    `diablerie`, for a diablerie a player asked to record: what staff change."""
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
     character = lock_character(db, approval.character_id)
@@ -1740,6 +1745,13 @@ def decide(
         from horatio.trait_exceptions import approve_asked  # imports this module
 
         approve_asked(db, staff, character, approval, at_cost)
+    elif approval.kind == "diablerie":
+        from horatio import diablerie as diablerie_rules  # imports this module
+
+        if approve:
+            diablerie_rules.approve_asked(db, staff, character, approval, diablerie)
+        else:
+            diablerie_rules.declined(db, character, approval)
     elif approve and approval.kind == "discipline":
         bought = db.scalars(
             select(DisciplinePurchase).where(DisciplinePurchase.approval_id == approval.id)

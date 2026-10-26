@@ -192,10 +192,15 @@ def self_entered_entries(db: Session, character: Character) -> list[tuple[XpEntr
 
 
 def given_xp(db: Session, character: Character) -> int:
+    """The XP the character has been given. A correction to a purchase takes back XP a
+    flaw paid (a diablerie removing one does), which was never given, so it is left out."""
+    purchases = select(XpEntry.id).where(XpEntry.kind == "purchase")
     return (
         db.scalar(
             select(func.coalesce(func.sum(XpEntry.amount), 0)).where(
-                XpEntry.character_id == character.id, XpEntry.kind.in_(GIVEN)
+                XpEntry.character_id == character.id,
+                XpEntry.kind.in_(GIVEN),
+                XpEntry.corrects_id.is_(None) | XpEntry.corrects_id.not_in(purchases),
             )
         )
         or 0

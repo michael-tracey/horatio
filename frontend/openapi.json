@@ -2816,6 +2816,16 @@
             "title": "At Cost",
             "type": "boolean"
           },
+          "diablerie": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiablerieDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "note": {
             "default": "",
             "title": "Note",
@@ -3054,6 +3064,479 @@
           "detail"
         ],
         "title": "DetailChange",
+        "type": "object"
+      },
+      "DiablerieAsk": {
+        "properties": {
+          "committed_on": {
+            "format": "date",
+            "title": "Committed On",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "committed_on"
+        ],
+        "title": "DiablerieAsk",
+        "type": "object"
+      },
+      "DiablerieAskOut": {
+        "description": "A diablerie a player says they committed: when, and what recording it does.",
+        "properties": {
+          "committed_on": {
+            "format": "date",
+            "title": "Committed On",
+            "type": "string"
+          },
+          "done": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiablerieEffectsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiablerieEffectsPlanOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "victim": {
+            "title": "Victim",
+            "type": "string"
+          }
+        },
+        "required": [
+          "committed_on",
+          "note",
+          "victim"
+        ],
+        "title": "DiablerieAskOut",
+        "type": "object"
+      },
+      "DiablerieDecision": {
+        "description": "A diablerie only: what staff change from the form's fill-in when approving.",
+        "properties": {
+          "beast_traits": {
+            "anyOf": [
+              {
+                "maximum": 5.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beast Traits"
+          },
+          "humanity_lowered": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Humanity Lowered"
+          },
+          "victim": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim"
+          }
+        },
+        "title": "DiablerieDecision",
+        "type": "object"
+      },
+      "DiablerieEffectsOut": {
+        "description": "What a diablerie does to the sheet: filled in before, or done.",
+        "properties": {
+          "beast_traits": {
+            "title": "Beast Traits",
+            "type": "integer"
+          },
+          "caitiff": {
+            "title": "Caitiff",
+            "type": "boolean"
+          },
+          "flaw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FlawPlanOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "from_generation": {
+            "title": "From Generation",
+            "type": "integer"
+          },
+          "humanity_lowered": {
+            "title": "Humanity Lowered",
+            "type": "integer"
+          },
+          "morality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Morality"
+          },
+          "morality_rating": {
+            "title": "Morality Rating",
+            "type": "integer"
+          },
+          "on_path": {
+            "title": "On Path",
+            "type": "boolean"
+          },
+          "techniques": {
+            "items": {
+              "$ref": "#/components/schemas/LossOut"
+            },
+            "title": "Techniques",
+            "type": "array"
+          },
+          "to_generation": {
+            "title": "To Generation",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from_generation",
+          "to_generation",
+          "techniques",
+          "morality",
+          "morality_rating",
+          "on_path",
+          "humanity_lowered",
+          "beast_traits",
+          "flaw",
+          "caitiff"
+        ],
+        "title": "DiablerieEffectsOut",
+        "type": "object"
+      },
+      "DiablerieEffectsPlanOut": {
+        "properties": {
+          "beast_traits": {
+            "title": "Beast Traits",
+            "type": "integer"
+          },
+          "caitiff": {
+            "title": "Caitiff",
+            "type": "boolean"
+          },
+          "flaw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FlawPlanOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flaw_setting": {
+            "title": "Flaw Setting",
+            "type": "string"
+          },
+          "from_generation": {
+            "title": "From Generation",
+            "type": "integer"
+          },
+          "humanity_lowered": {
+            "title": "Humanity Lowered",
+            "type": "integer"
+          },
+          "morality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Morality"
+          },
+          "morality_rating": {
+            "title": "Morality Rating",
+            "type": "integer"
+          },
+          "on_path": {
+            "title": "On Path",
+            "type": "boolean"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused"
+          },
+          "techniques": {
+            "items": {
+              "$ref": "#/components/schemas/LossOut"
+            },
+            "title": "Techniques",
+            "type": "array"
+          },
+          "to_generation": {
+            "title": "To Generation",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from_generation",
+          "to_generation",
+          "techniques",
+          "morality",
+          "morality_rating",
+          "on_path",
+          "humanity_lowered",
+          "beast_traits",
+          "flaw",
+          "caitiff",
+          "refused",
+          "flaw_setting"
+        ],
+        "title": "DiablerieEffectsPlanOut",
+        "type": "object"
+      },
+      "DiablerieFlaws": {
+        "properties": {
+          "setting": {
+            "enum": [
+              "leave",
+              "remove",
+              "keep_xp"
+            ],
+            "title": "Setting",
+            "type": "string"
+          }
+        },
+        "required": [
+          "setting"
+        ],
+        "title": "DiablerieFlaws",
+        "type": "object"
+      },
+      "DiablerieIn": {
+        "properties": {
+          "beast_traits": {
+            "anyOf": [
+              {
+                "maximum": 5.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beast Traits"
+          },
+          "committed_on": {
+            "format": "date",
+            "title": "Committed On",
+            "type": "string"
+          },
+          "humanity_lowered": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Humanity Lowered"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Note",
+            "type": "string"
+          },
+          "victim": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Victim",
+            "type": "string"
+          }
+        },
+        "required": [
+          "committed_on"
+        ],
+        "title": "DiablerieIn",
+        "type": "object"
+      },
+      "DiablerieListOut": {
+        "properties": {
+          "can_ask": {
+            "title": "Can Ask",
+            "type": "boolean"
+          },
+          "can_record": {
+            "title": "Can Record",
+            "type": "boolean"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/DiablerieOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "waiting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "can_record",
+          "can_ask",
+          "waiting"
+        ],
+        "title": "DiablerieListOut",
+        "type": "object"
+      },
+      "DiablerieOut": {
+        "description": "A diablerie on the sheet.",
+        "properties": {
+          "committed_on": {
+            "format": "date",
+            "title": "Committed On",
+            "type": "string"
+          },
+          "effects": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiablerieEffectsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "recorded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded At"
+          },
+          "recorded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded By"
+          },
+          "victim": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim"
+          }
+        },
+        "required": [
+          "id",
+          "committed_on",
+          "note",
+          "victim",
+          "recorded_by",
+          "recorded_at",
+          "effects"
+        ],
+        "title": "DiablerieOut",
+        "type": "object"
+      },
+      "DiablerieRecorded": {
+        "properties": {
+          "effects": {
+            "$ref": "#/components/schemas/DiablerieEffectsOut"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetOut"
+          }
+        },
+        "required": [
+          "effects",
+          "sheet"
+        ],
+        "title": "DiablerieRecorded",
         "type": "object"
       },
       "DifferenceOut": {
@@ -3906,6 +4389,40 @@
           "action_key"
         ],
         "title": "FinishIn",
+        "type": "object"
+      },
+      "FlawPlanOut": {
+        "description": "A Lesser Generation or Thin Blooded flaw, and what the troupe's setting does.",
+        "properties": {
+          "gave": {
+            "title": "Gave",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "setting": {
+            "title": "Setting",
+            "type": "string"
+          },
+          "taken": {
+            "title": "Taken",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "rating",
+          "setting",
+          "gave",
+          "taken"
+        ],
+        "title": "FlawPlanOut",
         "type": "object"
       },
       "Forgot": {
@@ -6164,6 +6681,35 @@
         "title": "LookupOut",
         "type": "object"
       },
+      "LossOut": {
+        "description": "A technique lost to the new Generation, and the XP it gives back.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "refund": {
+            "title": "Refund",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "rating",
+          "refund"
+        ],
+        "title": "LossOut",
+        "type": "object"
+      },
       "Me": {
         "properties": {
           "display_name": {
@@ -8227,6 +8773,14 @@
             "title": "Character Name",
             "type": "string"
           },
+          "diablerie": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "title": "Diablerie",
+            "type": "array"
+          },
           "home": {
             "title": "Home",
             "type": "boolean"
@@ -8310,6 +8864,7 @@
           "home",
           "accepted_at",
           "accepted_by",
+          "diablerie",
           "traits",
           "retainers"
         ],
@@ -8847,6 +9402,16 @@
               }
             ],
             "title": "Clan"
+          },
+          "diablerie": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiablerieAskOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "discipline": {
             "anyOf": [
@@ -11921,6 +12486,10 @@
             "title": "Description",
             "type": "string"
           },
+          "diablerie_flaws": {
+            "title": "Diablerie Flaws",
+            "type": "string"
+          },
           "downtime_xp": {
             "title": "Downtime Xp",
             "type": "integer"
@@ -12010,6 +12579,7 @@
           "xp_ceiling",
           "starting_blood",
           "influence_lookback_days",
+          "diablerie_flaws",
           "portrait",
           "banner",
           "public",
@@ -14552,6 +15122,267 @@
         "summary": "Remove Pick",
         "tags": [
           "creation"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/diablerie": {
+      "get": {
+        "description": "The diablerie on the sheet. Who was diablerized shows to staff only.",
+        "operationId": "list_diablerie_api_characters__character_id__diablerie_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiablerieListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Diablerie",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "post": {
+        "description": "A storyteller or assistant storyteller of the character's home troupe records a\ndiablerie: Generation up one, free, and the rest of what p. 306 changes. The player\nis told.",
+        "operationId": "record_diablerie_api_characters__character_id__diablerie_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiablerieIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiablerieRecorded"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Diablerie",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/diablerie/ask": {
+      "delete": {
+        "description": "The player takes back the diablerie they asked to record.",
+        "operationId": "withdraw_diablerie_api_characters__character_id__diablerie_ask_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Diablerie",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "post": {
+        "description": "The player says their character committed diablerie. It waits on the home\ntroupe's storytellers; approving it does what recording one does.",
+        "operationId": "ask_diablerie_api_characters__character_id__diablerie_ask_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiablerieAsk"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ask Diablerie",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/diablerie/plan": {
+      "get": {
+        "description": "What recording a diablerie would do to the sheet, for staff to see before they\nconfirm: the Generation, the techniques lost, the Humanity or Beast traits it fills\nin, and what the troupe's setting does to a Lesser Generation or Thin Blooded flaw.",
+        "operationId": "diablerie_plan_api_characters__character_id__diablerie_plan_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "humanity_lowered",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Humanity Lowered"
+            }
+          },
+          {
+            "in": "query",
+            "name": "beast_traits",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Beast Traits"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiablerieEffectsPlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Diablerie Plan",
+        "tags": [
+          "sheets"
         ]
       }
     },
@@ -21153,7 +21984,8 @@
                     "home_troupe_change",
                     "discipline",
                     "review",
-                    "exception"
+                    "exception",
+                    "diablerie"
                   ],
                   "type": "string"
                 },
@@ -22248,6 +23080,60 @@
         "summary": "Create Cycle",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/diablerie-flaws": {
+      "put": {
+        "description": "How this troupe handles a Lesser Generation or Thin Blooded flaw when a holder\ncommits diablerie.",
+        "operationId": "set_diablerie_flaws_api_troupes__troupe_id__diablerie_flaws_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiablerieFlaws"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Diablerie Flaws",
+        "tags": [
+          "house rules"
         ]
       }
     },

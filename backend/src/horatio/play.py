@@ -107,6 +107,8 @@ class Limits:
     expendables: tuple[Expendable, ...] = ()
     # Blood starts at half, rounded up: the character fed short last downtime.
     half_blood: bool = False
+    # Beast traits the game starts with: a diablerie added them (horatio.diablerie).
+    beast_start: int = 0
     # Names for counters since removed, so old logs still read.
     removed: Mapping[str, str] = field(default_factory=dict[str, str])
     # Derangement traits where the game starts (where the last one ended), and
@@ -148,7 +150,7 @@ class Limits:
             "willpower": self.willpower,
             "health": [],
             "morality": self.morality,
-            "beast": 0,
+            "beast": self.beast_start,
             "derangements": self.derangements,
             "held": {t.key: self.held.get(t.key, 0) for t in self.temporary},
             "uses": {e.key: e.uses for e in self.expendables},
@@ -352,6 +354,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     expendables = influence_effects.play_uses(db, character, expendables)
     # A game not started yet starts at half if the last downtime said so.
     half = game.half_blood if game is not None else character.half_blood_next_game
+    beast = game.beast_start if game is not None else character.beast_next_game
     usual = blood if house is None else min(house, blood)
     least = 1 if malkavian(rows) else 0
     traits, held = carried(db, character, game, least)
@@ -361,6 +364,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         blood_per_turn=per_turn,
         starting_blood=-(-blood // 2) if half else usual,
         half_blood=half,
+        beast_start=min(beast, BEAST_TRAITS),
         willpower=ratings.get(("willpower_sources", "Willpower"), 0),
         health=tuple((level, ratings.get(("health_levels", level), 0)) for level in HEALTH_LEVELS),
         morality=(path.trait.rating or 0) if path else 0,
@@ -490,11 +494,25 @@ def start_game(db: Session, character: Character) -> PlayGame:
         number=(last or 0) + 1,
         state={},
         half_blood=character.half_blood_next_game,
+        beast_start=character.beast_next_game,
     )
     character.half_blood_next_game = False
+    character.beast_next_game = 0
     db.add(game)
     db.flush()
     return game
+
+
+def add_beast(db: Session, character: Character, amount: int) -> None:
+    """Add Beast traits to the character's next game (a diablerie does, p. 306): to the
+    game it is in if that has had no taps yet, as it is not really started, else to the
+    one the next reset starts."""
+    game = current_game(db, character)
+    if game is not None and not game_events(db, game):
+        game.beast_start += amount
+    else:
+        character.beast_next_game += amount
+    db.flush()
 
 
 def reset(db: Session, character: Character, actor: User, *, troupe_id: uuid.UUID | None) -> bool:

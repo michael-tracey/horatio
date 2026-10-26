@@ -5,18 +5,21 @@ import { api, unwrap } from "../../api/client";
 import type { QueuedApproval, XpReviewOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { adjusted, DiablerieAdjustFields, DiablerieEffects, type DiablerieAdjust } from "../character/Diablerie";
 import { describeDifference, settlementLabel } from "../../settlements";
 import { joining, type XpChoice } from "./xpRange";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
-type Kind = "home_troupe_change" | "discipline" | "review" | "exception";
+type Kind = "home_troupe_change" | "discipline" | "review" | "exception" | "diablerie";
 
 const KINDS: Record<Kind, string> = {
   home_troupe_change: "Home troupe requests",
   discipline: "Disciplines",
   review: "Rule reviews",
   exception: "Exceptions",
+  diablerie: "Diablerie",
 };
 
 export function ApprovalsTab({ troupeId }: { troupeId: string }) {
@@ -65,6 +68,9 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   const [note, setNote] = useState("");
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [xp, setXp] = useState<XpChoice & { extra_reason: string }>({ self_entered: "keep", top_up: null, above_ceiling: "keep", extra: 0, extra_reason: "" });
+  const dates = useDates();
+  const [victim, setVictim] = useState("");
+  const [adjust, setAdjust] = useState<DiablerieAdjust>({});
   const decide = useAction(({ approve, atCost = false }: { approve: boolean; atCost?: boolean }) =>
     unwrap(
       api.POST(approve ? "/api/approvals/{approval_id}/approve" : "/api/approvals/{approval_id}/decline", {
@@ -77,6 +83,15 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
             settlement: settlement as "keep_price",
           })),
           ...(approval.xp ? { xp } : {}),
+          ...(approve && approval.diablerie?.plan
+            ? {
+                diablerie: {
+                  victim,
+                  humanity_lowered: adjust.humanity ?? approval.diablerie.plan.humanity_lowered,
+                  beast_traits: adjust.beast ?? approval.diablerie.plan.beast_traits,
+                },
+              }
+            : {}),
         },
       }),
     ),
@@ -85,6 +100,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   const joining = approval.kind === "home_troupe_change";
   const d = approval.discipline;
   const ex = approval.exception;
+  const dia = approval.diablerie;
 
   return (
     <Card
@@ -106,7 +122,9 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
                   ? ex?.free
                     ? "exception, free"
                     : "exception"
-                  : "sheet changes"}
+                  : approval.kind === "diablerie"
+                    ? "diablerie"
+                    : "sheet changes"}
         </Badge>
       }
     >
@@ -136,6 +154,29 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           {d.teacher && <>Taught by {d.teacher}. </>}
           <span className="text-mist">The XP is spent; declining refunds it and takes the dots back.</span>
         </p>
+      )}
+      {dia && (
+        <div className="mb-3 flex flex-col gap-2 text-sm">
+          <p>
+            Says {approval.character_name} committed diablerie on {dates.day(dia.committed_on)}.
+          </p>
+          {pending && dia.plan?.refused && <p className="text-blood-bright">{dia.plan.refused}</p>}
+          {pending && dia.plan && !dia.plan.refused && (
+            <>
+              <Field label="Who was diablerized" hint="Optional. Only staff see it.">
+                <Input maxLength={200} value={victim} onChange={(e) => setVictim(e.target.value)} />
+              </Field>
+              <DiablerieAdjustFields plan={dia.plan} adjust={adjust} onChange={setAdjust} />
+              <div className="rounded-md border border-ash p-2">
+                <p className="mb-1 text-xs text-mist">Approving will:</p>
+                <DiablerieEffects effects={adjusted(dia.plan, adjust)} />
+              </div>
+              <p className="text-xs text-mist">Declining changes nothing on the sheet.</p>
+            </>
+          )}
+          {!pending && dia.victim && <p className="text-xs text-mist">Diablerized: {dia.victim}</p>}
+          {!pending && dia.done && <DiablerieEffects effects={dia.done} done />}
+        </div>
       )}
       {joining && approval.locks.length > 0 && (
         <p className="mb-3 text-sm">

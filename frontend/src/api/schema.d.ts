@@ -413,6 +413,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/diablerie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Diablerie
+         * @description The diablerie on the sheet. Who was diablerized shows to staff only.
+         */
+        get: operations["list_diablerie_api_characters__character_id__diablerie_get"];
+        put?: never;
+        /**
+         * Record Diablerie
+         * @description A storyteller or assistant storyteller of the character's home troupe records a
+         *     diablerie: Generation up one, free, and the rest of what p. 306 changes. The player
+         *     is told.
+         */
+        post: operations["record_diablerie_api_characters__character_id__diablerie_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/diablerie/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask Diablerie
+         * @description The player says their character committed diablerie. It waits on the home
+         *     troupe's storytellers; approving it does what recording one does.
+         */
+        post: operations["ask_diablerie_api_characters__character_id__diablerie_ask_post"];
+        /**
+         * Withdraw Diablerie
+         * @description The player takes back the diablerie they asked to record.
+         */
+        delete: operations["withdraw_diablerie_api_characters__character_id__diablerie_ask_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/diablerie/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Diablerie Plan
+         * @description What recording a diablerie would do to the sheet, for staff to see before they
+         *     confirm: the Generation, the techniques lost, the Humanity or Beast traits it fills
+         *     in, and what the troupe's setting does to a Lesser Generation or Thin Blooded flaw.
+         */
+        get: operations["diablerie_plan_api_characters__character_id__diablerie_plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/disciplines/{approval_id}": {
         parameters: {
             query?: never;
@@ -2899,6 +2972,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/diablerie-flaws": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Diablerie Flaws
+         * @description How this troupe handles a Lesser Generation or Thin Blooded flaw when a holder
+         *     commits diablerie.
+         */
+        put: operations["set_diablerie_flaws_api_troupes__troupe_id__diablerie_flaws_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/discord": {
         parameters: {
             query?: never;
@@ -4701,6 +4795,7 @@ export interface components {
              * @default false
              */
             at_cost: boolean;
+            diablerie?: components["schemas"]["DiablerieDecision"] | null;
             /**
              * Note
              * @default
@@ -4793,6 +4888,169 @@ export interface components {
             detail: string;
             /** Name */
             name: string;
+        };
+        /** DiablerieAsk */
+        DiablerieAsk: {
+            /**
+             * Committed On
+             * Format: date
+             */
+            committed_on: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /**
+         * DiablerieAskOut
+         * @description A diablerie a player says they committed: when, and what recording it does.
+         */
+        DiablerieAskOut: {
+            /**
+             * Committed On
+             * Format: date
+             */
+            committed_on: string;
+            done?: components["schemas"]["DiablerieEffectsOut"] | null;
+            /** Note */
+            note: string;
+            plan?: components["schemas"]["DiablerieEffectsPlanOut"] | null;
+            /** Victim */
+            victim: string;
+        };
+        /**
+         * DiablerieDecision
+         * @description A diablerie only: what staff change from the form's fill-in when approving.
+         */
+        DiablerieDecision: {
+            /** Beast Traits */
+            beast_traits?: number | null;
+            /** Humanity Lowered */
+            humanity_lowered?: number | null;
+            /** Victim */
+            victim?: string | null;
+        };
+        /**
+         * DiablerieEffectsOut
+         * @description What a diablerie does to the sheet: filled in before, or done.
+         */
+        DiablerieEffectsOut: {
+            /** Beast Traits */
+            beast_traits: number;
+            /** Caitiff */
+            caitiff: boolean;
+            flaw: components["schemas"]["FlawPlanOut"] | null;
+            /** From Generation */
+            from_generation: number;
+            /** Humanity Lowered */
+            humanity_lowered: number;
+            /** Morality */
+            morality: string | null;
+            /** Morality Rating */
+            morality_rating: number;
+            /** On Path */
+            on_path: boolean;
+            /** Techniques */
+            techniques: components["schemas"]["LossOut"][];
+            /** To Generation */
+            to_generation: number;
+        };
+        /** DiablerieEffectsPlanOut */
+        DiablerieEffectsPlanOut: {
+            /** Beast Traits */
+            beast_traits: number;
+            /** Caitiff */
+            caitiff: boolean;
+            flaw: components["schemas"]["FlawPlanOut"] | null;
+            /** Flaw Setting */
+            flaw_setting: string;
+            /** From Generation */
+            from_generation: number;
+            /** Humanity Lowered */
+            humanity_lowered: number;
+            /** Morality */
+            morality: string | null;
+            /** Morality Rating */
+            morality_rating: number;
+            /** On Path */
+            on_path: boolean;
+            /** Refused */
+            refused: string | null;
+            /** Techniques */
+            techniques: components["schemas"]["LossOut"][];
+            /** To Generation */
+            to_generation: number;
+        };
+        /** DiablerieFlaws */
+        DiablerieFlaws: {
+            /**
+             * Setting
+             * @enum {string}
+             */
+            setting: "leave" | "remove" | "keep_xp";
+        };
+        /** DiablerieIn */
+        DiablerieIn: {
+            /** Beast Traits */
+            beast_traits?: number | null;
+            /**
+             * Committed On
+             * Format: date
+             */
+            committed_on: string;
+            /** Humanity Lowered */
+            humanity_lowered?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Victim
+             * @default
+             */
+            victim: string;
+        };
+        /** DiablerieListOut */
+        DiablerieListOut: {
+            /** Can Ask */
+            can_ask: boolean;
+            /** Can Record */
+            can_record: boolean;
+            /** Entries */
+            entries: components["schemas"]["DiablerieOut"][];
+            waiting: components["schemas"]["ApprovalOut"] | null;
+        };
+        /**
+         * DiablerieOut
+         * @description A diablerie on the sheet.
+         */
+        DiablerieOut: {
+            /**
+             * Committed On
+             * Format: date
+             */
+            committed_on: string;
+            effects: components["schemas"]["DiablerieEffectsOut"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string;
+            /** Recorded At */
+            recorded_at: string | null;
+            /** Recorded By */
+            recorded_by: string | null;
+            /** Victim */
+            victim: string | null;
+        };
+        /** DiablerieRecorded */
+        DiablerieRecorded: {
+            effects: components["schemas"]["DiablerieEffectsOut"];
+            sheet: components["schemas"]["SheetOut"];
         };
         /** DifferenceOut */
         DifferenceOut: {
@@ -5104,6 +5362,22 @@ export interface components {
              * @default
              */
             specialization: string;
+        };
+        /**
+         * FlawPlanOut
+         * @description A Lesser Generation or Thin Blooded flaw, and what the troupe's setting does.
+         */
+        FlawPlanOut: {
+            /** Gave */
+            gave: number;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Setting */
+            setting: string;
+            /** Taken */
+            taken: number;
         };
         /** Forgot */
         Forgot: {
@@ -5962,6 +6236,20 @@ export interface components {
             type: "elite" | "underworld";
             window: components["schemas"]["WindowOut"];
         };
+        /**
+         * LossOut
+         * @description A technique lost to the new Generation, and the XP it gives back.
+         */
+        LossOut: {
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Refund */
+            refund: number;
+        };
         /** Me */
         Me: {
             /** Display Name */
@@ -6780,6 +7068,8 @@ export interface components {
             accepted_by: string | null;
             /** Character Name */
             character_name: string;
+            /** Diablerie */
+            diablerie: string[];
             /** Home */
             home: boolean;
             /** Kind */
@@ -7011,6 +7301,7 @@ export interface components {
             character_name: string;
             /** Clan */
             clan: string | null;
+            diablerie?: components["schemas"]["DiablerieAskOut"] | null;
             discipline: components["schemas"]["DisciplineOut"] | null;
             exception?: components["schemas"]["ExceptionAskOut"] | null;
             /**
@@ -8123,6 +8414,8 @@ export interface components {
             banner: string | null;
             /** Description */
             description: string;
+            /** Diablerie Flaws */
+            diablerie_flaws: string;
             /** Downtime Xp */
             downtime_xp: number;
             /**
@@ -9506,6 +9799,170 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_diablerie_api_characters__character_id__diablerie_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiablerieListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_diablerie_api_characters__character_id__diablerie_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiablerieIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiablerieRecorded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_diablerie_api_characters__character_id__diablerie_ask_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiablerieAsk"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_diablerie_api_characters__character_id__diablerie_ask_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diablerie_plan_api_characters__character_id__diablerie_plan_get: {
+        parameters: {
+            query?: {
+                humanity_lowered?: number | null;
+                beast_traits?: number | null;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiablerieEffectsPlanOut"];
                 };
             };
             /** @description Validation Error */
@@ -13899,7 +14356,7 @@ export interface operations {
         parameters: {
             query?: {
                 state?: "pending" | "approved" | "declined" | "withdrawn";
-                kind?: ("home_troupe_change" | "discipline" | "review" | "exception") | null;
+                kind?: ("home_troupe_change" | "discipline" | "review" | "exception" | "diablerie") | null;
             };
             header?: never;
             path: {
@@ -14577,6 +15034,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CycleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_diablerie_flaws_api_troupes__troupe_id__diablerie_flaws_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiablerieFlaws"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

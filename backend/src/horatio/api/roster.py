@@ -180,6 +180,10 @@ MESSAGES: dict[str, str] = {
     "approval.declined.exception": "{actor} declined {character}'s {name} {rating} by exception;"
     " refunded.",
     "approval.withdrawn.exception": "{actor} withdrew {character}'s {name} {rating}; refunded.",
+    "approval.request.diablerie": "{actor} says {character} committed diablerie on {committed_on}.",
+    "approval.approved.diablerie": "{actor} approved {character}'s diablerie.",
+    "approval.declined.diablerie": "{actor} declined {character}'s diablerie.",
+    "approval.withdrawn.diablerie": "{actor} withdrew {character}'s diablerie.",
     "approval.request.home_troupe_change": "{actor} asked to make this {character}'s home.",
     "approval.approved.home_troupe_change": "{actor} accepted {character}; this is its home.",
     "approval.approved": "{actor} approved {character}.",
@@ -251,6 +255,11 @@ MESSAGES: dict[str, str] = {
     "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",
     "sheet.choose": "{actor} chose {name} as {character}'s {category}.",
     "sheet.change": "{actor} changed {character}'s {category}: {from_name} → {name} ({cost} XP).",
+    "sheet.diablerie": "{actor} recorded {character}'s diablerie of {committed_on}: Generation"
+    " {generation}, techniques lost: {techniques}, Humanity lowered {humanity}, Beast traits"
+    " {beast}, flaw: {flaw}.",
+    "house.diablerie_flaws": "{actor} set what diablerie does to Lesser Generation and Thin"
+    " Blooded: it {setting}.",
     "sheet.give": "{actor} gave {character} {name} {rating} by exception ({cost} XP): {reason}",
     "creation.pick": "{actor} picked {name} {rating} for {character}.",
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
