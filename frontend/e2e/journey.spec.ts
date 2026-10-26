@@ -4416,6 +4416,7 @@ test("a troupe takes ghouls once its storytellers tick Ghoul on About, and a gho
   const troupeName = `Thrall Court ${run}`;
   await custodian.page.reload();
   await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
