@@ -1892,6 +1892,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
     ["attributes", "Mental", 3],
     ["skills", "Dodge", 2],
     ["disciplines", "Celerity", 2],
+    ["disciplines", "Potence", 2],
   ] as const) {
     const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
     expect(rated.status(), await rated.text()).toBe(200);
@@ -1930,6 +1931,10 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(initiative.getByText("7", { exact: true })).toBeVisible();
   await expect(p.getByRole("listitem").filter({ hasText: /^Dodge/ }).getByText("7", { exact: true }).first()).toBeVisible();
   await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
+  // Each attack shows what a hit does, with Potence's Might in the breakdown.
+  const unarmed = p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ });
+  await expect(unarmed.getByText("2 damage: 1 (unarmed) + 1 (Might)")).toBeVisible();
+  await expect(unarmed.getByText("An exceptional success adds 1 damage, 3 in all.")).toBeVisible();
   // The player's own modifier: Social pools go up while it is on, with Fame in the breakdown.
   const social = p.getByRole("listitem").filter({ hasText: /^Resisting Social powers/ });
   await expect(social).not.toContainText("Fame");
@@ -2005,6 +2010,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByLabel("Fame on")).toBeChecked();
   await p.goto(`/print/characters/${npc}`);
   await expect(p.getByText("(+2 Fame)", { exact: true })).toBeVisible();
+  await expect(p.getByText("2 damage (3 exceptional)", { exact: true })).toBeVisible();
   await p.goBack();
 
   // With ratings as pips in Settings, the Sheet and Pools tabs show pips too:

@@ -12,6 +12,11 @@ the rules data: on a discipline or power in bns_met_vampire_powers.toml, and on
 merits and flaws in the catalogue. See the top of that file for their shape. An
 entry with `when` is a variant ("With Celerity active: 12"), not part of the
 number shown, since it holds only some of the time.
+
+Each attack pool also carries the damage a hit does (issue #190): the base for its
+type (core p. 279) plus what the sheet's powers add through `damage` entries in the
+same file, with a note for the extra point of an exceptional success. Weapons are
+not counted.
 """
 
 import tomllib
@@ -20,7 +25,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -46,6 +51,21 @@ class PoolPart(BaseModel):
     value: int
 
 
+class Damage(BaseModel):
+    """What a successful attack does: a base for its type, and what powers add."""
+
+    # unarmed, melee, thrown or firearms.
+    kind: str
+    type: Literal["normal", "aggravated"] = "normal"
+    # The base, then each power's addition: "1 (melee) + 1 (Might)".
+    parts: list[PoolPart]
+    total: int
+    # What an exceptional success adds on top of the total.
+    exceptional: int
+    # Changes that hold only some of the time: "With Celerity active, …".
+    notes: list[str] = []
+
+
 class PoolVariant(BaseModel):
     # When it applies: "With Celerity active", "In fight form".
     when: str
@@ -67,6 +87,8 @@ class TestPool(BaseModel):
     willpower_floor: int = 0
     variants: list[PoolVariant] = []
     notes: list[str] = []
+    # For an attack: what a hit does.
+    damage: Damage | None = None
 
 
 class PowerNote(BaseModel):
@@ -108,6 +130,8 @@ class Reference(BaseModel):
 class Catalogue:
     disciplines: Mapping[str, Mapping[str, Any]]
     powers: Mapping[str, Sequence[Mapping[str, Any]]]
+    # The default damage of each attack, by the skill its pool is made on.
+    attacks: Mapping[str, Mapping[str, Any]]
 
 
 @lru_cache
@@ -120,6 +144,7 @@ def catalogue() -> Catalogue:
     return Catalogue(
         disciplines={d["name"]: d for d in raw.get("disciplines", [])},
         powers={k: sorted(v, key=lambda p: p["level"]) for k, v in powers.items()},
+        attacks={a["skill"]: a for a in raw.get("attacks", [])},
     )
 
 
@@ -133,6 +158,19 @@ class Effect:
     attribute: str | None = None
     willpower_floor: int = 0
     instead_of: tuple[str, ...] = ()
+
+
+@dataclass
+class DamageEffect:
+    """A power's change to the damage of some attacks."""
+
+    attacks: tuple[str, ...]
+    source: str
+    amount: int = 0
+    exceptional: int = 0
+    type: Literal["normal", "aggravated"] = "normal"
+    when: str | None = None
+    note: str | None = None
 
 
 @dataclass
@@ -255,6 +293,66 @@ def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
     return found
 
 
+def damage_effects(sheet: Sheet) -> list[DamageEffect]:
+    """Every change to attack damage the character has, from its disciplines and
+    the powers it has reached."""
+    found: list[DamageEffect] = []
+
+    def add(entries: Iterable[Mapping[str, Any]], source: str) -> None:
+        for e in entries:
+            found.append(
+                DamageEffect(
+                    attacks=tuple(e["attacks"]),
+                    source=source,
+                    amount=e.get("amount", 0),
+                    exceptional=e.get("exceptional", 0),
+                    type=e.get("type", "normal"),
+                    when=e.get("when"),
+                    note=e.get("note"),
+                )
+            )
+
+    book = catalogue()
+    for name, rating in sheet.disciplines.items():
+        add(book.disciplines.get(name, {}).get("damage", []), name)
+        for power in book.powers.get(name, []):
+            if power["level"] <= rating:
+                add(power.get("damage", []), power["name"])
+    return found
+
+
+def damage(skill: str, found: Sequence[DamageEffect]) -> Damage | None:
+    """What a hit with the attack made on `skill` does: its base (core p. 279) plus
+    each power that always adds to it. Powers that hold only some of the time
+    (`when`) are notes."""
+    base = catalogue().attacks.get(skill)
+    if base is None:
+        return None
+    parts = [PoolPart(label=base["kind"], value=base["damage"])]
+    exceptional = base.get("exceptional", 0)
+    kind: Literal["normal", "aggravated"] = "normal"
+    notes: list[str] = []
+    for e in found:
+        if skill not in e.attacks:
+            continue
+        if e.when:
+            notes.append(f"{e.note} ({e.source})" if e.note else f"{e.when} ({e.source})")
+            continue
+        if e.amount:
+            parts.append(PoolPart(label=e.source, value=e.amount))
+        exceptional += e.exceptional
+        if e.type == "aggravated":
+            kind = "aggravated"
+    return Damage(
+        kind=base["kind"],
+        type=kind,
+        parts=parts,
+        total=sum(p.value for p in parts),
+        exceptional=exceptional,
+        notes=notes,
+    )
+
+
 def _applies(effect: Effect, key: str) -> bool:
     """Whether an effect's pool covers a pool: "attack" covers every attack,
     "discipline:Thaumaturgy" every Thaumaturgy path."""
@@ -314,7 +412,12 @@ def _when_label(when: str) -> str:
     return "With Celerity active" if when == "Celerity" else when[:1].upper() + when[1:]
 
 
-def pools(sheet: Sheet, found: Sequence[Effect], blood_per_turn: int) -> list[TestPool]:
+def pools(
+    sheet: Sheet,
+    found: Sequence[Effect],
+    blood_per_turn: int,
+    hurts: Sequence[DamageEffect] = (),
+) -> list[TestPool]:
     attrs = {a: sheet.rating("attributes", a) for a in ATTRIBUTES}
 
     def skill(name: str) -> PoolPart:
@@ -360,6 +463,7 @@ def pools(sheet: Sheet, found: Sequence[Effect], blood_per_turn: int) -> list[Te
                     found,
                     versus="Physical + Dodge",
                     notes=[blood],
+                    damage=damage(name, hurts),
                 )
             )
     floor = max((e.willpower_floor for e in found if e.pool == "defense"), default=0)
@@ -451,7 +555,7 @@ def reference(rows: Sequence[SheetRow], rule_set: RuleSetData, blood_per_turn: i
     bases = technique_bases(rule_set)
     found = effects(sheet, bases)
     return Reference(
-        pools=pools(sheet, found, blood_per_turn),
+        pools=pools(sheet, found, blood_per_turn, damage_effects(sheet)),
         disciplines=disciplines(sheet),
         other_powers=[
             OtherPower(

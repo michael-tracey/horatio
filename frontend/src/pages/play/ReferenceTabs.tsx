@@ -4,7 +4,7 @@ import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
 import { RetainerLines } from "../character/Retainers";
 import { ModifiersPanel } from "./Modifiers";
-import { breakdown, grouped, total } from "./pools";
+import { breakdown, damageText, exceptionalText, grouped, total } from "./pools";
 import { useModifiers } from "./useModifiers";
 
 type Trait = PlayReference["traits"][number];
@@ -72,6 +72,17 @@ function PoolRow({ pool, willpower, modifiers }: { pool: TestPool; willpower: nu
         {breakdown(pool, willpower, modifiers)}
         {pool.versus && <> · against {pool.versus}</>}
       </p>
+      {pool.damage && (
+        <p className="mt-0.5 text-sm text-parchment">
+          {damageText(pool.damage)}
+          <span className="block text-xs text-mist">{exceptionalText(pool.damage)}</span>
+          {pool.damage.notes.map((n) => (
+            <span key={n} className="block text-xs text-mist">
+              {n}
+            </span>
+          ))}
+        </p>
+      )}
       {pool.variants.length > 0 && (
         <ul className="mt-1 flex flex-col gap-0.5 text-sm">
           {pool.variants.map((v) => (

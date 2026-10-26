@@ -15,6 +15,44 @@
 #   character has; `when` makes it a variant ("Celerity" is Celerity active);
 #   `focus` limits it to characters with that focus, `unless_focus` to those
 #   without it (for a bonus a focus replaces).
+# [[attacks]]: what a successful attack of each type does by default, and what an
+#   exceptional success adds (`exceptional`), with the book `page`. `skill` is the
+#   skill the attack pool is made on (attack:<skill>); `kind` names the type.
+# `damage` (on a discipline or power) changes the damage of attack pools while the
+#   character has it: { attacks = [skills], amount?, exceptional?, type?, when?,
+#   note?, page }. `amount` is added to the damage and `exceptional` to what an
+#   exceptional success adds on top of the usual one; `type = "aggravated"` makes
+#   it aggravated. An entry with `when` holds only some of the time, so it is a
+#   `note` on the pool, not part of the number shown. `page` is the book page.
+
+# MET: VTM core, p. 279.
+[[attacks]]
+skill = "Brawl"
+kind = "unarmed"
+damage = 1
+exceptional = 1
+page = 279
+
+[[attacks]]
+skill = "Melee"
+kind = "melee"
+damage = 1
+exceptional = 1
+page = 279
+
+[[attacks]]
+skill = "Athletics"
+kind = "thrown"
+damage = 1
+exceptional = 1
+page = 279
+
+[[attacks]]
+skill = "Firearms"
+kind = "firearms"
+damage = 2
+exceptional = 1
+page = 279
 
 [[disciplines]]
 name = "Animalism"
@@ -127,6 +165,8 @@ level = 4
 name = "Legerity"
 note = "+2 wild card to Dodge pools while Celerity is active, and mundane ranged exceptional successes do 2 extra damage instead of 1."
 pools = [{ pool = "dodge", amount = 2, when = "Celerity" }]
+# Core p. 122: a mundane ranged exceptional success adds 2 instead of 1, with Celerity active.
+damage = [{ attacks = ["Firearms", "Athletics"], exceptional = 1, when = "Celerity", note = "With Celerity active, an exceptional success adds 2 damage instead of 1", page = 122 }]
 
 [[powers]]
 discipline = "Celerity"
@@ -550,6 +590,8 @@ discipline = "Potence"
 level = 2
 name = "Might"
 note = "Brawl and Melee hits do 2 damage (3 on an exceptional success)."
+# Potence, core p. 150: Might makes a Brawl or Melee hit do 2.
+damage = [{ attacks = ["Brawl", "Melee"], amount = 1, page = 150 }]
 
 [[powers]]
 discipline = "Potence"
@@ -562,12 +604,16 @@ discipline = "Potence"
 level = 4
 name = "Intensity"
 note = "Brawl and Melee exceptional successes add 2 damage instead of 1."
+# Core p. 151: an exceptional success adds 2 instead of the usual 1.
+damage = [{ attacks = ["Brawl", "Melee"], exceptional = 1, page = 151 }]
 
 [[powers]]
 discipline = "Potence"
 level = 5
 name = "Puissance"
 note = "Brawl and Melee hits do 3 damage (more on an exceptional success)."
+# Core p. 151: a hit does 3 in all, which includes Might's extra point.
+damage = [{ attacks = ["Brawl", "Melee"], amount = 1, page = 151 }]
 
 [[disciplines]]
 name = "Presence"
@@ -625,6 +671,8 @@ discipline = "Protean"
 level = 2
 name = "Feral Claws"
 note = "1 Blood, simple action: claws that do aggravated damage with Brawl."
+# Core p. 154.
+damage = [{ attacks = ["Brawl"], type = "aggravated", when = "claws out", note = "Aggravated damage while your Feral Claws are out", page = 154 }]
 focus = { Wits = "Grow or sheathe them with no action." }
 
 [[powers]]
