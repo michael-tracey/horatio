@@ -11,11 +11,12 @@ werewolf, all on the Vampire rule set, and a form: sheeted, with a full sheet as
 above, or stock, with only an NPC rating and specializations (horatio.rules.stock).
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -112,7 +113,9 @@ def create_npc(
     if npc_form == "stock":
         db.add(StockNpc(character_id=npc.id, rating=1))
     else:
-        grant_starting_traits(db, rules_for(db, npc), npc)
+        grant_starting_traits(
+            db, rules_for(db, npc), npc, skip=no_panels(resolve_kind(npc_kind, custom))
+        )
     db.flush()
     audit.record(
         db,
@@ -124,6 +127,12 @@ def create_npc(
         npc_form=npc_form,
     )
     return npc
+
+
+def no_panels(kind: NpcKind) -> tuple[str, ...]:
+    """The sheet categories a kind has no use for, so its NPCs start without them:
+    no Humanity for one that has no Morality."""
+    return () if kind.panels.morality else ("paths",)
 
 
 def stock_of(db: Session, npc: Character) -> StockNpc:
@@ -280,3 +289,85 @@ def tally(db: Session, npc: Character) -> tuple[int, list[TallyLine]]:
             line.note = str(error)
         lines.append(line)
     return sum(line.cost or 0 for line in lines), lines
+
+
+# A converted Stock NPC's attributes: Physical, Social and Mental each at its pool,
+# the rating times two (MET: VTM p. 489), and never above this.
+ATTRIBUTES = ("Physical", "Social", "Mental")
+ATTRIBUTE_MAX = 10
+# Skills and disciplines come across at the rating, as far as this (p. 490).
+DOTS_MAX = 5
+
+
+@dataclass(frozen=True)
+class Conversion:
+    """What a Stock NPC becomes as a sheet: the ratings to set, and the specializations
+    and powers that have no trait in the Vampire rule set to carry them."""
+
+    ratings: tuple[tuple[str, str, int], ...]
+    left_out: tuple[str, ...]
+
+
+def conversion(
+    block: stock.StatBlock,
+    specializations: Sequence[stock.Specialization],
+    traits: Collection[tuple[str, str]],
+) -> Conversion:
+    """The sheet a Stock NPC starts as, in the Stock NPC rules' own terms:
+    - each attribute at the pool (rating × 2), up to 10;
+    - each skill specialization as that skill at the NPC rating, up to 5;
+    - each discipline or path in its stat block (a discipline specialization, or one
+      its kind gives) at the dots the block reaches, up to 5.
+    What the rule set has no trait for (True Faith, Feral Claws) is left out."""
+    ratings: list[tuple[str, str, int]] = [
+        ("attributes", name, min(block.pool, ATTRIBUTE_MAX)) for name in ATTRIBUTES
+    ]
+    left_out: list[str] = []
+    for s in specializations:
+        if s.type == "skill":
+            ratings.append(("skills", s.name, min(block.rating, DOTS_MAX)))
+    for name, dots in block.powers:
+        if ("disciplines", name) in traits:
+            ratings.append(("disciplines", name, min(dots, DOTS_MAX)))
+        else:
+            left_out.append(name)
+    left_out += [p.name for p in block.built_in]
+    return Conversion(tuple(ratings), tuple(left_out))
+
+
+def make_sheeted(db: Session, staff: User, npc: Character) -> Conversion:
+    """Turn a Stock NPC into a sheeted one. It keeps its name, kind, picture and
+    memberships; its sheet starts with the kind's starting traits and what
+    `conversion` makes of its rating and specializations. Its Stock row goes, as
+    a sheeted NPC has no use for it, and its notes, rating and specializations are
+    kept in the log entry. It cannot be turned back."""
+    row, block = stat_block(db, npc)
+    kind = kind_of(npc)
+    specializations = specializations_of(row)
+    rules = rules_for(db, npc)
+    made = conversion(block, specializations, set(rules.rule_set.traits))
+    notes, rating = row.notes, row.rating
+    npc.npc_form = "sheeted"
+    npc.creation_completed_at = npc.creation_completed_at or datetime.now(UTC)
+    db.delete(row)
+    db.flush()
+    grant_starting_traits(db, rules, npc, skip=no_panels(kind))
+    left_out = list(made.left_out)
+    for category, name, dots in made.ratings:
+        try:
+            set_rating(db, staff, npc, category, name, "", dots)
+        except HTTPException:
+            left_out.append(name)
+    audit.record(
+        db,
+        staff,
+        "npc.made_sheeted",
+        troupe_id=npc.owner_troupe_id,
+        character_id=npc.id,
+        npc_kind=kind.label,
+        rating=rating,
+        specializations=", ".join(s.name for s in specializations) or "none",
+        left_out=", ".join(left_out) or "none",
+        notes=notes,
+    )
+    return Conversion(made.ratings, tuple(left_out))

@@ -53,6 +53,7 @@ from horatio.models import (
     User,
 )
 from horatio.rules.feeding import clan_family
+from horatio.rules.npc_kinds import Panels
 
 # Most blood, and blood a turn, by Generation dots (MET: VTM pp. 100-101).
 BLOOD_BY_GENERATION = ((10, 1), (10, 1), (12, 2), (15, 3), (20, 4), (30, 5))
@@ -167,6 +168,8 @@ class Limits:
     blood_name: str = "Blood"
     # The fixed trackers the character has; a Stock NPC has no Willpower and so on.
     trackers: frozenset[str] = frozenset(TRACKERS)
+    # The Play View's panels for this character (horatio.rules.npc_kinds.Panels).
+    panels: Panels = Panels()
 
     def retainer_trackers(self) -> dict[str, int]:
         return {k: most for r in self.retainers for k, most in r.trackers().items()}
@@ -294,6 +297,13 @@ def carries(tracker: str) -> bool:
     return tracker == "derangements" or tracker.startswith(TEMPORARY)
 
 
+def trackers_for(panels: Panels) -> frozenset[str]:
+    """The fixed trackers a character with these panels has: none for Morality or
+    Beast traits where the kind has no such panel."""
+    gone = {"morality": not panels.morality, "beast": not panels.beast}
+    return frozenset(t for t in TRACKERS if not gone.get(t))
+
+
 def known_tracker(tracker: str) -> bool:
     return (
         tracker in TRACKERS
@@ -388,6 +398,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     start lower by what earlier games spent that no cycle has taken off yet."""
     if character.npc_form == "stock":
         return stock_limits(db, character)
+    kind = npcs.kind_of(character) if character.npc_form == "sheeted" else None
     rows = sheets.sheet_rows(db, character)
     rule_set = sheets.rules_for(db, character).rule_set
     ratings: dict[tuple[str, str], int] = {}
@@ -399,6 +410,15 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     blood, per_turn = BLOOD_BY_GENERATION[min(max(generation, 0), 5)]
     troupe = home_troupe(db, character)
     house = troupe.starting_blood if troupe is not None else None
+    panels = kind.panels if kind is not None else Panels()
+    blood_name = "Blood"
+    if kind is not None and not kind.vampiric:
+        # Its kind's resource stands in for Blood (MET: VTM ch. 12), from the kind
+        # rather than from Generation, which it has none of; and it has no Morality
+        # or Beast traits.
+        resource = kind.resource
+        generation, blood, per_turn, house = 0, resource.size, resource.per_turn, None
+        blood_name = resource.name
     path = next((r for r in rows if r.category.key == "paths"), None)
 
     expendables: list[Expendable] = []
@@ -447,6 +467,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     # A game not started yet starts at half if the last downtime said so.
     half = game.half_blood if game is not None else character.half_blood_next_game
     beast = game.beast_start if game is not None else character.beast_next_game
+    half, beast = half and panels.feed, beast if panels.beast else 0
     usual = blood if house is None else min(house, blood)
     least = 1 if malkavian(rows) else 0
     traits, held = carried(db, character, game, least)
@@ -459,8 +480,8 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         beast_start=min(beast, BEAST_TRAITS),
         willpower=ratings.get(("willpower_sources", "Willpower"), 0),
         health=tuple((level, ratings.get(("health_levels", level), 0)) for level in HEALTH_LEVELS),
-        morality=(path.trait.rating or 0) if path else 0,
-        morality_name=path.definition.name if path else None,
+        morality=(path.trait.rating or 0) if path and panels.morality else 0,
+        morality_name=path.definition.name if path and panels.morality else None,
         expendables=tuple(expendables),
         removed={counter_key(c.id): c.name for c in counters if c.removed_at is not None},
         derangements=traits,
@@ -469,6 +490,9 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         temporary=temporary_derangements(db, character),
         held=held,
         switches=tuple(reference.switches(rows, rule_set)),
+        blood_name=blood_name,
+        trackers=trackers_for(panels),
+        panels=panels,
         retainers=tuple(
             RetainerTrack(
                 key=retainers.tracker(r),

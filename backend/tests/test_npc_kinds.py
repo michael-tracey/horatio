@@ -227,3 +227,12 @@ def test_a_custom_kind_is_set_up_by_the_storyteller() -> None:
     check(angel, 3, [power("Presence")], SKILLS, DISCIPLINES)
     with pytest.raises(StockError, match="skill specializations only"):
         check(hermit, 3, [power("Presence")], SKILLS, DISCIPLINES)
+
+
+def test_only_vampiric_kinds_have_the_beast_humanity_and_generation_panels() -> None:
+    kinds = npc_kinds()
+
+    for key in ("vampire", "ghoul", "blood_brother"):
+        assert all(vars(kinds[key].panels).values()), key
+    for key in ("mortal", "werewolf", "mage", "fae", "wraith", "demon", "hunter_arcanum", "custom"):
+        assert not any(vars(kinds[key].panels).values()), key

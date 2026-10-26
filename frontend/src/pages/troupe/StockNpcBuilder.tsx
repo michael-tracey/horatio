@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
+import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, PageTitle, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { CharacterPicture } from "../character/Picture";
@@ -236,9 +237,71 @@ function Builder({
         <div className="flex flex-col gap-6">
           <StatBlock stock={stock} />
           <RulesCard kind={kind} />
+          <MakeSheeted stock={stock} character={character} path={path} refresh={refresh} />
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * "Make this a full sheet…", with its confirmation. The rule it follows is written
+ * out here, and in the PR, because it cannot be undone.
+ */
+function MakeSheeted({
+  stock,
+  character,
+  path,
+  refresh,
+}: {
+  stock: StockNpc;
+  character: components["schemas"]["CharacterOut"];
+  path: { params: { path: { character_id: string } } };
+  refresh: () => Promise<void>;
+}) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const convert = useAction(async () => {
+    await unwrap(api.POST("/api/characters/{character_id}/npc/sheeted", path));
+    await refresh();
+    navigate(`/characters/${character.id}`);
+  });
+  const s = stock.stats;
+  const attribute = Math.min(s.pool, 10);
+  const fate = stock.kind.panels.morality ? "" : ` It has no Humanity, Beast traits or Generation, as a ${stock.kind.name.toLowerCase()} has none.`;
+  return (
+    <Card title="Full sheet">
+      <p className="mb-3 text-sm text-mist">Give this NPC a full Vampire-rules sheet, to play like any other NPC. It cannot be turned back.</p>
+      <Button type="button" variant="secondary" onClick={() => setOpen(true)}>
+        Make this a full sheet…
+      </Button>
+      <Dialog title={`Make ${character.name} a full sheet?`} open={open} onClose={() => setOpen(false)}>
+        <div className="flex flex-col gap-3 p-4 text-sm">
+          <p>
+            {character.name} keeps its name, kind, picture and notes (the notes go in the log). Its sheet starts from the Stock data like this:
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>
+              Physical, Social and Mental are each its test pool, rating × 2: {attribute}
+              {s.pool > 10 && " (the most an attribute can be)"}.
+            </li>
+            <li>Each skill specialization becomes that skill at its rating, {Math.min(s.rating, 5)} (5 at most).</li>
+            <li>Each discipline specialization becomes that discipline at its rating (5 at most).</li>
+            <li>Powers the Vampire rules have no trait for stay on the {stock.kind.name} rules card.</li>
+          </ul>
+          <p className="text-mist">It becomes a sheeted NPC with the {stock.kind.name} rules card, and uses {stock.kind.resource.name} in place of Blood.{fate}</p>
+          <ErrorText error={convert.error} />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={convert.isPending} onClick={() => convert.mutate(undefined)}>
+              Make a full sheet
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+    </Card>
   );
 }
 

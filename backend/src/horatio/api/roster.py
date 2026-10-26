@@ -238,6 +238,9 @@ MESSAGES: dict[str, str] = {
     "downtime.feeding_adjusted": "{actor} adjusted {character}'s feeding by {delta}: {reason}",
     "downtime.feeding_answered": "{actor} answered {character}'s feeding: {result}.",
     "npc.created": "{actor} made an NPC, {character}.",
+    "npc.made_sheeted": "{actor} made the Stock NPC {character} a full sheet (a {npc_kind}"
+    " rated {rating}; specializations: {specializations}; left off the sheet: {left_out})."
+    " Its notes: {notes}",
     "npc.deleted": "{actor} deleted the NPC {character}.",
     "title.given": "{actor} gave {character} the title {title}.",
     "title.taken": "{actor} took the title {title} from {character}.",

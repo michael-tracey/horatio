@@ -12,6 +12,7 @@ import { DowntimeTab } from "./DowntimeTab";
 import { InfluenceTab } from "./InfluenceTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
+import { KindBadge } from "./NpcKindBadge";
 import { CharacterMenu } from "./Actions";
 import { RenameCharacter } from "./Rename";
 import { CharacterPicture } from "./Picture";
@@ -69,6 +70,7 @@ export function CharacterPage() {
             actions={
               <div className="flex flex-wrap items-center gap-3">
                 <Badge tone="gold">NPC</Badge>
+                <KindBadge kind={c.npc_kind} name={c.npc_kind_name} />
                 {play}
                 <CharacterMenu character={c} canRename={!renaming} renameOn={null} onRename={() => setRenaming(true)} canDelete />
               </div>
