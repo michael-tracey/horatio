@@ -11,6 +11,9 @@
 
 import type { CreationOut, SheetOut } from "../../../api/types";
 
+/** The in-clan disciplines a character chooses, decided on Concept (see inClan.ts). */
+export const EXTRA_IN_CLAN = "extra_in_clan_disciplines";
+
 /** A wizard step as notices see it: the categories it places picks in, and those it
  * decides without picks (Concept: the clan, and the extra in-clan disciplines). */
 export type StepRef = { key: string; title: string; categories: string[]; decides?: string[] };
@@ -24,6 +27,8 @@ export type StepNotice = {
   fix: string;
   /** The trait it is about, on the fix step, for that step to mark. */
   trait?: { category: string; name: string };
+  /** It is an in-clan choice still to make: the steps that offer the choice themselves (Merits, Disciplines, Review) say so. */
+  inClan?: boolean;
   /** Finishing does not wait on it (a merit's free traits, chosen until a troupe accepts). */
   canWait?: boolean;
 };
@@ -138,7 +143,9 @@ export const brokenChecks: NoticeSource = ({ creation, sheet, steps }) => {
     );
     const names = [...new Set(clashing.map((t) => t.name))];
     const message = names.length ? `${problem.name} and ${listed(names)} clash: ${problem.message}` : problem.message;
-    found.set(problem.message, { key: `check/${problem.message}`, message, on, fix: on[0]! });
+    // Vestiges of Greatness wanting one from the uncommon list: a choice of in-clan disciplines.
+    const inClan = problem.strength === "complete" && (problem.looks_at ?? []).some((t) => t.category === EXTRA_IN_CLAN);
+    found.set(problem.message, { key: `check/${problem.message}`, message, on, fix: on[0]!, ...(inClan ? { inClan } : {}) });
   }
   return [...found.values()];
 };

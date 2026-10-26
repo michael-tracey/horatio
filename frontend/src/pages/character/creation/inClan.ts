@@ -1,13 +1,14 @@
 /**
  * In-clan disciplines, chosen on Concept: a Caitiff's three (core p. 246), and the
- * one a merit adds for any clan (pp. 242, 248). Which disciplines each allows is the
+ * one a merit adds for any clan (pp. 242, 248). The merit's choice is also offered
+ * under it on Merits, on Disciplines while it is open, and from Review (#216). Which disciplines each allows is the
  * server's to say (`GET /unavailable`); this only counts the choices and words them.
  */
 
 import type { SheetOut, SheetTraitOut } from "../../../api/types";
-import { inOrder, type NoticeSource } from "./notices";
+import { EXTRA_IN_CLAN, inOrder, type NoticeSource } from "./notices";
 
-export const EXTRA_IN_CLAN = "extra_in_clan_disciplines";
+export { EXTRA_IN_CLAN };
 
 /** Merits that change in-clan disciplines, offered on Concept as well as on Merits. */
 export const IN_CLAN_MERITS = [
@@ -25,6 +26,11 @@ const ADDS_ONE: Record<string, string> = {
   "Additional Uncommon Discipline": "from the uncommon ones",
   "Pliable Blood": "from those it allows",
 };
+
+/** Whether taking a merit makes an in-clan choice: one of IN_CLAN_MERITS, or a troupe's own that adds one. */
+export function makesInClanChoice(trait: { name: string; house?: { in_clan?: string[] | null } | null }): boolean {
+  return IN_CLAN_MERITS.includes(trait.name) || (trait.house?.in_clan?.length ?? 0) > 0;
+}
 
 const holds = (sheet: SheetOut, name: string) => sheet.traits.some((t) => t.category === "merits" && t.name === name && (t.rating ?? 0) > 0);
 
@@ -96,6 +102,30 @@ export function whenTapped(name: string, refused: Record<string, string>): "choo
   return name in refused ? "swap" : "choose";
 }
 
+/**
+ * Whether an in-clan choice waits on the player: one still to choose, or a merit's
+ * check that wants a different one (Vestiges of Greatness: one from the uncommon list).
+ */
+export function inClanOpen(sheet: SheetOut): boolean {
+  const { chooses, chosen } = inClanChoice(sheet);
+  if (chooses > chosen.length) return true;
+  return sheet.problems.some(
+    (p) => p.category === "merits" && (p.strength === "complete" || p.strength === "refuse") && sheet.traits.some((t) => t.category === "merits" && t.name === p.name && makesInClanChoice(t)),
+  );
+}
+
+/**
+ * A short key for the sheet as it stands: the traits held and their ratings. What the
+ * server says the character can choose is asked again for each, so an answer from
+ * before a change (taking Vestiges of Greatness) is never shown as if it were now's.
+ */
+export function sheetKey(sheet: SheetOut): string {
+  const held = sheet.traits.map((t) => `${t.category}/${t.name}/${t.detail}/${t.rating ?? ""}`).sort().join("|");
+  let hash = 5381;
+  for (let i = 0; i < held.length; i++) hash = ((hash * 33) ^ held.charCodeAt(i)) >>> 0;
+  return `${sheet.traits.length}-${hash.toString(36)}`;
+}
+
 /** In-clan disciplines still to choose: on Concept, and on Merits when a merit there added the choice. */
 export const inClanChoices: NoticeSource = ({ sheet, steps, ghoul }) => {
   // A ghoul chooses none: its in-clan disciplines are its domitor's.
@@ -109,5 +139,5 @@ export const inClanChoices: NoticeSource = ({ sheet, steps, ghoul }) => {
   const message = merit
     ? `${adding}: choose the in-clan discipline it adds.`
     : `Choose ${left}${left < chooses ? " more" : ""} in-clan ${left === 1 ? "discipline" : "disciplines"}.`;
-  return [{ key: "in-clan/choose", message, on: inOrder(steps, ["concept", adding ? "merits" : undefined]), fix: "concept" }];
+  return [{ key: "in-clan/choose", message, on: inOrder(steps, ["concept", adding ? "merits" : undefined]), fix: "concept", inClan: true }];
 };
