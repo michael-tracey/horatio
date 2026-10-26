@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { TraitOut } from "../../api/types";
 import { Button, Field, Input, Select } from "../../components/ui";
 import type { Exception } from "./cart";
-import { FIELD_PLACEHOLDER } from "./fields";
+import { detailNeed } from "./fields";
 
 /**
  * Ask the home troupe's staff for a trait the rules refuse, as an exception:
@@ -33,6 +33,7 @@ export function AskStaff({
   const [reason, setReason] = useState("");
   const [free, setFree] = useState(false);
   const [detail, setDetail] = useState("");
+  const need = detailNeed(trait);
   const [rating, setRating] = useState(1);
   const fixed = trait?.fixed_rating ?? null;
   return (
@@ -61,9 +62,9 @@ export function AskStaff({
           </Select>
         </Field>
       ) : (
-        trait?.needs_field && (
-          <Field label="Field" hint="Bought once per field.">
-            <Input required placeholder={FIELD_PLACEHOLDER} value={detail} onChange={(e) => setDetail(e.target.value)} />
+        need && (
+          <Field label={need.label} hint={need.hint}>
+            <Input required placeholder={need.placeholder} value={detail} onChange={(e) => setDetail(e.target.value)} />
           </Field>
         )
       )}

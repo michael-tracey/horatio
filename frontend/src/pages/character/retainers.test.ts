@@ -1,16 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { mismatch } from "./retainers";
+import { retainerName, retainerSource } from "./retainers";
 
-describe("mismatch", () => {
-  it("says nothing when the dots add up", () => {
-    expect(mismatch(4, 4)).toBeNull();
-    expect(mismatch(0, 0)).toBeNull();
+describe("a Retainer in a list", () => {
+  it("is named, or says it has no name yet", () => {
+    expect(retainerName({ name: "Bocephus" })).toBe("Bocephus");
+    expect(retainerName({ name: "" })).toBe("A Retainer not yet named");
   });
-  it("warns of dots not given to a Retainer", () => {
-    expect(mismatch(4, 3)).toBe("1 dot of the Retainers background is not given to a Retainer yet.");
-    expect(mismatch(4, 1)).toContain("3 dots");
-  });
-  it("warns of more dots listed than bought", () => {
-    expect(mismatch(2, 3)).toBe("The Retainers listed have 1 more dot than the Retainers background.");
+  it("says where its dots come from when they are not bought on the sheet", () => {
+    expect(retainerSource({ bought: true, from_merit: "" })).toBeNull();
+    expect(retainerSource({ bought: false, from_merit: "Ghostly Retainer" })).toBe("from Ghostly Retainer");
+    expect(retainerSource({ bought: false, from_merit: "" })).toBe("listed before each Retainer was bought on its own");
   });
 });

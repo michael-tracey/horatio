@@ -14,7 +14,7 @@ import { DotGrid, PointsList, type Held, type RatingBar } from "./DotGrid";
 import { Because } from "./Because";
 import { FreeChoicesStep, withFreeChoices } from "./FreeChoicesStep";
 import { BACKGROUND_MERITS, FOCUS_MERITS, SKILL_MERITS, freedPicks, givenIn, unchosenFree } from "./gifts";
-import { fieldSkills } from "../fields";
+import { detailNeed, fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
 import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, traitOf, type Allowed, type Picks } from "./logic";
 import { FromMerits } from "./FromMerits";
@@ -193,10 +193,16 @@ function StepView({
   useEffect(() => setPicks(before), [before]);
   const [details, setDetails] = useState(savedDetail);
   useEffect(() => setDetails(savedDetail), [savedDetail]);
-  // A Crafts, Performance or Science with no field, or two with one field: by category, then pick.
-  const needsField = fieldSkills(catalogue);
+  // A Crafts, Performance or Science with no field, a Retainer with no name, or two
+  // with one field or name: by category, then pick. A Retainer saved without a name,
+  // from before each was named, may stay so.
+  const detailNeeds = new Map(catalogue.traits.map((t) => [`${t.category}/${t.name}`, detailNeed(t)]));
   const problems = Object.fromEntries(
-    step.categories.map((c) => [c, fieldProblems(picks[c] ?? {}, details[c] ?? {}, (name) => needsField.has(name))]),
+    step.categories.map((c) => {
+      const found = fieldProblems(picks[c] ?? {}, details[c] ?? {}, (name) => detailNeeds.get(`${c}/${name}`) ?? null);
+      const unnamedBefore = (key: string) => !found[key]?.twice && key in (before[c] ?? {}) && !(savedDetail[c]?.[key] ?? "") && detailNeeds.get(`${c}/${traitOf(key)}`)?.kind === "name";
+      return [c, Object.fromEntries(Object.entries(found).filter(([key]) => !unnamedBefore(key)))];
+    }),
   );
 
   const save = useAction(async () => {

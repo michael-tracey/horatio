@@ -9,6 +9,7 @@ import { HEALTH_RULE, healthRows } from "../health";
 import { DEFAULT_PREFERENCES, useMe, usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { choiceName } from "./character/creation/logic";
+import { retainerName } from "./character/retainers";
 import { changing, damageShort, total } from "./play/pools";
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
@@ -189,6 +190,8 @@ function TraitList({
   retainers?: PrintedSheet["retainers"];
 }) {
   const blanks = Math.max(0, empty - traits.length);
+  // Each Retainer is a Retainers row of its own: they are listed once, under the last.
+  const lastRetainers = traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1);
   return (
     <ul className="text-[11px] leading-5">
       {traits.map((t) => {
@@ -205,11 +208,11 @@ function TraitList({
               {t.rating !== null && t.specializes === null && <Dots value={t.rating} />}
             </div>
             {brackets && !inline && <p className="pb-0.5 pl-3 text-[9px] leading-3">{brackets}</p>}
-            {t.category === "backgrounds" && t.name === "Retainers" && retainers.length > 0 && (
+            {t.category === "backgrounds" && t.name === "Retainers" && t === lastRetainers && retainers.length > 0 && (
               <ul className="pb-0.5 pl-3 text-[9px] leading-3" aria-label="Retainers">
-                {retainers.map((r) => (
-                  <li key={r.id}>
-                    {r.name} ({r.dots}
+                {retainers.map((r, i) => (
+                  <li key={r.id ?? `bought${i}`}>
+                    {retainerName(r)} ({r.dots}
                     {r.from_merit ? `, from ${r.from_merit}` : ""}
                     {r.lost ? `, ${r.lost}` : ""})
                     {r.description && ` – ${r.description}`}

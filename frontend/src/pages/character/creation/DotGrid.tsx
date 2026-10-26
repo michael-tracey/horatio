@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
-import { FIELD_PLACEHOLDER } from "../fields";
+import { detailNeed } from "../fields";
 import { canTap, clear, fieldProblems, keysOf, left, traitOf, nextCopy, spent, tap, togglePoints, type Allowed, type Picks } from "./logic";
 
 // Long lists get a search box.
@@ -98,7 +98,7 @@ export function DotGrid({
   const [added, setAdded] = useState<string[]>([]);
   // The field box to focus when it appears: the one just tapped or added.
   const [focus, setFocus] = useState<string | null>(null);
-  const problems = onDetail ? fieldProblems(picks, details, (name) => !!traits.find((t) => t.name === name)?.needs_field) : {};
+  const problems = onDetail ? fieldProblems(picks, details, (name) => detailNeed(traits.find((t) => t.name === name))) : {};
 
   /** One row of dots, for a trait or for one more field of it (`key` then names that field's pick). */
   const line = (trait: TraitOut, key: string) => {
@@ -111,7 +111,8 @@ export function DotGrid({
     const marked = rating && !copy ? marks[trait.name] : undefined;
     const about = !copy && trait.description ? `about-${title}-${trait.name}`.replace(/\W+/g, "-") : undefined;
     const shown = open.has(trait.name);
-    const fielded = trait.needs_field && onDetail && (rating > 0 || copy);
+    const need = detailNeed(trait);
+    const fielded = need && onDetail && (rating > 0 || copy);
     const remove = () => {
       onChange(clear(picks, key));
       setAdded(added.filter((k) => k !== key));
@@ -138,8 +139,8 @@ export function DotGrid({
             {label && <span className="text-xs text-gold">{label}</span>}
             {fielded && (
               <Input
-                aria-label={`${key} field`}
-                placeholder={FIELD_PLACEHOLDER}
+                aria-label={`${key} ${need.kind}`}
+                placeholder={need.placeholder}
                 autoFocus={focus === key}
                 value={details[key] ?? ""}
                 onChange={(e) => onDetail(key, e.target.value)}
@@ -161,7 +162,7 @@ export function DotGrid({
                   aria-pressed={rating === dot}
                   disabled={!enabled}
                   onClick={() => {
-                    if (!rating && trait.needs_field) setFocus(key);
+                    if (!rating && need) setFocus(key);
                     onChange(tap(picks, allowed, key, dot));
                   }}
                   className={[
@@ -211,7 +212,8 @@ export function DotGrid({
   };
 
   const row = (trait: TraitOut) => {
-    const fields = trait.needs_field && onDetail;
+    const need = detailNeed(trait);
+    const fields = need && onDetail;
     const copies = fields
       ? [...new Set([...keysOf(picks, trait.name), ...added.filter((k) => traitOf(k) === trait.name)])].filter((k) => k !== trait.name)
       : [];
@@ -226,7 +228,7 @@ export function DotGrid({
         {copies.map((key) => line(trait, key))}
         {fields && keysOf(picks, trait.name).length > 0 && (
           <button type="button" onClick={more} className="mt-1 ml-6 text-xs text-gold underline hover:text-parchment">
-            Add another field
+            {need.another}
           </button>
         )}
       </li>

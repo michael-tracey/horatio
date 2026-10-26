@@ -10995,7 +10995,7 @@
             "title": "Lost On"
           },
           "name": {
-            "maxLength": 100,
+            "maxLength": 200,
             "minLength": 1,
             "title": "Name",
             "type": "string"
@@ -11022,6 +11022,10 @@
       },
       "RetainerOut": {
         "properties": {
+          "bought": {
+            "title": "Bought",
+            "type": "boolean"
+          },
           "description": {
             "title": "Description",
             "type": "string"
@@ -11035,9 +11039,16 @@
             "type": "string"
           },
           "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
           },
           "lost": {
             "anyOf": [
@@ -11094,6 +11105,7 @@
           "id",
           "name",
           "dots",
+          "bought",
           "description",
           "from_merit",
           "lost",
@@ -11141,15 +11153,10 @@
             },
             "title": "Retainers",
             "type": "array"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
           }
         },
         "required": [
           "rating",
-          "total",
           "retainers",
           "can_edit",
           "can_link"
@@ -13381,6 +13388,17 @@
               }
             ],
             "title": "In Clan"
+          },
+          "instance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance"
           },
           "kind": {
             "anyOf": [
@@ -18847,7 +18865,7 @@
         ]
       },
       "put": {
-        "description": "Replace the list. The player edits names, descriptions, dots and losses;\nstaff do the same and alone link an NPC.",
+        "description": "Replace the list. The player edits descriptions and losses, and the names\nand dots of those not bought on the sheet; staff do the same and alone link\nan NPC.",
         "operationId": "save_retainers_api_characters__character_id__retainers_put",
         "parameters": [
           {

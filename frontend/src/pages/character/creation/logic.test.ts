@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
-import { fieldSkills } from "../fields";
+import { detailNeed, fieldSkills } from "../fields";
 import { canTap, choiceName, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, tap, togglePoints, traitOf } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
@@ -110,7 +110,7 @@ describe("identityChoices", () => {
 });
 
 describe("more than one field of a skill", () => {
-  const fielded = (name: string) => ["Crafts", "Performance", "Science"].includes(name);
+  const fielded = (name: string) => detailNeed({ name, needs_field: ["Crafts", "Performance", "Science"].includes(name), instance: null });
 
   it("keys the second field apart from the first, and finds the trait again", () => {
     const key = nextCopy(["Performance"], "Performance");
@@ -144,6 +144,16 @@ describe("more than one field of a skill", () => {
     expect(problems.Science).toEqual({ message: "Science needs a field.", twice: false });
     expect(problems[copyKey("Performance", 2)]!.twice).toBe(true);
     expect(fieldProblems({ Performance: 2 }, { Performance: "Singing" }, fielded)).toEqual({});
+  });
+
+  it("asks a name of each Retainer, and a different one for the second", () => {
+    const named = (name: string) => detailNeed({ name, needs_field: false, instance: name === "Retainers" ? "Retainer" : null });
+    const picks = { Retainers: 3, [copyKey("Retainers", 2)]: 2, Haven: 1 };
+    expect(fieldProblems(picks, { Retainers: "Bocephus" }, named)).toEqual({ [copyKey("Retainers", 2)]: { message: "Name each Retainer.", twice: false } });
+    expect(fieldProblems(picks, { Retainers: "Bocephus", [copyKey("Retainers", 2)]: "bocephus" }, named)[copyKey("Retainers", 2)]).toEqual({
+      message: "Retainers: bocephus is picked already; give this one another name.",
+      twice: true,
+    });
   });
 
   it("takes the skills that need a field from the rules", () => {

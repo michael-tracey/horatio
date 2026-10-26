@@ -55,6 +55,9 @@ class TraitOut(BaseModel):
     # A skill bought once per field, such as Performance: Singing (p. 92): one
     # the catalogue says needs a specialisation.
     needs_field: bool = False
+    # A trait bought once for each of several, each named in its detail with its
+    # own dots (Retainers, Alternate Identity, pp. 98-99, 104): what one is called.
+    instance: str | None = None
 
 
 class CatalogueOut(BaseModel):
@@ -133,6 +136,7 @@ def catalogue(
                 else None,
                 needs_field=t.category == "skills"
                 and t.properties.get("requirement") == "requires_specialization",
+                instance=t.properties.get("instance"),
             )
             for t in traits
             if category is None or t.category == category

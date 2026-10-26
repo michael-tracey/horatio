@@ -1229,8 +1229,9 @@ export interface paths {
         get: operations["read_retainers_api_characters__character_id__retainers_get"];
         /**
          * Save Retainers
-         * @description Replace the list. The player edits names, descriptions, dots and losses;
-         *     staff do the same and alone link an NPC.
+         * @description Replace the list. The player edits descriptions and losses, and the names
+         *     and dots of those not bought on the sheet; staff do the same and alone link
+         *     an NPC.
          */
         put: operations["save_retainers_api_characters__character_id__retainers_put"];
         post?: never;
@@ -8068,17 +8069,16 @@ export interface components {
         };
         /** RetainerOut */
         RetainerOut: {
+            /** Bought */
+            bought: boolean;
             /** Description */
             description: string;
             /** Dots */
             dots: number;
             /** From Merit */
             from_merit: string;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
+            /** Id */
+            id: string | null;
             /** Lost */
             lost: string | null;
             /** Lost On */
@@ -8105,8 +8105,6 @@ export interface components {
             rating: number;
             /** Retainers */
             retainers: components["schemas"]["RetainerOut"][];
-            /** Total */
-            total: number;
         };
         /**
          * Role
@@ -8976,6 +8974,8 @@ export interface components {
             house_rule: string | null;
             /** In Clan */
             in_clan: string[] | null;
+            /** Instance */
+            instance?: string | null;
             /** Kind */
             kind?: string | null;
             /** Name */

@@ -9,16 +9,20 @@ from sqlalchemy.orm import Session
 
 from horatio import retainers, sheets
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Character, Retainer, User
+from horatio.models import Character, User
 from horatio.permissions import visible_character
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["retainers"])
 
 
 class RetainerOut(BaseModel):
-    id: uuid.UUID
+    # None for a Retainer bought on the sheet with nothing kept for it yet.
+    id: uuid.UUID | None
+    # The name, and the dots: for one bought on the sheet, its detail ("" for one
+    # held without a name) and rating there.
     name: str
     dots: int
+    bought: bool
     description: str
     # The merit that gave it; empty for the background's own.
     from_merit: str
@@ -30,9 +34,8 @@ class RetainerOut(BaseModel):
 
 
 class RetainersOut(BaseModel):
-    # The Retainers background's rating, and the dots the listed Retainers add up to.
+    # The Retainers background's dots, across every Retainer bought.
     rating: int
-    total: int
     retainers: list[RetainerOut]
     can_edit: bool
     can_link: bool
@@ -41,7 +44,8 @@ class RetainersOut(BaseModel):
 class RetainerIn(BaseModel):
     # Present for a Retainer already listed.
     id: uuid.UUID | None = None
-    name: str = Field(min_length=1, max_length=100)
+    # One bought on the sheet is named as it was bought there, and its dots are the sheet's.
+    name: str = Field(min_length=1, max_length=200)
     dots: int
     description: str = Field(default="", max_length=500)
     from_merit: str = Field(default="", max_length=100)
@@ -54,19 +58,21 @@ class RetainersIn(BaseModel):
     retainers: list[RetainerIn] = Field(max_length=retainers.MAX_LISTED)
 
 
-def listed(db: Session, rows: list[Retainer], viewer: User | None) -> list[RetainerOut]:
+def listed(db: Session, entries: list[retainers.Listed], viewer: User | None) -> list[RetainerOut]:
     out: list[RetainerOut] = []
-    for r in rows:
-        npc = retainers.viewable_npc(db, viewer, r)
+    for e in entries:
+        r = e.row
+        npc = retainers.viewable_npc(db, viewer, r) if r else None
         out.append(
             RetainerOut(
-                id=r.id,
-                name=r.name,
-                dots=r.dots,
-                description=r.description,
-                from_merit=r.from_merit,
-                lost=r.lost,
-                lost_on=r.lost_on,
+                id=r.id if r else None,
+                name=e.name,
+                dots=e.dots,
+                bought=e.bought,
+                description=r.description if r else "",
+                from_merit=r.from_merit if r else "",
+                lost=r.lost if r else None,
+                lost_on=r.lost_on if r else None,
                 npc_id=npc.id if npc else None,
                 npc_name=npc.name if npc else None,
             )
@@ -75,11 +81,9 @@ def listed(db: Session, rows: list[Retainer], viewer: User | None) -> list[Retai
 
 
 def retainers_out(db: Session, character: Character, user: User) -> RetainersOut:
-    rows = retainers.read(db, character)
     return RetainersOut(
         rating=retainers.rating(db, character),
-        total=retainers.counted(rows),
-        retainers=listed(db, rows, user),
+        retainers=listed(db, retainers.read(db, character), user),
         can_edit=retainers.can_edit(db, user, character),
         can_link=retainers.can_link(db, user, character),
     )
@@ -94,8 +98,9 @@ def read_retainers(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
 def save_retainers(
     character_id: uuid.UUID, body: RetainersIn, db: DbSession, user: CurrentUser
 ) -> RetainersOut:
-    """Replace the list. The player edits names, descriptions, dots and losses;
-    staff do the same and alone link an NPC."""
+    """Replace the list. The player edits descriptions and losses, and the names
+    and dots of those not bought on the sheet; staff do the same and alone link
+    an NPC."""
     character = visible_character(db, user, character_id)
     if not retainers.can_edit(db, user, character):
         raise HTTPException(

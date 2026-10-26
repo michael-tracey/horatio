@@ -1,11 +1,18 @@
-"""Retainers (core book p. 104): the people who serve a character, listed with
-their own dots under the Retainers background.
+"""Retainers (core book p. 104): the people who serve a character.
 
-The dots across the listed Retainers should add up to the background's rating;
-the list never changes the rating, and a lost Retainer stays listed (the book
-takes its dots away for a while, which staff decide). Retainers a merit gives
-are listed too, but are not counted in the background's dots. Staff alone link
-a Retainer to an NPC.
+The Retainers background is bought once for each Retainer, each with its own
+name (the trait's detail) and up to 5 dots, priced on its own (horatio.sheets).
+Each one bought is listed here, with what the sheet does not hold: who they
+are, whether they are lost, and the NPC staff linked to them, kept in a row of
+the same name. One held without a name, from before Retainers were bought one
+by one, is listed until it is named, with nothing kept for it.
+
+Retainers a merit gives are listed too, with their own dots, and are not part
+of the background. A row of the background's that no Retainer bought is named
+for (listed before they were bought one by one) stays listed with its own dots
+until it is removed; no new one can be added. A lost Retainer stays listed (the
+book takes its dots away for a while, which staff decide). Staff alone link a
+Retainer to an NPC.
 """
 
 import uuid
@@ -48,7 +55,18 @@ class Draft:
     npc_id: uuid.UUID | None
 
 
-def read(db: Session, character: Character) -> list[Retainer]:
+@dataclass(frozen=True)
+class Listed:
+    """One Retainer as listed: bought on the sheet (its name and dots are the
+    sheet's), or from a merit or listed before, with the dots kept in its row."""
+
+    row: Retainer | None
+    name: str
+    dots: int
+    bought: bool
+
+
+def rows(db: Session, character: Character) -> list[Retainer]:
     return list(
         db.scalars(
             select(Retainer)
@@ -58,17 +76,34 @@ def read(db: Session, character: Character) -> list[Retainer]:
     )
 
 
+def bought(db: Session, character: Character) -> list[tuple[str, int]]:
+    """Each Retainer bought on the sheet: its name ("" for one held without) and dots."""
+    return [
+        (row.trait.detail, row.trait.rating or 0)
+        for row in sheet_rows(db, character)
+        if (row.category.key, row.definition.name) == BACKGROUND and (row.trait.rating or 0) > 0
+    ]
+
+
 def rating(db: Session, character: Character) -> int:
-    """The Retainers background's rating on the sheet."""
-    for row in sheet_rows(db, character):
-        if (row.category.key, row.definition.name) == BACKGROUND:
-            return row.trait.rating or 0
-    return 0
+    """The Retainers background's dots, across every Retainer bought."""
+    return sum(dots for _, dots in bought(db, character))
 
 
-def counted(retainers: list[Retainer]) -> int:
-    """The dots the background's rating should match: those not from a merit."""
-    return sum(r.dots for r in retainers if not r.from_merit)
+def read(db: Session, character: Character) -> list[Listed]:
+    """The Retainers bought, in the sheet's order, then those from merits and any
+    listed before, in the order they were saved."""
+    kept = rows(db, character)
+    named = {r.name: r for r in reversed(kept) if not r.from_merit}
+    listed: list[Listed] = []
+    used: set[uuid.UUID] = set()
+    for name, dots in bought(db, character):
+        row = named.get(name) if name else None
+        if row is not None:
+            used.add(row.id)
+        listed.append(Listed(row, name, dots, bought=True))
+    listed += [Listed(r, r.name, r.dots, bought=False) for r in kept if r.id not in used]
+    return listed
 
 
 def can_link(db: Session, user: User, character: Character) -> bool:
@@ -97,7 +132,8 @@ def _refuse(code: int, message: str) -> HTTPException:
     return HTTPException(code, message)
 
 
-def _clean(db: Session, character: Character, drafts: list[Draft]) -> None:
+def _clean(db: Session, character: Character, drafts: list[Draft]) -> set[str]:
+    """Check and tidy the drafts; the names of those bought on the sheet."""
     if len(drafts) > MAX_LISTED:
         raise _refuse(status.HTTP_422_UNPROCESSABLE_CONTENT, "That is too many Retainers.")
     merits = {
@@ -105,12 +141,26 @@ def _clean(db: Session, character: Character, drafts: list[Draft]) -> None:
         for r in sheet_rows(db, character)
         if r.category.key == "merits" and r.trait.rating != 0
     }
+    held = dict(bought(db, character))
+    # Rows of the background's listed before Retainers were bought one by one.
+    before = {r.id for r in rows(db, character) if not r.from_merit and r.name not in held}
+    names = [d.name.strip() for d in drafts if not d.from_merit.strip()]
+    if len(set(names)) < len(names):
+        raise _refuse(status.HTTP_422_UNPROCESSABLE_CONTENT, "Give each Retainer its own name.")
     for d in drafts:
         d.name = d.name.strip()
         d.description = d.description.strip()
         d.from_merit = d.from_merit.strip()
         if not d.name:
             raise _refuse(status.HTTP_422_UNPROCESSABLE_CONTENT, "Name each Retainer.")
+        if not d.from_merit and d.name in held:
+            d.dots = held[d.name]
+        elif not d.from_merit and d.id not in before:
+            raise _refuse(
+                status.HTTP_409_CONFLICT,
+                f"Buy {d.name} on the sheet first: each Retainer is bought on its own,"
+                " with its own dots.",
+            )
         top = MAX_MERIT_DOTS if d.from_merit else MAX_DOTS
         if not 1 <= d.dots <= top:
             raise _refuse(
@@ -125,6 +175,7 @@ def _clean(db: Session, character: Character, drafts: list[Draft]) -> None:
             d.lost_on = None
         elif d.lost_on is None:
             d.lost_on = date.today()
+    return {name for name in held if name}
 
 
 def _link(db: Session, character: Character, npc_id: uuid.UUID) -> None:
@@ -138,11 +189,11 @@ def _link(db: Session, character: Character, npc_id: uuid.UUID) -> None:
 
 def replace(
     db: Session, user: User, character: Character, drafts: list[Draft], *, link: bool
-) -> list[Retainer]:
+) -> list[Listed]:
     """Save the whole list, logging what changed. Without `link`, each kept
     Retainer keeps the NPC it had and a new one has none."""
-    _clean(db, character, drafts)
-    held = {r.id: r for r in read(db, character)}
+    on_sheet = _clean(db, character, drafts)
+    held = {r.id: r for r in rows(db, character)}
     troupe_id = character.home_troupe_id or character.owner_troupe_id
     log = {"character_id": character.id, "troupe_id": troupe_id}
     kept: set[uuid.UUID] = set()
@@ -169,7 +220,9 @@ def replace(
             if row.npc_id:
                 audit.record(db, user, "retainer.linked", **log, **facts)
             continue
-        if was[:3] != (row.name, row.dots, row.description):
+        # A bought Retainer's dots change on the sheet, whose own log has them.
+        moved = was[1] != row.dots and (bool(d.from_merit) or d.name not in on_sheet)
+        if (was[0], was[2]) != (row.name, row.description) or moved:
             audit.record(db, user, "retainer.changed", **log, **facts, was=was[0], was_dots=was[1])
         if was[3] != row.lost and row.lost:
             audit.record(db, user, "retainer.lost", **log, **facts, how=row.lost)

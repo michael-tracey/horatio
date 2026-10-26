@@ -95,7 +95,7 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
                   <TraitLine trait={t} reference={reference} />
                   {t.rating !== null && <Rating value={t.rating} of={pipsOf(t.category)} className="shrink-0 font-display text-base text-gold" />}
                 </div>
-                {t.category === "backgrounds" && t.name === "Retainers" && reference.retainers.length > 0 && <RetainerLines retainers={reference.retainers} />}
+                {t.category === "backgrounds" && t.name === "Retainers" && t === traits.filter((x) => x.name === "Retainers").at(-1) && reference.retainers.length > 0 && <RetainerLines retainers={reference.retainers} />}
               </li>
             ))}
           </ul>
