@@ -1789,7 +1789,8 @@ for (const forTroupe of [false, true]) {
 
     // The starting dot on Obfuscate moves to Protean at a tap, from here too.
     await p.getByRole("group", { name: "Starting dots to move" }).getByRole("button", { name: "Move the dot from Obfuscate to Protean" }).click();
-    await expect(p.getByRole("group", { name: "Starting dots to move" })).toHaveCount(0);
+    // Moving saves Disciplines, and asks again for everything on Merits: as slow as a step's save.
+    await expect(p.getByRole("group", { name: "Starting dots to move" })).toHaveCount(0, { timeout: 15_000 });
     await expect(p.getByText("Your starting dot in Obfuscate needs moving")).toHaveCount(0);
     await p.screenshot(shots(`vestiges-on-merits${forTroupe ? "-troupe" : ""}`));
     await next("Review");
@@ -1825,7 +1826,7 @@ test("a Caitiff with Vestiges of Greatness is shown its choice on Disciplines, m
 
   // The two dots on Celerity move to Dementation from Review too, and it finishes.
   await p.getByRole("button", { name: "Move the dots from Celerity to Dementation" }).click();
-  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0, { timeout: 15_000 });
   await expect(p.getByRole("listitem").filter({ hasText: "Disciplines at 2" })).toContainText("Dementation");
   await p.getByRole("button", { name: "Finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
