@@ -126,3 +126,34 @@ export function exceptionalText(damage: Damage, extra: ExtraDamage[] = []): stri
 export function damageShort(damage: Damage, extra: ExtraDamage[] = []): string {
   return `${damageTotal(damage, extra)} ${kindOf(damage, extra)} (${damageTotal(damage, extra) + exceptionalOf(damage, extra)} exceptional)`;
 }
+
+/** The groups with the fight first (Combat, whose attacks and Dodge a scene needs, then Defence), then the rest as they came. */
+export function fightFirst(groups: [string, TestPool[]][]): [string, TestPool[]][] {
+  const rank = (group: string) => ["Combat", "Defence"].indexOf(group) + 1 || 3;
+  return [...groups].sort((a, b) => rank(a[0]) - rank(b[0]));
+}
+
+const isAttack = (pool: TestPool) => pool.key.startsWith("attack:");
+
+/** The attacks with the highest totals now, best first; equal totals keep the book's order. */
+export function topAttacks(pools: TestPool[], willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = [], count = 3): TestPool[] {
+  const now = (p: TestPool) => total(p, willpower, modifiers, on);
+  return pools
+    .filter(isAttack)
+    .sort((a, b) => now(b) - now(a))
+    .slice(0, count);
+}
+
+/** "Unarmed 9 (2 dmg)": an attack's total and its damage with the forms and powers on. */
+export function attackGlance(pool: TestPool, willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = []): string {
+  const dmg = pool.damage ? ` (${damageTotal(pool.damage, switchedDamage(pool.damage, on))} dmg)` : "";
+  return `${pool.name.replace(/ attack$/, "")} ${total(pool, willpower, modifiers, on)}${dmg}`;
+}
+
+/** "Dodge 8 · vs Social 7 · vs Mental 7": Dodge, then each defence against a power. */
+export function defenceGlance(pools: TestPool[], willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = []): string[] {
+  const now = (p: TestPool) => total(p, willpower, modifiers, on);
+  const dodge = pools.filter((p) => p.key === "dodge").map((p) => `Dodge ${now(p)}`);
+  const resisting = pools.filter((p) => p.key.startsWith("defense:")).map((p) => `vs ${p.key.slice("defense:".length)} ${now(p)}`);
+  return [...dodge, ...resisting];
+}
