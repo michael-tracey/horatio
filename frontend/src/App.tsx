@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { Layout } from "./components/Layout";
 import { Loading } from "./components/ui";
@@ -8,6 +8,7 @@ import { CharactersPage } from "./pages/CharactersPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
+import { LazyPages } from "./staleBuild";
 import { useTextSize } from "./textSize";
 
 // The bigger pages load when first opened, so the first visit (signing in, the
@@ -32,9 +33,9 @@ function RequireSignIn() {
   if (me.isPending) return <Loading />;
   if (!me.data) return <Navigate to="/sign-in" replace />;
   return (
-    <Suspense fallback={<Loading />}>
+    <LazyPages>
       <Outlet />
-    </Suspense>
+    </LazyPages>
   );
 }
 
@@ -64,9 +65,9 @@ export function App() {
         <Route
           path="/t/:troupeId"
           element={
-            <Suspense fallback={<Loading />}>
+            <LazyPages>
               <PublicTroupePage />
-            </Suspense>
+            </LazyPages>
           }
         />
         <Route element={<RequireSignIn />}>

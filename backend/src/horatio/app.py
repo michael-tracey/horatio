@@ -4,7 +4,7 @@ import re
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -185,6 +185,12 @@ def serve_frontend(dist: Path, target: FastAPI = app) -> None:
     public_url = get_settings().public_url.rstrip("/")
     index = (dist / "index.html").read_text().replace("__HORATIO_PUBLIC_URL__", public_url)
 
+    # index.html names the current build's files, so the browser checks for it
+    # every time; those files' names change with their contents, so they never
+    # need checking again.
+    fresh = {"Cache-Control": "no-cache"}
+    hashed = {"Cache-Control": "public, max-age=31536000, immutable"}
+
     @target.get("/{path:path}", include_in_schema=False)
     def frontend(path: str, db: DbSession) -> Response:
         if path.startswith("api/"):
@@ -194,9 +200,10 @@ def serve_frontend(dist: Path, target: FastAPI = app) -> None:
             try:
                 troupe_id = uuid.UUID(public.group(1))
             except ValueError:
-                return HTMLResponse(index)
+                return HTMLResponse(index, headers=fresh)
             preview = troupe_profiles.link_preview(db, troupe_id)
-            return HTMLResponse(with_preview(index, preview, public_url) if preview else index)
+            page = with_preview(index, preview, public_url) if preview else index
+            return HTMLResponse(page, headers=fresh)
         candidate = (dist / path).resolve()
         if (
             path
@@ -204,8 +211,13 @@ def serve_frontend(dist: Path, target: FastAPI = app) -> None:
             and candidate.is_relative_to(dist.resolve())
             and candidate != (dist / "index.html").resolve()
         ):
-            return FileResponse(candidate)
-        return HTMLResponse(index)
+            return FileResponse(candidate, headers=hashed if path.startswith("assets/") else None)
+        # A file that is gone (an old build's page, after a deploy) is not an app
+        # route: answering with index.html would hand the browser HTML where it
+        # asked for a script.
+        if path.startswith("assets/") or (path != "index.html" and PurePosixPath(path).suffix):
+            raise HTTPException(status_code=404)
+        return HTMLResponse(index, headers=fresh)
 
 
 _frontend_dist = get_settings().frontend_dist
