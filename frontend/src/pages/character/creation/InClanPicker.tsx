@@ -65,7 +65,9 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   const options = loaded ? inClanOptions(names, choice, barred) : [];
   if (loaded && !options.length && !choice.chooses) return null;
   if (!loaded && !choice.chooses) return null;
-  const busy = toggle.isPending || swapIn.isPending;
+  // A tap does not count either while it asks again after a change elsewhere (a merit
+  // just taken on Concept): its last answer may refuse what the change now allows.
+  const busy = toggle.isPending || swapIn.isPending || refusing.isFetching;
   return (
     <fieldset className="flex flex-col gap-2 rounded-md border border-ash p-3">
       <legend className="px-1 text-sm text-parchment">
