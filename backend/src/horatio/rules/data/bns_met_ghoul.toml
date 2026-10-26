@@ -1,0 +1,444 @@
+# By Night Studios Mind's Eye Theatre: Vampire — ghoul player characters.
+#
+# A ghoul is a mortal fed on a vampire's blood and bound to that vampire, its
+# domitor (MET: VTM pp. 296–297, "Playing a Ghoul"). It is built as a vampire is
+# (p. 84), with these differences:
+#
+#   - no clan of its own: its sheet holds its domitor's clan and bloodline, and it
+#     pays for them as a vampire would, rarity and bloodline merits included;
+#   - no Generation, at creation or after;
+#   - 5 dots of disciplines, all in its domitor's in-clan disciplines and in powers
+#     its domitor has; dots it cannot place at creation can be saved for later;
+#   - no clan merits but those its domitor's clan and bloodline need, no Morality
+#     merits, and nothing about the vampiric condition;
+#   - its own XP costs (below); disciplines cannot be bought with XP;
+#   - no Humanity, Path, Beast, techniques or elder powers (p. 297).
+#
+# The trait catalogue, checks and grants are the vampire's, less what a ghoul
+# cannot have (`leave_out`).
+#
+# Facts a Ghoul cost rule's condition can test:
+#   in_clan      whether this trait is one of the domitor's clan's in-clan disciplines
+#   clan         the clan or bloodline exactly ("Brujah: True Brujah")
+#   clan_family  the clan ("Brujah")
+
+key = "bns-met-ghoul"
+splat = "ghoul"
+name = "BNS MET Ghoul"
+version = 1
+
+# As for a vampire (pp. 106–107).
+starting_xp = 30
+banked_xp = 5
+
+# The vampire's clans (in its rule set file) and the rest of its catalogue.
+trait_files = ["bns_met_vampire.toml", "bns_met_vampire_traits.toml"]
+
+# The ghoul's own checks first, so a discipline a ghoul cannot take says why in a
+# ghoul's words before the vampire's.
+check_files = ["bns_met_ghoul_checks.toml", "bns_met_vampire_checks.toml"]
+
+grant_files = ["bns_met_vampire_grants.toml"]
+
+# Downtime action kinds and allowances are the vampire's.
+borrow = { action_kinds = "bns_met_vampire.toml", allowance_rules = "bns_met_vampire.toml" }
+
+# Traits a ghoul cannot have, left out of the files above along with the checks
+# and grants about them: Generation (p. 296); Humanity and the Paths, techniques and
+# elder powers (p. 297); and the extra in-clan disciplines vampire merits give.
+leave_out = [
+  { category = "backgrounds", name = "Generation" },
+  { category = "paths" },
+  { category = "techniques" },
+  { category = "elder_disciplines" },
+  { category = "luminary_disciplines" },
+  { category = "extra_in_clan_disciplines" },
+]
+
+# ---------------------------------------------------------------------------
+# Categories, in the vampire's sheet order, less those a ghoul cannot have.
+
+[[categories]]
+key = "clan"
+name = "Clan"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "archetype"
+name = "Archetype"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "sect"
+name = "Sect"
+group = "Identity"
+rated = false
+
+[[categories]]
+key = "faction"
+name = "Faction"
+group = "Identity"
+rated = false
+requires = { category = "sect", name = "Sabbat" }
+
+[[categories]]
+key = "attributes"
+name = "Attributes"
+group = "Attributes"
+
+[[categories]]
+key = "focus_physicals"
+name = "Physical Focus"
+group = "Attributes"
+max_held = 1
+change_cost = 10
+
+[[categories]]
+key = "focus_mentals"
+name = "Mental Focus"
+group = "Attributes"
+max_held = 1
+change_cost = 10
+
+[[categories]]
+key = "focus_socials"
+name = "Social Focus"
+group = "Attributes"
+max_held = 1
+change_cost = 10
+
+[[categories]]
+key = "health_levels"
+name = "Health Levels"
+group = "Expended"
+derived = true
+
+[[categories]]
+key = "willpower_sources"
+name = "Willpower"
+group = "Expended"
+derived = true
+
+[[categories]]
+key = "skills"
+name = "Skills"
+group = "Skills"
+max_rating = 10
+usual_max = 5
+
+[[categories]]
+key = "lore_specializations"
+name = "Lore Specializations"
+group = "Skills"
+specializes = { category = "skills", name = "Lore" }
+
+[[categories]]
+key = "academics_specializations"
+name = "Academics Specializations"
+group = "Skills"
+specializes = { category = "skills", name = "Academics" }
+
+[[categories]]
+key = "drive_specializations"
+name = "Drive Specializations"
+group = "Skills"
+specializes = { category = "skills", name = "Drive" }
+
+[[categories]]
+key = "linguistics_specializations"
+name = "Languages"
+group = "Skills"
+specializes = { category = "skills", name = "Linguistics" }
+
+# Never more than 5 dots in all (p. 297; bns_met_ghoul_checks.toml), so never more
+# than 5 in one. Not bought with XP, so no downtime action to learn one.
+[[categories]]
+key = "disciplines"
+name = "Disciplines"
+group = "Disciplines"
+max_rating = 5
+
+[[categories]]
+key = "rituals"
+name = "Rituals"
+group = "Disciplines"
+
+[[categories]]
+key = "backgrounds"
+name = "Backgrounds"
+group = "Backgrounds"
+usual_max = 5
+
+[[categories]]
+key = "haven_specializations"
+name = "Haven Specializations"
+group = "Backgrounds"
+specializes = { category = "backgrounds", name = "Haven" }
+
+[[categories]]
+key = "contacts_specializations"
+name = "Contacts Specializations"
+group = "Backgrounds"
+specializes = { category = "backgrounds", name = "Contacts" }
+
+[[categories]]
+key = "allies_specializations"
+name = "Allies Specializations"
+group = "Backgrounds"
+specializes = { category = "backgrounds", name = "Allies" }
+
+[[categories]]
+key = "sabbat_rituals"
+name = "Sabbat Ritae"
+group = "Backgrounds"
+
+[[categories]]
+key = "vampiric_texts"
+name = "Vampiric Texts"
+group = "Backgrounds"
+
+[[categories]]
+key = "influence_elite_specializations"
+name = "Influence: Elite"
+group = "Backgrounds"
+specializes = { category = "backgrounds", name = "Influences: The Elite" }
+
+[[categories]]
+key = "influence_underworld_specializations"
+name = "Influence: Underworld"
+group = "Backgrounds"
+specializes = { category = "backgrounds", name = "Influences: The Underworld" }
+
+[[categories]]
+key = "status_traits"
+name = "Sect Status"
+group = "Backgrounds"
+
+[[categories]]
+key = "merits"
+name = "Merits"
+group = "Merits and Flaws"
+house_rules_per_trait = true
+points_limit = 7
+downtime_actions = 1
+
+[[categories]]
+key = "flaws"
+name = "Flaws"
+group = "Merits and Flaws"
+house_rules_per_trait = true
+points_limit = 7
+buy_off_factor = 2
+
+# ---------------------------------------------------------------------------
+# Cost rules (p. 296): an attribute 3 XP a dot, a merit its rating, a background
+# or skill the new level × 1; disciplines cannot be bought with XP. The book
+# gives no other prices for a ghoul, so the rest are the vampire's.
+
+[[cost_rules]]
+category = "attributes"
+scheme = "per_dot"
+rate = 3
+
+[[cost_rules]]
+category = "skills"
+scheme = "progressive"
+rate = 1
+
+[[cost_rules]]
+category = "backgrounds"
+scheme = "progressive"
+rate = 1
+
+[[cost_rules]]
+category = "disciplines"
+scheme = "not_allowed"
+
+[[cost_rules]]
+category = "rituals"
+scheme = "per_dot"
+rate = 2
+
+[[cost_rules]]
+category = "merits"
+scheme = "per_dot"
+rate = 1
+
+[[cost_rules]]
+category = "flaws"
+scheme = "per_dot"
+rate = -1
+
+[[cost_rules]]
+category = "focus_physicals"
+scheme = "free"
+
+[[cost_rules]]
+category = "focus_mentals"
+scheme = "free"
+
+[[cost_rules]]
+category = "focus_socials"
+scheme = "free"
+
+[[cost_rules]]
+category = "health_levels"
+scheme = "free"
+
+[[cost_rules]]
+category = "willpower_sources"
+scheme = "free"
+
+[[cost_rules]]
+category = "lore_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "academics_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "drive_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "linguistics_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "haven_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "contacts_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "allies_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "sabbat_rituals"
+scheme = "free"
+
+[[cost_rules]]
+category = "vampiric_texts"
+scheme = "free"
+
+[[cost_rules]]
+category = "influence_elite_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "influence_underworld_specializations"
+scheme = "free"
+
+[[cost_rules]]
+category = "status_traits"
+scheme = "free"
+
+# ---------------------------------------------------------------------------
+# Character creation: as for a vampire, but for disciplines (p. 296): 5 dots to
+# place as the player likes, in-clan only. Points left unplaced are saved.
+
+[[creation_rules]]
+category = "attributes"
+rating = 7
+picks = 1
+
+[[creation_rules]]
+category = "attributes"
+rating = 5
+picks = 1
+
+[[creation_rules]]
+category = "attributes"
+rating = 3
+picks = 1
+
+[[creation_rules]]
+category = "focus_physicals"
+rating = 1
+picks = 1
+
+[[creation_rules]]
+category = "focus_mentals"
+rating = 1
+picks = 1
+
+[[creation_rules]]
+category = "focus_socials"
+rating = 1
+picks = 1
+
+[[creation_rules]]
+category = "skills"
+rating = 4
+picks = 1
+
+[[creation_rules]]
+category = "skills"
+rating = 3
+picks = 2
+
+[[creation_rules]]
+category = "skills"
+rating = 2
+picks = 3
+
+[[creation_rules]]
+category = "skills"
+rating = 1
+picks = 4
+
+[[creation_rules]]
+category = "backgrounds"
+rating = 3
+picks = 1
+
+[[creation_rules]]
+category = "backgrounds"
+rating = 2
+picks = 1
+
+[[creation_rules]]
+category = "backgrounds"
+rating = 1
+picks = 1
+
+[[creation_rules]]
+category = "disciplines"
+points = 5
+restriction = "in_clan"
+
+[[creation_rules]]
+category = "merits"
+points = 7
+
+[[creation_rules]]
+category = "flaws"
+points = 7
+
+# Every new ghoul starts with these, free: a vampire's, without Humanity.
+
+[[starting_traits]]
+category = "health_levels"
+name = "Healthy"
+rating = 3
+
+[[starting_traits]]
+category = "health_levels"
+name = "Injured"
+rating = 3
+
+[[starting_traits]]
+category = "health_levels"
+name = "Incapacitated"
+rating = 3
+
+[[starting_traits]]
+category = "willpower_sources"
+name = "Willpower"
+rating = 6

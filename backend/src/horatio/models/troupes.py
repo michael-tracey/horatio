@@ -36,6 +36,11 @@ class Troupe(Imported, Record):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Sects whose PCs may join; empty means any.
     allowed_sects: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Splats whose PCs may join, and be built for it (horatio.rules.splats): never
+    # empty. NPCs are the troupe's own, of any splat.
+    allowed_splats: Mapped[list[str]] = mapped_column(
+        JSONB, default=lambda: ["vampire"], server_default='["vampire"]'
+    )
     # Experience the troupe usually gives: for a game session, and for completing a
     # downtime. Defaults for awarding and for new cycles; each can be changed there.
     session_xp: Mapped[int] = mapped_column(default=8, server_default="8")

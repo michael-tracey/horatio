@@ -19,6 +19,7 @@ from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import ClanLogo, RuleSet, TraitCategory, TraitDefinition
 from horatio.permissions import require_custodian
+from horatio.rules.splats import SPLATS
 
 router = APIRouter(prefix="/clan-logos", tags=["clan logos"])
 
@@ -42,13 +43,19 @@ class ClanLogosOut(BaseModel):
 
 
 def clans(db: DbSession) -> list[tuple[str, str]]:
-    """Every clan and bloodline in the rule sets, as (splat, name)."""
+    """Every clan and bloodline in the rule sets, as (splat, name). A splat whose
+    clans are another's (a ghoul's are the vampire's) has no logos of its own."""
+    borrowing = [s for s, splat in SPLATS.items() if splat.clans_from]
     return list(
         db.execute(
             select(RuleSet.splat, TraitDefinition.name)
             .join(TraitCategory, TraitCategory.rule_set_id == RuleSet.id)
             .join(TraitDefinition, TraitDefinition.category_id == TraitCategory.id)
-            .where(TraitCategory.key == "clan", TraitDefinition.retired.is_(False))
+            .where(
+                TraitCategory.key == "clan",
+                TraitDefinition.retired.is_(False),
+                RuleSet.splat.not_in(borrowing),
+            )
             .order_by(RuleSet.splat, TraitDefinition.name)
         )
     )

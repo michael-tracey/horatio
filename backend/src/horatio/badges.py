@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from horatio import dark_pack, pictures, social_age, titles
 from horatio.models import Character, CharacterTrait, ClanLogo, TraitCategory, TraitDefinition
+from horatio.rules.splats import SPLATS
 
 
 @dataclass(frozen=True)
@@ -55,7 +56,8 @@ NO_LOGO: Logo = (None, None)
 def logos(db: Session, splat: str) -> dict[str, Logo]:
     """Each clan's logo address, and its white version's if it has one: the
     custodian's upload, or else the clan's Dark Pack symbol (horatio.dark_pack).
-    A bloodline without its own takes its clan's."""
+    A bloodline without its own takes its clan's, and a ghoul its domitor's clan's."""
+    splat = (SPLATS[splat].clans_from or splat) if splat in SPLATS else splat
     found: dict[str, Logo] = dict(dark_pack.clan_logos()) if splat == "vampire" else {}
     for clan, image_id in db.execute(
         select(ClanLogo.clan, ClanLogo.image_id).where(ClanLogo.splat == splat)

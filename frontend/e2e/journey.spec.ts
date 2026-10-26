@@ -4408,6 +4408,54 @@ test("a troupe's Profile tab switches it public at once, About sets its XP range
   await expect(p.getByRole("button", { name: "Set by hand" })).toHaveCount(0);
 });
 
+test("a troupe takes ghouls once its storytellers tick Ghoul on About, and a ghoul can then join", async ({ browser }) => {
+  const custodian = await person(browser, "splat-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "splat-lead");
+  const player = await person(browser, "splat-player");
+  const troupeName = `Thrall Court ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  const l = lead.page;
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(l.url()).pathname.split("/")[2]!;
+
+  // A player builds a ghoul, bound to a domitor not in Horatio; the troupe takes vampires only.
+  const p = player.page;
+  const send = (method: "POST" | "PUT", url: string, data: object) => p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+  const made = await send("POST", "/api/characters", { splat: "ghoul", name: "Renfield", domitor: { name: "Count Orlok", clan: "Nosferatu" } });
+  expect(made.status(), await made.text()).toBe(201);
+  const { id } = await made.json();
+  const refused = await send("POST", `/api/characters/${id}/troupes`, { troupe_id: troupeId });
+  expect(refused.status()).toBe(409);
+  expect((await refused.json()).detail).toBe(`${troupeName} does not take ghoul characters.`);
+
+  // The lead ticks Ghoul. Vampire, the only splat ticked until then, could not be unticked.
+  const splats = l.locator("section").filter({ has: l.getByRole("heading", { name: "Splats", exact: true }) });
+  await expect(splats.getByRole("checkbox", { name: "Vampire" })).toBeChecked();
+  await expect(splats.getByRole("checkbox", { name: "Vampire" })).toBeDisabled();
+  await expect(splats.getByRole("checkbox", { name: "Ghoul" })).not.toBeChecked();
+  // The box follows the troupe as saved, so it ticks once the change is in.
+  await splats.getByRole("checkbox", { name: "Ghoul" }).click();
+  await expect(splats.getByRole("checkbox", { name: "Ghoul" })).toBeChecked();
+  await expect(splats.getByRole("checkbox", { name: "Vampire" })).toBeEnabled();
+  await l.reload();
+  await expect(splats.getByRole("checkbox", { name: "Ghoul" })).toBeChecked();
+
+  // Now the ghoul joins, and the player reads which splats may.
+  const joined = await send("POST", `/api/characters/${id}/troupes`, { troupe_id: troupeId });
+  expect(joined.status(), await joined.text()).toBe(201);
+  await p.goto(`/troupes/${troupeId}`);
+  await expect(p.getByText("Vampire and Ghoul player characters may join.")).toBeVisible();
+});
+
 test("a player asks staff for an elder power the rules refuse, free, and a storyteller approves it", async ({ browser }) => {
   const custodian = await person(browser, "exc-custodian");
   makeCustodian(custodian.email);

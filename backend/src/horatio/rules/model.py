@@ -227,6 +227,15 @@ class RuleSetData:
         """Each trait's catalogue type ("Clan", "General"…), for checks that ask."""
         return {k: t.properties["type"] for k, t in self.traits.items() if "type" in t.properties}
 
+    @cached_property
+    def tags(self) -> Mapping[tuple[str, str], frozenset[str]]:
+        """Each trait's catalogue tags ("vampire_only"), for checks that ask."""
+        return {
+            k: frozenset(t.properties["tags"])
+            for k, t in self.traits.items()
+            if "tags" in t.properties
+        }
+
     def trait_properties(self, category: str, name: str) -> Mapping[str, Any]:
         trait = self.traits.get((category, name))
         return trait.properties if trait else {}

@@ -372,18 +372,52 @@ def ensure_named(definition: TraitDefinition, detail: str) -> None:
         raise unprocessable(f"Name each {noun}: each is bought on its own, with its own dots.")
 
 
+@dataclass(frozen=True)
+class Domitor:
+    """What a ghoul's checks know of its linked domitor (horatio.domitors): its clan
+    and bloodline, and the rating it holds each discipline at, by full name."""
+
+    clan: str
+    powers: Mapping[str, int]
+
+
+def linked_domitor(db: Session, character: Character) -> Domitor | None:
+    """The character's linked domitor as its checks see it; None for a vampire, or a
+    ghoul whose domitor is only a name."""
+    if character.domitor_id is None:
+        return None
+    return as_domitor(db, db.get_one(Character, character.domitor_id))
+
+
+def as_domitor(db: Session, domitor: Character) -> Domitor:
+    """A vampire as the checks of a ghoul bound to it see it."""
+    rows = sheet_rows(db, domitor)
+    return Domitor(
+        clan=next((r.definition.name for r in rows if r.category.key == "clan"), ""),
+        powers={
+            r.as_rules_trait().full_name: r.trait.rating or 0
+            for r in rows
+            if r.category.key == "disciplines"
+        },
+    )
+
+
 def check_context(
     db: Session,
     character: Character,
     sheet: Sequence[SheetTrait],
     priced: Iterable[tuple[str, str, str | None]] | None = None,
+    domitor: Domitor | None | Literal["read"] = "read",
 ) -> Context:
     """What checks know beyond the sheet. `priced` is what the sheet's grants price
-    as in-clan, where the caller has it already."""
+    as in-clan, and `domitor` the character's linked domitor, where the caller has
+    them already."""
     rules = rules_for(db, character)
     # Paths a merit prices as in-clan (Thaumaturgic Expertise) count as in-clan here.
     if priced is None:
         priced = effects(rules.rule_set.grants, sheet, rules.rule_set).in_clan_priced
+    if domitor == "read":
+        domitor = linked_domitor(db, character)
     native = frozenset(SPLATS[character.splat].in_clan(rules, sheet))
     return Context(
         accepted=character.home_troupe_id is not None,
@@ -392,6 +426,9 @@ def check_context(
         native=native,
         primary=primary_set(character, native),
         kinds=rules.rule_set.kinds,
+        tags=rules.rule_set.tags,
+        domitor_clan=domitor.clan if domitor is not None else None,
+        domitor_powers=domitor.powers if domitor is not None else None,
     )
 
 
@@ -619,7 +656,8 @@ def refusals(
         ]
     held = {t.name for t in sheet if t.category == category_key}
     checks = rules.checks()
-    context = check_context(db, character, sheet)
+    domitor = linked_domitor(db, character)
+    context = check_context(db, character, sheet, domitor=domitor)
     # Trying a trait no grant gives from or looks at leaves the grants as they are,
     # so their answer for the sheet serves every such trial (grants are slow to redo).
     grants = rule_set.grants
@@ -699,6 +737,7 @@ def refusals(
                 character,
                 trial,
                 None if {(category, name), (category, None)} & moves_grants else priced,
+                domitor,
             )
             same_clan = (trial_context.in_clan, trial_context.native) == (
                 context.in_clan,

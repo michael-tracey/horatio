@@ -11,7 +11,7 @@ import { XpRangeCard } from "./XpRange";
 
 /**
  * The troupe at a glance: what it is, when it next plays, who leads it, which
- * sects may join, and its XP floor and ceiling; for its staff, what is waiting
+ * sects and splats may join, and its XP floor and ceiling; for its staff, what is waiting
  * on them. The full profile is on the Profile tab.
  */
 export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
@@ -21,6 +21,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
       {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
       <Summary troupe={troupe} />
       <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
+      <SplatsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       <div className="md:col-span-2">
         <XpRangeCard
           troupeId={troupe.id}
@@ -150,6 +151,48 @@ function SectsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean })
             </label>
           ))}
           <ErrorText error={save.error ?? catalogue.error} />
+        </fieldset>
+      )}
+    </Card>
+  );
+}
+
+/** Which splats' player characters may join, and be built for the troupe: Vampire, Ghoul. At least one. */
+function SplatsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
+  const splats = useQuery({
+    queryKey: ["splats"],
+    queryFn: () => unwrap(api.GET("/api/rules")),
+    staleTime: 5 * 60_000,
+  });
+  const save = useAction((allowed_splats: string[]) =>
+    unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { allowed_splats } })),
+  );
+  const allowed = troupe.allowed_splats;
+  const label = (splat: string) => splats.data?.find((s) => s.splat === splat)?.label ?? splat;
+  const named = allowed.map(label);
+  const listed = named.length > 1 ? `${named.slice(0, -1).join(", ")} and ${named[named.length - 1]}` : named[0];
+
+  return (
+    <Card title="Splats">
+      {!canEdit ? (
+        <p className="text-sm">{listed} player characters may join.</p>
+      ) : (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-sm text-mist">
+            What may player characters be? New characters built for the troupe, and those joining it, must be one of these. NPCs are not limited.
+          </legend>
+          {(splats.data ?? []).map(({ splat, label }) => (
+            <label key={splat} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={allowed.includes(splat)}
+                disabled={save.isPending || (allowed.length === 1 && allowed.includes(splat))}
+                onChange={(e) => save.mutate(e.target.checked ? [...allowed, splat] : allowed.filter((s) => s !== splat))}
+              />
+              {label}
+            </label>
+          ))}
+          <ErrorText error={save.error ?? splats.error} />
         </fieldset>
       )}
     </Card>

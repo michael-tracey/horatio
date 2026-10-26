@@ -533,6 +533,8 @@ def set_category_picks(
 
 def complete(db: Session, player: User, character: Character) -> None:
     ensure_creating(db, character)
+    if SPLATS[character.splat].has_domitor and not (character.domitor_id or character.domitor_name):
+        raise conflict("Name the ghoul's domitor first: its clan and disciplines follow from it.")
     every = pools_with_strays(db, character)
     unplaced = [p for p in every if p.kind == "picks" and p.remaining > 0]
     if unplaced:

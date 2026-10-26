@@ -1,17 +1,25 @@
 import uuid
 from collections.abc import Iterable
 from datetime import date
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import deletion, pictures, renames, social_age
+from horatio import deletion, domitors, pictures, renames, social_age
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
-from horatio.models import Character, RuleSet, Troupe
-from horatio.permissions import can_edit_character, visible_character
+from horatio.models import Character, RuleSet, Troupe, User
+from horatio.permissions import (
+    TroupeAction,
+    allows,
+    can_edit_character,
+    troupe_role,
+    visible_character,
+)
+from horatio.rules.splats import SPLATS
 from horatio.sheets import lock_character, rules_for, start_character, sync_fixed_ratings
 
 router = APIRouter(prefix="/characters", tags=["characters"])
@@ -38,11 +46,40 @@ class CharacterOut(BaseModel):
     clan: str | None
 
 
+class PlacedDots(BaseModel):
+    name: str
+    detail: str = ""
+    rating: int
+
+
+class DomitorIn(BaseModel):
+    """A ghoul's domitor: a vampire PC or NPC in Horatio, or one that is not, by name
+    and clan ("Brujah: True Brujah" for a bloodline)."""
+
+    character_id: uuid.UUID | None = None
+    name: str = Field(default="", max_length=200)
+    clan: str | None = None
+    # When the ghoul already has discipline dots: keep them, or move all of them to
+    # the new domitor's in-clan disciplines, as `moved` says (MET: VTM p. 297).
+    disciplines: Literal["keep", "move"] = "keep"
+    moved: list[PlacedDots] = []
+
+
+class DomitorOut(BaseModel):
+    # The linked domitor, if it is in Horatio.
+    character_id: uuid.UUID | None
+    name: str
+    # The domitor's clan and bloodline, which are the ghoul's.
+    clan: str | None
+
+
 class NewCharacter(BaseModel):
     splat: str
     name: str = Field(min_length=1, max_length=200)
     # Build by this troupe's rules; None for the plain rule set.
     building_troupe_id: uuid.UUID | None = None
+    # A ghoul's domitor, if known yet.
+    domitor: DomitorIn | None = None
 
 
 class BuildingTroupe(BaseModel):
@@ -101,19 +138,24 @@ def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterOut]:
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_character(body: NewCharacter, db: DbSession, user: CurrentUser) -> CharacterOut:
-    """Players build characters on their own, outside any troupe."""
+    """Players build characters on their own, outside any troupe: of any splat with
+    no building troupe, else of a splat it takes."""
     if db.scalar(select(RuleSet.id).where(RuleSet.splat == body.splat)) is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No rules for {body.splat!r}.")
+    if body.domitor is not None and not SPLATS[body.splat].has_domitor:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Only a ghoul has a domitor.")
     character = Character(
         player_id=user.id,
         splat=body.splat,
         name=body.name,
-        building_troupe_id=running_troupe_id(db, body.building_troupe_id),
+        building_troupe_id=running_troupe_id(db, body.building_troupe_id, body.splat),
     )
     db.add(character)
     db.flush()
     start_character(db, user, character)
     grant_starting_traits(db, rules_for(db, character), character)
+    if body.domitor is not None:
+        bind(db, user, character, body.domitor)
     db.commit()
     db.refresh(character)
     return character_out(db, character)
@@ -138,12 +180,18 @@ def change_character(
     return character_out(db, character)
 
 
-def running_troupe_id(db: DbSession, troupe_id: uuid.UUID | None) -> uuid.UUID | None:
+def running_troupe_id(db: DbSession, troupe_id: uuid.UUID | None, splat: str) -> uuid.UUID | None:
+    """The troupe to build by, if it is running and takes characters of `splat`."""
     if troupe_id is None:
         return None
     troupe = db.get(Troupe, troupe_id)
     if troupe is None or troupe.archived_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
+    if splat not in troupe.allowed_splats:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"{troupe.name} does not take {SPLATS[splat].label.lower() or splat} characters.",
+        )
     return troupe.id
 
 
@@ -158,10 +206,72 @@ def set_building_troupe(
         raise HTTPException(
             status.HTTP_409_CONFLICT, "The character has a home troupe; its rules apply."
         )
-    character.building_troupe_id = running_troupe_id(db, body.troupe_id)
+    character.building_troupe_id = running_troupe_id(db, body.troupe_id, character.splat)
     sync_fixed_ratings(db, character)
     db.commit()
     return character_out(db, character)
+
+
+def bind(db: DbSession, user: User, ghoul: Character, body: DomitorIn) -> None:
+    domitor = None
+    if body.character_id is not None:
+        try:
+            domitor = visible_character(db, user, body.character_id)
+        except HTTPException as error:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "No such domitor.") from error
+    domitors.set_domitor(
+        db,
+        user,
+        ghoul,
+        domitor=domitor,
+        name=body.name,
+        clan=body.clan,
+        disciplines=body.disciplines,
+        moved=[domitors.Placed(p.name, p.rating, p.detail) for p in body.moved],
+    )
+
+
+def domitor_out(db: DbSession, ghoul: Character) -> DomitorOut | None:
+    found = domitors.domitor_info(db, ghoul)
+    if found is None:
+        return None
+    return DomitorOut(
+        character_id=found.character.id if found.character is not None else None,
+        name=found.name,
+        clan=found.clan,
+    )
+
+
+@router.get("/{character_id}/domitor")
+def read_domitor(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> DomitorOut | None:
+    """A ghoul's domitor; None while it has none, and for a vampire."""
+    return domitor_out(db, visible_character(db, user, character_id))
+
+
+@router.put("/{character_id}/domitor")
+def change_domitor(
+    character_id: uuid.UUID, body: DomitorIn, db: DbSession, user: CurrentUser
+) -> DomitorOut | None:
+    """Bind a ghoul to its domitor (MET: VTM pp. 296–297): its player, until a home
+    troupe accepts it; after that, the home troupe's running staff, once the old bond
+    has faded."""
+    ghoul = visible_character(db, user, character_id)
+    if ghoul.home_troupe_id is None:
+        ghoul = editable_character(db, user, character_id)
+    else:
+        home = db.get_one(Troupe, ghoul.home_troupe_id)
+        if not allows(
+            troupe_role(db, user, home),
+            TroupeAction.APPROVE_CHANGES,
+            is_custodian=user.is_custodian,
+        ):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Once a home troupe accepts a ghoul, its staff change its domitor.",
+            )
+    bind(db, user, lock_character(db, ghoul.id), body)
+    db.commit()
+    return domitor_out(db, ghoul)
 
 
 @router.delete("/{character_id}", status_code=status.HTTP_204_NO_CONTENT)

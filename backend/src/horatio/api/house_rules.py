@@ -15,7 +15,7 @@ from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import RESTRICTION_TEXT
-from horatio.models import User
+from horatio.models import Troupe, User
 from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, pricing
 from horatio.rules.model import (
@@ -66,20 +66,27 @@ class CheckChange(BaseModel):
     strength: Strength | None
 
 
-def checks_out(db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire") -> list[CheckOut]:
-    rules = read_troupe_rules(db, splat, troupe_id)
-    return [
-        CheckOut(
-            key=c.key,
-            category=c.category,
-            about=c.name or (f"{c.name_prefix}…" if c.name_prefix else "any"),
-            message=c.message,
-            page=c.page,
-            strength=c.strength,
-            house=rules.check_overrides.get(c.key),
-        )
-        for c in rules.rule_set.checks
-    ]
+def checks_out(db: DbSession, troupe_id: uuid.UUID) -> list[CheckOut]:
+    """The checks of every splat the troupe takes, each once: a vampire's, then those
+    only a ghoul's rules have. A house strength is the troupe's for every splat."""
+    troupe = db.get_one(Troupe, troupe_id)
+    found: dict[str, CheckOut] = {}
+    for splat in ["vampire", *(s for s in troupe.allowed_splats if s != "vampire")]:
+        rules = read_troupe_rules(db, splat, troupe_id)
+        for c in rules.rule_set.checks:
+            found.setdefault(
+                c.key,
+                CheckOut(
+                    key=c.key,
+                    category=c.category,
+                    about=c.name or (f"{c.name_prefix}…" if c.name_prefix else "any"),
+                    message=c.message,
+                    page=c.page,
+                    strength=c.strength,
+                    house=rules.check_overrides.get(c.key),
+                ),
+            )
+    return list(found.values())
 
 
 @router.get("/checks")
@@ -93,7 +100,7 @@ def change_check(
     troupe_id: uuid.UUID, key: str, body: CheckChange, db: DbSession, user: CurrentUser
 ) -> CheckOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    known = {c.key for c in read_troupe_rules(db, "vampire", troupe_id).rule_set.checks}
+    known = {c.key for c in checks_out(db, troupe_id)}
     if key not in known:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such check.")
     set_check_override(db, troupe.id, key, body.strength)

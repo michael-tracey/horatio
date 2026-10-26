@@ -4,11 +4,13 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Troupe
+from horatio.models import RuleSet, Troupe
 from horatio.rules.grants import choices
+from horatio.rules.splats import SPLATS, splat_order
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(prefix="/rules", tags=["rules"])
@@ -65,6 +67,25 @@ class CatalogueOut(BaseModel):
     name: str
     categories: list[CategoryOut]
     traits: list[TraitOut]
+
+
+class SplatOut(BaseModel):
+    splat: str
+    # Its name in the app: "Vampire", "Ghoul".
+    label: str
+    # A character of it is bound to a vampire, its domitor, whose clan it takes.
+    has_domitor: bool
+
+
+@router.get("")
+def splats(db: DbSession, user: CurrentUser) -> list[SplatOut]:
+    """The splats there are rules for, vampires first: what a character can be."""
+    loaded = sorted(db.scalars(select(RuleSet.splat)), key=splat_order)
+    return [
+        SplatOut(splat=s, label=SPLATS[s].label or s, has_domitor=SPLATS[s].has_domitor)
+        for s in loaded
+        if s in SPLATS
+    ]
 
 
 @router.get("/{splat}")
