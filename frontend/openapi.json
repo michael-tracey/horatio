@@ -4061,6 +4061,14 @@
             "title": "Disciplines",
             "type": "string"
           },
+          "in_clan": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "In Clan",
+            "type": "array"
+          },
           "moved": {
             "default": [],
             "items": {
@@ -4104,6 +4112,13 @@
             ],
             "title": "Clan"
           },
+          "in_clan": {
+            "items": {
+              "type": "string"
+            },
+            "title": "In Clan",
+            "type": "array"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -4112,7 +4127,8 @@
         "required": [
           "character_id",
           "name",
-          "clan"
+          "clan",
+          "in_clan"
         ],
         "title": "DomitorOut",
         "type": "object"

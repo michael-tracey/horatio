@@ -5434,6 +5434,11 @@ export interface components {
              */
             disciplines: "keep" | "move";
             /**
+             * In Clan
+             * @default []
+             */
+            in_clan: string[];
+            /**
              * Moved
              * @default []
              */
@@ -5450,6 +5455,8 @@ export interface components {
             character_id: string | null;
             /** Clan */
             clan: string | null;
+            /** In Clan */
+            in_clan: string[];
             /** Name */
             name: string;
         };

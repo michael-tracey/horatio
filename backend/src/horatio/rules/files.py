@@ -363,6 +363,15 @@ def load_rule_set(path: Path) -> RuleSetData:
             included = tomllib.load(f)
         raw_traits += included.get("traits", [])
         titles += included.get("titles", [])
+    # A category can hold the traits of another, by name, even one left out: a ghoul's
+    # domitor's in-clan disciplines are those a vampire's extra ones can be.
+    for c in raw["categories"]:
+        if "traits_of" in c:
+            raw_traits += [
+                {"category": c["key"], "name": t["name"]}
+                for t in raw_traits
+                if t["category"] == c["traits_of"]
+            ]
     for selector in left_out:
         if "category" not in selector or not any(
             leaves_out(selector, t["category"], [t["name"]]) for t in raw_traits

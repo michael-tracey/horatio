@@ -59,6 +59,9 @@ class DomitorIn(BaseModel):
     character_id: uuid.UUID | None = None
     name: str = Field(default="", max_length=200)
     clan: str | None = None
+    # For a Caitiff not in Horatio: the three in-clan disciplines it chose (MET: VTM
+    # p. 246), which staff check at approval. A linked domitor's are its own.
+    in_clan: list[str] = []
     # When the ghoul already has discipline dots: keep them, or move all of them to
     # the new domitor's in-clan disciplines, as `moved` says (MET: VTM p. 297).
     disciplines: Literal["keep", "move"] = "keep"
@@ -71,6 +74,9 @@ class DomitorOut(BaseModel):
     name: str
     # The domitor's clan and bloodline, which are the ghoul's.
     clan: str | None
+    # The domitor's in-clan disciplines, which are the ghoul's: its clan's, or the
+    # three a Caitiff chose.
+    in_clan: list[str]
 
 
 class NewCharacter(BaseModel):
@@ -226,6 +232,7 @@ def bind(db: DbSession, user: User, ghoul: Character, body: DomitorIn) -> None:
         domitor=domitor,
         name=body.name,
         clan=body.clan,
+        in_clan=body.in_clan,
         disciplines=body.disciplines,
         moved=[domitors.Placed(p.name, p.rating, p.detail) for p in body.moved],
     )
@@ -239,6 +246,7 @@ def domitor_out(db: DbSession, ghoul: Character) -> DomitorOut | None:
         character_id=found.character.id if found.character is not None else None,
         name=found.name,
         clan=found.clan,
+        in_clan=found.in_clan,
     )
 
 

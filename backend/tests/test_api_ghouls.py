@@ -35,6 +35,9 @@ BUILD = [
     ("backgrounds", "Allies", 1),
 ]
 
+# A Toreador's in-clan disciplines, and so its ghoul's.
+TOREADOR = ["Auspex", "Celerity", "Presence"]
+
 pytestmark = pytest.mark.usefixtures("ghoul_rules")
 
 
@@ -135,6 +138,7 @@ def test_a_ghoul_with_a_domitor_not_in_horatio(troupe: Troupe) -> None:
         "character_id": None,
         "name": "Lady Vasquez",
         "clan": "Toreador",
+        "in_clan": TOREADOR,
     }
     # No Humanity: a ghoul starts with the rest of a vampire's starting traits, and 30 XP.
     found = sheet(troupe.player, ghoul.json()["id"])
@@ -169,6 +173,7 @@ def test_a_ghoul_linked_to_a_vampire_takes_its_clan(troupe: Troupe) -> None:
         "character_id": vampire,
         "name": "Vasquez",
         "clan": "Toreador",
+        "in_clan": TOREADOR,
     }
     assert ratings(troupe.player, ghoul, "clan") == {"Toreador": None}
     # Nor can the ghoul's player give it another clan.
@@ -353,7 +358,12 @@ def test_a_new_domitor_and_the_dots_kept(troupe: Troupe) -> None:
     changed = bind(troupe.player, ghoul, typed("Marcus", "Brujah"))
 
     assert changed.status_code == 200, changed.text
-    assert changed.json() == {"character_id": None, "name": "Marcus", "clan": "Brujah"}
+    assert changed.json() == {
+        "character_id": None,
+        "name": "Marcus",
+        "clan": "Brujah",
+        "in_clan": ["Celerity", "Potence", "Presence"],
+    }
     assert ratings(troupe.player, ghoul, "clan") == {"Brujah": None}
     assert ratings(troupe.player, ghoul, "disciplines") == {"Auspex": 3, "Presence": 2}
     messages = [e["message"] for e in troupe.player.client.get(f"/characters/{ghoul}/log").json()]
@@ -444,7 +454,175 @@ def test_a_deleted_domitor_is_kept_by_name(troupe: Troupe) -> None:
         "character_id": None,
         "name": "Vasquez",
         "clan": "Toreador",
+        "in_clan": TOREADOR,
     }
+
+
+# --- a Caitiff domitor (p. 246) ---------------------------------------------------------------
+
+
+def caitiff_domitor(troupe: Troupe, *, fourth: str | None = None) -> str:
+    """The player's Caitiff, who chose Auspex, Celerity and Presence as its in-clan
+    disciplines and has dots in them; with `fourth`, Additional Common Discipline and
+    that discipline as the one it adds."""
+    vampire = new_character(troupe, troupe.player, "Tom Nobody", finished=False, clan="Caitiff")
+
+    def choose(name: str, rating: int = 1) -> None:
+        chosen = troupe.player.client.put(
+            f"/characters/{vampire}/traits",
+            json={"category": "extra_in_clan_disciplines", "name": name, "rating": rating},
+        )
+        assert chosen.status_code == 200, chosen.text
+
+    for name in TOREADOR:
+        choose(name)
+    place(
+        troupe.player,
+        vampire,
+        [
+            ("disciplines", "Auspex", 2),
+            ("disciplines", "Celerity", 1),
+            ("disciplines", "Presence", 1),
+        ],
+    )
+    if fourth is not None:
+        place(troupe.player, vampire, [("merits", "Additional Common Discipline", 4)])
+        choose(fourth)
+    return vampire
+
+
+def in_clan_options(person: Person, character_id: str) -> list[str]:
+    state = person.client.get(f"/characters/{character_id}/creation").json()
+    return next(p for p in state["pools"] if p["category"] == "disciplines")["options"]
+
+
+def test_a_caitiff_domitors_ghoul_has_the_three_it_chose(troupe: Troupe) -> None:
+    vampire = caitiff_domitor(troupe, fourth="Potence")
+
+    ghoul = ghoul_of(troupe.player, {"character_id": vampire})
+
+    assert domitor(troupe.player, ghoul)["in_clan"] == TOREADOR
+    assert ratings(troupe.player, ghoul, "domitor_in_clan_disciplines") == dict.fromkeys(
+        TOREADOR, 1
+    )
+    assert in_clan_options(troupe.player, ghoul) == TOREADOR
+    assert pick(troupe.player, ghoul, "disciplines", "Auspex", 2).status_code == 200
+    assert pick(troupe.player, ghoul, "disciplines", "Celerity", 1).status_code == 200
+    # Not the fourth, which Additional Common Discipline added.
+    refused = pick(troupe.player, ghoul, "disciplines", "Potence", 1)
+    assert refused.status_code == 422
+    assert "Potence is not in-clan" in refused.json()["detail"]
+    # Nor can its player change them.
+    changed = troupe.player.client.put(
+        f"/characters/{ghoul}/traits",
+        json={"category": "domitor_in_clan_disciplines", "name": "Potence", "rating": 1},
+    )
+    assert changed.status_code == 422
+
+
+def test_the_ghoul_follows_its_caitiff_domitors_choices(troupe: Troupe) -> None:
+    vampire = caitiff_domitor(troupe)
+    ghoul = ghoul_of(troupe.player, {"character_id": vampire})
+
+    # The domitor's player swaps Presence for Dominate, all at once from the cart.
+    swapped = troupe.player.client.post(
+        f"/characters/{vampire}/cart",
+        json={
+            "changes": [
+                {"kind": "set", "category": "extra_in_clan_disciplines", "name": n, "rating": r}
+                for n, r in (("Presence", 0), ("Dominate", 1))
+            ]
+        },
+    )
+
+    assert swapped.status_code == 200, swapped.text
+    assert domitor(troupe.player, ghoul)["in_clan"] == ["Auspex", "Celerity", "Dominate"]
+    assert in_clan_options(troupe.player, ghoul) == ["Auspex", "Celerity", "Dominate"]
+    assert ratings(troupe.player, ghoul, "domitor_in_clan_disciplines") == {
+        "Auspex": 1,
+        "Celerity": 1,
+        "Dominate": 1,
+    }
+
+
+def test_a_caitiff_domitor_not_in_horatio_has_three_named(troupe: Troupe) -> None:
+    three = ["Animalism", "Fortitude", "Obfuscate"]
+
+    def caitiff(in_clan: list[str]) -> Any:
+        return new_ghoul(troupe.player, domitor=typed("Old Tom", "Caitiff", in_clan=in_clan))
+
+    assert caitiff([]).status_code == 422
+    assert caitiff(["Animalism", "Fortitude"]).status_code == 422
+    assert caitiff(["Animalism", "Fortitude", "Fortitude"]).status_code == 422
+    assert caitiff(["Animalism", "Fortitude", "Elf Magic"]).status_code == 422
+    assert new_ghoul(troupe.player, domitor=typed(in_clan=three)).status_code == 422
+    linked = new_ghoul(
+        troupe.player, domitor={"character_id": caitiff_domitor(troupe), "in_clan": three}
+    )
+    assert linked.status_code == 422
+
+    made = caitiff(three)
+
+    assert made.status_code == 201, made.text
+    ghoul = made.json()["id"]
+    assert domitor(troupe.player, ghoul)["in_clan"] == three
+    assert pick(troupe.player, ghoul, "disciplines", "Fortitude", 3).status_code == 200
+    assert pick(troupe.player, ghoul, "disciplines", "Potence", 1).status_code == 422
+    # A domitor of another clan leaves them, as its in-clan disciplines are its clan's.
+    assert bind(troupe.player, ghoul, typed("Marcus", "Brujah")).status_code == 200
+    assert ratings(troupe.player, ghoul, "domitor_in_clan_disciplines") == {}
+
+
+def test_dots_move_to_a_caitiff_domitors_three(troupe: Troupe) -> None:
+    ghoul = finished_ghoul(troupe)
+
+    def move(*moved: tuple[str, int]) -> Any:
+        return bind(
+            troupe.player,
+            ghoul,
+            typed(
+                "Old Tom",
+                "Caitiff",
+                in_clan=["Auspex", "Fortitude", "Obfuscate"],
+                disciplines="move",
+                moved=[{"name": n, "rating": r} for n, r in moved],
+            ),
+        )
+
+    assert move(("Auspex", 3), ("Presence", 2)).status_code == 422
+    moved = move(("Auspex", 3), ("Obfuscate", 2))
+    assert moved.status_code == 200, moved.text
+    assert ratings(troupe.player, ghoul, "disciplines") == {"Auspex": 3, "Obfuscate": 2}
+
+
+def test_an_npc_ghoul_is_built_freely(troupe: Troupe) -> None:
+    allow(troupe, ["vampire", "ghoul"])
+
+    def make(name: str, splat: str) -> str:
+        return troupe.storyteller.client.post(
+            f"/troupes/{troupe.id}/npcs", json={"name": name, "splat": splat}
+        ).json()["id"]
+
+    def rate(character_id: str, category: str, name: str, rating: int | None) -> int:
+        return troupe.storyteller.client.put(
+            f"/characters/{character_id}/npc/ratings",
+            json={"category": category, "name": name, "rating": rating},
+        ).status_code
+
+    vampire = make("Baron Vey", "vampire")
+    assert rate(vampire, "clan", "Toreador", None) == 200
+    assert rate(vampire, "disciplines", "Auspex", 1) == 200
+    npc = make("Igor", "ghoul")
+    bound = bind(troupe.storyteller, npc, {"character_id": vampire})
+    assert bound.status_code == 200, bound.text
+
+    # Out of clan, in powers its domitor lacks, and more than 5 dots in all.
+    assert rate(npc, "disciplines", "Potence", 3) == 200
+    assert rate(npc, "disciplines", "Auspex", 4) == 200
+    assert ratings(troupe.storyteller, npc, "disciplines") == {"Auspex": 4, "Potence": 3}
+    assert not [
+        p for p in sheet(troupe.storyteller, npc)["problems"] if p["category"] == "disciplines"
+    ]
 
 
 # --- which splats a troupe takes --------------------------------------------------------------

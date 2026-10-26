@@ -137,8 +137,14 @@ def test_the_rest_of_the_catalogue_is_the_vampires(
     kept = {
         k for k in vampire.traits if k[0] not in left_out and k != ("backgrounds", "Generation")
     }
+    # A Caitiff domitor's in-clan disciplines, named as a vampire's extra ones are.
+    domitors = {
+        ("domitor_in_clan_disciplines", n)
+        for c, n in vampire.traits
+        if c == "extra_in_clan_disciplines"
+    }
 
-    assert set(ghoul.traits) == kept
+    assert set(ghoul.traits) == kept | domitors
     assert ghoul.traits[("clan", "Toreador")].properties["in_clan"] == [
         "Auspex",
         "Celerity",

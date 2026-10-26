@@ -422,6 +422,7 @@ def check_context(
     return Context(
         accepted=character.home_troupe_id is not None,
         finished=character.creation_completed_at is not None,
+        npc=character.kind == "npc",
         in_clan=native | {f"{name}: {detail}" if detail else name for _, name, detail in priced},
         native=native,
         primary=primary_set(character, native),
