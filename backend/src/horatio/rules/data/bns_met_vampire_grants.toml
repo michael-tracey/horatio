@@ -311,8 +311,6 @@ target = { category = "disciplines", names = ["Auspex", "Potence", "Necromancy: 
 amount = 0
 page = "Vol. 2, p. 62"
 
-# Shadows of the Past also gives up to 3 points of Lasombra merits free, which the
-# player chooses: staff add them by hand.
 [[grants]]
 source = { category = "merits", name = "Shadows of the Past" }
 kind = "replace_in_clan"
@@ -379,6 +377,97 @@ kind = "free_up_to"
 target = { category = "backgrounds", name = "Haven" }
 amount = 5
 page = "Vol. 2, p. 55"
+
+# --- free traits the player chooses ----------------------------------------------------
+# The choices are kept on the merit held (CharacterTrait.choices) and change freely
+# until a home troupe accepts the character (horatio.free_choices).
+
+# Placed 4, 3 and 2 in three backgrounds. Dots bought there before are refunded; dots
+# placed at creation count as free already (the book lets them move: a pick can be
+# unpicked and placed elsewhere).
+[[grants]]
+source = { category = "merits", name = "Ventrue Royalty" }
+kind = "free_choices"
+target = { category = "backgrounds", choose = ["Allies", "Contacts", "Fame", "Haven", "Herd", "Influences: The Elite", "Influences: The Underworld", "Resources"] }
+picks = { places = [4, 3, 2] }
+amount = 0
+page = "Vol. 2 Issue 1, p. 44"
+
+# Two specialisations in each of three skills. They are bonuses: they do not count
+# against the one per dot (checks leave out specialisations another trait gives).
+[[grants]]
+source = { category = "merits", name = "Chosen of Cappadocius" }
+kind = "free_choices"
+target = { category = "lore_specializations", choose = "any" }
+picks = { count = 2 }
+amount = 0
+page = "Vol. 2 Issue 1, p. 47"
+
+[[grants]]
+source = { category = "merits", name = "Chosen of Cappadocius" }
+kind = "free_choices"
+target = { category = "linguistics_specializations", choose = "any" }
+picks = { count = 2 }
+amount = 0
+page = "Vol. 2 Issue 1, p. 47"
+
+[[grants]]
+source = { category = "merits", name = "Chosen of Cappadocius" }
+kind = "free_choices"
+target = { category = "academics_specializations", choose = "any" }
+picks = { count = 2 }
+amount = 0
+page = "Vol. 2 Issue 1, p. 47"
+
+# Rituals cost their rating x 1 XP: half the usual rating x 2.
+[[grants]]
+source = { category = "merits", name = "Chosen of Cappadocius" }
+kind = "cost_percent"
+target = { category = "rituals" }
+amount = 50
+page = "Vol. 2 Issue 1, p. 47"
+
+# Up to 3 points of merits usually limited to the Sabbat. The Storyteller can forbid
+# ones that need an active Sabbat position: staff confirm by accepting the character.
+[[grants]]
+source = { category = "merits", name = "Old Habits" }
+kind = "free_choices"
+target = { category = "merits", pool = { types = ["Sabbat"] } }
+picks = { points = 3 }
+amount = 0
+page = "Vol. 2 Issue 1, p. 41"
+
+# One 1- or 2-point clan merit of another clan: not a bloodline, and none that gives
+# disciplines or paths (those the grants know of, and the `except` ones that learn
+# them without a teacher or buy more paths). Merits only a bloodline's members buy
+# are allowed.
+[[grants]]
+source = { category = "merits", name = "Piece That Remains" }
+kind = "free_choices"
+target = { category = "merits", pool = { types = ["Clan"], other_clan = true, max_rating = 2, except_prefix = "Bloodline:", except_granting = true, except = ["Kupala's Bounty", "Thaumaturgically Gifted", "Prodigy of the Flesh", "Mook"] } }
+picks = { count = 1 }
+amount = 0
+page = "Vol. 2 Issue 1, p. 46"
+
+# A copy of a general merit of 3 points or less, free, that the character does not
+# hold already (a merit cannot be held twice).
+[[grants]]
+source = { category = "merits", name = "Auspicious" }
+kind = "free_choices"
+target = { category = "merits", pool = { types = ["General"], max_rating = 3, not_held = true } }
+picks = { count = 1 }
+amount = 0
+page = "245"
+
+# Up to 3 points of Lasombra merits that are not a bloodline's. This is an exception
+# to the rule against two clan merits of one value (checks leave out merits given).
+[[grants]]
+source = { category = "merits", name = "Shadows of the Past" }
+kind = "free_choices"
+target = { category = "merits", pool = { types = ["Clan"], requirement = ["Lasombra"], except_prefix = "Bloodline:" } }
+picks = { points = 3 }
+amount = 0
+page = "Vol. 2, p. 260"
 
 # --- higher caps -------------------------------------------------------------------
 
@@ -737,21 +826,9 @@ why = "Magic Resistance's benefits except against Tremere blood magic; the merit
 
 [[rules_only]]
 category = "merits"
-name = "Auspicious"
-page = "245"
-why = "Copies a general merit of 3 points or less that the player chooses; staff add the copied merit's effect."
-
-[[rules_only]]
-category = "merits"
 name = "Chimerical Templar"
 page = "Vol. 2 Issue 1, p. 50"
 why = "Extra health levels for the character's illusions, not for the character."
-
-[[rules_only]]
-category = "merits"
-name = "Chosen of Cappadocius"
-page = "Vol. 2 Issue 1, p. 47"
-why = "Six free specializations the player chooses (two each in Lore, Linguistics and Academics), and rituals at x1 XP."
 
 [[rules_only]]
 category = "merits"
@@ -791,21 +868,9 @@ why = "A focus and a bonus that change with the moon each game."
 
 [[rules_only]]
 category = "merits"
-name = "Old Habits"
-page = "Vol. 2 Issue 1, p. 41"
-why = "Up to 3 points of Sabbat merits the player and Storyteller choose, free."
-
-[[rules_only]]
-category = "merits"
 name = "Paragon"
 page = "245"
 why = "A Ventrue lieutenant NPC built as a level 6 Retainer, more money from Resources and an extra action per Influence."
-
-[[rules_only]]
-category = "merits"
-name = "Piece That Remains"
-page = "Vol. 2 Issue 1, p. 46"
-why = "A 1- or 2-point clan merit of another clan that the player chooses, free."
 
 [[rules_only]]
 category = "merits"
@@ -818,6 +883,20 @@ category = "merits"
 name = "Polymorphic Demeanor"
 page = "Vol. 2 Issue 1, p. 42"
 why = "Changes the archetype and one focus for a game, then they return."
+
+[[rules_only]]
+category = "merits"
+name = "Shadows of the Past"
+page = "Vol. 2, p. 260"
+partly = true
+why = "Counts as a Lasombra for the discount on Paths of Enlightenment merits (Path of Night costs the Lasombra 2): the discount is not applied."
+
+[[rules_only]]
+category = "merits"
+name = "Ventrue Royalty"
+page = "Vol. 2 Issue 1, p. 44"
+partly = true
+why = "The background dots are given. Not modelled: one Antique, Artisan, Flashy or Stylish quality on any miscellaneous gear, free."
 
 [[rules_only]]
 category = "merits"
@@ -836,12 +915,6 @@ category = "merits"
 name = "Typhonic Beast"
 page = "Vol. 2 Issue 1, p. 31"
 why = "A form with the benefits of two Serpentis powers; the powers are not given."
-
-[[rules_only]]
-category = "merits"
-name = "Ventrue Royalty"
-page = "Vol. 2 Issue 1, p. 44"
-why = "9 free background dots, as 4, 3 and 2 in three backgrounds the player chooses."
 
 [[rules_only]]
 category = "merits"

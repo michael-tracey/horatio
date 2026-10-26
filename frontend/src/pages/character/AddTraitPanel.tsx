@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
@@ -8,12 +9,25 @@ import type { CartLine, Exception } from "./cart";
 import { foundElsewhere, shownChips, useBarred, useChoices } from "./choices";
 import { QuickPicks } from "./creation/DotGrid";
 import { FIELD_PLACEHOLDER } from "./fields";
+import { FreeChoicesFields } from "./FreeChoices";
+import { sayable, summary, toSend, type FreePick } from "./freeChoices";
 import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
 
 const SHOWN = 40;
 
 /** A new trait for the cart. */
-export type NewTrait = { category: string; name: string; detail: string; rating: number; teacher: string; fixed: boolean; exception?: Exception };
+export type NewTrait = {
+  category: string;
+  name: string;
+  detail: string;
+  rating: number;
+  teacher: string;
+  fixed: boolean;
+  exception?: Exception;
+  /** The free traits chosen with a merit that gives some (see FreeChoices), and them in words. */
+  picks?: FreePick[];
+  picked?: string;
+};
 
 /**
  * Add a trait to one part of the sheet: pick a category from its chips, then from
@@ -51,6 +65,7 @@ export function AddTraitPanel({
   const [rating, setRating] = useState(1);
   const [quote, setQuote] = useState<number | null>(null);
   const [teacher, setTeacher] = useState("");
+  const [picks, setPicks] = useState<FreePick[]>([]);
   // A trait the rules refuse, asked of staff as an exception.
   const [asking, setAsking] = useState<TraitOut | null>(null);
   const cat = catalogue.categories.find((c) => c.key === category);
@@ -80,11 +95,20 @@ export function AddTraitPanel({
   const needsField = !!trait?.needs_field;
   // After acceptance, discipline dots wait on the home troupe, who will want to know the teacher.
   const asksTeacher = category === "disciplines" && character.home_troupe_id !== null;
+  // A merit that gives free traits the player chooses: choose them as it goes in.
+  const free = useQuery({
+    queryKey: ["free-choices", character.id, category, name],
+    enabled: !!trait && !asking,
+    queryFn: () =>
+      unwrap(api.GET("/api/characters/{character_id}/free-choices", { params: { path: { character_id: character.id }, query: { category, name } } })),
+  });
+  const offers = free.data ?? [];
   const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null, teacher: asksTeacher ? teacher : "" };
 
   const choose = (t: TraitOut) => {
     setAsking(null);
     setName(t.name);
+    setPicks([]);
     setDetail("");
     setRating(1);
     setQuote(null);
@@ -94,7 +118,15 @@ export function AddTraitPanel({
     setQuote(result.cost);
   });
   const add = () => {
-    onAdd({ category, name, detail, rating: body.rating ?? 1, teacher: body.teacher, fixed: fixed !== null });
+    onAdd({
+      category,
+      name,
+      detail,
+      rating: body.rating ?? 1,
+      teacher: body.teacher,
+      fixed: fixed !== null,
+      ...(offers.length > 0 && picks.length > 0 ? { picks: toSend(picks), picked: summary(offers, picks) } : {}),
+    });
     onClose();
   };
 
@@ -224,6 +256,16 @@ export function AddTraitPanel({
               <Input value={teacher} onChange={(e) => setTeacher(e.target.value)} />
             </Field>
           )}
+          {offers.length > 0 && (
+            <>
+              <FreeChoicesFields offers={offers} picks={picks} onChange={setPicks} />
+              <p className="text-xs text-mist">
+                {character.home_troupe_id
+                  ? "Choose now: once it is on the sheet, staff change them."
+                  : "You can change these on the sheet until a home troupe accepts the character."}
+              </p>
+            </>
+          )}
           {quote !== null && <p className="text-sm">Costs {quote} XP.</p>}
           <ErrorText error={price.error} />
           <div className="flex gap-2">
@@ -232,7 +274,9 @@ export function AddTraitPanel({
                 Price it
               </Button>
             )}
-            <Button type="submit">Add to cart</Button>
+            <Button type="submit" disabled={!sayable(picks, offers)}>
+              Add to cart
+            </Button>
           </div>
         </form>
       )}

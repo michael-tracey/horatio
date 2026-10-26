@@ -122,3 +122,6 @@ export type TemporaryDerangement = Schemas["TemporaryDerangement"];
 export type SharedBackgroundOut = Schemas["SharedBackgroundOut"];
 export type SharedEntryOut = Schemas["SharedEntryOut"];
 export type SharedChoicesOut = Schemas["SharedChoicesOut"];
+export type FreeChoicesOut = Schemas["FreeChoicesOut"];
+export type FreeOptionOut = Schemas["FreeOptionOut"];
+export type FreePickIn = Schemas["FreePickIn"];

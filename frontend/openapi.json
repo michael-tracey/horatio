@@ -4554,6 +4554,249 @@
         "title": "FoundOut",
         "type": "object"
       },
+      "FreeChoicesChange": {
+        "description": "Replace the free traits chosen for a held merit.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picks": {
+            "items": {
+              "$ref": "#/components/schemas/FreePickIn"
+            },
+            "maxItems": 20,
+            "title": "Picks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "picks"
+        ],
+        "title": "FreeChoicesChange",
+        "type": "object"
+      },
+      "FreeChoicesOut": {
+        "description": "What a held merit lets the player choose for free, and what they chose\n(horatio.free_choices).",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "grant": {
+            "title": "Grant",
+            "type": "string"
+          },
+          "locked": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/FreeOptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "picks": {
+            "items": {
+              "$ref": "#/components/schemas/FreePickOut"
+            },
+            "title": "Picks",
+            "type": "array"
+          },
+          "places": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Places"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          }
+        },
+        "required": [
+          "grant",
+          "category",
+          "category_name",
+          "options",
+          "places",
+          "count",
+          "points",
+          "picks",
+          "complete",
+          "locked"
+        ],
+        "title": "FreeChoicesOut",
+        "type": "object"
+      },
+      "FreeChoicesSummaryOut": {
+        "description": "The free traits a joining character's player chose for a merit, for staff to\nconfirm by accepting it.",
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "merit": {
+            "title": "Merit",
+            "type": "string"
+          },
+          "picks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Picks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "merit",
+          "picks",
+          "complete"
+        ],
+        "title": "FreeChoicesSummaryOut",
+        "type": "object"
+      },
+      "FreeOptionOut": {
+        "description": "A trait a merit lets the player choose for free.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_detail": {
+            "title": "Needs Detail",
+            "type": "boolean"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          }
+        },
+        "required": [
+          "name",
+          "rating",
+          "needs_detail"
+        ],
+        "title": "FreeOptionOut",
+        "type": "object"
+      },
+      "FreePickIn": {
+        "description": "One of the free traits the player chooses for a merit that gives them.",
+        "properties": {
+          "amount": {
+            "default": 0,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "grant": {
+            "title": "Grant",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "grant",
+          "name"
+        ],
+        "title": "FreePickIn",
+        "type": "object"
+      },
+      "FreePickOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "amount"
+        ],
+        "title": "FreePickOut",
+        "type": "object"
+      },
       "GameChoice": {
         "description": "A game on the troupe's schedule, which dates an entry when it started.",
         "properties": {
@@ -9671,6 +9914,14 @@
               }
             ]
           },
+          "free_choices": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FreeChoicesSummaryOut"
+            },
+            "title": "Free Choices",
+            "type": "array"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -10668,6 +10919,15 @@
             "title": "Name",
             "type": "string"
           },
+          "picks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FreePickIn"
+            },
+            "maxItems": 20,
+            "title": "Picks",
+            "type": "array"
+          },
           "rating": {
             "anyOf": [
               {
@@ -11324,6 +11584,14 @@
           "detail": {
             "title": "Detail",
             "type": "string"
+          },
+          "free_choices": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FreeChoicesOut"
+            },
+            "title": "Free Choices",
+            "type": "array"
           },
           "free_rating": {
             "title": "Free Rating",
@@ -15959,6 +16227,72 @@
         ]
       }
     },
+    "/api/characters/{character_id}/free-choices": {
+      "get": {
+        "description": "What a merit would let the player choose if the character took it now.",
+        "operationId": "free_choices_preview_api_characters__character_id__free_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FreeChoicesOut"
+                  },
+                  "title": "Response Free Choices Preview Api Characters  Character Id  Free Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Free Choices Preview",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
     "/api/characters/{character_id}/give": {
       "post": {
         "description": "A storyteller or assistant storyteller of a player's character's home troupe\ngives it a trait, or raises one: free, despite the rules, or both, always with\na reason. Nothing waits on approval; the player is told.",
@@ -18116,6 +18450,60 @@
           }
         },
         "summary": "Change Choice",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/traits/choices": {
+      "put": {
+        "description": "Choose, or change, the free traits a held merit gives (Ventrue Royalty's\nbackgrounds), until a home troupe has accepted the character.",
+        "operationId": "change_free_choices_api_characters__character_id__traits_choices_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FreeChoicesChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Free Choices",
         "tags": [
           "sheets"
         ]

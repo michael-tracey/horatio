@@ -15,6 +15,7 @@ const trait = (category: string, category_name: string, group: string, name: str
   pending_from: null,
   granted_rating: 0,
   granted_by: [],
+  free_choices: [],
   note: "",
 });
 

@@ -304,6 +304,18 @@ class TroupeRules:
 
 
 @dataclass(frozen=True)
+class FreeChoice:
+    """One of the free traits a player chose for a merit that gives them
+    (horatio.rules.grants, kind free_choices): which grant it answers, the trait's
+    name and detail, and for dots the amount placed on it."""
+
+    grant: str
+    name: str
+    detail: str = ""
+    amount: int = 0
+
+
+@dataclass(frozen=True)
 class SheetTrait:
     """One trait on a character's sheet, as the rules see it."""
 
@@ -314,6 +326,8 @@ class SheetTrait:
     detail: str = ""
     # Dots another trait's grant gives it (horatio.rules.grants).
     granted_rating: int = 0
+    # The free traits the player chose for it, if it gives some.
+    choices: tuple[FreeChoice, ...] = ()
 
     @property
     def granted(self) -> bool:

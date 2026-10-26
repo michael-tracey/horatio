@@ -60,7 +60,15 @@ describe("ordered", () => {
 
 describe("toChange", () => {
   it("sends a rating with the one it was made from", () => {
-    expect(toChange(setRating([], brawl, 3)[0]!)).toEqual({ kind: "set", category: "skills", name: "Brawl", detail: "", rating: 3, from_rating: 2, teacher: "" });
+    expect(toChange(setRating([], brawl, 3)[0]!)).toEqual({ kind: "set", category: "skills", name: "Brawl", detail: "", rating: 3, from_rating: 2, teacher: "", picks: [] });
+  });
+
+  it("sends the free traits chosen with a merit, and shows them", () => {
+    const royalty = { category: "merits", name: "Ventrue Royalty", detail: "", rating: 0, fixed: true };
+    const picks = [{ grant: "merits/Ventrue Royalty/1", name: "Resources", detail: "", amount: 4 }];
+    const lines = setRating([], { ...royalty, picks, picked: "Resources 4" }, 2);
+    expect(toChange(lines[0]!)).toMatchObject({ kind: "set", name: "Ventrue Royalty", picks });
+    expect(describeLine(lines[0]!)).toBe("Add Ventrue Royalty (free: Resources 4)");
   });
 
   it("sends a line asked as an exception with why, and whether free", () => {

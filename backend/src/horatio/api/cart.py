@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from horatio import cart, sheets
-from horatio.api.sheets import players_character
+from horatio.api.sheets import FreePickIn, players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.permissions import visible_character
 from horatio.trait_exceptions import Ask
@@ -38,6 +38,8 @@ class SetChangeIn(BaseModel):
     teacher: str = Field(default="", max_length=200)
     # Asked as an exception: made at once, waiting on the home troupe's staff.
     exception: ExceptionIn | None = None
+    # For a merit that gives free traits the player chooses: their choices, made with it.
+    picks: list[FreePickIn] = Field(default=[], max_length=20)
 
 
 class SwapChangeIn(BaseModel):
@@ -125,6 +127,7 @@ def to_change(change: CartChangeIn) -> cart.Change:
                 Ask(change.exception.reason.strip(), change.exception.free)
                 if change.exception
                 else None,
+                tuple(p.to_rules() for p in change.picks),
             )
         case SwapChangeIn():
             return cart.Swap(change.category, change.from_name, change.to_name)

@@ -8,7 +8,15 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import diablerie, pictures, sheets, social_age, trait_exceptions, xp_range
+from horatio import (
+    diablerie,
+    free_choices,
+    pictures,
+    sheets,
+    social_age,
+    trait_exceptions,
+    xp_range,
+)
 from horatio.api.sheets import ApprovalOut, approval_out
 from horatio.api.trait_exceptions import (
     DiablerieEffectsOut,
@@ -107,6 +115,17 @@ class LockedOut(BaseModel):
     rating: int | None
 
 
+class FreeChoicesSummaryOut(BaseModel):
+    """The free traits a joining character's player chose for a merit, for staff to
+    confirm by accepting it."""
+
+    merit: str
+    # What they chose, as "Resources 4" or "Lore: Giovanni".
+    picks: list[str]
+    # Everything the merit gives has been chosen.
+    complete: bool
+
+
 class QueuedApproval(ApprovalOut):
     character_name: str
     # The character's picture (horatio.pictures) and clan, for its placeholder.
@@ -125,6 +144,8 @@ class QueuedApproval(ApprovalOut):
     xp: XpReviewOut | None = None
     # For a first home troupe request still waiting: the traits accepting it fixes.
     locks: list[LockedOut] = []
+    # For a home troupe request still waiting: the free traits the player chose.
+    free_choices: list[FreeChoicesSummaryOut] = []
 
 
 class SettlementOverride(BaseModel):
@@ -233,6 +254,38 @@ def locks_out(db: DbSession, approval: Approval, character: Character) -> list[L
     ]
 
 
+def free_choices_out(
+    db: DbSession, approval: Approval, character: Character
+) -> list[FreeChoicesSummaryOut]:
+    if (
+        approval.kind != "home_troupe_change"
+        or approval.status != "pending"
+        or character.kind != "pc"
+    ):
+        return []
+    found: list[FreeChoicesSummaryOut] = []
+    for row, offered in free_choices.held_offers(db, character):
+        found.append(
+            FreeChoicesSummaryOut(
+                merit=row.definition.name,
+                picks=[
+                    " ".join(
+                        part
+                        for part in (
+                            f"{p.name}: {p.detail}" if p.detail else p.name,
+                            str(p.amount) if p.amount else "",
+                        )
+                        if part
+                    )
+                    for o in offered
+                    for p in o.picks
+                ],
+                complete=all(o.complete for o in offered),
+            )
+        )
+    return found
+
+
 def exception_out(db: DbSession, approval: Approval) -> ExceptionAskOut | None:
     if approval.kind != "exception":
         return None
@@ -323,6 +376,7 @@ def troupe_approvals(
             reconciliation=reconciliation_out(db, a),
             xp=xp_review_out(db, a, c),
             locks=locks_out(db, a, c),
+            free_choices=free_choices_out(db, a, c),
         )
         for a, c in rows
     ]

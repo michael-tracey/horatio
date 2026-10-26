@@ -254,6 +254,7 @@ MESSAGES: dict[str, str] = {
     "sheet.primary_path": "{actor} named {path} {character}'s primary path of {discipline}.",
     "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",
     "sheet.choose": "{actor} chose {name} as {character}'s {category}.",
+    "sheet.free_choices": "{actor} chose {picks} free traits for {name} on {character}.",
     "sheet.change": "{actor} changed {character}'s {category}: {from_name} → {name} ({cost} XP).",
     "sheet.diablerie": "{actor} recorded {character}'s diablerie of {committed_on}: Generation"
     " {generation}, techniques lost: {techniques}, Humanity lowered {humanity}, Beast traits"

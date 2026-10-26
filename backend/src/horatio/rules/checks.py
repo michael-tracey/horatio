@@ -37,7 +37,8 @@ Condition vocabulary (every key in one table must hold):
                        per_dot? }
                                     the sheet holds more traits of the first kind
                                     than it has dots of the second (rituals against
-                                    Thaumaturgy)
+                                    Thaumaturgy), leaving out those another trait
+                                    gives (Chosen of Cappadocius' specialisations)
     above_in_clan = { category, name_prefix }
                                     the subject is rated above every in-clan trait
                                     of that kind the sheet holds, or the primary
@@ -111,6 +112,10 @@ class Context:
 
 
 NO_CONTEXT = Context()
+
+# The end of the key of a check derived from a merit's requirement (a clan merit
+# only for that clan). A merit another trait gives is not held to it.
+REQUIREMENT_KEY = "/requirement"
 
 
 @dataclass(frozen=True)
@@ -306,6 +311,7 @@ def matches(
                 if t.category == counted["category"]
                 and t.name.startswith(counted.get("name_prefix", ""))
                 and t.rating != 0
+                and not t.granted
             )
             dots = sum(
                 t.rating or 0
@@ -394,7 +400,7 @@ def violations(
             else by_name.get((check.category, check.name), ())
         )
         for trait in about:
-            if not check.about(trait):
+            if not check.about(trait) or (trait.granted and check.key.endswith(REQUIREMENT_KEY)):
                 continue
             broken = (
                 check.requires is not None and not matches(check.requires, sheet, trait, context)

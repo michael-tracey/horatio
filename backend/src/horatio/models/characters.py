@@ -95,6 +95,9 @@ class CharacterTrait(Record):
     # Which one, for traits a character can hold more than once: "Path of Blood".
     detail: Mapped[str] = mapped_column(default="", server_default="")
     note: Mapped[str] = mapped_column(default="", server_default="")
+    # For a merit that gives free traits the player chooses (Ventrue Royalty): the
+    # choices, as {"grant", "name", "detail", "amount"} each (horatio.rules.grants).
+    choices: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class TraitException(Record):

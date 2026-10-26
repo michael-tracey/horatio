@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import sheets, titles, xp_range
+from horatio import audit, free_choices, sheets, titles, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Approval,
@@ -29,8 +29,68 @@ from horatio.permissions import (
     visible_character,
 )
 from horatio.reconciliation import unbanked_xp
+from horatio.rules.model import FreeChoice, RuleSetData
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["sheets"])
+
+
+class FreeOptionOut(BaseModel):
+    """A trait a merit lets the player choose for free."""
+
+    name: str
+    # A merit's value; null for any other trait.
+    rating: int | None
+    # The player says more: a "Custom" specialisation's words, a merit's field.
+    needs_detail: bool
+
+
+class FreePickOut(BaseModel):
+    name: str
+    detail: str
+    # The dots placed on it, where the merit places dots.
+    amount: int
+
+
+class FreeChoicesOut(BaseModel):
+    """What a held merit lets the player choose for free, and what they chose
+    (horatio.free_choices)."""
+
+    grant: str
+    category: str
+    category_name: str
+    options: list[FreeOptionOut]
+    # The amounts to place, one on each of the traits chosen (4, 3, 2).
+    places: list[int] | None
+    # The most traits to choose, or the most points of merits to choose.
+    count: int | None
+    points: int | None
+    picks: list[FreePickOut]
+    # Everything it gives has been chosen.
+    complete: bool
+    # Why the player can no longer change the choices; null while they can.
+    locked: str | None
+
+
+class FreePickIn(BaseModel):
+    """One of the free traits the player chooses for a merit that gives them."""
+
+    grant: str
+    name: str
+    detail: str = Field(default="", max_length=200)
+    # For dots placed on a trait (Ventrue Royalty: 4, 3 or 2).
+    amount: int = Field(default=0, ge=0, le=10)
+
+    def to_rules(self) -> FreeChoice:
+        return FreeChoice(self.grant, self.name, self.detail, self.amount)
+
+
+class FreeChoicesChange(BaseModel):
+    """Replace the free traits chosen for a held merit."""
+
+    category: str
+    name: str
+    detail: str = Field(default="", max_length=200)
+    picks: list[FreePickIn] = Field(max_length=20)
 
 
 class SheetTraitOut(BaseModel):
@@ -50,6 +110,8 @@ class SheetTraitOut(BaseModel):
     granted_rating: int
     granted_by: list[str]
     note: str
+    # For a merit that gives free traits the player chooses: what and which.
+    free_choices: list[FreeChoicesOut] = []
 
 
 class XpSummary(BaseModel):
@@ -287,10 +349,41 @@ def exceptions_out(db: DbSession, character: Character) -> list[ExceptionOut]:
     ]
 
 
+def free_choices_out(
+    db: DbSession, character: Character
+) -> dict[tuple[str, str, str], list[FreeChoicesOut]]:
+    """The free choices of each held merit that gives some, by trait."""
+    rule_set = sheets.rules_for(db, character).rule_set
+    return {
+        row.key: [free_offer_out(rule_set, o) for o in offered]
+        for row, offered in free_choices.held_offers(db, character)
+    }
+
+
+def free_offer_out(rule_set: RuleSetData, offer: free_choices.Offer) -> FreeChoicesOut:
+    shape = offer.grant.picks or {}
+    return FreeChoicesOut(
+        grant=offer.grant.key,
+        category=offer.category,
+        category_name=rule_set.categories[offer.category].name,
+        options=[
+            FreeOptionOut(name=o.name, rating=o.rating, needs_detail=o.needs_detail)
+            for o in offer.options
+        ],
+        places=list(shape["places"]) if "places" in shape else None,
+        count=shape.get("count"),
+        points=shape.get("points"),
+        picks=[FreePickOut(name=p.name, detail=p.detail, amount=p.amount) for p in offer.picks],
+        complete=offer.complete,
+        locked=offer.locked,
+    )
+
+
 def sheet_out(db: DbSession, character: Character) -> SheetOut:
     floor = sheets.accepted_ratings(db, character)
     granting = sheets.sheet_effects(db, character).sources
     rows = sheets.sheet_rows(db, character)
+    choosing = free_choices_out(db, character)
     entries = [
         (kind, amount)
         for kind, amount in db.execute(
@@ -356,6 +449,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 granted_rating=r.trait.granted_rating,
                 granted_by=granting.get(r.key, []) if r.trait.granted_rating else [],
                 note=r.trait.note,
+                free_choices=choosing.get(r.key, []),
             )
             for r in rows
         ],
@@ -477,6 +571,48 @@ def change_trait(
     db.commit()
     cost = (change.quote.cost if change.quote else 0) + change.repricing_cost
     return ChangeOut(cost=cost, sheet=sheet_out(db, character))
+
+
+@router.get("/free-choices")
+def free_choices_preview(
+    character_id: uuid.UUID, category: str, name: str, db: DbSession, user: CurrentUser
+) -> list[FreeChoicesOut]:
+    """What a merit would let the player choose if the character took it now."""
+    character = visible_character(db, user, character_id)
+    rule_set = sheets.rules_for(db, character).rule_set
+    return [
+        free_offer_out(rule_set, offer)
+        for offer in free_choices.preview(db, character, category, name)
+    ]
+
+
+@router.put("/traits/choices")
+def change_free_choices(
+    character_id: uuid.UUID, body: FreeChoicesChange, db: DbSession, user: CurrentUser
+) -> ChangeOut:
+    """Choose, or change, the free traits a held merit gives (Ventrue Royalty's
+    backgrounds), until a home troupe has accepted the character."""
+    character = players_character(db, user, character_id)
+    with sheets.checked(db, character, user):
+        free_choices.set_choices(
+            db,
+            character,
+            body.category,
+            body.name,
+            body.detail,
+            [p.to_rules() for p in body.picks],
+        )
+    audit.record(
+        db,
+        user,
+        "sheet.free_choices",
+        character_id=character.id,
+        category=body.category,
+        name=body.name,
+        picks=len(body.picks),
+    )
+    db.commit()
+    return ChangeOut(cost=0, sheet=sheet_out(db, character))
 
 
 @router.put("/primary-path")

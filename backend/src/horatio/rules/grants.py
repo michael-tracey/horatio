@@ -22,6 +22,29 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
     convert      the trait named in `from` becomes the target, keeping its rating
                  (a Path merit turns Humanity into that Path); undone with the merit.
                  The target can be the player's choice (Path Adherent)
+    free_choices the player chooses several free traits, kept on the merit held
+                 (CharacterTrait.choices), until a home troupe accepts the character
+                 (Ventrue Royalty: three backgrounds, placed 4, 3 and 2). The target
+                 names one `category` and what can be chosen: `choose` (names, or
+                 "any" as below) or a `pool` of that category's catalogue:
+                     types           the catalogue types (Clan, Sabbat, General…)
+                     requirement     the requirement is one of these
+                     other_clan      the requirement names a clan family other than
+                                     the character's own
+                     max_rating      a merit worth at most this
+                     except_prefix   names not starting with this
+                     except          names not to offer
+                     except_granting leave out merits that grant a discipline, an
+                                     in-clan one or the price of one
+                     not_held        leave out merits the character holds
+                 `picks` says how many and how much: `places` (amounts, each used
+                 once on a different trait: 4, 3, 2), `count` (at most this many
+                 picks) and `points` (the picked merits' values add up to at most
+                 this). Each pick is given free like `free_up_to`: dots placed free,
+                 a merit given whole and at its value (so it is not counted against
+                 the merit limit, which is for merits bought), a specialisation
+                 named free. A specialisation named "Custom" takes the player's
+                 words as its detail. Removing the merit removes what it gave
 
 A grant can also hold only `when` a condition holds, in the vocabulary of
 horatio.rules.checks: Fortitude gives a Stamina-focused character a health level
@@ -31,18 +54,29 @@ The target is fixed (`name`, and perhaps `detail`), every trait of some names
 (`names`) or of the whole category, or the player's choice: with `choose`, the
 source trait's detail says which, as "Resources" or "Performance: Singing".
 `choose = "any"` allows any trait in the target's categories.
+
+A `cost_percent` grant with no name in its target prices every trait of the
+category at that percent (Chosen of Cappadocius: rituals at half, ×1 XP a dot).
 """
 
+from collections import Counter
 from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Literal
 
 from horatio.rules.checks import matches
-from horatio.rules.model import RuleSetData, SheetTrait
+from horatio.rules.model import FreeChoice, RuleSetData, SheetTrait
 
 Kind = Literal[
-    "add", "free_up_to", "raise_max", "price_in_clan", "replace_in_clan", "cost_percent", "convert"
+    "add",
+    "free_up_to",
+    "raise_max",
+    "price_in_clan",
+    "replace_in_clan",
+    "cost_percent",
+    "convert",
+    "free_choices",
 ]
 KINDS = (
     "add",
@@ -52,8 +86,13 @@ KINDS = (
     "replace_in_clan",
     "cost_percent",
     "convert",
+    "free_choices",
 )
 TraitKey = tuple[str, str, str]  # category, name, detail
+# In a price entry, the name that stands for every trait of the category.
+WHOLE_CATEGORY = "*"
+# The specialisation a player names in their own words.
+CUSTOM = "Custom"
 
 
 @dataclass(frozen=True)
@@ -68,6 +107,8 @@ class GrantData:
     when: Mapping[str, Any] | None = None
     # For a conversion: the trait that becomes the target.
     convert_from: Mapping[str, str] | None = None
+    # For free_choices: how many the player chooses and how much (places, count, points).
+    picks: Mapping[str, Any] | None = None
 
     @property
     def categories(self) -> list[str]:
@@ -137,6 +178,155 @@ def chosen_target(
     return (category, name, sub)
 
 
+@dataclass(frozen=True)
+class Option:
+    """A trait a free_choices grant lets the player choose."""
+
+    category: str
+    name: str
+    # A merit's value; None for any other trait.
+    rating: int | None = None
+    # The player says more: a "Custom" specialisation's words.
+    needs_detail: bool = False
+
+
+def clan_family(sheet: Sequence[SheetTrait]) -> str | None:
+    clan = next((t.name for t in sheet if t.category == "clan"), None)
+    return clan.split(":")[0].strip() if clan else None
+
+
+def clan_families(rule_set: RuleSetData) -> frozenset[str]:
+    return rule_set.remembered(
+        ("clan_families",),
+        lambda: frozenset(n.split(":")[0].strip() for (c, n) in rule_set.traits if c == "clan"),
+    )
+
+
+def grants_disciplines(rule_set: RuleSetData) -> frozenset[str]:
+    """The merits that give a discipline, an in-clan one or the price of one."""
+    return rule_set.remembered(
+        ("grants_disciplines",),
+        lambda: frozenset(
+            g.source["name"]
+            for g in rule_set.grants
+            if g.kind in ("replace_in_clan", "price_in_clan")
+            or g.target.get("category") == "extra_in_clan_disciplines"
+        ),
+    )
+
+
+def options(
+    grant: GrantData,
+    rule_set: RuleSetData,
+    sheet: Sequence[SheetTrait] = (),
+    *,
+    choosing: bool = True,
+) -> list[Option]:
+    """What a free_choices grant lets the player choose, in name order. With
+    `choosing` False, the filters that depend on the sheet (a clan other than
+    theirs, a merit not already held) are left out: what the grant may give, not
+    what can still be picked."""
+    category = grant.target["category"]
+    pool = grant.target.get("pool")
+    if pool is None:
+        names = choices(grant, rule_set)
+    else:
+        own = clan_family(sheet) if choosing else None
+        held = (
+            {t.name for t in sheet if t.category == category and not t.granted}
+            if choosing and pool.get("not_held")
+            else set()
+        )
+        unwanted = grants_disciplines(rule_set) if pool.get("except_granting") else frozenset()
+        names = []
+        for (c, name), trait in rule_set.traits.items():
+            if c != category:
+                continue
+            props = trait.properties
+            requirement = props.get("requirement")
+            if "types" in pool and props.get("type") not in pool["types"]:
+                continue
+            if "requirement" in pool and requirement not in pool["requirement"]:
+                continue
+            if pool.get("other_clan"):
+                family = str(requirement or "").split(":")[0].strip()
+                if family not in clan_families(rule_set) or family == own:
+                    continue
+            if "max_rating" in pool and not 0 < props.get("rating", 99) <= pool["max_rating"]:
+                continue
+            if name.startswith(pool.get("except_prefix", "\0")) or name in pool.get("except", ()):
+                continue
+            if name in unwanted or name in held:
+                continue
+            if "rating" not in props and category == "merits":
+                continue
+            names.append(name)
+    return [
+        Option(
+            category,
+            name,
+            rule_set.trait_properties(category, name).get("rating")
+            if category == "merits"
+            else None,
+            needs_detail=name == CUSTOM
+            or rule_set.trait_properties(category, name).get("requirement")
+            == "requires_specialization",
+        )
+        for name in sorted(names)
+        if (category, name) in rule_set.traits
+    ]
+
+
+def chosen_options(grant: GrantData, trait: SheetTrait, rule_set: RuleSetData) -> list[FreeChoice]:
+    """The free traits the player chose for `trait` under this grant that still
+    stand: those it may give (judged without the sheet, which may have moved on)."""
+    mine = [c for c in trait.choices if c.grant == grant.key]
+    if not mine:
+        return []
+    allowed = {o.name for o in options(grant, rule_set, choosing=False)}
+    return [c for c in mine if c.name in allowed]
+
+
+def check_picks(
+    grant: GrantData,
+    picks: Sequence[FreeChoice],
+    rule_set: RuleSetData,
+    sheet: Sequence[SheetTrait],
+) -> str | None:
+    """Why `picks` cannot answer a free_choices grant, or None if they can."""
+    assert grant.picks is not None
+    offered = {o.name: o for o in options(grant, rule_set, sheet)}
+    seen: set[tuple[str, str]] = set()
+    for pick in picks:
+        option = offered.get(pick.name)
+        if option is None:
+            return f"{pick.name} is not one of the traits {grant.source['name']} can give."
+        detail = pick.detail.strip()
+        if option.needs_detail and not detail:
+            return f"Say what the {pick.name} is."
+        if (pick.name, detail) in seen:
+            return f"{pick.name} is chosen twice."
+        seen.add((pick.name, detail))
+    places = grant.picks.get("places")
+    if places is not None:
+        if len({p.name for p in picks}) < len(picks):
+            return "Each of the traits is chosen once, with its own amount."
+        left = Counter(places)
+        for pick in picks:
+            if left[pick.amount] <= 0:
+                return f"Place {', '.join(map(str, places))}, each once."
+            left[pick.amount] -= 1
+    count = grant.picks.get("count")
+    if count is not None and len(picks) > count:
+        return f"{grant.source['name']} gives {count}, not {len(picks)}."
+    points = grant.picks.get("points")
+    if points is not None:
+        worth = sum(offered[p.name].rating or 0 for p in picks)
+        if worth > points:
+            return f"{grant.source['name']} gives up to {points} points; these are {worth}."
+    return None
+
+
 def effects(
     grants: Sequence[GrantData], sheet: Sequence[SheetTrait], rule_set: RuleSetData
 ) -> Effects:
@@ -153,6 +343,14 @@ def effects(
                 continue
             label = trait.full_name
             if grant.kind == "replace_in_clan":
+                continue
+            if grant.kind == "free_choices":
+                given = chosen_options(grant, trait, rule_set)
+                for pick in given:
+                    key = (grant.target["category"], pick.name, pick.detail)
+                    amount = pick.amount if "places" in (grant.picks or {}) else 1
+                    found.free_up_to[key] = max(found.free_up_to.get(key, 0), amount)
+                    found.sources.setdefault(key, []).append(label)
                 continue
             if grant.kind == "convert":
                 assert grant.convert_from is not None
@@ -182,7 +380,9 @@ def effects(
                     found.cost_percent[(category, name, detail or None)] = grant.amount
                     continue
             elif grant.kind in ("price_in_clan", "cost_percent"):
-                targets: list[str] = grant.target.get("names") or [grant.target["name"]]
+                targets: list[str] = grant.target.get("names") or [
+                    grant.target.get("name", WHOLE_CATEGORY)
+                ]
                 for category in grant.categories:
                     for name in targets:
                         key3: tuple[str, str, str | None] = (
@@ -256,10 +456,11 @@ def matching(
     keys: Mapping[tuple[str, str, str | None], Any] | Set[tuple[str, str, str | None]],
     trait: SheetTrait,
 ) -> tuple[str, str, str | None] | None:
-    """The entry for `trait`: its detail exactly, or any detail."""
+    """The entry for `trait`: its detail exactly, any detail, or its whole category."""
     for key in (
         (trait.category, trait.name, trait.detail or None),
         (trait.category, trait.name, None),
+        (trait.category, WHOLE_CATEGORY, None),
     ):
         if key in keys:
             return key
@@ -285,6 +486,7 @@ def grant_from_dict(raw: Mapping[str, Any]) -> GrantData:
         page=raw.get("page"),
         when=raw.get("when"),
         convert_from=raw.get("from"),
+        picks=raw.get("picks"),
     )
 
 
@@ -329,3 +531,25 @@ def validate_grant(
         )
     if grant.kind in ("add", "free_up_to") and not (grant.target.get("name") or choose):
         raise ValueError(f"grant {grant.key} must name one trait, or let the player choose one")
+    if grant.kind == "free_choices":
+        validate_free_choices(grant)
+        for name in (grant.target.get("pool") or {}).get("except", ()):
+            if (grant.categories[0], name) not in rule_set_traits:
+                raise ValueError(f"grant {grant.key} leaves out unknown trait {name!r}")
+
+
+def validate_free_choices(grant: GrantData) -> None:
+    if "category" not in grant.target or not (
+        grant.target.get("choose") or grant.target.get("pool") is not None
+    ):
+        raise ValueError(f"grant {grant.key} must name one category and what can be chosen in it")
+    shape = grant.picks or {}
+    if not set(shape) & {"places", "count", "points"} or set(shape) - {"places", "count", "points"}:
+        raise ValueError(f"grant {grant.key} must say its picks: places, count or points")
+    pool = grant.target.get("pool") or {}
+    unknown = set(pool) - {
+        "types", "requirement", "other_clan", "max_rating", "except_prefix", "except",
+        "except_granting", "not_held",
+    }  # fmt: skip
+    if unknown:
+        raise ValueError(f"grant {grant.key} has unknown pool filters {sorted(unknown)}")
