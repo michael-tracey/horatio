@@ -19,6 +19,7 @@ from horatio.permissions import (
     troupe_role,
     visible_character,
 )
+from horatio.rules.npc_kinds import kind_name
 from horatio.rules.splats import SPLATS
 from horatio.sheets import lock_character, rules_for, start_character, sync_fixed_ratings
 
@@ -44,6 +45,11 @@ class CharacterOut(BaseModel):
     picture: str | None
     # For the placeholder shown without a picture: initials on the clan's colour.
     clan: str | None
+    # What an NPC is (horatio.rules.npc_kinds), its kind's name (a custom kind's
+    # own), and its form: sheeted or stock. All None for a PC.
+    npc_kind: str | None
+    npc_kind_name: str | None
+    npc_form: str | None
 
 
 class PlacedDots(BaseModel):
@@ -112,6 +118,9 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
             picture=pictures.picture_url(character.id, character.picture_id),
             clan=standing[character.id].clan,
             next_rename_on=renames.next_rename_on(db, character),
+            npc_kind=character.npc_kind,
+            npc_kind_name=kind_name(character.npc_kind, character.npc_custom_kind),
+            npc_form=character.npc_form,
         )
         for character in found
     ]

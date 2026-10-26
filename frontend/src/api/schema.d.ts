@@ -850,6 +850,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/npc/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Stock
+         * @description A Stock NPC's rating, specializations and notes, and the stat block they make.
+         */
+        get: operations["read_stock_api_characters__character_id__npc_stock_get"];
+        /**
+         * Set Stock
+         * @description Change a Stock NPC's kind, rating, specializations and notes.
+         */
+        put: operations["set_stock_api_characters__character_id__npc_stock_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/npc/tally": {
         parameters: {
             query?: never;
@@ -2275,6 +2299,26 @@ export interface paths {
         put?: never;
         /** Mark Read */
         post: operations["mark_read_api_notifications_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/npc-kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Npc Kinds
+         * @description Every kind an NPC can be, from the rules data (MET: VTM pp. 489–505).
+         */
+        get: operations["list_npc_kinds_api_npc_kinds_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4383,6 +4427,21 @@ export interface components {
             /** Troupe Id */
             troupe_id: string | null;
         };
+        /** BuiltInPowerOut */
+        BuiltInPowerOut: {
+            /** Category */
+            category: string | null;
+            /** Discipline */
+            discipline: string | null;
+            /** Dots */
+            dots: number | "rating" | null;
+            /** From Rating */
+            from_rating: number | null;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
+        };
         /** BulkAward */
         BulkAward: {
             /** Awards */
@@ -4647,6 +4706,12 @@ export interface components {
             name: string;
             /** Next Rename On */
             next_rename_on: string | null;
+            /** Npc Form */
+            npc_form: string | null;
+            /** Npc Kind */
+            npc_kind: string | null;
+            /** Npc Kind Name */
+            npc_kind_name: string | null;
             /** Owner Troupe Id */
             owner_troupe_id: string | null;
             /** Picture */
@@ -4953,6 +5018,21 @@ export interface components {
             x: number;
             /** Y */
             y: number;
+        };
+        /**
+         * CustomKind
+         * @description A custom kind, for one the book does not cover: its name, whether it is
+         *     mortal or supernatural, and its resource.
+         */
+        CustomKind: {
+            /** Name */
+            name: string;
+            /**
+             * Nature
+             * @enum {string}
+             */
+            nature: "mortal" | "supernatural";
+            resource: components["schemas"]["ResourceIn"];
         };
         /** CycleChanges */
         CycleChanges: {
@@ -6935,13 +7015,23 @@ export interface components {
         };
         /** NewNpc */
         NewNpc: {
+            custom_kind?: components["schemas"]["CustomKind"] | null;
             /** Name */
             name: string;
+            /**
+             * Npc Form
+             * @default sheeted
+             * @enum {string}
+             */
+            npc_form: "sheeted" | "stock";
+            /** Npc Kind */
+            npc_kind?: string | null;
             /**
              * Splat
              * @default vampire
              */
             splat: string;
+            stock?: components["schemas"]["StockFields"] | null;
             /**
              * Wizard
              * @default false
@@ -7019,6 +7109,95 @@ export interface components {
             count: number;
             /** Items */
             items: components["schemas"]["NotificationOut"][];
+        };
+        /** NpcKindOut */
+        NpcKindOut: {
+            /** Any Discipline */
+            any_discipline: boolean;
+            /** Custom */
+            custom: boolean;
+            /** Group */
+            group: string;
+            /** Health Per Rating */
+            health_per_rating: number;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Nature
+             * @enum {string}
+             */
+            nature: "mortal" | "partly_mortal" | "supernatural";
+            /** Notes */
+            notes: string[];
+            /** Numina */
+            numina: components["schemas"]["NuminaOut"][];
+            /** Page */
+            page: number;
+            /** Powers */
+            powers: components["schemas"]["BuiltInPowerOut"][];
+            /** Rating Max */
+            rating_max: number;
+            resource: components["schemas"]["ResourceOut"];
+            /** Specialization Label */
+            specialization_label: string;
+            /** Specializations */
+            specializations: string[];
+            /** To Page */
+            to_page: number | null;
+        };
+        /** NpcOut */
+        NpcOut: {
+            /** Building Troupe Id */
+            building_troupe_id: string | null;
+            /** Clan */
+            clan: string | null;
+            /** Creation Complete */
+            creation_complete: boolean;
+            /** Home Troupe Id */
+            home_troupe_id: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Next Rename On */
+            next_rename_on: string | null;
+            /** Npc Form */
+            npc_form: string | null;
+            /** Npc Kind */
+            npc_kind: string | null;
+            /** Npc Kind Name */
+            npc_kind_name: string | null;
+            /** Owner Troupe Id */
+            owner_troupe_id: string | null;
+            /** Picture */
+            picture: string | null;
+            /**
+             * Player Id
+             * Format: uuid
+             */
+            player_id: string;
+            /** Splat */
+            splat: string;
+            /** Status */
+            status: string;
+            /** Stock Rating */
+            stock_rating: number | null;
+        };
+        /** NuminaOut */
+        NuminaOut: {
+            /** Levels */
+            levels: string[];
+            /** Name */
+            name: string;
+            /** Page */
+            page: number;
         };
         /** OptionList */
         OptionList: {
@@ -7578,6 +7757,13 @@ export interface components {
             level: number;
             /** Power */
             power: string;
+        };
+        /** PowerDots */
+        PowerDots: {
+            /** Dots */
+            dots: number;
+            /** Name */
+            name: string;
         };
         /** PowerNote */
         PowerNote: {
@@ -8195,6 +8381,31 @@ export interface components {
             levels?: number | null;
             /** Type */
             type?: ("elite" | "underworld") | null;
+        };
+        /** ResourceIn */
+        ResourceIn: {
+            /** Name */
+            name: string;
+            /** Per Turn */
+            per_turn: number;
+            /**
+             * Regains
+             * @default
+             */
+            regains: string;
+            /** Size */
+            size: number;
+        };
+        /** ResourceOut */
+        ResourceOut: {
+            /** Name */
+            name: string;
+            /** Per Turn */
+            per_turn: number;
+            /** Regains */
+            regains: string;
+            /** Size */
+            size: number;
         };
         /** ResultOut */
         ResultOut: {
@@ -8817,6 +9028,13 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** SkillPool */
+        SkillPool: {
+            /** Name */
+            name: string;
+            /** Pool */
+            pool: number;
+        };
         /**
          * Someone
          * @description A person as others find them: never their email.
@@ -8837,6 +9055,16 @@ export interface components {
              */
             plays_here: boolean;
             staff_role?: components["schemas"]["Role"] | null;
+        };
+        /** Specialization */
+        Specialization: {
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "skill" | "power";
         };
         /** SplatOut */
         SplatOut: {
@@ -8929,12 +9157,92 @@ export interface components {
             /** When Text */
             when_text?: string | null;
         };
+        /**
+         * StatBlockOut
+         * @description What the book prints for a Stock NPC (MET: VTM p. 490).
+         */
+        StatBlockOut: {
+            /** Built In */
+            built_in: components["schemas"]["BuiltInPowerOut"][];
+            /** Health */
+            health: number;
+            /** Pool */
+            pool: number;
+            /** Powers */
+            powers: components["schemas"]["PowerDots"][];
+            /** Rating */
+            rating: number;
+            resource: components["schemas"]["ResourceOut"];
+            /** Retests */
+            retests: boolean;
+            /** Rules */
+            rules: string[];
+            /** Skill Pools */
+            skill_pools: components["schemas"]["SkillPool"][];
+            /** Willpower */
+            willpower: number;
+        };
         /** StepNeed */
         StepNeed: {
             /** Message */
             message: string;
             /** Step */
             step: string;
+        };
+        /**
+         * StockFields
+         * @description What a Stock NPC has in place of a sheet (MET: VTM pp. 489–490).
+         */
+        StockFields: {
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Rating */
+            rating: number;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: components["schemas"]["Specialization"][];
+        };
+        /** StockIn */
+        StockIn: {
+            custom_kind?: components["schemas"]["CustomKind"] | null;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Npc Kind */
+            npc_kind: string;
+            /** Rating */
+            rating: number;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: components["schemas"]["Specialization"][];
+        };
+        /** StockNpcOut */
+        StockNpcOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            custom_kind: components["schemas"]["CustomKind"] | null;
+            kind: components["schemas"]["NpcKindOut"];
+            /** Notes */
+            notes: string;
+            /** Npc Kind */
+            npc_kind: string;
+            /** Rating */
+            rating: number;
+            /** Specializations */
+            specializations: components["schemas"]["Specialization"][];
+            stats: components["schemas"]["StatBlockOut"];
         };
         /**
          * SwapChangeIn
@@ -11577,6 +11885,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Tally"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_stock_api_characters__character_id__npc_stock_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockNpcOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_stock_api_characters__character_id__npc_stock_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockNpcOut"];
                 };
             };
             /** @description Validation Error */
@@ -14435,6 +14809,26 @@ export interface operations {
             };
         };
     };
+    list_npc_kinds_api_npc_kinds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcKindOut"][];
+                };
+            };
+        };
+    };
     password_resets_api_password_resets_get: {
         parameters: {
             query?: {
@@ -16953,7 +17347,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CharacterOut"][];
+                    "application/json": components["schemas"]["NpcOut"][];
                 };
             };
             /** @description Validation Error */

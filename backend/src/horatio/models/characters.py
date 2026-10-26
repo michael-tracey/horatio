@@ -17,6 +17,10 @@ class Character(Imported, Record):
         CheckConstraint("status in ('active', 'retired')", name="status"),
         CheckConstraint("kind in ('pc', 'npc')", name="kind"),
         CheckConstraint("(kind = 'npc') = (owner_troupe_id is not null)", name="npc_has_troupe"),
+        CheckConstraint(
+            "(kind = 'npc') = (npc_kind is not null and npc_form is not null)", name="npc_has_kind"
+        ),
+        CheckConstraint("npc_form in ('sheeted', 'stock')", name="npc_form"),
     )
 
     # For a PC, its player. For an NPC, the staff member who made it; the NPC
@@ -66,6 +70,15 @@ class Character(Imported, Record):
     # bloodline are the ghoul's clan trait. Both empty for a vampire.
     domitor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"))
     domitor_name: Mapped[str] = mapped_column(default="", server_default="")
+    # What an NPC is, by its kind's key (horatio.rules.npc_kinds): "vampire",
+    # "werewolf", "custom" and so on; and its form: "sheeted", with a full sheet, or
+    # "stock", with only a rating and specializations (horatio.stock_npcs). Both
+    # null for a PC.
+    npc_kind: Mapped[str | None]
+    npc_form: Mapped[str | None]
+    # A custom kind as staff set it up for this NPC: {"name", "nature", "resource":
+    # {"name", "size", "per_turn", "regains"}}. Null for every other kind.
+    npc_custom_kind: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class CharacterTrait(Record):

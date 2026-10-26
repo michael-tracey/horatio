@@ -971,6 +971,58 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByRole("tab", { name: "Tracker" })).toBeVisible();
 });
 
+test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the list by kind and form", async ({ browser }) => {
+  const custodian = await person(browser, "kinds-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "kinds-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Antlers ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  const p = lead.page;
+  await p.goto(`/troupes/${troupeId}/npcs`);
+  await expect(p.getByRole("heading", { name: "New NPC" })).toBeVisible();
+  // A Stock werewolf: the kind's resource and pages show as it is picked.
+  await p.getByLabel("Name").fill("Bites-the-Hand");
+  await p.getByLabel("Kind", { exact: true }).selectOption("werewolf");
+  await expect(p.getByText("Supernatural · Rage 10, up to 3 a turn, regains 1 every five turns · pp. 494–495")).toBeVisible();
+  await p.getByRole("radio", { name: "Stock" }).click();
+  await p.getByLabel("Rating").fill("3");
+  await p.getByRole("button", { name: "Make Stock NPC" }).click();
+  const wolf = p.getByRole("listitem", { name: "Bites-the-Hand" });
+  await expect(wolf.getByText("Werewolf")).toBeVisible();
+  await expect(wolf.getByText("Stock", { exact: true })).toBeVisible();
+  await expect(wolf.getByText("Rating 3")).toBeVisible();
+  // A Stock NPC has no sheet yet to play from.
+  await expect(p.getByRole("link", { name: "Play Bites-the-Hand" })).toHaveCount(0);
+
+  // A sheeted mage goes to its quick build, on the Vampire sheet.
+  await p.getByLabel("Name").fill("Sarah Juniper");
+  await p.getByLabel("Kind", { exact: true }).selectOption("mage");
+  await p.getByRole("radio", { name: "Sheeted" }).click();
+  await p.getByRole("button", { name: "Quick build" }).click();
+  await expect(p.getByRole("heading", { name: "Sarah Juniper" })).toBeVisible();
+
+  await p.goto(`/troupes/${troupeId}/npcs`);
+  const mage = p.getByRole("listitem", { name: "Sarah Juniper" });
+  await expect(mage.getByText("Mage")).toBeVisible();
+  await expect(mage.getByText("Sheeted")).toBeVisible();
+  await expect(p.getByRole("link", { name: "Play Sarah Juniper" })).toBeVisible();
+  await p.screenshot(shots("npc-kinds"));
+
+  // The filter: by form, then by kind.
+  await p.getByLabel("Show form").selectOption("stock");
+  await expect(wolf).toBeVisible();
+  await expect(mage).toHaveCount(0);
+  await p.getByLabel("Show form").selectOption("");
+  await p.getByLabel("Show kind").selectOption("mage");
+  await expect(mage).toBeVisible();
+  await expect(wolf).toHaveCount(0);
+  await p.getByLabel("Show form").selectOption("stock");
+  await expect(p.getByText("No NPCs of that kind.")).toBeVisible();
+});
+
 test("storytellers give an NPC powers, and one out of order is marked until it is in order", async ({ browser }) => {
   const custodian = await person(browser, "powers-cust");
   makeCustodian(custodian.email);

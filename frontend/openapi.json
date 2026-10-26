@@ -1054,6 +1054,76 @@
         "title": "BuildingTroupe",
         "type": "object"
       },
+      "BuiltInPowerOut": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "discipline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discipline"
+          },
+          "dots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "const": "rating",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dots"
+          },
+          "from_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Rating"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "dots",
+          "discipline",
+          "category",
+          "from_rating",
+          "note"
+        ],
+        "title": "BuiltInPowerOut",
+        "type": "object"
+      },
       "BulkAward": {
         "properties": {
           "awards": {
@@ -1783,6 +1853,39 @@
             ],
             "title": "Next Rename On"
           },
+          "npc_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
+          "npc_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind"
+          },
+          "npc_kind_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind Name"
+          },
           "owner_troupe_id": {
             "anyOf": [
               {
@@ -1833,7 +1936,10 @@
           "owner_troupe_id",
           "next_rename_on",
           "picture",
-          "clan"
+          "clan",
+          "npc_kind",
+          "npc_kind_name",
+          "npc_form"
         ],
         "title": "CharacterOut",
         "type": "object"
@@ -2706,6 +2812,35 @@
           "size"
         ],
         "title": "CropIn",
+        "type": "object"
+      },
+      "CustomKind": {
+        "description": "A custom kind, for one the book does not cover: its name, whether it is\nmortal or supernatural, and its resource.",
+        "properties": {
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "nature": {
+            "enum": [
+              "mortal",
+              "supernatural"
+            ],
+            "title": "Nature",
+            "type": "string"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceIn"
+          }
+        },
+        "required": [
+          "name",
+          "nature",
+          "resource"
+        ],
+        "title": "CustomKind",
         "type": "object"
       },
       "CycleChanges": {
@@ -7922,16 +8057,56 @@
       },
       "NewNpc": {
         "properties": {
+          "custom_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "maxLength": 200,
             "minLength": 1,
             "title": "Name",
             "type": "string"
           },
+          "npc_form": {
+            "default": "sheeted",
+            "enum": [
+              "sheeted",
+              "stock"
+            ],
+            "title": "Npc Form",
+            "type": "string"
+          },
+          "npc_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind"
+          },
           "splat": {
             "default": "vampire",
             "title": "Splat",
             "type": "string"
+          },
+          "stock": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StockFields"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "wizard": {
             "default": false,
@@ -8131,6 +8306,312 @@
           "count"
         ],
         "title": "NotificationsOut",
+        "type": "object"
+      },
+      "NpcKindOut": {
+        "properties": {
+          "any_discipline": {
+            "title": "Any Discipline",
+            "type": "boolean"
+          },
+          "custom": {
+            "title": "Custom",
+            "type": "boolean"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "health_per_rating": {
+            "title": "Health Per Rating",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "nature": {
+            "enum": [
+              "mortal",
+              "partly_mortal",
+              "supernatural"
+            ],
+            "title": "Nature",
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "numina": {
+            "items": {
+              "$ref": "#/components/schemas/NuminaOut"
+            },
+            "title": "Numina",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "powers": {
+            "items": {
+              "$ref": "#/components/schemas/BuiltInPowerOut"
+            },
+            "title": "Powers",
+            "type": "array"
+          },
+          "rating_max": {
+            "title": "Rating Max",
+            "type": "integer"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceOut"
+          },
+          "specialization_label": {
+            "title": "Specialization Label",
+            "type": "string"
+          },
+          "specializations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Specializations",
+            "type": "array"
+          },
+          "to_page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Page"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "group",
+          "nature",
+          "page",
+          "to_page",
+          "resource",
+          "any_discipline",
+          "specializations",
+          "specialization_label",
+          "numina",
+          "powers",
+          "health_per_rating",
+          "rating_max",
+          "notes",
+          "custom"
+        ],
+        "title": "NpcKindOut",
+        "type": "object"
+      },
+      "NpcOut": {
+        "properties": {
+          "building_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Building Troupe Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "creation_complete": {
+            "title": "Creation Complete",
+            "type": "boolean"
+          },
+          "home_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home Troupe Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "next_rename_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Rename On"
+          },
+          "npc_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
+          "npc_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind"
+          },
+          "npc_kind_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind Name"
+          },
+          "owner_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe Id"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "player_id": {
+            "format": "uuid",
+            "title": "Player Id",
+            "type": "string"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stock_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Rating"
+          }
+        },
+        "required": [
+          "id",
+          "player_id",
+          "splat",
+          "name",
+          "status",
+          "home_troupe_id",
+          "building_troupe_id",
+          "creation_complete",
+          "kind",
+          "owner_troupe_id",
+          "next_rename_on",
+          "picture",
+          "clan",
+          "npc_kind",
+          "npc_kind_name",
+          "npc_form",
+          "stock_rating"
+        ],
+        "title": "NpcOut",
+        "type": "object"
+      },
+      "NuminaOut": {
+        "properties": {
+          "levels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "page",
+          "levels"
+        ],
+        "title": "NuminaOut",
         "type": "object"
       },
       "OptionList": {
@@ -9560,6 +10041,24 @@
           "can_change"
         ],
         "title": "PowerChoicesOut",
+        "type": "object"
+      },
+      "PowerDots": {
+        "properties": {
+          "dots": {
+            "title": "Dots",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "dots"
+        ],
+        "title": "PowerDots",
         "type": "object"
       },
       "PowerNote": {
@@ -11143,6 +11642,69 @@
         "title": "ResolveIn",
         "type": "object"
       },
+      "ResourceIn": {
+        "properties": {
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "per_turn": {
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Per Turn",
+            "type": "integer"
+          },
+          "regains": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Regains",
+            "type": "string"
+          },
+          "size": {
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "per_turn"
+        ],
+        "title": "ResourceIn",
+        "type": "object"
+      },
+      "ResourceOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "per_turn": {
+            "title": "Per Turn",
+            "type": "integer"
+          },
+          "regains": {
+            "title": "Regains",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "per_turn",
+          "regains"
+        ],
+        "title": "ResourceOut",
+        "type": "object"
+      },
       "ResultOut": {
         "properties": {
           "cycle_id": {
@@ -12665,6 +13227,24 @@
         "title": "SignUp",
         "type": "object"
       },
+      "SkillPool": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pool": {
+            "title": "Pool",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "pool"
+        ],
+        "title": "SkillPool",
+        "type": "object"
+      },
       "Someone": {
         "description": "A person as others find them: never their email.",
         "properties": {
@@ -12703,6 +13283,30 @@
           "display_name"
         ],
         "title": "Someone",
+        "type": "object"
+      },
+      "Specialization": {
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "skill",
+              "power"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ],
+        "title": "Specialization",
         "type": "object"
       },
       "SplatOut": {
@@ -12982,6 +13586,76 @@
         "title": "StartingRule",
         "type": "object"
       },
+      "StatBlockOut": {
+        "description": "What the book prints for a Stock NPC (MET: VTM p. 490).",
+        "properties": {
+          "built_in": {
+            "items": {
+              "$ref": "#/components/schemas/BuiltInPowerOut"
+            },
+            "title": "Built In",
+            "type": "array"
+          },
+          "health": {
+            "title": "Health",
+            "type": "integer"
+          },
+          "pool": {
+            "title": "Pool",
+            "type": "integer"
+          },
+          "powers": {
+            "items": {
+              "$ref": "#/components/schemas/PowerDots"
+            },
+            "title": "Powers",
+            "type": "array"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceOut"
+          },
+          "retests": {
+            "title": "Retests",
+            "type": "boolean"
+          },
+          "rules": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "skill_pools": {
+            "items": {
+              "$ref": "#/components/schemas/SkillPool"
+            },
+            "title": "Skill Pools",
+            "type": "array"
+          },
+          "willpower": {
+            "title": "Willpower",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating",
+          "pool",
+          "skill_pools",
+          "powers",
+          "built_in",
+          "health",
+          "resource",
+          "willpower",
+          "retests",
+          "rules"
+        ],
+        "title": "StatBlockOut",
+        "type": "object"
+      },
       "StepNeed": {
         "properties": {
           "message": {
@@ -12998,6 +13672,138 @@
           "message"
         ],
         "title": "StepNeed",
+        "type": "object"
+      },
+      "StockFields": {
+        "description": "What a Stock NPC has in place of a sheet (MET: VTM pp. 489\u2013490).",
+        "properties": {
+          "notes": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "rating": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "specializations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Specialization"
+            },
+            "maxItems": 20,
+            "title": "Specializations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "StockFields",
+        "type": "object"
+      },
+      "StockIn": {
+        "properties": {
+          "custom_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "npc_kind": {
+            "title": "Npc Kind",
+            "type": "string"
+          },
+          "rating": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "specializations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Specialization"
+            },
+            "maxItems": 20,
+            "title": "Specializations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rating",
+          "npc_kind"
+        ],
+        "title": "StockIn",
+        "type": "object"
+      },
+      "StockNpcOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "custom_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NpcKindOut"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "npc_kind": {
+            "title": "Npc Kind",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "specializations": {
+            "items": {
+              "$ref": "#/components/schemas/Specialization"
+            },
+            "title": "Specializations",
+            "type": "array"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/StatBlockOut"
+          }
+        },
+        "required": [
+          "character_id",
+          "npc_kind",
+          "kind",
+          "custom_kind",
+          "rating",
+          "specializations",
+          "notes",
+          "stats"
+        ],
+        "title": "StockNpcOut",
         "type": "object"
       },
       "SwapChangeIn": {
@@ -18126,6 +18932,102 @@
         ]
       }
     },
+    "/api/characters/{character_id}/npc/stock": {
+      "get": {
+        "description": "A Stock NPC's rating, specializations and notes, and the stat block they make.",
+        "operationId": "read_stock_api_characters__character_id__npc_stock_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockNpcOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Stock",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "put": {
+        "description": "Change a Stock NPC's kind, rating, specializations and notes.",
+        "operationId": "set_stock_api_characters__character_id__npc_stock_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockNpcOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Stock",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
     "/api/characters/{character_id}/npc/tally": {
       "get": {
         "description": "What the NPC's sheet would be worth in experience under its troupe's rules.",
@@ -22567,6 +23469,32 @@
         ]
       }
     },
+    "/api/npc-kinds": {
+      "get": {
+        "description": "Every kind an NPC can be, from the rules data (MET: VTM pp. 489\u2013505).",
+        "operationId": "list_npc_kinds_api_npc_kinds_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NpcKindOut"
+                  },
+                  "title": "Response List Npc Kinds Api Npc Kinds Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Npc Kinds",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
     "/api/password-resets": {
       "get": {
         "description": "For the custodian: the reset links live now, and who has made, asked for and\nused them.",
@@ -26527,7 +27455,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CharacterOut"
+                    "$ref": "#/components/schemas/NpcOut"
                   },
                   "title": "Response List Npcs Api Troupes  Troupe Id  Npcs Get",
                   "type": "array"
