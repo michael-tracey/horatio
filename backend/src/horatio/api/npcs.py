@@ -2,6 +2,7 @@
 Each has a kind and a form: sheeted, or a Stock NPC (horatio.rules.stock)."""
 
 import uuid
+from dataclasses import asdict
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, status
@@ -100,6 +101,16 @@ class NuminaOut(BaseModel):
     levels: list[str]
 
 
+class PanelsOut(BaseModel):
+    """The panels of the sheet and Play View a kind has (horatio.rules.npc_kinds)."""
+
+    beast: bool
+    frenzy: bool
+    morality: bool
+    generation: bool
+    feed: bool
+
+
 class NpcKindOut(BaseModel):
     key: str
     name: str
@@ -120,6 +131,8 @@ class NpcKindOut(BaseModel):
     notes: list[str]
     # The storyteller names it and sets it up on each NPC.
     custom: bool
+    # What a sheeted NPC of this kind has of the Vampire sheet and Play View.
+    panels: PanelsOut
 
 
 class SkillPool(BaseModel):
@@ -200,6 +213,7 @@ def kind_out(kind: NpcKind) -> NpcKindOut:
         rating_max=kind.rating_max,
         notes=list(kind.notes),
         custom=kind.custom,
+        panels=PanelsOut(**asdict(kind.panels)),
     )
 
 
@@ -342,6 +356,26 @@ def set_stock(
     set_stock_fields(db, user, npc, body.npc_kind, custom_dict(body.custom_kind), body)
     db.commit()
     return stock_out(db, npc)
+
+
+class SheetedOut(BaseModel):
+    character: CharacterOut
+    # What the sheet could not carry over: powers and numina the Vampire rule set
+    # has no trait for.
+    left_out: list[str]
+
+
+@router.post("/characters/{character_id}/npc/sheeted")
+def make_sheeted(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> SheetedOut:
+    """Turn a Stock NPC into a sheeted one, its sheet starting from its rating and
+    specializations (horatio.npcs.make_sheeted). There is no turning back."""
+    npc = players_character(db, user, character_id)
+    if npc.kind != "npc" or npc.npc_form != "stock":
+        raise HTTPException(status.HTTP_409_CONFLICT, f"{npc.name} is not a Stock NPC.")
+    with sheets.checked(db, npc, user):
+        made = npcs.make_sheeted(db, user, npc)
+    db.commit()
+    return SheetedOut(character=character_out(db, npc), left_out=list(made.left_out))
 
 
 @router.put("/characters/{character_id}/npc/ratings")

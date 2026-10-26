@@ -11,7 +11,7 @@ A pick can only go on a trait with no purchased dots, and can only be taken
 back while the trait still has none, so free and paid dots never get tangled.
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -313,8 +313,14 @@ def restriction_error(pool: Pool, name: str, fits: Fitting | None = None) -> HTT
     )
 
 
-def grant_starting_traits(db: Session, rules: TroupeRules, character: Character) -> None:
+def grant_starting_traits(
+    db: Session, rules: TroupeRules, character: Character, skip: Collection[str] = ()
+) -> None:
+    """Give the character the rule set's starting traits, but for those in the
+    categories in `skip` (an NPC that is no vampire has no Humanity)."""
     for starting in rules.starting_traits():
+        if starting.category in skip:
+            continue
         definition, _ = find_definition(db, character, starting.category, starting.name)
         db.add(
             CharacterTrait(

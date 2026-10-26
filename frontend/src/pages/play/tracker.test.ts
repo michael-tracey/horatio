@@ -9,6 +9,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     player_name: "Jane",
     kind: "pc",
     blood_name: "Blood",
+    panels: { beast: true, frenzy: true, morality: true, generation: true, feed: true },
     clan: "Brujah",
     sect: "Camarilla",
     generation: 1,

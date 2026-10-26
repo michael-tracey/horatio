@@ -46,6 +46,9 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
       unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: character.splat }, query: { troupe_id: character.owner_troupe_id ?? undefined } } })),
     staleTime: 5 * 60_000,
   });
+  // What the NPC's kind leaves off the Vampire sheet: a mortal has no Generation or Humanity.
+  const kinds = useQuery({ queryKey: ["npc-kinds"], queryFn: () => unwrap(api.GET("/api/npc-kinds")), staleTime: Infinity });
+  const panels = kinds.data?.find((k) => k.key === character.npc_kind)?.panels;
   const set = useAction((body: Change) => unwrap(api.PUT("/api/characters/{character_id}/npc/ratings", { ...path, body: { ...body, detail: "" } })));
 
   if (sheet.isPending || catalogue.isPending) return <Loading />;
@@ -57,9 +60,9 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
         <Identity sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         <Attributes sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         {SECTIONS.map((section) => (
-          <Section key={section.title} {...section} character={character} sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
+          <Section key={section.title} {...section} noGeneration={panels?.generation === false} character={character} sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         ))}
-        <Morality sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
+        {panels?.morality !== false && <Morality sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />}
         <ErrorText error={set.error} />
       </div>
       <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
@@ -223,11 +226,14 @@ function Section({
   categories,
   split,
   powers,
+  noGeneration,
   sheet,
   catalogue,
   onChange,
 }: {
   character: CharacterOut;
+  /** Leave the Generation background out: the NPC's kind has none. */
+  noGeneration?: boolean;
   title: string;
   categories: string[];
   split?: boolean;
@@ -257,7 +263,10 @@ function Section({
   if (!present.length) return null;
   // An archived house merit is not taken anew; one held stays listed.
   const traits = catalogue.traits.filter(
-    (t) => present.includes(t.category) && !(t.house?.archived && !ratings.get(`${t.category}/${t.name}`)),
+    (t) =>
+      present.includes(t.category) &&
+      !(noGeneration && t.category === "backgrounds" && t.name === "Generation") &&
+      !(t.house?.archived && !ratings.get(`${t.category}/${t.name}`)),
   );
   const q = query.trim().toLowerCase();
   // Long lists show what the NPC has, plus whatever the search finds.

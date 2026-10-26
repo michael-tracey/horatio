@@ -12,6 +12,7 @@ import { ChoiceInfo } from "../character/Info";
 import { Derangements, showsDerangements } from "./Derangements";
 import { Feed, FeedButton } from "./Feed";
 import { Frenzy } from "./Frenzy";
+import { KindBadge } from "../character/NpcKindBadge";
 import { bloodPerTurn, boxes, healthMost } from "./powers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
@@ -113,13 +114,13 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
         <>
           <div className="grid gap-3 md:grid-cols-2">
             <BoxTracker
-              title="Blood"
+              title={shown.blood_name}
               tracker="blood"
               value={shown.blood.value}
               most={shown.blood.most}
               hint={`${bloodPerTurn(shown)} a turn${shown.half_blood ? " · Half Blood: fed short last downtime" : ""}`}
               record={record}
-              extra={<FeedButton onClick={() => setFeeding(true)} />}
+              extra={shown.panels.feed ? <FeedButton onClick={() => setFeeding(true)} /> : undefined}
             />
             <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} />
             <HealthTracker view={shown} record={record} />
@@ -135,17 +136,19 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
                   small
                 />
               )}
-              <BoxTracker
-                title="Beast traits"
-                tracker="beast"
-                value={shown.beast.value}
-                most={shown.beast.most}
-                spendIsUp
-                warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality)} />}
-                record={record}
-                small
-              />
-              <Frenzy />
+              {shown.panels.beast && (
+                <BoxTracker
+                  title="Beast traits"
+                  tracker="beast"
+                  value={shown.beast.value}
+                  most={shown.beast.most}
+                  spendIsUp
+                  warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality)} />}
+                  record={record}
+                  small
+                />
+              )}
+              {shown.panels.frenzy && <Frenzy />}
               <Derangements view={shown} record={record} tap={tap} />
             </div>
           </div>
@@ -290,13 +293,18 @@ function Identity({ view }: { view: PlayView }) {
           </span>
         ))
       : [view.clan, view.sect]),
-    view.generation ? `Generation ${view.generation}` : null,
-    `${bloodPerTurn(view)} blood a turn`,
+    view.panels.generation && view.generation ? `Generation ${view.generation}` : null,
+    view.blood_per_turn > 0 || view.panels.feed ? `${bloodPerTurn(view)} ${view.blood_name.toLowerCase()} a turn` : null,
   ].filter(Boolean);
   return (
     <section className="flex items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl leading-tight">{view.character_name}</h1>
+        <h1 className="flex flex-wrap items-center gap-x-3 text-2xl leading-tight">
+          {view.character_name}
+          <span className="flex items-center gap-2 text-base">
+            <KindBadge kind={view.npc_kind ?? null} name={view.npc_kind_name ?? null} />
+          </span>
+        </h1>
         <p className="text-sm text-mist">
           {facts.map((fact, i) => (
             <Fragment key={i}>

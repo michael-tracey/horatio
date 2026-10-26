@@ -919,6 +919,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/npc/sheeted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make Sheeted
+         * @description Turn a Stock NPC into a sheeted one, its sheet starting from its rating and
+         *     specializations (horatio.npcs.make_sheeted). There is no turning back.
+         */
+        post: operations["make_sheeted_api_characters__character_id__npc_sheeted_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/npc/stock": {
         parameters: {
             query?: never;
@@ -7696,6 +7717,7 @@ export interface components {
             numina: components["schemas"]["NuminaOut"][];
             /** Page */
             page: number;
+            panels: components["schemas"]["PanelsOut"];
             /** Powers */
             powers: components["schemas"]["BuiltInPowerOut"][];
             /** Rating Max */
@@ -7844,6 +7866,22 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /**
+         * PanelsOut
+         * @description The panels of the sheet and Play View a kind has (horatio.rules.npc_kinds).
+         */
+        PanelsOut: {
+            /** Beast */
+            beast: boolean;
+            /** Feed */
+            feed: boolean;
+            /** Frenzy */
+            frenzy: boolean;
+            /** Generation */
+            generation: boolean;
+            /** Morality */
+            morality: boolean;
         };
         /** ParticipantDeliveries */
         ParticipantDeliveries: {
@@ -8202,6 +8240,20 @@ export interface components {
             morality: components["schemas"]["Morality"] | null;
             /** Npc Form */
             npc_form?: ("sheeted" | "stock") | null;
+            /** Npc Kind */
+            npc_kind?: string | null;
+            /** Npc Kind Name */
+            npc_kind_name?: string | null;
+            /**
+             * @default {
+             *       "beast": true,
+             *       "feed": true,
+             *       "frenzy": true,
+             *       "generation": true,
+             *       "morality": true
+             *     }
+             */
+            panels: components["schemas"]["PanelsOut"];
             /** Player Name */
             player_name: string;
             /**
@@ -9731,6 +9783,12 @@ export interface components {
             troupe_name: string;
             /** Waiting */
             waiting: boolean;
+        };
+        /** SheetedOut */
+        SheetedOut: {
+            character: components["schemas"]["CharacterOut"];
+            /** Left Out */
+            left_out: string[];
         };
         /** SignIn */
         SignIn: {
@@ -12764,6 +12822,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Tally"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_sheeted_api_characters__character_id__npc_sheeted_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetedOut"];
                 };
             };
             /** @description Validation Error */

@@ -80,6 +80,25 @@ class BuiltInPower:
 
 
 @dataclass(frozen=True)
+class Panels:
+    """Which parts of the Vampire sheet and Play View a kind has. A vampire has
+    them all; a mortal or a werewolf has no Beast, Humanity or Generation."""
+
+    # Beast traits, and the frenzy reminders that go with them.
+    beast: bool = True
+    frenzy: bool = True
+    # A Humanity or Path of Enlightenment track.
+    morality: bool = True
+    # The Generation background.
+    generation: bool = True
+    # Feeding, which is for those who spend Blood (and not a werewolf's Rage).
+    feed: bool = True
+
+
+NO_VAMPIRE_PANELS = Panels(beast=False, frenzy=False, morality=False, generation=False, feed=False)
+
+
+@dataclass(frozen=True)
 class NpcKind:
     key: str
     name: str
@@ -110,6 +129,21 @@ class NpcKind:
     @property
     def label(self) -> str:
         return self.custom_name or self.name
+
+    @property
+    def vampiric(self) -> bool:
+        """A vampire, a ghoul or one of the vampire bloodlines: those whose sheet is
+        the Vampire sheet as it stands."""
+        return self.group in ("vampire", "bloodline")
+
+    @property
+    def panels(self) -> Panels:
+        """The sheet and Play View panels that apply to the kind. Any other kind
+        has its own resource in Blood's place (Rage, Essence) and no Beast,
+        Humanity or Generation."""
+        if self.vampiric:
+            return Panels(feed=self.resource.name == "Blood" and self.resource.per_turn > 0)
+        return NO_VAMPIRE_PANELS
 
     def may_specialize(self, name: str, disciplines: Collection[str]) -> bool:
         """Whether a discipline specialization in `name` is open to this kind:

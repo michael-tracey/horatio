@@ -1248,6 +1248,90 @@ test("storytellers build a Stock NPC from the NPCs tab and see the book's stat b
   await expect(p.getByRole("listitem", { name: "Melee" })).toHaveCount(0);
 });
 
+test("a storyteller makes a Stock werewolf a full sheet, which plays with Rage and no Beast", async ({ browser }) => {
+  const custodian = await person(browser, "tosheet-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tosheet-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Burrs ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  const p = lead.page;
+  const stock = await p.request.post(`/api/troupes/${troupeId}/npcs`, {
+    headers,
+    data: {
+      name: "Grinds-the-Bone",
+      npc_kind: "werewolf",
+      npc_form: "stock",
+      stock: { rating: 3, specializations: [{ type: "skill", name: "Brawl" }, { type: "power", name: "Celerity" }], notes: "Hunts alone." },
+    },
+  });
+  expect(stock.status(), await stock.text()).toBe(201);
+  const npc = (await stock.json()).id as string;
+
+  await p.goto(`/troupes/${troupeId}/npcs/${npc}`);
+  await p.getByRole("button", { name: "Make this a full sheet…" }).click();
+  const confirm = p.getByRole("dialog", { name: "Make Grinds-the-Bone a full sheet?" });
+  await expect(confirm.getByText("Physical, Social and Mental are each its test pool, rating × 2: 6.")).toBeVisible();
+  await expect(p.getByText("It cannot be turned back.")).toBeVisible();
+  await confirm.getByRole("button", { name: "Make a full sheet" }).click();
+
+  // Its sheet starts from the Stock data, labelled as a werewolf, with the rules card at hand.
+  await expect(p).toHaveURL(new RegExp(`/characters/${npc}$`));
+  await expect(p.getByRole("heading", { name: "Grinds-the-Bone" })).toBeVisible();
+  await expect(p.getByText("Werewolf", { exact: true }).first()).toBeVisible();
+  await p.getByRole("button", { name: "Rules card" }).click();
+  await expect(p.getByRole("dialog", { name: "Rules card" }).getByRole("heading", { name: "Werewolf rules card" })).toBeVisible();
+  await p.keyboard.press("Escape");
+  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  await expect(p.getByText("Brawl", { exact: true }).first()).toBeVisible();
+  const sheet = await (await p.request.get(`/api/characters/${npc}/sheet`)).json();
+  const rating = (name: string) => sheet.traits.find((t: { name: string }) => t.name === name)?.rating;
+  expect([rating("Brawl"), rating("Celerity"), rating("Physical")]).toEqual([3, 3, 6]);
+
+  // Its Play View has Rage in Blood's place, and no Beast, Humanity or Generation.
+  await p.goto(`/play/characters/${npc}?tab=tracker`);
+  await expect(p.getByText("Werewolf", { exact: true }).first()).toBeVisible();
+  await expect(p.getByLabel("Rage: 10 of 10")).toBeVisible();
+  await expect(p.getByLabel(/^Beast traits/)).toHaveCount(0);
+  await expect(p.getByLabel(/^Humanity/)).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Frenzy" })).toHaveCount(0);
+  await expect(p.getByText(/Generation \d/)).toHaveCount(0);
+  await p.getByRole("button", { name: "Spend Rage" }).first().click();
+  await expect(p.getByLabel("Rage: 9 of 10")).toBeVisible();
+  await p.screenshot(shots("npc-werewolf-play"));
+});
+
+test("a sheeted Mortal NPC's Play View has no Beast or Humanity panel", async ({ browser }) => {
+  const custodian = await person(browser, "mortal-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mortal-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Thistles ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  const p = lead.page;
+  const npc = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Constable Marsh", npc_kind: "mortal", wizard: false } });
+  expect(npc.status(), await npc.text()).toBe(201);
+  const id = (await npc.json()).id as string;
+
+  await p.goto(`/characters/${id}`);
+  await expect(p.getByText("Mortal", { exact: true }).first()).toBeVisible();
+  // The quick build leaves out what a mortal does not have.
+  await expect(p.getByRole("heading", { name: "Skills" })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Humanity" })).toHaveCount(0);
+
+  await p.goto(`/play/characters/${id}?tab=tracker`);
+  await expect(p.getByLabel("Blood: 5 of 5")).toBeVisible();
+  await expect(p.getByLabel("Willpower: 6 of 6")).toBeVisible();
+  await expect(p.getByLabel(/^Beast traits/)).toHaveCount(0);
+  await expect(p.getByLabel(/^Humanity/)).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Frenzy" })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Feed" })).toHaveCount(0);
+});
+
 test("storytellers give an NPC powers, and one out of order is marked until it is in order", async ({ browser }) => {
   const custodian = await person(browser, "powers-cust");
   makeCustodian(custodian.email);

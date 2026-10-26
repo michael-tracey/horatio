@@ -3,6 +3,7 @@ limited uses are spent tap by tap (horatio.play). The character's player and
 the staff who can see the sheet use it alike; each tap says who made it."""
 
 import uuid
+from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Annotated, Literal, Self
 
@@ -23,7 +24,7 @@ from horatio import (
 )
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceStandingOut, standing_out
-from horatio.api.npcs import StockNpcOut, stock_out
+from horatio.api.npcs import PanelsOut, StockNpcOut, stock_out
 from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
 from horatio.api.roster import roster
 from horatio.auth.deps import CurrentUser, DbSession
@@ -40,6 +41,7 @@ from horatio.models import (
 )
 from horatio.permissions import TroupeAction, require_troupe_action, visible_character
 from horatio.pool_modifiers import ModifierOut, modifiers_out
+from horatio.rules.npc_kinds import kind_name
 
 router = APIRouter(tags=["play"])
 
@@ -219,6 +221,15 @@ class PlayView(BaseModel):
     npc_form: Literal["sheeted", "stock"] | None = None
     # A Stock NPC's stat block, with its kind's rules; None for anyone else.
     stock: StockNpcOut | None = None
+    # A sheeted NPC's kind and its name (a custom kind's own), for the badge and
+    # rules card; None for a PC.
+    npc_kind: str | None = None
+    npc_kind_name: str | None = None
+    # The panels this character has: a mortal or a werewolf has no Beast, Humanity,
+    # Generation or frenzy (horatio.rules.npc_kinds.Panels). A PC has them all.
+    panels: PanelsOut = PanelsOut(
+        beast=True, frenzy=True, morality=True, generation=True, feed=True
+    )
     clan: str | None
     sect: str | None
     generation: int
@@ -527,6 +538,9 @@ def play_view(db: Session, character: Character) -> PlayView:
         kind=character.kind,
         npc_form=character.npc_form,  # type: ignore[arg-type]  # checked by the database
         stock=stock_out(db, character) if character.npc_form == "stock" else None,
+        npc_kind=character.npc_kind,
+        npc_kind_name=kind_name(character.npc_kind, character.npc_custom_kind),
+        panels=PanelsOut(**asdict(limits.panels)),
         clan=one("clan"),
         sect=one("sect"),
         generation=limits.generation,

@@ -8999,6 +8999,9 @@
             "title": "Page",
             "type": "integer"
           },
+          "panels": {
+            "$ref": "#/components/schemas/PanelsOut"
+          },
           "powers": {
             "items": {
               "$ref": "#/components/schemas/BuiltInPowerOut"
@@ -9052,7 +9055,8 @@
           "health_per_rating",
           "rating_max",
           "notes",
-          "custom"
+          "custom",
+          "panels"
         ],
         "title": "NpcKindOut",
         "type": "object"
@@ -9430,6 +9434,40 @@
           "purpose"
         ],
         "title": "OwnEntryOut",
+        "type": "object"
+      },
+      "PanelsOut": {
+        "description": "The panels of the sheet and Play View a kind has (horatio.rules.npc_kinds).",
+        "properties": {
+          "beast": {
+            "title": "Beast",
+            "type": "boolean"
+          },
+          "feed": {
+            "title": "Feed",
+            "type": "boolean"
+          },
+          "frenzy": {
+            "title": "Frenzy",
+            "type": "boolean"
+          },
+          "generation": {
+            "title": "Generation",
+            "type": "boolean"
+          },
+          "morality": {
+            "title": "Morality",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "beast",
+          "frenzy",
+          "morality",
+          "generation",
+          "feed"
+        ],
+        "title": "PanelsOut",
         "type": "object"
       },
       "ParticipantDeliveries": {
@@ -10335,6 +10373,38 @@
               }
             ],
             "title": "Npc Form"
+          },
+          "npc_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind"
+          },
+          "npc_kind_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind Name"
+          },
+          "panels": {
+            "$ref": "#/components/schemas/PanelsOut",
+            "default": {
+              "beast": true,
+              "feed": true,
+              "frenzy": true,
+              "generation": true,
+              "morality": true
+            }
           },
           "player_name": {
             "title": "Player Name",
@@ -14216,6 +14286,26 @@
           "titles"
         ],
         "title": "SheetTroupeOut",
+        "type": "object"
+      },
+      "SheetedOut": {
+        "properties": {
+          "character": {
+            "$ref": "#/components/schemas/CharacterOut"
+          },
+          "left_out": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Left Out",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character",
+          "left_out"
+        ],
+        "title": "SheetedOut",
         "type": "object"
       },
       "SignIn": {
@@ -20245,6 +20335,50 @@
           }
         },
         "summary": "Set Rating",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/npc/sheeted": {
+      "post": {
+        "description": "Turn a Stock NPC into a sheeted one, its sheet starting from its rating and\nspecializations (horatio.npcs.make_sheeted). There is no turning back.",
+        "operationId": "make_sheeted_api_characters__character_id__npc_sheeted_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Sheeted",
         "tags": [
           "npcs"
         ]
