@@ -60,7 +60,7 @@ describe("ordered", () => {
 
 describe("toChange", () => {
   it("sends a rating with the one it was made from", () => {
-    expect(toChange(setRating([], brawl, 3)[0]!)).toEqual({ kind: "set", category: "skills", name: "Brawl", detail: "", rating: 3, from_rating: 2, teacher: "", picks: [] });
+    expect(toChange(setRating([], brawl, 3)[0]!)).toEqual({ kind: "set", category: "skills", name: "Brawl", detail: "", rating: 3, from_rating: 2, teacher: "" });
   });
 
   it("sends the free traits chosen with a merit, and shows them", () => {

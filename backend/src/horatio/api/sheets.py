@@ -111,7 +111,8 @@ class SheetTraitOut(BaseModel):
     granted_by: list[str]
     note: str
     # For a merit that gives free traits the player chooses: what and which.
-    free_choices: list[FreeChoicesOut] = []
+    # Always given, but optional so a sheet made without it (in a test) still reads.
+    free_choices: list[FreeChoicesOut] | None = None
 
 
 class XpSummary(BaseModel):

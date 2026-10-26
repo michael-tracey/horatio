@@ -7963,11 +7963,8 @@ export interface components {
             kind: "set";
             /** Name */
             name: string;
-            /**
-             * Picks
-             * @default []
-             */
-            picks: components["schemas"]["FreePickIn"][];
+            /** Picks */
+            picks?: components["schemas"]["FreePickIn"][] | null;
             /** Rating */
             rating?: number | null;
             /**
@@ -8240,11 +8237,8 @@ export interface components {
             category_name: string;
             /** Detail */
             detail: string;
-            /**
-             * Free Choices
-             * @default []
-             */
-            free_choices: components["schemas"]["FreeChoicesOut"][];
+            /** Free Choices */
+            free_choices?: components["schemas"]["FreeChoicesOut"][] | null;
             /** Free Rating */
             free_rating: number;
             /** Granted By */

@@ -10920,13 +10920,19 @@
             "type": "string"
           },
           "picks": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/FreePickIn"
-            },
-            "maxItems": 20,
-            "title": "Picks",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FreePickIn"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picks"
           },
           "rating": {
             "anyOf": [
@@ -11586,12 +11592,18 @@
             "type": "string"
           },
           "free_choices": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/FreeChoicesOut"
-            },
-            "title": "Free Choices",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FreeChoicesOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Choices"
           },
           "free_rating": {
             "title": "Free Rating",

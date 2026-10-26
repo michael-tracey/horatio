@@ -39,7 +39,7 @@ class SetChangeIn(BaseModel):
     # Asked as an exception: made at once, waiting on the home troupe's staff.
     exception: ExceptionIn | None = None
     # For a merit that gives free traits the player chooses: their choices, made with it.
-    picks: list[FreePickIn] = Field(default=[], max_length=20)
+    picks: list[FreePickIn] | None = Field(default=None, max_length=20)
 
 
 class SwapChangeIn(BaseModel):
@@ -127,7 +127,7 @@ def to_change(change: CartChangeIn) -> cart.Change:
                 Ask(change.exception.reason.strip(), change.exception.free)
                 if change.exception
                 else None,
-                tuple(p.to_rules() for p in change.picks),
+                tuple(p.to_rules() for p in change.picks or ()),
             )
         case SwapChangeIn():
             return cart.Swap(change.category, change.from_name, change.to_name)

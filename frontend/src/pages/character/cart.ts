@@ -115,7 +115,7 @@ export function toChange(line: CartLine): CartChange {
         from_rating: line.from,
         teacher: line.teacher ?? "",
         ...(line.exception ? { exception: line.exception } : {}),
-        picks: line.picks ?? [],
+        ...(line.picks?.length ? { picks: line.picks } : {}),
       };
     case "swap":
       return line;

@@ -455,7 +455,7 @@ export function SheetTab({
                                 }
                                 onSwap={(to) => cart.update((l) => swap(l, t.category, t.name, to))}
                               />,
-                              !inCart(t) && t.free_choices.length > 0 && (
+                              !inCart(t) && (t.free_choices?.length ?? 0) > 0 && (
                                 <FreeChoicesRow
                                   key={`${t.id}/free`}
                                   character={character}

@@ -162,7 +162,7 @@ function Budget({ offer, picks, onChange }: Part) {
  * troupe accepts the character, a way to choose or change them.
  */
 export function FreeChoicesRow({ character, trait, editable }: { character: CharacterOut; trait: SheetTraitOut; editable: boolean }) {
-  const offers = trait.free_choices;
+  const offers = trait.free_choices ?? [];
   const saved = offers.flatMap((o) => o.picks.map((p) => ({ grant: o.grant, name: p.name, detail: p.detail, amount: p.amount })));
   const [draft, setDraft] = useState<FreePick[] | null>(null);
   const save = useAction((picks: FreePick[]) =>
