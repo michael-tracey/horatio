@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio.models import CharacterTrait, TraitCategory, TraitDefinition
-from horatio.reference import catalogue
+from horatio.reference import Sheet, catalogue, damage_effects, effects, pools
 from horatio.rules.files import DATA_DIR, all_rule_set_files, load_rule_set
 from tests.api_helpers import Troupe
 from tests.test_api_character_search import member
@@ -200,3 +200,86 @@ def test_every_discipline_has_notes_for_each_dot() -> None:
 
 def test_the_power_notes_are_not_a_rule_set() -> None:
     assert all(not p.name.endswith("_powers.toml") for p in all_rule_set_files())
+
+
+def attack_damage(disciplines: dict[str, int], **skills: int) -> dict[str, Any]:
+    """Each attack pool's damage for a sheet with these skills and disciplines."""
+    sheet = Sheet(
+        ratings={("attributes", "Physical"): 3, **{("skills", k): v for k, v in skills.items()}},
+        disciplines=disciplines,
+    )
+    found = pools(sheet, effects(sheet, {}), 1, damage_effects(sheet))
+    return {p.key: p.damage for p in found if p.damage}
+
+
+def test_base_damage_follows_the_attack_type() -> None:
+    found = attack_damage({}, Brawl=1, Melee=1, Firearms=1, Athletics=1)
+
+    assert {k: (d.kind, d.total, d.exceptional, d.type) for k, d in found.items()} == {
+        "attack:Brawl": ("unarmed", 1, 1, "normal"),
+        "attack:Melee": ("melee", 1, 1, "normal"),
+        "attack:Firearms": ("firearms", 2, 1, "normal"),
+        "attack:Athletics": ("thrown", 1, 1, "normal"),
+    }
+    assert [(p.label, p.value) for p in found["attack:Firearms"].parts] == [("firearms", 2)]
+
+
+def test_potence_adds_to_brawl_and_melee_only() -> None:
+    def breakdown(potence: int) -> dict[str, tuple[int, int, list[tuple[str, int]]]]:
+        found = attack_damage({"Potence": potence}, Brawl=1, Melee=2, Firearms=1, Athletics=1)
+        return {
+            k: (d.total, d.exceptional, [(p.label, p.value) for p in d.parts])
+            for k, d in found.items()
+        }
+
+    # Prowess adds nothing to damage.
+    assert breakdown(1)["attack:Brawl"] == (1, 1, [("unarmed", 1)])
+    # Might: 2 damage (core p. 150), 3 on an exceptional success.
+    assert breakdown(2)["attack:Melee"] == (2, 1, [("melee", 1), ("Might", 1)])
+    assert breakdown(3)["attack:Brawl"][:2] == (2, 1)
+    # Intensity: an exceptional success adds 2, so 4 (core p. 151).
+    assert breakdown(4)["attack:Brawl"][:2] == (2, 2)
+    # Puissance: 3 in all, with Might's point included; 5 on an exceptional success.
+    puissance = breakdown(5)["attack:Brawl"]
+    assert puissance == (3, 2, [("unarmed", 1), ("Might", 1), ("Puissance", 1)])
+    # Firearms and thrown attacks are not Brawl or Melee.
+    assert breakdown(5)["attack:Firearms"] == (2, 1, [("firearms", 2)])
+    assert breakdown(5)["attack:Athletics"][0] == 1
+
+
+def test_powers_that_change_damage_type_or_hold_only_sometimes_are_notes() -> None:
+    claws = attack_damage({"Protean": 2}, Brawl=1)["attack:Brawl"]
+    assert (claws.total, claws.type) == (1, "normal")
+    assert any("Aggravated" in n and "Feral Claws" in n for n in claws.notes)
+
+    legerity = attack_damage({"Celerity": 4}, Firearms=1)["attack:Firearms"]
+    assert (legerity.total, legerity.exceptional) == (2, 1)
+    assert any("Celerity active" in n for n in legerity.notes)
+
+
+def test_the_reference_sends_the_damage(troupe: Troupe, swift: str) -> None:
+    brawl = pool(reference(troupe, swift), "attack:Brawl")["damage"]
+
+    assert (brawl["kind"], brawl["total"], brawl["exceptional"], brawl["type"]) == (
+        "unarmed",
+        1,
+        1,
+        "normal",
+    )
+    assert pool(reference(troupe, swift), "dodge")["damage"] is None
+
+
+def test_every_damage_entry_is_from_a_page_and_names_an_attack() -> None:
+    book = catalogue()
+    assert {a["skill"]: a["page"] for a in book.attacks.values()} == dict.fromkeys(
+        ("Brawl", "Melee", "Athletics", "Firearms"), 279
+    )
+    entries = [e for d in book.disciplines.values() for e in d.get("damage", [])] + [
+        e for ps in book.powers.values() for p in ps for e in p.get("damage", [])
+    ]
+    assert entries
+    for e in entries:
+        assert e["page"] > 0
+        assert set(e["attacks"]) <= set(book.attacks)
+        assert e["type"] in ("normal", "aggravated") if "type" in e else True
+        assert "note" in e if "when" in e else True

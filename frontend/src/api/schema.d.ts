@@ -4826,6 +4826,31 @@ export interface components {
              */
             type: "elite" | "underworld";
         };
+        /**
+         * Damage
+         * @description What a successful attack does: a base for its type, and what powers add.
+         */
+        Damage: {
+            /** Exceptional */
+            exceptional: number;
+            /** Kind */
+            kind: string;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+            /** Parts */
+            parts: components["schemas"]["PoolPart"][];
+            /** Total */
+            total: number;
+            /**
+             * Type
+             * @default normal
+             * @enum {string}
+             */
+            type: "normal" | "aggravated";
+        };
         /** DarkPackOut */
         DarkPackOut: {
             /** Clans */
@@ -8373,6 +8398,7 @@ export interface components {
              * @default false
              */
             adds_willpower: boolean;
+            damage?: components["schemas"]["Damage"] | null;
             /** Group */
             group: string;
             /** Key */

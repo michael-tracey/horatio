@@ -2788,6 +2788,55 @@
         "title": "CycleUseOut",
         "type": "object"
       },
+      "Damage": {
+        "description": "What a successful attack does: a base for its type, and what powers add.",
+        "properties": {
+          "exceptional": {
+            "title": "Exceptional",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PoolPart"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "type": {
+            "default": "normal",
+            "enum": [
+              "normal",
+              "aggravated"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "parts",
+          "total",
+          "exceptional"
+        ],
+        "title": "Damage",
+        "type": "object"
+      },
       "DarkPackOut": {
         "properties": {
           "clans": {
@@ -12170,6 +12219,16 @@
             "default": false,
             "title": "Adds Willpower",
             "type": "boolean"
+          },
+          "damage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Damage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "group": {
             "title": "Group",

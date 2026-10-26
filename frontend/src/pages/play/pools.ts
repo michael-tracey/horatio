@@ -57,3 +57,30 @@ export function grouped(pools: TestPool[]): [string, TestPool[]][] {
   for (const p of pools) groups.set(p.group, [...(groups.get(p.group) ?? []), p]);
   return [...groups];
 }
+
+type Damage = NonNullable<TestPool["damage"]>;
+/** More damage from elsewhere, such as a pool modifier that says it adds damage (#188): the seam is
+ * here, and nothing passes any yet. */
+export type ExtraDamage = { label: string; value: number };
+
+export function damageTotal(damage: Damage, extra: ExtraDamage[] = []): number {
+  return damage.total + extra.reduce((sum, e) => sum + e.value, 0);
+}
+
+/** "2 damage: 1 (melee) + 1 (Might)", or "2 aggravated damage: …" where a power makes it so. */
+export function damageText(damage: Damage, extra: ExtraDamage[] = []): string {
+  const kind = damage.type === "aggravated" ? "aggravated damage" : "damage";
+  const parts = [...damage.parts, ...extra].map((p) => `${p.value} (${p.label})`).join(" + ");
+  return `${damageTotal(damage, extra)} ${kind}: ${parts}`;
+}
+
+/** What an exceptional success does: the usual extra point, or more with a power like Intensity. */
+export function exceptionalText(damage: Damage, extra: ExtraDamage[] = []): string {
+  return `An exceptional success adds ${damage.exceptional} damage, ${damageTotal(damage, extra) + damage.exceptional} in all.`;
+}
+
+/** The short form for the printed sheet: "2 damage (4 on an exceptional success)". */
+export function damageShort(damage: Damage, extra: ExtraDamage[] = []): string {
+  const kind = damage.type === "aggravated" ? "aggravated damage" : "damage";
+  return `${damageTotal(damage, extra)} ${kind} (${damageTotal(damage, extra) + damage.exceptional} exceptional)`;
+}

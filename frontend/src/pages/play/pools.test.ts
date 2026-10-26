@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolModifier, TestPool } from "../../api/types";
-import { appliesTo, breakdown, describe as describeModifier, describePools, grouped, total } from "./pools";
+import { appliesTo, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, describePools, exceptionalText, grouped, total } from "./pools";
 
 const pool = (over: Partial<TestPool>): TestPool => ({
   key: "dodge",
@@ -82,5 +82,37 @@ describe("pool modifiers", () => {
     expect(appliesTo(mod({ pools: "all" }), brawl)).toBe(true);
     expect(describeModifier(mod({ when: "against mortals" }), [])).toBe("+2 Social pools, against mortals");
     expect(describePools("pool:attack:Brawl", [brawl])).toBe("Unarmed attack");
+  });
+});
+
+describe("damage", () => {
+  const melee = (over: Partial<NonNullable<TestPool["damage"]>> = {}): NonNullable<TestPool["damage"]> => ({
+    kind: "melee",
+    type: "normal",
+    parts: [{ label: "melee", value: 1 }],
+    total: 1,
+    exceptional: 1,
+    notes: [],
+    ...over,
+  });
+
+  it("shows the base for the attack type and its exceptional success", () => {
+    expect(damageText(melee())).toBe("1 damage: 1 (melee)");
+    expect(exceptionalText(melee())).toBe("An exceptional success adds 1 damage, 2 in all.");
+    expect(damageText(melee({ kind: "firearms", parts: [{ label: "firearms", value: 2 }], total: 2 }))).toBe("2 damage: 2 (firearms)");
+  });
+
+  it("shows what Potence adds, and aggravated damage where a power makes it so", () => {
+    const might = melee({ total: 2, parts: [{ label: "melee", value: 1 }, { label: "Might", value: 1 }] });
+    expect(damageText(might)).toBe("2 damage: 1 (melee) + 1 (Might)");
+    const intensity = { ...might, exceptional: 2 };
+    expect(exceptionalText(intensity)).toBe("An exceptional success adds 2 damage, 4 in all.");
+    expect(damageShort(intensity)).toBe("2 damage (4 exceptional)");
+    expect(damageText(melee({ type: "aggravated" }))).toBe("1 aggravated damage: 1 (melee)");
+  });
+
+  it("leaves a seam for damage a modifier adds", () => {
+    expect(damageText(melee(), [{ label: "brass knuckles", value: 1 }])).toBe("2 damage: 1 (melee) + 1 (brass knuckles)");
+    expect(damageTotal(melee(), [{ label: "brass knuckles", value: 1 }])).toBe(2);
   });
 });

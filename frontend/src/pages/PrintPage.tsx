@@ -9,7 +9,7 @@ import { HEALTH_RULE, healthRows } from "../health";
 import { DEFAULT_PREFERENCES, useMe, usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { choiceName } from "./character/creation/logic";
-import { changing, total } from "./play/pools";
+import { changing, damageShort, total } from "./play/pools";
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 
@@ -400,6 +400,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
                   <span>
                     {p.name}
                     <Changes pool={p} modifiers={sheet.modifiers} />
+                    {p.damage && <span className="block text-neutral-600">{damageShort(p.damage)}</span>}
                   </span>
                   <strong>
                     {total(p, 0, sheet.modifiers)}
