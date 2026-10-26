@@ -10,11 +10,12 @@ import { askException, costText, describe, toChange, type Cart, type CartLine } 
 
 type CartOut = components["schemas"]["CartOut"];
 
-function post(characterId: string, lines: CartLine[], dryRun: boolean) {
+function post(characterId: string, lines: CartLine[], dryRun: boolean, signal?: AbortSignal) {
   return unwrap(
     api.POST("/api/characters/{character_id}/cart", {
       params: { path: { character_id: characterId } },
       body: { changes: lines.map(toChange), dry_run: dryRun },
+      signal,
     }),
   );
 }
@@ -38,7 +39,9 @@ export function useCartPrices(characterId: string, lines: CartLine[]) {
   }, [now]);
   const prices = useQuery({
     queryKey: pricesKey(characterId, lines),
-    queryFn: () => post(characterId, lines, true),
+    // A cart that has changed since is not waited on: its request is dropped,
+    // which frees the browser's connection for the one that counts.
+    queryFn: ({ signal }) => post(characterId, lines, true, signal),
     enabled: lines.length > 0 && settled === now,
   });
   // Only an answer for these very lines.
