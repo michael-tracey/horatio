@@ -295,6 +295,13 @@ MESSAGES: dict[str, str] = {
     "character.renamed": "{actor} renamed {from_name} to {character}.",
     "character.domitor": "{actor} made {domitor} {character}'s domitor, of {clan}; discipline"
     " dots {disciplines}.",
+    "embrace.step": "{actor} Embraced {character}, {step}: {summary} ({xp} XP).",
+    "embrace.vampire": "{actor} Embraced {character}: {sire}'s childe, a vampire of {clan},"
+    " {generation} generation, with {debt} XP of debt.",
+    "embrace.died": "{actor} recorded that {character} died in the Embrace; it is retired. {note}",
+    "xp.debt_added": "{actor} added {amount} XP of debt to {character}, now owing {debt}: {reason}",
+    "xp.debt_forgiven": "{actor} forgave {amount} XP of {character}'s debt, now owing {debt}:"
+    " {reason}",
     "picture.uploaded": "{actor} gave {character} a picture.",
     "picture.replaced": "{actor} gave {character} a new picture.",
     "picture.cropped": "{actor} moved the crop of {character}'s picture.",

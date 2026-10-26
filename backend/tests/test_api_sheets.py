@@ -61,6 +61,7 @@ def test_new_characters_start_with_30_xp(troupe: Troupe) -> None:
         "spent": 0,
         # All but 5 would be lost if a home troupe accepted it now.
         "unbanked": 25,
+        "debt": 0,
     }
     history = troupe.player.client.get(f"/characters/{character_id}/xp").json()
     assert [(e["kind"], e["amount"], e["reason"]) for e in history] == [

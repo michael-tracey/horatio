@@ -646,6 +646,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/embrace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Embraces
+         * @description The character's Embrace, once it has been Embraced, and whether this viewer can
+         *     run one now.
+         */
+        get: operations["list_embraces_api_characters__character_id__embrace_get"];
+        put?: never;
+        /**
+         * Embrace Ghoul
+         * @description The ghoul becomes a vampire of its sire's clan, all its steps at once or none
+         *     (MET: VTM pp. 297–299). Its player is told.
+         */
+        post: operations["embrace_ghoul_api_characters__character_id__embrace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/embrace/died": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Died In Embrace
+         * @description The ghoul died in the attempted Embrace: it is retired, with a note in its log.
+         */
+        post: operations["died_in_embrace_api_characters__character_id__embrace_died_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/embrace/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Embrace Plan
+         * @description What the Embrace would do with these choices, step by step with its XP, for
+         *     staff to see before they confirm. Nothing is saved.
+         */
+        post: operations["embrace_plan_api_characters__character_id__embrace_plan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/embrace/sires": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sire Choices
+         * @description The vampires in Horatio the staff member can see, by name, that could be the
+         *     sire: with their clan, and generation as their sheets have it.
+         */
+        get: operations["sire_choices_api_characters__character_id__embrace_sires_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/free-choices": {
         parameters: {
             query?: never;
@@ -1641,6 +1729,27 @@ export interface paths {
          * @description Storytellers and assistant storytellers of the character's home troupe award XP.
          */
         post: operations["award_xp_api_characters__character_id__xp_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/xp/debt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Xp Debt Of */
+        get: operations["xp_debt_of_api_characters__character_id__xp_debt_get"];
+        put?: never;
+        /**
+         * Change Xp Debt
+         * @description The home troupe's staff add XP debt, or forgive some of it, with a reason.
+         */
+        post: operations["change_xp_debt_api_characters__character_id__xp_debt_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5459,6 +5568,25 @@ export interface components {
             /** Logo */
             logo: boolean;
         };
+        /** DebtIn */
+        DebtIn: {
+            /** Amount */
+            amount: number;
+            /**
+             * Change
+             * @enum {string}
+             */
+            change: "add" | "forgive";
+            /** Reason */
+            reason: string;
+        };
+        /** DebtOut */
+        DebtOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Debt */
+            debt: number;
+        };
         /** Decision */
         Decision: {
             /**
@@ -5934,6 +6062,263 @@ export interface components {
         EmailHelp: {
             /** Available */
             available: boolean;
+        };
+        /** EmbraceChoicesIn */
+        EmbraceChoicesIn: {
+            /** Buy Back */
+            buy_back?: components["schemas"]["EmbraceDotsIn"][];
+            /**
+             * Buy Back Into Debt
+             * @default false
+             */
+            buy_back_into_debt: boolean;
+            /** Caitiff Three */
+            caitiff_three?: string[];
+            /** Clan Merits */
+            clan_merits?: string[] | null;
+            /** Remove */
+            remove?: components["schemas"]["EmbraceNamedIn"][];
+            sire: components["schemas"]["SireIn"];
+            /** Sire Is Domitor */
+            sire_is_domitor?: boolean | null;
+            /** Two Dots */
+            two_dots?: string | null;
+            /**
+             * Weakness
+             * @default
+             */
+            weakness: string;
+        };
+        /** EmbraceDiedIn */
+        EmbraceDiedIn: {
+            /**
+             * Embraced On
+             * Format: date
+             */
+            embraced_on: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Sire Name
+             * @default
+             */
+            sire_name: string;
+        };
+        /** EmbraceDotsIn */
+        EmbraceDotsIn: {
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+        };
+        /** EmbraceIn */
+        EmbraceIn: {
+            /** Buy Back */
+            buy_back?: components["schemas"]["EmbraceDotsIn"][];
+            /**
+             * Buy Back Into Debt
+             * @default false
+             */
+            buy_back_into_debt: boolean;
+            /** Caitiff Three */
+            caitiff_three?: string[];
+            /** Clan Merits */
+            clan_merits?: string[] | null;
+            /**
+             * Embraced On
+             * Format: date
+             */
+            embraced_on: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Remove */
+            remove?: components["schemas"]["EmbraceNamedIn"][];
+            sire: components["schemas"]["SireIn"];
+            /** Sire Is Domitor */
+            sire_is_domitor?: boolean | null;
+            /** Two Dots */
+            two_dots?: string | null;
+            /**
+             * Weakness
+             * @default
+             */
+            weakness: string;
+        };
+        /** EmbraceLineOut */
+        EmbraceLineOut: {
+            /** Text */
+            text: string;
+            /** Xp */
+            xp: number;
+        };
+        /** EmbraceListOut */
+        EmbraceListOut: {
+            /** Can Embrace */
+            can_embrace: boolean;
+            /** Entries */
+            entries: components["schemas"]["EmbraceOut"][];
+        };
+        /** EmbraceNamedIn */
+        EmbraceNamedIn: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "merits" | "flaws";
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+        };
+        /** EmbraceOut */
+        EmbraceOut: {
+            /** Debt */
+            debt: number;
+            /**
+             * Embraced On
+             * Format: date
+             */
+            embraced_on: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string;
+            /** Recorded By */
+            recorded_by: string | null;
+            /** Result */
+            result: string;
+            /** Sire Clan */
+            sire_clan: string;
+            /** Sire Generation */
+            sire_generation: number | null;
+            /** Sire Id */
+            sire_id: string | null;
+            /** Sire Name */
+            sire_name: string;
+            /** Steps */
+            steps: components["schemas"]["EmbraceStepOut"][];
+        };
+        /** EmbracePlanOut */
+        EmbracePlanOut: {
+            /** Attribute Bonus */
+            attribute_bonus: number;
+            /** Balance After */
+            balance_after: number;
+            /** Balance Before */
+            balance_before: number;
+            /** Blood */
+            blood: number;
+            /** Blood Per Turn */
+            blood_per_turn: number;
+            /** Bought Back */
+            bought_back: components["schemas"]["EmbraceRatedOut"][];
+            /** Buy Back Into Debt */
+            buy_back_into_debt: boolean;
+            /** Caitiff */
+            caitiff: boolean;
+            /** Clan */
+            clan: string;
+            /** Clan Merit Choices */
+            clan_merit_choices: string[];
+            /** Clan Merits */
+            clan_merits: string[];
+            /** Debt */
+            debt: number;
+            /** Dies */
+            dies: boolean;
+            /** Disciplines */
+            disciplines: components["schemas"]["EmbraceRatedOut"][];
+            /** Generation */
+            generation: number | null;
+            /** Generation Dots */
+            generation_dots: number;
+            /** In Clan */
+            in_clan: string[];
+            /** Lesser Flaw */
+            lesser_flaw: string | null;
+            /** Lost */
+            lost: components["schemas"]["EmbraceRatedOut"][];
+            /** Merit Limit */
+            merit_limit: number;
+            /** Merit Points */
+            merit_points: number;
+            /** Notes */
+            notes: string[];
+            /** Refused */
+            refused: string | null;
+            /** Removable */
+            removable: components["schemas"]["EmbraceRemovableOut"][];
+            /** Sire Clan */
+            sire_clan: string;
+            /** Sire Generation */
+            sire_generation: number | null;
+            /** Sire Id */
+            sire_id: string | null;
+            /** Sire Is Domitor */
+            sire_is_domitor: boolean;
+            /** Sire Name */
+            sire_name: string;
+            /** Steps */
+            steps: components["schemas"]["EmbraceStepOut"][];
+            /** Title */
+            title: string;
+            /** Two Dots */
+            two_dots: string | null;
+            /** Weakness */
+            weakness: string;
+        };
+        /** EmbraceRatedOut */
+        EmbraceRatedOut: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+        };
+        /** EmbraceRemovableOut */
+        EmbraceRemovableOut: {
+            /** Category */
+            category: string;
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Xp */
+            xp: number;
+        };
+        /** EmbraceStepOut */
+        EmbraceStepOut: {
+            /** Key */
+            key: string;
+            /** Lines */
+            lines: components["schemas"]["EmbraceLineOut"][];
+            /** Title */
+            title: string;
+            /** Xp */
+            xp: number;
+        };
+        /** EmbracedOut */
+        EmbracedOut: {
+            plan: components["schemas"]["EmbracePlanOut"];
+            sheet: components["schemas"]["SheetOut"];
         };
         /**
          * ExceptionAskOut
@@ -9753,6 +10138,39 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** SireChoiceOut */
+        SireChoiceOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string;
+            /** Generation */
+            generation: number | null;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /** SireIn */
+        SireIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Clan
+             * @default
+             */
+            clan: string;
+            /** Generation */
+            generation?: number | null;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
         /** SkillPool */
         SkillPool: {
             /** Name */
@@ -10830,6 +11248,11 @@ export interface components {
             corrected_to?: number | null;
             /** Corrects Id */
             corrects_id?: string | null;
+            /**
+             * Debt
+             * @default 0
+             */
+            debt: number;
             /** Detail */
             detail: string | null;
             /**
@@ -10848,6 +11271,11 @@ export interface components {
             kind: string;
             /** Reason */
             reason: string;
+            /**
+             * To Debt
+             * @default 0
+             */
+            to_debt: number;
             /** To Rating */
             to_rating: number | null;
             /** Trait */
@@ -10949,6 +11377,11 @@ export interface components {
         XpSummary: {
             /** Balance */
             balance: number;
+            /**
+             * Debt
+             * @default 0
+             */
+            debt: number;
             /** Earned */
             earned: number;
             /** Spent */
@@ -12226,6 +12659,175 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyDowntime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_embraces_api_characters__character_id__embrace_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbraceListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    embrace_ghoul_api_characters__character_id__embrace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmbraceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbracedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    died_in_embrace_api_characters__character_id__embrace_died_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmbraceDiedIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbraceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    embrace_plan_api_characters__character_id__embrace_plan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmbraceChoicesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbracePlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sire_choices_api_characters__character_id__embrace_sires_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SireChoiceOut"][];
                 };
             };
             /** @description Validation Error */
@@ -14295,6 +14897,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["XpEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xp_debt_of_api_characters__character_id__xp_debt_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_xp_debt_api_characters__character_id__xp_debt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtOut"];
                 };
             };
             /** @description Validation Error */

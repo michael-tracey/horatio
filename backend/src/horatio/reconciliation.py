@@ -432,7 +432,8 @@ def check_settlements(
             + ", ".join(short)
         )
 
-    if xp + sum(d.xp_delta(settlements[d.key]) for d in differences) < 0:
+    # A character in XP debt (horatio.xp_debt) can move, but not deeper into it.
+    if xp + sum(d.xp_delta(settlements[d.key]) for d in differences) < min(0, xp):
         raise conflict("Those settlements cost more XP than the character has.")
 
 
@@ -610,10 +611,11 @@ def approve_change(
     decision = xp or xp_range.Decision()
     review = xp_range.review(db, character, troupe, change.top_up)
     plan = xp_range.plan(review, decision) if character.kind == "pc" else xp_range.Plan()
-    if xp_balance(db, character) + total + plan.delta < 0:
+    balance = xp_balance(db, character)
+    if balance + total + plan.delta < min(0, balance):
         raise conflict(
             "Those settlements cost more XP than the character has."
-            if xp_balance(db, character) + total < 0
+            if balance + total < min(0, balance)
             else f"{character.name} has spent that XP: taking it away would leave"
             " less than nothing. Keep it instead."
         )

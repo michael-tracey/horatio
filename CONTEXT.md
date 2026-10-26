@@ -93,6 +93,10 @@ _Avoid_: Secondary troupe, guest troupe
 A vampire draining another of better Generation, which raises the diablerist's Generation by one. The home troupe's lead storyteller, storytellers and assistant storytellers record it on the sheet with its date (or approve the player's request to), and the sheet changes with it: Generation up one for free, techniques the new Generation cannot hold lost with their XP refunded, Humanity down one (or Beast traits at the next game for a character on a Path). Earlier buys keep their cost.
 _Avoid_: Amaranth, level-up
 
+**Embrace**:
+A ghoul PC made a vampire in play by its sire. The home troupe's lead storyteller, storytellers and assistant storytellers run it from the ghoul's sheet, and its player chooses: it dies in the attempt, and is retired, or it becomes a vampire of its sire's clan, one generation weaker, with new clan and rarity merits, new starting disciplines, and what it bought in play repriced. What it cannot pay is XP debt.
+_Avoid_: Conversion, turning, siring (in names)
+
 **Retired Character**:
 A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history.
 _Avoid_: Deleted, dead, inactive
@@ -200,6 +204,10 @@ _Avoid_: Maximum XP, XP cap
 **Self-entered XP**:
 XP a player adds to their own character while it has no home troupe, such as for one played elsewhere. The troupe it makes its home accepts or removes it.
 _Avoid_: Self-award, bonus XP
+
+**XP Debt**:
+XP a character owes, from its Embrace or put on it by its home troupe's staff, who can also forgive it: its XP history below nothing. All the XP it earns goes to the debt until it is paid off, and nothing that costs XP is bought until then.
+_Avoid_: Negative XP, XP loan
 
 **Long Text**:
 A piece of free-form writing attached to a character, such as its background or history.

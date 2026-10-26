@@ -1750,12 +1750,17 @@ def set_trait(
             definition.id,
         )
     total = cost + sum(r.cost for r in repriced)
-    if total > 0 and xp_balance(db, character) < total:
-        raise conflict(
-            f"That costs {total} XP"
-            + (", with earlier buys repriced" if repriced else "")
-            + f", and the character has {xp_balance(db, character)}."
-        )
+    balance = xp_balance(db, character)
+    if total > 0 and balance < total:
+        from horatio import embrace, xp_debt  # imports this module
+
+        # Dots an Embrace took, which the Storyteller let be bought back into debt.
+        if embrace.buys_back_into_debt(
+            db, character, category.key, definition.name, current_rating, rating
+        ):
+            because = because or "bought back after the Embrace, into XP debt"
+        else:
+            raise conflict(xp_debt.short_of(balance, total, repriced=bool(repriced)))
 
     # Which one, in the XP history: "Retainers: Bocephus 0 → 3".
     labelled = f"{name}: {detail}" if detail else name
@@ -1896,7 +1901,9 @@ def change_choice(
         raise conflict(f"The character already has {to_name}.")
     cost = category.change_cost
     if xp_balance(db, character) < cost:
-        raise conflict(f"That costs {cost} XP, and the character has {xp_balance(db, character)}.")
+        from horatio import xp_debt  # imports this module
+
+        raise conflict(xp_debt.short_of(xp_balance(db, character), cost))
 
     old.trait.trait_definition_id = new_definition.id
     # An exception was for the trait swapped away, not the one it becomes.
@@ -2162,10 +2169,10 @@ def earned_and_spent(entries: Iterable[tuple[str, int]]) -> tuple[int, int]:
     """XP earned and spent from (kind, amount) pairs. A correction changes what an
     award gave, and a cap what was earned before joining a troupe, so they count
     toward earned whichever way they go; a reprice changes what a purchase cost,
-    so it counts toward spent."""
+    and a debt line what is owed (horatio.xp_debt), so they count toward spent."""
     earned = spent = 0
     for kind, amount in entries:
-        if kind == "reprice":
+        if kind in ("reprice", "debt"):
             spent -= amount
         elif kind in ("correction", "cap") or amount > 0:
             earned += amount

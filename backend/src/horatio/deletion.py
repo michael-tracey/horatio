@@ -24,6 +24,7 @@ from horatio.models import (
     CycleParticipant,
     Delivery,
     DisciplinePurchase,
+    Embrace,
     HomeTroupeChange,
     ReconciliationItem,
     Response,
@@ -99,6 +100,9 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         .where(Character.domitor_id == cid)
         .values(domitor_id=None, domitor_name=name)
     )
+    # Its own Embrace goes with it; a childe it sired keeps its sire by name.
+    db.execute(delete(Embrace).where(Embrace.character_id == cid))
+    db.execute(update(Embrace).where(Embrace.sire_id == cid).values(sire_id=None))
     db.execute(delete(CharacterTrait).where(CharacterTrait.character_id == cid))
     db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))
