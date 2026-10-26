@@ -1113,6 +1113,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/power-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Power Choices */
+        get: operations["read_power_choices_api_characters__character_id__power_choices_get"];
+        /**
+         * Set Power Choices
+         * @description Choose, or for staff change, what a power was bought with.
+         */
+        put: operations["set_power_choices_api_characters__character_id__power_choices_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/primary-path": {
         parameters: {
             query?: never;
@@ -4072,6 +4093,23 @@ export interface components {
             /** User Id */
             user_id?: string | null;
         };
+        /**
+         * AttributeChange
+         * @description A switch's change to an attribute in the pools made on it.
+         */
+        AttributeChange: {
+            /**
+             * Amount
+             * @default 0
+             */
+            amount: number;
+            /** Attribute */
+            attribute: string;
+            /** Most */
+            most?: number | null;
+            /** Pools */
+            pools?: string | null;
+        };
         /** AwardableCharacter */
         AwardableCharacter: {
             /**
@@ -4591,6 +4629,19 @@ export interface components {
             /** To Name */
             to_name: string;
         };
+        /** ChoiceOut */
+        ChoiceOut: {
+            /** Default */
+            default: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Options */
+            options: string[];
+            /** Value */
+            value: string;
+        };
         /** ClanFeedingIn */
         ClanFeedingIn: {
             /** Amount */
@@ -4925,6 +4976,11 @@ export interface components {
             notes: string[];
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
+            /**
+             * Switched
+             * @default []
+             */
+            switched: components["schemas"]["SwitchedDamage"][];
             /** Total */
             total: number;
             /**
@@ -7127,6 +7183,11 @@ export interface components {
             /** Blood Per Turn */
             blood_per_turn: number;
             /**
+             * Blood Usual
+             * @default 0
+             */
+            blood_usual: number;
+            /**
              * Character Id
              * Format: uuid
              */
@@ -7164,6 +7225,11 @@ export interface components {
             morality: components["schemas"]["Morality"] | null;
             /** Player Name */
             player_name: string;
+            /**
+             * Powers
+             * @default []
+             */
+            powers: components["schemas"]["PowerOut"][];
             /** Sect */
             sect: string | null;
             willpower: components["schemas"]["Tracker"];
@@ -7283,6 +7349,32 @@ export interface components {
             /** When */
             when: string;
         };
+        /** PowerChoicesIn */
+        PowerChoicesIn: {
+            /** Discipline */
+            discipline: string;
+            /** Power */
+            power: string;
+            /** Values */
+            values: {
+                [key: string]: string;
+            };
+        };
+        /** PowerChoicesOut */
+        PowerChoicesOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Choices */
+            choices: components["schemas"]["ChoiceOut"][];
+            /** Chosen */
+            chosen: boolean;
+            /** Discipline */
+            discipline: string;
+            /** Level */
+            level: number;
+            /** Power */
+            power: string;
+        };
         /** PowerNote */
         PowerNote: {
             /** Focus */
@@ -7293,6 +7385,67 @@ export interface components {
             name: string;
             /** Note */
             note: string;
+        };
+        /**
+         * PowerOut
+         * @description A form or power the character has, and whether it is on in this game.
+         */
+        PowerOut: {
+            /**
+             * Attributes
+             * @default []
+             */
+            attributes: components["schemas"]["AttributeChange"][];
+            /**
+             * Blood Half
+             * @default false
+             */
+            blood_half: boolean;
+            /**
+             * Blood Per Turn
+             * @default 0
+             */
+            blood_per_turn: number;
+            /**
+             * Changes
+             * @default []
+             */
+            changes: string[];
+            /**
+             * Combines
+             * @default []
+             */
+            combines: string[];
+            /**
+             * Focuses
+             * @default []
+             */
+            focuses: string[];
+            /**
+             * Form
+             * @default false
+             */
+            form: boolean;
+            /**
+             * Health
+             * @default []
+             */
+            health: components["schemas"]["SwitchLevel"][];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+            /** On */
+            on: boolean;
+            /** Origin */
+            origin: string;
+            /** Page */
+            page: string;
         };
         /** Preferences */
         Preferences: {
@@ -8482,6 +8635,59 @@ export interface components {
             /** To Name */
             to_name: string;
         };
+        /** SwitchLevel */
+        SwitchLevel: {
+            /** Boxes */
+            boxes: number;
+            /** Level */
+            level: string;
+        };
+        /**
+         * SwitchedDamage
+         * @description What a switch does to an attack's damage while it is on.
+         */
+        SwitchedDamage: {
+            /**
+             * Amount
+             * @default 0
+             */
+            amount: number;
+            /**
+             * Exceptional
+             * @default 0
+             */
+            exceptional: number;
+            /** Label */
+            label: string;
+            /** Switch */
+            switch: string;
+            /**
+             * Type
+             * @default normal
+             * @enum {string}
+             */
+            type: "normal" | "aggravated";
+        };
+        /**
+         * SwitchedPart
+         * @description What a switch adds to a pool while it is on: a part ("Alacrity 4"), or a
+         *     change to the attribute the pool is made on (Physical counts as 3).
+         */
+        SwitchedPart: {
+            /** Attribute */
+            attribute?: string | null;
+            /** Label */
+            label: string;
+            /** Most */
+            most?: number | null;
+            /** Switch */
+            switch: string;
+            /**
+             * Value
+             * @default 0
+             */
+            value: number;
+        };
         /** SystemOut */
         SystemOut: {
             /** Built At */
@@ -8655,6 +8861,11 @@ export interface components {
             notes: string[];
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
+            /**
+             * Switched
+             * @default []
+             */
+            switched: components["schemas"]["SwitchedPart"][];
             /** Total */
             total: number;
             /**
@@ -11534,6 +11745,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_power_choices_api_characters__character_id__power_choices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PowerChoicesOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_power_choices_api_characters__character_id__power_choices_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PowerChoicesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PowerChoicesOut"][];
                 };
             };
             /** @description Validation Error */

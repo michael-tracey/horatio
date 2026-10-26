@@ -4148,7 +4148,7 @@ properties = { rating = 2, type = "Clan", requirement = "Ravnos" }
 category = "merits"
 name = "Shape of the Beast's Wrath"
 description = "Can opt to turn into half-wolf/half-man monster in Fight Form. Gain +5 to Brawl test pool and do aggravated damage with Brawl attacks. All defensive pools (Physical, Social and Mental) suffer -2 penalty."
-properties = { rating = 3, type = "Clan", requirement = "Gangrel", pools = [{ pool = "attack:Brawl", amount = 5, when = "in Fight Form" }, { pool = "dodge", amount = -2, when = "in Fight Form" }, { pool = "defense", amount = -2, when = "in Fight Form" }] }
+properties = { rating = 3, type = "Clan", requirement = "Gangrel", pools = [{ pool = "attack:Brawl", amount = 5, when = "Shape of the Beast's Wrath" }, { pool = "dodge", amount = -2, when = "Shape of the Beast's Wrath" }, { pool = "defense", amount = -2, when = "Shape of the Beast's Wrath" }] }
 
 [[traits]]
 category = "merits"

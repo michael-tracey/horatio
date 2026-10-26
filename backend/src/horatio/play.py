@@ -16,6 +16,15 @@ clear, Morality at the sheet's, no Beast traits, and each limited use back.
 Derangement traits are the exception: nothing in the rules clears them between
 games, so each game starts them where the last one left them. So are temporary
 derangements, which the player adds and removes themselves.
+
+Forms and powers in use (issue #200) are taps too: "power:<key>" +1 switches one
+on and -1 off (horatio.reference.Switch). Only one form is on at a time (MET: VtM
+core, p. 114), so turning one on turns the last off. A form's extra wound levels
+follow the sheet's own in each category, and when it ends they go with the damage
+marked in them, as Vol. 2 has it for levels that are lost (p. 55); damage in the
+sheet's own levels stays, since injuries carry between forms (core p. 114). Blood
+over the usual most goes when Blood of Potency ends (core p. 188). Each game
+starts with everything off.
 """
 
 import uuid
@@ -28,7 +37,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, aliased
 
-from horatio import audit, influence_effects, play_influence, sheets
+from horatio import audit, influence_effects, play_influence, reference, sheets
 from horatio.models import (
     Character,
     PlayCounter,
@@ -51,6 +60,8 @@ BEAST_TRAITS = 5
 DERANGEMENT_TRAITS = 3
 # A temporary derangement's taps: +1 adds it, -1 removes it.
 TEMPORARY = "derangement:"
+# A form's or power's taps: +1 switches it on, -1 off.
+SWITCH = "power:"
 HEALTH_LEVELS = ("Healthy", "Injured", "Incapacitated")
 TRACKERS = ("blood", "willpower", "health", "morality", "beast", "derangements")
 DAMAGE = ("normal", "aggravated")
@@ -120,17 +131,46 @@ class Limits:
     # Temporary derangements ever added, and those held as the game starts.
     temporary: tuple[Temporary, ...] = ()
     held: Mapping[str, int] = field(default_factory=dict[str, int])
+    # The forms and powers the sheet has that can be switched on.
+    switches: tuple[reference.Switch, ...] = ()
 
     @property
     def health_boxes(self) -> int:
         return sum(boxes for _, boxes in self.health)
 
-    def most(self, tracker: str) -> int | None:
-        """The highest a tracker goes, or None for one the sheet does not have."""
+    def switch(self, key: str) -> reference.Switch | None:
+        return next((s for s in self.switches if s.key == key), None)
+
+    def on(self, keys: Sequence[str]) -> list[reference.Switch]:
+        """The switches on, in the order they were switched on."""
+        return [s for key in keys if (s := self.switch(key)) is not None]
+
+    def boxes(self, on: Sequence[str] = ()) -> list[str | None]:
+        """Every wound box, in the order damage fills them: in each category the
+        sheet's own (None), then those of the forms on, by their keys."""
+        found: list[str | None] = []
+        for level, count in self.health:
+            found += [None] * count
+            for switch in self.on(on):
+                found += [switch.key] * sum(h.boxes for h in switch.health if h.level == level)
+        return found
+
+    def blood_most(self, on: Sequence[str] = ()) -> int:
+        """The most Blood, half again with Blood of Potency on (rounded up)."""
+        return self.blood + sum(-(-self.blood // 2) for s in self.on(on) if s.blood_half)
+
+    def blood_per_turn_now(self, on: Sequence[str] = ()) -> int:
+        return self.blood_per_turn + sum(s.blood_per_turn for s in self.on(on))
+
+    def most(self, tracker: str, on: Sequence[str] = ()) -> int | None:
+        """The highest a tracker goes with the switches `on`, or None for one the
+        sheet does not have."""
+        if tracker.startswith(SWITCH):
+            return 1 if self.switch(tracker.removeprefix(SWITCH)) else None
         fixed = {
-            "blood": self.blood,
+            "blood": self.blood_most(on),
             "willpower": self.willpower,
-            "health": self.health_boxes,
+            "health": len(self.boxes(on)),
             "morality": self.morality,
             "beast": BEAST_TRAITS,
             "derangements": DERANGEMENT_TRAITS,
@@ -154,6 +194,8 @@ class Limits:
             "derangements": self.derangements,
             "held": {t.key: self.held.get(t.key, 0) for t in self.temporary},
             "uses": {e.key: e.uses for e in self.expendables},
+            # Forms and powers switched on: none, as a game starts.
+            "on": [],
         }
 
     def name(self, tracker: str) -> str:
@@ -173,6 +215,9 @@ class Limits:
             return found
         if tracker in self.removed:
             return self.removed[tracker]
+        if tracker.startswith(SWITCH):
+            switch = self.switch(tracker.removeprefix(SWITCH))
+            return switch.name if switch else tracker.removeprefix(SWITCH)
         # A trait no longer on the sheet: "trait:backgrounds/Herd/" reads "Herd".
         parts = tracker.removeprefix("trait:").split("/")
         return ": ".join(p for p in parts[1:] if p) if len(parts) == 3 else tracker
@@ -209,6 +254,7 @@ def known_tracker(tracker: str) -> bool:
     return (
         tracker in TRACKERS
         or tracker.startswith(("trait:", "counter:"))
+        or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or temporary_id(tracker) is not None
     )
 
@@ -376,17 +422,62 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         flaws=derangement_flaws(rows),
         temporary=temporary_derangements(db, character),
         held=held,
+        switches=tuple(reference.switches(rows, rule_set)),
     )
 
 
-def apply(state: dict[str, Any], limits: Limits, event: PlayEvent) -> tuple[int, int] | None:
+def switch_off(
+    state: dict[str, Any], limits: Limits, key: str, said: list[str] | None = None
+) -> None:
+    """Switch a form or power off: the damage in its wound levels goes with them,
+    and Blood over the usual most."""
+    on: list[str] = state["on"]
+    if key not in on:
+        return
+    marks: list[str] = state["health"]
+    lost = [i for i, owner in enumerate(limits.boxes(on)) if owner == key and i < len(marks)]
+    for i in reversed(lost):
+        del marks[i]
+    on.remove(key)
+    state["blood"] = min(state["blood"], limits.blood_most(on))
+    if said is not None and lost:
+        said.append(f"{len(lost)} damage in its levels gone")
+
+
+def switch(
+    state: dict[str, Any], limits: Limits, key: str, amount: int, said: list[str] | None = None
+) -> tuple[int, int]:
+    """Switch a form or power on (amount > 0) or off. A form turns off any other
+    form it does not combine with (core p. 114; Vol. 2 p. 82)."""
+    on: list[str] = state.setdefault("on", [])
+    before = int(key in on)
+    found = limits.switch(key)
+    if amount > 0 and not before and found is not None:
+        if found.form:
+            for other in limits.on(list(on)):
+                if other.form and other.key not in found.combines and key not in other.combines:
+                    if said is not None:
+                        said.append(f"out of {other.name}")
+                    switch_off(state, limits, other.key, said)
+        on.append(key)
+    elif amount < 0 and before:
+        switch_off(state, limits, key, said)
+    return before, int(key in on)
+
+
+def apply(
+    state: dict[str, Any], limits: Limits, event: PlayEvent, said: list[str] | None = None
+) -> tuple[int, int] | None:
     """Apply one change to `state`, and say what the tracker was before and after
-    (for health, boxes marked). None for a note, or a tracker the sheet lacks."""
+    (for health, boxes marked). None for a note, or a tracker the sheet lacks.
+    What switching a form or power did besides goes in `said`."""
     if event.kind != "change":
         return None
-    most = limits.most(event.tracker)
+    most = limits.most(event.tracker, state.get("on", []))
     if most is None:
         return None
+    if event.tracker.startswith(SWITCH):
+        return switch(state, limits, event.tracker.removeprefix(SWITCH), event.amount, said)
     if event.tracker == "health":
         marks: list[str] = state["health"]
         before = len(marks)
@@ -423,6 +514,8 @@ class Replay:
     # Each change's tracker before and after, by event id.
     changes: dict[uuid.UUID, tuple[int, int] | None]
     undone: set[uuid.UUID]
+    # What switching a form or power also did, for the log, by event id.
+    said: dict[uuid.UUID, list[str]] = field(default_factory=dict[uuid.UUID, list[str]])
 
 
 def replay(limits: Limits, events: Sequence[PlayEvent]) -> Replay:
@@ -431,11 +524,13 @@ def replay(limits: Limits, events: Sequence[PlayEvent]) -> Replay:
     undone = {e.undoes_id for e in events if e.kind == "undo" and e.undoes_id is not None}
     state = limits.start()
     changes: dict[uuid.UUID, tuple[int, int] | None] = {}
+    said: dict[uuid.UUID, list[str]] = {}
     for event in in_order(events):
         if event.kind == "undo" or event.id in undone:
             continue
-        changes[event.id] = apply(state, limits, event)
-    return Replay(state, changes, undone)
+        said[event.id] = []
+        changes[event.id] = apply(state, limits, event, said[event.id])
+    return Replay(state, changes, undone, {k: v for k, v in said.items() if v})
 
 
 def game_events(db: Session, game: PlayGame) -> list[PlayEvent]:
@@ -453,13 +548,25 @@ def refresh(db: Session, game: PlayGame, limits: Limits) -> Replay:
     return result
 
 
-def describe(event: PlayEvent, limits: Limits, target: PlayEvent | None = None) -> str:
-    """The tap as the log reads it: "Blood 7 → 6"."""
+def describe(
+    event: PlayEvent,
+    limits: Limits,
+    target: PlayEvent | None = None,
+    said: Sequence[str] = (),
+) -> str:
+    """The tap as the log reads it: "Blood 7 → 6", "Turned into fight form"."""
     if event.kind == "note":
         return "Note"
     if event.kind == "undo":
         return f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"
     name = limits.name(event.tracker)
+    if event.tracker.startswith(SWITCH):
+        found = limits.switch(event.tracker.removeprefix(SWITCH))
+        if found is not None and found.form:
+            text = f"Turned into {name}" if event.amount > 0 else f"Out of {name}"
+        else:
+            text = f"{name} on" if event.amount > 0 else f"{name} off"
+        return f"{text}: {', '.join(said)}" if said else text
     if event.tracker.startswith(TEMPORARY):
         return f"Temporary derangement {'added' if event.amount > 0 else 'removed'}: {name}"
     if event.tracker == "health":

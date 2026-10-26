@@ -11,7 +11,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio.models import CharacterTrait, TraitCategory, TraitDefinition
-from horatio.reference import Sheet, catalogue, damage_effects, effects, pools
+from horatio.reference import (
+    Sheet,
+    actives,
+    catalogue,
+    damage_effects,
+    effects,
+    pools,
+    work_out,
+)
 from horatio.rules.files import DATA_DIR, all_rule_set_files, load_rule_set
 from tests.api_helpers import Troupe
 from tests.test_api_character_search import member
@@ -56,6 +64,11 @@ def variants(p: dict[str, Any]) -> dict[str, int]:
     return {v["when"]: v["total"] for v in p["variants"]}
 
 
+def switched(p: dict[str, Any]) -> list[tuple[str, str, int]]:
+    """What each switch adds to a pool while it is on."""
+    return [(s["switch"], s["label"], s["value"]) for s in p["switched"]]
+
+
 @pytest.fixture
 def swift(troupe: Troupe) -> str:
     """Physical 6, Mental 4, Dexterity focus, Celerity 4 with a Celerity elder
@@ -85,12 +98,10 @@ def test_initiative_with_and_without_celerity(troupe: Troupe, swift: str) -> Non
     initiative = pool(reference(troupe, swift), "initiative")
 
     assert initiative["total"] == 6  # Physical, the higher of Physical and Mental
-    assert variants(initiative) == {
-        # Alacrity: Celerity 4, its elder power and a technique built on it.
-        "With Celerity active": 12,
-        "While Injured": 9,
-        "While Incapacitated": 12,
-    }
+    assert variants(initiative) == {"While Injured": 9, "While Incapacitated": 12}
+    # With Celerity switched on, Alacrity: Celerity 4, its elder power and a
+    # technique built on it.
+    assert switched(initiative) == [("Celerity", "Alacrity", 6)]
 
 
 def test_dodge_counts_merits_focus_and_celerity(troupe: Troupe, swift: str) -> None:
@@ -101,8 +112,9 @@ def test_dodge_counts_merits_focus_and_celerity(troupe: Troupe, swift: str) -> N
         ("Dodge", 3),
         ("Slippery Customer", 3),
     ]
-    # +2 with the Dexterity focus, +2 from Legerity.
-    assert variants(dodge) == {"With Celerity active": 16}
+    # With Celerity on, +2 with the Dexterity focus, +2 from Legerity.
+    assert variants(dodge) == {}
+    assert switched(dodge) == [("Celerity", "Celerity", 2), ("Celerity", "Legerity", 2)]
     assert any("+2 to one Dodge pool" in n for n in dodge["notes"])
 
 
@@ -247,14 +259,14 @@ def test_potence_adds_to_brawl_and_melee_only() -> None:
     assert breakdown(5)["attack:Athletics"][0] == 1
 
 
-def test_powers_that_change_damage_type_or_hold_only_sometimes_are_notes() -> None:
+def test_powers_switched_on_change_damage_only_while_on() -> None:
     claws = attack_damage({"Protean": 2}, Brawl=1)["attack:Brawl"]
-    assert (claws.total, claws.type) == (1, "normal")
-    assert any("Aggravated" in n and "Feral Claws" in n for n in claws.notes)
+    assert (claws.total, claws.type, claws.notes) == (1, "normal", [])
+    assert [(s.switch, s.type) for s in claws.switched] == [("Feral Claws", "aggravated")]
 
     legerity = attack_damage({"Celerity": 4}, Firearms=1)["attack:Firearms"]
     assert (legerity.total, legerity.exceptional) == (2, 1)
-    assert any("Celerity active" in n for n in legerity.notes)
+    assert [(s.switch, s.exceptional) for s in legerity.switched] == [("Celerity", 1)]
 
 
 def test_the_reference_sends_the_damage(troupe: Troupe, swift: str) -> None:
@@ -277,9 +289,123 @@ def test_every_damage_entry_is_from_a_page_and_names_an_attack() -> None:
     entries = [e for d in book.disciplines.values() for e in d.get("damage", [])] + [
         e for ps in book.powers.values() for p in ps for e in p.get("damage", [])
     ]
+    entries += [e for o in book.others.values() for e in o.get("damage", [])]
     assert entries
     for e in entries:
         assert e["page"] > 0
         assert set(e["attacks"]) <= set(book.attacks)
         assert e["type"] in ("normal", "aggravated") if "type" in e else True
         assert "note" in e if "when" in e else True
+
+
+# --- Forms and powers in use (issue #200) -----------------------------------
+
+
+def beast(**choices: str) -> Sheet:
+    """Physical 5, Brawl 3, Dodge 2, Protean 4 and Celerity 2, with these choices
+    made for Shape of the Beast."""
+    return Sheet(
+        ratings={
+            ("attributes", "Physical"): 5,
+            ("attributes", "Mental"): 3,
+            ("attributes", "Social"): 2,
+            ("skills", "Brawl"): 3,
+            ("skills", "Dodge"): 2,
+        },
+        disciplines={"Protean": 4, "Celerity": 2},
+        choices={"Protean": {"Shape of the Beast": choices}} if choices else {},
+    )
+
+
+def by_key(found: list[Any]) -> dict[str, Any]:
+    return {f.key: f for f in found}
+
+
+def test_shape_of_the_beast_has_two_forms_from_the_book() -> None:
+    worked = work_out(beast(fight="bear", template="Huge"), {})
+    found = by_key(worked.switches)
+
+    assert {"flight form", "fight form", "Feral Claws", "Earth Meld", "Celerity"} <= set(found)
+    fight = found["fight form"]
+    assert fight.name == "Shape of the Beast: fight form (bear, Huge)"
+    assert (fight.form, fight.origin, fight.page) == (True, "Protean 4", "p. 155")
+    assert [(h.level, h.boxes) for h in fight.health] == [("Healthy", 2)]
+    assert fight.changes == ["+2 Brawl attacks", "+2 Healthy", "Brawl damage aggravated"]
+    # The bat keeps its default animal, and flying is a note.
+    flight = found["flight form"]
+    assert flight.name == "Shape of the Beast: flight form (bat)"
+    assert flight.changes == ["+3 Dodge", "Physical counts as 3 at most for attacks"]
+    assert flight.notes == ["Can fly at your normal speed."]
+    # Feral Claws and Celerity are not forms, so they go with one.
+    assert not found["Feral Claws"].form and not found["Celerity"].form
+
+
+def test_a_template_changes_only_the_fight_form() -> None:
+    plain = by_key(work_out(beast(), {}).switches)["fight form"]
+    assert plain.name == "Shape of the Beast: fight form (wolf)"
+    assert plain.health == []
+
+    vicious = work_out(beast(template="Vicious"), {})
+    brawl = next(
+        p for p in pools(beast(), vicious.effects, 2, vicious.hurts) if p.key == "attack:Brawl"
+    )
+    assert [(s.switch, s.value) for s in brawl.switched] == [("fight form", 2), ("fight form", 1)]
+
+    agile = work_out(beast(template="Agile"), {})
+    assert "+1 Dodge" in by_key(agile.switches)["fight form"].changes
+    aquatic = by_key(work_out(beast(template="Aquatic"), {}).switches)["fight form"]
+    assert any("Swim" in n for n in aquatic.notes)
+
+
+def test_pools_say_what_each_switch_changes() -> None:
+    sheet = beast(template="Huge")
+    worked = work_out(sheet, {})
+    found = {p.key: p for p in pools(sheet, worked.effects, 2, worked.hurts, worked.switches)}
+
+    brawl = found["attack:Brawl"]
+    assert brawl.total == 8  # Physical 5 + Brawl 3, with nothing on
+    assert [(s.switch, s.label, s.value, s.attribute, s.most) for s in brawl.switched] == [
+        ("fight form", "Shape of the Beast", 2, None, None),
+        ("flight form", "Physical (flight form)", 0, "Physical", 3),
+    ]
+    assert brawl.damage is not None
+    assert {(s.switch, s.type) for s in brawl.damage.switched} == {
+        ("Feral Claws", "aggravated"),
+        ("fight form", "aggravated"),
+    }
+    assert [(s.switch, s.value) for s in found["dodge"].switched] == [("flight form", 3)]
+    # Alacrity: Celerity's two powers.
+    assert [(s.switch, s.value) for s in found["initiative"].switched] == [("Celerity", 2)]
+    # The flight form's Physical is for attacks only.
+    assert found["defense:Physical"].switched == []
+
+
+def test_a_form_can_give_a_focus_and_change_attributes() -> None:
+    sheet = Sheet(
+        ratings={("attributes", "Physical"): 4, ("attributes", "Mental"): 4},
+        disciplines={"Vicissitude": 4, "Potence": 1},
+    )
+    worked = work_out(sheet, {})
+    horrid = by_key(worked.switches)["Horrid Form"]
+
+    # Horrid Form gives the Strength focus, and Potence's focus adds +2 with it.
+    assert "+2 Brawl attacks (Potence, Strength focus)" in horrid.changes
+    assert "-3 Mental" in horrid.changes and horrid.form
+    found = {p.key: p for p in pools(sheet, worked.effects, 1, worked.hurts, worked.switches)}
+    assert [(s.attribute, s.value) for s in found["defense:Mental"].switched] == [("Mental", -3)]
+
+
+def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> None:
+    book = catalogue()
+    entries = [*book.disciplines.values(), *(p for ps in book.powers.values() for p in ps)]
+    entries += list(book.others.values())
+    keys = [a["key"] for e in entries for a in actives(e)]
+    assert len(keys) == len(set(keys)), "switch keys are unique"
+    for e in entries:
+        for when in [x.get("when") for x in [*e.get("pools", []), *e.get("damage", [])]]:
+            assert when is None or when in book.switch_keys, (e["name"], when)
+        for a in actives(e):
+            assert a["page"] > 0 and a.get("book", "core") in ("core", "Vol. 2", "Vol. 2 Issue 1")
+    rule_set = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+    for category, name in book.others:
+        assert (category, name) in rule_set.traits, name

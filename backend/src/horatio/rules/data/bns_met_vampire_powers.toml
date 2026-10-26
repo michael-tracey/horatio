@@ -11,19 +11,47 @@
 # `pools` (on either) changes a pool on the Pools tab while the character has
 #   it: { pool, amount, when?, focus? }. `pool` is initiative, dodge, attack,
 #   attack:<Skill>, defense, defense:<Attribute> or discipline:<Name>; `amount`
-#   is a number, or "powers:<Discipline>" for how many powers of it the
-#   character has; `when` makes it a variant ("Celerity" is Celerity active);
-#   `focus` limits it to characters with that focus, `unless_focus` to those
-#   without it (for a bonus a focus replaces).
+#   is a number, "powers:<Discipline>" for how many powers of it the character
+#   has, or "rating:<category>/<Name>"; a `when` naming a switch (see `active`)
+#   makes it hold only while that switch is on, and any other `when` makes it a
+#   variant ("While Injured"); `focus` limits it to characters with that focus,
+#   `unless_focus` to those without it (for a bonus a focus replaces), and
+#   `choice` (see `choices`) to those who chose that when buying the power.
+# `active` (on a discipline, power or [[others]] entry): what the Play View can
+#   switch on while the character has it, one table or a list of them (issue
+#   #200): { key, name?, form?, combines?, page, book?, label?, health?,
+#   attributes?, focuses?, blood?, notes? }. `key` is what `when` names; `name`
+#   is shown (the power's name by default), with the purchase choices `label`
+#   lists after it in brackets. `form = true` makes it transformative (a major
+#   transformation: core p. 114, Vol. 2 Issue 1 p. 56): only one form is on at a
+#   time, but for those it `combines` with. `page` (and `book`, the core book by
+#   default) is where its rules are. While it is on:
+#   - `health = [{ level, boxes, choice? }]` adds wound levels to the tracker;
+#   - `attributes = [{ attribute, amount?, most?, pools?, choice? }]` changes an
+#     attribute in the pools made on it: `amount` is added, `most` is the most it
+#     counts as ("reduced to 3"), and `pools` (attack, defense or one pool's key)
+#     limits it to some pools;
+#   - `focuses = [Name]`: the character counts as having that focus, so what the
+#     focus adds elsewhere in this file counts too;
+#   - `blood = { per_turn?, most? }`: more Blood a turn, and `most = "half"` makes
+#     the Blood pool half again as big (rounded up) until it ends;
+#   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out.
+# `choices` (on a power): what the player chooses when buying it, kept on the
+#   discipline's trait and fixed afterwards: [{ key, label, default?, options? }].
+#   `choice = { key = value }` on an entry makes it hold only for that choice.
+# [[others]]: techniques, elder and luminary powers and merits with `pools`,
+#   `damage` or `active`, by `category` and `name`; `needs = { discipline, level }`
+#   when it works only with a power of a discipline.
 # [[attacks]]: what a successful attack of each type does by default, and what an
 #   exceptional success adds (`exceptional`), with the book `page`. `skill` is the
 #   skill the attack pool is made on (attack:<skill>); `kind` names the type.
 # `damage` (on a discipline or power) changes the damage of attack pools while the
 #   character has it: { attacks = [skills], amount?, exceptional?, type?, when?,
-#   note?, page }. `amount` is added to the damage and `exceptional` to what an
+#   focus?, note?, page, book? }. `amount` is added to the damage and `exceptional` to what an
 #   exceptional success adds on top of the usual one; `type = "aggravated"` makes
-#   it aggravated. An entry with `when` holds only some of the time, so it is a
-#   `note` on the pool, not part of the number shown. `page` is the book page.
+#   it aggravated. An entry whose `when` names a switch holds while it is on; any
+#   other `when` holds only some of the time, so it is a `note` on the pool, not
+#   part of the number shown. `page` is the book page (`book` as for `active`).
 
 # MET: VTM core, p. 279.
 [[attacks]]
@@ -139,6 +167,8 @@ name = "Celerity"
 note = "No standard test pool. 1 Blood activates it for the turn."
 focus = { Dexterity = "+2 to Dodge pools while Celerity is active." }
 pools = [{ pool = "dodge", amount = 2, when = "Celerity", focus = "Dexterity" }]
+# Core pp. 121-122: 1 Blood activates every Celerity power for the turn.
+active = { key = "Celerity", page = 121, notes = ["For the turn: 1 Blood activates every Celerity power you have."] }
 
 [[powers]]
 discipline = "Celerity"
@@ -562,6 +592,8 @@ level = 4
 name = "Black Metamorphosis"
 note = "1 Blood, simple action: become a shadow-wreathed horror with four tentacle limbs."
 focus = { Appearance = "Sense your surroundings perfectly, even in magical darkness." }
+# Core p. 149.
+active = { key = "Black Metamorphosis", form = true, page = 149, notes = ["Once a turn, a free Brawl attack with your tentacles on someone within five steps (your usual Brawl pool and damage).", "You can use weapons."] }
 
 [[powers]]
 discipline = "Obtenebration"
@@ -569,6 +601,8 @@ level = 5
 name = "Tenebrous Form"
 note = "1 Blood, simple and standard actions: become living shadow, immune to Physical attacks but fire and sunlight; no powers or attacks."
 focus = { Manipulation = "1 Blood for glowing eyes: use the first 3 dots of Dominate and Presence." }
+# Core pp. 149-150.
+active = { key = "Tenebrous Form", form = true, page = 149, notes = ["Immune to Physical attacks but fire and sunlight; 1 more aggravated damage from them.", "Can't spend Blood, use powers or attack."] }
 
 [[disciplines]]
 name = "Potence"
@@ -672,8 +706,11 @@ level = 2
 name = "Feral Claws"
 note = "1 Blood, simple action: claws that do aggravated damage with Brawl."
 # Core p. 154.
-damage = [{ attacks = ["Brawl"], type = "aggravated", when = "claws out", note = "Aggravated damage while your Feral Claws are out", page = 154 }]
-focus = { Wits = "Grow or sheathe them with no action." }
+damage = [{ attacks = ["Brawl"], type = "aggravated", when = "Feral Claws", note = "Aggravated damage while your Feral Claws are out", page = 154 }]
+focus = { Wits = "Grow or sheathe them with no action, and +1 to Brawl attacks with them." }
+# A minor transformation (Vol. 2 Issue 1 p. 56): it goes with a form.
+active = { key = "Feral Claws", name = "Feral Claws", page = 154 }
+pools = [{ pool = "attack:Brawl", amount = 1, when = "Feral Claws", focus = "Wits" }]
 
 [[powers]]
 discipline = "Protean"
@@ -681,6 +718,9 @@ level = 3
 name = "Earth Meld"
 note = "1 Blood, simple action, touching soft earth: sink into the ground, safe to sleep, unable to act."
 focus = { Perception = "Perceive the surroundings while melded and awake." }
+# Core p. 155: not transformative, but it can't be combined with a form, and
+# melding returns you to your own shape, so it switches like one.
+active = { key = "Earth Meld", form = true, page = 155, notes = ["Can't act or use powers.", "Safe from sunlight and from fire above."] }
 
 [[powers]]
 discipline = "Protean"
@@ -688,16 +728,35 @@ level = 4
 name = "Shape of the Beast"
 note = "1 Blood, standard action: become a bat (fly, +3 Dodge, Physical 3 for attacks) or a wolf (+2 Brawl, aggravated bites and claws)."
 focus = { Wits = "Choose other predators for your two forms." }
-pools = [
-  { pool = "dodge", amount = 3, when = "in flight form" },
-  { pool = "attack:Brawl", amount = 2, when = "in fight form" },
+# Core pp. 155-156, with the errata in Vol. 2 Issue 1 pp. 16-17: a fight form's
+# template is in addition to the wolf's bonuses.
+choices = [
+  { key = "flight", label = "Flight form", default = "bat" },
+  { key = "fight", label = "Fight form", default = "wolf" },
+  { key = "template", label = "Fight form template", options = ["Huge", "Vicious", "Fast", "Agile", "Aquatic"] },
 ]
+active = [
+  { key = "flight form", name = "Shape of the Beast: flight form", label = ["flight"], form = true, page = 155, attributes = [{ attribute = "Physical", most = 3, pools = "attack" }], notes = ["Can fly at your normal speed."] },
+  { key = "fight form", name = "Shape of the Beast: fight form", label = ["fight", "template"], form = true, page = 155, health = [{ level = "Healthy", boxes = 2, choice = { template = "Huge" } }], notes = [
+    { note = "Nine steps when you spend both actions moving.", choice = { template = "Fast" } },
+    { note = "Swim at your normal speed, but one step an action on land; +2 more to Brawl attacks while submerged.", choice = { template = "Aquatic" } },
+  ] },
+]
+pools = [
+  { pool = "dodge", amount = 3, when = "flight form" },
+  { pool = "attack:Brawl", amount = 2, when = "fight form" },
+  { pool = "attack:Brawl", amount = 1, when = "fight form", choice = { template = "Vicious" } },
+  { pool = "dodge", amount = 1, when = "fight form", choice = { template = "Agile" } },
+]
+# Core p. 155: a fight form's bites and claws are aggravated.
+damage = [{ attacks = ["Brawl"], type = "aggravated", when = "fight form", note = "Aggravated bites and claws in fight form", page = 155 }]
 
 [[powers]]
 discipline = "Protean"
 level = 5
 name = "Form of Mist"
 note = "1 Blood, standard action: become mist, immune to Physical attacks but fire and sunlight; no Blood, speech, powers or attacks."
+active = { key = "Form of Mist", form = true, page = 156, notes = ["Immune to Physical attacks but fire and sunlight.", "Can't spend Blood, talk, use powers or attack."] }
 focus = { Wits = "Move three steps per simple action whatever the wind, even upwards." }
 
 [[disciplines]]
@@ -732,6 +791,9 @@ level = 4
 name = "Baal's Caress"
 note = "1 Blood, simple action: coat a blade with your blood; for three turns its hits do aggravated damage."
 focus = { Intelligence = "Stays toxic for five turns." }
+# Core p. 158: a coated weapon's hits are aggravated, not harder.
+active = { key = "Baal's Caress", name = "Baal's Caress: a weapon coated", page = 158, notes = ["One sword-sized weapon, arrow or bolt; not bullets or unarmed attacks."] }
+damage = [{ attacks = ["Melee"], type = "aggravated", when = "Baal's Caress", note = "Aggravated with a weapon your Baal's Caress coats", page = 158 }]
 
 [[powers]]
 discipline = "Quietus"
@@ -765,7 +827,12 @@ level = 3
 name = "Skin of the Adder"
 note = "1 Blood, standard action: scales give +2 to Dodge pools, and you can bite without grappling first."
 focus = { Charisma = "+3 to Dodge instead, and +1 to Brawl when biting." }
-pools = [{ pool = "dodge", amount = 2, when = "with Skin of the Adder" }]
+# Core pp. 159 and 161: transformative, close enough to human for weapons.
+active = { key = "Skin of the Adder", form = true, page = 159, notes = ["Bite without grappling first.", { note = "+1 to Brawl when biting.", focus = "Charisma" }, "You can use weapons."] }
+pools = [
+  { pool = "dodge", amount = 2, when = "Skin of the Adder", unless_focus = "Charisma" },
+  { pool = "dodge", amount = 3, when = "Skin of the Adder", focus = "Charisma" },
+]
 
 [[powers]]
 discipline = "Serpentis"
@@ -773,6 +840,8 @@ level = 4
 name = "Form of the Cobra"
 note = "1 Blood, standard action: become a human-sized cobra that can't be grappled, with a venomous bite."
 focus = { Appearance = "Grow as large as a python or as small as a viper." }
+# Core p. 161.
+active = { key = "Form of the Cobra", form = true, page = 161, notes = ["Can't be grappled; your bite is venomous (virility 15).", "Only powers that need no hands or speech."] }
 
 [[powers]]
 discipline = "Serpentis"
@@ -847,6 +916,8 @@ level = 3
 name = "Ashes to Ashes"
 note = "1 Blood, standard action: become a pile of ash, immune to Physical damage, fire and sunlight, unable to act."
 focus = { Wits = "Spend Blood while ash to gather yourself back together." }
+# Core p. 164.
+active = { key = "Ashes to Ashes", form = true, page = 164, notes = ["Immune to Physical damage, fire and sunlight; can't act.", "10 Cohesion: scattered ashes lose some."] }
 
 [[powers]]
 discipline = "Thanatosis"
@@ -894,7 +965,12 @@ level = 4
 name = "Armor of Caine's Fury"
 note = "1 Blood, simple action: +3 to Dodge and Survival defence pools, while you only fight or close on a foe."
 focus = { Wits = "The benefits of a rage frenzy with none of the drawbacks; immune to fear and hunger frenzy." }
-pools = [{ pool = "dodge", amount = 3, when = "with Armor of Caine's Fury" }]
+# Core p. 167; a rage frenzy gives +1 to Physical attacks (p. 301).
+active = { key = "Armor of Caine's Fury", page = 167, notes = ["+3 to Survival defences too.", "Ends if you use a standard action for anything but a Brawl or Melee attack or closing on a foe."] }
+pools = [
+  { pool = "dodge", amount = 3, when = "Armor of Caine's Fury" },
+  { pool = "attack", amount = 1, when = "Armor of Caine's Fury", focus = "Wits" },
+]
 
 [[powers]]
 discipline = "Valeren"
@@ -934,10 +1010,13 @@ level = 4
 name = "Horrid Form"
 note = "1 Blood, standard action: become a monster: -3 Mental and Social, the Strength focus, +3 Physical for Brawl attacks."
 focus = { Charisma = "+5 to Brawl attacks instead, and terrifying to behold." }
+# Core p. 169.
+active = { key = "Horrid Form", form = true, page = 169, attributes = [{ attribute = "Mental", amount = -3 }, { attribute = "Social", amount = -3 }], focuses = ["Strength"], notes = [{ note = "Opponents with less Willpower than you take -2 to Brawl and Melee attacks on you.", focus = "Charisma" }] }
 pools = [
-  { pool = "attack:Brawl", amount = 3, when = "in Horrid Form", unless_focus = "Charisma" },
-  { pool = "attack:Brawl", amount = 5, when = "in Horrid Form", focus = "Charisma" },
+  { pool = "attack:Brawl", amount = 3, when = "Horrid Form", unless_focus = "Charisma" },
+  { pool = "attack:Brawl", amount = 5, when = "Horrid Form", focus = "Charisma" },
 ]
+damage = [{ attacks = ["Brawl"], type = "aggravated", when = "Horrid Form", note = "Aggravated Brawl damage in Horrid Form", page = 169 }]
 
 [[powers]]
 discipline = "Vicissitude"
@@ -945,6 +1024,8 @@ level = 5
 name = "Blood Form"
 note = "1 Blood, standard action: become a pool of blood, immune to Physical attacks but fire and sunlight; no Blood, speech or powers."
 focus = { Manipulation = "A walking, man-shaped mass of blood instead." }
+# Core pp. 169-170.
+active = { key = "Blood Form", form = true, page = 169, notes = ["Immune to Physical attacks but fire and sunlight.", "Can't spend Blood, talk or use powers; others can drink you."] }
 
 [[disciplines]]
 name = "Visceratika"
@@ -985,6 +1066,8 @@ level = 5
 name = "Stone Strength"
 note = "1 Blood, simple action: become stone-hard: no fire damage beyond normal, and you can't be staked."
 focus = { Wits = "Half damage from sunlight." }
+# Core p. 171.
+active = { key = "Stone Strength", form = true, page = 171, notes = ["No damage from fire; flaming attacks do normal damage.", "You can't be staked."] }
 
 [[disciplines]]
 name = "Necromancy: Sepulchre Path"
@@ -1121,6 +1204,8 @@ level = 1
 name = "Masque of Death"
 note = "1 Blood, standard action: become, to every test, an ordinary corpse; no powers or movement."
 focus = { Appearance = "1 Blood a turn for a simple action while in it." }
+# Core p. 179.
+active = { key = "Masque of Death", form = true, page = 179, notes = ["To every test, an ordinary corpse: no movement and no powers.", "No wounds from damage to your body; can't be staked."] }
 
 [[powers]]
 discipline = "Necromancy: Mortis Path"
@@ -1149,6 +1234,12 @@ level = 5
 name = "The Fourth Horseman"
 note = "1 Blood, simple action: become an avatar of death that feeds on life around you."
 focus = { Appearance = "Your Brawl and Melee attacks do aggravated damage." }
+# Core p. 180: you can use weapons in it.
+active = { key = "The Fourth Horseman", form = true, page = 180, notes = ["Each turn, the living within two steps take 2 damage and vampires lose 1 Blood.", "You can use weapons."] }
+damage = [
+  { attacks = ["Brawl", "Melee"], amount = 1, when = "The Fourth Horseman", note = "1 more damage as the Fourth Horseman", page = 180 },
+  { attacks = ["Brawl", "Melee"], type = "aggravated", when = "The Fourth Horseman", focus = "Appearance", note = "Aggravated as the Fourth Horseman", page = 180 },
+]
 
 [[disciplines]]
 name = "Thaumaturgy: Path of Blood"
@@ -1174,7 +1265,9 @@ focus = { Perception = "Within 10 steps instead of one." }
 discipline = "Thaumaturgy: Path of Blood"
 level = 3
 name = "Blood of Potency"
-note = "1 Blood, simple action: for an hour your Blood pool grows by half, and you can spend more a turn."
+note = "1 Blood, simple action: for an hour your Blood pool grows by half, and you can spend 2 more a turn."
+# Core p. 188, as Vol. 2 Issue 1 p. 18 has it: Blood over your usual most goes when it ends.
+active = { key = "Blood of Potency", page = 188, blood = { per_turn = 2, most = "half" }, notes = ["Three generations lower for waking a vampire from torpor."] }
 focus = { Intelligence = "Twice a night." }
 
 [[powers]]
@@ -1306,6 +1399,8 @@ level = 4
 name = "Elemental Form"
 note = "1 Blood, standard action: become an object about your size, keeping your senses."
 focus = { Intelligence = "Anything from half to twice your size." }
+# Core p. 194.
+active = { key = "Elemental Form", form = true, page = 194, notes = ["Can't move or use disciplines; your attributes and health stay the same."] }
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Elemental Mastery"
@@ -1325,7 +1420,11 @@ discipline = "Thaumaturgy: Lure of Flames"
 level = 1
 name = "Hand of Flame"
 note = "1 Blood, standard action: your hands burn; Brawl strikes do aggravated fire damage."
-focus = { Wits = "Call it up with no action." }
+focus = { Wits = "Call it up with no action, and +1 to Brawl attacks with it." }
+# Core p. 195.
+active = { key = "Hand of Flame", page = 195, notes = ["Your hands cast light."] }
+pools = [{ pool = "attack:Brawl", amount = 1, when = "Hand of Flame", focus = "Wits" }]
+damage = [{ attacks = ["Brawl"], type = "aggravated", when = "Hand of Flame", note = "Aggravated fire damage with Hand of Flame", page = 195 }]
 
 [[powers]]
 discipline = "Thaumaturgy: Lure of Flames"
@@ -1543,8 +1642,14 @@ focus = { Charisma = "A destroyed Beast Spirit reforms in an hour, not a month."
 discipline = "Spiritus"
 level = 3
 name = "Umbral Huntress"
-note = "Always on: your Brawl and Melee can hurt unmanifested spirits you can see, and you can feed on their Gnosis for Blood."
-focus = { Manipulation = "Thrown, Firearms and Melee attacks do aggravated damage, more to spirits." }
+note = "Always on: your Brawl and Melee can hurt unmanifested spirits you can see, and you can feed on their Gnosis for Blood. 1 Blood, simple action: claws of moonlight, aggravated, for an hour."
+focus = { Manipulation = "Thrown, Firearms and Melee attacks do aggravated damage while it's active, more to spirits." }
+# Vol. 2 p. 81.
+active = { key = "Umbral Huntress", name = "Umbral Huntress claws", page = 81, book = "Vol. 2", notes = ["1 more damage to spirits."] }
+damage = [
+  { attacks = ["Brawl"], type = "aggravated", when = "Umbral Huntress", note = "Aggravated with your moonlight claws", page = 81, book = "Vol. 2" },
+  { attacks = ["Athletics", "Firearms", "Melee"], type = "aggravated", when = "Umbral Huntress", focus = "Manipulation", note = "Aggravated while Umbral Huntress is active", page = 81, book = "Vol. 2" },
+]
 
 [[powers]]
 discipline = "Spiritus"
@@ -1552,6 +1657,9 @@ level = 4
 name = "Mantle of Atira"
 note = "1 Blood, simple action: take two Beast Spirit qualities, such as Bear Strength (+1 Brawl attacks) or Stride of the Gazelle."
 focus = { Manipulation = "Double the qualities' bonuses." }
+# Vol. 2 p. 82: a major transformation that goes with Spiritwalker. The qualities
+# are chosen each time it's used, so they are notes.
+active = { key = "Mantle of Atira", form = true, combines = ["Spiritwalker"], page = 82, book = "Vol. 2", notes = ["Two qualities as you activate it: Bear Strength +1 Brawl attacks, Speed of the Hare +1 initiative, Agility of the Fox +1 Dodge, or another (doubled with the Manipulation focus). Add them under Your own."] }
 
 [[powers]]
 discipline = "Spiritus"
@@ -1559,6 +1667,8 @@ level = 5
 name = "Spiritwalker"
 note = "1 Blood, standard action: merge with your Beast Spirit and cross into the Umbra for a time."
 focus = { Charisma = "Spend its Gnosis instead of Blood on your disciplines." }
+# Vol. 2 p. 82: a major transformation that goes with Mantle of Atira, for an hour.
+active = { key = "Spiritwalker", form = true, combines = ["Mantle of Atira"], page = 82, book = "Vol. 2", health = [{ level = "Healthy", boxes = 3 }], notes = ["Your Beast Spirit's Animal Retainer qualities and attribute focus.", "Sunlight does you only normal damage."] }
 
 [[disciplines]]
 name = "Necromancy: Path of Grief"
@@ -1757,6 +1867,9 @@ level = 4
 name = "Flowing Wall"
 note = "1 Blood, simple action: a vortex of water around you deflects blows, then freezes into a shell."
 focus = { Intelligence = "Shield up to two more people." }
+# Vol. 2 p. 160: +2 to Dodge in the vortex, +4 after a second application; the third freezes it.
+active = { key = "Flowing Wall", name = "Flowing Wall: in the vortex", page = 160, book = "Vol. 2", notes = ["A second application makes it +4 (add +2 under Your own); the third freezes it into a barrier with 4 health levels, and the bonus ends."] }
+pools = [{ pool = "dodge", amount = 2, when = "Flowing Wall" }]
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Neptune's Might"
@@ -1764,3 +1877,68 @@ level = 5
 name = "Dehydrate"
 note = "1 Blood, standard action, Mental + Occult against Physical + Dodge: the target loses 4 Blood, more if repeated."
 focus = { Perception = "Choose to make them defend with Physical + Willpower." }
+
+# --- Techniques, elder and luminary powers, and merits ----------------------
+
+# Vol. 2 p. 198: for the turn, Dodge gains your number of Celerity powers.
+[[others]]
+category = "elder_disciplines"
+name = "Celerity: Nimble Departure"
+active = { key = "Nimble Departure", page = 198, book = "Vol. 2", notes = ["2 Blood for the turn: only challenges to get away; a fair escape you can keep."] }
+pools = [{ pool = "dodge", amount = "powers:Celerity", when = "Nimble Departure" }]
+
+# Core p. 217: +3 Mental for five minutes, taken from the victim.
+[[others]]
+category = "elder_disciplines"
+name = "Mytherceria: Steal the Mind"
+active = { key = "Steal the Mind", page = 217, attributes = [{ attribute = "Mental", amount = 3 }], notes = ["Five minutes; less against a Stock NPC with a lower rating."] }
+
+# Core p. 222: a major transformation; its +2 is to some Social pools only.
+[[others]]
+category = "elder_disciplines"
+name = "Serpentis: Divine Image"
+active = { key = "Divine Image", form = true, page = 222, notes = ["+2 to Social pools for mundane challenges, and to Social powers that rely on attraction (benevolent) or fear (malevolent).", "Ten minutes; you can use weapons."] }
+
+# Core p. 221: with Baal's Caress, +2 to Melee and 1 more aggravated damage.
+[[others]]
+category = "elder_disciplines"
+name = "Quietus: Baal's Bloody Talons"
+pools = [{ pool = "attack:Melee", amount = 2, when = "Baal's Caress" }]
+damage = [{ attacks = ["Melee"], amount = 1, when = "Baal's Caress", note = "1 more aggravated damage with Baal's Bloody Talons", page = 221 }]
+
+# Vol. 2 p. 245: all the damage you and your allies do is aggravated.
+[[others]]
+category = "luminary_disciplines"
+name = "Valeren: Warrior's Eminence"
+active = { key = "Warrior's Eminence", page = 245, book = "Vol. 2", notes = ["Your allies in sight (up to your Medicine dots) do aggravated damage too.", "Healing costs 1 more Blood, for everyone."] }
+damage = [{ attacks = ["Brawl", "Melee", "Athletics", "Firearms"], type = "aggravated", when = "Warrior's Eminence", note = "Aggravated with Warrior's Eminence", page = 245, book = "Vol. 2" }]
+
+# Vol. 2 Issue 1 p. 62: +5 to Dodge for the turn, ending if you move.
+[[others]]
+category = "techniques"
+name = "Bullet Time"
+active = { key = "Bullet Time", page = 62, book = "Vol. 2 Issue 1", notes = ["Ends if you spend an action moving."] }
+pools = [{ pool = "dodge", amount = 5, when = "Bullet Time" }]
+
+# Vol. 2 Issue 1 pp. 74-75: in flight form, your Subterfuge dots to Dodge (and +3
+# to Leadership and Intimidation in fight form, which the Pools tab has no pool for).
+[[others]]
+category = "techniques"
+name = "Primal Grace"
+pools = [{ pool = "dodge", amount = "rating:skills/Subterfuge", when = "flight form" }]
+
+# Vol. 2 Issue 1 pp. 19 and 56: a major transformation, one animal per dot of
+# Celerity, each with its own pools.
+[[others]]
+category = "techniques"
+name = "Animal Swarm"
+needs = { discipline = "Protean", level = 4 }
+active = { key = "Animal Swarm", form = true, page = 19, book = "Vol. 2 Issue 1", notes = ["One animal per dot of Celerity, each acting on its own, with 5 health levels.", "No Blood and no other powers; flight: Physical counts as 1 to attack, +1 Dodge; fight: Physical half yours.", "Coming back: 2 aggravated per animal destroyed, 1 per one hurt."] }
+
+# Core p. 240: instead of Shape of the Beast's fight form, a half-wolf monster.
+[[others]]
+category = "merits"
+name = "Shape of the Beast's Wrath"
+needs = { discipline = "Protean", level = 4 }
+active = { key = "Shape of the Beast's Wrath", form = true, page = 240, notes = ["Shape of the Beast's own bonuses don't apply in it."] }
+damage = [{ attacks = ["Brawl"], type = "aggravated", when = "Shape of the Beast's Wrath", note = "Aggravated brawling in your Wrath form", page = 240 }]

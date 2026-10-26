@@ -1,5 +1,6 @@
 import type { InfluenceDetailsIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
 import { TYPE_NAMES } from "../../influence";
+import { applySwitch, describeSwitch, healthMost, SWITCH } from "./powers";
 
 /**
  * The Play View's taps on the device. The server works the trackers out from
@@ -108,7 +109,9 @@ export function trackerName(view: PlayView, tracker: string): string {
   const found = view.expendables.find((e) => e.key === tracker);
   if (found) return found.detail ? `${found.name}: ${found.detail}` : found.name;
   const temporary = view.derangements.temporary.find((t) => t.key === tracker);
-  return temporary ? temporaryLabel(temporary) : tracker;
+  if (temporary) return temporaryLabel(temporary);
+  const power = tracker.startsWith(SWITCH) ? view.powers.find((p) => SWITCH + p.key === tracker) : undefined;
+  return power?.name ?? tracker;
 }
 
 /** The highest a tracker goes on this sheet; undefined for one it lacks. */
@@ -125,7 +128,7 @@ function most(view: PlayView, tracker: string): number | undefined {
     case "derangements":
       return view.derangements.most;
     case "health":
-      return view.health.levels.reduce((sum, l) => sum + l.boxes, 0);
+      return healthMost(view);
   }
   if (tracker.startsWith(TEMPORARY)) return view.derangements.temporary.some((t) => t.key === tracker) ? 1 : undefined;
   return view.expendables.find((e) => e.key === tracker)?.uses;
@@ -135,9 +138,11 @@ const clamp = (value: number, top: number, least = 0) => Math.max(least, Math.mi
 
 /**
  * Apply one change to `view` (changed in place), as the server does, and say
- * what the tracker was before and after (for health, boxes marked).
+ * what the tracker was before and after (for health, boxes marked). What
+ * switching a form or power also did goes in `said`.
  */
-export function applyChange(view: PlayView, tracker: string, amount: number, damage: Damage | null = null): [number, number] | null {
+export function applyChange(view: PlayView, tracker: string, amount: number, damage: Damage | null = null, said: string[] = []): [number, number] | null {
+  if (tracker.startsWith(SWITCH)) return applySwitch(view, tracker.slice(SWITCH.length), amount, said);
   const top = most(view, tracker);
   if (top === undefined) return null;
   if (tracker === "health") {
@@ -175,8 +180,14 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
 }
 
 /** The change as the log reads it: "Blood 7 → 6". */
-export function describe(view: PlayView, tap: Pick<Tap, "kind" | "tracker" | "amount" | "damage" | "influence">, change: [number, number] | null): string {
+export function describe(
+  view: PlayView,
+  tap: Pick<Tap, "kind" | "tracker" | "amount" | "damage" | "influence">,
+  change: [number, number] | null,
+  said: string[] = [],
+): string {
   if (tap.kind === "note") return "Note";
+  if (tap.tracker.startsWith(SWITCH)) return describeSwitch(view, tap.tracker.slice(SWITCH.length), tap.amount, said);
   const spent = tap.kind === "change" ? spendText(view, tap.tracker, tap.amount, tap.influence) : null;
   if (spent) return spent;
   if (tap.tracker === "health") {
@@ -198,6 +209,7 @@ function copy(view: PlayView): Shown {
     morality: view.morality ? { ...view.morality } : null,
     health: { ...view.health, marks: [...view.health.marks] },
     expendables: view.expendables.map((e) => ({ ...e })),
+    powers: view.powers.map((p) => ({ ...p })),
     log: view.log.map((e) => ({ ...e })),
   };
 }
@@ -231,9 +243,10 @@ export function withPending(view: PlayView, pending: Tap[]): Shown {
       if (tap.derangement && !shown.derangements.temporary.some((t) => t.key === tap.tracker)) {
         shown.derangements.temporary.push({ key: tap.tracker, name: tap.derangement.name, source: tap.derangement.source ?? "", held: false });
       }
-      if (tap.kind === "change" && !undone.has(tap.id)) change = applyChange(shown, tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null);
-      else if (tap.kind === "change") change = applyChange(copy(shown), tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null);
-      text = describe(shown, tap, change);
+      const said: string[] = [];
+      if (tap.kind === "change" && !undone.has(tap.id)) change = applyChange(shown, tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null, said);
+      else if (tap.kind === "change") change = applyChange(copy(shown), tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null, said);
+      text = describe(shown, tap, change, said);
     }
     entries.push({
       id: tap.id,
@@ -265,7 +278,7 @@ export function latestUndoable(log: ShownEntry[]): ShownEntry | undefined {
 
 /** Damage marked into the Incapacitated boxes: the character loses their simple action. */
 export function incapacitated(view: PlayView): boolean {
-  const before = view.health.levels.filter((l) => l.name !== "Incapacitated").reduce((sum, l) => sum + l.boxes, 0);
+  const before = healthMost({ ...view, health: { ...view.health, levels: view.health.levels.filter((l) => l.name !== "Incapacitated") } });
   return view.health.marks.length > before;
 }
 

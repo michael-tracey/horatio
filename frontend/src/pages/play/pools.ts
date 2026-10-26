@@ -1,4 +1,4 @@
-import type { PoolModifier, TestPool } from "../../api/types";
+import type { PoolModifier, SwitchedPart, TestPool } from "../../api/types";
 
 /** A Mental, Social or Physical defence pool counts current Willpower, which the
  * tracker holds (never less than a merit like Quixotic allows). */
@@ -22,16 +22,44 @@ export function changing(pool: TestPool, modifiers: PoolModifier[]): PoolModifie
   return modifiers.filter((m) => m.on && appliesTo(m, pool));
 }
 
-export function total(pool: TestPool, willpower: number, modifiers: PoolModifier[] = []): number {
-  return pool.total + willpowerFor(pool, willpower) + changing(pool, modifiers).reduce((sum, m) => sum + m.amount, 0);
+/** What the forms and powers on (issue #200) change in this pool: parts they add, and attribute changes. */
+function switchedOn(pool: TestPool, on: readonly string[]): { adds: SwitchedPart[]; attributes: SwitchedPart[] } {
+  const now = pool.switched.filter((s) => on.includes(s.switch));
+  return { adds: now.filter((s) => !s.attribute && s.value), attributes: now.filter((s) => s.attribute) };
+}
+
+/**
+ * The pool's own parts with the forms and powers on: an attribute a form changes
+ * is shown as it counts now ("Physical (flight form) 3"), and what they add follows.
+ */
+export function partsOn(pool: TestPool, on: readonly string[] = []): { label: string; value: number }[] {
+  const { adds, attributes } = switchedOn(pool, on);
+  const parts = pool.parts.map((p) => {
+    const changes = attributes.filter((a) => a.attribute === p.label);
+    if (!changes.length) return p;
+    let value = p.value + changes.reduce((sum, a) => sum + a.value, 0);
+    for (const a of changes) if (a.most !== null && a.most !== undefined) value = Math.min(value, a.most);
+    return { label: changes.map((a) => a.label).join(", "), value: Math.max(0, value) };
+  });
+  return [...parts, ...adds.map((a) => ({ label: a.label, value: a.value }))];
+}
+
+export function total(pool: TestPool, willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = []): number {
+  const own = partsOn(pool, on).reduce((sum, p) => sum + p.value, 0) - pool.parts.reduce((sum, p) => sum + p.value, 0);
+  return pool.total + own + willpowerFor(pool, willpower) + changing(pool, modifiers).reduce((sum, m) => sum + m.amount, 0);
 }
 
 const part = (label: string, value: number) => (value < 0 ? `− ${label} ${-value}` : `${label} ${value}`);
 
-/** "Physical 6 + Dodge 3 + Slippery Customer 3", with Willpower where it counts, then each modifier that is on. */
-export function breakdown(pool: TestPool, willpower: number, modifiers: PoolModifier[] = []): string {
-  const parts = pool.parts.map((p) => part(p.label, p.value));
+/**
+ * "Physical 6 + Dodge 3 + Slippery Customer 3", with Willpower where it counts, then
+ * what the forms and powers on add ("+ Shape of the Beast 2"), then each modifier that is on.
+ */
+export function breakdown(pool: TestPool, willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = []): string {
+  const own = partsOn(pool, on);
+  const parts = own.slice(0, pool.parts.length).map((p) => part(p.label, p.value));
   if (pool.adds_willpower) parts.push(`Willpower ${willpowerFor(pool, willpower)}`);
+  for (const p of own.slice(pool.parts.length)) parts.push(part(p.label, p.value));
   for (const m of changing(pool, modifiers)) parts.push(part(m.label, m.amount));
   return parts.join(" + ").replaceAll("+ −", "−");
 }
@@ -59,28 +87,42 @@ export function grouped(pools: TestPool[]): [string, TestPool[]][] {
 }
 
 type Damage = NonNullable<TestPool["damage"]>;
-/** More damage from elsewhere, such as a pool modifier that says it adds damage (#188): the seam is
- * here, and nothing passes any yet. */
-export type ExtraDamage = { label: string; value: number };
+/**
+ * More damage from elsewhere: what the forms and powers on do to an attack (issue
+ * #200), and the seam for a pool modifier that adds damage (#188), which nothing
+ * passes yet. `exceptional` adds to what an exceptional success adds; `type` can
+ * make the damage aggravated (Feral Claws).
+ */
+export type ExtraDamage = { label: string; value: number; exceptional?: number; type?: "normal" | "aggravated" };
+
+/** What the forms and powers on do to this attack's damage. */
+export function switchedDamage(damage: Damage, on: readonly string[]): ExtraDamage[] {
+  return damage.switched.filter((s) => on.includes(s.switch)).map((s) => ({ label: s.label, value: s.amount, exceptional: s.exceptional, type: s.type }));
+}
 
 export function damageTotal(damage: Damage, extra: ExtraDamage[] = []): number {
   return damage.total + extra.reduce((sum, e) => sum + e.value, 0);
 }
 
+const exceptionalOf = (damage: Damage, extra: ExtraDamage[]) => damage.exceptional + extra.reduce((sum, e) => sum + (e.exceptional ?? 0), 0);
+
+const kindOf = (damage: Damage, extra: ExtraDamage[]) =>
+  damage.type === "aggravated" || extra.some((e) => e.type === "aggravated") ? "aggravated damage" : "damage";
+
 /** "2 damage: 1 (melee) + 1 (Might)", or "2 aggravated damage: …" where a power makes it so. */
 export function damageText(damage: Damage, extra: ExtraDamage[] = []): string {
-  const kind = damage.type === "aggravated" ? "aggravated damage" : "damage";
-  const parts = [...damage.parts, ...extra].map((p) => `${p.value} (${p.label})`).join(" + ");
-  return `${damageTotal(damage, extra)} ${kind}: ${parts}`;
+  const parts = [...damage.parts, ...extra.filter((e) => e.value)].map((p) => `${p.value} (${p.label})`).join(" + ");
+  const by = extra.filter((e) => e.type === "aggravated").map((e) => e.label);
+  return `${damageTotal(damage, extra)} ${kindOf(damage, extra)}: ${parts}${by.length && damage.type !== "aggravated" ? `, aggravated by ${by.join(" and ")}` : ""}`;
 }
 
 /** What an exceptional success does: the usual extra point, or more with a power like Intensity. */
 export function exceptionalText(damage: Damage, extra: ExtraDamage[] = []): string {
-  return `An exceptional success adds ${damage.exceptional} damage, ${damageTotal(damage, extra) + damage.exceptional} in all.`;
+  const more = exceptionalOf(damage, extra);
+  return `An exceptional success adds ${more} damage, ${damageTotal(damage, extra) + more} in all.`;
 }
 
 /** The short form for the printed sheet: "2 damage (4 on an exceptional success)". */
 export function damageShort(damage: Damage, extra: ExtraDamage[] = []): string {
-  const kind = damage.type === "aggravated" ? "aggravated damage" : "damage";
-  return `${damageTotal(damage, extra)} ${kind} (${damageTotal(damage, extra) + damage.exceptional} exceptional)`;
+  return `${damageTotal(damage, extra)} ${kindOf(damage, extra)} (${damageTotal(damage, extra) + exceptionalOf(damage, extra)} exceptional)`;
 }

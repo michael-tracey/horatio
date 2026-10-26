@@ -17,12 +17,19 @@ Each attack pool also carries the damage a hit does (issue #190): the base for i
 type (core p. 279) plus what the sheet's powers add through `damage` entries in the
 same file, with a note for the extra point of an exceptional success. Weapons are
 not counted.
+
+Forms and powers that hold only while they are active (issue #200) are switches,
+from `active` in the same file: Shape of the Beast's forms, Celerity, Feral Claws
+and the rest. Each pool says what each switch would change in it (`switched`), and
+the Play View adds what is on, since being on is a tap in the game
+(horatio.play). A switch can also add wound levels, change an attribute, give a
+focus or more Blood; `switches` lists those the sheet has, with what they change.
 """
 
 import tomllib
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -44,11 +51,43 @@ ATTACKS = (
 )
 # Categories whose traits are powers of a discipline, named "Discipline: Power".
 POWER_CATEGORIES = ("elder_disciplines", "luminary_disciplines")
+BOOK = "core"
+# How the summary of a switch names each pool family.
+POOL_WORDS = {
+    "initiative": "initiative",
+    "dodge": "Dodge",
+    "attack": "attacks",
+    "defense": "defences",
+    "all": "every pool",
+}
 
 
 class PoolPart(BaseModel):
     label: str
     value: int
+
+
+class SwitchedPart(BaseModel):
+    """What a switch adds to a pool while it is on: a part ("Alacrity 4"), or a
+    change to the attribute the pool is made on (Physical counts as 3)."""
+
+    switch: str
+    label: str
+    value: int = 0
+    # The attribute it changes, instead of adding a part: `value` is added to it,
+    # and it counts as no more than `most`.
+    attribute: str | None = None
+    most: int | None = None
+
+
+class SwitchedDamage(BaseModel):
+    """What a switch does to an attack's damage while it is on."""
+
+    switch: str
+    label: str
+    amount: int = 0
+    exceptional: int = 0
+    type: Literal["normal", "aggravated"] = "normal"
 
 
 class Damage(BaseModel):
@@ -64,6 +103,8 @@ class Damage(BaseModel):
     exceptional: int
     # Changes that hold only some of the time: "With Celerity active, …".
     notes: list[str] = []
+    # What forms and powers change while they are on.
+    switched: list[SwitchedDamage] = []
 
 
 class PoolVariant(BaseModel):
@@ -89,6 +130,8 @@ class TestPool(BaseModel):
     notes: list[str] = []
     # For an attack: what a hit does.
     damage: Damage | None = None
+    # What forms and powers add while they are on (the Play View knows which are).
+    switched: list[SwitchedPart] = []
 
 
 class PowerNote(BaseModel):
@@ -117,6 +160,49 @@ class OtherPower(BaseModel):
     note: str | None
 
 
+class SwitchLevel(BaseModel):
+    level: str
+    boxes: int
+
+
+class AttributeChange(BaseModel):
+    """A switch's change to an attribute in the pools made on it."""
+
+    attribute: str
+    amount: int = 0
+    # The most it counts as: Shape of the Beast's flight form reduces Physical to 3.
+    most: int | None = None
+    # attack, defense or one pool's key; None for every pool made on it.
+    pools: str | None = None
+
+
+class Switch(BaseModel):
+    """A form or power the Play View can switch on while the character has it
+    (issue #200). Forms are transformative: only one is on at a time (core
+    p. 114), but for those it combines with."""
+
+    key: str
+    # "Shape of the Beast: fight form (wolf, Huge)".
+    name: str
+    # Where it comes from: "Protean 4", "Celerity", "Celerity: Nimble Departure".
+    origin: str
+    form: bool = False
+    combines: list[str] = []
+    # Its rules: "p. 155", "Vol. 2, p. 82".
+    page: str
+    # What it changes, in words: "+2 Brawl attacks", "+2 Healthy".
+    changes: list[str] = []
+    # What can't be worked out: "Can fly at your normal speed."
+    notes: list[str] = []
+    # Wound levels it adds while on.
+    health: list[SwitchLevel] = []
+    attributes: list[AttributeChange] = []
+    focuses: list[str] = []
+    blood_per_turn: int = 0
+    # The Blood pool is half again as big (rounded up) while it is on.
+    blood_half: bool = False
+
+
 class Reference(BaseModel):
     pools: list[TestPool]
     disciplines: list[DisciplinePowers]
@@ -132,6 +218,19 @@ class Catalogue:
     powers: Mapping[str, Sequence[Mapping[str, Any]]]
     # The default damage of each attack, by the skill its pool is made on.
     attacks: Mapping[str, Mapping[str, Any]]
+    # Techniques, elder and luminary powers and merits, by (category, name).
+    others: Mapping[tuple[str, str], Mapping[str, Any]] = field(default_factory=dict)
+    # Every switch's key: a `when` naming one holds while it is on.
+    switch_keys: frozenset[str] = frozenset()
+
+    def power(self, discipline: str, name: str) -> Mapping[str, Any] | None:
+        return next((p for p in self.powers.get(discipline, []) if p["name"] == name), None)
+
+
+def actives(entry: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """An entry's switches: `active` is one table or a list of them."""
+    found = entry.get("active", [])
+    return [found] if isinstance(found, Mapping) else list(found)  # pyright: ignore[reportUnknownArgumentType]
 
 
 @lru_cache
@@ -141,10 +240,13 @@ def catalogue() -> Catalogue:
     powers: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for p in raw.get("powers", []):
         powers[p["discipline"]].append(p)
+    entries = [*raw.get("disciplines", []), *raw.get("powers", []), *raw.get("others", [])]
     return Catalogue(
         disciplines={d["name"]: d for d in raw.get("disciplines", [])},
         powers={k: sorted(v, key=lambda p: p["level"]) for k, v in powers.items()},
         attacks={a["skill"]: a for a in raw.get("attacks", [])},
+        others={(o["category"], o["name"]): o for o in raw.get("others", [])},
+        switch_keys=frozenset(a["key"] for e in entries for a in actives(e)),
     )
 
 
@@ -158,6 +260,8 @@ class Effect:
     attribute: str | None = None
     willpower_floor: int = 0
     instead_of: tuple[str, ...] = ()
+    # The focus it needs, for working out what a switch's focus gives.
+    focus: str | None = None
 
 
 @dataclass
@@ -171,6 +275,7 @@ class DamageEffect:
     type: Literal["normal", "aggravated"] = "normal"
     when: str | None = None
     note: str | None = None
+    focus: str | None = None
 
 
 @dataclass
@@ -183,9 +288,33 @@ class Sheet:
     # Techniques, elder and luminary powers: (category name, name).
     others: list[tuple[str, str, str]] = field(default_factory=list)
     traits: list[tuple[str, str, Mapping[str, Any]]] = field(default_factory=list)
+    # What was chosen when buying powers, by discipline and power (horatio.api.power_choices).
+    choices: dict[str, Mapping[str, Mapping[str, str]]] = field(default_factory=dict)
 
     def rating(self, category: str, name: str) -> int:
         return self.ratings.get((category, name), 0)
+
+    def held(self, category: str, name: str) -> bool:
+        return (category, name) in self.ratings
+
+    def chosen(self, discipline: str, power: Mapping[str, Any] | None) -> dict[str, str]:
+        """A power's purchase choices, each its default until chosen."""
+        if power is None:
+            return {}
+        made = self.choices.get(discipline, {}).get(power["name"], {})
+        return {
+            c["key"]: made.get(c["key"]) or c.get("default", "") for c in power.get("choices", [])
+        }
+
+    def with_focus(self, focus: str) -> "Sheet":
+        return Sheet(
+            ratings=self.ratings,
+            focuses=self.focuses | {focus},
+            disciplines=self.disciplines,
+            others=self.others,
+            traits=self.traits,
+            choices=self.choices,
+        )
 
     @classmethod
     def read(cls, rows: Iterable[SheetRow], rule_set: RuleSetData) -> "Sheet":
@@ -201,6 +330,8 @@ class Sheet:
                 sheet.focuses.add(name)
             elif category == "disciplines":
                 sheet.disciplines[name] = max(sheet.disciplines.get(name, 0), rating)
+                if row.trait.power_choices:
+                    sheet.choices[name] = row.trait.power_choices
             elif category in (*POWER_CATEGORIES, "techniques"):
                 sheet.others.append((category, row.category.name, name))
             properties = rule_set.trait_properties(category, name)
@@ -256,16 +387,58 @@ def _amount(spec: Any, sheet: Sheet, bases: Mapping[str, set[str]]) -> int:
     return 0
 
 
+def _holds(entry: Mapping[str, Any], sheet: Sheet, chosen: Mapping[str, str]) -> bool:
+    """Whether an entry holds for this sheet: its focus, and the purchase choice it needs."""
+    if "focus" in entry and entry["focus"] not in sheet.focuses:
+        return False
+    if "unless_focus" in entry and entry["unless_focus"] in sheet.focuses:
+        return False
+    return all(chosen.get(k) == v for k, v in entry.get("choice", {}).items())
+
+
+def _needs(entry: Mapping[str, Any], sheet: Sheet) -> bool:
+    need = entry.get("needs")
+    return need is None or sheet.disciplines.get(need["discipline"], 0) >= need["level"]
+
+
+@dataclass(frozen=True)
+class Owner:
+    """An entry of the powers file the character has, and what it is called."""
+
+    entry: Mapping[str, Any]
+    # The name a part of a pool shows: "Alacrity", "Celerity".
+    source: str
+    # Where it comes from, for a switch: "Protean 4", "Celerity", "Bullet Time".
+    origin: str
+    chosen: Mapping[str, str] = field(default_factory=dict[str, str])
+
+
+def owners(sheet: Sheet) -> Iterable[Owner]:
+    """Every entry the character has: its disciplines, the powers it has reached,
+    and its techniques, elder powers and merits from [[others]]."""
+    book = catalogue()
+    for name, rating in sheet.disciplines.items():
+        if name in book.disciplines:
+            yield Owner(book.disciplines[name], name, name)
+        for power in book.powers.get(name, []):
+            if power["level"] <= rating:
+                yield Owner(
+                    power, power["name"], f"{name} {power['level']}", sheet.chosen(name, power)
+                )
+    for (category, name), other in book.others.items():
+        if sheet.held(category, name) and _needs(other, sheet):
+            short = name.split(": ", 1)[-1]
+            yield Owner(other, short, name)
+
+
 def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
     """Every pool change the character has, from its disciplines, powers,
     merits and flaws, resolved to numbers."""
     found: list[Effect] = []
 
-    def add(entries: Iterable[Mapping[str, Any]], source: str) -> None:
+    def add(entries: Iterable[Mapping[str, Any]], source: str, chosen: Mapping[str, str]) -> None:
         for e in entries:
-            if "focus" in e and e["focus"] not in sheet.focuses:
-                continue
-            if "unless_focus" in e and e["unless_focus"] in sheet.focuses:
+            if not _holds(e, sheet, chosen):
                 continue
             found.append(
                 Effect(
@@ -277,54 +450,46 @@ def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
                     attribute=e.get("attribute"),
                     willpower_floor=e.get("willpower_floor", 0),
                     instead_of=tuple(e.get("instead_of", ())),
+                    focus=e.get("focus"),
                 )
             )
 
-    book = catalogue()
-    for name, rating in sheet.disciplines.items():
-        spec = book.disciplines.get(name, {})
-        add(spec.get("pools", []), name)
-        for power in book.powers.get(name, []):
-            if power["level"] <= rating:
-                add(power.get("pools", []), power["name"])
+    for owner in owners(sheet):
+        add(owner.entry.get("pools", []), owner.source, owner.chosen)
     for category, name, properties in sheet.traits:
         if category in ("merits", "flaws"):
-            add(properties.get("pools", []), name)
+            add(properties.get("pools", []), name, {})
     return found
 
 
 def damage_effects(sheet: Sheet) -> list[DamageEffect]:
-    """Every change to attack damage the character has, from its disciplines and
-    the powers it has reached."""
+    """Every change to attack damage the character has, from its disciplines, the
+    powers it has reached and its other powers."""
     found: list[DamageEffect] = []
-
-    def add(entries: Iterable[Mapping[str, Any]], source: str) -> None:
-        for e in entries:
+    for owner in owners(sheet):
+        for e in owner.entry.get("damage", []):
+            if not _holds(e, sheet, owner.chosen):
+                continue
             found.append(
                 DamageEffect(
                     attacks=tuple(e["attacks"]),
-                    source=source,
+                    source=owner.source,
                     amount=e.get("amount", 0),
                     exceptional=e.get("exceptional", 0),
                     type=e.get("type", "normal"),
                     when=e.get("when"),
                     note=e.get("note"),
+                    focus=e.get("focus"),
                 )
             )
-
-    book = catalogue()
-    for name, rating in sheet.disciplines.items():
-        add(book.disciplines.get(name, {}).get("damage", []), name)
-        for power in book.powers.get(name, []):
-            if power["level"] <= rating:
-                add(power.get("damage", []), power["name"])
     return found
 
 
 def damage(skill: str, found: Sequence[DamageEffect]) -> Damage | None:
     """What a hit with the attack made on `skill` does: its base (core p. 279) plus
-    each power that always adds to it. Powers that hold only some of the time
-    (`when`) are notes."""
+    each power that always adds to it. What a switch changes is kept apart, for
+    the Play View to add while it is on; other powers that hold only some of the
+    time (`when`) are notes."""
     base = catalogue().attacks.get(skill)
     if base is None:
         return None
@@ -332,8 +497,20 @@ def damage(skill: str, found: Sequence[DamageEffect]) -> Damage | None:
     exceptional = base.get("exceptional", 0)
     kind: Literal["normal", "aggravated"] = "normal"
     notes: list[str] = []
+    switched: list[SwitchedDamage] = []
     for e in found:
         if skill not in e.attacks:
+            continue
+        if e.when in catalogue().switch_keys:
+            switched.append(
+                SwitchedDamage(
+                    switch=e.when,
+                    label=e.source,
+                    amount=e.amount,
+                    exceptional=e.exceptional,
+                    type=e.type,
+                )
+            )
             continue
         if e.when:
             notes.append(f"{e.note} ({e.source})" if e.note else f"{e.when} ({e.source})")
@@ -350,6 +527,7 @@ def damage(skill: str, found: Sequence[DamageEffect]) -> Damage | None:
         total=sum(p.value for p in parts),
         exceptional=exceptional,
         notes=notes,
+        switched=switched,
     )
 
 
@@ -379,15 +557,20 @@ def _pool(
     **extra: Any,
 ) -> TestPool:
     """A pool from its base parts and the effects that change it: those that
-    always hold add to it, those with `when` become its variants."""
+    always hold add to it, those a switch holds are kept for while it is on, and
+    those with another `when` become its variants."""
     parts = list(base)
     variants: dict[str, list[PoolPart]] = defaultdict(list)
+    switched: list[SwitchedPart] = []
     notes: list[str] = list(extra.pop("notes", []))
     for e in found:
         if e.pool == "all" or not _applies(e, key) or e.attribute or e.instead_of:
             continue
         if e.note:
             notes.append(f"{e.note} ({e.source})")
+        elif e.when in catalogue().switch_keys:
+            if e.amount:
+                switched.append(SwitchedPart(switch=e.when, label=e.source, value=e.amount))
         elif e.when:
             variants[e.when].append(PoolPart(label=e.source, value=e.amount))
         elif e.amount:
@@ -404,12 +587,23 @@ def _pool(
             for when, adds in variants.items()
         ],
         notes=notes,
+        switched=switched,
         **extra,
     )
 
 
 def _when_label(when: str) -> str:
-    return "With Celerity active" if when == "Celerity" else when[:1].upper() + when[1:]
+    return when[:1].upper() + when[1:]
+
+
+def _covers(which: str | None, key: str) -> bool:
+    """Whether a switch's attribute change covers a pool: every pool made on the
+    attribute, its attacks or its defences, or one pool."""
+    if which is None:
+        return True
+    if which in ("attack", "defense"):
+        return key.startswith(f"{which}:")
+    return key == which
 
 
 def pools(
@@ -417,6 +611,7 @@ def pools(
     found: Sequence[Effect],
     blood_per_turn: int,
     hurts: Sequence[DamageEffect] = (),
+    switched: Sequence["Switch"] = (),
 ) -> list[TestPool]:
     attrs = {a: sheet.rating("attributes", a) for a in ATTRIBUTES}
 
@@ -498,7 +693,163 @@ def pools(
     for pool in out:
         for variant in pool.variants:
             variant.when = _when_label(variant.when)
+        for switch in switched:
+            for change in switch.attributes:
+                if pool.parts[0].label == change.attribute and _covers(change.pools, pool.key):
+                    pool.switched.append(
+                        SwitchedPart(
+                            switch=switch.key,
+                            label=f"{change.attribute} ({switch.key})",
+                            value=change.amount,
+                            attribute=change.attribute,
+                            most=change.most,
+                        )
+                    )
     return out
+
+
+def _page(entry: Mapping[str, Any]) -> str:
+    book = entry.get("book", BOOK)
+    return f"p. {entry['page']}" if book == BOOK else f"{book}, p. {entry['page']}"
+
+
+def _pool_words(pool: str) -> str:
+    """How a summary names a pool: "Brawl attacks", "Mental defence", "Dodge"."""
+    family, _, which = pool.partition(":")
+    if not which:
+        return POOL_WORDS.get(family, family)
+    if family == "attack":
+        return f"{_attack_words((which,))} attacks"
+    if family == "defense":
+        return f"{which} defence"
+    return which
+
+
+def _attack_words(skills: Iterable[str]) -> str:
+    """The attacks made on these skills: "Brawl and Melee", "thrown"."""
+    return " and ".join("thrown" if s == "Athletics" else s for s in skills)
+
+
+def _changes(switch: Switch, found: Sequence[Effect], hurts: Sequence[DamageEffect]) -> list[str]:
+    """What a switch changes, in words, for its line on the Play View."""
+    lines: list[str] = []
+    for e in found:
+        if e.when == switch.key and e.amount and not e.note:
+            by = "" if switch.name.startswith(e.source) else f" ({e.source})"
+            lines.append(f"{_signed(e.amount)} {_pool_words(e.pool)}{by}")
+    for change in switch.attributes:
+        to = {"attack": " for attacks", "defense": " for defences", None: ""}.get(
+            change.pools, f" for {_pool_words(change.pools or '')}"
+        )
+        if change.amount:
+            lines.append(f"{_signed(change.amount)} {change.attribute}{to}")
+        if change.most is not None:
+            lines.append(f"{change.attribute} counts as {change.most} at most{to}")
+    levels: dict[str, int] = defaultdict(int)
+    for level in switch.health:
+        levels[level.level] += level.boxes
+    lines += [f"+{boxes} {level}" for level, boxes in levels.items()]
+    for d in hurts:
+        if d.when != switch.key:
+            continue
+        words = _attack_words(d.attacks)
+        upper = words[:1].upper() + words[1:]
+        if d.type == "aggravated":
+            lines.append(f"{upper} damage aggravated")
+        if d.amount:
+            lines.append(f"{_signed(d.amount)} {words} damage")
+        if d.exceptional:
+            lines.append(f"{upper} exceptional successes add {d.exceptional} more")
+    lines += [f"The {focus} focus" for focus in switch.focuses]
+    if switch.blood_per_turn:
+        lines.append(f"{_signed(switch.blood_per_turn)} Blood a turn")
+    if switch.blood_half:
+        lines.append("Blood pool half again as big")
+    return lines
+
+
+def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
+    holds = lambda e: not isinstance(e, Mapping) or _holds(e, sheet, owner.chosen)  # noqa: E731
+    name = active.get("name") or owner.entry["name"]
+    chosen = [owner.chosen[k] for k in active.get("label", []) if owner.chosen.get(k)]
+    blood = active.get("blood", {})
+    return Switch(
+        key=active["key"],
+        name=f"{name} ({', '.join(chosen)})" if chosen else name,
+        origin=owner.origin,
+        form=active.get("form", False),
+        combines=list(active.get("combines", [])),
+        page=_page(active),
+        notes=[n if isinstance(n, str) else n["note"] for n in active.get("notes", []) if holds(n)],
+        health=[
+            SwitchLevel(level=h["level"], boxes=h["boxes"])
+            for h in active.get("health", [])
+            if holds(h)
+        ],
+        attributes=[
+            AttributeChange(
+                attribute=a["attribute"],
+                amount=a.get("amount", 0),
+                most=a.get("most"),
+                pools=a.get("pools"),
+            )
+            for a in active.get("attributes", [])
+            if holds(a)
+        ],
+        focuses=list(active.get("focuses", [])),
+        blood_per_turn=blood.get("per_turn", 0),
+        blood_half=blood.get("most") == "half",
+    )
+
+
+def focus_effects(
+    sheet: Sheet, bases: Mapping[str, set[str]], found: Sequence[Switch]
+) -> tuple[list[Effect], list[DamageEffect]]:
+    """What a switch's focus gives (Horrid Form's Strength focus: Potence's +2 to
+    Brawl and Melee), as effects that hold while it is on."""
+    pools: list[Effect] = []
+    hurts: list[DamageEffect] = []
+    for switch in found:
+        for focus in switch.focuses:
+            if focus in sheet.focuses:
+                continue
+            plus = sheet.with_focus(focus)
+            label = f"{focus} focus"
+            pools += [
+                replace(e, when=switch.key, source=f"{e.source}, {label}")
+                for e in effects(plus, bases)
+                if e.focus == focus and e.when is None
+            ]
+            hurts += [
+                replace(d, when=switch.key, source=f"{d.source}, {label}")
+                for d in damage_effects(plus)
+                if d.focus == focus and d.when is None
+            ]
+    return pools, hurts
+
+
+@dataclass(frozen=True)
+class Worked:
+    """Everything that changes the character's pools, worked out from the sheet."""
+
+    effects: list[Effect]
+    hurts: list[DamageEffect]
+    switches: list[Switch]
+
+
+def work_out(sheet: Sheet, bases: Mapping[str, set[str]]) -> Worked:
+    found = [_switch(o, a, sheet) for o in owners(sheet) for a in actives(o.entry)]
+    pools, hurts = effects(sheet, bases), damage_effects(sheet)
+    more_pools, more_hurts = focus_effects(sheet, bases, found)
+    pools, hurts = pools + more_pools, hurts + more_hurts
+    for switch in found:
+        switch.changes = _changes(switch, pools, hurts)
+    return Worked(pools, hurts, found)
+
+
+def switches(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Switch]:
+    """The forms and powers on this sheet the Play View can switch on."""
+    return work_out(Sheet.read(rows, rule_set), technique_bases(rule_set)).switches
 
 
 def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
@@ -552,10 +903,10 @@ def other_notes(found: Sequence[Effect]) -> list[str]:
 
 def reference(rows: Sequence[SheetRow], rule_set: RuleSetData, blood_per_turn: int) -> Reference:
     sheet = Sheet.read(rows, rule_set)
-    bases = technique_bases(rule_set)
-    found = effects(sheet, bases)
+    worked = work_out(sheet, technique_bases(rule_set))
+    found = worked.effects
     return Reference(
-        pools=pools(sheet, found, blood_per_turn, damage_effects(sheet)),
+        pools=pools(sheet, found, blood_per_turn, worked.hurts, worked.switches),
         disciplines=disciplines(sheet),
         other_powers=[
             OtherPower(

@@ -6,6 +6,7 @@ import type { RosterEntry } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
+import { formsOn, healthMost } from "./powers";
 import { findPins, loadScene, pin, saveScene, unpin } from "./scene";
 import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracker";
 import { usePlay } from "./usePlay";
@@ -212,7 +213,7 @@ function Counter({
 
 function HealthRow({ view, damage }: { view: Shown; damage: (kind: Damage, amount: number) => void }) {
   const marks = view.health.marks;
-  const total = view.health.levels.reduce((sum, l) => sum + l.boxes, 0);
+  const total = healthMost(view);
   const has = (kind: Damage) => marks.includes(kind);
   return (
     <div>
@@ -288,6 +289,12 @@ function SceneCard({ characterId, onRemove }: { characterId: string; onRemove: (
             {shown.kind === "npc" ? "NPC" : shown.player_name}
             {shown.clan ? ` · ${shown.clan}` : ""}
           </p>
+          {/* The form they are in (issue #200), switched on the full Play View. */}
+          {formsOn(shown).map((f) => (
+            <span key={f.key} className="mt-1 inline-block rounded-full border border-gold/60 bg-gold/10 px-2 py-0.5 text-xs text-gold" title={f.notes.join(" ")}>
+              {f.name}
+            </span>
+          ))}
         </div>
         <SyncStatus sync={sync} />
       </header>

@@ -125,14 +125,14 @@ function Row({ modifier, pools, modifiers }: { modifier: PoolModifier; pools: Te
   );
 }
 
-/** The player's own modifiers to the pools: on ones first, off ones listed below, ready to switch on. */
+/** "Your own": the player's own modifiers to the pools, on ones first, off ones listed below, ready to switch on. */
 export function ModifiersPanel({ pools, modifiers }: { pools: TestPool[]; modifiers: ReturnType<typeof useModifiers> }) {
   const { add, change, remove } = modifiers;
   const on = modifiers.modifiers.filter((m) => m.on);
   const off = modifiers.modifiers.filter((m) => !m.on);
   return (
-    <section className="rounded-lg border border-ash bg-dusk p-3" aria-label="Your modifiers">
-      <h2 className="mb-2 text-base text-gold">Your modifiers</h2>
+    <div className="border-t border-ash pt-2" role="group" aria-label="Your own">
+      <h3 className="mb-1 text-xs tracking-wide text-mist uppercase">Your own</h3>
       {modifiers.modifiers.length === 0 && <p className="text-sm text-mist">Note a bonus or penalty from a merit, flaw, power, equipment or the scene. Switch it on while it counts.</p>}
       <ul className="divide-y divide-ash/60">
         {on.map((m) => (
@@ -141,7 +141,7 @@ export function ModifiersPanel({ pools, modifiers }: { pools: TestPool[]; modifi
       </ul>
       {off.length > 0 && (
         <>
-          <h3 className="mt-2 text-xs tracking-wide text-mist uppercase">Switched off</h3>
+          <h4 className="mt-2 text-xs tracking-wide text-mist uppercase">Switched off</h4>
           <ul className="divide-y divide-ash/60">
             {off.map((m) => (
               <Row key={m.id} modifier={m} pools={pools} modifiers={modifiers} />
@@ -151,6 +151,6 @@ export function ModifiersPanel({ pools, modifiers }: { pools: TestPool[]; modifi
       )}
       <ModifierForm initial={EMPTY} pools={pools} busy={add.isPending} submit={(fields) => add.mutateAsync(fields)} />
       <ErrorText error={add.error ?? change.error ?? remove.error} />
-    </section>
+    </div>
   );
 }

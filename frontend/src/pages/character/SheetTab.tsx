@@ -45,6 +45,7 @@ import {
   useSpecializations,
 } from "./Specializations";
 import { RetainersPanel } from "./Retainers";
+import { PowerChoices } from "./PowerChoices";
 import { InfluenceEffects } from "./InfluenceEffects";
 
 function useSheet(characterId: string) {
@@ -469,6 +470,9 @@ export function SheetTab({
                                   character={character}
                                   merits={[...new Set(s.traits.filter((x) => x.category === "merits" && x.rating !== 0).map((x) => x.name))]}
                                 />
+                              ),
+                              !inCart(t) && t.category === "disciplines" && (
+                                <PowerChoices key={`${t.id}/choices`} characterId={character.id} discipline={t.name} />
                               ),
                               kindOf(t) && (
                                 <SpecializationRow

@@ -150,6 +150,12 @@ class LogEntryOut(BaseModel):
     influence: InfluenceSpendOut | None = None
 
 
+class PowerOut(reference.Switch):
+    """A form or power the character has, and whether it is on in this game."""
+
+    on: bool
+
+
 class GameOut(BaseModel):
     id: uuid.UUID
     number: int
@@ -184,6 +190,8 @@ class PlayView(BaseModel):
     # much blood, rather than 15 for 2 (MET: VtM core, p. 102).
     herd: int = 0
     blood: Tracker
+    # The most Blood with nothing switched on (Blood of Potency raises it).
+    blood_usual: int = 0
     # Blood started at half: the character fed short last downtime.
     half_blood: bool = False
     willpower: Tracker
@@ -192,6 +200,10 @@ class PlayView(BaseModel):
     beast: Tracker
     derangements: Derangements
     expendables: list[ExpendableOut]
+    # Forms and powers in use (issue #200): those the sheet has, on or off. The
+    # health tracker gains the wound levels of those on, after the sheet's own in
+    # each category; `blood_per_turn` and `blood_usual` are without them.
+    powers: list[PowerOut] = []
     # What the character can do with each type of influence it has, for the
     # details of a spend. Empty when there is no troupe to log spends in.
     influence: list[InfluenceStandingOut] = []
@@ -349,6 +361,8 @@ def log_out(
     undone = {e.undoes_id for e in events if e.kind == "undo"}
     actors = names(db, {e.actor_id for e in events})
     spends = spends_out(db, play_influence.entries(db, by_id))
+    # What switching a form or power also did: "out of flight form".
+    said = play.replay(limits, events).said
 
     def target(event: PlayEvent) -> PlayEvent | None:
         return by_id.get(event.undoes_id) if event.undoes_id else None
@@ -365,7 +379,10 @@ def log_out(
             text=spend.text
             if (spend := spends.get(event.id))
             else play.describe(
-                event, limits, by_id.get(event.undoes_id) if event.undoes_id else None
+                event,
+                limits,
+                by_id.get(event.undoes_id) if event.undoes_id else None,
+                said.get(event.id, ()),
             ),
             note=event.note,
             happened_at=event.happened_at,
@@ -468,7 +485,10 @@ def play_view(db: Session, character: Character) -> PlayView:
             ),
             default=0,
         ),
-        blood=Tracker(value=state["blood"], most=limits.blood, start=limits.starting_blood),
+        blood=Tracker(
+            value=state["blood"], most=limits.blood_most(state["on"]), start=limits.starting_blood
+        ),
+        blood_usual=limits.blood,
         half_blood=limits.half_blood,
         willpower=Tracker(value=state["willpower"], most=limits.willpower, start=limits.willpower),
         health=Health(
@@ -511,6 +531,7 @@ def play_view(db: Session, character: Character) -> PlayView:
             )
             for e in limits.expendables
         ],
+        powers=[PowerOut(**s.model_dump(), on=s.key in state["on"]) for s in limits.switches],
         influence=[standing_out(s) for s in play_influence.standings(db, character)],
         game=game_out(db, game, events) if game else None,
         log=log_out(db, character, limits, events),
@@ -787,12 +808,16 @@ def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
                 game_number=game.number if game else None,
                 taps=sum(1 for e in events if e.kind == "change"),
                 last_tap_at=max((e.happened_at for e in events), default=None),
-                blood=Tracker(value=state["blood"], most=limits.blood, start=limits.starting_blood),
+                blood=Tracker(
+                    value=state["blood"],
+                    most=limits.blood_most(state["on"]),
+                    start=limits.starting_blood,
+                ),
                 willpower=Tracker(
                     value=state["willpower"], most=limits.willpower, start=limits.willpower
                 ),
                 health_marked=len(state["health"]),
-                health_boxes=limits.health_boxes,
+                health_boxes=len(limits.boxes(state["on"])),
             )
         )
     return found

@@ -10,6 +10,8 @@ import { offered, reachNote, TYPE_NAMES } from "../../influence";
 import { Derangements, showsDerangements } from "./Derangements";
 import { Feed, FeedButton } from "./Feed";
 import { Frenzy } from "./Frenzy";
+import { bloodPerTurn, boxes, healthMost } from "./powers";
+import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Sync } from "./usePlay";
@@ -84,8 +86,9 @@ export function PlayPage() {
   return (
     <PlayShell characterId={characterId} sync={sync} awake={awake} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
+      <PowersBanner powers={shown.powers} tap={tap} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
-      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} />)}
+      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} tap={tap} />)}
       {tab === "tracker" && (
         <>
           <div className="grid gap-3 md:grid-cols-2">
@@ -94,7 +97,7 @@ export function PlayPage() {
               tracker="blood"
               value={shown.blood.value}
               most={shown.blood.most}
-              hint={`${shown.blood_per_turn} a turn${shown.half_blood ? " · Half Blood: fed short last downtime" : ""}`}
+              hint={`${bloodPerTurn(shown)} a turn${shown.half_blood ? " · Half Blood: fed short last downtime" : ""}`}
               record={record}
               extra={<FeedButton onClick={() => setFeeding(true)} />}
             />
@@ -241,7 +244,7 @@ export function SyncStatus({ sync }: { sync: Sync }) {
 }
 
 function Identity({ view }: { view: PlayView }) {
-  const facts = [view.clan, view.sect, view.generation ? `Generation ${view.generation}` : null, `${view.blood_per_turn} blood a turn`].filter(Boolean);
+  const facts = [view.clan, view.sect, view.generation ? `Generation ${view.generation}` : null, `${bloodPerTurn(view)} blood a turn`].filter(Boolean);
   return (
     <section className="flex items-end justify-between gap-3">
       <div>
@@ -362,44 +365,51 @@ function BoxTracker({
   );
 }
 
-/** Healthy, Injured and Incapacitated boxes, filled in the order damage came. */
+/**
+ * Healthy, Injured and Incapacitated boxes, filled in the order damage came. A
+ * form's extra levels follow the sheet's own, outlined in gold, and go (with the
+ * damage in them) when the form ends.
+ */
 function HealthTracker({ view, record }: { view: PlayView; record: RecordTap }) {
   const marks = view.health.marks;
-  const total = view.health.levels.reduce((sum, l) => sum + l.boxes, 0);
-  let offset = 0;
+  const total = healthMost(view);
+  const all = boxes(view).map((box, i) => ({ ...box, mark: marks[i] }));
   const has = (kind: Damage) => marks.includes(kind);
   const damage = (kind: Damage, amount: number) =>
     record({ tracker: "health", amount, damage: kind, label: amount > 0 ? `${kind} damage` : `heal ${kind}` });
+  const extra = view.powers.filter((p) => p.on && p.health.length > 0);
   return (
     <Panel title="Health">
       <ul className="flex flex-col gap-2">
-        {view.health.levels.map((level) => {
-          const start = offset;
-          offset += level.boxes;
-          return (
-            <li key={level.name} className="flex items-center justify-between gap-2">
-              <span className="w-28 text-sm">{level.name}</span>
-              <span className="flex flex-1 flex-wrap justify-end gap-1.5">
-                {Array.from({ length: level.boxes }, (_, i) => {
-                  const mark = marks[start + i];
-                  return (
-                    <span
-                      key={i}
-                      aria-label={mark ? `${mark} damage` : "unmarked"}
-                      className={cx(
-                        "grid h-9 w-9 place-items-center rounded-md border text-lg leading-none",
-                        mark === "aggravated" ? "border-blood bg-blood text-parchment" : mark === "normal" ? "border-mist bg-ash text-parchment" : "border-ash bg-night",
-                      )}
-                    >
-                      {mark === "aggravated" ? "✕" : mark === "normal" ? "/" : ""}
-                    </span>
-                  );
-                })}
-              </span>
-            </li>
-          );
-        })}
+        {view.health.levels.map((level) => (
+          <li key={level.name} className="flex items-center justify-between gap-2">
+            <span className="w-28 text-sm">{level.name}</span>
+            <span className="flex flex-1 flex-wrap justify-end gap-1.5">
+              {all
+                .filter((b) => b.level === level.name)
+                .map((b, i) => (
+                  <span
+                    key={i}
+                    title={b.from ? `From ${b.from.name}` : undefined}
+                    aria-label={`${b.mark ? `${b.mark} damage` : "unmarked"}${b.from ? ", from the form" : ""}`}
+                    className={cx(
+                      "grid h-9 w-9 place-items-center rounded-md border text-lg leading-none",
+                      b.mark === "aggravated" ? "border-blood bg-blood text-parchment" : b.mark === "normal" ? "border-mist bg-ash text-parchment" : "border-ash bg-night",
+                      b.from && "border-dashed outline-2 outline-offset-1 outline-gold/70 outline-dashed",
+                    )}
+                  >
+                    {b.mark === "aggravated" ? "✕" : b.mark === "normal" ? "/" : ""}
+                  </span>
+                ))}
+            </span>
+          </li>
+        ))}
       </ul>
+      {extra.map((p) => (
+        <p key={p.key} className="mt-2 text-xs text-gold">
+          {p.health.map((h) => `+${h.boxes} ${h.level}`).join(", ")} from {p.name}: they go when it ends, with any damage in them.
+        </p>
+      ))}
       {incapacitated(view) && (
         <p className="mt-2 rounded-md border border-blood/60 bg-blood/15 px-3 py-2 text-sm">
           {view.health.stamina_focus ? "Incapacitated, but a Stamina focus spares you the penalty." : "Incapacitated characters lose their simple action."}
