@@ -480,11 +480,13 @@ function SceneCard({ characterId, back, onRemove }: { characterId: string; back:
         </div>
         <SyncStatus sync={sync} />
       </header>
-      <Counter title="Blood" value={shown.blood.value} most={shown.blood.most} fill="border-blood bg-blood" onChange={(n) => change("blood", n)} />
+      {/* A ghoul's spendable Blood is its vitae; the human Blood beside it can't be spent. */}
+      <Counter title={shown.vitae ? "Vitae" : "Blood"} value={shown.blood.value} most={shown.blood.most} fill="border-blood bg-blood" onChange={(n) => change("blood", n)} />
+      {shown.vitae && <p className="-mt-2 text-xs text-mist">{shown.vitae.human} human Blood, which can't be spent</p>}
       <Counter title="Willpower" value={shown.willpower.value} most={shown.willpower.most} fill="border-gold/70 bg-gold/70" onChange={(n) => change("willpower", n)} />
       <HealthRow view={shown} damage={(kind, amount) => change("health", amount, kind)} />
       {reference && <PoolsGlance pools={reference.pools} willpower={willpower} modifiers={modifiers.modifiers} on={on} />}
-      <Counter title="Beast traits" value={shown.beast.value} most={shown.beast.most} fill="border-gold/70 bg-gold/70" spendIsUp onChange={(n) => change("beast", n)} />
+      {shown.panels.beast && <Counter title="Beast traits" value={shown.beast.value} most={shown.beast.most} fill="border-gold/70 bg-gold/70" spendIsUp onChange={(n) => change("beast", n)} />}
       <div className="flex flex-wrap items-center gap-1.5 border-t border-ash pt-2">
         <Button
           variant="secondary"

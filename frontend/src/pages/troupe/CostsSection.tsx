@@ -5,6 +5,7 @@ import type { CostCategoryOut, CostOut, CostsOut } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { pageText } from "./bookPage";
+import { useHouseSplat } from "./HouseSplat";
 import { flat, overlaps, parseTable, previewRatings, priceAt, SCHEMES } from "./costs";
 import type { Pricing, Scheme } from "./costs";
 
@@ -29,12 +30,13 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
   const [editing, setEditing] = useState<Editing | null>(null);
   const [onlyOurs, setOnlyOurs] = useState(false);
   const [query, setQuery] = useState("");
+  const { splat, picker } = useHouseSplat(troupeId);
   const costs = useQuery({
-    queryKey: ["costs", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/costs", { params: { path: { troupe_id: troupeId } } })),
+    queryKey: ["costs", troupeId, splat],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/costs", { params: { path: { troupe_id: troupeId }, query: { splat } } })),
   });
   const remove = useAction((id: string) =>
-    unwrap(api.DELETE("/api/troupes/{troupe_id}/costs/{cost_id}", { params: { path: { troupe_id: troupeId, cost_id: id } } })),
+    unwrap(api.DELETE("/api/troupes/{troupe_id}/costs/{cost_id}", { params: { path: { troupe_id: troupeId, cost_id: id }, query: { splat } } })),
   );
   if (costs.isPending) return <Loading />;
   if (costs.error) return <ErrorText error={costs.error} />;
@@ -56,6 +58,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
 
   return (
     <div className="flex flex-col gap-6">
+      {picker}
       <Card title="How costs work">
         <p className="text-sm">
           Each price below comes from the rule set, with the book page where it names one trait. When several could
@@ -69,7 +72,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
       </Card>
 
       {editing && (
-        <PriceEditor key={JSON.stringify(editing)} troupeId={troupeId} data={costs.data} editing={editing} onClose={() => setEditing(null)} />
+        <PriceEditor key={JSON.stringify(editing)} troupeId={troupeId} splat={splat} data={costs.data} editing={editing} onClose={() => setEditing(null)} />
       )}
 
       <Card
@@ -164,7 +167,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
   );
 }
 
-function PriceEditor({ troupeId, data, editing, onClose }: { troupeId: string; data: CostsOut; editing: Editing; onClose: () => void }) {
+function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: string; splat: string; data: CostsOut; editing: Editing; onClose: () => void }) {
   const start = editing.kind === "new" ? null : editing.cost;
   const [category, setCategory] = useState(start?.category ?? data.categories[0]?.key ?? "");
   const [trait, setTrait] = useState(start?.trait ?? "");
@@ -175,8 +178,8 @@ function PriceEditor({ troupeId, data, editing, onClose }: { troupeId: string; d
   const cat = data.categories.find((c) => c.key === category);
   const catalogue = useQuery({
     // The rule set's own catalogue, for the book ratings of merits and flaws.
-    queryKey: ["catalogue", "vampire", null],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
+    queryKey: ["catalogue", splat, null],
+    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: {} } })),
     enabled: editing.kind === "new",
   });
   const traits = (catalogue.data?.traits ?? []).filter((t) => t.category === category).map((t) => t.name);
@@ -194,14 +197,14 @@ function PriceEditor({ troupeId, data, editing, onClose }: { troupeId: string; d
     if (editing.kind === "change") {
       await unwrap(
         api.PUT("/api/troupes/{troupe_id}/costs/{cost_id}", {
-          params: { path: { troupe_id: troupeId, cost_id: editing.cost.id! } },
+          params: { path: { troupe_id: troupeId, cost_id: editing.cost.id! }, query: { splat } },
           body,
         }),
       );
     } else {
       await unwrap(
         api.POST("/api/troupes/{troupe_id}/costs", {
-          params: { path: { troupe_id: troupeId } },
+          params: { path: { troupe_id: troupeId }, query: { splat } },
           body: { ...body, category, trait: trait || null, condition: start?.condition ?? null },
         }),
       );

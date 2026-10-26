@@ -6,6 +6,7 @@ import type { StartingCategoryOut, StartingRule } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { DiablerieFlaws } from "./DiablerieFlaws";
+import { useHouseSplat } from "./HouseSplat";
 import { XpRangeCard } from "./XpRange";
 
 /**
@@ -14,9 +15,11 @@ import { XpRangeCard } from "./XpRange";
  * for characters built for this troupe or homed in it while still being built.
  */
 export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+  // Starting points are kept for each splat; the rest of this page is the troupe's.
+  const { splat, picker } = useHouseSplat(troupeId);
   const starting = useQuery({
-    queryKey: ["starting", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/creation", { params: { path: { troupe_id: troupeId } } })),
+    queryKey: ["starting", troupeId, splat],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/creation", { params: { path: { troupe_id: troupeId }, query: { splat } } })),
   });
   if (starting.isPending) return <Loading />;
   if (starting.error) return <ErrorText error={starting.error} />;
@@ -33,9 +36,10 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
         </p>
       </Card>
       <Card title="Starting points">
+        {picker && <div className="mb-2">{picker}</div>}
         <ul className="divide-y divide-ash">
           {starting.data.map((c) => (
-            <CategoryRow key={c.key} troupeId={troupeId} category={c} canEdit={canEdit} />
+            <CategoryRow key={c.key} troupeId={troupeId} splat={splat} category={c} canEdit={canEdit} />
           ))}
         </ul>
       </Card>
@@ -211,9 +215,9 @@ function StartingBlood({ troupeId, canEdit }: { troupeId: string; canEdit: boole
   );
 }
 
-function CategoryRow({ troupeId, category, canEdit }: { troupeId: string; category: StartingCategoryOut; canEdit: boolean }) {
+function CategoryRow({ troupeId, splat, category, canEdit }: { troupeId: string; splat: string; category: StartingCategoryOut; canEdit: boolean }) {
   const [editing, setEditing] = useState(false);
-  const path = { params: { path: { troupe_id: troupeId, category: category.key } } };
+  const path = { params: { path: { troupe_id: troupeId, category: category.key }, query: { splat } } };
   const reset = useAction(() => unwrap(api.DELETE("/api/troupes/{troupe_id}/creation/{category}", path)));
   return (
     <li className="py-2.5">
@@ -237,14 +241,14 @@ function CategoryRow({ troupeId, category, canEdit }: { troupeId: string; catego
         </span>
       </div>
       <ErrorText error={reset.error} />
-      {editing && <StartingEditor troupeId={troupeId} category={category} onClose={() => setEditing(false)} />}
+      {editing && <StartingEditor troupeId={troupeId} splat={splat} category={category} onClose={() => setEditing(false)} />}
     </li>
   );
 }
 
 type Row = { rating: string; picks: string; points: string; restriction: string | null; when: StartingRule["when"]; when_text: string | null };
 
-function StartingEditor({ troupeId, category, onClose }: { troupeId: string; category: StartingCategoryOut; onClose: () => void }) {
+function StartingEditor({ troupeId, splat, category, onClose }: { troupeId: string; splat: string; category: StartingCategoryOut; onClose: () => void }) {
   const points = category.book.some((r) => r.points !== null);
   // Start from the rules as played, so the book's restrictions and conditions carry over.
   const [rows, setRows] = useState<Row[]>(
@@ -261,7 +265,7 @@ function StartingEditor({ troupeId, category, onClose }: { troupeId: string; cat
   const save = useAction(async () => {
     await unwrap(
       api.PUT("/api/troupes/{troupe_id}/creation/{category}", {
-        params: { path: { troupe_id: troupeId, category: category.key } },
+        params: { path: { troupe_id: troupeId, category: category.key }, query: { splat } },
         body: {
           rules: rows.map((r) =>
             points

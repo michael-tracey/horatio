@@ -45,6 +45,7 @@ from horatio.models import (
     XpEntry,
 )
 from horatio.rules.checks import Violation
+from horatio.rules.splats import SPLATS
 from horatio.sheets import conflict
 from horatio.trait_exceptions import checks_of
 
@@ -164,6 +165,9 @@ def net_spent(db: Session, character: Character, definition_id: uuid.UUID, detai
 
 def can_have(character: Character) -> str | None:
     """Why a diablerie cannot be on this character's sheet, if it cannot."""
+    splat = SPLATS[character.splat]
+    if not splat.diablerie:
+        return f"A {splat.label.lower()} cannot commit diablerie."
     if character.kind != "pc":
         return "An NPC is its staff's to build as they like; set its Generation directly."
     if character.home_troupe_id is None:

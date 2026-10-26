@@ -89,7 +89,8 @@ def by_short_id(db: Session, troupe_id: uuid.UUID, text: str) -> InfluenceEntry 
 
 def troupe_rules(db: Session, troupe_id: uuid.UUID) -> TroupeRules:
     """The rules the troupe's influence actions come from. Influence is a Vampire
-    rule, as the rest of Horatio's troupe rules are today."""
+    rule, and a ghoul's rule set takes the vampire's catalogue and action kinds,
+    so one troupe log serves both."""
     return read_troupe_rules(db, "vampire", troupe_id)
 
 

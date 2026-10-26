@@ -4442,6 +4442,44 @@
         "title": "DomitorIn",
         "type": "object"
       },
+      "DomitorLine": {
+        "description": "A ghoul's domitor, and the clan weakness it plays (MET: VtM core p. 297).",
+        "properties": {
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "weakness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness"
+          }
+        },
+        "required": [
+          "name",
+          "clan",
+          "weakness"
+        ],
+        "title": "DomitorLine",
+        "type": "object"
+      },
       "DomitorOut": {
         "properties": {
           "character_id": {
@@ -10856,6 +10894,16 @@
             "title": "Disciplines",
             "type": "array"
           },
+          "domitor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DomitorLine"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "identities": {
             "default": [],
             "items": {
@@ -11214,10 +11262,25 @@
             ],
             "title": "Sect"
           },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
           "stock": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/StockNpcOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vitae": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VitaeOut"
               },
               {
                 "type": "null"
@@ -12084,6 +12147,36 @@
         "title": "PrimaryPathOut",
         "type": "object"
       },
+      "PrintedBlood": {
+        "description": "The Blood boxes to print: `most` that can be spent, `per_turn` a turn. A\nghoul's are its vitae, and the rest of its `pool` is human Blood, which cannot\nbe spent (MET: VtM core p. 297); `pool` is None for a vampire's.",
+        "properties": {
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "per_turn": {
+            "title": "Per Turn",
+            "type": "integer"
+          },
+          "pool": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pool"
+          }
+        },
+        "required": [
+          "most",
+          "per_turn"
+        ],
+        "title": "PrintedBlood",
+        "type": "object"
+      },
       "PrintedSheet": {
         "properties": {
           "accepted_at": {
@@ -12109,6 +12202,9 @@
             ],
             "title": "Accepted By"
           },
+          "blood": {
+            "$ref": "#/components/schemas/PrintedBlood"
+          },
           "character_name": {
             "title": "Character Name",
             "type": "string"
@@ -12120,6 +12216,17 @@
             },
             "title": "Diablerie",
             "type": "array"
+          },
+          "domitor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domitor"
           },
           "home": {
             "title": "Home",
@@ -12227,6 +12334,7 @@
           "accepted_at",
           "accepted_by",
           "diablerie",
+          "blood",
           "traits",
           "retainers",
           "pools",
@@ -17107,6 +17215,17 @@
             "title": "Home",
             "type": "boolean"
           },
+          "human_blood": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Human Blood"
+          },
           "kind": {
             "title": "Kind",
             "type": "string"
@@ -17753,6 +17872,48 @@
           "note"
         ],
         "title": "VisibleNote",
+        "type": "object"
+      },
+      "VitaeOut": {
+        "description": "A ghoul's Blood beside its vitae, which is `blood` (MET: VtM core p. 297): `pool`\nin all, the rest human Blood, which cannot be spent. Vitae refills only by\ndrinking it (\"drank\" taps); without a drink for `days` days, the ghoul ages 10\nyears a day.",
+        "properties": {
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "human": {
+            "title": "Human",
+            "type": "integer"
+          },
+          "human_start": {
+            "title": "Human Start",
+            "type": "integer"
+          },
+          "last_drank_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Drank At"
+          },
+          "pool": {
+            "title": "Pool",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pool",
+          "human",
+          "human_start",
+          "last_drank_at",
+          "days"
+        ],
+        "title": "VitaeOut",
         "type": "object"
       },
       "WaitingLine": {
@@ -27816,6 +27977,7 @@
     },
     "/api/troupes/{troupe_id}/allowances": {
       "get": {
+        "description": "The downtime actions characters of `splat` get in this troupe.",
         "operationId": "list_allowances_api_troupes__troupe_id__allowances_get",
         "parameters": [
           {
@@ -27825,6 +27987,16 @@
             "schema": {
               "format": "uuid",
               "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
               "type": "string"
             }
           }
@@ -27866,6 +28038,16 @@
             "schema": {
               "format": "uuid",
               "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
               "type": "string"
             }
           }
@@ -27931,6 +28113,16 @@
               "title": "Rule Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -27973,6 +28165,16 @@
             "schema": {
               "format": "uuid",
               "title": "Rule Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
               "type": "string"
             }
           }
@@ -28700,6 +28902,7 @@
     },
     "/api/troupes/{troupe_id}/costs": {
       "get": {
+        "description": "The prices characters of `splat` pay in this troupe.",
         "operationId": "list_costs_api_troupes__troupe_id__costs_get",
         "parameters": [
           {
@@ -28709,6 +28912,16 @@
             "schema": {
               "format": "uuid",
               "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
               "type": "string"
             }
           }
@@ -28750,6 +28963,16 @@
             "schema": {
               "format": "uuid",
               "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
               "type": "string"
             }
           }
@@ -28815,6 +29038,16 @@
               "title": "Cost Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -28859,6 +29092,16 @@
               "title": "Cost Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -28901,6 +29144,7 @@
     },
     "/api/troupes/{troupe_id}/creation": {
       "get": {
+        "description": "What new characters of `splat` start with in this troupe.",
         "operationId": "list_starting_api_troupes__troupe_id__creation_get",
         "parameters": [
           {
@@ -28910,6 +29154,16 @@
             "schema": {
               "format": "uuid",
               "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
               "type": "string"
             }
           }
@@ -28968,6 +29222,16 @@
               "title": "Category",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -29016,6 +29280,16 @@
             "required": true,
             "schema": {
               "title": "Category",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
               "type": "string"
             }
           }
@@ -31850,6 +32124,7 @@
     },
     "/api/troupes/{troupe_id}/specializations": {
       "get": {
+        "description": "The troupe's lists for each kind of specialisation. They are the troupe's, for\nevery splat: a ghoul's kinds and catalogue are the vampire's.",
         "operationId": "troupe_kinds_api_troupes__troupe_id__specializations_get",
         "parameters": [
           {

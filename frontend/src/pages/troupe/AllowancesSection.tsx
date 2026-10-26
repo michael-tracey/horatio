@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { AllowanceOut, AllowancesOut } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { useHouseSplat } from "./HouseSplat";
 import { InfluenceLookback } from "./InfluenceLookback";
 
 /** An editor's target: a new trait rule, a rule set rule to replace, or a troupe rule to change. */
@@ -15,12 +16,13 @@ type Editing = { kind: "new" } | { kind: "replace"; rule: AllowanceOut } | { kin
  */
 export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const [editing, setEditing] = useState<Editing | null>(null);
+  const { splat, picker } = useHouseSplat(troupeId);
   const allowances = useQuery({
-    queryKey: ["allowances", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/allowances", { params: { path: { troupe_id: troupeId } } })),
+    queryKey: ["allowances", troupeId, splat],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/allowances", { params: { path: { troupe_id: troupeId }, query: { splat } } })),
   });
   const remove = useAction((id: string) =>
-    unwrap(api.DELETE("/api/troupes/{troupe_id}/allowances/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: id } } })),
+    unwrap(api.DELETE("/api/troupes/{troupe_id}/allowances/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: id }, query: { splat } } })),
   );
   if (allowances.isPending) return <Loading />;
   if (allowances.error) return <ErrorText error={allowances.error} />;
@@ -31,6 +33,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
 
   return (
     <div className="flex flex-col gap-6">
+      {picker}
       <Card title="How downtime actions work">
         <p className="text-sm">
           Each cycle, a character gets the base number of actions of each kind, and each trait below adds or takes away
@@ -43,7 +46,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
       </Card>
 
       {editing && (
-        <AllowanceEditor key={JSON.stringify(editing)} troupeId={troupeId} data={allowances.data} editing={editing} onClose={() => setEditing(null)} />
+        <AllowanceEditor key={JSON.stringify(editing)} troupeId={troupeId} splat={splat} data={allowances.data} editing={editing} onClose={() => setEditing(null)} />
       )}
 
       <Card
@@ -99,7 +102,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
   );
 }
 
-function AllowanceEditor({ troupeId, data, editing, onClose }: { troupeId: string; data: AllowancesOut; editing: Editing; onClose: () => void }) {
+function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: string; splat: string; data: AllowancesOut; editing: Editing; onClose: () => void }) {
   const start = editing.kind === "new" ? null : editing.rule;
   const [actionKind, setActionKind] = useState(start?.action_kind ?? data.action_kinds[0]?.key ?? "general");
   const [category, setCategory] = useState(start?.category ?? "flaws");
@@ -108,8 +111,8 @@ function AllowanceEditor({ troupeId, data, editing, onClose }: { troupeId: strin
   const [amount, setAmount] = useState(start?.amount.toString() ?? "-1");
   const [minRating, setMinRating] = useState(start?.min_rating.toString() ?? "1");
   const catalogue = useQuery({
-    queryKey: ["catalogue", "vampire", null],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
+    queryKey: ["catalogue", splat, null],
+    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: {} } })),
     enabled: editing.kind === "new",
   });
   const categories = (catalogue.data?.categories ?? []).filter((c) => c.rated && !c.derived);
@@ -120,12 +123,12 @@ function AllowanceEditor({ troupeId, data, editing, onClose }: { troupeId: strin
   const save = useAction(async () => {
     if (editing.kind === "change") {
       await unwrap(
-        api.PUT("/api/troupes/{troupe_id}/allowances/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: editing.rule.id! } }, body }),
+        api.PUT("/api/troupes/{troupe_id}/allowances/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: editing.rule.id! }, query: { splat } }, body }),
       );
     } else {
       await unwrap(
         api.POST("/api/troupes/{troupe_id}/allowances", {
-          params: { path: { troupe_id: troupeId } },
+          params: { path: { troupe_id: troupeId }, query: { splat } },
           body: { ...body, action_kind: actionKind, category: everyone ? null : category, trait: everyone ? null : trait },
         }),
       );

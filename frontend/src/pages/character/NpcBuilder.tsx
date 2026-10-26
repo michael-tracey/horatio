@@ -6,6 +6,8 @@ import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/t
 import { Badge, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction, useUnavailable } from "../../hooks";
 import { PrintAndBadge } from "./Badge";
+import { DomitorCard } from "./Domitor";
+import { useHasDomitor } from "./splats";
 import { CUSTOM_ARCHETYPE, identityChoices } from "./creation/logic";
 import { MORALITY, heldMorality, moralityLabel, moralityOptions, moveMorality, willpowerAndHealth } from "./morality";
 
@@ -49,6 +51,8 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
   // What the NPC's kind leaves off the Vampire sheet: a mortal has no Generation or Humanity.
   const kinds = useQuery({ queryKey: ["npc-kinds"], queryFn: () => unwrap(api.GET("/api/npc-kinds")), staleTime: Infinity });
   const panels = kinds.data?.find((k) => k.key === character.npc_kind)?.panels;
+  // A ghoul NPC takes its clan from its domitor, which staff set here instead.
+  const hasDomitor = useHasDomitor(character.splat);
   const set = useAction((body: Change) => unwrap(api.PUT("/api/characters/{character_id}/npc/ratings", { ...path, body: { ...body, detail: "" } })));
 
   if (sheet.isPending || catalogue.isPending) return <Loading />;
@@ -57,7 +61,8 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
       <div className="flex flex-col gap-4">
-        <Identity sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
+        {hasDomitor && <DomitorCard character={character} sheet={sheet.data} catalogue={catalogue.data} canChange />}
+        <Identity sheet={sheet.data} catalogue={catalogue.data} withoutClan={!!hasDomitor} onChange={(c) => set.mutate(c)} />
         <Attributes sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         {SECTIONS.map((section) => (
           <Section key={section.title} {...section} noGeneration={panels?.generation === false} character={character} sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
@@ -88,8 +93,8 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
   );
 }
 
-function Identity({ sheet, catalogue, onChange }: { sheet: SheetOut; catalogue: CatalogueOut; onChange: (c: Change) => void }) {
-  const choices = identityChoices(catalogue, sheet);
+function Identity({ sheet, catalogue, withoutClan, onChange }: { sheet: SheetOut; catalogue: CatalogueOut; withoutClan: boolean; onChange: (c: Change) => void }) {
+  const choices = identityChoices(catalogue, sheet).filter((c) => !(withoutClan && c.key === "clan"));
   return (
     <Card title="Who">
       <div className="grid gap-3 sm:grid-cols-2">

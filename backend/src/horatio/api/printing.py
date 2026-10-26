@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from horatio import (
     diablerie,
+    domitors,
     house_traits,
     pictures,
     play,
@@ -47,6 +48,16 @@ class PrintedTrait(BaseModel):
     house: str | None = None
 
 
+class PrintedBlood(BaseModel):
+    """The Blood boxes to print: `most` that can be spent, `per_turn` a turn. A
+    ghoul's are its vitae, and the rest of its `pool` is human Blood, which cannot
+    be spent (MET: VtM core p. 297); `pool` is None for a vampire's."""
+
+    most: int
+    per_turn: int
+    pool: int | None = None
+
+
 class PrintedSheet(BaseModel):
     character_name: str
     player_name: str
@@ -65,6 +76,9 @@ class PrintedSheet(BaseModel):
     accepted_by: str | None
     # When the character committed diablerie (p. 306 asks for the date on the sheet).
     diablerie: list[date]
+    blood: PrintedBlood
+    # A ghoul's domitor, by name; None for a vampire.
+    domitor: str | None = None
     traits: list[PrintedTrait]
     # Its Retainers, listed under the background.
     retainers: list[RetainerOut]
@@ -151,6 +165,8 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         for t in sorted(snapshot, key=lambda t: (order.get(t["category"], 999), t["name"]))
         if t["category"] in rule_set.categories
     ]
+    limits = play.limits(db, character)
+    domitor = domitors.domitor_info(db, character) if domitors.has_domitor(character) else None
     return PrintedSheet(
         character_name=character.name,
         player_name=(
@@ -167,13 +183,19 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         accepted_at=version.approved_at if version else None,
         accepted_by=db.get_one(User, version.approved_by).display_name if version else None,
         diablerie=[d.committed_on for d in diablerie.recorded(db, character)],
+        blood=PrintedBlood(
+            most=limits.blood,
+            per_turn=limits.blood_per_turn,
+            pool=limits.vitae.pool if limits.vitae else None,
+        ),
+        domitor=domitor.name if domitor else None,
         traits=traits,
         retainers=listed(db, retainers.read(db, character), None),
         identities=identities_out(db, character),
         pools=reference.reference(
             sheets.sheet_rows(db, character),
             sheets.rules_for(db, character).rule_set,
-            play.limits(db, character).blood_per_turn,
+            limits.blood_per_turn,
         ).pools,
         modifiers=modifiers_out(db, character, only_on=True),
         picture=pictures.picture_url(character.id, character.picture_id),

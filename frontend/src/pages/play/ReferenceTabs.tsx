@@ -94,6 +94,16 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
   }
   return (
     <div className="grid gap-3 md:grid-cols-2">
+      {/* A ghoul's domitor, whose clan it takes, and the weakness it plays for roleplay only (MET: VtM core p. 297). */}
+      {reference.domitor && (
+        <Panel title="Domitor">
+          <p className="text-sm text-parchment">
+            {reference.domitor.name}
+            {reference.domitor.clan && <span className="text-mist"> · {reference.domitor.clan}</span>}
+          </p>
+          {reference.domitor.weakness && <p className="mt-1 text-xs text-mist">Weakness: {reference.domitor.weakness}</p>}
+        </Panel>
+      )}
       {[...groups].map(([name, traits]) => (
         <Panel key={name} title={name}>
           <ul className="text-sm">

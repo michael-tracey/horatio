@@ -30,6 +30,17 @@ A Stock NPC (issue #215) has only two trackers, from its stat block
 (horatio.rules.stock): its kind's resource in Blood's place (Rage for a werewolf)
 and its health levels, as one track. It has no Willpower, Morality or Beast
 traits (MET: VTM p. 490), so taps on those change nothing.
+
+A splat's Blood and panels follow its properties (horatio.rules.splats.Splat).
+A ghoul's Blood is part vitae and part human (core p. 297): "blood" is its vitae,
+at most 5, spent 1 a turn; the rest of its 10 is human Blood, which no tap can
+spend. Vitae refills only by drinking: a "drank" tap adds vitae, turning human
+Blood to vitae when the pool is full, and is when the ghoul last drank. So vitae
+is not refilled by a reset, but carries from game to game as Derangement traits
+do, and each game starts the rest of the pool as human Blood, as spent vitae
+comes back as human Blood at 1 a day. A splat without the Beast has no Beast
+traits to tap, and a ghoul's clan weakness is roleplay only, so a Malkavian
+domitor's ghoul has no Derangement trait from it.
 """
 
 import uuid
@@ -53,7 +64,7 @@ from horatio.models import (
     User,
 )
 from horatio.rules.feeding import clan_family
-from horatio.rules.npc_kinds import Panels
+from horatio.rules.splats import SPLATS, Panels, Vitae, both
 
 # Most blood, and blood a turn, by Generation dots (MET: VTM pp. 100-101).
 BLOOD_BY_GENERATION = ((10, 1), (10, 1), (12, 2), (15, 3), (20, 4), (30, 5))
@@ -72,6 +83,8 @@ SWITCH = "power:"
 RETAINER = "retainer:"
 HEALTH_LEVELS = ("Healthy", "Injured", "Incapacitated")
 TRACKERS = ("blood", "willpower", "health", "morality", "beast", "derangements")
+# Drinking vitae, for a ghoul: +n adds that much vitae to "blood" (core p. 297).
+DRANK = "drank"
 DAMAGE = ("normal", "aggravated")
 # A Stock NPC's trackers: its kind's resource, kept as "blood", and its health
 # levels, one track of them (MET: VTM p. 490).
@@ -168,8 +181,10 @@ class Limits:
     blood_name: str = "Blood"
     # The fixed trackers the character has; a Stock NPC has no Willpower and so on.
     trackers: frozenset[str] = frozenset(TRACKERS)
-    # The Play View's panels for this character (horatio.rules.npc_kinds.Panels).
+    # The Play View's panels for this character (horatio.rules.splats.Panels).
     panels: Panels = Panels()
+    # A ghoul's Blood, part vitae ("blood") and part human; None for a vampire's.
+    vitae: Vitae | None = None
 
     def retainer_trackers(self) -> dict[str, int]:
         return {k: most for r in self.retainers for k, most in r.trackers().items()}
@@ -215,6 +230,8 @@ class Limits:
             "beast": BEAST_TRAITS,
             "derangements": DERANGEMENT_TRAITS,
         }
+        if tracker == DRANK:
+            return self.vitae.most if self.vitae else None
         if tracker in fixed:
             return fixed[tracker] if tracker in self.trackers else None
         if tracker.startswith(TEMPORARY):
@@ -226,9 +243,14 @@ class Limits:
     def least(self, tracker: str) -> int:
         return self.derangements_least if tracker == "derangements" else 0
 
+    def human_start(self) -> int:
+        """A ghoul's human Blood as a game starts: the rest of its pool."""
+        return self.vitae.pool - self.starting_blood if self.vitae else 0
+
     def start(self) -> dict[str, Any]:
         return {
             "blood": self.starting_blood,
+            "human": self.human_start(),
             "willpower": self.willpower,
             "health": [],
             "morality": self.morality,
@@ -243,6 +265,7 @@ class Limits:
     def name(self, tracker: str) -> str:
         names = {
             "blood": self.blood_name,
+            DRANK: "Drank vitae",
             "willpower": "Willpower",
             "health": "Health",
             "morality": self.morality_name or "Morality",
@@ -292,9 +315,14 @@ def temporary_id(tracker: str) -> uuid.UUID | None:
         return None
 
 
-def carries(tracker: str) -> bool:
-    """A tracker kept from game to game, through Reset."""
-    return tracker == "derangements" or tracker.startswith(TEMPORARY)
+def carries(tracker: str, vitae: bool = False) -> bool:
+    """A tracker kept from game to game, through Reset: Derangement traits, and a
+    ghoul's vitae, which only drinking refills."""
+    return (
+        tracker == "derangements"
+        or tracker.startswith(TEMPORARY)
+        or (vitae and tracker in ("blood", DRANK))
+    )
 
 
 def trackers_for(panels: Panels) -> frozenset[str]:
@@ -307,6 +335,7 @@ def trackers_for(panels: Panels) -> frozenset[str]:
 def known_tracker(tracker: str) -> bool:
     return (
         tracker in TRACKERS
+        or tracker == DRANK
         or tracker.startswith(("trait:", "counter:", RETAINER))
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or temporary_id(tracker) is not None
@@ -334,28 +363,69 @@ def carried(
     (or the next game, for None): where the game before it left them, which is
     every earlier game's taps on them, in order, as nothing clears them between
     games."""
+    value = least
+    held: dict[str, int] = {}
+    for tracker, amount in earlier_taps(db, character, game, ("derangements",), TEMPORARY):
+        if tracker == "derangements":
+            value = max(least, min(value + amount, DERANGEMENT_TRAITS))
+        else:
+            held[tracker] = max(0, min(held.get(tracker, 0) + amount, 1))
+    return value, held
+
+
+def earlier_taps(
+    db: Session,
+    character: Character,
+    game: PlayGame | None,
+    trackers: Sequence[str],
+    prefix: str | None = None,
+) -> list[tuple[str, int]]:
+    """Every change tap not undone on `trackers` (or on those starting `prefix`) in
+    the character's games before `game` (or before the next game, for None), in
+    the order they happened."""
     undo = aliased(PlayEvent)
+    which = PlayEvent.tracker.in_(trackers)
+    if prefix is not None:
+        which = which | PlayEvent.tracker.startswith(prefix)
     query = (
         select(PlayEvent.tracker, PlayEvent.amount)
         .join(PlayGame, PlayEvent.game_id == PlayGame.id)
         .where(
             PlayGame.character_id == character.id,
             PlayEvent.kind == "change",
-            (PlayEvent.tracker == "derangements") | PlayEvent.tracker.startswith(TEMPORARY),
+            which,
             ~select(undo.id).where(undo.undoes_id == PlayEvent.id).exists(),
         )
         .order_by(PlayGame.number, PlayEvent.happened_at, PlayEvent.id)
     )
     if game is not None:
         query = query.where(PlayGame.number < game.number)
-    value = least
-    held: dict[str, int] = {}
-    for tracker, amount in db.execute(query):
-        if tracker == "derangements":
-            value = max(least, min(value + amount, DERANGEMENT_TRAITS))
-        else:
-            held[tracker] = max(0, min(held.get(tracker, 0) + amount, 1))
-    return value, held
+    return [(tracker, amount) for tracker, amount in db.execute(query)]
+
+
+def carried_vitae(db: Session, character: Character, game: PlayGame | None, vitae: Vitae) -> int:
+    """A ghoul's vitae as `game` starts: full before its first game, then where the
+    games before left it, as only drinking refills it."""
+    value = vitae.most
+    for _, amount in earlier_taps(db, character, game, ("blood", DRANK)):
+        value = max(0, min(value + amount, vitae.most))
+    return value
+
+
+def last_drank(db: Session, character: Character) -> datetime | None:
+    """When the character last drank vitae, by its taps: a drink not undone."""
+    undo = aliased(PlayEvent)
+    return db.scalar(
+        select(func.max(PlayEvent.happened_at))
+        .join(PlayGame, PlayEvent.game_id == PlayGame.id)
+        .where(
+            PlayGame.character_id == character.id,
+            PlayEvent.kind == "change",
+            PlayEvent.tracker == DRANK,
+            PlayEvent.amount > 0,
+            ~select(undo.id).where(undo.undoes_id == PlayEvent.id).exists(),
+        )
+    )
 
 
 def derangement_flaws(rows: Sequence[sheets.SheetRow]) -> tuple[str, ...]:
@@ -401,6 +471,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     kind = npcs.kind_of(character) if character.npc_form == "sheeted" else None
     rows = sheets.sheet_rows(db, character)
     rule_set = sheets.rules_for(db, character).rule_set
+    splat = SPLATS[character.splat]
     ratings: dict[tuple[str, str], int] = {}
     for row in rows:
         key = (row.category.key, row.definition.name)
@@ -410,7 +481,9 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     blood, per_turn = BLOOD_BY_GENERATION[min(max(generation, 0), 5)]
     troupe = home_troupe(db, character)
     house = troupe.starting_blood if troupe is not None else None
-    panels = kind.panels if kind is not None else Panels()
+    # What its kind and splat leave off: a ghoul has no Beast, Humanity,
+    # Generation or Feed, whatever its kind (horatio.rules.splats.Splat.panels).
+    panels = both(kind.panels, splat.panels) if kind is not None else splat.panels
     blood_name = "Blood"
     if kind is not None and not kind.vampiric:
         # Its kind's resource stands in for Blood (MET: VTM ch. 12), from the kind
@@ -419,6 +492,10 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         resource = kind.resource
         generation, blood, per_turn, house = 0, resource.size, resource.per_turn, None
         blood_name = resource.name
+    # A ghoul's spendable Blood is its vitae, which carries from game to game.
+    vitae = splat.vitae
+    if vitae is not None:
+        blood, per_turn, house, blood_name = vitae.most, vitae.per_turn, None, "Vitae"
     path = next((r for r in rows if r.category.key == "paths"), None)
 
     expendables: list[Expendable] = []
@@ -469,13 +546,18 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     beast = game.beast_start if game is not None else character.beast_next_game
     half, beast = half and panels.feed, beast if panels.beast else 0
     usual = blood if house is None else min(house, blood)
-    least = 1 if malkavian(rows) else 0
+    starting = -(-blood // 2) if half else usual
+    if vitae is not None:
+        half, starting = False, carried_vitae(db, character, game, vitae)
+    # A Malkavian's Derangement trait is its clan weakness, which a ghoul plays
+    # for roleplay only.
+    least = 1 if splat.weakness and malkavian(rows) else 0
     traits, held = carried(db, character, game, least)
     return Limits(
         generation=generation,
         blood=blood,
         blood_per_turn=per_turn,
-        starting_blood=-(-blood // 2) if half else usual,
+        starting_blood=starting,
         half_blood=half,
         beast_start=min(beast, BEAST_TRAITS),
         willpower=ratings.get(("willpower_sources", "Willpower"), 0),
@@ -502,6 +584,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
             )
             for r in retainers.read(db, character)
         ),
+        vitae=vitae,
     )
 
 
@@ -593,6 +676,8 @@ def apply(
         before = state["held"].get(event.tracker, 0)
         state["held"][event.tracker] = max(0, min(before + event.amount, most))
         return before, state["held"][event.tracker]
+    if limits.vitae is not None and event.tracker in ("blood", DRANK):
+        return change_vitae(state, limits.vitae, event.amount)
     if event.tracker in TRACKERS:
         before = state[event.tracker]
         state[event.tracker] = max(limits.least(event.tracker), min(before + event.amount, most))
@@ -600,6 +685,17 @@ def apply(
     before = state["uses"].get(event.tracker, most)
     state["uses"][event.tracker] = max(0, min(before + event.amount, most))
     return before, state["uses"][event.tracker]
+
+
+def change_vitae(state: dict[str, Any], vitae: Vitae, amount: int) -> tuple[int, int]:
+    """Spend or drink a ghoul's vitae (core p. 297): never more than its most, and
+    drunk into a full pool it takes the place of human Blood. Human Blood is never
+    spent."""
+    before = state["blood"]
+    state["blood"] = max(0, min(before + amount, vitae.most))
+    human = state.setdefault("human", vitae.pool - before)
+    state["human"] = max(0, min(human, vitae.pool - state["blood"]))
+    return before, state["blood"]
 
 
 def in_order(events: Iterable[PlayEvent]) -> list[PlayEvent]:
@@ -668,6 +764,11 @@ def describe(
         return f"{text}: {', '.join(said)}" if said else text
     if event.tracker.startswith(TEMPORARY):
         return f"Temporary derangement {'added' if event.amount > 0 else 'removed'}: {name}"
+    if event.tracker == DRANK:
+        text = f"Drank {event.amount} vitae"
+        if event.before is not None and event.after is not None:
+            text += f": Vitae {event.before} → {event.after}"
+        return text
     if event.tracker == "health":
         verb = "took" if event.amount > 0 else "healed"
         text = f"Health: {verb} {abs(event.amount)} {event.damage or 'normal'}"
@@ -811,7 +912,8 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         g.id: g for g in db.scalars(select(PlayGame).where(PlayGame.character_id == character.id))
     }
     touched: dict[uuid.UUID, PlayGame] = {}
-    # The earliest game whose Derangement traits these taps change.
+    vitae = SPLATS[character.splat].vitae is not None
+    # The earliest game whose Derangement traits (or a ghoul's vitae) these taps change.
     carried: int | None = None
     latest = datetime.now(UTC) + CLOCK_SLACK
     for tap in taps:
@@ -856,12 +958,12 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
             play_influence.spend(db, character, actor, event, tap.influence)
         existing[tap.id] = (event, character.id)
         touched[game.id] = game
-        if carries((target or event).tracker):
+        if carries((target or event).tracker, vitae):
             carried = game.number if carried is None else min(carried, game.number)
     for game in touched.values():
         refresh(db, game, limits(db, character, game))
-    # Derangement traits carry from game to game, so a late tap in a game already
-    # over moves where each game after it started them.
+    # Derangement traits and a ghoul's vitae carry from game to game, so a late tap
+    # in a game already over moves where each game after it started them.
     if carried is not None:
         for game in games.values():
             if game.number > carried and game.id not in touched:

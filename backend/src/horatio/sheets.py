@@ -484,6 +484,7 @@ def check_context(
         tags=rules.rule_set.tags,
         domitor_clan=domitor.clan if domitor is not None else None,
         domitor_powers=domitor.powers if domitor is not None else None,
+        generation=SPLATS[character.splat].panels.generation,
     )
 
 

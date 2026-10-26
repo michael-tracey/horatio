@@ -10,6 +10,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     kind: "pc",
     blood_name: "Blood",
     panels: { beast: true, frenzy: true, morality: true, generation: true, feed: true },
+    splat: "vampire",
     clan: "Brujah",
     sect: "Camarilla",
     generation: 1,
@@ -266,5 +267,40 @@ describe("makeTap with an id chosen ahead", () => {
   it("keeps the id, so feeding's tap is the same tap however often it is made", () => {
     const id = tapId();
     expect(makeTap({ id, kind: "change", tracker: "blood", amount: 2 }, "g1", at(5)).id).toBe(id);
+  });
+});
+
+describe("a ghoul's vitae (MET: VtM core p. 297)", () => {
+  const ghoul = () =>
+    view({
+      splat: "ghoul",
+      blood_name: "Vitae",
+      panels: { beast: false, frenzy: false, morality: false, generation: false, feed: false },
+      generation: 0,
+      blood: { value: 2, most: 5, start: 2 },
+      blood_usual: 5,
+      beast: { value: 0, most: 5, start: 0 },
+      morality: null,
+      vitae: { pool: 10, human: 8, human_start: 8, last_drank_at: null, days: 30 },
+    });
+
+  it("spends vitae but never human Blood, and Beast traits are not on the sheet", () => {
+    const shown = withPending(ghoul(), [makeTap({ kind: "change", tracker: "blood", amount: -1 }, null), makeTap({ kind: "change", tracker: "beast", amount: 1 }, null)]);
+    expect(shown.blood.value).toBe(1);
+    expect(shown.vitae!.human).toBe(8);
+    expect(shown.beast.value).toBe(0);
+    expect(shown.log.map((e) => e.text)).toEqual(["Beast traits +1", "Vitae 2 → 1"]);
+  });
+
+  it("drinks up to 5, turning human Blood to vitae in a full pool", () => {
+    const shown = withPending(ghoul(), [makeTap({ kind: "change", tracker: "drank", amount: 5 }, null)]);
+    expect(shown.blood.value).toBe(5);
+    expect(shown.vitae!.human).toBe(5);
+    expect(shown.log[0]!.text).toBe("Drank 5 vitae: Vitae 2 → 5");
+  });
+
+  it("is not a vampire's to drink", () => {
+    const shown = withPending(view(), [makeTap({ kind: "change", tracker: "drank", amount: 2 }, null)]);
+    expect(shown.blood.value).toBe(10);
   });
 });

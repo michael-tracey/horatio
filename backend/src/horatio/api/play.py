@@ -5,7 +5,7 @@ the staff who can see the sheet use it alike; each tap says who made it."""
 import uuid
 from dataclasses import asdict
 from datetime import UTC, datetime
-from typing import Annotated, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field, StringConstraints, model_validator
@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from horatio import (
     audit,
+    domitors,
     house_traits,
     influence_log,
     play,
@@ -41,6 +42,7 @@ from horatio.models import (
 )
 from horatio.permissions import TroupeAction, require_troupe_action, visible_character
 from horatio.pool_modifiers import ModifierOut, modifiers_out
+from horatio.rules.feeding import clan_family
 from horatio.rules.npc_kinds import kind_name
 
 router = APIRouter(tags=["play"])
@@ -189,6 +191,20 @@ class GameOut(BaseModel):
     notes: int
 
 
+class VitaeOut(BaseModel):
+    """A ghoul's Blood beside its vitae, which is `blood` (MET: VtM core p. 297): `pool`
+    in all, the rest human Blood, which cannot be spent. Vitae refills only by
+    drinking it ("drank" taps); without a drink for `days` days, the ghoul ages 10
+    years a day."""
+
+    pool: int
+    human: int
+    # Human Blood as the game started.
+    human_start: int
+    last_drank_at: datetime | None
+    days: int
+
+
 class PlayTrait(BaseModel):
     category: str
     category_name: str
@@ -230,16 +246,20 @@ class PlayView(BaseModel):
     panels: PanelsOut = PanelsOut(
         beast=True, frenzy=True, morality=True, generation=True, feed=True
     )
+    # What the character is (horatio.rules.splats.Splat).
+    splat: str = "vampire"
     clan: str | None
     sect: str | None
     generation: int
     blood_per_turn: int
-    # What `blood` is: Blood, or a Stock NPC's kind's resource, such as Rage.
+    # What `blood` is: Blood, a ghoul's Vitae, or a Stock NPC's kind's resource (Rage).
     blood_name: str = "Blood"
     # The Herd background's rating: feeding at a game takes 5 minutes for that
     # much blood, rather than 15 for 2 (MET: VtM core, p. 102).
     herd: int = 0
     blood: Tracker
+    # A ghoul's human Blood; its `blood` is its vitae. None for a vampire.
+    vitae: VitaeOut | None = None
     # The most Blood with nothing switched on (Blood of Potency raises it).
     blood_usual: int = 0
     # Blood started at half: the character fed short last downtime.
@@ -376,6 +396,8 @@ class TroupePlayEntry(BaseModel):
     taps: int
     last_tap_at: datetime | None
     blood: Tracker
+    # A ghoul's human Blood beside its vitae (`blood`); None for a vampire.
+    human_blood: int | None = None
     willpower: Tracker
     health_marked: int
     health_boxes: int
@@ -519,6 +541,20 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
     ]
 
 
+def vitae_out(
+    db: Session, character: Character, limits: play.Limits, state: dict[str, Any]
+) -> VitaeOut | None:
+    if limits.vitae is None:
+        return None
+    return VitaeOut(
+        pool=limits.vitae.pool,
+        human=state.get("human", limits.human_start()),
+        human_start=limits.human_start(),
+        last_drank_at=play.last_drank(db, character),
+        days=limits.vitae.days,
+    )
+
+
 def play_view(db: Session, character: Character) -> PlayView:
     game = play.current_game(db, character)
     limits = play.limits(db, character, game)
@@ -541,6 +577,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         npc_kind=character.npc_kind,
         npc_kind_name=kind_name(character.npc_kind, character.npc_custom_kind),
         panels=PanelsOut(**asdict(limits.panels)),
+        splat=character.splat,
         clan=one("clan"),
         sect=one("sect"),
         generation=limits.generation,
@@ -557,6 +594,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         blood=Tracker(
             value=state["blood"], most=limits.blood_most(state["on"]), start=limits.starting_blood
         ),
+        vitae=vitae_out(db, character, limits, state),
         blood_usual=limits.blood,
         half_blood=limits.half_blood,
         willpower=Tracker(value=state["willpower"], most=limits.willpower, start=limits.willpower),
@@ -630,6 +668,15 @@ def read_play(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Play
     return play_view(db, visible_character(db, user, character_id))
 
 
+class DomitorLine(BaseModel):
+    """A ghoul's domitor, and the clan weakness it plays (MET: VtM core p. 297)."""
+
+    name: str
+    clan: str | None
+    # Its domitor's clan weakness, for roleplay only.
+    weakness: str | None
+
+
 class PlayReference(reference.Reference):
     """The Play View's Sheet and Pools tabs: everything there is to look up at a
     game, which changes only between games, so the page loads it once."""
@@ -637,6 +684,23 @@ class PlayReference(reference.Reference):
     traits: list[PlayTrait]
     retainers: list[RetainerOut]
     identities: list[IdentityOut] = []
+    # A ghoul's domitor; None for a vampire, or a ghoul not yet bound to one.
+    domitor: DomitorLine | None = None
+
+
+def domitor_line(db: Session, character: Character) -> DomitorLine | None:
+    info = domitors.domitor_info(db, character) if domitors.has_domitor(character) else None
+    if info is None:
+        return None
+    family = clan_family(info.clan) if info.clan else None
+    return DomitorLine(
+        name=info.name,
+        clan=info.clan,
+        weakness=f"A milder form of the {family} weakness, for roleplay only, with none of its"
+        " rules effects (MET: VtM core p. 297)."
+        if family
+        else None,
+    )
 
 
 @router.get("/characters/{character_id}/play/reference")
@@ -652,6 +716,7 @@ def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
         traits=sheet_traits(db, character),
         retainers=listed(db, retainers.read(db, character), user),
         identities=identities_out(db, character),
+        domitor=domitor_line(db, character),
     )
 
 
@@ -901,6 +966,7 @@ def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
                     most=limits.blood_most(state["on"]),
                     start=limits.starting_blood,
                 ),
+                human_blood=state["human"] if limits.vitae else None,
                 willpower=Tracker(
                     value=state["willpower"], most=limits.willpower, start=limits.willpower
                 ),

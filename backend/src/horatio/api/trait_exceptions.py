@@ -208,6 +208,7 @@ def may_record(db: DbSession, user: User, character: Character) -> bool:
     troupe = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
     return (
         character.kind == "pc"
+        and diablerie.can_have(character) is None
         and troupe is not None
         and (troupe.archived_at is None or user.is_custodian)
         and allows(
@@ -251,7 +252,7 @@ def list_diablerie(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
         can_record=staff,
         can_ask=(
             mine
-            and character.home_troupe_id is not None
+            and diablerie.can_have(character) is None
             and character.status == "active"
             and not waiting
         ),
