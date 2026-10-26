@@ -9120,6 +9120,8 @@ export interface components {
             mine: boolean;
             /** Name */
             name: string;
+            /** Stock */
+            stock: components["schemas"]["StockPin"][];
         };
         /** SceneSummary */
         SceneSummary: {
@@ -9763,6 +9765,22 @@ export interface components {
             /** Specializations */
             specializations: components["schemas"]["Specialization"][];
             stats: components["schemas"]["StatBlockOut"];
+        };
+        /**
+         * StockPin
+         * @description A Stock NPC in the scene. It has no Play View yet, so its card is its name
+         *     and NPC rating (issue #215).
+         */
+        StockPin: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
         };
         /**
          * SwapChangeIn

@@ -18,7 +18,15 @@ from sqlalchemy.orm import Session
 from horatio import audit
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Scene, SceneCharacter, Troupe, TroupeMembership, User
+from horatio.models import (
+    Character,
+    Scene,
+    SceneCharacter,
+    StockNpc,
+    Troupe,
+    TroupeMembership,
+    User,
+)
 from horatio.permissions import TroupeAction, allows, troupe_role
 
 router = APIRouter(prefix="/troupes/{troupe_id}/scenes", tags=["scenes"])
@@ -61,9 +69,20 @@ class SceneSummary(BaseModel):
     can_change: bool
 
 
+class StockPin(BaseModel):
+    """A Stock NPC in the scene. It has no Play View yet, so its card is its name
+    and NPC rating (issue #215)."""
+
+    character_id: uuid.UUID
+    name: str
+    rating: int
+
+
 class SceneOut(SceneSummary):
     # The pinned characters, in order.
     characters: list[uuid.UUID]
+    # Those of them that are Stock NPCs.
+    stock: list[StockPin]
 
 
 class Cleared(BaseModel):
@@ -153,7 +172,16 @@ def summaries(db: Session, user: User, troupe: Troupe, scenes: list[Scene]) -> l
 
 def scene_out(db: Session, user: User, troupe: Troupe, scene: Scene) -> SceneOut:
     (summary,) = summaries(db, user, troupe, [scene])
-    return SceneOut(**summary.model_dump(), characters=pinned(db, scene.id))
+    characters = pinned(db, scene.id)
+    stock = [
+        StockPin(character_id=character_id, name=name, rating=rating)
+        for character_id, name, rating in db.execute(
+            select(Character.id, Character.name, StockNpc.rating)
+            .join(StockNpc, StockNpc.character_id == Character.id)
+            .where(Character.id.in_(characters), Character.npc_form == "stock")
+        )
+    ]
+    return SceneOut(**summary.model_dump(), characters=characters, stock=stock)
 
 
 def used(scene: Scene) -> None:

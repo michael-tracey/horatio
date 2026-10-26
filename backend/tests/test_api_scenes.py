@@ -174,6 +174,19 @@ def test_only_the_troupes_own_characters_are_pinned(
     assert reached.status_code == 404
 
 
+def test_a_stock_npc_is_pinned_with_its_rating(troupe: Troupe) -> None:
+    made = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/npcs",
+        json={"name": "Ghoul guard", "npc_form": "stock", "stock": {"rating": 2}},
+    )
+    assert made.status_code == 201, made.text
+    guard, lucien = made.json()["id"], npc(troupe, "Lucien")
+    scene = new_scene(troupe.storyteller, troupe, "Gate", characters=[lucien, guard])
+
+    assert scene["characters"] == [lucien, guard]
+    assert scene["stock"] == [{"character_id": guard, "name": "Ghoul guard", "rating": 2}]
+
+
 def test_removing_a_scene_leaves_its_characters_and_their_play(troupe: Troupe) -> None:
     lucien = npc(troupe, "Lucien")
     scene = new_scene(troupe.storyteller, troupe, "Ambush", characters=[lucien])

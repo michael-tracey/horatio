@@ -4035,6 +4035,8 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
     expect(made.status(), await made.text()).toBe(201);
     npcs[name] = (await made.json()).id;
   }
+  const stocked = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Grimsby", npc_form: "stock", stock: { rating: 2 } } });
+  expect(stocked.status(), await stocked.text()).toBe(201);
 
   // The lead's browser still has a scene of its own from before; the old address goes to the list, which offers to save it.
   await p.evaluate(([troupe, odile]) => localStorage.setItem(`horatio.scene.${troupe}`, JSON.stringify([odile])), [troupeId, npcs.Odile!]);
@@ -4068,6 +4070,13 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
     await expect(p.getByRole("article", { name: npc })).toBeVisible();
   }
   await expect(p.getByRole("article")).toHaveCount(1);
+  // A Stock NPC has no Play View yet: its card is its name and rating.
+  await p.goto(scenes["Elysium, ballroom"]!);
+  await search(p).fill("Grimsby");
+  await p.getByRole("option", { name: /Grimsby/ }).click();
+  await expect(p.getByRole("article", { name: "Grimsby" })).toContainText("Stock NPC · rating 2");
+  await expect(p.getByRole("article", { name: "Grimsby" })).toContainText("its Play card comes in a later PR");
+  await p.goto(scenes["Warehouse ambush"]!);
 
   // The second storyteller has none of their own, and sees all three under All, with who made them.
   const s = second.page;
@@ -4116,7 +4125,7 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   await doomed.getByRole("button", { name: "Remove Warehouse ambush" }).click();
   await doomed.getByRole("button", { name: "Remove the scene" }).click();
   await expect(doomed).toHaveCount(0);
-  await expect(p.getByRole("listitem", { name: "Elysium, gallery" })).toContainText("1 character");
+  await expect(p.getByRole("listitem", { name: "Elysium, gallery" })).toContainText("2 characters");
 
   // The second storyteller's list follows; removing the scene left Kasimir as he was.
   await s.goto(`/play/troupes/${troupeId}/scenes`);

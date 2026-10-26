@@ -12855,6 +12855,13 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "stock": {
+            "items": {
+              "$ref": "#/components/schemas/StockPin"
+            },
+            "title": "Stock",
+            "type": "array"
           }
         },
         "required": [
@@ -12867,7 +12874,8 @@
           "count",
           "mine",
           "can_change",
-          "characters"
+          "characters",
+          "stock"
         ],
         "title": "SceneOut",
         "type": "object"
@@ -14464,6 +14472,31 @@
           "stats"
         ],
         "title": "StockNpcOut",
+        "type": "object"
+      },
+      "StockPin": {
+        "description": "A Stock NPC in the scene. It has no Play View yet, so its card is its name\nand NPC rating (issue #215).",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "rating"
+        ],
+        "title": "StockPin",
         "type": "object"
       },
       "SwapChangeIn": {

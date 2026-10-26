@@ -11,7 +11,7 @@ import { attackGlance, defenceGlance, fightFirst, grouped, topAttacks } from "./
 import { PowersList } from "./Powers";
 import { formsOn, healthMost } from "./powers";
 import { PoolRow } from "./ReferenceTabs";
-import { findPins, loadOpen, pin, saveOpen, toggleOpen, unpin, type Section } from "./scene";
+import { findPins, loadOpen, saveOpen, toggleOpen, unpin, type Section } from "./scene";
 import { RenameScene, SCENE_REFRESH, useSceneChanges } from "./ScenesPage";
 import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracker";
 import { useModifiers } from "./useModifiers";
@@ -44,15 +44,17 @@ export function ScenePage() {
     refetchInterval: SCENE_REFRESH,
     refetchOnWindowFocus: true,
   });
-  // Pinning and unpinning show at once, and the server's answer settles it.
+  // Unpinning shows at once, and the server's answer settles it.
   const pinning = useMutation({
     mutationFn: ({ id, on }: { id: string; on: boolean }) => {
       const where = { params: { path: { troupe_id: troupeId, scene_id: sceneId, character_id: id } } };
       return unwrap(on ? api.PUT("/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}", where) : api.DELETE("/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}", where));
     },
+    // A pin waits for the server, which says whether it is a Stock NPC (no Play View to load yet).
     onMutate: async ({ id, on }) => {
+      if (on) return;
       await client.cancelQueries({ queryKey: sceneKey });
-      client.setQueryData<SceneOut>(sceneKey, (now) => now && { ...now, characters: on ? pin(now.characters, id) : unpin(now.characters, id) });
+      client.setQueryData<SceneOut>(sceneKey, (now) => now && { ...now, characters: unpin(now.characters, id) });
     },
     onSuccess: (data) => client.setQueryData(sceneKey, data),
     onError: () => client.invalidateQueries({ queryKey: sceneKey }),
@@ -71,6 +73,7 @@ export function ScenePage() {
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", { params: { path: { troupe_id: troupeId } } })),
   });
   const pinned = scene.data?.characters ?? [];
+  const stock = new Map((scene.data?.stock ?? []).map((s) => [s.character_id, s]));
   const list = `/play/troupes/${troupeId}/scenes`;
 
   return (
@@ -129,11 +132,15 @@ export function ScenePage() {
               <p className="py-8 text-center text-mist">Nobody is in the scene yet. Find an NPC above to put them here.</p>
             ) : (
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {pinned.map((id) => (
-                  <li key={id} className="min-w-0">
-                    <SceneCard characterId={id} back={`?troupe=${troupeId}&scene=${sceneId}`} onRemove={() => pinning.mutate({ id, on: false })} />
-                  </li>
-                ))}
+                {pinned.map((id) => {
+                  const remove = () => pinning.mutate({ id, on: false });
+                  const stocked = stock.get(id);
+                  return (
+                    <li key={id} className="min-w-0">
+                      {stocked ? <StockCard pin={stocked} onRemove={remove} /> : <SceneCard characterId={id} back={`?troupe=${troupeId}&scene=${sceneId}`} onRemove={remove} />}
+                    </li>
+                  );
+                })}
               </ul>
             )}
             <p className="text-xs text-mist">
@@ -339,6 +346,22 @@ function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; w
         {defenceGlance(pools, willpower, modifiers, on).join(" · ")}
       </p>
     </div>
+  );
+}
+
+/** A Stock NPC in the scene: its name and NPC rating, until it has a Play card of its own (issue #215). */
+function StockCard({ pin, onRemove }: { pin: SceneOut["stock"][number]; onRemove: () => void }) {
+  return (
+    <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={pin.name}>
+      <header>
+        <h2 className="truncate text-lg leading-tight text-gold">{pin.name}</h2>
+        <p className="text-xs text-mist">Stock NPC · rating {pin.rating}</p>
+      </header>
+      <p className="text-sm text-mist">Stock NPC: its Play card comes in a later PR.</p>
+      <button type="button" className="self-start text-xs text-mist underline hover:text-parchment" onClick={onRemove} aria-label={`Remove ${pin.name} from the scene`}>
+        Remove from the scene
+      </button>
+    </article>
   );
 }
 
