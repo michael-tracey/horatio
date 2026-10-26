@@ -315,6 +315,22 @@ def test_only_staff_link_a_retainer_to_an_npc(troupe: Troupe) -> None:
     assert again["retainers"][0]["npc_id"] == npc_id
 
 
+def test_a_retainer_can_be_linked_to_a_stock_npc(troupe: Troupe) -> None:
+    # The book builds Retainers as Stock NPCs (p. 104).
+    character_id = with_both(troupe)
+    response = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/npcs",
+        json={"name": "Marta", "npc_kind": "mortal", "npc_form": "stock", "stock": {"rating": 3}},
+    )
+    assert response.status_code == 201, response.text
+    npc_id = response.json()["id"]
+    listed = put(troupe.player, character_id, [MARTA]).json()["retainers"][0]
+
+    body = put(troupe.storyteller, character_id, [{**listed, "npc_id": npc_id}]).json()
+
+    assert (body["retainers"][0]["npc_id"], body["retainers"][0]["npc_name"]) == (npc_id, "Marta")
+
+
 def test_a_link_must_be_an_npc_of_the_home_troupe(troupe: Troupe) -> None:
     character_id = with_both(troupe)
     other = new_character(troupe, troupe.player, "Beatrice")

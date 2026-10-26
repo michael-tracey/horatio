@@ -1,0 +1,398 @@
+# NPC kinds: what an NPC is, for NPCs of every kind built on the Vampire rule set
+# (issue #215). From MET: VTM ch. 12, "Allies and Antagonists", pp. 489–505: the
+# book's quick rules for using other creatures in a Vampire chronicle, as Stock
+# NPCs (pp. 489–490). Read by horatio.rules.npc_kinds; not part of any rule set,
+# so nothing here changes what a character can buy.
+#
+# [[kinds]]
+#   key, name     the kind's key and the name shown for it.
+#   group         where it is listed: "vampire", "mortal", "hunter",
+#                 "supernatural" or "bloodline".
+#   nature        "mortal", "partly_mortal" (a ghoul) or "supernatural". Mortals
+#                 take skill specializations only, unless the kind lists numina or
+#                 powers (p. 489).
+#   page          the page its rules start on; `to_page` the last, if more.
+#   resource      { name, size, per_turn, regains? }: what it spends on its powers.
+#                 Left out, it is Blood: 5 for a mortal or partly mortal NPC, 10
+#                 for a supernatural one, 1 a turn (p. 490); a mortal cannot spend
+#                 its Blood (per_turn 0), as only ghouls can.
+#   specializations
+#                 what its discipline specializations may be: "any" for any
+#                 discipline or path in the Vampire rule set, or a list of names.
+#                 "Thaumaturgy: *" means any Thaumaturgy path. Left out, none.
+#   specialization_label
+#                 what the book calls those for this kind ("Hedge Magic").
+#   [[kinds.numina]]
+#                 numina of its own, not in the Vampire rule set, it can take as a
+#                 specialization: { name, page, levels = [what each dot does] }.
+#   [[kinds.powers]]
+#                 what every NPC of the kind has: `dots` of a discipline (a number,
+#                 or "rating" for its NPC rating), or a power or merit by `name`,
+#                 with the `discipline` it belongs to or its `category`. `from_rating`
+#                 makes it come only at that rating or above. `note`: in our words.
+#   health_per_rating
+#                 health levels for each point of rating (1 if left out, p. 490).
+#   rating_max    the highest NPC rating it can have (5 if left out, p. 489).
+#   notes         its special rules, short and in our own words.
+
+# --- Vampires and ghouls (pp. 489–490) ---------------------------------------
+
+[[kinds]]
+key = "vampire"
+name = "Vampire"
+group = "vampire"
+nature = "supernatural"
+page = 489
+to_page = 490
+specializations = "any"
+notes = [
+  "A Stock vampire is built as any Stock NPC is; the sample is Nemian the Nosferatu, rating 4 (p. 490).",
+]
+
+[[kinds]]
+key = "ghoul"
+name = "Ghoul"
+group = "vampire"
+nature = "partly_mortal"
+page = 489
+to_page = 490
+specializations = "any"
+notes = [
+  "Partly mortal: 5 Blood, which a ghoul, unlike other mortals, can spend on its powers (p. 490).",
+]
+
+# --- Mortals (pp. 489–493) ---------------------------------------------------
+
+[[kinds]]
+key = "mortal"
+name = "Mortal"
+group = "mortal"
+nature = "mortal"
+page = 489
+notes = [
+  "Skill specializations only (p. 489).",
+  "5 Blood, which it cannot spend (p. 490).",
+  "A plain vampire hunter is a mortal, such as Douglas Houston, rating 3 (p. 493).",
+]
+
+[[kinds]]
+key = "hunter_inquisition"
+name = "Vampire Hunter: Inquisition"
+group = "hunter"
+nature = "mortal"
+page = 491
+to_page = 493
+notes = [
+  "The Society of Leopold: trained to fight and destroy vampires, sometimes with True Faith.",
+  "A True Faith specialization gives 1 dot of True Faith per NPC rating.",
+  "Someone with True Faith cannot be Embraced: they die instead.",
+  "Can pray for a miracle: dramatic, rare, at most one a story.",
+]
+
+[[kinds.numina]]
+name = "True Faith"
+page = 491
+levels = [
+  "Wards off a vampire with a holy symbol: a Social challenge, rating × 2 (+5 with Intimidation) against the vampire's Social + Willpower; a loser flees for the scene.",
+  "Senses a vampire nearby when in quiet surroundings, without an action.",
+  "Immune to Dominate and Dementation.",
+  "Cannot be made a ghoul; immune to Presence and Obfuscate.",
+  "A vampire touched by them or hearing them pray makes a frenzy challenge at difficulty 30 or flees; one that cannot flee can only defend itself.",
+]
+
+[[kinds]]
+key = "hunter_arcanum"
+name = "Vampire Hunter: Arcanum"
+group = "hunter"
+nature = "mortal"
+page = 492
+to_page = 493
+specialization_label = "Hedge Magic"
+specializations = [
+  "Thaumaturgy: Lure of Flames",
+  "Thaumaturgy: Path of Corruption",
+  "Necromancy: Ash Path",
+  "Necromancy: Bone Path",
+  "Necromancy: Sepulchre Path",
+]
+resource = { name = "Mana", size = 5, per_turn = 1, regains = "1 for each hour of meditation" }
+notes = [
+  "Occult scholars who would rather watch, and pass what they learn to other hunters.",
+  "Hedge Magic is shown as specializations in set Thaumaturgy and Necromancy paths, fuelled by mana.",
+]
+
+[[kinds]]
+key = "hunter_twilight"
+name = "Vampire Hunter: Project Twilight"
+group = "hunter"
+nature = "mortal"
+page = 492
+to_page = 493
+specialization_label = "Psychic Numina"
+specializations = [
+  "Auspex",
+  "Dominate",
+  "Thaumaturgy: Movement of the Mind",
+  "Thaumaturgy: Path of Technomancy",
+]
+resource = { name = "Focus", size = 5, per_turn = 1, regains = "1 for each hour of meditation" }
+notes = [
+  "A US government agency with wide powers of surveillance.",
+  "Psychic Numina are shown as specializations in Auspex, Dominate and set Thaumaturgy paths, fuelled by focus.",
+  "Uses its Thaumaturgy paths with the mind alone: no words or gestures.",
+]
+
+# --- Other supernaturals (pp. 494–503) ---------------------------------------
+
+[[kinds]]
+key = "werewolf"
+name = "Werewolf"
+group = "supernatural"
+nature = "supernatural"
+page = 494
+to_page = 495
+health_per_rating = 2
+specializations = [
+  "Celerity",
+  "Potence",
+  "Fortitude",
+  "Auspex",
+  "Obeah",
+  "Obfuscate",
+  "Thaumaturgy: Path of Elemental Mastery",
+]
+resource = { name = "Rage", size = 10, per_turn = 3, regains = "1 every five turns" }
+notes = [
+  "Supernatural: powers stronger against mortals are not stronger against it.",
+  "Uses rage as a vampire uses Blood: for its disciplines and to raise its Physical attribute.",
+  "Heals 1 normal damage a round on its own; 1 rage heals 1 normal damage, 3 rage 1 aggravated.",
+  "Silver weapons do it aggravated damage.",
+  "Twice the usual health levels.",
+  "Each point of its blood a vampire drinks counts as a Beast trait for rage frenzy, and refills 2 Blood.",
+]
+
+[[kinds.powers]]
+name = "Feral Claws"
+discipline = "Protean"
+note = "No Blood needed."
+
+[[kinds.powers]]
+name = "Shape of the Beast: fight form"
+discipline = "Protean"
+note = "No Blood needed."
+
+[[kinds.powers]]
+name = "Shape of the Beast's Wrath"
+category = "merits"
+note = "No Blood needed."
+
+[[kinds]]
+key = "mage"
+name = "Mage"
+group = "supernatural"
+nature = "supernatural"
+page = 496
+to_page = 497
+specializations = [
+  "Auspex",
+  "Dominate",
+  "Celerity",
+  "Chimerstry",
+  "Presence",
+  "Protean",
+  "Obfuscate",
+  "Obtenebration",
+  "Necromancy: *",
+  "Thaumaturgy: *",
+]
+resource = { name = "Essence", size = 10, per_turn = 3, regains = "1 every 10 minutes" }
+notes = [
+  "Supernatural: powers stronger against mortals are not stronger against it.",
+  "Uses essence as a vampire uses Blood: for its disciplines and to heal.",
+  "Concentrating for a turn, doing nothing else, 1 essence heals 1 normal or aggravated damage.",
+]
+
+[[kinds]]
+key = "fae"
+name = "Fae"
+group = "supernatural"
+nature = "supernatural"
+page = 498
+to_page = 499
+specializations = [
+  "Auspex",
+  "Dominate",
+  "Potence",
+  "Fortitude",
+  "Chimerstry",
+  "Dementation",
+  "Mytherceria",
+  "Presence",
+  "Obfuscate",
+  "Temporis",
+  "Thaumaturgy: Path of Conjuring",
+]
+resource = { name = "Glamour", size = 10, per_turn = 1, regains = "1 every 10 minutes, or by the Dream or inspiring mortals" }
+notes = [
+  "Supernatural: powers stronger against mortals are not stronger against it.",
+  "Uses glamour as a vampire uses Blood: for its disciplines and to heal.",
+  "1 glamour heals 1 normal or aggravated damage, on itself or a friend within a pace.",
+  "Pure iron does it aggravated damage; steel and other alloys do not.",
+]
+
+[[kinds]]
+key = "wraith"
+name = "Wraith"
+group = "supernatural"
+nature = "supernatural"
+page = 500
+to_page = 501
+specializations = [
+  "Dementation",
+  "Dominate",
+  "Chimerstry",
+  "Potence",
+  "Presence",
+  "Obfuscate",
+  "Obtenebration",
+  "Thaumaturgy: Movement of the Mind",
+]
+resource = { name = "Pathos", size = 10, per_turn = 3, regains = "1 every 10 minutes" }
+notes = [
+  "Supernatural: powers stronger against mortals are not stronger against it.",
+  "Uses Pathos as a vampire uses Blood: for its disciplines and to heal.",
+  "Lives in the Shadowlands: it sees the living world but cannot touch it, or use powers on it but its first 2 dots of Dementation, unless it manifests.",
+  "Spends Pathos to manifest for an hour: its health levels while manifested are the Pathos spent, at most 5, and cannot be raised after.",
+  "A Dementation specialization takes it above its first 2 dots.",
+]
+
+[[kinds.powers]]
+name = "Dementation"
+dots = 2
+note = "Works across the Shroud without manifesting."
+
+[[kinds]]
+key = "demon"
+name = "Demon"
+group = "supernatural"
+nature = "supernatural"
+page = 502
+to_page = 503
+specializations = [
+  "Auspex",
+  "Chimerstry",
+  "Dominate",
+  "Dementation",
+  "Presence",
+  "Obfuscate",
+  "Thaumaturgy: Lure of Flames",
+  "Thaumaturgy: Movement of the Mind",
+  "Thaumaturgy: Path of Elemental Mastery",
+  "Thaumaturgy: Path of Corruption",
+  "Thaumaturgy: Path of Conjuring",
+]
+resource = { name = "Faith", size = 10, per_turn = 3, regains = "1 every 10 minutes" }
+notes = [
+  "Supernatural: powers stronger against mortals are not stronger against it.",
+  "Uses faith as a vampire uses Blood: for its disciplines and to heal.",
+  "Heals 1 damage a turn on its own, aggravated first; 1 faith heals 1 normal damage, 3 faith 1 aggravated.",
+  "Blessed or sacred weapons do it aggravated damage.",
+  "Out of health, it is banished for a year and a day, not destroyed.",
+  "Always in the storyteller's hands; infernal deals only as part of a plot.",
+]
+
+[[kinds.powers]]
+name = "Daimoinon"
+dots = 5
+
+[[kinds.powers]]
+name = "Fortitude"
+dots = "rating"
+
+[[kinds.powers]]
+name = "Potence"
+dots = "rating"
+
+[[kinds.powers]]
+name = "Daimoinon elder power"
+discipline = "Daimoinon"
+from_rating = 4
+note = "One, an exception to Stock NPCs having no elder powers."
+
+# --- Vampire bloodlines (pp. 504–505) ----------------------------------------
+
+[[kinds]]
+key = "blood_brother"
+name = "Blood Brother"
+group = "bloodline"
+nature = "supernatural"
+page = 504
+health_per_rating = 2
+# Up to four can merge into one gestalt, its rating all of theirs together.
+rating_max = 20
+specializations = "any"
+notes = [
+  "Made, not sired, in circles of three to ten that share one mind; they cannot Embrace.",
+  "Up to four can merge into a gestalt whose NPC rating is all of theirs together, above 5 if need be.",
+  "Twice the usual health levels.",
+]
+
+[[kinds.powers]]
+name = "Celerity"
+dots = "rating"
+
+[[kinds.powers]]
+name = "Fortitude"
+dots = "rating"
+
+[[kinds.powers]]
+name = "Potence"
+dots = "rating"
+
+[[kinds]]
+key = "lhiannan"
+name = "Lhiannan"
+group = "bloodline"
+nature = "supernatural"
+page = 505
+specializations = "any"
+notes = [
+  "Part nature spirit: Auspex finds their nature 2 easier, and mortals feel uneasy near them.",
+  "-3 to all test pools outside their own territory, until a few hours after coming back.",
+]
+
+[[kinds.powers]]
+name = "Animalism"
+dots = "rating"
+
+[[kinds.powers]]
+name = "Presence"
+dots = "rating"
+
+[[kinds.powers]]
+name = "Thaumaturgy: Path of Elemental Mastery"
+dots = "rating"
+
+[[kinds.powers]]
+name = "Earth Meld"
+discipline = "Protean"
+note = "Into any natural substance: wood, stone and the like."
+
+# --- Custom ------------------------------------------------------------------
+
+# A kind the book does not cover, built by the Stock NPC rules (pp. 489–490). The
+# storyteller names it on each NPC, and sets whether it is mortal or supernatural
+# and its resource's name, size and spending; a supernatural one can specialize
+# in any discipline.
+[[kinds]]
+key = "custom"
+name = "Custom"
+group = "custom"
+custom = true
+nature = "supernatural"
+page = 489
+to_page = 490
+specializations = "any"
+notes = [
+  "A kind the book does not cover, named by the storyteller.",
+]

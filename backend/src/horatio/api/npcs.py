@@ -1,6 +1,8 @@
-"""NPCs: a troupe's own characters, built quickly by its storytellers and assistants."""
+"""NPCs: a troupe's own characters, built quickly by its storytellers and assistants.
+Each has a kind and a form: sheeted, or a Stock NPC (horatio.rules.stock)."""
 
 import uuid
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -11,17 +13,222 @@ from horatio.api.characters import CharacterOut, character_out, characters_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Character, RuleSet
+from horatio.models import Character, RuleSet, StockNpc
 from horatio.permissions import TroupeAction
+from horatio.rules import stock
+from horatio.rules.npc_kinds import BuiltInPower, NpcKind, Resource, npc_kinds
 
 router = APIRouter(tags=["npcs"])
 
 
+class ResourceIn(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+    size: int = Field(ge=1, le=50)
+    # The most it can spend in a turn; 0 for none.
+    per_turn: int = Field(ge=0, le=10)
+    regains: str = Field(default="", max_length=200)
+
+
+class CustomKind(BaseModel):
+    """A custom kind, for one the book does not cover: its name, whether it is
+    mortal or supernatural, and its resource."""
+
+    name: str = Field(min_length=1, max_length=60)
+    nature: Literal["mortal", "supernatural"]
+    resource: ResourceIn
+
+
+class Specialization(BaseModel):
+    # A skill, or a discipline, path or numina the NPC's kind allows.
+    type: Literal["skill", "power"]
+    name: str = Field(min_length=1, max_length=200)
+
+
+class StockFields(BaseModel):
+    """What a Stock NPC has in place of a sheet (MET: VTM pp. 489–490)."""
+
+    rating: int = Field(ge=1, le=20)
+    specializations: list[Specialization] = Field(default=[], max_length=20)
+    notes: str = Field(default="", max_length=10000)
+
+
+class StockIn(StockFields):
+    npc_kind: str
+    custom_kind: CustomKind | None = None
+
+
 class NewNpc(BaseModel):
     name: str = Field(min_length=1, max_length=200)
+    # The rule set, for an NPC made without a kind: "ghoul" makes a ghoul, anything
+    # else a vampire. With a kind, the kind decides.
     splat: str = "vampire"
     # Build through the creation wizard rather than setting ratings directly.
     wizard: bool = False
+    # What it is (GET /npc-kinds), and the custom kind's set-up for "custom".
+    npc_kind: str | None = None
+    custom_kind: CustomKind | None = None
+    npc_form: Literal["sheeted", "stock"] = "sheeted"
+    # A Stock NPC's rating and specializations; rating 1 and none if left out.
+    stock: StockFields | None = None
+
+
+class NpcOut(CharacterOut):
+    # A Stock NPC's rating; None for a sheeted one.
+    stock_rating: int | None
+
+
+class ResourceOut(BaseModel):
+    name: str
+    size: int
+    per_turn: int
+    regains: str
+
+
+class BuiltInPowerOut(BaseModel):
+    name: str
+    # Dots of the discipline `name`: a number, or "rating"; None for one power.
+    dots: int | Literal["rating"] | None
+    discipline: str | None
+    category: str | None
+    from_rating: int | None
+    note: str
+
+
+class NuminaOut(BaseModel):
+    name: str
+    page: int
+    levels: list[str]
+
+
+class NpcKindOut(BaseModel):
+    key: str
+    name: str
+    group: str
+    nature: Literal["mortal", "partly_mortal", "supernatural"]
+    page: int
+    to_page: int | None
+    resource: ResourceOut
+    # Any discipline or path may be a specialization; else only `specializations`
+    # ("Thaumaturgy: *" for any Thaumaturgy path) and its numina.
+    any_discipline: bool
+    specializations: list[str]
+    specialization_label: str
+    numina: list[NuminaOut]
+    powers: list[BuiltInPowerOut]
+    health_per_rating: int
+    rating_max: int
+    notes: list[str]
+    # The storyteller names it and sets it up on each NPC.
+    custom: bool
+
+
+class SkillPool(BaseModel):
+    name: str
+    pool: int
+
+
+class PowerDots(BaseModel):
+    name: str
+    dots: int
+
+
+class StatBlockOut(BaseModel):
+    """What the book prints for a Stock NPC (MET: VTM p. 490)."""
+
+    rating: int
+    # The test pool in most challenges.
+    pool: int
+    skill_pools: list[SkillPool]
+    powers: list[PowerDots]
+    built_in: list[BuiltInPowerOut]
+    health: int
+    resource: ResourceOut
+    willpower: int
+    retests: bool
+    # What no Stock NPC has (p. 490).
+    rules: list[str]
+
+
+class StockNpcOut(BaseModel):
+    character_id: uuid.UUID
+    npc_kind: str
+    kind: NpcKindOut
+    custom_kind: CustomKind | None
+    rating: int
+    specializations: list[Specialization]
+    notes: str
+    stats: StatBlockOut
+
+
+def resource_out(resource: Resource) -> ResourceOut:
+    return ResourceOut(
+        name=resource.name,
+        size=resource.size,
+        per_turn=resource.per_turn,
+        regains=resource.regains,
+    )
+
+
+def power_out(power: BuiltInPower) -> BuiltInPowerOut:
+    return BuiltInPowerOut(
+        name=power.name,
+        dots=power.dots,
+        discipline=power.discipline,
+        category=power.category,
+        from_rating=power.from_rating,
+        note=power.note,
+    )
+
+
+def kind_out(kind: NpcKind) -> NpcKindOut:
+    return NpcKindOut(
+        key=kind.key,
+        name=kind.label,
+        group=kind.group,
+        nature=kind.nature,
+        page=kind.page,
+        to_page=kind.to_page,
+        resource=resource_out(kind.resource),
+        any_discipline=kind.specializations == "any",
+        specializations=[] if kind.specializations == "any" else list(kind.specializations),
+        specialization_label=kind.specialization_label,
+        numina=[NuminaOut(name=n.name, page=n.page, levels=list(n.levels)) for n in kind.numina],
+        powers=[power_out(p) for p in kind.powers],
+        health_per_rating=kind.health_per_rating,
+        rating_max=kind.rating_max,
+        notes=list(kind.notes),
+        custom=kind.custom,
+    )
+
+
+def stock_out(db: DbSession, npc: Character) -> StockNpcOut:
+    row, stats = npcs.stat_block(db, npc)
+    assert npc.npc_kind is not None
+    return StockNpcOut(
+        character_id=npc.id,
+        npc_kind=npc.npc_kind,
+        kind=kind_out(npcs.kind_of(npc)),
+        custom_kind=CustomKind.model_validate(npc.npc_custom_kind) if npc.npc_custom_kind else None,
+        rating=row.rating,
+        specializations=[Specialization.model_validate(s) for s in row.specializations],
+        notes=row.notes,
+        stats=StatBlockOut(
+            rating=stats.rating,
+            pool=stats.pool,
+            skill_pools=[SkillPool(name=n, pool=p) for n, p in stats.skill_pools],
+            powers=[PowerDots(name=n, dots=d) for n, d in stats.powers],
+            built_in=[power_out(p) for p in stats.built_in],
+            health=stats.health,
+            resource=resource_out(stats.resource),
+            willpower=stats.willpower,
+            retests=stats.retests,
+            rules=list(stock.STOCK_RULES),
+        ),
+    )
+
+
+def custom_dict(custom: CustomKind | None) -> dict[str, Any] | None:
+    return custom.model_dump() if custom is not None else None
 
 
 class Rating(BaseModel):
@@ -46,15 +253,32 @@ class Tally(BaseModel):
     lines: list[TallyLineOut]
 
 
+@router.get("/npc-kinds")
+def list_npc_kinds(user: CurrentUser) -> list[NpcKindOut]:
+    """Every kind an NPC can be, from the rules data (MET: VTM pp. 489–505)."""
+    return [kind_out(kind) for kind in npc_kinds().values()]
+
+
 @router.get("/troupes/{troupe_id}/npcs")
-def list_npcs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[CharacterOut]:
+def list_npcs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[NpcOut]:
     staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_NPCS)
-    found = db.scalars(
-        select(Character)
-        .where(Character.kind == "npc", Character.owner_troupe_id == troupe_id)
-        .order_by(Character.name)
+    found = list(
+        db.scalars(
+            select(Character)
+            .where(Character.kind == "npc", Character.owner_troupe_id == troupe_id)
+            .order_by(Character.name)
+        )
     )
-    return characters_out(db, found)
+    ratings = {
+        row.character_id: row.rating
+        for row in db.scalars(
+            select(StockNpc).where(StockNpc.character_id.in_([c.id for c in found]))
+        )
+    }
+    return [
+        NpcOut(**out.model_dump(), stock_rating=ratings.get(out.id))
+        for out in characters_out(db, found)
+    ]
 
 
 @router.post("/troupes/{troupe_id}/npcs", status_code=status.HTTP_201_CREATED)
@@ -62,11 +286,59 @@ def create_npc(
     troupe_id: uuid.UUID, body: NewNpc, db: DbSession, user: CurrentUser
 ) -> CharacterOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_NPCS)
-    if db.scalar(select(RuleSet.id).where(RuleSet.splat == body.splat)) is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No rules for {body.splat!r}.")
-    npc = npcs.create_npc(db, user, troupe, body.splat, body.name, body.wizard)
+    npc_kind = body.npc_kind or ("ghoul" if body.splat == "ghoul" else "vampire")
+    splat = npcs.splat_for(npc_kind)
+    if db.scalar(select(RuleSet.id).where(RuleSet.splat == splat)) is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No rules for {splat!r}.")
+    if body.stock is not None and body.npc_form != "stock":
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Only a Stock NPC has a rating of its own."
+        )
+    custom = custom_dict(body.custom_kind)
+    npc = npcs.create_npc(
+        db, user, troupe, splat, body.name, body.wizard, npc_kind, body.npc_form, custom
+    )
+    if body.stock is not None:
+        set_stock_fields(db, user, npc, npc_kind, custom, body.stock)
     db.commit()
     return character_out(db, npc)
+
+
+def set_stock_fields(
+    db: DbSession,
+    user: CurrentUser,
+    npc: Character,
+    npc_kind: str,
+    custom: dict[str, Any] | None,
+    fields: StockFields,
+) -> None:
+    npcs.set_stock(
+        db,
+        user,
+        npc,
+        npc_kind,
+        custom,
+        fields.rating,
+        [stock.Specialization(s.type, s.name) for s in fields.specializations],
+        fields.notes,
+    )
+
+
+@router.get("/characters/{character_id}/npc/stock")
+def read_stock(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> StockNpcOut:
+    """A Stock NPC's rating, specializations and notes, and the stat block they make."""
+    return stock_out(db, players_character(db, user, character_id))
+
+
+@router.put("/characters/{character_id}/npc/stock")
+def set_stock(
+    character_id: uuid.UUID, body: StockIn, db: DbSession, user: CurrentUser
+) -> StockNpcOut:
+    """Change a Stock NPC's kind, rating, specializations and notes."""
+    npc = players_character(db, user, character_id)
+    set_stock_fields(db, user, npc, body.npc_kind, custom_dict(body.custom_kind), body)
+    db.commit()
+    return stock_out(db, npc)
 
 
 @router.put("/characters/{character_id}/npc/ratings")

@@ -507,9 +507,12 @@ def check_named_actions(source: str, kind: ActionKindData) -> None:
 
 def all_rule_set_files() -> Iterable[Path]:
     """Rule set files; `*_traits.toml`, `*_checks.toml` and `*_grants.toml` are parts
-    they include, and `*_powers.toml` is horatio.reference's quick notes."""
+    they include, `*_powers.toml` is horatio.reference's quick notes, and
+    `*_npc_kinds.toml` is horatio.rules.npc_kinds' NPC kinds."""
     return sorted(
         p
         for p in DATA_DIR.glob("*.toml")
-        if not p.name.endswith(("_traits.toml", "_checks.toml", "_grants.toml", "_powers.toml"))
+        if not p.name.endswith(
+            ("_traits.toml", "_checks.toml", "_grants.toml", "_powers.toml", "_npc_kinds.toml")
+        )
     )

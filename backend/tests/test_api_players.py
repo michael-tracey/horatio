@@ -202,6 +202,7 @@ def test_the_custodian_filters_people_by_the_troupe_their_active_pc_is_home_in(
     troupe.narrator.client.post(f"/characters/{visiting}/troupes", json={"troupe_id": troupe.id})
     npc = troupe.session.get_one(Character, uuid.UUID(new_character(troupe, troupe.stranger)))
     npc.kind, npc.owner_troupe_id, npc.home_troupe_id = "npc", here, here
+    npc.npc_kind, npc.npc_form = "vampire", "sheeted"
     troupe.session.flush()
 
     assert found(troupe_id=troupe.id) == ["player"]
