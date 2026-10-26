@@ -130,7 +130,8 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
                     <span className="flex items-start justify-between gap-2">
                       <span className={priced?.refused ? "text-blood-bright" : undefined}>
                         {describe(line)}
-                        {cost && <span className="text-mist"> · {cost}</span>}
+                        {/* Not priced yet: say so, rather than look free. */}
+                        {!priced && !prices.error ? <span className="text-mist"> · …</span> : cost && <span className="text-mist"> · {cost}</span>}
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
                         {exception && <Badge tone="gold">exception</Badge>}
