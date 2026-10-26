@@ -27,6 +27,8 @@ class RosterEntry(BaseModel):
     player_id: uuid.UUID | None
     player_handle: str | None
     kind: str  # pc | npc
+    # The player has retired the character.
+    retired: bool
     titles: list[str]
     # Where its picture is (horatio.pictures), or None.
     picture: str | None
@@ -86,6 +88,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_id=player.id if c.kind == "pc" else None,
             player_handle=player.handle if c.kind == "pc" else None,
             kind=c.kind,
+            retired=c.status == "retired",
             titles=titles.held(db, troupe_id, c.id),
             picture=pictures.picture_url(c.id, c.picture_id),
             clan=standing[c.id].clan,

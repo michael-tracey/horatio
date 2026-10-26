@@ -11257,6 +11257,10 @@
             "title": "Player Name",
             "type": "string"
           },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
           "social_age": {
             "title": "Social Age",
             "type": "string"
@@ -11280,6 +11284,7 @@
           "player_id",
           "player_handle",
           "kind",
+          "retired",
           "titles",
           "picture",
           "clan",

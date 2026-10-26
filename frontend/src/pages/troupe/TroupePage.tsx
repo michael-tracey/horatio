@@ -12,6 +12,7 @@ import { LogTab } from "./LogTab";
 import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
+import { PlayersTab } from "./PlayersTab";
 import { PlayTab } from "./PlayTab";
 import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
@@ -77,16 +78,20 @@ export function TroupePage() {
             ],
           },
           {
-            label: "People",
+            label: "Characters",
             tabs: [
               ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
+              ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
               ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
-              ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
               ...(can.running ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
               ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
             ],
+          },
+          {
+            label: "Players",
+            tabs: [...(can.running ? [{ to: `${base}/players`, label: "Players" }] : [])],
           },
           {
             label: "Downtimes",
@@ -112,6 +117,7 @@ export function TroupePage() {
         <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
+        {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
