@@ -479,6 +479,15 @@ requires = { any_of = [
 message = "Before a home troupe accepts the character, out-of-clan disciplines are the common ones only, up to 3 dots."
 page = "106"
 
+# Inept: the discipline it names is one of the clan's own in-clan disciplines (p. 263).
+[[checks]]
+category = "flaws"
+name = "Inept"
+requires = { detail_in_clan = true }
+strength = "complete"
+message = "Inept: choose one of your in-clan disciplines."
+page = "263"
+
 [[checks]]
 category = "disciplines"
 forbids = { has = { category = "flaws", name = "Thin Blooded" }, self = { rating = { gte = 5 } } }

@@ -4256,6 +4256,17 @@ export interface components {
              */
             file: string;
         };
+        /**
+         * BudgetChange
+         * @description What changes a category's starting picks: the merits and flaws held that its
+         *     creation rules depend on (Thin Blooded, for the starting disciplines).
+         */
+        BudgetChange: {
+            /** Because */
+            because: components["schemas"]["TraitRefOut"][];
+            /** Category */
+            category: string;
+        };
         /** BuildingTroupe */
         BuildingTroupe: {
             /** Troupe Id */
@@ -4784,10 +4795,20 @@ export interface components {
         };
         /** CreationOut */
         CreationOut: {
+            /**
+             * Budget Changes
+             * @default []
+             */
+            budget_changes: components["schemas"]["BudgetChange"][];
             /** Complete */
             complete: boolean;
             /** Needs */
             needs: components["schemas"]["StepNeed"][];
+            /**
+             * Path Starts
+             * @default []
+             */
+            path_starts: components["schemas"]["PathStart"][];
             /** Pools */
             pools: components["schemas"]["PoolOut"][];
         };
@@ -6895,6 +6916,22 @@ export interface components {
             /** Log */
             log: components["schemas"]["LogEntry"][];
         };
+        /**
+         * PathStart
+         * @description A Morality that starts lower because a Path merit was bought in creation.
+         */
+        PathStart: {
+            /** Because */
+            because: components["schemas"]["TraitRefOut"][];
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /** Page */
+            page?: string | null;
+            /** Rating */
+            rating: number;
+        };
         /** PendingDisciplineOut */
         PendingDisciplineOut: {
             /**
@@ -6964,6 +7001,11 @@ export interface components {
         };
         /** PickedTrait */
         PickedTrait: {
+            /**
+             * Because
+             * @default []
+             */
+            because: components["schemas"]["TraitRefOut"][];
             /** Detail */
             detail: string;
             /**
@@ -7196,6 +7238,11 @@ export interface components {
         PoolOut: {
             /** Allowed */
             allowed: number;
+            /**
+             * Because
+             * @default []
+             */
+            because: components["schemas"]["TraitRefOut"][];
             /** Category */
             category: string;
             /** Category Name */
@@ -7214,6 +7261,11 @@ export interface components {
             traits: components["schemas"]["PickedTrait"][];
             /** Used */
             used: number;
+            /**
+             * Without Dot
+             * @default []
+             */
+            without_dot: components["schemas"]["WithoutDot"][];
         };
         /** PoolPart */
         PoolPart: {
@@ -9057,6 +9109,16 @@ export interface components {
              * Format: date-time
              */
             until: string;
+        };
+        /**
+         * WithoutDot
+         * @description A trait of a restricted pool that takes no pick, though it may be in-clan.
+         */
+        WithoutDot: {
+            /** Because */
+            because: components["schemas"]["TraitRefOut"][];
+            /** Name */
+            name: string;
         };
         /** WorkCycle */
         WorkCycle: {

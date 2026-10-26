@@ -4630,6 +4630,7 @@ properties = { visible = "Path of Honorable Accord" }
 [[traits]]
 category = "paths"
 name = "Humanity"
+properties = { path_start = 4, path_start_page = "306" }
 
 [[traits]]
 category = "paths"

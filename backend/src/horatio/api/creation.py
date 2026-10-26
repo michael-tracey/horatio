@@ -1,12 +1,13 @@
 """Character creation: the picks a new character places, and finishing creation."""
 
 import uuid
+from collections.abc import Iterable
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from horatio import creation, sheets
-from horatio.api.sheets import players_character
+from horatio.api.sheets import TraitRefOut, players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character
 from horatio.permissions import visible_character
@@ -22,6 +23,15 @@ class PickedTrait(BaseModel):
     # False when the pick no longer meets its pool's restriction: a starting dot on
     # a discipline that is no longer in-clan. It is kept, but must move to finish.
     fits: bool = True
+    # What leaves it without a free dot, if that is why it does not fit (Inept).
+    because: list[TraitRefOut] = []
+
+
+class WithoutDot(BaseModel):
+    """A trait of a restricted pool that takes no pick, though it may be in-clan."""
+
+    name: str
+    because: list[TraitRefOut]
 
 
 class PoolOut(BaseModel):
@@ -37,7 +47,24 @@ class PoolOut(BaseModel):
     restriction: str | None
     # With a restriction, the traits that meet it now (the in-clan disciplines).
     options: list[str] | None = None
+    # Traits that take no pick here, and why: Inept's discipline, or the extra in-clan
+    # discipline of a merit (no free dot, p. 248). Some are among `options`.
+    without_dot: list[WithoutDot] = []
+    # For a rating the rules no longer give picks at (allowed 0, with picks still on
+    # it): the traits held that took it away, such as Thin Blooded.
+    because: list[TraitRefOut] = []
     traits: list[PickedTrait]
+
+
+class PathStart(BaseModel):
+    """A Morality that starts lower because a Path merit was bought in creation."""
+
+    category: str
+    # The Path, and the merit that converted Humanity to it.
+    name: str
+    rating: int
+    because: list[TraitRefOut]
+    page: str | None = None
 
 
 class StepNeed(BaseModel):
@@ -46,9 +73,20 @@ class StepNeed(BaseModel):
     message: str
 
 
+class BudgetChange(BaseModel):
+    """What changes a category's starting picks: the merits and flaws held that its
+    creation rules depend on (Thin Blooded, for the starting disciplines)."""
+
+    category: str
+    because: list[TraitRefOut]
+
+
 class CreationOut(BaseModel):
     complete: bool
     pools: list[PoolOut]
+    # Paths whose Morality starts lower than Humanity's 5, for the merits bought now.
+    path_starts: list[PathStart] = []
+    budget_changes: list[BudgetChange] = []
     # What the sheet must have before the wizard moves on from a step.
     needs: list[StepNeed]
 
@@ -78,8 +116,11 @@ class Unpick(BaseModel):
     detail: str = ""
 
 
+def refs(found: Iterable[tuple[str, str]]) -> list[TraitRefOut]:
+    return [TraitRefOut(category=c, name=n) for c, n in dict.fromkeys(found)]
+
+
 def creation_out(db: DbSession, character: Character) -> CreationOut:
-    pools = creation.pools(db, character)
     catalogue = creation.rules_for(db, character).rule_set.categories
     fits = creation.fitting(db, character)
     needs = [
@@ -87,31 +128,59 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
         for v in sheets.sheet_violations(db, character)
         if v.check.step is not None and v.check.strength in ("refuse", "complete")
     ]
+
+    def pool_out(p: creation.Pool) -> PoolOut:
+        return PoolOut(
+            category=p.category,
+            category_name=catalogue[p.category].name,
+            rating=p.rating,
+            kind=p.kind,
+            allowed=p.allowed,
+            used=p.used,
+            remaining=p.remaining,
+            restriction=p.restriction,
+            options=creation.options(db, character, p, fits),
+            without_dot=[
+                WithoutDot(name=name, because=refs(by))
+                for name, by in creation.without_dot(db, character, p, fits).items()
+            ],
+            because=refs(p.because),
+            traits=[
+                PickedTrait(
+                    name=r.definition.name,
+                    detail=r.trait.detail,
+                    pick=r.trait.creation_pick or 0,
+                    fits=fits(p, r.definition.name, r.trait.detail),
+                    because=refs(fits.without_dot(p, r.definition.name, r.trait.detail))
+                    if p.restriction
+                    else [],
+                )
+                for r in p.traits
+            ],
+        )
+
     return CreationOut(
         complete=character.creation_completed_at is not None,
         needs=list({(n.step, n.message): n for n in needs}.values()),
         pools=[
-            PoolOut(
-                category=p.category,
-                category_name=catalogue[p.category].name,
-                rating=p.rating,
-                kind=p.kind,
-                allowed=p.allowed,
-                used=p.used,
-                remaining=p.remaining,
-                restriction=p.restriction,
-                options=creation.options(db, character, p, fits),
-                traits=[
-                    PickedTrait(
-                        name=r.definition.name,
-                        detail=r.trait.detail,
-                        pick=r.trait.creation_pick or 0,
-                        fits=fits(p, r.definition.name, r.trait.detail),
-                    )
-                    for r in p.traits
-                ],
+            pool_out(p)
+            for p in sorted(
+                creation.pools_with_strays(db, character), key=lambda p: (p.category, -p.rating)
             )
-            for p in sorted(pools.values(), key=lambda p: (p.category, -p.rating))
+        ],
+        budget_changes=[
+            BudgetChange(category=category, because=refs(because))
+            for category, because in creation.budget_changes(db, character).items()
+        ],
+        path_starts=[
+            PathStart(
+                category=s.category,
+                name=s.name,
+                rating=s.rating,
+                because=refs([s.because]),
+                page=s.page,
+            )
+            for s in creation.path_starts(db, character)
         ],
     )
 
@@ -155,7 +224,9 @@ def remove_pick(
     character_id: uuid.UUID, body: Unpick, db: DbSession, user: CurrentUser
 ) -> CreationOut:
     character = players_character(db, user, character_id)
-    creation.remove_pick(db, user, character, body.category, body.name, body.detail)
+    # Taking a pick back takes what it granted with it (a Path merit's Morality).
+    with sheets.checked(db, character, user):
+        creation.remove_pick(db, user, character, body.category, body.name, body.detail)
     db.commit()
     return creation_out(db, character)
 

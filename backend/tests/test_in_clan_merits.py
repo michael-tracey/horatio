@@ -477,7 +477,9 @@ def test_the_starting_disciplines_follow_merits_that_change_what_is_in_clan(
     assert blight.status_code == 200, blight.text
 
     assert at(2)["options"] == ["Auspex", "Potence"]
-    assert at(2)["traits"] == [{"name": "Dominate", "detail": "", "pick": 2, "fits": False}]
+    assert at(2)["traits"] == [
+        {"name": "Dominate", "detail": "", "pick": 2, "fits": False, "because": []}
+    ]
 
 
 def test_a_merit_that_gives_a_discipline_in_clan_opens_its_starting_dots(troupe: Troupe) -> None:

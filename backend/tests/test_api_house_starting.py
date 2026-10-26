@@ -51,7 +51,8 @@ def test_the_rule_sets_starting_points_in_plain_words(troupe: Troupe) -> None:
     assert listed["skills"]["text"] == "1 at 4, 2 at 3, 3 at 2, 4 at 1"
     assert listed["merits"]["text"] == "7 points"
     assert listed["disciplines"]["text"] == (
-        "1 at 2 in-clan (without Thin Blooded); 2 at 1 in-clan"
+        "1 at 2 in-clan (without Thin Blooded); 2 at 1 in-clan (without Inept);"
+        " 1 at 1 in-clan (with Inept)"
     )
     assert not listed["skills"]["house"]
     assert troupe.narrator.client.get(f"/troupes/{troupe.id}/creation").status_code == 403

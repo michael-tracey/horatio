@@ -143,7 +143,7 @@ def test_a_pick_gives_free_dots(troupe: Troupe) -> None:
     state = pick(troupe.player, character_id, "attributes", "Physical", 7).json()
 
     assert pool(state, "attributes", 7)["traits"] == [
-        {"name": "Physical", "detail": "", "pick": 7, "fits": True}
+        {"name": "Physical", "detail": "", "pick": 7, "fits": True, "because": []}
     ]
     assert pool(state, "attributes", 7)["remaining"] == 0
     physical = trait(troupe.player, character_id, "Physical")
@@ -421,9 +421,9 @@ def test_a_whole_step_is_saved_in_one_go(troupe: Troupe) -> None:
     assert [
         (p["rating"], p["traits"]) for p in state["pools"] if p["category"] == "attributes"
     ] == [
-        (7, [{"name": "Physical", "detail": "", "pick": 7, "fits": True}]),
-        (5, [{"name": "Social", "detail": "", "pick": 5, "fits": True}]),
-        (3, [{"name": "Mental", "detail": "", "pick": 3, "fits": True}]),
+        (7, [{"name": "Physical", "detail": "", "pick": 7, "fits": True, "because": []}]),
+        (5, [{"name": "Social", "detail": "", "pick": 5, "fits": True, "because": []}]),
+        (3, [{"name": "Mental", "detail": "", "pick": 3, "fits": True, "because": []}]),
     ]
 
 

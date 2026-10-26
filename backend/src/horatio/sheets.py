@@ -735,11 +735,46 @@ def convert(
             was = before.get((category, origin), origin)
             if wanted == was or (wanted == origin and current.definition.name != was):
                 continue
+        was = current.definition.name
         definition, _ = find_definition(db, character, category, wanted)
         current.trait.trait_definition_id = definition.id
+        if character.kind == "pc" and character.creation_completed_at is None:
+            restart_path(rules, current.trait, category, origin, was, wanted)
         changed = True
     db.flush()
     return changed
+
+
+def path_start(rules: TroupeRules, category: str, origin: str) -> tuple[int, int] | None:
+    """A character who takes a Path merit while being built starts on the Path lower
+    than on `origin` (Humanity, 5): as (the Path's start, the origin's), or None if
+    the rules say nothing of it (core p. 306)."""
+    lower = rules.rule_set.trait_properties(category, origin).get("path_start")
+    start = next(
+        (s.rating for s in rules.starting_traits() if (s.category, s.name) == (category, origin)),
+        None,
+    )
+    return None if lower is None or start is None else (lower, start)
+
+
+def restart_path(
+    rules: TroupeRules,
+    trait: CharacterTrait,
+    category: str,
+    origin: str,
+    was: str,
+    now: str,
+) -> None:
+    """Taking a Path merit during creation lowers Morality's starting dots to the Path's
+    start (4 instead of 5), and dropping it puts them back. Dots bought on top, or a
+    Morality that was already moved, are left as they are."""
+    starts = path_start(rules, category, origin)
+    if starts is None or (was != origin) == (now != origin):
+        return
+    lower, usual = starts
+    before, after = (usual, lower) if was == origin else (lower, usual)
+    if trait.rating == before and trait.free_rating == before:
+        trait.rating = trait.free_rating = after
 
 
 # How many times granted traits may grant others in turn (Web of Knives gives

@@ -19,6 +19,13 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
                  read by splats.vampire_in_clan_disciplines, not by `effects`
     cost_percent the trait costs `amount` percent of its price, rounded up
                  (Supernatural Aria: Performance: Singing at 50)
+    price_out_of_clan  the trait is priced as out-of-clan, and takes no free
+                 starting dot, though the checks still count it native (Inept: the
+                 in-clan discipline its detail names)
+    no_free_dot  the extra in-clan discipline the target names takes no free
+                 starting dot (Additional Common Discipline, p. 248). It is for the
+                 extra disciplines (`extra_in_clan_disciplines`), and never for one
+                 the clan itself has in-clan
     convert      the trait named in `from` becomes the target, keeping its rating
                  (a Path merit turns Humanity into that Path); undone with the merit.
                  The target can be the player's choice (Path Adherent)
@@ -77,6 +84,8 @@ Kind = Literal[
     "cost_percent",
     "convert",
     "free_choices",
+    "price_out_of_clan",
+    "no_free_dot",
 ]
 KINDS = (
     "add",
@@ -87,8 +96,12 @@ KINDS = (
     "cost_percent",
     "convert",
     "free_choices",
+    "price_out_of_clan",
+    "no_free_dot",
 )
 TraitKey = tuple[str, str, str]  # category, name, detail
+# A trait a grant looks at: its detail, or None for any detail.
+LooseKey = tuple[str, str, str | None]
 # In a price entry, the name that stands for every trait of the category.
 WHOLE_CATEGORY = "*"
 # The specialisation a player names in their own words.
@@ -129,8 +142,14 @@ class Effects:
     # or None for any).
     in_clan_priced: set[tuple[str, str, str | None]] = field(default_factory=set)
     cost_percent: dict[tuple[str, str, str | None], int] = field(default_factory=dict)
+    # Traits priced as out-of-clan, and extra in-clan disciplines that take no free dot,
+    # with the source traits (category, name) each is because of.
+    out_of_clan_priced: dict[LooseKey, list[tuple[str, str]]] = field(default_factory=dict)
+    no_free_dot: dict[LooseKey, list[tuple[str, str]]] = field(default_factory=dict)
     # Conversions the sheet's grants want: (category, from name) -> to name.
     converts: dict[tuple[str, str], str] = field(default_factory=dict)
+    # The source trait of each conversion: (category, from name) -> (category, name).
+    converted_by: dict[tuple[str, str], tuple[str, str]] = field(default_factory=dict)
     # Which source traits each granted trait owes its dots to.
     sources: dict[TraitKey, list[str]] = field(default_factory=dict)
     # Source traits whose detail does not say what they grant.
@@ -362,7 +381,9 @@ def effects(
                     to = chosen[1]
                 else:
                     to = grant.target["name"]
-                found.converts[(grant.convert_from["category"], grant.convert_from["name"])] = to
+                origin = (grant.convert_from["category"], grant.convert_from["name"])
+                found.converts[origin] = to
+                found.converted_by[origin] = (trait.category, trait.name)
                 continue
             if "choose" in grant.target:
                 target = chosen_target(grant, trait.detail, rule_set)
@@ -379,7 +400,22 @@ def effects(
                 if grant.kind == "cost_percent":
                     found.cost_percent[(category, name, detail or None)] = grant.amount
                     continue
-            elif grant.kind in ("price_in_clan", "cost_percent"):
+                if grant.kind in ("price_out_of_clan", "no_free_dot"):
+                    held = (
+                        found.out_of_clan_priced
+                        if grant.kind == "price_out_of_clan"
+                        else found.no_free_dot
+                    )
+                    held.setdefault((category, name, detail or None), []).append(
+                        (trait.category, trait.name)
+                    )
+                    continue
+            elif grant.kind in (
+                "price_in_clan",
+                "cost_percent",
+                "price_out_of_clan",
+                "no_free_dot",
+            ):
                 targets: list[str] = grant.target.get("names") or [
                     grant.target.get("name", WHOLE_CATEGORY)
                 ]
@@ -392,8 +428,15 @@ def effects(
                         )
                         if grant.kind == "price_in_clan":
                             found.in_clan_priced.add(key3)
-                        else:
+                        elif grant.kind == "cost_percent":
                             found.cost_percent[key3] = grant.amount
+                        else:
+                            held = (
+                                found.out_of_clan_priced
+                                if grant.kind == "price_out_of_clan"
+                                else found.no_free_dot
+                            )
+                            held.setdefault(key3, []).append((trait.category, trait.name))
                 continue
             elif grant.kind == "raise_max":
                 names = grant.target.get("names") or [grant.target.get("name")]
@@ -420,17 +463,26 @@ def effects(
 class Priced:
     """What a sheet's grants do to prices."""
 
-    in_clan: Set[tuple[str, str, str | None]]
-    cost_percent: Mapping[tuple[str, str, str | None], int]
+    in_clan: Set[LooseKey]
+    cost_percent: Mapping[LooseKey, int]
+    # Priced as out-of-clan, and extra in-clan disciplines without a free dot: the
+    # traits (category, name) each is because of.
+    out_of_clan: Mapping[LooseKey, tuple[tuple[str, str], ...]]
+    no_free_dot: Mapping[LooseKey, tuple[tuple[str, str], ...]]
 
 
 def priced(rule_set: RuleSetData, sheet: Sequence[SheetTrait]) -> Priced:
-    """What the sheet's grants price as in-clan, and at what percent: worked out
-    once for each sheet, as pricing asks it of every trait it prices."""
+    """What the sheet's grants price as in-clan or out-of-clan, and at what percent:
+    worked out once for each sheet, as pricing asks it of every trait it prices."""
 
     def work_out() -> Priced:
         found = effects(rule_set.grants, sheet, rule_set)
-        return Priced(frozenset(found.in_clan_priced), MappingProxyType(dict(found.cost_percent)))
+        return Priced(
+            frozenset(found.in_clan_priced),
+            MappingProxyType(dict(found.cost_percent)),
+            MappingProxyType({k: tuple(v) for k, v in found.out_of_clan_priced.items()}),
+            MappingProxyType({k: tuple(v) for k, v in found.no_free_dot.items()}),
+        )
 
     return rule_set.remembered(("priced", tuple(sheet)), work_out)
 
