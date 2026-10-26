@@ -2939,12 +2939,15 @@ test("only a character with a ritual discipline sees rituals, up to its path's l
   await expect(disciplines.getByRole("button", { name: /^\d+ Rituals$/ })).toBeVisible();
   await disciplines.getByRole("button", { name: /^\d+ Rituals$/ }).click();
   await expect(chips.getByRole("button", { name: /^Rituals/ })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Search Rituals").fill(ritual(1));
+  await expect(p.getByRole("button", { name: new RegExp(`^${ritual(1)}`) })).toBeEnabled();
+  // A ritual of each level comes before one of the next.
   await p.getByLabel("Search Rituals").fill(ritual(2));
-  await expect(p.getByRole("button", { name: new RegExp(`^${ritual(2)}`) })).toBeEnabled();
-  await p.getByLabel("Search Rituals").fill(ritual(3));
-  // Left out of what the character can take, but a tap away, with the reason.
   await expect(p.getByText("None you can take. 1 you can't:")).toBeVisible();
   await p.getByRole("button", { name: "show", exact: true }).click();
+  await expect(p.getByText("A thaumaturge learns a ritual of each level before one of the next.", { exact: false })).toBeVisible();
+  await p.getByLabel("Search Rituals").fill(ritual(3));
+  // Left out of what the character can take, but a tap away, with the reason.
   await expect(p.getByText("A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more.", { exact: false })).toBeVisible();
 });
 

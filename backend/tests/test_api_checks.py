@@ -165,6 +165,13 @@ def test_rituals_are_bought_at_their_level_with_a_path_that_high(troupe: Troupe)
     take(troupe.player, character_id, "disciplines", "Thaumaturgy: Path of Blood", 1)
     level = 2  # Ritual levels come from the book; pick one level 2 ritual.
     catalogue = troupe.player.client.get("/rules/vampire").json()["traits"]
+    first = next(
+        t["name"]
+        for t in catalogue
+        if t["category"] == "rituals"
+        and t["name"].startswith("Thaumaturgy: ")
+        and t["fixed_rating"] == 1
+    )
     ritual = next(
         t["name"]
         for t in catalogue
@@ -178,6 +185,8 @@ def test_rituals_are_bought_at_their_level_with_a_path_that_high(troupe: Troupe)
     assert refused.status_code == 409
     assert "needs a path of Thaumaturgy at 2" in refused.json()["detail"]
     take(troupe.player, character_id, "disciplines", "Thaumaturgy: Path of Blood", 2)
+    # A ritual of each level comes before one of the next.
+    assert take(troupe.player, character_id, "rituals", first, 1).status_code == 200
     bought = take(troupe.player, character_id, "rituals", ritual, level)
     assert bought.status_code == 200, bought.text
     assert bought.json()["cost"] == 4
