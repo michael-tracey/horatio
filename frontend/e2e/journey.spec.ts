@@ -1742,10 +1742,11 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(social).toContainText("Fame 2");
   await expect(p.getByText("+2 Social pools, against mortals")).toBeVisible();
   // Switched off, it drops back and waits at the foot of the tab.
-  await p.getByLabel("Fame on").uncheck();
+  await p.getByLabel("Fame on").click();
+  await expect(p.getByLabel("Fame on")).not.toBeChecked();
   await expect(social).not.toContainText("Fame");
   await expect(p.getByRole("heading", { name: "Switched off" })).toBeVisible();
-  await p.getByLabel("Fame on").check();
+  await p.getByLabel("Fame on").click();
   await expect(social).toContainText("Fame 2");
   await p.screenshot(shots("play-pools"));
   await p.getByRole("tab", { name: "Sheet" }).click();
