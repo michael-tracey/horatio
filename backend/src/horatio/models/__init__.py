@@ -11,6 +11,7 @@ from horatio.models.base import Base
 from horatio.models.characters import (
     Character,
     CharacterTrait,
+    Diablerie,
     SheetVersion,
     TraitException,
     XpEntry,
@@ -68,6 +69,7 @@ __all__ = [
     "Answer",
     "CycleParticipant",
     "Delivery",
+    "Diablerie",
     "DisciplinePurchase",
     "DowntimeCycle",
     "EmailNotice",

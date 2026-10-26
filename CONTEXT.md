@@ -89,6 +89,10 @@ _Avoid_: Approved character, draft (there are no per-troupe drafts)
 A troupe a character is in that is not its home troupe. Its staff can see the sheet, but they approve nothing on it and award it no experience.
 _Avoid_: Secondary troupe, guest troupe
 
+**Diablerie**:
+A vampire draining another of better Generation, which raises the diablerist's Generation by one. The home troupe's lead storyteller, storytellers and assistant storytellers record it on the sheet with its date (or approve the player's request to), and the sheet changes with it: Generation up one for free, techniques the new Generation cannot hold lost with their XP refunded, Humanity down one (or Beast traits at the next game for a character on a Path). Earlier buys keep their cost.
+_Avoid_: Amaranth, level-up
+
 **Retired Character**:
 A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history.
 _Avoid_: Deleted, dead, inactive

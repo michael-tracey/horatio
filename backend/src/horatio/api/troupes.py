@@ -41,6 +41,9 @@ class TroupeOut(BaseModel):
     starting_blood: int | None
     # House rule: how many days back influence lookups look, from their cycle's close.
     influence_lookback_days: int
+    # House rule: what a diablerie does to a Lesser Generation or Thin Blooded flaw:
+    # leave | remove | keep_xp (horatio.diablerie).
+    diablerie_flaws: str
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
     portrait: str | None
     # Its banner, across the top of its page (add "/1500.webp" or "/750.webp"), or None.
@@ -99,6 +102,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         xp_ceiling=figures.ceiling,
         starting_blood=troupe.starting_blood,
         influence_lookback_days=troupe.influence_lookback_days,
+        diablerie_flaws=troupe.diablerie_flaws,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
         public=troupe.public,

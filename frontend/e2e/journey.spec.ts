@@ -3449,6 +3449,98 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   await expect(p.getByText("exc-lead gave Wren Calm Heart 1, free: Raised by a True Brujah")).toBeVisible();
 });
 
+test("a player says they committed diablerie, staff approve it, and then record another", async ({ browser }) => {
+  const custodian = await person(browser, "dia-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "dia-lead");
+  const player = await person(browser, "dia-player");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Cinders ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  // Sable is built through the API and accepted at Generation 1.
+  const p = player.page;
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Sable" });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+  const asked = await send("POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  const accepted = await lead.page.request.post(`/api/approvals/${asked.id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBe(200);
+  const held = async (name: string) => (await (await p.request.get(`/api/characters/${id}/sheet`)).json()).traits.find((t: { name: string }) => t.name === name).rating;
+
+  // The troupe's setting for a Lesser Generation holder starts at leaving the flaw.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/starting`);
+  await expect(l.getByText("Leave the flaw.")).toBeVisible();
+
+  // The player asks, with the date and a note.
+  await p.goto(`/characters/${id}`);
+  await p.getByRole("button", { name: "Ask staff: I committed diablerie" }).click();
+  const ask = p.getByRole("form", { name: "Ask staff about diablerie" });
+  await ask.getByLabel("Date").fill("2026-10-24");
+  await ask.getByLabel("Note").fill("Drank my sire at Elysium");
+  await ask.getByRole("button", { name: "Ask staff", exact: true }).click();
+  await expect(p.getByText("You said Sable committed diablerie.")).toBeVisible();
+  expect(await held("Generation")).toBe(1);
+
+  // The lead sees what approving does, changes the Beast traits, and approves.
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  await l.getByLabel("Kind").selectOption({ label: "Diablerie" });
+  const card = l.locator("section").filter({ hasText: "Sable" });
+  await expect(card).toContainText("committed diablerie on 24 Oct 2026");
+  await expect(card).toContainText("Generation 1 → 2, as a free dot. Earlier buys keep what they cost.");
+  await expect(card).toContainText("Humanity goes down 1");
+  await card.getByLabel("Beast traits at the next game").fill("2");
+  await card.getByLabel("Who was diablerized").fill("Her sire");
+  await l.screenshot(shots("diablerie-approval"));
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+
+  // Generation went up free, Humanity fell, and the date shows on the sheet and the printed sheet.
+  expect(await held("Generation")).toBe(2);
+  expect(await held("Humanity")).toBe(4);
+  await p.reload();
+  await expect(p.getByRole("list", { name: "Diablerie" })).toContainText("Diablerie: 24 Oct 2026");
+  await expect(p.getByRole("list", { name: "Diablerie" })).not.toContainText("Her sire");
+  await p.screenshot(shots("diablerie-sheet"));
+  await p.goto(`/print/characters/${id}`);
+  await expect(p.getByText("Diablerie: 24 Oct 2026")).toBeVisible();
+  // Two Beast traits wait for the next game on the Play View.
+  expect((await (await p.request.get(`/api/characters/${id}/play`)).json()).beast.value).toBe(2);
+
+  // The lead records another from the character's page, and takes more Humanity than filled in.
+  await l.goto(`/characters/${id}`);
+  await expect(l.getByRole("list", { name: "Diablerie" })).toContainText("Her sire");
+  await l.getByRole("button", { name: "Record diablerie" }).click();
+  const form = l.getByRole("form", { name: "Record diablerie" });
+  await form.getByLabel("Date").fill("2026-10-25");
+  await form.getByLabel("Who was diablerized").fill("The Prince");
+  await expect(form).toContainText("Generation 2 → 3, as a free dot.");
+  await form.getByLabel("Humanity lowered by").fill("2");
+  await expect(form).toContainText("Humanity goes down 2, with no XP back.");
+  await form.getByRole("button", { name: "Record diablerie" }).click();
+  await expect(l.getByRole("list", { name: "Diablerie" })).toContainText("Diablerie: 25 Oct 2026");
+  expect(await held("Generation")).toBe(3);
+  expect(await held("Humanity")).toBe(2);
+});
+
 test("feeding in a downtime: Herd given to another character, both answered, and half Blood at the next game", async ({ browser }) => {
   const custodian = await person(browser, "dtfeed-custodian");
   makeCustodian(custodian.email);

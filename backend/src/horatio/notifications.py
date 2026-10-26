@@ -140,6 +140,8 @@ def approval_items(
                 f"{character} bought {name}{detail} {bought.from_rating} → {bought.to_rating}"
                 f" ({bought.cost} XP)"
             )
+        elif approval.kind == "diablerie":
+            summary = f"{character} says they committed diablerie"
         elif approval.kind == "home_troupe_change":
             moving = moves.get(approval.id) is not None
             summary = f"{character} asks to {'move' if moving else 'make'} {troupe.name} its home"

@@ -36,7 +36,7 @@ export function ExceptionMark({ exception }: { exception: ExceptionOut }) {
   );
 }
 
-const named = (e: ExceptionOut) => `${e.name}${e.detail ? `: ${e.detail}` : ""} ${e.rating}`;
+const named = (e: ExceptionOut) => `${e.name}${e.detail ? `: ${e.detail}` : ""}${e.rating ? ` ${e.rating}` : ""}`;
 
 /** Every trait the character holds by exception, with who approved or gave it, and why. */
 export function ExceptionsCard({ exceptions }: { exceptions: ExceptionOut[] }) {

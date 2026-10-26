@@ -58,6 +58,9 @@ class Character(Imported, Record):
     # Its last downtime's answer was half Blood: its next Play View game starts
     # at half (horatio.feeding, horatio.play). Cleared when that game starts.
     half_blood_next_game: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Beast traits a diablerie adds to its next Play View game (horatio.diablerie),
+    # which start there and are cleared when that game starts.
+    beast_next_game: Mapped[int] = mapped_column(default=0, server_default="0")
 
 
 class CharacterTrait(Record):
@@ -121,6 +124,32 @@ class TraitException(Record):
     # Who gave it or approved it, and when; none while it waits.
     given_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     given_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Diablerie(Record):
+    """A diablerie on a character's sheet (MET: VTM p. 306): recorded by the home
+    troupe's staff, or asked by the player and kept here, unrecorded, while it waits
+    on an approval. `outcome` says what recording it did."""
+
+    __tablename__ = "diableries"
+
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"))
+    # The approval a player's request waits on; none for one staff recorded.
+    approval_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("approvals.id"), unique=True)
+    # The night it happened, as p. 306 asks the sheet to mark.
+    committed_on: Mapped[date] = mapped_column(Date)
+    # Who was diablerized, as staff write it: for staff only.
+    victim: Mapped[str] = mapped_column(default="", server_default="")
+    note: Mapped[str] = mapped_column(default="", server_default="")
+    requested_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # Who recorded it (or approved it) and when; none while it waits.
+    recorded_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    recorded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # What recording it did: the Generations, Humanity lowered, Beast traits added,
+    # techniques lost with their refunds, and what was done about a Lesser
+    # Generation or Thin Blooded flaw.
+    outcome: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class SheetVersion(Record):

@@ -1,14 +1,21 @@
 """The approvals queue storytellers and assistant storytellers work from."""
 
 import uuid
+from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import pictures, sheets, social_age, trait_exceptions, xp_range
+from horatio import diablerie, pictures, sheets, social_age, trait_exceptions, xp_range
 from horatio.api.sheets import ApprovalOut, approval_out
+from horatio.api.trait_exceptions import (
+    DiablerieEffectsOut,
+    DiablerieEffectsPlanOut,
+    effects_out,
+    plan_out,
+)
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Approval,
@@ -60,6 +67,19 @@ class ExceptionAskOut(BaseModel):
     normal_cost: int | None
 
 
+class DiablerieAskOut(BaseModel):
+    """A diablerie a player says they committed: when, and what recording it does."""
+
+    committed_on: date
+    note: str
+    # Staff only (this queue is theirs): who was diablerized, once they have said.
+    victim: str
+    # While it waits: what recording it would do, as the form fills it in.
+    plan: DiablerieEffectsPlanOut | None = None
+    # Once approved: what it did.
+    done: DiablerieEffectsOut | None = None
+
+
 class XpReviewOut(BaseModel):
     """A joining character's XP against the troupe's floor and ceiling: as it
     stands while the request waits, and what was done once it is decided."""
@@ -97,6 +117,8 @@ class QueuedApproval(ApprovalOut):
     discipline: DisciplineOut | None
     # For an exception: the rules it breaks, why, and whether it is asked free.
     exception: ExceptionAskOut | None = None
+    # For a diablerie a player asked to record.
+    diablerie: DiablerieAskOut | None = None
     # For a home troupe change: each difference and how it is to be settled.
     reconciliation: list[ReconciliationOut]
     # For a player character's home troupe change: its XP against the floor and ceiling.
@@ -132,6 +154,14 @@ class XpDecision(BaseModel):
     extra_reason: str = Field(default="", max_length=500)
 
 
+class DiablerieDecision(BaseModel):
+    """A diablerie only: what staff change from the form's fill-in when approving."""
+
+    victim: str | None = Field(default=None, max_length=200)
+    humanity_lowered: int | None = Field(default=None, ge=0, le=10)
+    beast_traits: int | None = Field(default=None, ge=0, le=5)
+
+
 class Decision(BaseModel):
     note: str = ""
     # Exceptions asked free only: approve, but charge the XP at the normal price.
@@ -139,6 +169,7 @@ class Decision(BaseModel):
     # Home troupe changes only: settle these differences differently from the player's proposal.
     settlements: list[SettlementOverride] = []
     xp: XpDecision | None = None
+    diablerie: DiablerieDecision | None = None
 
 
 def reconciliation_out(db: DbSession, approval: Approval) -> list[ReconciliationOut]:
@@ -216,6 +247,27 @@ def exception_out(db: DbSession, approval: Approval) -> ExceptionAskOut | None:
     )
 
 
+def diablerie_out(db: DbSession, approval: Approval) -> DiablerieAskOut | None:
+    if approval.kind != "diablerie":
+        return None
+    asked = diablerie.asked_for(db, approval)
+    if asked is None:
+        return None
+    character = db.get_one(Character, approval.character_id)
+    plan = (
+        plan_out(db, character, diablerie.plan_for(db, character))
+        if approval.status == "pending"
+        else None
+    )
+    return DiablerieAskOut(
+        committed_on=asked.committed_on,
+        note=asked.note,
+        victim=asked.victim,
+        plan=plan,
+        done=effects_out(asked.outcome),
+    )
+
+
 def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
     if approval.kind not in sheets.HELD_KINDS:
         return None
@@ -241,7 +293,8 @@ def troupe_approvals(
     db: DbSession,
     user: CurrentUser,
     state: Literal["pending", "approved", "declined", "withdrawn"] = "pending",
-    kind: Literal["home_troupe_change", "discipline", "review", "exception"] | None = None,
+    kind: Literal["home_troupe_change", "discipline", "review", "exception", "diablerie"]
+    | None = None,
 ) -> list[QueuedApproval]:
     """The troupe's requests in one state, oldest first: of one kind, if given."""
     troupe = db.get(Troupe, troupe_id)
@@ -266,6 +319,7 @@ def troupe_approvals(
             clan=standing[c.id].clan,
             discipline=discipline_out(db, a),
             exception=exception_out(db, a),
+            diablerie=diablerie_out(db, a),
             reconciliation=reconciliation_out(db, a),
             xp=xp_review_out(db, a, c),
             locks=locks_out(db, a, c),
@@ -291,6 +345,11 @@ def decide(
         {o.item_id: o.settlement for o in body.settlements},
         xp_range.Decision(**body.xp.model_dump()) if body.xp else None,
         at_cost=body.at_cost,
+        diablerie=diablerie.Adjust(
+            body.diablerie.victim, body.diablerie.humanity_lowered, body.diablerie.beast_traits
+        )
+        if body.diablerie
+        else None,
     )
     db.commit()
     return approval_out(approval)
