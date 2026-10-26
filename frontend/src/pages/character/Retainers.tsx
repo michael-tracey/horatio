@@ -26,9 +26,12 @@ type Draft = {
   lost: string;
   lost_on: string;
   npc_id: string;
+  ghoul: boolean;
+  specialties: string[];
+  discipline: string;
 };
 
-const blank = (merit: string): Draft => ({ id: null, name: "", dots: 1, bought: false, description: "", from_merit: merit, lost: "", lost_on: "", npc_id: "" });
+const blank = (merit: string): Draft => ({ id: null, name: "", dots: 1, bought: false, description: "", from_merit: merit, lost: "", lost_on: "", npc_id: "", ghoul: false, specialties: [], discipline: "" });
 
 const draftOf = (r: RetainerOut): Draft => ({
   id: r.id,
@@ -40,6 +43,9 @@ const draftOf = (r: RetainerOut): Draft => ({
   lost: r.lost ?? "",
   lost_on: r.lost_on ?? "",
   npc_id: r.npc_id ?? "",
+  ghoul: r.ghoul,
+  specialties: r.specialties,
+  discipline: r.discipline,
 });
 
 /** A Retainer's links to its NPC's sheet and Play View, for staff who can see it. */
@@ -67,7 +73,9 @@ export function RetainerLines({ retainers }: { retainers: RetainerOut[] }) {
         <li key={r.id ?? `bought/${r.name}/${i}`} className="border-b border-ash/60 py-1 last:border-0">
           <span className={r.lost ? "text-mist line-through" : r.name ? "" : "text-mist"}>{retainerName(r)}</span>
           <span className="text-gold"> · {r.dots}</span>
+          {r.ghoul && <span className="text-mist"> · ghoul</span>}
           {retainerSource(r) && <span className="text-mist"> · {retainerSource(r)}</span>}
+          {specialtiesOf(r) && <span className="text-mist"> · {specialtiesOf(r)}</span>}
           {r.lost && (
             <span className="text-blood-bright">
               {" "}
@@ -112,13 +120,16 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
             lost: d.lost || null,
             lost_on: d.lost ? d.lost_on || null : null,
             npc_id: d.npc_id || null,
+            ghoul: d.ghoul,
+            specialties: d.specialties,
+            discipline: d.ghoul ? d.discipline : "",
           })),
         },
       }),
     ),
   );
   if (!data.data) return null;
-  const { retainers, can_edit, can_link } = data.data;
+  const { retainers, can_edit, can_link, skills, disciplines } = data.data;
   if (retainers.length === 0 && !can_edit) return null;
   // One held without a name has nothing kept for it until it is named on the sheet.
   const unnamed = retainers.filter((r) => r.bought && !r.name).length;
@@ -186,6 +197,7 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
                     </>
                   )}
                 </div>
+                <Specialties draft={d} label={label} skills={skills} disciplines={disciplines} onChange={(patch) => change(i, patch)} />
                 <Input aria-label={`About ${label}`} value={d.description} onChange={(e) => change(i, { description: e.target.value })} placeholder="Who they are, what they do" className="min-h-7 py-0.5 text-xs" />
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Select aria-label={`Status of ${label}`} value={d.lost} onChange={(e) => change(i, { lost: e.target.value, lost_on: e.target.value ? d.lost_on || new Date().toISOString().slice(0, 10) : "" })} className="min-h-7 w-32 py-0.5 text-xs">
@@ -229,6 +241,75 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
         </form>
       )}
       <ErrorText error={save.error} />
+    </div>
+  );
+}
+
+/** A Retainer's specialties in short: "Brawl, Stealth, Obfuscate". */
+function specialtiesOf(r: Pick<RetainerOut, "specialties" | "discipline">): string {
+  return [...r.specialties, ...(r.discipline ? [r.discipline] : [])].join(", ");
+}
+
+/**
+ * Whether a Retainer is a ghoul, and its specialties: one a dot, each a skill
+ * (+5 to its pool), or for a ghoul one discipline in-clan for the character it
+ * serves, which gives it that discipline's powers up to its dots (p. 105).
+ */
+function Specialties({
+  draft,
+  label,
+  skills,
+  disciplines,
+  onChange,
+}: {
+  draft: Draft;
+  label: string;
+  skills: string[];
+  disciplines: string[];
+  onChange: (patch: Partial<Draft>) => void;
+}) {
+  const taken = draft.specialties.length + (draft.ghoul && draft.discipline ? 1 : 0);
+  const full = taken >= draft.dots;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <label className="flex items-center gap-1 text-mist">
+        <input type="checkbox" aria-label={`${label} is a ghoul`} checked={draft.ghoul} onChange={(e) => onChange({ ghoul: e.target.checked, discipline: e.target.checked ? draft.discipline : "" })} />
+        Ghoul
+      </label>
+      <span className={taken > draft.dots ? "text-blood-bright" : "text-mist"}>
+        Specialties {taken} of {draft.dots}:
+      </span>
+      {draft.specialties.map((skill) => (
+        <span key={skill} className="inline-flex items-center gap-1 rounded border border-ash px-1">
+          {skill}
+          <button type="button" aria-label={`Remove ${skill} from ${label}`} className="text-mist hover:text-blood-bright" onClick={() => onChange({ specialties: draft.specialties.filter((x) => x !== skill) })}>
+            ×
+          </button>
+        </span>
+      ))}
+      {!full && (
+        <Select
+          aria-label={`Add a specialty for ${label}`}
+          value=""
+          onChange={(e) => e.target.value && onChange({ specialties: [...draft.specialties, e.target.value] })}
+          className="min-h-7 w-36 py-0.5 text-xs"
+        >
+          <option value="">+ A skill…</option>
+          {skills
+            .filter((x) => !draft.specialties.includes(x))
+            .map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+        </Select>
+      )}
+      {draft.ghoul && (
+        <Select aria-label={`Discipline for ${label}`} value={draft.discipline} onChange={(e) => onChange({ discipline: e.target.value })} className="min-h-7 w-40 py-0.5 text-xs" disabled={full && !draft.discipline}>
+          <option value="">No discipline</option>
+          {disciplines.map((x) => (
+            <option key={x}>{x}</option>
+          ))}
+        </Select>
+      )}
     </div>
   );
 }

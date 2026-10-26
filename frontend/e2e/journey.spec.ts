@@ -5099,9 +5099,8 @@ test("a player says who each Retainer bought is, and a storyteller links one to 
 
   // Both show on the printed sheet and the Play View.
   await p.goto(`/print/characters/${id}`);
-  const printed = p.getByRole("list", { name: "Retainers" });
-  await expect(printed.getByText("Marta, the driver (3) – Drives at night")).toBeVisible();
-  await expect(printed.getByText("Pike (1)")).toBeVisible();
+  await expect(p.getByRole("article", { name: "Retainer: Marta, the driver" })).toContainText("Drives at night");
+  await expect(p.getByRole("article", { name: "Retainer: Pike" })).toContainText("Pool 2");
   await p.goto(`/play/characters/${id}`);
   await p.getByRole("tab", { name: "Sheet" }).click();
   const playing = p.getByRole("list", { name: "Retainers" });
@@ -5178,11 +5177,44 @@ test("in the cart, a second Retainer and a second Alternate Identity are each bo
     await expect(backgrounds.getByRole("button", { name: `Raise ${name}`, exact: true })).toBeVisible();
   await expect(p.getByLabel("Retainers list").getByRole("listitem")).toHaveCount(2);
 
-  // And on the Play View's Sheet tab, both identities by name.
+  // Bocephus is a ghoul, with three skills and Obfuscate as his specialties (p. 105).
+  const list = p.getByLabel("Retainers list");
+  await list.getByRole("button", { name: "Edit Retainers" }).click();
+  await list.getByLabel("Bocephus is a ghoul").check();
+  for (const skill of ["Brawl", "Stealth", "Dodge"]) await list.getByLabel("Add a specialty for Bocephus").selectOption(skill);
+  await list.getByLabel("Discipline for Bocephus").selectOption("Obfuscate");
+  await expect(list.getByText("Specialties 4 of 4:")).toBeVisible();
+  await list.getByRole("button", { name: "Save Retainers" }).click();
+  await expect(list.getByText("Brawl, Stealth, Dodge, Obfuscate")).toBeVisible();
+  // Father Kell is Accepted by the Sabbat; each identity says what its rating stands up to.
+  await p.getByRole("button", { name: "Accepted by a sect or group?" }).last().click();
+  await p.getByLabel("Who Accepts Father Kell").fill("the Sabbat");
+  await p.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(p.getByLabel("About Father Kell")).toContainText("Accepted by the Sabbat.");
+  await expect(p.getByLabel("About Dr. Ellen Marsh, coroner")).toContainText("Well grounded");
+
+  // On the Play View, each Retainer has a pool of its own, and its health and Blood to tap.
   await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  const bocephus = p.getByRole("article", { name: "Retainer: Bocephus" });
+  const rook = p.getByRole("article", { name: "Retainer: Rook" });
+  await expect(bocephus.getByLabel("Bocephus's pool: 8")).toBeVisible();
+  await expect(rook.getByLabel("Rook's pool: 4")).toBeVisible();
+  await expect(bocephus.getByRole("listitem").filter({ hasText: "Brawl" })).toContainText("13");
+  await expect(bocephus.getByText("4. Vanish From the Mind's Eye")).toBeVisible();
+  await expect(bocephus.getByText("Cloak the Gathering")).toHaveCount(0);
+  await expect(rook.getByText("Blood")).toHaveCount(0);
+  await p.getByRole("checkbox", { name: "Quick notes" }).uncheck();
+  await bocephus.getByRole("button", { name: "Spend Bocephus: Blood" }).click();
+  await expect(bocephus.getByLabel("Bocephus: Blood: 4 of 5")).toBeVisible();
+  await rook.getByRole("button", { name: "Spend Rook: health" }).click();
+  await expect(rook.getByLabel("Rook: health: 1 of 2")).toBeVisible();
+
+  // And on the Sheet tab, both identities by name, with who Accepts one.
   await p.getByRole("tab", { name: "Sheet" }).click();
   await expect(p.getByText("Alternate Identity: Dr. Ellen Marsh, coroner")).toBeVisible();
   await expect(p.getByText("Alternate Identity: Father Kell")).toBeVisible();
+  await expect(p.getByText("Accepted by the Sabbat.")).toBeVisible();
 });
 
 test("a page whose file is gone after a deploy reloads once, then says Horatio was updated", async ({ browser }) => {

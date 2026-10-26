@@ -354,3 +354,108 @@ def test_the_printed_sheet_and_play_reference_list_them(troupe: Troupe) -> None:
 
     assert [r["name"] for r in printed["retainers"]] == ["Marta, the driver", "Pike"]
     assert [r["dots"] for r in reference["retainers"]] == [3, 1]
+
+
+def nosferatu_with_bocephus(troupe: Troupe) -> str:
+    """A Nosferatu with Bocephus, a four-dot Retainer (the book's own, p. 105)."""
+    character_id = new_character(troupe, troupe.player, clan="Nosferatu")
+    assert buy(troupe.player, character_id, "Retainers", "Bocephus", 4).status_code == 200
+    return character_id
+
+
+BOCEPHUS = {
+    "name": "Bocephus",
+    "dots": 4,
+    "ghoul": True,
+    "specialties": ["Brawl", "Stealth", "Dodge"],
+    "discipline": "Obfuscate",
+}
+
+
+def test_each_retainer_has_its_own_pool_specialties_and_powers(troupe: Troupe) -> None:
+    character_id = nosferatu_with_bocephus(troupe)
+
+    saved = put(troupe.player, character_id, [BOCEPHUS])
+
+    assert saved.status_code == 200, saved.text
+    body = saved.json()
+    assert "Obfuscate" in body["disciplines"] and "Brawl" in body["skills"]
+    bocephus = body["retainers"][0]
+    assert (bocephus["pool"], bocephus["health"], bocephus["blood"]) == (8, 4, 5)
+    assert bocephus["specialties"] == ["Brawl", "Stealth", "Dodge"]
+    assert [p["level"] for p in bocephus["powers"]] == [1, 2, 3, 4]
+    assert bocephus["tracker"] == "retainer:Bocephus"
+
+
+def test_a_retainers_specialties_are_one_a_dot_and_a_discipline_only_for_a_ghoul(
+    troupe: Troupe,
+) -> None:
+    character_id = nosferatu_with_bocephus(troupe)
+    for wrong in (
+        {"specialties": ["Brawl", "Stealth", "Dodge", "Melee"]},
+        {"specialties": ["Brawl", "Brawl"]},
+        {"specialties": ["Juggling"]},
+        {"discipline": "Dominate"},
+    ):
+        refused = put(troupe.player, character_id, [{**BOCEPHUS, **wrong}])
+        assert refused.status_code == 422, wrong
+
+    # Not a ghoul: no discipline, no Blood.
+    body = put(troupe.player, character_id, [{**BOCEPHUS, "ghoul": False}]).json()
+    assert (body["retainers"][0]["discipline"], body["retainers"][0]["blood"]) == ("", 0)
+
+
+def test_a_retainers_health_and_blood_are_tapped_at_a_game(troupe: Troupe) -> None:
+    character_id = nosferatu_with_bocephus(troupe)
+    put(troupe.player, character_id, [BOCEPHUS])
+    taps = [
+        {
+            "id": str(uuid.uuid4()),
+            "happened_at": f"2026-10-24T20:0{n}:00+00:00",
+            "kind": "change",
+            "tracker": f"retainer:Bocephus/{what}",
+            "amount": -1,
+        }
+        for n, what in enumerate(("health", "blood", "blood"))
+    ]
+
+    response = troupe.player.client.post(
+        f"/characters/{character_id}/play/taps", json={"taps": taps}
+    )
+
+    assert response.status_code == 200, response.text
+    state = response.json()
+    [tracked] = state["retainers"]
+    assert tracked["name"] == "Bocephus"
+    assert (tracked["health"]["value"], tracked["health"]["most"]) == (3, 4)
+    assert (tracked["blood"]["value"], tracked["blood"]["most"]) == (3, 5)
+    assert "Bocephus: Blood 4 → 3" in [e["text"] for e in state["log"]]
+
+
+def test_each_identity_is_listed_with_its_rating_and_who_accepts_it(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    for name, dots in (("Dr. Ellen Marsh, coroner", 1), ("Father Kell", 4)):
+        assert buy(troupe.player, character_id, "Alternate Identity", name, dots).status_code == 200
+    url = f"/characters/{character_id}/identities"
+
+    saved = troupe.player.client.put(
+        url, json={"identities": [{"name": "Father Kell", "accepted_by": "the Sabbat"}]}
+    )
+
+    assert saved.status_code == 200, saved.text
+    listed = saved.json()["identities"]
+    assert [(i["name"], i["dots"], i["accepted_by"]) for i in listed] == [
+        ("Dr. Ellen Marsh, coroner", 1, ""),
+        ("Father Kell", 4, "the Sabbat"),
+    ]
+    assert listed[0]["line"].startswith("Shallow")
+    assert listed[1]["line"].startswith("Built to infiltrate another clan or sect")
+    refused = troupe.player.client.put(url, json={"identities": [{"name": "Nobody"}]})
+    assert refused.status_code == 409
+    assert troupe.stranger.client.get(url).status_code == 404
+    for path in ("print", "play/reference"):
+        found = troupe.player.client.get(f"/characters/{character_id}/{path}").json()
+        assert [i["name"] for i in found["identities"]] == [
+            "Dr. Ellen Marsh, coroner",
+            "Father Kell",
+        ]

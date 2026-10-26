@@ -30,6 +30,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit, notifications, repricing, xp_range
 from horatio.models import (
+    AlternateIdentity,
     Approval,
     Character,
     CharacterTrait,
@@ -1798,6 +1799,13 @@ def set_detail(
             )
         ):
             kept.name = detail
+    if before and definition.properties.get("instance") == "identity":
+        for held in db.scalars(
+            select(AlternateIdentity).where(
+                AlternateIdentity.character_id == character.id, AlternateIdentity.name == before
+            )
+        ):
+            held.name = detail
     db.flush()
     audit.record(
         db,

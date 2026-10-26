@@ -9,7 +9,8 @@ import { HEALTH_RULE, healthRows } from "../health";
 import { DEFAULT_PREFERENCES, useMe, usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { choiceName } from "./character/creation/logic";
-import { retainerName } from "./character/retainers";
+import { retainerName, retainerSource } from "./character/retainers";
+import { NO_WILLPOWER, poolLine } from "./play/retainerPools";
 import { changing, damageShort, total } from "./play/pools";
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
@@ -181,17 +182,16 @@ function TraitList({
   traits,
   empty = 3,
   specialties = () => [],
-  retainers = [],
+  identities = [],
 }: {
   traits: Trait[];
   empty?: number;
   specialties?: (t: Trait) => string[];
-  /** Listed under the Retainers background, if it is in `traits`. */
-  retainers?: PrintedSheet["retainers"];
+  /** What each Alternate Identity's rating means, under its row. */
+  identities?: PrintedSheet["identities"];
 }) {
   const blanks = Math.max(0, empty - traits.length);
-  // Each Retainer is a Retainers row of its own: they are listed once, under the last.
-  const lastRetainers = traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1);
+  const identityOf = (name: string) => identities.find((i) => i.name === name);
   return (
     <ul className="text-[11px] leading-5">
       {traits.map((t) => {
@@ -208,17 +208,11 @@ function TraitList({
               {t.rating !== null && t.specializes === null && <Dots value={t.rating} />}
             </div>
             {brackets && !inline && <p className="pb-0.5 pl-3 text-[9px] leading-3">{brackets}</p>}
-            {t.category === "backgrounds" && t.name === "Retainers" && t === lastRetainers && retainers.length > 0 && (
-              <ul className="pb-0.5 pl-3 text-[9px] leading-3" aria-label="Retainers">
-                {retainers.map((r, i) => (
-                  <li key={r.id ?? `bought${i}`}>
-                    {retainerName(r)} ({r.dots}
-                    {r.from_merit ? `, from ${r.from_merit}` : ""}
-                    {r.lost ? `, ${r.lost}` : ""})
-                    {r.description && ` – ${r.description}`}
-                  </li>
-                ))}
-              </ul>
+            {t.category === "backgrounds" && t.name === "Alternate Identity" && identityOf(t.detail) && (
+              <p className="pb-0.5 pl-3 text-[9px] leading-3">
+                {identityOf(t.detail)!.line}
+                {identityOf(t.detail)!.accepted_by && ` Accepted by ${identityOf(t.detail)!.accepted_by}.`}
+              </p>
             )}
           </li>
         );
@@ -227,6 +221,37 @@ function TraitList({
         <li key={`blank${i}`} className="h-5 border-b border-dotted border-neutral-400" />
       ))}
     </ul>
+  );
+}
+
+/** One Retainer as the NPC it is (MET: VtM core p. 105), with boxes for its health and Blood. */
+function PrintedRetainer({ retainer: r }: { retainer: PrintedSheet["retainers"][number] }) {
+  const source = retainerSource(r);
+  return (
+    <article className="break-inside-avoid text-[10px] leading-4" aria-label={`Retainer: ${retainerName(r)}`}>
+      <p className="border-b border-dotted border-neutral-400 text-[11px]">
+        <strong>{retainerName(r)}</strong> · Retainer {r.dots}
+        {r.ghoul && " · ghoul"}
+        {source && ` · ${source}`}
+        {r.lost && ` · ${r.lost}`}
+      </p>
+      {r.description && <p className="text-neutral-600">{r.description}</p>}
+      <p>{poolLine(r)}</p>
+      {r.discipline && (
+        <p>
+          {r.discipline} to {r.dots}: {r.powers.map((p) => p.name).join(", ")}
+        </p>
+      )}
+      <p className="flex flex-wrap items-center gap-x-1">
+        Health <Boxes count={r.health} label={`${retainerName(r)}: ${r.health} health levels`} />
+      </p>
+      {r.blood > 0 && (
+        <p className="flex flex-wrap items-center gap-x-1">
+          Blood <Boxes count={r.blood} /> <span className="text-neutral-600">1 a round; and 5 mortal Blood it cannot spend</span>
+        </p>
+      )}
+      <p className="text-neutral-600">{NO_WILLPOWER}</p>
+    </article>
   );
 }
 
@@ -344,7 +369,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
 
       <div className="grid grid-cols-3 gap-4">
         <Section title="Backgrounds">
-          <TraitList traits={by(t, "backgrounds")} empty={4} specialties={specialties.of} retainers={sheet.retainers} />
+          <TraitList traits={by(t, "backgrounds")} empty={4} specialties={specialties.of} identities={sheet.identities} />
         </Section>
         <Section title="Disciplines">
           <TraitList traits={by(t, "disciplines")} empty={4} />
@@ -424,6 +449,16 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
             </Section>
           ))}
         </div>
+      )}
+
+      {sheet.retainers.length > 0 && (
+        <Section title="Retainers">
+          <div className="grid grid-cols-3 gap-x-4 gap-y-2" aria-label="Retainers">
+            {sheet.retainers.map((r, i) => (
+              <PrintedRetainer key={r.id ?? `bought${i}`} retainer={r} />
+            ))}
+          </div>
+        </Section>
       )}
 
       <footer className="mt-auto border-t border-black pt-1 text-center text-[9px] text-neutral-600">

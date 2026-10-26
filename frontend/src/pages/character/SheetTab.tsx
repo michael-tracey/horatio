@@ -44,6 +44,7 @@ import {
   SpecializationRow,
   useSpecializations,
 } from "./Specializations";
+import { IdentityPanel } from "./Identities";
 import { RetainersPanel } from "./Retainers";
 import { PowerChoices } from "./PowerChoices";
 import { InfluenceEffects } from "./InfluenceEffects";
@@ -474,6 +475,9 @@ export function SheetTab({
                                   character={character}
                                   merits={[...new Set(s.traits.filter((x) => x.category === "merits" && x.rating !== 0).map((x) => x.name))]}
                                 />
+                              ),
+                              !inCart(t) && t.category === "backgrounds" && t.name === "Alternate Identity" && (
+                                <IdentityPanel key={`${t.id}/identity`} character={character} detail={t.detail} />
                               ),
                               !inCart(t) && t.category === "disciplines" && (
                                 <PowerChoices key={`${t.id}/choices`} characterId={character.id} discipline={t.name} />

@@ -37,7 +37,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, aliased
 
-from horatio import audit, influence_effects, play_influence, reference, sheets
+from horatio import audit, influence_effects, play_influence, reference, retainers, sheets
 from horatio.models import (
     Character,
     PlayCounter,
@@ -62,6 +62,8 @@ DERANGEMENT_TRAITS = 3
 TEMPORARY = "derangement:"
 # A form's or power's taps: +1 switches it on, -1 off.
 SWITCH = "power:"
+# A Retainer's health and Blood: "retainer:Bocephus/health" (horatio.retainers).
+RETAINER = "retainer:"
 HEALTH_LEVELS = ("Healthy", "Injured", "Incapacitated")
 TRACKERS = ("blood", "willpower", "health", "morality", "beast", "derangements")
 DAMAGE = ("normal", "aggravated")
@@ -104,6 +106,23 @@ class Temporary:
 
 
 @dataclass(frozen=True)
+class RetainerTrack:
+    """One Retainer's health levels and (a ghoul's) Blood at a game (core p. 105):
+    taps on "<key>/health" and "<key>/blood", each counting down from full."""
+
+    key: str
+    name: str
+    health: int
+    blood: int
+
+    def trackers(self) -> dict[str, int]:
+        found = {f"{self.key}/health": self.health}
+        if self.blood:
+            found[f"{self.key}/blood"] = self.blood
+        return found
+
+
+@dataclass(frozen=True)
 class Limits:
     """What the sheet allows each tracker, and where a game starts it."""
 
@@ -133,6 +152,11 @@ class Limits:
     held: Mapping[str, int] = field(default_factory=dict[str, int])
     # The forms and powers the sheet has that can be switched on.
     switches: tuple[reference.Switch, ...] = ()
+    # Each Retainer's health and Blood.
+    retainers: tuple[RetainerTrack, ...] = ()
+
+    def retainer_trackers(self) -> dict[str, int]:
+        return {k: most for r in self.retainers for k, most in r.trackers().items()}
 
     @property
     def health_boxes(self) -> int:
@@ -179,6 +203,8 @@ class Limits:
             return fixed[tracker]
         if tracker.startswith(TEMPORARY):
             return 1 if any(t.key == tracker for t in self.temporary) else None
+        if tracker.startswith(RETAINER):
+            return self.retainer_trackers().get(tracker)
         return next((e.uses for e in self.expendables if e.key == tracker), None)
 
     def least(self, tracker: str) -> int:
@@ -193,7 +219,7 @@ class Limits:
             "beast": self.beast_start,
             "derangements": self.derangements,
             "held": {t.key: self.held.get(t.key, 0) for t in self.temporary},
-            "uses": {e.key: e.uses for e in self.expendables},
+            "uses": {e.key: e.uses for e in self.expendables} | self.retainer_trackers(),
             # Forms and powers switched on: none, as a game starts.
             "on": [],
         }
@@ -218,6 +244,11 @@ class Limits:
         if tracker.startswith(SWITCH):
             switch = self.switch(tracker.removeprefix(SWITCH))
             return switch.name if switch else tracker.removeprefix(SWITCH)
+        if tracker.startswith(RETAINER):
+            key, _, what = tracker.rpartition("/")
+            found = next((r.name for r in self.retainers if r.key == key), None)
+            name = found if found is not None else key.removeprefix(RETAINER)
+            return f"{name or 'Retainer'}: {'Blood' if what == 'blood' else 'health'}"
         # A trait no longer on the sheet: "trait:backgrounds/Herd/" reads "Herd".
         parts = tracker.removeprefix("trait:").split("/")
         return ": ".join(p for p in parts[1:] if p) if len(parts) == 3 else tracker
@@ -253,7 +284,7 @@ def carries(tracker: str) -> bool:
 def known_tracker(tracker: str) -> bool:
     return (
         tracker in TRACKERS
-        or tracker.startswith(("trait:", "counter:"))
+        or tracker.startswith(("trait:", "counter:", RETAINER))
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or temporary_id(tracker) is not None
     )
@@ -423,6 +454,15 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         temporary=temporary_derangements(db, character),
         held=held,
         switches=tuple(reference.switches(rows, rule_set)),
+        retainers=tuple(
+            RetainerTrack(
+                key=retainers.tracker(r),
+                name=r.name,
+                health=r.dots,
+                blood=retainers.GHOUL_BLOOD if r.row and r.row.ghoul else 0,
+            )
+            for r in retainers.read(db, character)
+        ),
     )
 
 

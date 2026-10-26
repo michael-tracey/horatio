@@ -7,12 +7,18 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from horatio import retainers, sheets
+from horatio import identities, reference, retainers, sheets
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, User
 from horatio.permissions import visible_character
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["retainers"])
+
+
+class RetainerPower(BaseModel):
+    level: int
+    name: str
+    note: str
 
 
 class RetainerOut(BaseModel):
@@ -31,6 +37,19 @@ class RetainerOut(BaseModel):
     # The NPC it is linked to, for those who can see that NPC.
     npc_id: uuid.UUID | None
     npc_name: str | None
+    # What it is as an NPC (core p. 105): a ghoul or not, its specialties (skills,
+    # each +5 to its pool) and a ghoul's discipline specialty, with the powers
+    # that reaches, one for each dot.
+    ghoul: bool = False
+    specialties: list[str] = []
+    discipline: str = ""
+    powers: list[RetainerPower] = []
+    # Its test pool for most actions (dots x 2), its health levels (one a dot)
+    # and potent Blood (a ghoul's 5), and what its taps on the Play View are kept under.
+    pool: int = 0
+    health: int = 0
+    blood: int = 0
+    tracker: str = ""
 
 
 class RetainersOut(BaseModel):
@@ -39,6 +58,10 @@ class RetainersOut(BaseModel):
     retainers: list[RetainerOut]
     can_edit: bool
     can_link: bool
+    # What specialties can be: any skill, and for a ghoul one discipline in-clan
+    # for the character it serves.
+    skills: list[str] = []
+    disciplines: list[str] = []
 
 
 class RetainerIn(BaseModel):
@@ -52,6 +75,9 @@ class RetainerIn(BaseModel):
     lost: str | None = Field(default=None, pattern="^(released|killed)$")
     lost_on: date | None = None
     npc_id: uuid.UUID | None = None
+    ghoul: bool = False
+    specialties: list[str] = Field(default=[], max_length=10)
+    discipline: str = Field(default="", max_length=100)
 
 
 class RetainersIn(BaseModel):
@@ -75,9 +101,26 @@ def listed(db: Session, entries: list[retainers.Listed], viewer: User | None) ->
                 lost_on=r.lost_on if r else None,
                 npc_id=npc.id if npc else None,
                 npc_name=npc.name if npc else None,
+                ghoul=r.ghoul if r else False,
+                specialties=list(r.specialties) if r else [],
+                discipline=r.discipline if r else "",
+                powers=powers(r.discipline, e.dots) if r and r.discipline else [],
+                pool=e.dots * 2,
+                health=e.dots,
+                blood=retainers.GHOUL_BLOOD if r and r.ghoul else 0,
+                tracker=retainers.tracker(e),
             )
         )
     return out
+
+
+def powers(discipline: str, dots: int) -> list[RetainerPower]:
+    """The powers a ghoul's discipline specialty reaches: one a dot (p. 105)."""
+    return [
+        RetainerPower(level=p["level"], name=p["name"], note=p["note"])
+        for p in reference.catalogue().powers.get(discipline, [])
+        if p["level"] <= dots
+    ]
 
 
 def retainers_out(db: Session, character: Character, user: User) -> RetainersOut:
@@ -86,6 +129,8 @@ def retainers_out(db: Session, character: Character, user: User) -> RetainersOut
         retainers=listed(db, retainers.read(db, character), user),
         can_edit=retainers.can_edit(db, user, character),
         can_link=retainers.can_link(db, user, character),
+        skills=retainers.skills(db, character),
+        disciplines=retainers.domitor_disciplines(db, character),
     )
 
 
@@ -116,3 +161,59 @@ def save_retainers(
     )
     db.commit()
     return retainers_out(db, character, user)
+
+
+class IdentityOut(BaseModel):
+    # Its name on the sheet ("" for one held without), its dots, and what that
+    # rating means (p. 99).
+    name: str
+    dots: int
+    line: str
+    # The sect or group that has Accepted it (p. 310); empty for none.
+    accepted_by: str
+
+
+class IdentitiesOut(BaseModel):
+    identities: list[IdentityOut]
+    page: str
+    can_edit: bool
+
+
+class IdentityIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    accepted_by: str = Field(default="", max_length=100)
+
+
+class IdentitiesIn(BaseModel):
+    identities: list[IdentityIn] = Field(max_length=30)
+
+
+def identities_out(db: Session, character: Character) -> list[IdentityOut]:
+    return [IdentityOut(**vars(i)) for i in identities.read(db, character)]
+
+
+@router.get("/identities")
+def read_identities(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> IdentitiesOut:
+    character = visible_character(db, user, character_id)
+    return IdentitiesOut(
+        identities=identities_out(db, character),
+        page=identities.PAGE,
+        can_edit=retainers.can_edit(db, user, character),
+    )
+
+
+@router.put("/identities")
+def save_identities(
+    character_id: uuid.UUID, body: IdentitiesIn, db: DbSession, user: CurrentUser
+) -> IdentitiesOut:
+    """Say which sect or group has Accepted each identity. The player and the
+    staff of its home troupe can."""
+    character = visible_character(db, user, character_id)
+    if not retainers.can_edit(db, user, character):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the character's player or its staff can change this."
+        )
+    character = sheets.lock_character(db, character.id)
+    identities.accept(db, user, character, {i.name: i.accepted_by for i in body.identities})
+    db.commit()
+    return read_identities(character_id, db, user)

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from horatio import audit, influence_log, play, play_influence, reference, retainers, sheets
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceStandingOut, standing_out
-from horatio.api.retainers import RetainerOut, listed
+from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
 from horatio.api.roster import roster
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.influence import InfluenceType
@@ -109,6 +109,16 @@ class ExpendableOut(BaseModel):
     # Influence spent at earlier games that no downtime cycle has taken off yet:
     # `uses` is already that much lower, as the month has one pool.
     owed: int = 0
+
+
+class RetainerTrackOut(BaseModel):
+    """One Retainer's health levels and (a ghoul's) Blood at this game, tapped as
+    "<key>/health" and "<key>/blood" (horatio.play)."""
+
+    key: str
+    name: str
+    health: Tracker
+    blood: Tracker | None
 
 
 class InfluenceSpendOut(BaseModel):
@@ -208,6 +218,8 @@ class PlayView(BaseModel):
     beast: Tracker
     derangements: Derangements
     expendables: list[ExpendableOut]
+    # Each Retainer's health and Blood (its pool and the rest are in the reference).
+    retainers: list[RetainerTrackOut] = []
     # Forms and powers in use (issue #200): those the sheet has, on or off. The
     # health tracker gains the wound levels of those on, after the sheet's own in
     # each category; `blood_per_turn` and `blood_usual` are without them.
@@ -543,6 +555,23 @@ def play_view(db: Session, character: Character) -> PlayView:
             )
             for e in limits.expendables
         ],
+        retainers=[
+            RetainerTrackOut(
+                key=r.key,
+                name=r.name,
+                health=Tracker(
+                    value=state["uses"].get(f"{r.key}/health", r.health),
+                    most=r.health,
+                    start=r.health,
+                ),
+                blood=Tracker(
+                    value=state["uses"].get(f"{r.key}/blood", r.blood), most=r.blood, start=r.blood
+                )
+                if r.blood
+                else None,
+            )
+            for r in limits.retainers
+        ],
         powers=[PowerOut(**s.model_dump(), on=s.key in state["on"]) for s in limits.switches],
         influence=[standing_out(s) for s in play_influence.standings(db, character)],
         game=game_out(db, game, events) if game else None,
@@ -562,6 +591,7 @@ class PlayReference(reference.Reference):
 
     traits: list[PlayTrait]
     retainers: list[RetainerOut]
+    identities: list[IdentityOut] = []
 
 
 @router.get("/characters/{character_id}/play/reference")
@@ -576,6 +606,7 @@ def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
         **found.model_dump(),
         traits=sheet_traits(db, character),
         retainers=listed(db, retainers.read(db, character), user),
+        identities=identities_out(db, character),
     )
 
 

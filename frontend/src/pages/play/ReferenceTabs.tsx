@@ -3,6 +3,7 @@ import type { DisciplinePowers, PlayReference, PoolModifier, PowerSwitch, TestPo
 import { TraitInfo } from "../../components/TraitInfo";
 import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
+import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
 import { breakdown, damageText, exceptionalText, grouped, switchedDamage, total } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
@@ -96,6 +97,7 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
                   {t.rating !== null && <Rating value={t.rating} of={pipsOf(t.category)} className="shrink-0 font-display text-base text-gold" />}
                 </div>
                 {t.category === "backgrounds" && t.name === "Retainers" && t === traits.filter((x) => x.name === "Retainers").at(-1) && reference.retainers.length > 0 && <RetainerLines retainers={reference.retainers} />}
+                {t.category === "backgrounds" && t.name === "Alternate Identity" && <IdentityLine reference={reference} detail={t.detail} />}
               </li>
             ))}
           </ul>
@@ -103,6 +105,12 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
       ))}
     </div>
   );
+}
+
+/** An Alternate Identity's rating line, and who has Accepted it. */
+function IdentityLine({ reference, detail }: { reference: PlayReference; detail: string }) {
+  const identity = (reference.identities ?? []).find((i) => i.name === detail);
+  return identity ? <IdentityNote identity={identity} /> : null;
 }
 
 function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; willpower: number; modifiers: PoolModifier[]; on: string[] }) {

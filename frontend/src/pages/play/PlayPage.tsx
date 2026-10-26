@@ -15,6 +15,7 @@ import { Frenzy } from "./Frenzy";
 import { bloodPerTurn, boxes, healthMost } from "./powers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
+import { RetainerPools } from "./RetainerPools";
 import { incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Sync } from "./usePlay";
 import { useReference } from "./useReference";
@@ -133,6 +134,7 @@ export function PlayPage() {
               <Derangements view={shown} record={record} tap={tap} />
             </div>
           </div>
+          {reference && <RetainerPools retainers={reference.retainers} tracks={shown.retainers} tap={record} />}
           <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={setQuickNotes} online={sync.online} onChange={accept} />
           <Notes add={(note) => tap({ kind: "note", note })} />
           <GameLog view={shown} undo={(entry) => tap({ kind: "undo", undoes: entry.id })} onDetails={sync.online ? setDetailing : undefined} />

@@ -698,6 +698,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Identities */
+        get: operations["read_identities_api_characters__character_id__identities_get"];
+        /**
+         * Save Identities
+         * @description Say which sect or group has Accepted each identity. The player and the
+         *     staff of its home troupe can.
+         */
+        put: operations["save_identities_api_characters__character_id__identities_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/influence": {
         parameters: {
             query?: never;
@@ -5969,6 +5991,41 @@ export interface components {
              */
             troupe_id: string;
         };
+        /** IdentitiesIn */
+        IdentitiesIn: {
+            /** Identities */
+            identities: components["schemas"]["IdentityIn"][];
+        };
+        /** IdentitiesOut */
+        IdentitiesOut: {
+            /** Can Edit */
+            can_edit: boolean;
+            /** Identities */
+            identities: components["schemas"]["IdentityOut"][];
+            /** Page */
+            page: string;
+        };
+        /** IdentityIn */
+        IdentityIn: {
+            /**
+             * Accepted By
+             * @default
+             */
+            accepted_by: string;
+            /** Name */
+            name: string;
+        };
+        /** IdentityOut */
+        IdentityOut: {
+            /** Accepted By */
+            accepted_by: string;
+            /** Dots */
+            dots: number;
+            /** Line */
+            line: string;
+            /** Name */
+            name: string;
+        };
         /** InfluenceActionOut */
         InfluenceActionOut: {
             /** Conflict */
@@ -7178,6 +7235,11 @@ export interface components {
             blood_per_turn: number;
             /** Disciplines */
             disciplines: components["schemas"]["DisciplinePowers"][];
+            /**
+             * Identities
+             * @default []
+             */
+            identities: components["schemas"]["IdentityOut"][];
             /** Notes */
             notes: string[];
             /** Other Powers */
@@ -7271,6 +7333,11 @@ export interface components {
              * @default []
              */
             powers: components["schemas"]["PowerOut"][];
+            /**
+             * Retainers
+             * @default []
+             */
+            retainers: components["schemas"]["RetainerTrackOut"][];
             /** Sect */
             sect: string | null;
             willpower: components["schemas"]["Tracker"];
@@ -7608,6 +7675,11 @@ export interface components {
             diablerie: string[];
             /** Home */
             home: boolean;
+            /**
+             * Identities
+             * @default []
+             */
+            identities: components["schemas"]["IdentityOut"][];
             /** Kind */
             kind: string;
             /** Modifiers */
@@ -8049,6 +8121,11 @@ export interface components {
              * @default
              */
             description: string;
+            /**
+             * Discipline
+             * @default
+             */
+            discipline: string;
             /** Dots */
             dots: number;
             /**
@@ -8056,6 +8133,11 @@ export interface components {
              * @default
              */
             from_merit: string;
+            /**
+             * Ghoul
+             * @default false
+             */
+            ghoul: boolean;
             /** Id */
             id?: string | null;
             /** Lost */
@@ -8066,17 +8148,42 @@ export interface components {
             name: string;
             /** Npc Id */
             npc_id?: string | null;
+            /**
+             * Specialties
+             * @default []
+             */
+            specialties: string[];
         };
         /** RetainerOut */
         RetainerOut: {
+            /**
+             * Blood
+             * @default 0
+             */
+            blood: number;
             /** Bought */
             bought: boolean;
             /** Description */
             description: string;
+            /**
+             * Discipline
+             * @default
+             */
+            discipline: string;
             /** Dots */
             dots: number;
             /** From Merit */
             from_merit: string;
+            /**
+             * Ghoul
+             * @default false
+             */
+            ghoul: boolean;
+            /**
+             * Health
+             * @default 0
+             */
+            health: number;
             /** Id */
             id: string | null;
             /** Lost */
@@ -8089,6 +8196,48 @@ export interface components {
             npc_id: string | null;
             /** Npc Name */
             npc_name: string | null;
+            /**
+             * Pool
+             * @default 0
+             */
+            pool: number;
+            /**
+             * Powers
+             * @default []
+             */
+            powers: components["schemas"]["RetainerPower"][];
+            /**
+             * Specialties
+             * @default []
+             */
+            specialties: string[];
+            /**
+             * Tracker
+             * @default
+             */
+            tracker: string;
+        };
+        /** RetainerPower */
+        RetainerPower: {
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
+        };
+        /**
+         * RetainerTrackOut
+         * @description One Retainer's health levels and (a ghoul's) Blood at this game, tapped as
+         *     "<key>/health" and "<key>/blood" (horatio.play).
+         */
+        RetainerTrackOut: {
+            blood: components["schemas"]["Tracker"] | null;
+            health: components["schemas"]["Tracker"];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
         };
         /** RetainersIn */
         RetainersIn: {
@@ -8101,10 +8250,20 @@ export interface components {
             can_edit: boolean;
             /** Can Link */
             can_link: boolean;
+            /**
+             * Disciplines
+             * @default []
+             */
+            disciplines: string[];
             /** Rating */
             rating: number;
             /** Retainers */
             retainers: components["schemas"]["RetainerOut"][];
+            /**
+             * Skills
+             * @default []
+             */
+            skills: string[];
         };
         /**
          * Role
@@ -10996,6 +11155,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["XpStandingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_identities_api_characters__character_id__identities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentitiesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_identities_api_characters__character_id__identities_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentitiesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentitiesOut"];
                 };
             };
             /** @description Validation Error */

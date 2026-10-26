@@ -16,7 +16,7 @@ Retainer to an NPC.
 """
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from fastapi import HTTPException, status
@@ -32,9 +32,12 @@ from horatio.permissions import (
     can_view_character,
     troupe_role,
 )
-from horatio.sheets import sheet_rows
+from horatio.rules.splats import vampire_in_clan_disciplines
+from horatio.sheets import rules_for, sheet_rows
 
 BACKGROUND = ("backgrounds", "Retainers")
+# A ghoul Retainer's potent Blood, spent 1 a round to heal or use disciplines (p. 105).
+GHOUL_BLOOD = 5
 # Each Retainer of the background has up to 5 dots (p. 104); a merit's can be higher.
 MAX_DOTS = 5
 MAX_MERIT_DOTS = 10
@@ -53,6 +56,17 @@ class Draft:
     lost: str | None
     lost_on: date | None
     npc_id: uuid.UUID | None
+    ghoul: bool = False
+    specialties: list[str] = field(default_factory=list[str])
+    discipline: str = ""
+
+
+def tracker(listed: "Listed") -> str:
+    """What a Retainer's taps on the Play View are kept under: "retainer:Bocephus"
+    for one bought, by its row for one from a merit or listed before."""
+    if listed.bought or listed.row is None:
+        return f"retainer:{listed.name}"
+    return f"retainer:{listed.row.id}"
 
 
 @dataclass(frozen=True)
@@ -106,6 +120,21 @@ def read(db: Session, character: Character) -> list[Listed]:
     return listed
 
 
+def skills(db: Session, character: Character) -> list[str]:
+    """The skills a Retainer can specialise in: those of the character's rules."""
+    rule_set = rules_for(db, character).rule_set
+    return sorted(name for category, name in rule_set.traits if category == "skills")
+
+
+def domitor_disciplines(db: Session, character: Character) -> list[str]:
+    """What a ghoul Retainer's discipline specialty can be: one in-clan for the
+    character it serves (p. 105)."""
+    if character.splat != "vampire":
+        return []
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    return sorted(set(vampire_in_clan_disciplines(rules_for(db, character), sheet)))
+
+
 def can_link(db: Session, user: User, character: Character) -> bool:
     """Staff who run the character's troupe: the only ones who link an NPC."""
     troupe_id = character.owner_troupe_id if character.kind == "npc" else character.home_troupe_id
@@ -142,6 +171,8 @@ def _clean(db: Session, character: Character, drafts: list[Draft]) -> set[str]:
         if r.category.key == "merits" and r.trait.rating != 0
     }
     held = dict(bought(db, character))
+    known = set(skills(db, character))
+    in_clan = set(domitor_disciplines(db, character))
     # Rows of the background's listed before Retainers were bought one by one.
     before = {r.id for r in rows(db, character) if not r.from_merit and r.name not in held}
     names = [d.name.strip() for d in drafts if not d.from_merit.strip()]
@@ -170,6 +201,24 @@ def _clean(db: Session, character: Character, drafts: list[Draft]) -> set[str]:
         if d.from_merit and d.from_merit not in merits:
             raise _refuse(
                 status.HTTP_409_CONFLICT, f"{character.name} does not have {d.from_merit}."
+            )
+        d.specialties = [x.strip() for x in d.specialties if x.strip()]
+        d.discipline = d.discipline.strip() if d.ghoul else ""
+        if not set(d.specialties) <= known or len(set(d.specialties)) < len(d.specialties):
+            raise _refuse(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                f"{d.name}'s specialties are each a different skill.",
+            )
+        if d.discipline and d.discipline not in in_clan:
+            raise _refuse(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                f"{d.name}'s discipline is one in-clan for {character.name}.",
+            )
+        taken = len(d.specialties) + (1 if d.discipline else 0)
+        if taken > d.dots:
+            raise _refuse(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                f"{d.name} has one specialty a dot: {d.dots}, not {taken}.",
             )
         if d.lost is None:
             d.lost_on = None
@@ -202,13 +251,15 @@ def replace(
         if row is None:
             row = Retainer(character_id=character.id, name=d.name, dots=d.dots)
             db.add(row)
-            was = None
+            was = made = None
         else:
             was = (row.name, row.dots, row.description, row.lost, row.npc_id)
+            made = (row.ghoul, list(row.specialties), row.discipline)
             kept.add(row.id)
         row.position = position
         row.name, row.dots, row.description = d.name, d.dots, d.description
         row.from_merit, row.lost, row.lost_on = d.from_merit, d.lost, d.lost_on
+        row.ghoul, row.specialties, row.discipline = d.ghoul, d.specialties, d.discipline
         if link:
             if d.npc_id is not None and d.npc_id != row.npc_id:
                 _link(db, character, d.npc_id)
@@ -222,7 +273,8 @@ def replace(
             continue
         # A bought Retainer's dots change on the sheet, whose own log has them.
         moved = was[1] != row.dots and (bool(d.from_merit) or d.name not in on_sheet)
-        if (was[0], was[2]) != (row.name, row.description) or moved:
+        remade = made != (row.ghoul, row.specialties, row.discipline)
+        if (was[0], was[2]) != (row.name, row.description) or moved or remade:
             audit.record(db, user, "retainer.changed", **log, **facts, was=was[0], was_dots=was[1])
         if was[3] != row.lost and row.lost:
             audit.record(db, user, "retainer.lost", **log, **facts, how=row.lost)
