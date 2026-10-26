@@ -72,7 +72,7 @@ export function ScenePage() {
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {pinned.map((id) => (
               <li key={id} className="min-w-0">
-                <SceneCard characterId={id} onRemove={() => setPinned((now) => unpin(now, id))} />
+                <SceneCard characterId={id} troupeId={troupeId} onRemove={() => setPinned((now) => unpin(now, id))} />
               </li>
             ))}
           </ul>
@@ -262,7 +262,7 @@ function HealthRow({ view, damage }: { view: Shown; damage: (kind: Damage, amoun
  * one query, its refresh and its queue of unsent taps are the same), with the
  * trackers a scene needs.
  */
-function SceneCard({ characterId, onRemove }: { characterId: string; onRemove: () => void }) {
+function SceneCard({ characterId, troupeId, onRemove }: { characterId: string; troupeId: string; onRemove: () => void }) {
   const { view, shown, tap, sync, accept } = usePlay(characterId);
   const [panel, setPanel] = useState<"log" | "reset" | null>(null);
   const toggle = (next: "log" | "reset") => setPanel((now) => (now === next ? null : next));
@@ -319,7 +319,7 @@ function SceneCard({ characterId, onRemove }: { characterId: string; onRemove: (
         <Button variant="ghost" className="min-h-10 px-3" aria-expanded={panel === "reset"} onClick={() => toggle("reset")}>
           Reset {panel === "reset" ? "▴" : "▾"}
         </Button>
-        <Link to={`/play/characters/${characterId}`} className="ml-auto inline-flex min-h-10 items-center text-sm text-mist underline hover:text-parchment" aria-label={`Open the full Play View of ${name}`}>
+        <Link to={`/play/characters/${characterId}?scene=${troupeId}`} className="ml-auto inline-flex min-h-10 items-center text-sm text-mist underline hover:text-parchment" aria-label={`Open the full Play View of ${name}`}>
           Full view
         </Link>
       </div>

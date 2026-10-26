@@ -3436,7 +3436,14 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   await expect(p.getByLabel("Blood: 8 of 10")).toBeVisible();
   await expect(p.getByLabel("normal damage")).toHaveCount(1);
   await expect(p.getByText("Blood 10 → 9")).toBeVisible();
+  // Opened from the scene, the way back is to the scene, whichever tab is looked up.
+  await expect(p.getByRole("link", { name: "← Alder" })).toHaveCount(0);
+  await p.getByRole("tab", { name: "Sheet" }).click();
+  await p.getByRole("link", { name: "← Back to the scene" }).click();
+  await expect(p.getByRole("heading", { name: "Scene", exact: true })).toBeVisible();
+  await expect(p.getByRole("article")).toHaveCount(3);
   await p.goto(`/play/characters/${npcs.Brant}`);
+  await expect(p.getByRole("link", { name: "← Brant" })).toBeVisible();
   await expect(p.getByLabel("Blood: 9 of 10")).toBeVisible();
   await expect(p.getByLabel("aggravated damage")).toHaveCount(1);
   await expect(p.getByLabel("normal damage")).toHaveCount(0);

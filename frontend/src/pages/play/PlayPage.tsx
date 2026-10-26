@@ -69,9 +69,11 @@ export function PlayPage() {
       { replace: true },
     );
   const tabs = <TabBar tab={tab} onChange={choose} />;
+  // Opened from a Scene view's card: the way back is to that scene.
+  const scene = params.get("scene");
 
-  if (view.isPending) return <PlayShell characterId={characterId} sync={sync} awake={awake} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} sync={sync} awake={awake} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} scene={scene} sync={sync} awake={awake} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} scene={scene} sync={sync} awake={awake} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
 
   const record: RecordTap = (change) => {
     // Influence always asks for the spend's details, for the troupe's influence log.
@@ -84,7 +86,7 @@ export function PlayPage() {
     reference ? show(reference) : referenceError ? <ErrorText error={referenceError} /> : <p className="py-8 text-center text-mist">Loading…</p>;
 
   return (
-    <PlayShell characterId={characterId} sync={sync} awake={awake} name={shown.character_name} tabs={tabs}>
+    <PlayShell characterId={characterId} scene={scene} sync={sync} awake={awake} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
       <PowersBanner powers={shown.powers} tap={tap} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
@@ -163,9 +165,10 @@ export function PlayPage() {
   );
 }
 
-/** The page around the sheet: back to the character, whether the screen is kept awake and taps are saved, and the tabs. */
+/** The page around the sheet: back to the character (or to the scene it was opened from), whether the screen is kept awake and taps are saved, and the tabs. */
 function PlayShell({
   characterId,
+  scene,
   sync,
   awake,
   name,
@@ -173,6 +176,7 @@ function PlayShell({
   children,
 }: {
   characterId: string;
+  scene: string | null;
   sync: Sync;
   awake: boolean;
   name?: string;
@@ -183,9 +187,15 @@ function PlayShell({
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2">
-          <Link to={`/characters/${characterId}`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
-            ← {name ?? "Back"}
-          </Link>
+          {scene ? (
+            <Link to={`/play/troupes/${scene}/scene`} className="inline-flex min-h-10 items-center rounded-md border border-gold/60 px-3 text-sm text-gold hover:bg-gold/10">
+              ← Back to the scene
+            </Link>
+          ) : (
+            <Link to={`/characters/${characterId}`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
+              ← {name ?? "Back"}
+            </Link>
+          )}
           <span className="flex items-start gap-2">
             {awake && (
               <span className="rounded-full border border-ash px-2.5 py-0.5 text-xs whitespace-nowrap text-mist" title="Kept on while the Play View is open, as your settings ask.">
