@@ -9,7 +9,16 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import diablerie, pictures, play, reference, retainers, sheets, titles
+from horatio import (
+    diablerie,
+    house_traits,
+    pictures,
+    play,
+    reference,
+    retainers,
+    sheets,
+    titles,
+)
 from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, SheetVersion, TraitCategory, TraitDefinition, Troupe, User
@@ -34,6 +43,8 @@ class PrintedTrait(BaseModel):
     # For a specialisation: the skill or background it belongs to, as its
     # category and name (from the rule set's `specializes`).
     specializes: dict[str, str] | None
+    # A troupe's own merit or flaw: "House merit of Night Court", printed with a ★.
+    house: str | None = None
 
 
 class PrintedSheet(BaseModel):
@@ -90,7 +101,14 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         if found is not None and found.approved_version_id is not None
         else None
     )
-    snapshot = [r.snapshot() for r in sheets.sheet_rows(db, character)]
+    rows = sheets.sheet_rows(db, character)
+    snapshot = [r.snapshot() for r in rows]
+    found_marks = house_traits.marks(db, [r.definition.id for r in rows if r.definition.troupe_id])
+    house = {
+        (r.category.key, r.definition.name): found_marks[r.definition.id].label
+        for r in rows
+        if r.definition.id in found_marks
+    }
     held = {
         (name, d.detail): d.from_rating
         for (_, d), name in (
@@ -110,9 +128,9 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
     names = {
         (key, name): props
         for key, name, props in db.execute(
-            select(TraitCategory.key, TraitDefinition.name, TraitDefinition.properties).join(
-                TraitDefinition, TraitDefinition.category_id == TraitCategory.id
-            )
+            select(TraitCategory.key, TraitDefinition.name, TraitDefinition.properties)
+            .join(TraitDefinition, TraitDefinition.category_id == TraitCategory.id)
+            .where(TraitDefinition.troupe_id.is_(None))
         )
     }
     traits = [
@@ -128,6 +146,7 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
             if t["category"] == "disciplines"
             else None,
             specializes=dict(rule_set.categories[t["category"]].specializes or {}) or None,
+            house=house.get((t["category"], t["name"])),
         )
         for t in sorted(snapshot, key=lambda t: (order.get(t["category"], 999), t["name"]))
         if t["category"] in rule_set.categories

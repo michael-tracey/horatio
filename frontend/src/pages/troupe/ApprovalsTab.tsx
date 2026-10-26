@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { HouseMark } from "../../components/HouseMark";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
@@ -133,7 +134,8 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         <div className="mb-3 flex flex-col gap-1 text-sm">
           <p>
             {d.name}
-            {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating},{" "}
+            {d.detail && `: ${d.detail}`}
+            {d.house && <HouseMark label={d.house} />} {d.from_rating} → {d.to_rating},{" "}
             {ex.free
               ? `asked for free${ex.normal_cost != null ? ` (at normal cost, ${ex.normal_cost} XP)` : " (it has no normal cost)"}.`
               : `for ${d.cost} XP.`}
@@ -150,7 +152,8 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
       {d && !ex && (
         <p className="mb-3 text-sm">
           {d.name}
-          {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating}, for {d.cost} XP.{" "}
+          {d.detail && `: ${d.detail}`}
+          {d.house && <HouseMark label={d.house} />} {d.from_rating} → {d.to_rating}, for {d.cost} XP.{" "}
           {d.teacher && <>Taught by {d.teacher}. </>}
           <span className="text-mist">The XP is spent; declining refunds it and takes the dots back.</span>
         </p>

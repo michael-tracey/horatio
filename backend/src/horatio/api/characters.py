@@ -21,7 +21,13 @@ from horatio.permissions import (
 )
 from horatio.rules.npc_kinds import kind_name
 from horatio.rules.splats import SPLATS
-from horatio.sheets import lock_character, rules_for, start_character, sync_fixed_ratings
+from horatio.sheets import (
+    ensure_house_traits_fit,
+    lock_character,
+    rules_for,
+    start_character,
+    sync_fixed_ratings,
+)
 
 router = APIRouter(prefix="/characters", tags=["characters"])
 
@@ -221,7 +227,9 @@ def set_building_troupe(
         raise HTTPException(
             status.HTTP_409_CONFLICT, "The character has a home troupe; its rules apply."
         )
-    character.building_troupe_id = running_troupe_id(db, body.troupe_id, character.splat)
+    building = running_troupe_id(db, body.troupe_id, character.splat)
+    ensure_house_traits_fit(db, character, building)
+    character.building_troupe_id = building
     sync_fixed_ratings(db, character)
     db.commit()
     return character_out(db, character)

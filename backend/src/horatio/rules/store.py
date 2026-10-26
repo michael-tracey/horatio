@@ -4,7 +4,7 @@ import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from functools import wraps
-from typing import Concatenate
+from typing import Any, Concatenate
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -15,10 +15,12 @@ from horatio.models import (
     CheckOverride,
     CostRule,
     CreationRule,
+    HouseTrait,
     RuleSet,
     StartingTrait,
     TraitCategory,
     TraitDefinition,
+    Troupe,
 )
 from horatio.rules.checks import check_from_dict, check_to_dict
 from horatio.rules.files import (
@@ -35,10 +37,12 @@ from horatio.rules.model import (
     CategoryData,
     CostRuleData,
     CreationRuleData,
+    HouseTraitData,
     RuleSetData,
     StartingTraitData,
     TraitData,
     TroupeRules,
+    house_page,
 )
 
 RULES_CACHE = "horatio.troupe_rules"
@@ -123,7 +127,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         for d, category_key in session.execute(
             select(TraitDefinition, TraitCategory.key)
             .join(TraitCategory)
-            .where(TraitCategory.rule_set_id == rule_set.id)
+            .where(TraitCategory.rule_set_id == rule_set.id, TraitDefinition.troupe_id.is_(None))
         )
     }
     for (category_key, name), trait in data.traits.items():
@@ -300,7 +304,10 @@ def add_house_allowance_rule(
         for d, key in session.execute(
             select(TraitDefinition, TraitCategory.key)
             .join(TraitCategory)
-            .where(TraitCategory.rule_set_id == rule_set.id)
+            .where(
+                TraitCategory.rule_set_id == rule_set.id,
+                TraitDefinition.troupe_id.is_(None) | (TraitDefinition.troupe_id == troupe_id),
+            )
         )
     }
     row = allowance_row(rule_set, troupe_id, rule, definitions_by_key=definitions)
@@ -409,7 +416,9 @@ def add_house_rule(
     if rule.trait is not None:
         definition_id = session.scalars(
             select(TraitDefinition.id).where(
-                TraitDefinition.category_id == category.id, TraitDefinition.name == rule.trait
+                TraitDefinition.category_id == category.id,
+                TraitDefinition.name == rule.trait,
+                TraitDefinition.troupe_id.is_(None) | (TraitDefinition.troupe_id == troupe_id),
             )
         ).one()
     row = CostRule(
@@ -507,12 +516,18 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         )
     )
     category_keys = {c.id: c.key for c in categories}
+    # The rule set's traits, and this troupe's own merits and flaws.
     definitions = list(
         session.scalars(
-            select(TraitDefinition).where(TraitDefinition.category_id.in_(category_keys))
+            select(TraitDefinition)
+            .where(TraitDefinition.category_id.in_(category_keys))
+            .where(TraitDefinition.troupe_id.is_(None) | (TraitDefinition.troupe_id == troupe_id))
+            .order_by(TraitDefinition.troupe_id.nulls_first())
         )
     )
     definition_names = {d.id: d.name for d in definitions}
+    house = house_traits_of(session, splat, troupe_id)
+    house_by_definition = {h.trait_definition_id: h for h, _ in house}
 
     def to_data(row: CostRule) -> CostRuleData:
         return CostRuleData(
@@ -528,9 +543,11 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
 
     query = select(CostRule).where(CostRule.rule_set_id == rule_set.id).order_by(CostRule.id)
     generic = [to_data(r) for r in session.scalars(query.where(CostRule.troupe_id.is_(None)))]
-    house: list[CostRuleData] = []
+    house_costs: list[CostRuleData] = []
     if troupe_id is not None:
-        house = [to_data(r) for r in session.scalars(query.where(CostRule.troupe_id == troupe_id))]
+        house_costs = [
+            to_data(r) for r in session.scalars(query.where(CostRule.troupe_id == troupe_id))
+        ]
 
     kind_rows = list(
         session.scalars(
@@ -609,6 +626,39 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
             category=category, name=name, rating=row.rating, house=row.troupe_id is not None
         )
 
+    troupe_name = house[0][1] if house else ""
+    traits: dict[tuple[str, str], TraitData] = {}
+    taken: set[uuid.UUID] = set()
+    for d in definitions:
+        key = (category_keys[d.category_id], d.name)
+        # The book's own come first: one the book gained after a troupe used its
+        # name keeps the name, and the house one is left out.
+        if d.retired or key in traits:
+            continue
+        own = house_by_definition.get(d.id)
+        traits[key] = (
+            TraitData(
+                category=key[0],
+                name=d.name,
+                description=d.description,
+                page_reference=d.page_reference,
+                properties=d.properties,
+            )
+            if own is None
+            else TraitData(
+                category=key[0],
+                name=own.name,
+                description=own.description or None,
+                page_reference=house_page(troupe_name),
+                properties=house_properties(own),
+            )
+        )
+        taken.add(d.id)
+    house_data = [house_trait_data(h, name) for h, name in house if h.trait_definition_id in taken]
+    creation_only = tuple(rule_set.creation_only) + tuple(
+        {"category": h.category, "name": h.name} for h in house_data if h.creation_only
+    )
+
     data = RuleSetData(
         key=rule_set.key,
         splat=rule_set.splat,
@@ -619,7 +669,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         checks=tuple(check_from_dict(c) for c in rule_set.checks),
         grants=tuple(grant_from_dict(g) for g in rule_set.grants),
         feeding_modifiers=tuple(feeding_modifier_from_dict(m) for m in rule_set.feeding_modifiers),
-        creation_only=tuple(rule_set.creation_only),
+        creation_only=creation_only,
         banked_xp=rule_set.banked_xp,
         categories={
             c.key: CategoryData(
@@ -643,17 +693,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
             for c in categories
         },
         cost_rules=generic,
-        traits={
-            (category_keys[d.category_id], d.name): TraitData(
-                category=category_keys[d.category_id],
-                name=d.name,
-                description=d.description,
-                page_reference=d.page_reference,
-                properties=d.properties,
-            )
-            for d in definitions
-            if not d.retired
-        },
+        traits=traits,
         action_kinds={r.key: kind_data(r) for r in kind_rows if r.troupe_id is None},
         allowance_rules=[allowance_data(r) for r in allowance_rows if r.troupe_id is None],
         creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is None],
@@ -661,7 +701,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
     )
     return TroupeRules(
         rule_set=data,
-        house_rules=house,
+        house_rules=house_costs,
         house_action_kinds=[kind_data(r) for r in kind_rows if r.troupe_id is not None],
         house_allowance_rules=[
             allowance_data(r) for r in allowance_rows if r.troupe_id is not None
@@ -676,4 +716,55 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         }
         if troupe_id is not None
         else {},
+        house_traits=house_data,
+    )
+
+
+def house_traits_of(
+    session: Session, splat: str, troupe_id: uuid.UUID | None
+) -> list[tuple[HouseTrait, str]]:
+    """A troupe's own merits and flaws for a splat, each with the troupe's name."""
+    if troupe_id is None:
+        return []
+    return [
+        (h, name)
+        for h, name in session.execute(
+            select(HouseTrait, Troupe.name)
+            .join(Troupe, HouseTrait.troupe_id == Troupe.id)
+            .where(HouseTrait.troupe_id == troupe_id, HouseTrait.splat == splat)
+            .order_by(HouseTrait.category, HouseTrait.name)
+        )
+    ]
+
+
+def house_properties(row: HouseTrait) -> dict[str, Any]:
+    """What the rules read of a house merit or flaw, as they would a book one's:
+    its rating (its points), its type and requirement. `offered` False keeps it
+    out of what a player can pick (horatio.house_traits)."""
+    found: dict[str, Any] = {
+        "rating": row.points,
+        "type": row.kind,
+        "house": True,
+        "offered": row.availability == "building" and row.archived_at is None,
+    }
+    if row.requirement:
+        found["requirement"] = row.requirement
+    return found
+
+
+def house_trait_data(row: HouseTrait, troupe_name: str) -> HouseTraitData:
+    return HouseTraitData(
+        id=row.id,
+        troupe_id=row.troupe_id,
+        troupe_name=troupe_name,
+        category=row.category,
+        name=row.name,
+        points=row.points,
+        kind=row.kind,
+        availability=row.availability,  # type: ignore[arg-type]  # checked by the database
+        creation_only=row.creation_only,
+        archived=row.archived_at is not None,
+        description=row.description,
+        requirement=row.requirement,
+        effects=tuple(row.effects),
     )

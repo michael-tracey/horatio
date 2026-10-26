@@ -245,7 +245,11 @@ function StepView({
 
   // The Disciplines step's budget is the pools', which Thin Blooded and Inept change.
   const intro = step.key === "disciplines" ? disciplinesIntro(creation) : step.intro;
-  const traitsOf = (category: string) => catalogue.traits.filter((t) => t.category === category);
+  // A house merit given by staff only, or archived, is not the player's to pick; one held stays listed.
+  const traitsOf = (category: string) =>
+    catalogue.traits.filter(
+      (t) => t.category === category && (t.house?.offered !== false || sheet.traits.some((h) => h.category === category && h.name === t.name)),
+    );
   // Inept names one of the in-clan disciplines now, not any discipline there is.
   const narrowed = (category: string, traits: TraitOut[]) =>
     category === "flaws" ? traits.map((t) => (t.name === INEPT ? { ...t, choices: ineptChoices(creation, details.flaws?.[INEPT]) } : t)) : traits;

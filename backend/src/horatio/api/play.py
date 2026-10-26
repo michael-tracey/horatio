@@ -11,7 +11,16 @@ from pydantic import BaseModel, Field, StringConstraints, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, influence_log, play, play_influence, reference, retainers, sheets
+from horatio import (
+    audit,
+    house_traits,
+    influence_log,
+    play,
+    play_influence,
+    reference,
+    retainers,
+    sheets,
+)
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
@@ -193,6 +202,8 @@ class PlayTrait(BaseModel):
     note: str = ""
     # For a clan: its in-clan disciplines.
     in_clan: list[str] | None = None
+    # A troupe's own merit or flaw: "House merit of Night Court", shown with a ★.
+    house: str | None = None
 
 
 class PlayView(BaseModel):
@@ -459,6 +470,7 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
         if parent is not None and parent.specializes:
             key = (parent.specializes["category"], parent.specializes["name"])
             specialties.setdefault(key, []).append(row.trait.detail or row.definition.name)
+    house = house_traits.marks(db, [r.definition.id for r in rows if r.definition.troupe_id])
     return [
         PlayTrait(
             category=row.category.key,
@@ -469,9 +481,12 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             rating=row.trait.rating,
             specialties=specialties.get((row.category.key, row.definition.name), []),
             description=row.definition.description,
-            page_reference=row.definition.page_reference,
+            page_reference=house[row.definition.id].page
+            if row.definition.id in house
+            else row.definition.page_reference,
             note=row.trait.note,
             in_clan=row.definition.properties.get("in_clan"),
+            house=house[row.definition.id].label if row.definition.id in house else None,
         )
         for row in rows
         if row.category.key in rule_set.categories

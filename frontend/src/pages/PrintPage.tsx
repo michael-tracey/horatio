@@ -204,6 +204,7 @@ function TraitList({
                 {label(t)}
                 {brackets && inline && ` ${brackets}`}
                 {t.pending_from !== null && <em className="ml-1 text-neutral-500">(awaiting approval from {t.pending_from})</em>}
+                {t.house && <em className="ml-1 text-neutral-500">★ {t.house}</em>}
               </span>
               {t.rating !== null && t.specializes === null && <Dots value={t.rating} />}
             </div>

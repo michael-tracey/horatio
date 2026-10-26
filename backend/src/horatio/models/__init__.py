@@ -9,6 +9,7 @@ from horatio.models.approvals import (
 from horatio.models.audit import AuditEvent
 from horatio.models.base import Base
 from horatio.models.characters import (
+    AppliedHouseTrait,
     Character,
     CharacterTrait,
     Diablerie,
@@ -51,6 +52,7 @@ from horatio.models.rules import (
     ClanLogo,
     CostRule,
     CreationRule,
+    HouseTrait,
     RuleSet,
     StartingTrait,
     TraitCategory,
@@ -71,6 +73,8 @@ from horatio.models.troupes import (
 
 __all__ = [
     "ActionKind",
+    "AppliedHouseTrait",
+    "HouseTrait",
     "AllowanceAdjustment",
     "AllowanceRule",
     "Answer",

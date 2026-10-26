@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { HouseMark } from "../../components/HouseMark";
 import { useMemo, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
@@ -254,7 +255,10 @@ function Section({
   const ratings = useMemo(() => new Map(sheet.traits.map((t) => [`${t.category}/${t.name}`, t.rating ?? 0])), [sheet]);
   const present = categories.filter((c) => catalogue.categories.some((k) => k.key === c));
   if (!present.length) return null;
-  const traits = catalogue.traits.filter((t) => present.includes(t.category));
+  // An archived house merit is not taken anew; one held stays listed.
+  const traits = catalogue.traits.filter(
+    (t) => present.includes(t.category) && !(t.house?.archived && !ratings.get(`${t.category}/${t.name}`)),
+  );
   const q = query.trim().toLowerCase();
   // Long lists show what the NPC has, plus whatever the search finds.
   const long = traits.length > 30;
@@ -330,6 +334,7 @@ function Row({
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={on} onChange={() => onChange({ category: trait.category, name: trait.name, rating: on ? 0 : level })} />
             <span className={on ? "text-parchment" : "text-mist"}>{trait.name}</span>
+            {trait.house && <HouseMark label={trait.house.label} short />}
           </label>
           {trait.fixed_rating && <Badge>{trait.fixed_rating}</Badge>}
         </div>

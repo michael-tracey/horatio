@@ -155,6 +155,10 @@ _Avoid_: Override, custom rule, homebrew
 A rule about what a sheet may hold rather than what it costs, such as a clan-only merit or two flaws that cannot be taken together. A change that breaks one is refused, with the reason and the page.
 _Avoid_: Validation, restriction, prerequisite (one kind of check)
 
+**House Merit**:
+A merit or flaw a troupe makes itself, marked ★ as that troupe's wherever it shows. Only the troupe's own characters hold one: those whose home troupe it is, those being built for it, and its NPCs; never one only visiting. Each is either given by staff only, or available when building for the troupe.
+_Avoid_: Custom merit, homebrew merit
+
 **Troupe Rules**:
 A rule set with one troupe's house rules applied. A character plays by its home troupe's troupe rules, or by the plain rule set if it has no home troupe.
 _Avoid_: Effective rules, local rules

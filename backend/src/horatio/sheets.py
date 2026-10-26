@@ -31,6 +31,7 @@ from sqlalchemy.orm import ORMExecuteState, Session
 from horatio import audit, notifications, repricing, xp_range
 from horatio.models import (
     AlternateIdentity,
+    AppliedHouseTrait,
     Approval,
     Character,
     CharacterTrait,
@@ -348,6 +349,9 @@ def ensure_unlocked(db: Session, character: Character) -> None:
 def find_definition(
     db: Session, character: Character, category_key: str, name: str
 ) -> tuple[TraitDefinition, TraitCategory]:
+    # The rule set's traits, and the house merits and flaws of the troupe whose
+    # rules the character plays by (horatio.house_traits): never another troupe's.
+    house = rules_troupe(character)
     found = db.execute(
         select(TraitDefinition, TraitCategory)
         .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
@@ -356,7 +360,10 @@ def find_definition(
             RuleSet.splat == character.splat,
             TraitCategory.key == category_key,
             TraitDefinition.name == name,
+            TraitDefinition.troupe_id.is_(None)
+            | ((TraitDefinition.troupe_id == house) & TraitDefinition.retired.is_(False)),
         )
+        .order_by(TraitDefinition.troupe_id.nulls_first())
     ).first()
     if found is None:
         raise unprocessable(f"There is no {category_key} trait called {name!r}.")
@@ -370,6 +377,53 @@ def ensure_named(definition: TraitDefinition, detail: str) -> None:
     noun = definition.properties.get("instance")
     if noun and not detail.strip():
         raise unprocessable(f"Name each {noun}: each is bought on its own, with its own dots.")
+
+
+def house_refusal(rules: TroupeRules, category: str, name: str, *, staff: bool) -> str | None:
+    """Why a house merit or flaw cannot newly be taken (horatio.house_traits): it is
+    archived, or (unless `staff` are putting it on) given by staff only."""
+    own = rules.house_trait(category, name)
+    if own is None:
+        return None
+    if own.archived:
+        return f"{name} is archived: those who hold it keep it, but no one new takes it."
+    if own.availability == "staff" and not staff:
+        return f"{name} is given by {own.troupe_name}'s staff only."
+    return None
+
+
+def ensure_offered(db: Session, character: Character, category: str, name: str) -> None:
+    """Refuse a new pick of a house merit or flaw the character cannot take. Staff
+    building an NPC may take one given by staff only."""
+    refused = house_refusal(rules_for(db, character), category, name, staff=character.kind == "npc")
+    if refused is not None:
+        raise conflict(refused)
+
+
+def ensure_house_traits_fit(db: Session, character: Character, troupe_id: uuid.UUID | None) -> None:
+    """A house merit or flaw belongs to its troupe: refuse to make another troupe
+    the one the character plays by while the sheet holds one (horatio.house_traits)."""
+    held = [
+        r.definition
+        for r in sheet_rows(db, character)
+        if r.definition.troupe_id is not None and r.definition.troupe_id != troupe_id
+    ]
+    if not held:
+        return
+    assert held[0].troupe_id is not None
+    owner = db.get_one(Troupe, held[0].troupe_id)
+    one = len(held) == 1
+    raise conflict(
+        ", ".join(f"★ {d.name}" for d in held)
+        + f" {'is' if one else 'are'} {owner.name}'s own and cannot go elsewhere; "
+        + f"take {'it' if one else 'them'} off first (staff remove one they gave)."
+    )
+
+
+def staff_applied(db: Session, trait: CharacterTrait) -> AppliedHouseTrait | None:
+    return db.scalar(
+        select(AppliedHouseTrait).where(AppliedHouseTrait.character_trait_id == trait.id)
+    )
 
 
 @dataclass(frozen=True)
@@ -707,8 +761,13 @@ def refusals(
             found.append((subject.category, subject.full_name))
         return tuple(dict.fromkeys(found))
 
+    staff = character.kind == "npc"
     for category, name in rule_set.traits:
         if category != category_key or (name in held and at is None):
+            continue
+        refused_here = house_refusal(rules, category, name, staff=staff)
+        if refused_here is not None:
+            reasons[name] = Refusal(refused_here)
             continue
         trying = touching
         if rated:
@@ -1495,10 +1554,22 @@ def held_points(
     rules = rules_for(db, character)
     rows = sheet_rows(db, character)
     sheet = [r.as_rules_trait() for r in rows]
+    # A house merit staff gave free, outside the limit (horatio.house_traits).
+    outside = set(
+        db.scalars(
+            select(AppliedHouseTrait.character_trait_id).where(
+                AppliedHouseTrait.character_id == character.id,
+                AppliedHouseTrait.counts_toward_limit.is_(False),
+            )
+        )
+    )
     return sum(
         points(rules, sheet, trait)
         for r, trait in zip(rows, sheet, strict=True)
-        if r.category.key == category_key and r.key != leave_out and not trait.granted
+        if r.category.key == category_key
+        and r.key != leave_out
+        and not trait.granted
+        and r.trait.id not in outside
     )
 
 
@@ -1550,6 +1621,8 @@ def set_trait(
     *,
     free: str | None = None,
     by_exception: ByException = None,
+    by_staff: bool = False,
+    because: str = "",
 ) -> Change:
     """Add a trait, change its rating, or (at rating 0) remove it, buying or
     refunding the difference. Unrated traits replace the category's choice.
@@ -1595,6 +1668,15 @@ def set_trait(
     )
     if existing is None and rating:
         ensure_named(definition, detail)
+    if rating and not (existing.rating if existing else 0) and not by_staff:
+        ensure_offered(db, character, category.key, definition.name)
+    if (
+        existing is not None
+        and (rating or 0) < (existing.rating or 0)
+        and not by_staff
+        and staff_applied(db, existing) is not None
+    ):
+        raise conflict(f"Staff gave {name}; only they can take it away.")
     # Generation before acceptance: still creation, so earlier buys follow it.
     reopened = open_until_accepted(db, character, category.key, definition.name)
     # After it, fixed: said before what it would cost. Staff may still give it.
@@ -1691,7 +1773,8 @@ def set_trait(
                 kind="purchase",
                 amount=-cost,
                 reason=f"{labelled} {current_rating} → {rating}"
-                + (f", free by exception: {free}" if free is not None else ""),
+                + (f", free by exception: {free}" if free is not None else "")
+                + (f", {because}" if because else ""),
                 entered_by=player.id,
                 trait_definition_id=definition.id,
                 detail=detail or None,
@@ -1719,7 +1802,8 @@ def set_trait(
         "sheet.purchase",
         character_id=character.id,
         category=category.key,
-        name=name,
+        # A house merit or flaw is marked as the troupe's own (horatio.house_traits).
+        name=f"★ {name}" if definition.troupe_id else name,
         detail=detail,
         from_rating=current_rating,
         to_rating=rating,

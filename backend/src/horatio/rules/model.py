@@ -5,6 +5,7 @@ with one troupe's house rules applied (CONTEXT.md: Troupe Rules); a character
 with no home troupe plays by a `TroupeRules` with no house rules.
 """
 
+import uuid
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -177,6 +178,50 @@ class StartingTraitData:
 
 
 @dataclass(frozen=True)
+class HouseTraitData:
+    """A merit or flaw a troupe made itself (horatio.house_traits). Its troupe's
+    rules hold it in `RuleSetData.traits` like a merit from the book, with this
+    beside it saying whose it is and who can take it."""
+
+    id: uuid.UUID
+    troupe_id: uuid.UUID
+    troupe_name: str
+    category: str
+    name: str
+    points: int
+    kind: str
+    # "staff": only staff apply it; "building": a character built for the troupe
+    # can take it.
+    availability: Literal["staff", "building"]
+    creation_only: bool = False
+    archived: bool = False
+    description: str = ""
+    requirement: str = ""
+    # Its effect blocks, as stored (none yet: description only).
+    effects: tuple[Mapping[str, Any], ...] = ()
+
+    @property
+    def offered(self) -> bool:
+        """Whether a player can take it, rather than only staff apply it."""
+        return self.availability == "building" and not self.archived
+
+    @property
+    def label(self) -> str:
+        """How it is marked wherever it shows: "House merit of Night Court"."""
+        return house_label(self.category, self.troupe_name)
+
+
+def house_label(category: str, troupe_name: str) -> str:
+    noun = "House flaw" if category == "flaws" else "House merit"
+    return f"{noun} of {troupe_name}"
+
+
+def house_page(troupe_name: str) -> str:
+    """A house trait's page reference, where a book trait's page would be."""
+    return f"House rule — {troupe_name}"
+
+
+@dataclass(frozen=True)
 class RuleSetData:
     key: str
     splat: str
@@ -251,10 +296,21 @@ class TroupeRules:
     house_starting_traits: Sequence[StartingTraitData] = ()
     # Check key to its house strength ("off" drops the check).
     check_overrides: Mapping[str, str] = field(default_factory=dict)
+    # The troupe's own merits and flaws, also in `rule_set.traits` (and, for those
+    # chosen at creation only, in `rule_set.creation_only`).
+    house_traits: Sequence[HouseTraitData] = ()
 
     @property
     def splat(self) -> str:
         return self.rule_set.splat
+
+    def house_trait(self, category: str, name: str) -> HouseTraitData | None:
+        """The troupe's own merit or flaw of that name, if it is one."""
+        return self.house_by_key.get((category, name))
+
+    @cached_property
+    def house_by_key(self) -> Mapping[tuple[str, str], HouseTraitData]:
+        return {(t.category, t.name): t for t in self.house_traits}
 
     def checks(self) -> list["CheckData"]:
         """The rule set's checks with the troupe's house strengths applied."""

@@ -40,7 +40,8 @@ export function useChoices(
 ): Choices[] {
   const planned = usePlannedUnavailable(characterId, categories, lines.map(toChange), enabled);
   return categories.map((key) => {
-    const traits = catalogue.traits.filter((t) => t.category === key);
+    // A house merit given by staff only, or archived, is not the player's to pick.
+    const traits = catalogue.traits.filter((t) => t.category === key && t.house?.offered !== false);
     const refused = planned.data?.[key] ?? {};
     const mine = held.filter((h) => h.category === key);
     return {

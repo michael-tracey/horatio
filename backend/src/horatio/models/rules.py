@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -77,10 +78,17 @@ class TraitDefinition(Record):
     """Something a sheet can contain: a skill, merit, discipline, clan…"""
 
     __tablename__ = "trait_definitions"
-    __table_args__ = (UniqueConstraint("category_id", "name"),)
+    __table_args__ = (
+        # A troupe's house merits and flaws are unique among its own; the rule set's
+        # (no troupe) among theirs.
+        UniqueConstraint("category_id", "name", "troupe_id", postgresql_nulls_not_distinct=True),
+    )
 
     category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_categories.id"), index=True)
     name: Mapped[str]
+    # Set for a troupe's house merit or flaw (HouseTrait): only that troupe's
+    # characters can hold it. Null for the rule set's own traits.
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
     # The trait description (CONTEXT.md).
     description: Mapped[str | None]
     page_reference: Mapped[str | None]
@@ -221,3 +229,40 @@ class ClanLogo(Record):
     # The id its files are kept under, new with each upload.
     image_id: Mapped[uuid.UUID]
     uploaded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class HouseTrait(Record):
+    """A merit or flaw a troupe made itself (horatio.house_traits). Sheets and
+    purchases hold it through its own trait definition, which it keeps in step."""
+
+    __tablename__ = "house_traits"
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "splat", "category", "name"),
+        CheckConstraint("category in ('merits', 'flaws')", name="category"),
+        CheckConstraint("points between 1 and 7", name="points"),
+        CheckConstraint("kind in ('General', 'Clan', 'Sabbat')", name="kind"),
+        CheckConstraint("availability in ('staff', 'building')", name="availability"),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    splat: Mapped[str] = mapped_column(default="vampire", server_default="vampire")
+    category: Mapped[str]
+    name: Mapped[str]
+    points: Mapped[int]
+    # Its catalogue type, for the merit limit and the filters.
+    kind: Mapped[str] = mapped_column(default="General", server_default="General")
+    # "staff": only staff apply it; "building": characters built for the troupe can
+    # take it, as they would a merit from the book.
+    availability: Mapped[str]
+    creation_only: Mapped[bool] = mapped_column(default=False, server_default="false")
+    description: Mapped[str] = mapped_column(default="", server_default="")
+    requirement: Mapped[str] = mapped_column(default="", server_default="")
+    # What it does on the sheet and in play, as blocks each naming the engine kind
+    # it maps to ({"kind": "free_up_to", ...}), checked as the rules files are.
+    # Empty: description only, for the storytellers to rule on at the table.
+    effects: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Archived: no new picks; those who hold it keep it.
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    trait_definition_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("trait_definitions.id"), unique=True
+    )

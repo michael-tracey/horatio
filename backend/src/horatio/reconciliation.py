@@ -52,6 +52,7 @@ from horatio.sheets import (
     HELD_KINDS,
     SheetRow,
     conflict,
+    ensure_house_traits_fit,
     ensure_unlocked,
     freeze_sheet,
     pending_disciplines,
@@ -454,6 +455,7 @@ def request_change(
             "Discipline dots are waiting for the home troupe's approval. "
             "Wait for its decision, or withdraw them, before moving."
         )
+    ensure_house_traits_fit(db, character, troupe.id)
     join(db, player, character, troupe)
 
     differences = find_differences(db, character, troupe)

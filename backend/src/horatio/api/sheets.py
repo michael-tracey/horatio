@@ -8,9 +8,10 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, free_choices, sheets, titles, xp_range
+from horatio import audit, free_choices, house_traits, sheets, titles, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
+    AppliedHouseTrait,
     Approval,
     Character,
     RuleSet,
@@ -93,6 +94,32 @@ class FreeChoicesChange(BaseModel):
     picks: list[FreePickIn] = Field(max_length=20)
 
 
+class AppliedOut(BaseModel):
+    """How staff applied a house merit or flaw (horatio.house_traits)."""
+
+    free: bool
+    # A free merit left outside the merit limit counts False.
+    counts_toward_limit: bool
+    reason: str
+
+
+class HouseMarkOut(BaseModel):
+    """A troupe's own merit or flaw, marked ★ wherever it shows."""
+
+    house_trait_id: uuid.UUID
+    troupe_id: uuid.UUID
+    troupe_name: str
+    # "House merit of Night Court".
+    label: str
+    # Where a book trait's page is: "House rule — Night Court".
+    page: str
+    # "staff" (given by staff only) or "building".
+    availability: str
+    archived: bool
+    # Set when staff applied it; only they remove it.
+    applied: AppliedOut | None = None
+
+
 class SheetTraitOut(BaseModel):
     id: uuid.UUID
     category: str
@@ -113,6 +140,8 @@ class SheetTraitOut(BaseModel):
     # For a merit that gives free traits the player chooses: what and which.
     # Always given, but optional so a sheet made without it (in a test) still reads.
     free_choices: list[FreeChoicesOut] | None = None
+    # A troupe's own merit or flaw: whose it is.
+    house: HouseMarkOut | None = None
 
 
 class XpSummary(BaseModel):
@@ -380,6 +409,45 @@ def free_offer_out(rule_set: RuleSetData, offer: free_choices.Offer) -> FreeChoi
     )
 
 
+def house_marks(db: DbSession, rows: list[sheets.SheetRow]) -> dict[uuid.UUID, HouseMarkOut]:
+    """The house merits and flaws among a sheet's rows, by the row's trait id."""
+    found = house_traits.marks(db, [r.definition.id for r in rows if r.definition.troupe_id])
+    if not found:
+        return {}
+    applied = {
+        a.character_trait_id: a
+        for a in db.scalars(
+            select(AppliedHouseTrait).where(
+                AppliedHouseTrait.character_trait_id.in_([r.trait.id for r in rows])
+            )
+        )
+    }
+    return {
+        r.trait.id: house_mark_out(found[r.definition.id], applied.get(r.trait.id))
+        for r in rows
+        if r.definition.id in found
+    }
+
+
+def house_mark_out(mark: house_traits.Mark, applied: AppliedHouseTrait | None) -> HouseMarkOut:
+    return HouseMarkOut(
+        house_trait_id=mark.house_trait_id,
+        troupe_id=mark.troupe_id,
+        troupe_name=mark.troupe_name,
+        label=mark.label,
+        page=mark.page,
+        availability=mark.availability,
+        archived=mark.archived,
+        applied=AppliedOut(
+            free=applied.free,
+            counts_toward_limit=applied.counts_toward_limit,
+            reason=applied.reason,
+        )
+        if applied is not None
+        else None,
+    )
+
+
 def sheet_out(db: DbSession, character: Character) -> SheetOut:
     floor = sheets.accepted_ratings(db, character)
     granting = sheets.sheet_effects(db, character).sources
@@ -395,6 +463,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
     pending = sheets.pending_approvals(db, character)
     held = sheets.pending_disciplines(db, character)
     held_from = {(d.trait_definition_id, d.detail): d.from_rating for _, d in held}
+    house = house_marks(db, rows)
     joined = sheets.memberships(db, character)
     names = {
         troupe_id: name
@@ -451,6 +520,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 granted_by=granting.get(r.key, []) if r.trait.granted_rating else [],
                 note=r.trait.note,
                 free_choices=choosing.get(r.key, []),
+                house=house.get(r.trait.id),
             )
             for r in rows
         ],
