@@ -96,11 +96,11 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
               <li key={n.id} aria-label={n.name} className="flex flex-wrap items-center gap-3 py-2">
                 <input type="checkbox" aria-label={`Select ${n.name}`} checked={selected.has(n.id)} onChange={() => toggle(n.id)} />
                 {n.npc_form === "stock" ? (
-                  // Its builder and Play View come later (issue #215); for now, its rating.
-                  <span className="flex min-w-0 flex-1 items-center gap-3">
+                  // Its builder; the Stock Play View comes later (issue #215).
+                  <Link to={`/troupes/${troupeId}/npcs/${n.id}`} className="flex min-w-0 flex-1 items-center gap-3 hover:text-gold">
                     <Avatar name={n.name} picture={n.picture} clan={n.clan} />
                     <span className="truncate">{n.name}</span>
-                  </span>
+                  </Link>
                 ) : (
                   <Link to={`/characters/${n.id}`} className="flex min-w-0 flex-1 items-center gap-3 hover:text-gold">
                     <Avatar name={n.name} picture={n.picture} clan={n.clan} />

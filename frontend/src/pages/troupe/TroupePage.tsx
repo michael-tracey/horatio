@@ -9,6 +9,7 @@ import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
 import { LogTab } from "./LogTab";
+import { StockNpcBuilder } from "./StockNpcBuilder";
 import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
@@ -121,6 +122,7 @@ export function TroupePage() {
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
+        {can.running && <Route path="npcs/:characterId" element={<StockNpcBuilder troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
