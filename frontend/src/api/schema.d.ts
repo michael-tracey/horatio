@@ -924,7 +924,7 @@ export interface paths {
         /**
          * Reset Play
          * @description Reset for the next game: the game ends, kept with its log, and every tracker
-         *     goes back where the sheet starts it.
+         *     goes back where the sheet starts it, but for Derangement traits, which stay.
          */
         post: operations["reset_play_api_characters__character_id__play_reset_post"];
         delete?: never;
@@ -4743,6 +4743,26 @@ export interface components {
             /** Participants */
             participants: components["schemas"]["ParticipantDeliveries"][];
         };
+        /**
+         * Derangements
+         * @description Derangement traits and the derangements behind them, which Reset leaves as
+         *     they are (horatio.play). The Play View shows them for a character with the
+         *     Derangement flaw or a temporary derangement held, and while any are marked.
+         */
+        Derangements: {
+            /** Flaws */
+            flaws: string[];
+            /** Least */
+            least: number;
+            /** Most */
+            most: number;
+            /** Start */
+            start: number;
+            /** Temporary */
+            temporary: components["schemas"]["TemporaryDerangement"][];
+            /** Value */
+            value: number;
+        };
         /** DetailChange */
         DetailChange: {
             /** Category */
@@ -6473,6 +6493,7 @@ export interface components {
             character_name: string;
             /** Clan */
             clan: string | null;
+            derangements: components["schemas"]["Derangements"];
             /** Expendables */
             expendables: components["schemas"]["ExpendableOut"][];
             game: components["schemas"]["GameOut"] | null;
@@ -7798,6 +7819,7 @@ export interface components {
             amount: number;
             /** Damage */
             damage?: ("normal" | "aggravated") | null;
+            derangement?: components["schemas"]["TemporaryDerangementIn"] | null;
             /** Game Id */
             game_id?: string | null;
             /**
@@ -7833,6 +7855,30 @@ export interface components {
         Taps: {
             /** Taps */
             taps: components["schemas"]["TapIn"][];
+        };
+        /** TemporaryDerangement */
+        TemporaryDerangement: {
+            /** Held */
+            held: boolean;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Source */
+            source: string;
+        };
+        /**
+         * TemporaryDerangementIn
+         * @description A temporary derangement a tap adds.
+         */
+        TemporaryDerangementIn: {
+            /** Name */
+            name: string;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
         };
         /** TestPool */
         TestPool: {

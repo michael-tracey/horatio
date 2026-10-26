@@ -12,6 +12,11 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
                  (Blood of the Tzimisce: Lore +2)
     price_in_clan  the trait is priced as in-clan without being in-clan
                  (Thaumaturgic Expertise: another path)
+    replace_in_clan  the character's in-clan disciplines are the target's `names`
+                 instead of their clan's (Shadows of the Past, Blight of the
+                 Ever-Hungry). Extra in-clan disciplines still come on top, and the
+                 names need not be in the catalogue. It changes no trait, so it is
+                 read by splats.vampire_in_clan_disciplines, not by `effects`
     cost_percent the trait costs `amount` percent of its price, rounded up
                  (Supernatural Aria: Performance: Singing at 50)
     convert      the trait named in `from` becomes the target, keeping its rating
@@ -36,8 +41,18 @@ from typing import Any, Literal
 from horatio.rules.checks import matches
 from horatio.rules.model import RuleSetData, SheetTrait
 
-Kind = Literal["add", "free_up_to", "raise_max", "price_in_clan", "cost_percent", "convert"]
-KINDS = ("add", "free_up_to", "raise_max", "price_in_clan", "cost_percent", "convert")
+Kind = Literal[
+    "add", "free_up_to", "raise_max", "price_in_clan", "replace_in_clan", "cost_percent", "convert"
+]
+KINDS = (
+    "add",
+    "free_up_to",
+    "raise_max",
+    "price_in_clan",
+    "replace_in_clan",
+    "cost_percent",
+    "convert",
+)
 TraitKey = tuple[str, str, str]  # category, name, detail
 
 
@@ -137,6 +152,8 @@ def effects(
             if grant.when is not None and not matches(grant.when, sheet, trait):
                 continue
             label = trait.full_name
+            if grant.kind == "replace_in_clan":
+                continue
             if grant.kind == "convert":
                 assert grant.convert_from is not None
                 if "choose" in grant.target:
@@ -218,6 +235,23 @@ def priced(rule_set: RuleSetData, sheet: Sequence[SheetTrait]) -> Priced:
     return rule_set.remembered(("priced", tuple(sheet)), work_out)
 
 
+def in_clan_replaced(rule_set: RuleSetData, sheet: Sequence[SheetTrait]) -> list[str] | None:
+    """The in-clan disciplines a `replace_in_clan` grant sets in place of the clan's,
+    or None if the sheet holds none. Asked for every sheet a trial tries, so it
+    looks only at the few grants of that kind."""
+    replacing = rule_set.remembered(
+        ("replacing_in_clan",),
+        lambda: tuple(g for g in rule_set.grants if g.kind == "replace_in_clan"),
+    )
+    for grant in replacing:
+        for trait in sheet:
+            if holds_source(trait, grant.source) and (
+                grant.when is None or matches(grant.when, sheet, trait)
+            ):
+                return list(grant.target["names"])
+    return None
+
+
 def matching(
     keys: Mapping[tuple[str, str, str | None], Any] | Set[tuple[str, str, str | None]],
     trait: SheetTrait,
@@ -273,6 +307,12 @@ def validate_grant(
         if category not in categories:
             raise ValueError(f"grant {grant.key} names unknown category {category!r}")
     names = list(grant.target.get("names") or [])
+    if grant.kind == "replace_in_clan":
+        # The names are disciplines to be in-clan, which the catalogue may lack
+        # (the Graveborne path of Blight of the Ever-Hungry).
+        if not names:
+            raise ValueError(f"grant {grant.key} must name the in-clan disciplines")
+        return
     if grant.target.get("name"):
         names.append(grant.target["name"])
     choose = grant.target.get("choose")

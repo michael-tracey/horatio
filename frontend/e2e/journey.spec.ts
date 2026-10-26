@@ -762,6 +762,78 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await expect(p.getByText("above a ceiling", { exact: true })).toBeVisible();
 });
 
+test("Generation changes in the cart until a home troupe accepts the character, repricing earlier buys", async ({ browser }) => {
+  const custodian = await person(browser, "gen-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "gen-lead");
+  const player = await person(browser, "gen-player");
+  const troupeName = `Court of the Unaccepted ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  // Ottoline, a Neonate (Generation 1), finishes creation and buys Brawl and Herd at a Neonate's prices: 5 and 3 XP.
+  const p = player.page;
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Ottoline" });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const build: Record<string, [string, number][]> = {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+  await send("PUT", `/api/characters/${id}/traits`, { category: "skills", name: "Brawl", rating: 5 });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "backgrounds", name: "Herd", rating: 3 });
+  await p.goto(`/characters/${id}`);
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+
+  // No troupe has accepted her yet, so Generation still goes up in the cart: 4 XP, and the earlier buys at Generation 2's prices.
+  await p.getByRole("button", { name: "Raise Generation" }).click();
+  const line = cart.getByRole("listitem").filter({ hasText: "Generation 1 → 2" });
+  await expect(line).toContainText("Generation 1 → 2 · 12 XP");
+  await expect(line).toContainText("Earlier buys repriced at the new Generation, 8 XP in all: Brawl 4 → 5 (5 XP), Herd 2 → 3 (3 XP).");
+  await p.screenshot(shots("generation-repriced"));
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 12 XP.")).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
+  await expect(p.getByText("Generation 1 → 2: Brawl 4 → 5 repriced")).toBeVisible();
+  await expect(p.getByText("Generation 1 → 2: Herd 2 → 3 repriced")).toBeVisible();
+
+  // Down again refunds the dot and reprices back; the creation pick stays.
+  await p.goto(`/characters/${id}`);
+  await p.getByRole("button", { name: "Lower Generation" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Generation 2 → 1" })).toContainText("8 XP back in all");
+  await expect(p.getByRole("button", { name: "Lower Generation" })).toBeDisabled();
+  await p.getByRole("button", { name: "Clear" }).click();
+
+  // The lead sees the Generation being accepted, and that accepting locks it.
+  const asked = await send("POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  expect(asked.id).toBeTruthy();
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  const card = l.locator("section").filter({ hasText: "Ottoline" });
+  await expect(card).toContainText("Accepting at Generation 2.");
+  await expect(card).toContainText("Accepting locks it");
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+
+  // Once accepted, Generation is fixed.
+  await p.reload();
+  await p.getByRole("button", { name: "Raise Generation" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Generation 2 → 3" })).toContainText(
+    "Generation can't change once a home troupe has accepted the character.",
+  );
+  await expect(p.getByRole("button", { name: "Spend XP" })).toBeDisabled();
+});
+
 test("a character in no troupe can be deleted from the vault", async ({ browser }) => {
   const { page } = await person(browser, "deleter");
   await page.getByLabel("Name").fill("Short-lived");
@@ -1484,7 +1556,7 @@ test("a player renames their character once in three months, and the custodian a
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
-  await expect(p.getByText("visiting")).toBeVisible();
+  await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
   await p.getByRole("button", { name: "More for Agnes Moreau" }).click();
   await p.getByRole("menuitem", { name: "Rename…" }).click();
   await p.getByLabel("New name").fill("Agnes Duval");
@@ -1916,7 +1988,12 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
-  await expect(p.getByText("visiting")).toBeVisible();
+  await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
+  // Home troupe comes first, then the visiting troupes, each with what it means.
+  await expect(p.locator("main section h2")).toHaveText(["Home troupe", "Visiting troupes"]);
+  const card = (title: string) => p.locator("main section").filter({ has: p.getByRole("heading", { name: title }) });
+  await expect(card("Home troupe").getByText("The one troupe that holds this character's sheet.")).toBeVisible();
+  await expect(card("Visiting troupes").getByText("A troupe this character plays in without its home there.")).toBeVisible();
 
   // The list opens as soon as the box is clicked: the troupe's player first.
   await lead.page.getByRole("link", { name: "Troupes" }).click();
@@ -2934,12 +3011,15 @@ test("only a character with a ritual discipline sees rituals, up to its path's l
   await expect(disciplines.getByRole("button", { name: /^\d+ Rituals$/ })).toBeVisible();
   await disciplines.getByRole("button", { name: /^\d+ Rituals$/ }).click();
   await expect(chips.getByRole("button", { name: /^Rituals/ })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Search Rituals").fill(ritual(1));
+  await expect(p.getByRole("button", { name: new RegExp(`^${ritual(1)}`) })).toBeEnabled();
+  // A ritual of each level comes before one of the next.
   await p.getByLabel("Search Rituals").fill(ritual(2));
-  await expect(p.getByRole("button", { name: new RegExp(`^${ritual(2)}`) })).toBeEnabled();
-  await p.getByLabel("Search Rituals").fill(ritual(3));
-  // Left out of what the character can take, but a tap away, with the reason.
   await expect(p.getByText("None you can take. 1 you can't:")).toBeVisible();
   await p.getByRole("button", { name: "show", exact: true }).click();
+  await expect(p.getByText("A thaumaturge learns a ritual of each level before one of the next.", { exact: false })).toBeVisible();
+  await p.getByLabel("Search Rituals").fill(ritual(3));
+  // Left out of what the character can take, but a tap away, with the reason.
   await expect(p.getByText("A level 3 Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more.", { exact: false })).toBeVisible();
 });
 
@@ -3316,6 +3396,121 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await expect(a.getByText("Half Blood: fed short last downtime")).toHaveCount(0);
 });
 
+test("Derangement traits on the Play View: a temporary derangement added, warnings to the edge, kept through Reset, and removed", async ({ browser }) => {
+  const custodian = await person(browser, "derange-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "derange-lead");
+  const troupeName = `Court of Bedlam ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // Two NPCs the lead runs, neither with the Derangement flaw: a Malkavian, whose
+  // clan weakness is a derangement, and a Toreador.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const npc = async (name: string, clan: string) => {
+    const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(made.status(), await made.text()).toBe(201);
+    const id: string = (await made.json()).id;
+    const rated = await p.request.put(`/api/characters/${id}/npc/ratings`, { headers, data: { category: "clan", name: clan, rating: null, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+    return id;
+  };
+  const ophelia = await npc("Ophelia", "Malkavian");
+  const lucien = await npc("Lucien", "Toreador");
+
+  // No Derangement flaw on the sheet: no tracker, only a way to add one.
+  await p.goto(`/play/characters/${lucien}`);
+  await expect(p.getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Add a temporary derangement…" })).toBeVisible();
+
+  // The Malkavian's clan derangement is added by hand, as a temporary one.
+  await p.goto(`/play/characters/${ophelia}`);
+  await p.getByLabel("Quick notes").uncheck();
+  await expect(p.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Add a temporary derangement…" }).click();
+  const adding = p.getByRole("dialog", { name: "Temporary derangement" });
+  await adding.getByLabel("Derangement").fill("Paranoia: the Prince");
+  await adding.getByLabel("Where it came from (optional)").fill("Malkavian clan weakness");
+  await adding.getByRole("button", { name: "Add" }).click();
+  await expect(p.getByText("Temporary derangement added: Paranoia: the Prince, from Malkavian clan weakness")).toBeVisible();
+
+  // A Malkavian always has 1, so it can't be removed.
+  const traits = p.getByRole("region", { name: "Derangement traits" });
+  await expect(traits.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
+  await expect(traits).toContainText("Malkavians always have 1.");
+  await expect(traits.getByRole("listitem").filter({ hasText: "Paranoia: the Prince" })).toContainText("Temporary, from Malkavian clan weakness");
+  await expect(traits.getByRole("button", { name: "Remove a Derangement trait", exact: true }).last()).toBeDisabled();
+  await expect(traits.getByRole("button", { name: "Severe response" })).toBeDisabled();
+
+  // Two triggers resisted: a warning at 2, and at 3 how a psychotic break plays out.
+  const mark = traits.getByRole("button", { name: "Mark a Derangement trait", exact: true }).last();
+  await mark.click();
+  await expect(traits.getByRole("note", { name: "One trait from the edge" })).toContainText("MET: VtM core, p. 267");
+  await mark.click();
+  await expect(traits.getByLabel("Derangement traits: 3 of 3")).toBeVisible();
+  const edge = traits.getByRole("note", { name: "On the edge of a psychotic break" });
+  await expect(edge).toContainText("A severe response lasts five minutes.");
+  await expect(edge).toContainText("to 1, as a Malkavian always keeps 1");
+  // A warning only: the tap goes through, and nothing is blocked.
+  await expect(p.getByText("Derangement traits 2 → 3")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await p.screenshot(shots("play-derangements"));
+  // Undo takes one back, as any tap.
+  await p.getByRole("button", { name: "Undo Derangement traits 2 → 3" }).click();
+  await expect(p.getByText("Undid: Derangement traits 2 → 3")).toBeVisible();
+  await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // Another device (the custodian's) sees the same.
+  const other = custodian.page;
+  await other.goto(`/play/characters/${ophelia}`);
+  await expect(other.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+  await expect(other.getByText("Paranoia: the Prince", { exact: true })).toBeVisible();
+
+  // Reset for the next game puts Blood back but leaves Derangement traits and the derangement.
+  await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
+  await expect(p.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await p.getByRole("button", { name: "Reset for next game…" }).click();
+  await expect(p.getByText("Derangement traits stay at 2.")).toBeVisible();
+  await p.getByRole("button", { name: "Reset for next game", exact: true }).click();
+  await expect(p.getByText("Game 2")).toBeVisible();
+  await expect(p.getByLabel("Blood: 10 of 10")).toBeVisible();
+  await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+  await p.reload();
+  await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
+  await expect(traits.getByText("Paranoia: the Prince", { exact: true })).toBeVisible();
+
+  // A severe response clears them, down to the Malkavian's 1.
+  await traits.getByRole("button", { name: "Severe response" }).click();
+  await expect(traits.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
+  await expect(p.getByText("Derangement traits 2 → 1")).toBeVisible();
+  await expect(p.getByText("“Severe response”")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await other.reload();
+  await expect(other.getByLabel("Derangement traits: 1 of 3")).toBeVisible();
+
+  // Removed by the player when it's over: the tracker goes, back to a way to add one.
+  await traits.getByRole("button", { name: "Remove Paranoia: the Prince" }).click();
+  await expect(p.getByText("Temporary derangement removed: Paranoia: the Prince, from Malkavian clan weakness")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Add a temporary derangement…" })).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await other.reload();
+  await expect(other.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
+});
+
 test("a coterie's shared Haven: staff set it up, a player logs a use, and the other sharer reads it in the log", async ({ browser }) => {
   const custodian = await person(browser, "share-custodian");
   makeCustodian(custodian.email);
@@ -3411,74 +3606,32 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
 });
 
-test("Generation changes in the cart until a home troupe accepts the character, repricing earlier buys", async ({ browser }) => {
-  const custodian = await person(browser, "gen-custodian");
-  makeCustodian(custodian.email);
-  const lead = await person(browser, "gen-lead");
-  const player = await person(browser, "gen-player");
-  const troupeName = `Court of the Unaccepted ${run}`;
-  const headers = { "X-Horatio": "1" };
-  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
-  expect(made.status(), await made.text()).toBe(201);
-  const troupeId = (await made.json()).id;
-
-  // Ottoline, a Neonate (Generation 1), finishes creation and buys Brawl and Herd at a Neonate's prices: 5 and 3 XP.
-  const p = player.page;
-  const send = async (method: "POST" | "PUT", url: string, data: object) => {
-    const response = await p.request.fetch(url, { method, headers, data });
-    expect(response.status(), await response.text()).toBeLessThan(300);
-    return response.json();
-  };
-  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Ottoline" });
-  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
-  const build: Record<string, [string, number][]> = {
+test("a skill's specialisations sit in its own list item, in the sheet's two columns and on a phone", async ({ browser }) => {
+  const { page: p } = await person(browser, "stay-together");
+  const id = await builtVampire(p, "Marguerite", "Toreador", {
     ...ATTRIBUTES_AND_FOCUSES,
-    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
-    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
-  };
-  for (const [category, picks] of Object.entries(build))
-    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
-  await send("POST", `/api/characters/${id}/creation/complete`, {});
-  await send("PUT", `/api/characters/${id}/traits`, { category: "skills", name: "Brawl", rating: 5 });
-  await send("PUT", `/api/characters/${id}/traits`, { category: "backgrounds", name: "Herd", rating: 3 });
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+    skills: ATTRIBUTES_AND_FOCUSES.skills.map(([name, rating]) => [name === "Medicine" ? "Academics" : name, rating]),
+  });
   await p.goto(`/characters/${id}`);
-  const cart = p.getByRole("list", { name: "Changes in the cart" });
-
-  // No troupe has accepted her yet, so Generation still goes up in the cart: 4 XP, and the earlier buys at Generation 2's prices.
-  await p.getByRole("button", { name: "Raise Generation" }).click();
-  const line = cart.getByRole("listitem").filter({ hasText: "Generation 1 → 2" });
-  await expect(line).toContainText("Generation 1 → 2 · 12 XP");
-  await expect(line).toContainText("Earlier buys repriced at the new Generation, 8 XP in all: Brawl 4 → 5 (5 XP), Herd 2 → 3 (3 XP).");
-  await p.screenshot(shots("generation-repriced"));
-  await p.getByRole("button", { name: "Spend XP" }).click();
-  await expect(p.getByText("Spent 12 XP.")).toBeVisible();
-  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
-  await expect(p.getByText("Generation 1 → 2: Brawl 4 → 5 repriced")).toBeVisible();
-  await expect(p.getByText("Generation 1 → 2: Herd 2 → 3 repriced")).toBeVisible();
-
-  // Down again refunds the dot and reprices back; the creation pick stays.
-  await p.goto(`/characters/${id}`);
-  await p.getByRole("button", { name: "Lower Generation" }).click();
-  await expect(cart.getByRole("listitem").filter({ hasText: "Generation 2 → 1" })).toContainText("8 XP back in all");
-  await expect(p.getByRole("button", { name: "Lower Generation" })).toBeDisabled();
-  await p.getByRole("button", { name: "Clear" }).click();
-
-  // The lead sees the Generation being accepted, and that accepting locks it.
-  const asked = await send("POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
-  expect(asked.id).toBeTruthy();
-  const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/approvals`);
-  const card = l.locator("section").filter({ hasText: "Ottoline" });
-  await expect(card).toContainText("Accepting at Generation 2.");
-  await expect(card).toContainText("Accepting locks it");
-  await card.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(l.getByText("Nothing pending.")).toBeVisible();
-
-  // Once accepted, Generation is fixed.
-  await p.reload();
-  await p.getByRole("button", { name: "Raise Generation" }).click();
-  await expect(cart.getByRole("listitem").filter({ hasText: "Generation 2 → 3" })).toContainText(
-    "Generation can't change once a home troupe has accepted the character.",
-  );
-  await expect(p.getByRole("button", { name: "Spend XP" })).toBeDisabled();
+  const skills = p.locator("section").filter({ has: p.getByRole("heading", { name: "Skills", exact: true }) });
+  const academics = skills.locator("li[data-trait='Academics']");
+  for (const width of [1280, 390]) {
+    await p.setViewportSize({ width, height: 900 });
+    // Name one specialisation for Academics.
+    if (width === 1280) {
+      await academics.getByRole("button", { name: "Add to Academics Specializations" }).click();
+      await academics.getByLabel("Name a Academics Specializations").fill("Medieval");
+      await academics.getByRole("button", { name: "Add", exact: true }).click();
+    }
+    // The skill, its specialisations and their Add button all sit in the one item.
+    await expect(academics.getByText("Academics", { exact: true }).first()).toBeVisible();
+    await expect(academics.getByText("Academics Specializations 1/1")).toBeVisible();
+    await expect(academics.getByRole("button", { name: "Remove Medieval" })).toBeVisible();
+    await expect(academics.getByRole("listitem")).toHaveCount(0); // one item for the whole trait
+    // And the item is kept whole across a column break.
+    await expect(academics).toHaveCSS("break-inside", "avoid");
+  }
+  await p.screenshot(shots("specializations-stay-together"));
 });

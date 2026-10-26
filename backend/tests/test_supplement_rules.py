@@ -137,16 +137,20 @@ def test_core_ritual_levels_follow_the_book() -> None:
 
 def test_abyss_mysticism_needs_walk_the_abyss_and_obtenebration() -> None:
     ritual = t("rituals", "Abyssal: Echoes in Darkness", 2)
+    first = t("rituals", "Abyssal: Abyssal Ichor", 1)
     walk = t("merits", "Walk the Abyss", 3)
 
     assert broken(
-        [clan("Lasombra"), ritual, t("disciplines", "Obtenebration", 2)], ritual.name
+        [clan("Lasombra"), first, ritual, t("disciplines", "Obtenebration", 2)], ritual.name
     ) == ["Abyss Mysticism needs the Lasombra merit Walk the Abyss. (Vol. 2, p. 98)"]
     assert broken(
-        [clan("Lasombra"), ritual, walk, t("disciplines", "Obtenebration", 1)], ritual.name
+        [clan("Lasombra"), first, ritual, walk, t("disciplines", "Obtenebration", 1)], ritual.name
     ) == ["A level 2 Abyss Mysticism ritual needs Obtenebration 2 or more. (Vol. 2, p. 99)"]
     assert (
-        broken([clan("Lasombra"), ritual, walk, t("disciplines", "Obtenebration", 2)], ritual.name)
+        broken(
+            [clan("Lasombra"), first, ritual, walk, t("disciplines", "Obtenebration", 2)],
+            ritual.name,
+        )
         == []
     )
 

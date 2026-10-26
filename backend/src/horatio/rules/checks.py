@@ -17,6 +17,10 @@ Condition vocabulary (every key in one table must hold):
     count = { category, name_prefix?, gte }
                                     how many traits the sheet holds in a category
                                     (whose names start with `name_prefix`)
+    one_below = { category, name_prefix? }
+                                    the sheet holds a trait of that kind rated one
+                                    less than the subject (a level 2 ritual needs a
+                                    level 1 one, p. 202)
     parent = { category, rating }   the trait named before the subject's ":" (an
                                     elder power's discipline) is held at `rating`
     self = { names?, rating?, has_detail? }
@@ -76,9 +80,9 @@ Strength = Literal["refuse", "complete", "review", "note"]
 Condition = Mapping[str, Any]
 
 CONDITION_KEYS = frozenset(
-    {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count", "parent",
-     "self", "copies", "in_clan", "accepted", "more_than_dots", "above_in_clan", "same_value",
-     "any_of", "not"}
+    {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count",
+     "one_below", "parent", "self", "copies", "in_clan", "accepted", "more_than_dots",
+     "above_in_clan", "same_value", "any_of", "not"}
 )  # fmt: skip
 
 
@@ -249,6 +253,14 @@ def matches(
                 if t.category == test["category"] and t.name.startswith(prefix) and t.rating != 0
             )
             ok = compare(held, {k: v for k, v in test.items() if k in OPERATORS})
+        elif key == "one_below":
+            below = (subject.rating or 0) - 1
+            ok = any(
+                t.category == test["category"]
+                and t.name.startswith(test.get("name_prefix", ""))
+                and t.rating == below
+                for t in sheet
+            )
         elif key == "parent":
             parent = subject.name.split(":")[0].strip()
             ok = holds_trait(

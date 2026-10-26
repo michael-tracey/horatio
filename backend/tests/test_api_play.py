@@ -77,6 +77,15 @@ def test_a_new_game_starts_where_the_sheet_does(troupe: Troupe, agnes: str) -> N
     assert state["health"]["marks"] == []
     assert state["morality"] == {"name": "Humanity", "value": 5, "rating": 5}
     assert state["beast"] == {"value": 0, "most": 5, "start": 0}
+    # No derangement on the sheet, so the Play View leaves them out.
+    assert state["derangements"] == {
+        "value": 0,
+        "most": 3,
+        "start": 0,
+        "least": 0,
+        "flaws": [],
+        "temporary": [],
+    }
     assert [(e["name"], e["uses"], e["left"]) for e in state["expendables"]] == [("Herd", 2, 2)]
     assert state["game"] is None
     assert state["log"] == []
@@ -382,3 +391,170 @@ def test_feeding_at_a_game_is_a_blood_tap_with_a_note(troupe: Troupe, agnes: str
 
     no_herd = new_character(troupe, troupe.player, "Mara")
     assert view(troupe.player, no_herd)["herd"] == 0
+
+
+def reset(person: Person, character_id: str) -> dict[str, Any]:
+    response = person.client.post(f"/characters/{character_id}/play/reset", json={})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_derangement_traits_stay_through_a_reset(troupe: Troupe, agnes: str) -> None:
+    """Derangement traits (MET: VtM core, p. 267) carry from game to game (#161):
+    marked for a resisted trigger, at most 3, and cleared by a severe response."""
+    flaw = buy(troupe.player, agnes, "flaws", "Derangement", 2, detail="Phobia: water")
+    assert flaw.status_code == 200, flaw.text
+    assert view(troupe.player, agnes)["derangements"]["flaws"] == ["Phobia: water"]
+
+    send(troupe.player, agnes, tap("derangements", 1, at=1), tap("blood", -2, at=2))
+    state = send(troupe.storyteller, agnes, tap("derangements", 1, at=3, note="resisted"))
+    assert state["derangements"]["value"] == 2
+    assert texts(state)[0] == "Derangement traits 1 → 2"
+
+    state = reset(troupe.player, agnes)
+    assert state["game"]["number"] == 2
+    assert state["blood"]["value"] == 10
+    found = state["derangements"]
+    assert (found["value"], found["start"], found["flaws"]) == (2, 2, ["Phobia: water"])
+
+    # Never more than 3; Undo takes a tap back across the carry as well.
+    first, second = tap("derangements", 1, at=10), tap("derangements", 1, at=11)
+    state = send(troupe.player, agnes, first, second)
+    assert texts(state)[:2] == ["Derangement traits 3 → 3", "Derangement traits 2 → 3"]
+    for undone, left in ((second, 3), (first, 2)):
+        undo = tap(at=12, kind="undo", tracker="", amount=0, undoes=undone["id"])
+        assert send(troupe.player, agnes, undo)["derangements"]["value"] == left
+
+    # A severe response clears them all, and the next game starts there too.
+    state = send(troupe.player, agnes, tap("derangements", -3, at=20, note="Severe response"))
+    assert state["derangements"]["value"] == 0
+    assert reset(troupe.player, agnes)["derangements"]["value"] == 0
+
+
+def test_a_malkavian_always_has_one_derangement_trait(troupe: Troupe, session: Session) -> None:
+    """A Malkavian's clan weakness is a derangement, and resetting her Derangement
+    traits leaves 1 (MET: VtM core, pp. 57, 267). Reset for the next game too."""
+    lucie = new_character(troupe, troupe.player, "Lucie", clan="Malkavian")
+    make_home_troupe_member(session, troupe, lucie)
+    found = view(troupe.player, lucie)["derangements"]
+    assert (found["value"], found["start"], found["least"]) == (1, 1, 1)
+
+    state = send(troupe.player, lucie, tap("derangements", -1), tap("derangements", 2, at=1))
+    assert state["derangements"]["value"] == 3
+    state = reset(troupe.storyteller, lucie)
+    assert state["derangements"]["value"] == 3
+    state = send(troupe.player, lucie, tap("derangements", -3, at=5, note="Severe response"))
+    assert state["derangements"]["value"] == 1
+    assert texts(state)[0] == "Derangement traits 3 → 1"
+
+
+def test_only_the_derangement_flaw_shows_of_itself(troupe: Troupe, session: Session) -> None:
+    """The tracker shows for the Derangement flaw alone (#171): a clan weakness or
+    Dementation's derangement is added as a temporary one, so the Play View has
+    neither flaws nor temporary derangements for them. A Malkavian keeps 1."""
+    for clan, least in (("Malkavian", 1), ("Ravnos", 0), ("Assamite: Vizier", 0), ("Brujah", 0)):
+        character_id = new_character(troupe, troupe.player, clan, clan=clan)
+        found = view(troupe.player, character_id)["derangements"]
+        assert (found["flaws"], found["temporary"], found["least"]) == ([], [], least), clan
+        if clan == "Brujah":
+            make_home_troupe_member(session, troupe, character_id)
+            bought = buy(troupe.player, character_id, "disciplines", "Dementation", 1)
+            assert bought.status_code == 200, bought.text
+            assert view(troupe.player, character_id)["derangements"]["flaws"] == []
+
+
+def add_derangement(name: str, source: str = "", *, at: int = 0) -> dict[str, Any]:
+    """A tap adding a new temporary derangement, with an id chosen on the device."""
+    key = f"derangement:{uuid.uuid4()}"
+    return tap(key, 1, at=at, derangement={"name": name, "source": source})
+
+
+def held(state: dict[str, Any]) -> dict[str, bool]:
+    return {t["name"]: t["held"] for t in state["derangements"]["temporary"]}
+
+
+def test_temporary_derangements_stay_until_removed(troupe: Troupe, agnes: str) -> None:
+    """A player adds a temporary derangement on the Play View, naming it and where
+    it came from; it stays through Reset until they remove it, with Undo (#171)."""
+    added = add_derangement("Phobia: the Brujah", "Voice of Madness", at=1)
+    state = send(troupe.player, agnes, added)
+    key = added["tracker"]
+    assert state["derangements"]["temporary"] == [
+        {"key": key, "name": "Phobia: the Brujah", "source": "Voice of Madness", "held": True}
+    ]
+    assert texts(state) == [
+        "Temporary derangement added: Phobia: the Brujah, from Voice of Madness"
+    ]
+
+    # Staff add one for a character they run, with no source given.
+    staff = add_derangement("Obsession: rubies", at=2)
+    state = send(troupe.storyteller, agnes, staff, tap("derangements", 1, at=3))
+    assert held(state) == {"Phobia: the Brujah": True, "Obsession: rubies": True}
+    assert state["log"][1]["text"] == "Temporary derangement added: Obsession: rubies"
+    assert state["log"][1]["by_staff"]
+
+    # Reset leaves both, and the trait.
+    state = reset(troupe.player, agnes)
+    assert held(state) == {"Phobia: the Brujah": True, "Obsession: rubies": True}
+    assert state["derangements"]["value"] == 1
+
+    # Removed by the player: kept, not held, for the old logs. Undo brings it back.
+    removed = tap(key, -1, at=10)
+    state = send(troupe.player, agnes, removed)
+    assert held(state) == {"Phobia: the Brujah": False, "Obsession: rubies": True}
+    assert texts(state) == [
+        "Temporary derangement removed: Phobia: the Brujah, from Voice of Madness"
+    ]
+    undo = tap(at=11, kind="undo", tracker="", amount=0, undoes=removed["id"])
+    state = send(troupe.player, agnes, undo)
+    assert held(state) == {"Phobia: the Brujah": True, "Obsession: rubies": True}
+    state = send(troupe.player, agnes, tap(key, -1, at=12))
+    assert held(reset(troupe.player, agnes))["Phobia: the Brujah"] is False
+
+
+def test_who_may_add_and_remove_temporary_derangements(
+    troupe: Troupe, agnes: str, session: Session
+) -> None:
+    added = add_derangement("Paranoia", "a quest gone wrong")
+    for person in (troupe.narrator, troupe.stranger):
+        response = person.client.post(f"/characters/{agnes}/play/taps", json={"taps": [added]})
+        assert response.status_code == 404
+    send(troupe.player, agnes, added)
+
+    # Not on another character, and not one never added.
+    mara = new_character(troupe, troupe.player, "Mara")
+    make_home_troupe_member(session, troupe, mara)
+    elsewhere = {**tap(added["tracker"], -1, at=1)}
+    response = troupe.player.client.post(
+        f"/characters/{mara}/play/taps", json={"taps": [elsewhere]}
+    )
+    assert response.status_code == 409
+    for unknown in (
+        tap(f"derangement:{uuid.uuid4()}", -1),
+        tap(f"derangement:{uuid.uuid4()}", 1),  # adding needs a name
+    ):
+        response = troupe.player.client.post(
+            f"/characters/{agnes}/play/taps", json={"taps": [unknown]}
+        )
+        assert response.status_code == 404
+    response = troupe.player.client.post(
+        f"/characters/{agnes}/play/taps", json={"taps": [tap("derangement:nonsense", 1)]}
+    )
+    assert response.status_code == 422
+
+
+def test_a_late_derangement_tap_moves_the_next_game(troupe: Troupe, agnes: str) -> None:
+    """A phone offline at the end of a game sends its Derangement trait after the
+    reset: it lands in its own game, and the game after starts from it."""
+    game_one = send(troupe.player, agnes, tap("derangements", 1))["game"]["id"]
+    reset(troupe.storyteller, agnes)
+    send(troupe.player, agnes, tap("derangements", 1, at=60))
+    assert view(troupe.player, agnes)["log"][0]["text"] == "Derangement traits 1 → 2"
+
+    state = send(troupe.player, agnes, tap("derangements", 1, at=50, game_id=game_one))
+
+    found = state["derangements"]
+    assert (found["value"], found["start"]) == (3, 2)
+    assert state["log"][0]["text"] == "Derangement traits 2 → 3"
+    log = troupe.player.client.get(f"/characters/{agnes}/play/games/{game_one}").json()
+    assert texts(log) == ["Derangement traits 1 → 2", "Derangement traits 0 → 1"]

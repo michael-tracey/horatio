@@ -2986,6 +2986,51 @@
         "title": "DeliveryStatus",
         "type": "object"
       },
+      "Derangements": {
+        "description": "Derangement traits and the derangements behind them, which Reset leaves as\nthey are (horatio.play). The Play View shows them for a character with the\nDerangement flaw or a temporary derangement held, and while any are marked.",
+        "properties": {
+          "flaws": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Flaws",
+            "type": "array"
+          },
+          "least": {
+            "title": "Least",
+            "type": "integer"
+          },
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          },
+          "temporary": {
+            "items": {
+              "$ref": "#/components/schemas/TemporaryDerangement"
+            },
+            "title": "Temporary",
+            "type": "array"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value",
+          "most",
+          "start",
+          "least",
+          "flaws",
+          "temporary"
+        ],
+        "title": "Derangements",
+        "type": "object"
+      },
       "DetailChange": {
         "properties": {
           "category": {
@@ -7510,6 +7555,9 @@
             ],
             "title": "Clan"
           },
+          "derangements": {
+            "$ref": "#/components/schemas/Derangements"
+          },
           "expendables": {
             "items": {
               "$ref": "#/components/schemas/ExpendableOut"
@@ -7606,6 +7654,7 @@
           "health",
           "morality",
           "beast",
+          "derangements",
           "expendables",
           "game",
           "log"
@@ -11004,6 +11053,16 @@
             ],
             "title": "Damage"
           },
+          "derangement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TemporaryDerangementIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "game_id": {
             "anyOf": [
               {
@@ -11093,6 +11152,56 @@
           "taps"
         ],
         "title": "Taps",
+        "type": "object"
+      },
+      "TemporaryDerangement": {
+        "properties": {
+          "held": {
+            "title": "Held",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "source",
+          "held"
+        ],
+        "title": "TemporaryDerangement",
+        "type": "object"
+      },
+      "TemporaryDerangementIn": {
+        "description": "A temporary derangement a tap adds.",
+        "properties": {
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TemporaryDerangementIn",
         "type": "object"
       },
       "TestPool": {
@@ -15612,7 +15721,7 @@
     },
     "/api/characters/{character_id}/play/reset": {
       "post": {
-        "description": "Reset for the next game: the game ends, kept with its log, and every tracker\ngoes back where the sheet starts it.",
+        "description": "Reset for the next game: the game ends, kept with its log, and every tracker\ngoes back where the sheet starts it, but for Derangement traits, which stay.",
         "operationId": "reset_play_api_characters__character_id__play_reset_post",
         "parameters": [
           {

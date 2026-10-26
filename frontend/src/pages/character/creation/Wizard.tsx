@@ -450,7 +450,9 @@ function ReviewStep({
         <section aria-label="Fields to give" className="flex flex-col gap-1">
           <ul className="flex flex-col gap-1">
             {unfielded.map((t) => (
-              <SetField key={`${t.category}/${t.name}`} character={character} trait={t} />
+              <li key={`${t.category}/${t.name}`}>
+                <SetField character={character} trait={t} />
+              </li>
             ))}
           </ul>
           {stepFor("skills") && (
