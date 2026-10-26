@@ -57,6 +57,8 @@ class TroupeAction(StrEnum):
     RESET_GAMES = "reset_games"
     MANAGE_INFLUENCE_LOG = "manage_influence_log"
     MANAGE_SHARED_BACKGROUNDS = "manage_shared_backgrounds"
+    RUN_SCENES = "run_scenes"
+    CHANGE_ANY_SCENE = "change_any_scene"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -93,6 +95,11 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # Setting up shared backgrounds and keeping their logs. The players of the
     # characters sharing one also see it (horatio.shared_backgrounds).
     TroupeAction.MANAGE_SHARED_BACKGROUNDS: frozenset(_RUNNING),
+    # Opening the troupe's scenes, making them, and pinning in any of them. Its
+    # maker renames or removes a scene (horatio.api.scenes).
+    TroupeAction.RUN_SCENES: frozenset(_RUNNING),
+    # Renaming or removing a scene someone else made, and clearing old ones.
+    TroupeAction.CHANGE_ANY_SCENE: frozenset(_LEAD),
 }
 
 

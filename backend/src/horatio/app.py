@@ -44,6 +44,7 @@ from horatio.api import (
     retainers,
     roster,
     rules,
+    scenes,
     shared_backgrounds,
     sheets,
     specializations,
@@ -142,6 +143,7 @@ for module in (
     unsubscribe,
     system,
     play,
+    scenes,
     waiting,
 ):
     api.include_router(module.router)

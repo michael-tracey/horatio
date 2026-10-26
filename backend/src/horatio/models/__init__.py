@@ -58,6 +58,7 @@ from horatio.models.rules import (
     TraitCategory,
     TraitDefinition,
 )
+from horatio.models.scenes import Scene, SceneCharacter
 from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
 from horatio.models.troupes import (
     CharacterTitle,
@@ -117,6 +118,8 @@ __all__ = [
     "ReconciliationItem",
     "RuleSet",
     "ScheduledGame",
+    "Scene",
+    "SceneCharacter",
     "Session",
     "Retainer",
     "AlternateIdentity",

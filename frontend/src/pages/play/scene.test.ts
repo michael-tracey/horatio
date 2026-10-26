@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findPins, loadOpen, loadScene, pin, saveOpen, saveScene, toggleOpen, unpin } from "./scene";
+import { deviceScene, findPins, forgetDeviceScene, loadOpen, pin, saveOpen, toggleOpen, unpin } from "./scene";
 
 function memory(): Storage {
   const data = new Map<string, string>();
@@ -16,31 +16,26 @@ function memory(): Storage {
 }
 
 describe("the scene's pins", () => {
-  it("keeps one scene per troupe, in the order pinned", () => {
+  it("reads the scene a browser kept for each troupe, in the order pinned, and forgets it", () => {
     const storage = memory();
-    saveScene("a", ["x", "y"], storage);
-    saveScene("b", ["z"], storage);
-    expect(loadScene("a", storage)).toEqual(["x", "y"]);
-    expect(loadScene("b", storage)).toEqual(["z"]);
-    expect(loadScene("c", storage)).toEqual([]);
-  });
-
-  it("forgets an emptied scene", () => {
-    const storage = memory();
-    saveScene("a", ["x"], storage);
-    saveScene("a", [], storage);
-    expect(storage.length).toBe(0);
+    storage.setItem("horatio.scene.a", JSON.stringify(["x", "y"]));
+    storage.setItem("horatio.scene.b", JSON.stringify(["z"]));
+    expect(deviceScene("a", storage)).toEqual(["x", "y"]);
+    expect(deviceScene("c", storage)).toEqual([]);
+    forgetDeviceScene("a", storage);
+    expect(deviceScene("a", storage)).toEqual([]);
+    expect(deviceScene("b", storage)).toEqual(["z"]);
   });
 
   it("reads nothing from damaged storage, and survives storage that throws", () => {
     const storage = memory();
     storage.setItem("horatio.scene.a", "{nope");
-    expect(loadScene("a", storage)).toEqual([]);
+    expect(deviceScene("a", storage)).toEqual([]);
     storage.setItem("horatio.scene.a", JSON.stringify(["x", 3, "x", null, "y"]));
-    expect(loadScene("a", storage)).toEqual(["x", "y"]);
+    expect(deviceScene("a", storage)).toEqual(["x", "y"]);
     const broken = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); }, removeItem: () => { throw new Error("blocked"); } } as unknown as Storage;
-    expect(loadScene("a", broken)).toEqual([]);
-    expect(() => saveScene("a", ["x"], broken)).not.toThrow();
+    expect(deviceScene("a", broken)).toEqual([]);
+    expect(() => forgetDeviceScene("a", broken)).not.toThrow();
   });
 
   it("pins once and unpins", () => {

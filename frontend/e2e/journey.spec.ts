@@ -3112,7 +3112,7 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
   await expect(p.getByLabel("normal damage")).toHaveCount(5);
   await expect(p.getByRole("status")).toHaveText("Saved");
   const scene = await p.context().newPage();
-  await scene.goto(`/play/troupes/${troupeId}/scene`);
+  await openScene(scene, troupeId, "Ursa's den");
   await scene.getByRole("combobox", { name: "Add to the scene" }).fill("Ursa");
   await scene.getByRole("option", { name: /Ursa/ }).click();
   await expect(scene.getByRole("article", { name: "Ursa" }).getByText("Shape of the Beast: fight form (bear, Huge)")).toBeVisible();
@@ -3789,6 +3789,16 @@ test("Feed with Herd: 5 minutes for Blood equal to Herd, waiting while the phone
   expect(hunted.filter((e) => e.note === "Fed (hunted)")).toHaveLength(1);
 });
 
+/** A new scene in the troupe, made through the API, opened on the page. */
+async function openScene(page: Page, troupeId: string, name: string): Promise<string> {
+  const made = await page.request.post(`/api/troupes/${troupeId}/scenes`, { headers: { "X-Horatio": "1" }, data: { name } });
+  expect(made.status(), await made.text()).toBe(201);
+  const sceneId: string = (await made.json()).id;
+  await page.goto(`/play/troupes/${troupeId}/scenes/${sceneId}`);
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  return sceneId;
+}
+
 test("a storyteller pins three NPCs in a Scene view, taps for two, and each full Play View agrees", async ({ browser }) => {
   const custodian = await person(browser, "scene-custodian");
   makeCustodian(custodian.email);
@@ -3817,12 +3827,17 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   }
   const state = async (name: string) => (await p.request.get(`/api/characters/${npcs[name]}/play`)).json();
 
-  // From the At game tab to an empty scene.
+  // From the At game tab, through the troupe's scenes, to a new empty one.
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await p.getByRole("link", { name: "At game" }).click();
-  await p.getByRole("link", { name: "Open the Scene view" }).click();
-  await expect(p.getByRole("heading", { name: "Scene", exact: true })).toBeVisible();
+  await p.getByRole("link", { name: "Open the scenes" }).click();
+  await expect(p.getByRole("heading", { name: "Scenes", exact: true })).toBeVisible();
+  await p.getByLabel("Name of a new scene").fill("Masked ball");
+  await p.getByRole("button", { name: "New scene" }).click();
+  await expect(p.getByRole("heading", { name: "Masked ball", exact: true })).toBeVisible();
   await expect(p.getByText("Nobody is in the scene yet.")).toBeVisible();
+  const sceneUrl = new URL(p.url()).pathname;
+  const pinned = async () => (await (await p.request.get(`/api/troupes/${troupeId}/scenes/${sceneUrl.split("/").pop()}`)).json()).characters.length;
 
   // Pinned by searching: typing narrows the list, and a pinned one is not offered again.
   const search = p.getByRole("combobox", { name: "Add to the scene" });
@@ -3838,7 +3853,8 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   await expect(p.getByRole("article")).toHaveCount(3);
   await expect(card("Cassia").getByLabel("Blood: 10 of 10")).toBeVisible();
 
-  // The scene is kept on the device.
+  // The scene is kept on the server.
+  await expect.poll(pinned).toBe(3);
   await p.reload();
   await expect(p.getByRole("article")).toHaveCount(3);
   await expect(card("Brant")).toBeVisible();
@@ -3872,7 +3888,7 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   await expect(p.getByRole("link", { name: "← Alder" })).toHaveCount(0);
   await p.getByRole("tab", { name: "Sheet" }).click();
   await p.getByRole("link", { name: "← Back to the scene" }).click();
-  await expect(p.getByRole("heading", { name: "Scene", exact: true })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Masked ball", exact: true })).toBeVisible();
   await expect(p.getByRole("article")).toHaveCount(3);
   await p.goto(`/play/characters/${npcs.Brant}`);
   await expect(p.getByRole("link", { name: "← Brant" })).toBeVisible();
@@ -3885,7 +3901,7 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   await p.getByLabel("Quick notes").uncheck();
   await p.getByRole("button", { name: "Spend Willpower", exact: true }).last().click();
   await expect(p.getByRole("status")).toHaveText("Saved");
-  await p.goto(`/play/troupes/${troupeId}/scene`);
+  await p.goto(sceneUrl);
   const cassia = card("Cassia");
   await expect(cassia.getByLabel(`Willpower: ${before.value - 1} of ${before.most}`)).toBeVisible();
   await cassia.getByRole("button", { name: /^Undo Willpower/ }).click();
@@ -3903,9 +3919,10 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   await expect(brant.getByLabel(/^Health: 0 of \d+ marked$/)).toBeVisible();
   await expect(alder.getByLabel("Blood: 8 of 10")).toBeVisible();
 
-  // Removing one takes it off the page and off the device, not out of the troupe.
+  // Removing one takes it off the scene, not out of the troupe.
   await cassia.getByRole("button", { name: "Remove Cassia from the scene" }).click();
   await expect(p.getByRole("article")).toHaveCount(2);
+  await expect.poll(pinned).toBe(2);
   await p.reload();
   await expect(p.getByRole("article")).toHaveCount(2);
   await expect(card("Cassia")).toHaveCount(0);
@@ -3960,7 +3977,7 @@ test("a Scene card shows an NPC's best attacks and defences, and its Pools and P
   await expect(choices).toContainText("fight form bear · fight form template Huge");
 
   // Pinned: the top three attacks (Thrown, the fourth, is left out) and the defences are on the card.
-  await p.goto(`/play/troupes/${troupeId}/scene`);
+  await openScene(p, troupeId, "Vesper's hunt");
   await p.getByRole("combobox", { name: "Add to the scene" }).fill("Vesper");
   await p.getByRole("option", { name: /Vesper/ }).click();
   const card = p.getByRole("article", { name: "Vesper" });
@@ -3986,6 +4003,131 @@ test("a Scene card shows an NPC's best attacks and defences, and its Pools and P
   await p.reload();
   await expect(card.getByRole("region", { name: "Combat" })).toBeVisible();
   await expect(card.getByRole("button", { name: /^Powers/ })).toHaveAttribute("aria-expanded", "true");
+});
+
+test("two storytellers share a troupe's named scenes: each pins, taps and sees the other's, and the maker renames and removes", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "named-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "named-lead");
+  const second = await person(browser, "named-storyteller");
+  const troupeName = `Court of Tapers ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // A second storyteller and three NPCs, made straight through the API.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const staffed = await p.request.put(`/api/troupes/${troupeId}/staff`, { headers, data: { handle: second.handle, role: "storyteller" } });
+  expect(staffed.status(), await staffed.text()).toBe(200);
+  const npcs: Record<string, string> = {};
+  for (const name of ["Kasimir", "Lorcan", "Odile"]) {
+    const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(made.status(), await made.text()).toBe(201);
+    npcs[name] = (await made.json()).id;
+  }
+
+  // The lead's browser still has a scene of its own from before; the old address goes to the list, which offers to save it.
+  await p.evaluate(([troupe, odile]) => localStorage.setItem(`horatio.scene.${troupe}`, JSON.stringify([odile])), [troupeId, npcs.Odile!]);
+  await p.goto(`/play/troupes/${troupeId}/scene`);
+  await expect(p).toHaveURL(new RegExp(`/play/troupes/${troupeId}/scenes$`));
+  const offer = p.getByRole("region", { name: "This device's scene" });
+  await expect(offer).toContainText("1 character");
+  await offer.getByLabel("Name of the scene").fill("Old haunt");
+  await offer.getByRole("button", { name: "Save this device's scene" }).click();
+  await expect(offer).toHaveCount(0);
+  await expect(p.getByRole("listitem", { name: "Old haunt" })).toContainText("Yours · 1 character");
+  expect(await p.evaluate((troupe) => localStorage.getItem(`horatio.scene.${troupe}`), troupeId)).toBeNull();
+  await p.reload();
+  await expect(p.getByRole("listitem", { name: "Old haunt" })).toBeVisible();
+  await expect(offer).toHaveCount(0);
+
+  // Two named scenes, with a different NPC in each.
+  const search = (page: Page) => page.getByRole("combobox", { name: "Add to the scene" });
+  const scenes: Record<string, string> = {};
+  for (const [name, npc] of [
+    ["Elysium, ballroom", "Lorcan"],
+    ["Warehouse ambush", "Kasimir"],
+  ] as const) {
+    await p.goto(`/play/troupes/${troupeId}/scenes`);
+    await p.getByLabel("Name of a new scene").fill(name);
+    await p.getByRole("button", { name: "New scene" }).click();
+    await expect(p.getByRole("heading", { name, exact: true })).toBeVisible();
+    scenes[name] = new URL(p.url()).pathname;
+    await search(p).fill(npc);
+    await p.getByRole("option", { name: new RegExp(npc) }).click();
+    await expect(p.getByRole("article", { name: npc })).toBeVisible();
+  }
+  await expect(p.getByRole("article")).toHaveCount(1);
+
+  // The second storyteller has none of their own, and sees all three under All, with who made them.
+  const s = second.page;
+  await s.goto(`/play/troupes/${troupeId}/scenes`);
+  await expect(s.getByText("You have no scenes in this troupe yet.")).toBeVisible();
+  await s.getByRole("button", { name: "All" }).click();
+  await expect(s.getByRole("listitem")).toHaveCount(3);
+  const ambush = s.getByRole("listitem", { name: "Warehouse ambush" });
+  await expect(ambush).toContainText("By named-lead · 1 character");
+  // Not theirs to change.
+  await expect(ambush.getByRole("button", { name: "Rename Warehouse ambush" })).toHaveCount(0);
+
+  // They open the ambush, tap for Kasimir and pin Odile there too.
+  await ambush.getByRole("link", { name: "Warehouse ambush" }).click();
+  await expect(s.getByRole("heading", { name: "Warehouse ambush", exact: true })).toBeVisible();
+  await expect(s.getByText("named-lead's scene")).toBeVisible();
+  await expect(s.getByRole("button", { name: "Rename" })).toHaveCount(0);
+  const kasimir = s.getByRole("article", { name: "Kasimir" });
+  await kasimir.getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await expect(kasimir.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await expect(kasimir.getByRole("status")).toHaveText("Saved");
+  await search(s).fill("Odile");
+  await s.getByRole("option", { name: /Odile/ }).click();
+  await expect(s.getByRole("article")).toHaveCount(2);
+
+  // The lead, with the ambush open, sees the tap and the pin on the next refresh.
+  await expect(p.getByRole("article", { name: "Kasimir" }).getByLabel("Blood: 9 of 10")).toBeVisible({ timeout: 25_000 });
+  await expect(p.getByRole("article", { name: "Odile" })).toBeVisible({ timeout: 25_000 });
+  await p.screenshot(shots("named-scene"));
+
+  // Full view from a card goes back to that scene.
+  await p.getByRole("link", { name: "Open the full Play View of Kasimir" }).click();
+  await expect(p.getByLabel("Blood: 9 of 10")).toBeVisible();
+  await p.getByRole("link", { name: "← Back to the scene" }).click();
+  await expect(p).toHaveURL(new RegExp(`${scenes["Warehouse ambush"]}$`));
+  await expect(p.getByRole("heading", { name: "Warehouse ambush", exact: true })).toBeVisible();
+
+  // The maker renames one in its heading and removes the other from the list, after asking.
+  await p.goto(scenes["Elysium, ballroom"]!);
+  await p.getByRole("button", { name: "Rename" }).click();
+  await p.getByLabel("Name of the scene").fill("Elysium, gallery");
+  await p.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(p.getByRole("heading", { name: "Elysium, gallery", exact: true })).toBeVisible();
+  await p.getByRole("link", { name: /^← Scenes/ }).click();
+  const doomed = p.getByRole("listitem", { name: "Warehouse ambush" });
+  await doomed.getByRole("button", { name: "Remove Warehouse ambush" }).click();
+  await doomed.getByRole("button", { name: "Remove the scene" }).click();
+  await expect(doomed).toHaveCount(0);
+  await expect(p.getByRole("listitem", { name: "Elysium, gallery" })).toContainText("1 character");
+
+  // The second storyteller's list follows; removing the scene left Kasimir as he was.
+  await s.goto(`/play/troupes/${troupeId}/scenes`);
+  await s.getByRole("button", { name: "All" }).click();
+  await expect(s.getByRole("listitem", { name: "Elysium, gallery" })).toBeVisible();
+  await expect(s.getByRole("listitem", { name: "Warehouse ambush" })).toHaveCount(0);
+  expect((await (await s.request.get(`/api/characters/${npcs.Kasimir}/play`)).json()).blood.value).toBe(9);
+  const log = (await (await p.request.get(`/api/troupes/${troupeId}/log`)).json()) as { message: string }[];
+  expect(log.map((e) => e.message)).toEqual(
+    expect.arrayContaining(["named-lead removed the scene Warehouse ambush.", "named-lead renamed the scene Elysium, ballroom to Elysium, gallery."]),
+  );
 });
 
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {

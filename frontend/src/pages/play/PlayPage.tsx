@@ -75,11 +75,14 @@ export function PlayPage() {
       { replace: true },
     );
   const tabs = <TabBar tab={tab} onChange={choose} />;
-  // Opened from a Scene view's card: the way back is to that scene.
+  // Opened from a Scene view's card: the way back is to that scene. A link from
+  // before scenes were named gives only the troupe, whose old scene is its list.
   const scene = params.get("scene");
+  const sceneTroupe = params.get("troupe");
+  const back = scene ? (sceneTroupe ? `/play/troupes/${sceneTroupe}/scenes/${scene}` : `/play/troupes/${scene}/scene`) : null;
 
-  if (view.isPending) return <PlayShell characterId={characterId} scene={scene} sync={sync} awake={awake} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} scene={scene} sync={sync} awake={awake} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
 
   const record: RecordTap = (change) => {
     // Influence always asks for the spend's details, for the troupe's influence log.
@@ -93,7 +96,7 @@ export function PlayPage() {
     reference ? show(reference) : referenceError ? <ErrorText error={referenceError} /> : <p className="py-8 text-center text-mist">Loading…</p>;
 
   return (
-    <PlayShell characterId={characterId} scene={scene} sync={sync} awake={awake} name={shown.character_name} tabs={tabs}>
+    <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
       <PowersBanner powers={shown.powers} tap={tap} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
@@ -184,6 +187,7 @@ function PlayShell({
   children,
 }: {
   characterId: string;
+  /** Where "Back to the scene" goes, when it was opened from one. */
   scene: string | null;
   sync: Sync;
   awake: boolean;
@@ -196,7 +200,7 @@ function PlayShell({
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2">
           {scene ? (
-            <Link to={`/play/troupes/${scene}/scene`} className="inline-flex min-h-10 items-center rounded-md border border-gold/60 px-3 text-sm text-gold hover:bg-gold/10">
+            <Link to={scene} className="inline-flex min-h-10 items-center rounded-md border border-gold/60 px-3 text-sm text-gold hover:bg-gold/10">
               ← Back to the scene
             </Link>
           ) : (

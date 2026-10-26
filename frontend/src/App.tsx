@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { Navigate, Outlet, Route, Routes } from "react-router";
+import { Navigate, Outlet, Route, Routes, useParams } from "react-router";
 import { Layout } from "./components/Layout";
 import { Loading } from "./components/ui";
 import { AboutPage } from "./pages/AboutPage";
@@ -19,6 +19,7 @@ const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then(
 const CyclePage = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.CyclePage })));
 const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ default: m.PlayPage })));
 const ScenePage = lazy(() => import("./pages/play/ScenePage").then((m) => ({ default: m.ScenePage })));
+const ScenesPage = lazy(() => import("./pages/play/ScenesPage").then((m) => ({ default: m.ScenesPage })));
 const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })));
 const PublicTroupePage = lazy(() => import("./pages/PublicTroupePage").then((m) => ({ default: m.PublicTroupePage })));
 const PrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.PrintPage })));
@@ -27,6 +28,11 @@ const TroupeBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ d
 const StaffBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.StaffBadgesPage })));
 const CharacterBadgePage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.CharacterBadgePage })));
 const TroupePrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.TroupePrintPage })));
+
+function ToScenes() {
+  const { troupeId = "" } = useParams();
+  return <Navigate to={`/play/troupes/${troupeId}/scenes`} replace />;
+}
 
 function RequireSignIn() {
   const me = useMe();
@@ -52,7 +58,10 @@ export function App() {
         <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
         <Route path="/print/characters/:characterId/badge" element={<CharacterBadgePage />} />
         <Route path="/play/characters/:characterId" element={<PlayPage />} />
-        <Route path="/play/troupes/:troupeId/scene" element={<ScenePage />} />
+        <Route path="/play/troupes/:troupeId/scenes" element={<ScenesPage />} />
+        <Route path="/play/troupes/:troupeId/scenes/:sceneId" element={<ScenePage />} />
+        {/* The one scene per troupe from before scenes were named (issue #231). */}
+        <Route path="/play/troupes/:troupeId/scene" element={<ToScenes />} />
       </Route>
       <Route element={<Layout />}>
         <Route path="/sign-in" element={<SignInPage />} />

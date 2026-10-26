@@ -3845,6 +3845,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/scenes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Scenes
+         * @description The troupe's scenes, the most lately used first; with `mine`, only those the
+         *     one asking made.
+         */
+        get: operations["list_scenes_api_troupes__troupe_id__scenes_get"];
+        put?: never;
+        /** Create Scene */
+        post: operations["create_scene_api_troupes__troupe_id__scenes_post"];
+        /**
+         * Clear Scenes
+         * @description Remove every scene in the troupe not used since `unused_since`.
+         */
+        delete: operations["clear_scenes_api_troupes__troupe_id__scenes_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/scenes/{scene_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Scene */
+        get: operations["read_scene_api_troupes__troupe_id__scenes__scene_id__get"];
+        put?: never;
+        post?: never;
+        /** Remove Scene */
+        delete: operations["remove_scene_api_troupes__troupe_id__scenes__scene_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Scene */
+        patch: operations["rename_scene_api_troupes__troupe_id__scenes__scene_id__patch"];
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Pin
+         * @description Pin a character at the end of the scene; nothing changes if it is there.
+         */
+        put: operations["pin_api_troupes__troupe_id__scenes__scene_id__characters__character_id__put"];
+        post?: never;
+        /**
+         * Unpin
+         * @description Take a character off the scene. It stays in the troupe, as it was.
+         */
+        delete: operations["unpin_api_troupes__troupe_id__scenes__scene_id__characters__character_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/shared-backgrounds": {
         parameters: {
             query?: never;
@@ -4993,6 +5062,11 @@ export interface components {
             clans: components["schemas"]["ClanLogoOut"][];
             /** Dark Pack */
             dark_pack: boolean;
+        };
+        /** Cleared */
+        Cleared: {
+            /** Removed */
+            removed: number;
         };
         /** ConnectorChange */
         ConnectorChange: {
@@ -7374,6 +7448,13 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** NewScene */
+        NewScene: {
+            /** Characters */
+            characters?: string[];
+            /** Name */
+            name: string;
+        };
         /** NewTitle */
         NewTitle: {
             /** Name */
@@ -8999,6 +9080,79 @@ export interface components {
             titles: string[];
             /** Waiting */
             waiting: boolean;
+        };
+        /** SceneName */
+        SceneName: {
+            /** Name */
+            name: string;
+        };
+        /** SceneOut */
+        SceneOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Characters */
+            characters: string[];
+            /** Count */
+            count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Last Used At
+             * Format: date-time
+             */
+            last_used_at: string;
+            /** Mine */
+            mine: boolean;
+            /** Name */
+            name: string;
+        };
+        /** SceneSummary */
+        SceneSummary: {
+            /** Can Change */
+            can_change: boolean;
+            /** Count */
+            count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Last Used At
+             * Format: date-time
+             */
+            last_used_at: string;
+            /** Mine */
+            mine: boolean;
+            /** Name */
+            name: string;
         };
         /** ScheduledGameIn */
         ScheduledGameIn: {
@@ -18476,6 +18630,271 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Roll"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scenes_api_troupes__troupe_id__scenes_get: {
+        parameters: {
+            query?: {
+                mine?: boolean;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_scene_api_troupes__troupe_id__scenes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewScene"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_scenes_api_troupes__troupe_id__scenes_delete: {
+        parameters: {
+            query: {
+                unused_since: string;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cleared"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_scene_api_troupes__troupe_id__scenes__scene_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                scene_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_scene_api_troupes__troupe_id__scenes__scene_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                scene_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_scene_api_troupes__troupe_id__scenes__scene_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                scene_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SceneName"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pin_api_troupes__troupe_id__scenes__scene_id__characters__character_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                scene_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unpin_api_troupes__troupe_id__scenes__scene_id__characters__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                scene_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SceneOut"];
                 };
             };
             /** @description Validation Error */
