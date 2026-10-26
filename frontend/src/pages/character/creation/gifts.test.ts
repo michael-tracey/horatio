@@ -103,3 +103,12 @@ describe("brokenChecks naming a clash", () => {
     });
   });
 });
+
+describe("brokenChecks keeping a need's own words", () => {
+  it("does not call a check the player must meet a clash", () => {
+    const vestiges = { category: "merits", name: "Vestiges of Greatness", strength: "complete", message: "Vestiges of Greatness: choose one.", looks_at: [{ category: "skills", name: "Computer" }] };
+    const held = sheet([trait("skills", "Computer")], [vestiges]);
+
+    expect(brokenChecks({ creation: creation([]), sheet: held, steps: STEPS })[0]?.message).toBe("Vestiges of Greatness: choose one.");
+  });
+});
