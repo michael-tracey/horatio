@@ -17,8 +17,8 @@ from horatio.rules.files import DATA_DIR, load_rule_set
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import NotAllowed, trait_cost
 from horatio.rules.splats import SPLATS, vampire_in_clan_disciplines
-from tests.api_helpers import Troupe, new_character
-from tests.test_api_creation import creating, pick
+from tests.api_helpers import Person, Troupe, new_character
+from tests.test_api_creation import FULL_BUILD, creating, pick
 from tests.test_api_grants import take
 
 
@@ -134,6 +134,13 @@ def test_a_merit_held_at_no_dots_changes_nothing() -> None:
 # --- Inceptor (Vol. 2 Issue 1, p. 46) -------------------------------------------------------
 
 
+def build(player: Person, character_id: str, skip: str) -> None:
+    """Every pick of the usual build but those in `skip`."""
+    for category, name, rating in FULL_BUILD:
+        if category != skip:
+            assert pick(player, character_id, category, name, rating).status_code == 200, name
+
+
 def caitiff(*traits: SheetTrait) -> list[SheetTrait]:
     inceptor = t("merits", "Inceptor", 3)
     return sheet_of("Caitiff", inceptor, *traits)
@@ -206,6 +213,43 @@ def test_kineticism_is_learned_only_in_clan() -> None:
 def test_other_clans_are_in_clan_as_they_were() -> None:
     assert in_clan(sheet_of("Brujah")) == {"Celerity", "Potence", "Presence"}
     assert in_clan(sheet_of("Caitiff")) == set()
+
+
+# --- Vestiges of Greatness (p. 246) ---------------------------------------------------------
+
+VESTIGES_MESSAGE = "Vestiges of Greatness gives one in-clan discipline from the uncommon list"
+VESTIGES_NEEDS = "Vestiges of Greatness: choose one of your in-clan disciplines from Dementation"
+
+
+def vestiges(*extra: str) -> list[SheetTrait]:
+    return sheet_of(
+        "Caitiff",
+        t("merits", "Vestiges of Greatness", 3),
+        *(t("extra_in_clan_disciplines", name) for name in extra),
+    )
+
+
+def test_vestiges_gives_two_common_and_one_uncommon() -> None:
+    sheet = vestiges("Auspex", "Celerity", "Dementation")
+
+    assert in_clan(sheet) == {"Auspex", "Celerity", "Dementation"}
+    assert all(broken(sheet, name) == [] for name in ("Auspex", "Celerity", "Dementation"))
+    assert broken(sheet, "Vestiges of Greatness") == []
+
+
+def test_vestiges_refuses_a_second_uncommon_discipline() -> None:
+    sheet = vestiges("Auspex", "Dementation", "Protean")
+
+    assert any(VESTIGES_MESSAGE in m for m in broken(sheet, "Protean"))
+    assert any(VESTIGES_MESSAGE in m for m in broken(sheet, "Dementation"))
+    # The common one is not the problem.
+    assert broken(sheet, "Auspex") == []
+
+
+def test_vestiges_with_none_from_the_uncommon_list_is_flagged() -> None:
+    sheet = vestiges("Auspex", "Celerity", "Potence")
+
+    assert any(VESTIGES_NEEDS in m for m in broken(sheet, "Vestiges of Greatness"))
 
 
 # --- one ritual of each level before the next (pp. 180, 202; Vol. 2, pp. 98, 132, 162) ------
@@ -342,7 +386,8 @@ def test_blight_changes_what_a_nagaraja_pays_through_the_api(troupe: Troupe) -> 
         ).json()["cost"]
 
     before = (quote("Dominate"), quote("Potence"))
-    assert pick(player, character_id, "merits", "Blight of the Ever-Hungry", 3).status_code == 200
+    blight = pick(player, character_id, "merits", "Blight of the Ever-Hungry", 3)
+    assert blight.status_code == 200, blight.text
     after = (quote("Dominate"), quote("Potence"))
 
     assert (before, after) == ((9, 12), (12, 9))
@@ -376,3 +421,73 @@ def test_a_ritual_of_level_2_is_refused_until_one_of_level_1_is_held(
         take(troupe.player, character_id, "rituals", "Thaumaturgy: Blood Walk", 2).status_code
         == 200
     )
+
+
+def test_two_uncommon_disciplines_with_vestiges_are_refused(troupe: Troupe) -> None:
+    character_id = creating(troupe, clan="Caitiff")
+    player = troupe.player
+    assert pick(player, character_id, "merits", "Vestiges of Greatness", 3).status_code == 200
+
+    assert take(player, character_id, "extra_in_clan_disciplines", "Dementation").status_code == 200
+    refused = take(player, character_id, "extra_in_clan_disciplines", "Protean")
+
+    assert refused.status_code == 409
+    assert VESTIGES_MESSAGE in refused.json()["detail"]
+
+
+def test_vestiges_without_an_uncommon_discipline_cannot_finish(troupe: Troupe) -> None:
+    character_id = creating(troupe, clan="Caitiff")
+    player = troupe.player
+    for name in ("Auspex", "Celerity", "Potence"):
+        assert take(player, character_id, "extra_in_clan_disciplines", name).status_code == 200
+    assert pick(player, character_id, "merits", "Vestiges of Greatness", 3).status_code == 200
+    build(player, character_id, skip="disciplines")
+    for name, rating in (("Celerity", 2), ("Auspex", 1), ("Potence", 1)):
+        assert pick(player, character_id, "disciplines", name, rating).status_code == 200
+
+    problems = player.client.get(f"/characters/{character_id}/sheet").json()["problems"]
+    flagged = next(p for p in problems if p["name"] == "Vestiges of Greatness")
+    refused = player.client.post(f"/characters/{character_id}/creation/complete")
+
+    assert flagged["strength"] == "complete"
+    # It says what it looks at, so the wizard can show it where in-clan disciplines are chosen.
+    assert {"category": "extra_in_clan_disciplines", "name": None} in flagged["looks_at"]
+    assert refused.status_code == 409
+    assert VESTIGES_NEEDS in refused.json()["detail"]
+
+
+def test_the_starting_disciplines_follow_merits_that_change_what_is_in_clan(
+    troupe: Troupe,
+) -> None:
+    character_id = creating(troupe, clan="Nagaraja")
+    player = troupe.player
+    build(player, character_id, skip="disciplines")
+    # The Ash Path's pick is left for later: out of clan, a path needs a merit for it.
+    for name, rating in (("Dominate", 2), ("Auspex", 1)):
+        assert pick(player, character_id, "disciplines", name, rating).status_code == 200
+
+    def at(rating: int) -> dict[str, Any]:
+        pools = player.client.get(f"/characters/{character_id}/creation").json()["pools"]
+        return next(p for p in pools if p["category"] == "disciplines" and p["rating"] == rating)
+
+    assert at(2)["options"] == ["Auspex", "Dominate", "Necromancy: Ash Path"]
+    # Blight of the Ever-Hungry sets the in-clan disciplines (Vol. 2, p. 62): Dominate's
+    # dots are kept, but no longer fit.
+    blight = pick(player, character_id, "merits", "Blight of the Ever-Hungry", 3)
+    assert blight.status_code == 200, blight.text
+
+    assert at(2)["options"] == ["Auspex", "Potence"]
+    assert at(2)["traits"] == [{"name": "Dominate", "detail": "", "pick": 2, "fits": False}]
+
+
+def test_a_merit_that_gives_a_discipline_in_clan_opens_its_starting_dots(troupe: Troupe) -> None:
+    character_id = creating(troupe, clan="Followers of Set: Vipers")
+    player = troupe.player
+
+    def options() -> list[str]:
+        pools = player.client.get(f"/characters/{character_id}/creation").json()["pools"]
+        return next(p for p in pools if p["category"] == "disciplines")["options"]
+
+    assert "Fortitude" not in options()
+    assert pick(player, character_id, "merits", "Iron Scales", 2).status_code == 200
+    assert "Fortitude" in options()

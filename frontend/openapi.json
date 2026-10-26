@@ -7911,6 +7911,11 @@
             "title": "Detail",
             "type": "string"
           },
+          "fits": {
+            "default": true,
+            "title": "Fits",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -8564,6 +8569,20 @@
             "title": "Kind",
             "type": "string"
           },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          },
           "rating": {
             "title": "Rating",
             "type": "integer"
@@ -9123,6 +9142,14 @@
           "category": {
             "title": "Category",
             "type": "string"
+          },
+          "looks_at": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Looks At",
+            "type": "array"
           },
           "message": {
             "title": "Message",
@@ -9933,6 +9960,28 @@
           "extra"
         ],
         "title": "ReconciliationOut",
+        "type": "object"
+      },
+      "RefusalOut": {
+        "description": "Why a trait cannot be taken.",
+        "properties": {
+          "because": {
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Because",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "because"
+        ],
+        "title": "RefusalOut",
         "type": "object"
       },
       "RemovedOut": {
@@ -12470,6 +12519,31 @@
           "attribute"
         ],
         "title": "TraitOut",
+        "type": "object"
+      },
+      "TraitRefOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "TraitRefOut",
         "type": "object"
       },
       "TroupeChanges": {
@@ -17508,6 +17582,97 @@
           }
         },
         "summary": "Quote",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/refusals": {
+      "get": {
+        "description": "As `GET /unavailable`, with the traits held elsewhere on the sheet that each\nrefusal is because of, so the wizard can point to the step that holds them.",
+        "operationId": "refusals_api_characters__character_id__refusals_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "as_if",
+            "required": false,
+            "schema": {
+              "default": "sheet",
+              "enum": [
+                "sheet",
+                "picks",
+                "empty"
+              ],
+              "title": "As If",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "picks",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Picks"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/RefusalOut"
+                  },
+                  "title": "Response Refusals Api Characters  Character Id  Refusals Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refusals",
         "tags": [
           "sheets"
         ]

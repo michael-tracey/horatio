@@ -19,6 +19,9 @@ class PickedTrait(BaseModel):
     detail: str
     # The pick's rating, or the points it used.
     pick: int
+    # False when the pick no longer meets its pool's restriction: a starting dot on
+    # a discipline that is no longer in-clan. It is kept, but must move to finish.
+    fits: bool = True
 
 
 class PoolOut(BaseModel):
@@ -32,6 +35,8 @@ class PoolOut(BaseModel):
     remaining: int
     # A fact each trait must have to take a pick here, such as "in_clan".
     restriction: str | None
+    # With a restriction, the traits that meet it now (the in-clan disciplines).
+    options: list[str] | None = None
     traits: list[PickedTrait]
 
 
@@ -76,6 +81,7 @@ class Unpick(BaseModel):
 def creation_out(db: DbSession, character: Character) -> CreationOut:
     pools = creation.pools(db, character)
     catalogue = creation.rules_for(db, character).rule_set.categories
+    fits = creation.fitting(db, character)
     needs = [
         StepNeed(step=v.check.step, message=v.message)
         for v in sheets.sheet_violations(db, character)
@@ -94,11 +100,13 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
                 used=p.used,
                 remaining=p.remaining,
                 restriction=p.restriction,
+                options=creation.options(db, character, p, fits),
                 traits=[
                     PickedTrait(
                         name=r.definition.name,
                         detail=r.trait.detail,
                         pick=r.trait.creation_pick or 0,
+                        fits=fits(p, r.definition.name, r.trait.detail),
                     )
                     for r in p.traits
                 ],

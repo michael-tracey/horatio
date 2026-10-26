@@ -121,6 +121,18 @@ export function useUnavailable(characterId: string, category: string, enabled = 
   });
 }
 
+/** As useUnavailable, with the traits held elsewhere on the sheet that each refusal
+ * is because of (Archaic: the Computer picked on Skills). */
+export function useRefusals(characterId: string, category: string, enabled = true, as?: UnavailableAs) {
+  const query = { category, as_if: as?.asIf, picks: as?.picks };
+  return useQuery({
+    queryKey: ["refusals", characterId, category, as?.asIf ?? "sheet", as?.picks ?? []],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/refusals", { params: { path: { character_id: characterId }, query } })),
+    enabled: enabled && !!category,
+    placeholderData: (previous) => previous,
+  });
+}
+
 /**
  * For each category, the traits the character cannot take and why, with the sheet
  * as the cart's changes would leave it: a discipline dot in the cart opens the

@@ -14,9 +14,10 @@ Condition vocabulary (every key in one table must hold):
     has_all = [ {...}, {...} ]      the sheet holds all of these
     generation = { gte = 3 }        the Generation background's rating
     on_path = true                  the character follows a Path other than Humanity
-    count = { category, name_prefix?, gte }
+    count = { category, name_prefix?, names?, gte }
                                     how many traits the sheet holds in a category
-                                    (whose names start with `name_prefix`)
+                                    (whose names start with `name_prefix`, or are
+                                    among `names`)
     one_below = { category, name_prefix? }
                                     the sheet holds a trait of that kind rated one
                                     less than the subject (a level 2 ritual needs a
@@ -65,6 +66,8 @@ creation cannot be finished until it holds; "review" lets it through once the
 character has a home troupe, waiting on that troupe's approval (and freely
 before, as acceptance reviews the whole sheet); "note" only shows on the sheet.
 A troupe can change any check's strength, or switch it off.
+
+A check's message can name its subject as {name}: "{name} is not in-clan".
 
 A "complete" check can also name a creation `step`, the category whose picks
 must meet it: the wizard does not move on from that step until it holds (a
@@ -183,7 +186,7 @@ class Violation:
     def message(self) -> str:
         page = f" ({page_text(self.check.page)})" if self.check.page else ""
         text = self.check.message or f"{self.subject.full_name} is not allowed here."
-        return text.replace("{other}", self.other) + page
+        return text.replace("{other}", self.other).replace("{name}", self.subject.full_name) + page
 
     @property
     def key(self) -> tuple[str, str, str, str]:
@@ -252,10 +255,14 @@ def matches(
             ok = on_path == bool(test)
         elif key == "count":
             prefix = test.get("name_prefix", "")
+            names = test.get("names")
             held = sum(
                 1
                 for t in sheet
-                if t.category == test["category"] and t.name.startswith(prefix) and t.rating != 0
+                if t.category == test["category"]
+                and t.name.startswith(prefix)
+                and (names is None or t.name in names)
+                and t.rating != 0
             )
             ok = compare(held, {k: v for k, v in test.items() if k in OPERATORS})
         elif key == "one_below":

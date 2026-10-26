@@ -555,7 +555,23 @@ requires = { any_of = [
   { has = { category = "merits", name = "Blessing of the Gorgons" }, self = { names = ["Serpentis"] } },
   { has = { category = "merits", name = "Bonds of Stolen Vitae" }, self = { names = ["Animalism", "Auspex", "Obfuscate", "Protean"] } },
 ] }
-message = "Extra in-clan disciplines come from being Caitiff or from a merit, and only from its list."
+message = "{name} can be in-clan only for a Caitiff or through a merit, and only from its list."
+page = "246"
+
+# Vestiges of Greatness: two of a Caitiff's three from the common list, and one from
+# the uncommon list (p. 246).
+[[checks]]
+category = "extra_in_clan_disciplines"
+forbids = { has = { category = "merits", name = "Vestiges of Greatness" }, self = { names = ["Dementation", "Protean", "Serpentis", "Quietus", "Obtenebration", "Vicissitude", "Chimerstry"] }, count = { category = "extra_in_clan_disciplines", names = ["Dementation", "Protean", "Serpentis", "Quietus", "Obtenebration", "Vicissitude", "Chimerstry"], gte = 2 } }
+message = "Vestiges of Greatness gives one in-clan discipline from the uncommon list, not more."
+page = "246"
+
+[[checks]]
+category = "merits"
+name = "Vestiges of Greatness"
+requires = { count = { category = "extra_in_clan_disciplines", names = ["Dementation", "Protean", "Serpentis", "Quietus", "Obtenebration", "Vicissitude", "Chimerstry"], gte = 1 } }
+strength = "complete"
+message = "Vestiges of Greatness: choose one of your in-clan disciplines from Dementation, Protean, Serpentis, Quietus, Obtenebration, Vicissitude or Chimerstry."
 page = "246"
 
 # Inceptor: Kineticism, or one Necromancy or Thaumaturgy path, is one of the Caitiff's

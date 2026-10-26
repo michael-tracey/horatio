@@ -70,6 +70,12 @@ class ApprovalOut(BaseModel):
     staff_note: str
 
 
+class TraitRefOut(BaseModel):
+    category: str
+    # None for any trait of the category.
+    name: str | None
+
+
 class ProblemOut(BaseModel):
     """A check the sheet breaks: one the troupe should look at (refuse), or a note."""
 
@@ -77,6 +83,18 @@ class ProblemOut(BaseModel):
     name: str
     strength: str
     message: str
+    # The traits the check looks at besides its subject (Archaic: Computer, Drive…),
+    # so a step that holds them can say so.
+    looks_at: list[TraitRefOut] = []
+
+
+class RefusalOut(BaseModel):
+    """Why a trait cannot be taken."""
+
+    message: str
+    # Traits held in other categories that the refusal is because of: Computer on
+    # Skills for Archaic, or the clan a clan merit is not for.
+    because: list[TraitRefOut]
 
 
 class LimitOut(BaseModel):
@@ -365,6 +383,10 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 name=v.subject.full_name,
                 strength=v.check.strength,
                 message=v.message,
+                looks_at=[
+                    TraitRefOut(category=c, name=n)
+                    for c, n in sorted(v.check.looks_at, key=lambda k: (k[0], k[1] or ""))
+                ],
             )
             for v in sheets.sheet_violations(db, character)
         ],
@@ -499,6 +521,31 @@ def unavailable(
     if category not in rules.rule_set.categories:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No category {category!r}.")
     return sheets.unavailable(db, character, category, as_if, picks or [])
+
+
+@router.get("/refusals")
+def refusals(
+    character_id: uuid.UUID,
+    category: str,
+    db: DbSession,
+    user: CurrentUser,
+    as_if: Literal["sheet", "picks", "empty"] = "sheet",
+    picks: Annotated[list[str] | None, Query()] = None,
+) -> dict[str, RefusalOut]:
+    """As `GET /unavailable`, with the traits held elsewhere on the sheet that each
+    refusal is because of, so the wizard can point to the step that holds them."""
+    character = visible_character(db, user, character_id)
+    rules = sheets.rules_for(db, character)
+    if category not in rules.rule_set.categories:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No category {category!r}.")
+    found = sheets.refusals(db, character, category, as_if, picks or [])
+    return {
+        name: RefusalOut(
+            message=r.message,
+            because=[TraitRefOut(category=c, name=n) for c, n in r.because],
+        )
+        for name, r in found.items()
+    }
 
 
 def home_troupe_awarding(db: DbSession, user: User, character: Character) -> Troupe | None:

@@ -11,7 +11,7 @@ A pick can only go on a trait with no purchased dots, and can only be taken
 back while the trait still has none, so free and paid dots never get tangled.
 """
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
@@ -102,17 +102,40 @@ def pools(db: Session, character: Character) -> dict[tuple[str, int], Pool]:
 RESTRICTION_TEXT = {"in_clan": "in-clan"}
 
 
+Fits = Callable[[Pool, str, str], bool]
+
+
+def fitting(db: Session, character: Character) -> Fits:
+    """Whether a trait may take a pick from a pool, given the sheet as it stands
+    (for "in_clan", that means the character's clan and the merits that change
+    its in-clan disciplines). Read once, for as many traits as are asked about."""
+    rules = rules_for(db, character)
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    facts = SPLATS[character.splat].facts
+
+    def fits(pool: Pool, name: str, detail: str) -> bool:
+        if pool.restriction is None:
+            return True
+        trait = SheetTrait(category=pool.category, name=name, detail=detail, rating=0)
+        return bool(facts(rules, sheet, trait).get(pool.restriction))
+
+    return fits
+
+
 def allowed_by_restriction(
     db: Session, character: Character, pool: Pool, name: str, detail: str
 ) -> bool:
-    """Whether `name` may take a pick from `pool`, given the sheet as it stands
-    (for "in_clan", that means the character's clan)."""
+    """Whether `name` may take a pick from `pool`, given the sheet as it stands."""
+    return fitting(db, character)(pool, name, detail)
+
+
+def options(db: Session, character: Character, pool: Pool, fits: Fits) -> list[str] | None:
+    """The traits a restricted pool's picks can go on now, such as the in-clan
+    disciplines; None for a pool open to its whole category."""
     if pool.restriction is None:
-        return True
-    rules = rules_for(db, character)
-    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
-    trait = SheetTrait(category=pool.category, name=name, detail=detail, rating=0)
-    return bool(SPLATS[character.splat].facts(rules, sheet, trait).get(pool.restriction))
+        return None
+    rule_set = rules_for(db, character).rule_set
+    return sorted(n for (c, n) in rule_set.traits if c == pool.category and fits(pool, n, ""))
 
 
 def restriction_error(pool: Pool, name: str) -> HTTPException:
@@ -275,16 +298,22 @@ def set_category_picks(
             used = sum(1 for r in wanted.values() if r == rating)
             if used > pool.allowed:
                 raise conflict(f"Only {pool.allowed} at {rating}; that is {used}.")
-    for (name, detail), rating in wanted.items():
-        pool = all_pools.get((category, 0 if is_points else rating))
-        if pool is not None and not allowed_by_restriction(db, character, pool, name, detail):
-            raise restriction_error(pool, name)
-
     rows = {
         (r.definition.name, r.trait.detail): r
         for r in sheet_rows(db, character)
         if r.category.key == category
     }
+    # A pick kept as it was may stay where it no longer fits (a starting dot on a
+    # discipline that is no longer in-clan): the wizard marks it, and finishing
+    # refuses it. Only a new or moved pick must fit.
+    fits = fitting(db, character)
+    for (name, detail), rating in wanted.items():
+        kept = rows.get((name, detail))
+        if kept is not None and kept.trait.creation_pick == rating:
+            continue
+        pool = all_pools.get((category, 0 if is_points else rating))
+        if pool is not None and not fits(pool, name, detail):
+            raise restriction_error(pool, name)
     for key, row in rows.items():
         pick = row.trait.creation_pick
         if pick is None or wanted.get(key) == pick:
@@ -332,11 +361,12 @@ def complete(db: Session, player: User, character: Character) -> None:
             )
         )
     # The clan may have changed since the picks were placed.
+    fits = fitting(db, character)
     stray = [
         row.definition.name
         for pool in pools(db, character).values()
         for row in pool.traits
-        if not allowed_by_restriction(db, character, pool, row.definition.name, row.trait.detail)
+        if not fits(pool, row.definition.name, row.trait.detail)
     ]
     if stray:
         raise conflict("These picks are not allowed for this character: " + ", ".join(stray))
