@@ -4,19 +4,22 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { LiveReset, PlayerSummary } from "../../api/types";
 import { LogList } from "../../components/LogList";
-import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { memberSince } from "../players";
 import { ResetPassword, useCancelReset } from "./ResetPassword";
 
-/** Every account, for the custodian: find someone by name, handle or email, open their
+/** Every account, for the custodian: find someone by name, handle or email, or by the troupe an active character
+ * of theirs is home in, open their
  * profile, or reset their password here. Below, the reset links out now and who
  * has reset their password. */
 export function PeopleTab() {
   const [q, setQ] = useState("");
+  const [troupeId, setTroupeId] = useState("");
+  const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
   const people = useQuery({
-    queryKey: ["players", q],
-    queryFn: () => unwrap(api.GET("/api/players", { params: { query: { q } } })),
+    queryKey: ["players", q, troupeId],
+    queryFn: () => unwrap(api.GET("/api/players", { params: { query: { q, troupe_id: troupeId || undefined } } })),
     placeholderData: (previous) => previous,
   });
 
@@ -24,6 +27,18 @@ export function PeopleTab() {
     <div className="flex flex-col gap-6">
       <Card>
         <Input type="search" aria-label="Search people" placeholder="Name, handle or email…" value={q} onChange={(e) => setQ(e.target.value)} className="mb-3" />
+        <div className="mb-3">
+          <Field label="Active character in">
+            <Select value={troupeId} onChange={(e) => setTroupeId(e.target.value)}>
+              <option value="">Any troupe</option>
+              {troupes.data?.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
         {people.isPending ? (
           <Loading />
         ) : people.data?.length ? (

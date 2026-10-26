@@ -215,14 +215,28 @@ def clean_handle(handle: str | None) -> str | None:
 
 
 @router.get("/players")
-def find_players(db: DbSession, user: CurrentUser, q: str = "") -> list[PlayerSummary]:
-    """Every account whose name, handle or email has `q` in it, for the custodian."""
+def find_players(
+    db: DbSession, user: CurrentUser, q: str = "", troupe_id: uuid.UUID | None = None
+) -> list[PlayerSummary]:
+    """Every account whose name, handle or email has `q` in it, for the custodian. With
+    `troupe_id`, only those with an active PC whose home troupe is that troupe."""
     require_custodian(user)
     query = select(User).order_by(func.lower(User.display_name)).limit(50)
     if q.strip():
         like = f"%{q.strip().removeprefix('@')}%"
         query = query.where(
             or_(User.display_name.ilike(like), User.handle.ilike(like), User.email.ilike(like))
+        )
+    if troupe_id is not None:
+        query = query.where(
+            select(Character.id)
+            .where(
+                Character.player_id == User.id,
+                Character.kind == "pc",
+                Character.status == "active",
+                Character.home_troupe_id == troupe_id,
+            )
+            .exists()
         )
     found = list(db.scalars(query))
     expiries = {
