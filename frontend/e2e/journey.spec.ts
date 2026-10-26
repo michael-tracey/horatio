@@ -3579,6 +3579,70 @@ test("Derangement traits on the Play View: a temporary derangement added, warnin
   await expect(other.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
 });
 
+test("Beast traits on the Play View warn what each one brings, and the Frenzy rules open on request", async ({ browser }) => {
+  const custodian = await person(browser, "frenzy-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "frenzy-lead");
+  const troupeName = `Court of Fangs ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // A Brujah NPC the lead runs at game.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Tobias", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category: "clan", name: "Brujah", rating: null, detail: "" } });
+  expect(rated.status(), await rated.text()).toBe(200);
+
+  await p.goto(`/play/characters/${npc}`);
+  await expect(p.getByLabel("Beast traits: 0 of 5")).toBeVisible();
+  await expect(p.getByRole("note")).toHaveCount(0);
+
+  // Each Beast trait says what now makes a frenzy test, and how to play it.
+  const gain = p.getByRole("button", { name: "Gain a Beast traits point" });
+  await gain.click();
+  const foothold = p.getByRole("note", { name: "The Beast has a foothold" });
+  await expect(foothold).toContainText("You can frenzy now.");
+  await expect(foothold).toContainText("against 11");
+  await expect(foothold).toContainText("MET: VtM core, pp. 301–302; Vol. II Issue 1 update, pp. 97–98");
+  await gain.click();
+  await expect(p.getByRole("note", { name: "The Beast is awake" })).toContainText("a single blow of 3 or more damage (rage)");
+  await gain.click();
+  await gain.click();
+  await expect(p.getByLabel("Beast traits: 4 of 5")).toBeVisible();
+  await expect(p.getByRole("note", { name: "One trait from losing Humanity" })).toContainText("One more Beast trait costs a dot of permanent Humanity.");
+  // A warning only: the fifth goes through.
+  await gain.click();
+  await expect(p.getByLabel("Beast traits: 5 of 5")).toBeVisible();
+  await expect(p.getByRole("note", { name: "A dot of Humanity is lost" })).toBeVisible();
+  await expect(p.getByText("Beast traits 4 → 5")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // The Frenzy rules, closed until asked for.
+  const frenzy = p.getByRole("button", { name: /^Frenzy/ });
+  await expect(frenzy).toHaveAttribute("aria-expanded", "false");
+  await expect(p.getByText("Riding the wave")).toHaveCount(0);
+  await frenzy.click();
+  await expect(frenzy).toHaveAttribute("aria-expanded", "true");
+  await expect(p.getByRole("heading", { name: /Riding the wave/ })).toBeVisible();
+  await expect(p.getByText("Fear ends once you've escaped and hidden quietly for 10 minutes.", { exact: false })).toBeVisible();
+  await p.screenshot(shots("play-frenzy"));
+  await frenzy.click();
+  await expect(frenzy).toHaveAttribute("aria-expanded", "false");
+  await expect(p.getByText("Riding the wave")).toHaveCount(0);
+});
+
 test("a coterie's shared Haven: staff set it up, a player logs a use, and the other sharer reads it in the log", async ({ browser }) => {
   const custodian = await person(browser, "share-custodian");
   makeCustodian(custodian.email);

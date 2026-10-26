@@ -9,10 +9,13 @@ import { useAction, usePreferences } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
 import { Derangements, showsDerangements } from "./Derangements";
 import { Feed, FeedButton } from "./Feed";
+import { Frenzy } from "./Frenzy";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Sync } from "./usePlay";
 import { useReference } from "./useReference";
+import { ShownWarning } from "./TrackerWarning";
+import { beastWarning } from "./warnings";
 import { useWakeLock } from "./wakeLock";
 
 type Change = { tracker: string; amount: number; damage?: Damage; label: string };
@@ -115,10 +118,11 @@ export function PlayPage() {
                 value={shown.beast.value}
                 most={shown.beast.most}
                 spendIsUp
-                hint={shown.beast.value >= shown.beast.most ? `Five Beast traits: a dot of ${shown.morality?.name ?? "Morality"} is lost.` : undefined}
+                warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality)} />}
                 record={record}
                 small
               />
+              <Frenzy />
               <Derangements view={shown} record={record} tap={tap} />
             </div>
           </div>
@@ -297,6 +301,7 @@ function BoxTracker({
   small,
   spendIsUp,
   extra,
+  warning,
 }: {
   title: string;
   tracker: string;
@@ -309,6 +314,8 @@ function BoxTracker({
   spendIsUp?: boolean;
   /** Another button beside − and + (Feed, by Blood). */
   extra?: ReactNode;
+  /** What the count brings (Beast traits), under the boxes. */
+  warning?: ReactNode;
 }) {
   const down = () => record({ tracker, amount: -1, label: title });
   const up = () => record({ tracker, amount: 1, label: title });
@@ -338,6 +345,7 @@ function BoxTracker({
           />
         ))}
       </div>
+      {warning}
       <div className="mt-3 flex items-center justify-between gap-3">
         <span className="text-xs text-mist">{hint}</span>
         <span className="flex gap-2">

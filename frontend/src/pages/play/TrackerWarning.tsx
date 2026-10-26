@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Warning } from "./warnings";
 
 /**
  * What a tracker's count brings if the character goes on, and how to play it,
@@ -12,5 +13,17 @@ export function TrackerWarning({ level, title, source, children }: { level: "nea
       <div className="mt-1 flex flex-col gap-1 text-parchment">{children}</div>
       <p className="mt-1 text-xs text-mist">{source}</p>
     </div>
+  );
+}
+
+/** A warning from warnings.ts, one paragraph a line; nothing when there is none. */
+export function ShownWarning({ warning }: { warning: Warning | null }) {
+  if (!warning) return null;
+  return (
+    <TrackerWarning level={warning.level} title={warning.title} source={warning.source}>
+      {warning.lines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+    </TrackerWarning>
   );
 }
