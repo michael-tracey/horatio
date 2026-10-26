@@ -158,6 +158,20 @@ def test_power_notes_follow_dots_and_focus(troupe: Troupe, swift: str) -> None:
     assert any(t["name"] == "Celerity" for t in found["traits"])
 
 
+def test_traits_say_what_they_do(troupe: Troupe, swift: str) -> None:
+    """Each trait comes with its description and page for the Sheet tab, and the
+    clan with its in-clan disciplines for the subheader (issue #212)."""
+    traits = {(t["category"], t["name"]): t for t in reference(troupe, swift)["traits"]}
+
+    stealth = traits[("skills", "Stealth")]
+    assert stealth["description"].startswith("Moving unseen and unheard")
+    assert stealth["page_reference"] == "97"
+    clan = traits[("clan", "Brujah")]
+    assert (clan["group"], clan["rating"]) == ("Identity", None)
+    assert clan["in_clan"] == ["Celerity", "Potence", "Presence"]
+    assert traits[("skills", "Dodge")]["in_clan"] is None
+
+
 def test_substitutes_and_replacements(troupe: Troupe) -> None:
     odd = created(
         troupe,

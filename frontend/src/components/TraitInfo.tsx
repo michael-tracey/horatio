@@ -19,8 +19,9 @@ function Chevron({ open }: { open: boolean }) {
 
 /**
  * A trait's name in its row, as a button with a chevron that opens a short panel
- * under the row with the `description` and the book page. Several can be open
- * at once. A trait with no description is just its name.
+ * under the row with the `description`, anything `more` (a discipline's powers),
+ * and the book page. Several can be open at once. A trait with nothing to say is
+ * just its name.
  *
  * It renders into the row's own container, a wrapping flex row or a grid: the
  * name (and whatever follows it on the same line, `after`), then the panel, which
@@ -31,20 +32,23 @@ export function TraitInfo({
   name,
   after,
   description,
+  more,
   page,
 }: {
   name: ReactNode;
   after?: ReactNode;
   description?: string | null;
+  more?: ReactNode;
   page?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const pageText = pageLabel(page);
+  const says = Boolean(description || more);
   return (
     <>
       <span className="min-w-0">
-        {description ? (
+        {says ? (
           <button
             type="button"
             aria-expanded={open}
@@ -60,9 +64,10 @@ export function TraitInfo({
         )}
         {after}
       </span>
-      {description && open && (
+      {says && open && (
         <div id={id} className="order-last col-span-full basis-full pb-1 pl-5 text-xs leading-relaxed text-mist">
-          <p>{description}</p>
+          {description && <p>{description}</p>}
+          {more}
           {pageText && <p className="mt-0.5">{pageText}</p>}
         </div>
       )}

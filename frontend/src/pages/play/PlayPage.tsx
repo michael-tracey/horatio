@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { ExpendableOut, GameOut, InfluenceDetailsIn, InfluenceStandingOut, PlayView } from "../../api/types";
@@ -7,6 +7,8 @@ import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
+import { choiceName } from "../character/creation/logic";
+import { ChoiceInfo } from "../character/Info";
 import { Derangements, showsDerangements } from "./Derangements";
 import { Feed, FeedButton } from "./Feed";
 import { Frenzy } from "./Frenzy";
@@ -253,13 +255,38 @@ export function SyncStatus({ sync }: { sync: Sync }) {
   );
 }
 
+/**
+ * The character's name, then their clan, archetype and sect, each with an ⓘ
+ * saying what it is, their Generation and blood a turn. The choices come with
+ * the Sheet tab's traits; until those are here, the clan and sect stand alone.
+ */
 function Identity({ view }: { view: PlayView }) {
-  const facts = [view.clan, view.sect, view.generation ? `Generation ${view.generation}` : null, `${bloodPerTurn(view)} blood a turn`].filter(Boolean);
+  const { reference } = useReference(view.character_id);
+  const choices = reference?.traits.filter((t) => t.group === "Identity") ?? [];
+  const facts: ReactNode[] = [
+    ...(choices.length > 0
+      ? choices.map((t) => (
+          <span key={t.category} className="whitespace-nowrap">
+            <span className="text-parchment/90">{choiceName(t)}</span>
+            <ChoiceInfo choice={t} shown={choiceName(t)} about={t} />
+          </span>
+        ))
+      : [view.clan, view.sect]),
+    view.generation ? `Generation ${view.generation}` : null,
+    `${bloodPerTurn(view)} blood a turn`,
+  ].filter(Boolean);
   return (
     <section className="flex items-end justify-between gap-3">
       <div>
         <h1 className="text-2xl leading-tight">{view.character_name}</h1>
-        <p className="text-sm text-mist">{facts.join(" · ")}</p>
+        <p className="text-sm text-mist">
+          {facts.map((fact, i) => (
+            <Fragment key={i}>
+              {i > 0 && " · "}
+              {fact}
+            </Fragment>
+          ))}
+        </p>
       </div>
       <p className="text-right text-xs text-mist">
         {view.kind === "npc" ? "NPC" : view.player_name}

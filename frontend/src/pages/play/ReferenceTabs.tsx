@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { DisciplinePowers, PlayReference, PoolModifier, PowerSwitch, TestPool } from "../../api/types";
+import { TraitInfo } from "../../components/TraitInfo";
 import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
 import { RetainerLines } from "../character/Retainers";
@@ -31,11 +32,56 @@ function brackets(t: Trait, traits: Trait[]): string[] {
   return t.specialties;
 }
 
-/** The sheet to look things up in at a game: every part laid out, nothing folded away. */
+/**
+ * What opens under a trait's name, beyond its description: an attribute's
+ * focuses and what each adds, or a discipline's pool, note and the powers the
+ * character has of it, as the Pools tab lists them (in place of its description).
+ */
+function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayReference }) {
+  const discipline = t.category === "disciplines" ? reference.disciplines.find((d) => d.name === t.name) : undefined;
+  const focuses = t.category === "attributes" && FOCUSES[t.name] ? reference.traits.filter((f) => f.category === FOCUSES[t.name] && f.description) : [];
+  const shown = brackets(t, reference.traits);
+  return (
+    <TraitInfo
+      name={t.detail ? `${t.name}: ${t.detail}` : t.name}
+      after={shown.length > 0 && <span className="text-mist"> ({shown.join(", ")})</span>}
+      description={discipline ? [discipline.pool && `${discipline.pool} against ${discipline.versus}.`, discipline.note ?? t.description].filter(Boolean).join(" ") : t.description}
+      more={
+        discipline ? (
+          <>
+            {discipline.focus && <p className="text-gold">Your focus: {discipline.focus}</p>}
+            <ol className="mt-1 flex flex-col gap-1">
+              {discipline.powers.map((p) => (
+                <li key={p.level}>
+                  <Rating value={p.level} of={p.level} className="min-w-5 text-gold" /> <span className="text-parchment">{p.name}</span> {p.note}
+                  {p.focus && <span className="block text-gold">Your focus: {p.focus}</span>}
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : focuses.length > 0 ? (
+          focuses.map((f) => (
+            <p key={f.name} className="mt-0.5">
+              <span className="text-parchment">{f.name}:</span> {f.description}
+            </p>
+          ))
+        ) : null
+      }
+      page={t.page_reference}
+    />
+  );
+}
+
+/**
+ * The sheet to look things up in at a game: every part laid out, nothing folded
+ * away but what each trait does, which opens under its name. The clan, archetype
+ * and sect are in the subheader instead.
+ */
 export function SheetTab({ reference }: { reference: PlayReference }) {
   const groups = new Map<string, Trait[]>();
   for (const t of reference.traits) {
-    if (Object.values(FOCUSES).includes(t.category)) continue;
+    // The clan, archetype, sect and faction are in the subheader.
+    if (t.group === "Identity" || Object.values(FOCUSES).includes(t.category)) continue;
     groups.set(t.category_name, [...(groups.get(t.category_name) ?? []), t]);
   }
   return (
@@ -45,12 +91,9 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
           <ul className="text-sm">
             {traits.map((t) => (
               <li key={`${t.category}/${t.name}/${t.detail}`} className="border-b border-ash/60 py-1 last:border-0">
-                <div className="flex items-baseline justify-between gap-3">
-                <span>
-                  {t.detail ? `${t.name}: ${t.detail}` : t.name}
-                  {brackets(t, reference.traits).length > 0 && <span className="text-mist"> ({brackets(t, reference.traits).join(", ")})</span>}
-                </span>
-                {t.rating !== null && <Rating value={t.rating} of={pipsOf(t.category)} className="shrink-0 font-display text-base text-gold" />}
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3">
+                  <TraitLine trait={t} reference={reference} />
+                  {t.rating !== null && <Rating value={t.rating} of={pipsOf(t.category)} className="shrink-0 font-display text-base text-gold" />}
                 </div>
                 {t.category === "backgrounds" && t.name === "Retainers" && reference.retainers.length > 0 && <RetainerLines retainers={reference.retainers} />}
               </li>

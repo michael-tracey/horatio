@@ -33,9 +33,10 @@ from horatio.pool_modifiers import ModifierOut, modifiers_out
 
 router = APIRouter(tags=["play"])
 
-# Shown in the rest of the sheet; identity is at the top, health and Willpower
-# are trackers, and specialties go in brackets after their trait.
-NOT_LISTED = frozenset({"clan", "health_levels", "willpower_sources"})
+# Shown in the rest of the sheet; health and Willpower are trackers, and
+# specialties go in brackets after their trait. The clan, archetype and sect are
+# listed for the page's subheader, which shows them instead of the Sheet tab.
+NOT_LISTED = frozenset({"health_levels", "willpower_sources"})
 
 
 class Tracker(BaseModel):
@@ -175,6 +176,13 @@ class PlayTrait(BaseModel):
     rating: int | None
     # Its specialties, from the categories that specialise it.
     specialties: list[str]
+    # What it does and the book page, from the rules, as the sheet's catalogue has them.
+    description: str | None = None
+    page_reference: str | None = None
+    # The player's note on it: what a custom archetype means for the character.
+    note: str = ""
+    # For a clan: its in-clan disciplines.
+    in_clan: list[str] | None = None
 
 
 class PlayView(BaseModel):
@@ -448,6 +456,10 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             detail=row.trait.detail,
             rating=row.trait.rating,
             specialties=specialties.get((row.category.key, row.definition.name), []),
+            description=row.definition.description,
+            page_reference=row.definition.page_reference,
+            note=row.trait.note,
+            in_clan=row.definition.properties.get("in_clan"),
         )
         for row in rows
         if row.category.key in rule_set.categories

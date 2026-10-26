@@ -199,7 +199,11 @@ function Identity({ character, lead }: { character: CharacterOut; lead: string }
       {choices.map((t) => (
         <span key={t.id}>
           · <span className="text-parchment/90">{choiceName(t)}</span>
-          <ChoiceInfo choice={t} shown={choiceName(t)} catalogue={catalogue.data} />
+          <ChoiceInfo
+            choice={t}
+            shown={choiceName(t)}
+            about={catalogue.data?.traits.find((c) => c.category === t.category && c.name === t.name)}
+          />
         </span>
       ))}
     </span>

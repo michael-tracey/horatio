@@ -2066,7 +2066,7 @@ test("the sheet says what a trait does, under its name, and what a heading is, i
   // A background with a book page gives it; several stay open together.
   const generation = part("Backgrounds").getByRole("button", { name: "Generation", exact: true });
   await generation.click();
-  await expect(p.getByText("MET: VTM p. 100")).toBeVisible();
+  await expect(p.getByText("MET: VTM pp. 100-102")).toBeVisible();
   await expect(about).toBeVisible();
   await brawl.click();
   await expect(brawl).toHaveAttribute("aria-expanded", "false");
@@ -2097,6 +2097,47 @@ test("the sheet says what a trait does, under its name, and what a heading is, i
   await p.screenshot(shots("clan-info"));
   await p.keyboard.press("Escape");
   await expect(p.getByText("In-clan disciplines: Celerity, Potence, Presence.")).toHaveCount(0);
+});
+
+test("the Play View's Sheet tab puts the archetype in the subheader, and says what each trait does", async ({ browser }) => {
+  const { page: p } = await person(browser, "play-glossary");
+  await p.getByLabel("Name").fill("Footnote");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+  const put = async (url: string, data: object) => {
+    const response = await p.request.put(url, { headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBe(200);
+  };
+  await put(`/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  await put(`/api/characters/${id}/traits`, { category: "archetype", name: "Loner", rating: null });
+  await put(`/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+  await put(`/api/characters/${id}/creation/categories/skills`, { picks: [{ name: "Athletics", rating: 2 }] });
+  await put(`/api/characters/${id}/creation/categories/backgrounds`, { picks: [{ name: "Generation", rating: 1 }] });
+  await p.goto(`/play/characters/${id}?tab=sheet`);
+  await expect(p.getByRole("heading", { name: "Footnote" })).toBeVisible();
+
+  // The clan, archetype and sect are in the subheader, each with an ⓘ, and have no panels of their own.
+  await expect(p.getByText("Loner", { exact: true })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Skills" })).toBeVisible();
+  for (const part of ["Archetype", "Clan", "Sect"]) await expect(p.getByRole("heading", { name: part, exact: true })).toHaveCount(0);
+  await p.getByRole("button", { name: "About Loner" }).click();
+  await expect(p.getByText("You can't work within the system.")).toBeVisible();
+  await expect(p.getByText("MET: VTM p. 87")).toBeVisible();
+  await p.keyboard.press("Escape");
+  await p.getByRole("button", { name: "About Brujah" }).click();
+  await expect(p.getByText("In-clan disciplines: Celerity, Potence, Presence.")).toBeVisible();
+  await p.keyboard.press("Escape");
+
+  // A skill opens to what it lets you do, from the book, with the page.
+  await p.getByRole("button", { name: "Athletics", exact: true }).click();
+  await expect(p.getByText("Swimming, climbing and jumping are simple actions for you")).toBeVisible();
+  await expect(p.getByText("MET: VTM p. 92")).toBeVisible();
+  // So does a background, and both stay open.
+  await p.getByRole("button", { name: "Generation", exact: true }).click();
+  await expect(p.getByText("MET: VTM pp. 100-102")).toBeVisible();
+  await expect(p.getByText("Swimming, climbing and jumping are simple actions for you")).toBeVisible();
+  await p.screenshot(shots("play-sheet-info"));
 });
 
 test("a cart is judged by the sheet it ends with, so a technique may go in before what it needs", async ({ browser }) => {

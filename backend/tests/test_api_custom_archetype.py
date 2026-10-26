@@ -1,4 +1,4 @@
-"""A custom archetype (p. 86): "Other…", named by the player, with a note on what it means."""
+"""A custom archetype (p. 87): "Other…", named by the player, with a note on what it means."""
 
 from collections.abc import Callable
 from typing import Any
