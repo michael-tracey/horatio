@@ -8704,6 +8704,17 @@
             "title": "Category Name",
             "type": "string"
           },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -8712,9 +8723,39 @@
             "title": "Group",
             "type": "string"
           },
+          "in_clan": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Clan"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "page_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Reference"
           },
           "rating": {
             "anyOf": [

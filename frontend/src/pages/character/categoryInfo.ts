@@ -20,7 +20,7 @@ const PARTS: Record<string, string> = {
 /** The choices in the page title, by category key. */
 const CHOICES: Record<string, string> = {
   clan: "The bloodline the character belongs to. It decides which disciplines are in-clan, and so cheaper to learn.",
-  archetype: "A word or two for the character's personality, as a guide to playing them.",
+  archetype: "A word or two for the character's personality, as a guide to playing them. Once an hour, a test that fits it gets a free Willpower retest, in place of the usual one.",
   sect: "The political society the character belongs to, such as the Camarilla or the Sabbat.",
   faction: "For a Sabbat vampire, the faction within the sect that they belong to.",
 };

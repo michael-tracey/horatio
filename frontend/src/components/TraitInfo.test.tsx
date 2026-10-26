@@ -48,6 +48,12 @@ describe("TraitInfo", () => {
     expect(screen.getByText(", 5")).toBeTruthy();
   });
 
+  it("opens to more than a description, or to that alone", () => {
+    render(<TraitInfo name="Celerity" more={<ol><li>Alacrity</li></ol>} />);
+    fireEvent.click(screen.getByRole("button", { name: "Celerity" }));
+    expect(screen.getByText("Alacrity")).toBeTruthy();
+  });
+
   it("leaves the page out where there is none", () => {
     render(<TraitInfo name="Brawl" description="Fighting with your body." page={null} />);
     fireEvent.click(screen.getByRole("button", { name: "Brawl" }));

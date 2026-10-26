@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import type { CatalogueOut, SheetTraitOut } from "../../api/types";
+import type { CatalogueOut } from "../../api/types";
 import { InfoButton } from "../../components/InfoButton";
+import { pageLabel } from "../../components/TraitInfo";
 import { categoryInfo, choiceInfo, partInfo } from "./categoryInfo";
 
 function Lines({ about, facts }: { about: string; facts: string[] }) {
@@ -40,19 +41,28 @@ export function CategoryInfo({ category, name, catalogue }: { category: string; 
 
 /**
  * The ⓘ beside a choice in the page title (clan, archetype…): what the choice
- * is, then the choice's own description and note where it has them. Nothing
- * when there is nothing to say.
+ * is, then the rules' description of the choice, its in-clan disciplines, the
+ * player's note and the book page, where it has them. Nothing when there is
+ * nothing to say. The sheet editor's title and the Play View's subheader both use it.
  */
-export function ChoiceInfo({ choice, shown, catalogue }: { choice: SheetTraitOut; shown: string; catalogue: CatalogueOut | undefined }) {
-  const about = choiceInfo(choice.category);
-  const trait = catalogue?.traits.find((t) => t.category === choice.category && t.name === choice.name);
-  const inClan = trait?.in_clan?.length ? `In-clan disciplines: ${trait.in_clan.join(", ")}.` : null;
-  const lines: ReactNode[] = [trait?.description, inClan, choice.note].filter(Boolean);
-  if (!about && lines.length === 0) return null;
+export function ChoiceInfo({
+  choice,
+  shown,
+  about,
+}: {
+  choice: { category: string; category_name: string; note: string };
+  shown: string;
+  /** The rules' entry for the choice. */
+  about: { description?: string | null; page_reference?: string | null; in_clan?: string[] | null } | undefined;
+}) {
+  const what = choiceInfo(choice.category);
+  const inClan = about?.in_clan?.length ? `In-clan disciplines: ${about.in_clan.join(", ")}.` : null;
+  const lines: ReactNode[] = [about?.description, inClan, choice.note, pageLabel(about?.page_reference)].filter(Boolean);
+  if (!what && lines.length === 0) return null;
   return (
     <InfoButton label={`About ${shown}`} className="ml-1">
       <span className="block text-gold">{choice.category_name}</span>
-      {about && <span className="mt-1 block">{about}</span>}
+      {what && <span className="mt-1 block">{what}</span>}
       {lines.map((line, i) => (
         <span key={i} className="mt-1 block text-mist">
           {line}

@@ -7193,12 +7193,23 @@ export interface components {
             category: string;
             /** Category Name */
             category_name: string;
+            /** Description */
+            description?: string | null;
             /** Detail */
             detail: string;
             /** Group */
             group: string;
+            /** In Clan */
+            in_clan?: string[] | null;
             /** Name */
             name: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Page Reference */
+            page_reference?: string | null;
             /** Rating */
             rating: number | null;
             /** Specialties */
