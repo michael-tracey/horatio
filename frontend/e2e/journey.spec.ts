@@ -2662,11 +2662,11 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByRole("heading", { name: "Lucien" })).toBeVisible();
   await expect(p.getByLabel("Blood: 8 of 12")).toBeVisible();
   await expect(p.getByText("2 blood a turn")).toBeVisible();
-  // Quick notes start on: a spend asks what it was for, and the note is optional.
+  // Quick notes start on, but Blood, Willpower and healing never stop to ask.
   await expect(p.getByLabel("Quick notes")).toBeChecked();
   await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
-  await p.getByRole("dialog").getByRole("button", { name: "Save" }).click();
   await expect(p.getByLabel("Blood: 7 of 12")).toBeVisible();
+  await expect(p.getByRole("dialog", { name: "Note for this spend" })).toHaveCount(0);
   await expect(p.getByText("Blood 8 → 7")).toBeVisible();
   await expect(p.getByRole("status")).toHaveText("Saved");
 
@@ -2678,8 +2678,8 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   const initiative = p.getByRole("listitem").filter({ hasText: /^Initiative/ });
   await expect(initiative.getByText("5", { exact: true })).toBeVisible();
   // The pools come first; the switches are in a drawer from the button at the foot.
-  const switches = p.getByRole("button", { name: /^(In use|Nothing in use)/ });
-  await expect(switches).toHaveText(/Nothing in use/);
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await expect(switches).toHaveAccessibleDescription("Nothing in use");
   await expect(switches).toHaveAttribute("aria-expanded", "false");
   await expect(p.getByRole("heading", { name: "Forms and powers in use" })).toHaveCount(0);
   await p.evaluate(() => window.scrollTo(0, 0));
@@ -2699,9 +2699,9 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(initiative.getByText("7", { exact: true })).toBeVisible();
   await expect(initiative).toContainText("Physical 5 + Alacrity 2");
   await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Celerity");
-  await expect(switches).toHaveText(/In use: Celerity/);
+  await expect(switches).toHaveAccessibleDescription(/In use: Celerity/);
   await p.getByLabel("Celerity on").uncheck();
-  await expect(switches).toHaveText(/Nothing in use/);
+  await expect(switches).toHaveAccessibleDescription("Nothing in use");
   await expect(initiative.getByText("5", { exact: true })).toBeVisible();
   await expect(p.getByRole("listitem").filter({ hasText: /^Dodge/ }).getByText("7", { exact: true }).first()).toBeVisible();
   await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
@@ -2719,7 +2719,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await p.getByRole("button", { name: "Add modifier" }).click();
   await expect(social).toContainText("Fame 2");
   await expect(p.getByText("+2 Social pools, against mortals")).toBeVisible();
-  await expect(switches).toHaveText(/In use: \+2 Fame/);
+  await expect(switches).toHaveAccessibleDescription(/In use: \+2 Fame/);
   // Escape closes the drawer and puts focus back on the button; the button opens it again.
   await p.keyboard.press("Escape");
   await expect(p.getByRole("dialog", { name: "Forms, powers and modifiers" })).toHaveCount(0);
@@ -2787,7 +2787,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
 
   // The modifier is still there after the Reset, and prints beside the pools it changes while it is on.
   await p.getByRole("tab", { name: "Pools" }).click();
-  await p.getByRole("button", { name: /^In use/ }).click();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
   await expect(p.getByLabel("Fame on")).toBeChecked();
   await p.goto(`/print/characters/${npc}`);
   await expect(p.getByText("(+2 Fame)", { exact: true })).toBeVisible();
@@ -2858,7 +2858,7 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
   // The Pools tab lists the forms and powers, all off.
   await p.goto(`/play/characters/${npc}?tab=pools`);
   await expect(p.getByRole("heading", { name: "Ursa" })).toBeVisible();
-  await p.getByRole("button", { name: /^Nothing in use/ }).click();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
   const fight = p.getByLabel("Shape of the Beast: fight form (bear, Huge) on");
   const flight = p.getByLabel("Shape of the Beast: flight form (bat) on");
   await expect(fight).not.toBeChecked();
@@ -2892,7 +2892,7 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
 
   // Flight form ends the fight form: its levels go with the damage in them.
   await p.getByRole("tab", { name: "Pools" }).click();
-  await p.getByRole("button", { name: /^In use/ }).click();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
   await flight.check();
   await expect(fight).not.toBeChecked();
   await expect(p.getByLabel("Feral Claws on")).toBeChecked();
@@ -2923,7 +2923,7 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
   await expect(p.getByText("Game 2")).toBeVisible();
   await expect(p.getByRole("region", { name: "Switched on now" })).toHaveCount(0);
   await p.getByRole("tab", { name: "Pools" }).click();
-  await p.getByRole("button", { name: "Nothing in use" }).click();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
   await expect(fight).not.toBeChecked();
   await expect(p.getByLabel("Celerity on")).not.toBeChecked();
 });

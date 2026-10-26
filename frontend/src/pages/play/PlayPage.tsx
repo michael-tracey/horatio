@@ -37,6 +37,9 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
+/** Trackers whose spends never ask for a quick note. */
+const UNNOTED = new Set(["blood", "willpower", "health"]);
+
 /**
  * A living sheet for a game, laid out for a phone in one hand, in three tabs:
  * the Sheet to look things up in; the Tracker, with blood, Willpower, health,
@@ -81,8 +84,9 @@ export function PlayPage() {
   const record: RecordTap = (change) => {
     // Influence always asks for the spend's details, for the troupe's influence log.
     if (change.amount < 0 && influenceStanding(shown, change.tracker)) setSpending(change);
-    // Quick notes ask what a spend was for; restoring needs no reason.
-    else if (quickNotes && change.amount < 0) setAsking(change);
+    // Quick notes ask what a spend was for; restoring needs no reason, and Blood,
+    // Willpower and healing are tapped too often in a game to stop and type.
+    else if (quickNotes && change.amount < 0 && !UNNOTED.has(change.tracker)) setAsking(change);
     else tap({ kind: "change", tracker: change.tracker, amount: change.amount, damage: change.damage ?? null });
   };
   const lookup = (show: (r: NonNullable<typeof reference>) => ReactNode) =>
