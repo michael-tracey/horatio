@@ -1,10 +1,32 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
 import { detailNeed, fieldSkills } from "../fields";
-import { canTap, choiceName, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, tap, togglePoints, traitOf } from "./logic";
+import { canTap, canTapDots, choiceName, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, tap, tapDots, togglePoints, traitOf } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
+
+describe("tapDots", () => {
+  // A ghoul's 5 discipline dots, as many on one discipline as it likes.
+  it("sets a rating while the dots it adds are left", () => {
+    expect(tapDots({ Auspex: 3 }, 5, "Celerity", 2)).toEqual({ Auspex: 3, Celerity: 2 });
+  });
+
+  it("refuses a rating the dots left cannot pay for", () => {
+    const picks = { Auspex: 3 };
+    expect(tapDots(picks, 5, "Celerity", 3)).toBe(picks);
+    expect(canTapDots(picks, 5, "Celerity", 3)).toBe(false);
+  });
+
+  it("counts a trait's own dots as freed when it moves", () => {
+    expect(canTapDots({ Auspex: 3, Celerity: 2 }, 5, "Auspex", 2)).toBe(true);
+    expect(tapDots({ Auspex: 3, Celerity: 1 }, 5, "Auspex", 4)).toEqual({ Auspex: 4, Celerity: 1 });
+  });
+
+  it("clears a trait when its own rating is tapped again", () => {
+    expect(tapDots({ Auspex: 3 }, 5, "Auspex", 3)).toEqual({});
+  });
+});
 
 describe("tap", () => {
   it("sets a rating that has picks left", () => {

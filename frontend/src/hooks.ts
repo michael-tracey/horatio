@@ -139,13 +139,15 @@ export function useRefusals(characterId: string, category: string, enabled = tru
 /**
  * As useRefusals, for a pick at each of `ratings`: every trait of a rated category tried at
  * that many dots, those held too. Where a pick of one rating clashes and another does not
- * (Generation 3 for a Thin Blooded vampire; Physical 7 for a Childlike one).
+ * (Generation 3 for a Thin Blooded vampire; Physical 7 for a Childlike one). With `asIf`
+ * "empty", each is tried alone in its category (a ghoul's discipline, against its domitor's).
  */
-export function useRatingRefusals(characterId: string, category: string, ratings: number[], enabled = true) {
+export function useRatingRefusals(characterId: string, category: string, ratings: number[], enabled = true, asIf?: "empty") {
   const results = useQueries({
     queries: ratings.map((rating) => ({
-      queryKey: ["refusals", characterId, category, "rating", rating],
-      queryFn: () => unwrap(api.GET("/api/characters/{character_id}/refusals", { params: { path: { character_id: characterId }, query: { category, rating } } })),
+      queryKey: ["refusals", characterId, category, "rating", rating, ...(asIf ? [asIf] : [])],
+      queryFn: () =>
+        unwrap(api.GET("/api/characters/{character_id}/refusals", { params: { path: { character_id: characterId }, query: { category, rating, as_if: asIf } } })),
       enabled: enabled && !!category,
       placeholderData: (previous: Record<string, RefusalOut> | undefined) => previous,
     })),

@@ -16,18 +16,21 @@ import { FreeChoicesStep, withFreeChoices } from "./FreeChoicesStep";
 import { BACKGROUND_MERITS, FOCUS_MERITS, SKILL_MERITS, freedPicks, givenIn, unchosenFree } from "./gifts";
 import { detailNeed, fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
-import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, traitOf, type Allowed, type Picks } from "./logic";
+import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, spent, traitOf, type Allowed, type Picks } from "./logic";
 import { FromMerits } from "./FromMerits";
 import { EXTRA_IN_CLAN, IN_CLAN_MERITS, inClanChoices } from "./inClan";
 import { InClanPicker } from "./InClanPicker";
 import { DISCIPLINES_FROM_MERITS, INEPT, disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
 import { brokenChecks, listed, overBudget, stepFor, stepNotices, strayPicks, type NoticeSource, type StepNotice, type StepRef } from "./notices";
+import { useHasDomitor } from "../splats";
+import { DomitorPanel, DomitorSummary, useDomitor } from "../Domitor";
+import { domitorNeeded, dotBudget, ghoulDisciplinesIntro, savedDots } from "./ghoul";
 
 /** A step: the categories it places picks in, and those it decides without picks. */
 type Step = StepRef & { intro?: string };
 
 /** Where cross-step notices come from (notices.ts): a step that needs a new kind adds its source here. */
-const NOTICE_SOURCES: NoticeSource[] = [inClanChoices, strayPicks, overBudget, freedPicks, unchosenFree, brokenChecks];
+const NOTICE_SOURCES: NoticeSource[] = [domitorNeeded, inClanChoices, strayPicks, overBudget, freedPicks, unchosenFree, brokenChecks];
 
 /** Merits and flaws that change a step, offered on it as well as on Merits & flaws (#192). */
 const FROM_MERITS: Record<string, { category: string; name: string }[]> = {
@@ -96,15 +99,19 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
       unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: character.splat }, query: { troupe_id: rulesTroupe(character) } } })),
     staleTime: 5 * 60_000,
   });
+  // A ghoul takes its clan and in-clan disciplines from its domitor, chosen on Concept.
+  const hasDomitor = useHasDomitor(character.splat);
+  const domitor = useDomitor(character, !!hasDomitor);
 
   if (character.creation_complete) return <Navigate to={`/characters/${character.id}`} replace />;
-  if (creation.isPending || sheet.isPending || catalogue.isPending) return <Loading />;
+  if (creation.isPending || sheet.isPending || catalogue.isPending || hasDomitor === undefined) return <Loading />;
   if (!creation.data || !sheet.data || !catalogue.data) {
     return <ErrorText error={creation.error ?? sheet.error ?? catalogue.error} />;
   }
 
   const steps = buildSteps(creation.data, catalogue.data);
-  const notices = stepNotices({ creation: creation.data, sheet: sheet.data, steps }, NOTICE_SOURCES);
+  const ghoul = hasDomitor ? { domitor: domitor.data !== null, linked: !!domitor.data?.character_id } : undefined;
+  const notices = stepNotices({ creation: creation.data, sheet: sheet.data, steps, ghoul }, NOTICE_SOURCES);
   const index = Math.max(0, steps.findIndex((s) => s.key === stepKey));
   // The first step that still needs something (a vampire's Generation): no going past it.
   const needs = creation.data.needs;
@@ -159,10 +166,14 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
         onNext={index < steps.length - 1 ? () => go(index + 1) : undefined}
         steps={steps}
         notices={notices}
+        ghoul={ghoul}
       />
     </div>
   );
 }
+
+/** For a ghoul: whether it has a domitor yet, and whether that one is in Horatio. */
+type Ghoul = { domitor: boolean; linked: boolean };
 
 function StepView({
   character,
@@ -174,6 +185,7 @@ function StepView({
   onNext,
   steps,
   notices,
+  ghoul,
 }: {
   character: CharacterOut;
   step: Step;
@@ -184,6 +196,7 @@ function StepView({
   onNext?: () => void;
   steps: Step[];
   notices: StepNotice[];
+  ghoul?: Ghoul;
 }) {
   // Keyed by content, so a refetch that brings back the same saved picks (as the last
   // step's save does) doesn't wipe taps on this step that aren't saved yet.
@@ -243,8 +256,11 @@ function StepView({
     save.mutate(undefined, { onSuccess: (left) => (forward && left.length ? undefined : to?.()) });
   };
 
+  const ghoulDots = ghoul && step.key === "disciplines" ? dotBudget(creation, "disciplines") : undefined;
   // The Disciplines step's budget is the pools', which Thin Blooded and Inept change.
-  const intro = step.key === "disciplines" ? disciplinesIntro(creation) : step.intro;
+  // Its dots left unplaced, as tapped so far: saved for later.
+  const savedNote = ghoulDots && savedDots(ghoulDots.allowed - spent(picks.disciplines ?? {}));
+  const intro = ghoulDots ? ghoulDisciplinesIntro(ghoulDots, ghoul!.linked) : step.key === "disciplines" ? disciplinesIntro(creation) : step.intro;
   // A house merit given by staff only, or archived, is not the player's to pick; one held stays listed.
   const traitsOf = (category: string) =>
     catalogue.traits.filter(
@@ -264,8 +280,8 @@ function StepView({
     <Card title={step.title} className="min-w-0">
       {intro && <p className="mb-4 text-sm text-mist">{intro}</p>}
       {step.key !== "review" && <StepNotices character={character} notices={here} step={step} steps={steps} />}
-      {step.key === "concept" && <ConceptStep character={character} creation={creation} sheet={sheet} catalogue={catalogue} />}
-      {step.key === "review" && <ReviewStep character={character} creation={creation} catalogue={catalogue} steps={steps} notices={notices} />}
+      {step.key === "concept" && <ConceptStep character={character} creation={creation} sheet={sheet} catalogue={catalogue} ghoul={ghoul} />}
+      {step.key === "review" && <ReviewStep character={character} creation={creation} catalogue={catalogue} steps={steps} notices={notices} ghoul={ghoul} />}
       {FROM_MERITS[step.key] && step.key !== "concept" && (
         <div className="mb-6">
           <FromMerits
@@ -292,7 +308,9 @@ function StepView({
           const pools = creation.pools.filter((p) => p.category === category);
           const mine = picks[category] ?? {};
           const set = (next: Picks) => setPicks({ ...picks, [category]: next });
-          if (pools[0]?.kind === "points") {
+          // Picks from one budget of dots (a ghoul's disciplines).
+          const budget = dotBudget(creation, category);
+          if (pools[0]?.kind === "points" && !budget) {
             return (
               <CheckedPointsList
                 key={category}
@@ -325,10 +343,11 @@ function StepView({
           if (traits.length === 0 && restricted?.restriction === "in_clan") {
             return (
               <Notice key={category}>
-                Starting {nameOf(category).toLowerCase()} must be in-clan. Choose a clan on the Concept step first.
+                Starting {nameOf(category).toLowerCase()} must be in-clan. Choose {ghoul ? "the domitor" : "a clan"} on the Concept step first.
               </Notice>
             );
           }
+          const maxRating = catalogue.categories.find((c) => c.key === category)?.max_rating ?? budget?.allowed ?? 0;
           return (
             <CheckedDotGrid
               key={category}
@@ -345,6 +364,7 @@ function StepView({
               marks={strays[category]}
               barredFor={withoutDot}
               held={givenIn(creation, category)}
+              budget={budget && { dots: budget.allowed, max: Math.min(maxRating, budget.allowed) }}
               steps={steps}
               step={step}
               sections={
@@ -356,6 +376,7 @@ function StepView({
           );
         })}
       </fieldset>
+      {savedNote && <p className="mt-4 text-sm text-mist">{savedNote}</p>}
       {needs.length > 0 && (
         <div className="mt-6">
           <Notice>Before moving on: {needs.map((n) => n.message).join(" ")}</Notice>
@@ -376,7 +397,19 @@ function StepView({
   );
 }
 
-function ConceptStep({ character, creation, sheet, catalogue }: { character: CharacterOut; creation: CreationOut; sheet: SheetOut; catalogue: CatalogueOut }) {
+function ConceptStep({
+  character,
+  creation,
+  sheet,
+  catalogue,
+  ghoul,
+}: {
+  character: CharacterOut;
+  creation: CreationOut;
+  sheet: SheetOut;
+  catalogue: CatalogueOut;
+  ghoul?: Ghoul;
+}) {
   const choose = useAction((body: { category: string; name: string }) =>
     unwrap(
       api.PUT("/api/characters/{character_id}/traits", {
@@ -387,11 +420,24 @@ function ConceptStep({ character, creation, sheet, catalogue }: { character: Cha
   );
   // "Other…" waits for its name and description before it is saved.
   const [makingOwn, setMakingOwn] = useState(false);
-  const choices = identityChoices(catalogue, sheet);
+  // A ghoul's clan is its domitor's, set with the domitor.
+  const choices = identityChoices(catalogue, sheet).filter((c) => !ghoul || c.key !== "clan");
   return (
     <div className="flex flex-col gap-4">
       <BuildForCharacter character={character} />
-      <p className="text-sm text-mist">Who is {character.name}? Clan matters most: it decides which disciplines are in-clan.</p>
+      {ghoul ? (
+        <>
+          <p className="text-sm text-mist">
+            Who is {character.name}? The domitor matters most: a ghoul takes its domitor's clan and bloodline, and its in-clan disciplines.
+          </p>
+          <section aria-label="Domitor" className="flex flex-col gap-2">
+            <h3 className="text-base text-gold">Domitor</h3>
+            <DomitorPanel character={character} sheet={sheet} catalogue={catalogue} canChange openWhenNone />
+          </section>
+        </>
+      ) : (
+        <p className="text-sm text-mist">Who is {character.name}? Clan matters most: it decides which disciplines are in-clan.</p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         {choices.map((c) => (
           <Field key={c.key} label={c.name}>
@@ -419,8 +465,8 @@ function ConceptStep({ character, creation, sheet, catalogue }: { character: Cha
         <OwnArchetype character={character} sheet={sheet} onSaved={() => setMakingOwn(false)} />
       )}
       {clanOf(sheet) && <InClanNow creation={creation} />}
-      {clanOf(sheet) && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
-      {clanOf(sheet) && <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS.concept!} />}
+      {clanOf(sheet) && !ghoul && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
+      {clanOf(sheet) && !ghoul && <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS.concept!} />}
     </div>
   );
 }
@@ -475,14 +521,20 @@ function ReviewStep({
   catalogue,
   steps,
   notices,
+  ghoul,
 }: {
   character: CharacterOut;
   creation: CreationOut;
   catalogue: CatalogueOut;
   steps: Step[];
   notices: StepNotice[];
+  ghoul?: Ghoul;
 }) {
   const navigate = useNavigate();
+  const domitor = useDomitor(character, !!ghoul);
+  // A ghoul's discipline dots left unplaced: saved for later.
+  const ghoulDots = ghoul && dotBudget(creation, "disciplines");
+  const savedNote = ghoulDots && savedDots(ghoulDots.allowed - ghoulDots.used);
   // Picks placed on the Sheet tab wait in the cart; finishing asks what to do with them.
   const cart = useCart(character.id);
   const stepFor = (category: string) => steps.find((s) => s.categories.includes(category));
@@ -497,6 +549,12 @@ function ReviewStep({
 
   return (
     <div className="flex flex-col gap-4">
+      {domitor.data && (
+        <section aria-label="Domitor" className="flex flex-col gap-1">
+          <h3 className="text-sm text-gold">Domitor</h3>
+          <DomitorSummary domitor={domitor.data} />
+        </section>
+      )}
       {notices.length > 0 && (
         <section aria-label="Still to settle" className="flex flex-col gap-1">
           <h3 className="text-sm text-gold">Still to settle</h3>
@@ -551,7 +609,13 @@ function ReviewStep({
               </span>
               <span>
                 {p.traits.map((t) => (t.detail ? `${t.name}: ${t.detail}` : t.name)).join(", ") || "—"}
-                {p.kind === "points" ? ` (${p.used} of ${p.allowed} points)` : p.remaining ? ` (${p.remaining} left)` : ""}
+                {p === ghoulDots
+                  ? ` (${p.used} of ${p.allowed} dots placed${p.remaining > 0 ? `, ${p.remaining} saved for later` : ""})`
+                  : p.kind === "points"
+                    ? ` (${p.used} of ${p.allowed} points)`
+                    : p.remaining
+                      ? ` (${p.remaining} left)`
+                      : ""}
               </span>
               {!done && step && (
                 <Link className="text-gold underline" to={`/characters/${character.id}/create/${step.key}`}>
@@ -578,6 +642,7 @@ function ReviewStep({
           )}
         </section>
       )}
+      {savedNote && <p className="text-sm text-mist">{savedNote}</p>}
       {open.length > 0 ? (
         <Notice>Place every pick to finish. Merit and flaw points are optional.</Notice>
       ) : unfielded.length > 0 ? (
@@ -590,7 +655,7 @@ function ReviewStep({
       <FinishCreation
         character={character}
         cart={cart}
-        disabled={open.length > 0 || unfielded.length > 0}
+        disabled={open.length > 0 || unfielded.length > 0 || (!!ghoul && !ghoul.domitor)}
         className="self-start"
         onFinished={() => navigate(`/characters/${character.id}`)}
       >
@@ -691,10 +756,12 @@ function CheckedDotGrid({
   step,
   ...props
 }: { characterId: string; category: string; barredFor?: Record<string, string>; held?: Record<string, Held>; steps: Step[]; step: Step } & Parameters<typeof DotGrid>[0]) {
-  const byRating = CHECKED_BY_RATING.includes(category);
-  const ratings = Object.keys(props.allowed).map(Number);
+  // Dots from a budget (a ghoul's disciplines) are checked at each rating too, each
+  // alone: against its domitor's, while the budget keeps the total.
+  const byRating = CHECKED_BY_RATING.includes(category) || !!props.budget;
+  const ratings = props.budget ? Array.from({ length: props.budget.max }, (_, i) => i + 1) : Object.keys(props.allowed).map(Number);
   const named = useRefusals(characterId, category, !byRating).data ?? {};
-  const atRating = useRatingRefusals(characterId, category, byRating ? ratings : [], byRating);
+  const atRating = useRatingRefusals(characterId, category, byRating ? ratings : [], byRating, props.budget ? "empty" : undefined);
   // Barred at every rating it can be picked at: barred outright. At some: those dots only.
   const refusals: typeof named = byRating ? {} : named;
   const bars: Record<string, RatingBar[]> = {};
@@ -739,7 +806,7 @@ function BuildForCharacter({ character }: { character: CharacterOut }) {
   );
   return (
     <div className="flex flex-col gap-1">
-      <BuildFor value={character.building_troupe_id} onChange={(t) => change.mutate(t)} disabled={change.isPending || character.home_troupe_id !== null} />
+      <BuildFor value={character.building_troupe_id} onChange={(t) => change.mutate(t)} disabled={change.isPending || character.home_troupe_id !== null} splat={character.splat} />
       <ErrorText error={change.error} />
     </div>
   );

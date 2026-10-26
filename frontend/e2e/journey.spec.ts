@@ -4725,6 +4725,135 @@ test("a troupe takes ghouls once its storytellers tick Ghoul on About, and a gho
   await expect(p.getByText("Vampire and Ghoul player characters may join.")).toBeVisible();
 });
 
+test("a player builds a ghoul in the wizard, bound to their own vampire, and later moves its dots to a new domitor", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "ghw-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "ghw-lead");
+  const player = await person(browser, "ghw-player");
+  const takesGhouls = `Blood Bond Court ${run}`;
+  const vampiresOnly = `Pure Blood Court ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT" | "PATCH", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id: ghoulCourt } = await send(custodian.page, "POST", "/api/troupes", { name: takesGhouls, lead_handle: lead.handle });
+  await send(custodian.page, "POST", "/api/troupes", { name: vampiresOnly, lead_handle: lead.handle });
+  await send(lead.page, "PATCH", `/api/troupes/${ghoulCourt}`, { allowed_splats: ["vampire", "ghoul"] });
+
+  // The player's Toreador, who will be the domitor: Auspex 2, Celerity 1, Presence 1.
+  const p = player.page;
+  const { id: domitorId } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Lady Ysolde" });
+  await send(p, "PUT", `/api/characters/${domitorId}/traits`, { category: "clan", name: "Toreador", rating: null });
+  await send(p, "PUT", `/api/characters/${domitorId}/creation/categories/disciplines`, {
+    picks: [
+      { name: "Auspex", rating: 2 },
+      { name: "Celerity", rating: 1 },
+      { name: "Presence", rating: 1 },
+    ],
+  });
+
+  // Built for a troupe that takes vampires only, a new character cannot be a ghoul.
+  await p.reload();
+  await p.getByLabel("Name").fill("Wendel");
+  await p.getByLabel("Build for").selectOption({ label: vampiresOnly });
+  await expect(p.getByLabel("Splat").locator("option")).toHaveText(["Vampire"]);
+  await expect(p.getByText(`${vampiresOnly} takes vampire characters only.`)).toBeVisible();
+  await p.getByLabel("Build for").selectOption({ label: takesGhouls });
+  await expect(p.getByLabel("Splat").locator("option")).toHaveText(["Vampire", "Ghoul"]);
+  await p.getByLabel("Splat").selectOption("Ghoul");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const ghoulId = new URL(p.url()).pathname.split("/")[2]!;
+
+  // Review says the domitor is missing, and Finish waits for it.
+  await p.getByRole("link", { name: /Review/ }).click();
+  await expect(p.getByRole("region", { name: "Still to settle" }).getByText(/Choose the domitor/)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Finish creation" })).toBeDisabled();
+
+  // On Concept the domitor takes the place of the clan.
+  await p.getByRole("region", { name: "Still to settle" }).getByRole("link", { name: "Go to Concept" }).click();
+  await expect(p.getByLabel("Clan", { exact: true })).toHaveCount(0);
+  const domitor = p.getByRole("region", { name: "Domitor" });
+  await domitor.getByLabel("Find a vampire").fill("ysol");
+  await domitor.getByRole("radio", { name: /Lady Ysolde/ }).check();
+  await expect(domitor.getByText("Wendel's in-clan disciplines would be the domitor's: Auspex, Celerity and Presence.")).toBeVisible();
+  await domitor.getByRole("button", { name: "Save domitor" }).click();
+  await expect(domitor.getByText("Bound to Lady Ysolde, Toreador.")).toBeVisible();
+  await expect(p.getByText("In-clan now: Auspex, Celerity and Presence.")).toBeVisible();
+
+  // The other steps through the API; no Generation among the backgrounds.
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Allies", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send(p, "PUT", `/api/characters/${ghoulId}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await p.goto(`/characters/${ghoulId}/create/backgrounds`);
+  await expect(p.getByRole("button", { name: "Fame 3", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByRole("button", { name: "About Generation" })).toHaveCount(0);
+
+  // 5 dots, in-clan only, none higher than Lady Ysolde has; the rest saved for later.
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Disciplines", exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(p.getByText(/A ghoul has 5 dots of disciplines, all in its domitor's in-clan disciplines, no higher than your domitor has each/)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Potence 1", exact: true })).toHaveCount(0);
+  // Each rating is asked of the server, which takes a while on a busy one.
+  await expect(p.getByRole("button", { name: "Celerity 2", exact: true })).toBeDisabled({ timeout: 15_000 });
+  await expect(p.getByText(/Not at 2, 3, 4 or 5: The domitor does not have Celerity that high/)).toBeVisible();
+  await p.getByRole("button", { name: "Auspex 2", exact: true }).click();
+  await p.getByRole("button", { name: "Celerity 1", exact: true }).click();
+  const placed = p.getByRole("list", { name: "Disciplines dots placed" });
+  await expect(placed).toContainText("3 of 5 placed");
+  await expect(placed).toContainText("2 saved for later");
+  await expect(p.getByText(/2 dots are saved for later\. They are kept after creation, and placed later the same way/)).toBeVisible();
+
+  // A merit about the vampiric condition is left out, and refused with its reason.
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
+  const merits = p.getByRole("region", { name: "Merits", exact: true });
+  await merits.getByLabel("Search Merits").fill("Calm Heart");
+  await expect(merits.getByText("Calm Heart", { exact: true })).toHaveCount(0);
+  await merits.getByLabel("Show Merits").selectOption({ label: "Everything" });
+  await expect(merits.getByText("Calm Heart is about the vampiric condition, so a ghoul cannot take it.")).toBeVisible();
+  await expect(merits.getByRole("checkbox", { name: /Calm Heart/ })).toBeDisabled();
+
+  // Review lists the domitor and the dots saved, and finishing opens the sheet.
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(p.getByText("3 of 5 dots placed, 2 saved for later", { exact: false })).toBeVisible();
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p).toHaveURL(new RegExp(`/characters/${ghoulId}$`));
+  const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Domitor", exact: true }) });
+  await expect(card.getByText("Bound to Lady Ysolde, Toreador.")).toBeVisible();
+  await expect(card.getByText("In-clan disciplines, the domitor's: Auspex, Celerity and Presence.")).toBeVisible();
+
+  // Until a troupe accepts Wendel, the player binds him to another domitor, and moves his dots.
+  await card.getByRole("button", { name: "Change domitor" }).click();
+  await card.getByRole("radio", { name: "Not in Horatio" }).check();
+  await card.getByLabel("Domitor's name").fill("Old Marta");
+  await card.getByLabel("Domitor's clan").selectOption("Ventrue");
+  await card.getByRole("radio", { name: "Move them all to the new domitor's in-clan disciplines" }).check();
+  await card.getByLabel("Presence", { exact: true }).selectOption("2");
+  await expect(card.getByText("Move all 3 dots; 2 are placed.")).toBeVisible();
+  await card.getByLabel("Dominate", { exact: true }).selectOption("1");
+  await card.getByRole("button", { name: "Save domitor" }).click();
+  await expect(card.getByText("Bound to Old Marta, Ventrue, who is not in Horatio.")).toBeVisible();
+  await expect(card.getByText("In-clan disciplines, the domitor's: Dominate, Fortitude and Presence.")).toBeVisible();
+  const traits = await (await p.request.get(`/api/characters/${ghoulId}/sheet`)).json();
+  expect(Object.fromEntries(traits.traits.filter((t: { category: string }) => t.category === "disciplines").map((t: { name: string; rating: number }) => [t.name, t.rating]))).toEqual({
+    Dominate: 1,
+    Presence: 2,
+  });
+});
+
 test("a player asks staff for an elder power the rules refuse, free, and a storyteller approves it", async ({ browser }) => {
   const custodian = await person(browser, "exc-custodian");
   makeCustodian(custodian.email);

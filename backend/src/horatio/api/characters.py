@@ -91,6 +91,18 @@ class DomitorOut(BaseModel):
     in_clan: list[str]
 
 
+class DomitorChoiceOut(BaseModel):
+    """A vampire a ghoul could be bound to."""
+
+    character_id: uuid.UUID
+    name: str
+    kind: str  # pc | npc
+    clan: str
+    # The in-clan disciplines the ghoul would take from it: its clan's, or the three a
+    # Caitiff chose.
+    in_clan: list[str]
+
+
 class NewCharacter(BaseModel):
     splat: str
     name: str = Field(min_length=1, max_length=200)
@@ -273,6 +285,44 @@ def read_domitor(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> D
     return domitor_out(db, visible_character(db, user, character_id))
 
 
+def binding_ghoul(db: DbSession, user: User, character_id: uuid.UUID) -> Character:
+    """The ghoul, if `user` may bind it to a domitor: its player, until a home troupe
+    accepts it; after that, the home troupe's running staff."""
+    ghoul = visible_character(db, user, character_id)
+    if ghoul.home_troupe_id is None:
+        return editable_character(db, user, character_id)
+    home = db.get_one(Troupe, ghoul.home_troupe_id)
+    if not allows(
+        troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES, is_custodian=user.is_custodian
+    ):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Once a home troupe accepts a ghoul, its staff change its domitor.",
+        )
+    return ghoul
+
+
+@router.get("/{character_id}/domitor/choices")
+def domitor_choices(
+    character_id: uuid.UUID, db: DbSession, user: CurrentUser, q: str = ""
+) -> list[DomitorChoiceOut]:
+    """The vampires, PCs and NPCs, that the ghoul's player can see and bind it to,
+    whose names hold `q`: the first 20 by name."""
+    ghoul = binding_ghoul(db, user, character_id)
+    if not domitors.has_domitor(ghoul):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only a ghoul has a domitor.")
+    return [
+        DomitorChoiceOut(
+            character_id=c.character.id,
+            name=c.character.name,
+            kind=c.character.kind,
+            clan=c.clan,
+            in_clan=c.in_clan,
+        )
+        for c in domitors.candidates(db, user, ghoul, q)
+    ]
+
+
 @router.put("/{character_id}/domitor")
 def change_domitor(
     character_id: uuid.UUID, body: DomitorIn, db: DbSession, user: CurrentUser
@@ -280,20 +330,7 @@ def change_domitor(
     """Bind a ghoul to its domitor (MET: VTM pp. 296–297): its player, until a home
     troupe accepts it; after that, the home troupe's running staff, once the old bond
     has faded."""
-    ghoul = visible_character(db, user, character_id)
-    if ghoul.home_troupe_id is None:
-        ghoul = editable_character(db, user, character_id)
-    else:
-        home = db.get_one(Troupe, ghoul.home_troupe_id)
-        if not allows(
-            troupe_role(db, user, home),
-            TroupeAction.APPROVE_CHANGES,
-            is_custodian=user.is_custodian,
-        ):
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                "Once a home troupe accepts a ghoul, its staff change its domitor.",
-            )
+    ghoul = binding_ghoul(db, user, character_id)
     bind(db, user, lock_character(db, ghoul.id), body)
     db.commit()
     return domitor_out(db, ghoul)

@@ -67,6 +67,21 @@ export function tap(picks: Picks, allowed: Allowed, name: string, rating: number
   return picks;
 }
 
+/**
+ * Dots shared out from one budget, as many on a trait as it likes (a ghoul's 5
+ * discipline dots): a tap sets the trait to that rating if the dots it adds are
+ * left. Tapping the rating it has clears it.
+ */
+export function canTapDots(picks: Picks, budget: number, name: string, rating: number): boolean {
+  return picks[name] === rating || spent(picks) - (picks[name] ?? 0) + rating <= budget;
+}
+
+export function tapDots(picks: Picks, budget: number, name: string, rating: number): Picks {
+  if (picks[name] === rating) return clear(picks, name);
+  if (!canTapDots(picks, budget, name, rating)) return picks;
+  return { ...picks, [name]: rating };
+}
+
 /** Merits and flaws: toggle a trait worth `points` against a budget. */
 export function togglePoints(picks: Picks, budget: number, name: string, points: number): Picks {
   const next = { ...picks };

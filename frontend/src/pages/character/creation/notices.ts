@@ -28,7 +28,8 @@ export type StepNotice = {
   canWait?: boolean;
 };
 
-export type NoticeInput = { creation: CreationOut; sheet: SheetOut; steps: StepRef[] };
+/** `ghoul` for a ghoul, whose clan and in-clan disciplines are its domitor's: whether it has one yet. */
+export type NoticeInput = { creation: CreationOut; sheet: SheetOut; steps: StepRef[]; ghoul?: { domitor: boolean } };
 export type NoticeSource = (input: NoticeInput) => StepNotice[];
 
 /** The step that places or decides a category. */

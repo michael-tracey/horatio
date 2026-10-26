@@ -196,6 +196,55 @@ def test_a_domitor_is_a_vampire_the_player_can_see(troupe: Troupe) -> None:
     assert new_ghoul(troupe.player, domitor={"character_id": theirs}).status_code == 201
 
 
+def choices(person: Person, ghoul: str, q: str = "") -> Any:
+    return person.client.get(f"/characters/{ghoul}/domitor/choices", params={"q": q})
+
+
+def test_the_vampires_a_player_can_bind_their_ghoul_to(troupe: Troupe) -> None:
+    allow(troupe, ["vampire", "ghoul"])
+    theirs = vampire_domitor(troupe)
+    new_character(troupe, troupe.player, "Nobody Yet")
+    retired = new_character(troupe, troupe.player, "Vasquez the Elder", clan="Ventrue")
+    assert troupe.player.client.post(f"/characters/{retired}/retire").status_code == 200
+    new_character(troupe, troupe.stranger, "Vasquez's Rival", clan="Brujah")
+    npc = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/npcs", json={"name": "Baron Vasquez", "splat": "vampire"}
+    ).json()["id"]
+    troupe.storyteller.client.put(
+        f"/characters/{npc}/npc/ratings", json={"category": "clan", "name": "Tzimisce"}
+    )
+    ghoul = ghoul_of(troupe.player, typed())
+    other_ghoul = ghoul_of(troupe.player, typed(), name="Igor")
+
+    found = choices(troupe.player, ghoul)
+
+    # Their own vampires with a clan, not retired; not ghouls, nor another player's PC.
+    assert found.status_code == 200, found.text
+    assert found.json() == [
+        {
+            "character_id": theirs,
+            "name": "Vasquez",
+            "kind": "pc",
+            "clan": "Toreador",
+            "in_clan": TOREADOR,
+        }
+    ]
+    assert other_ghoul not in [c["character_id"] for c in found.json()]
+    assert choices(troupe.player, ghoul, "nobody").json() == []
+    # A Caitiff's are the three it chose.
+    caitiff = caitiff_domitor(troupe)
+    assert [c["in_clan"] for c in choices(troupe.player, ghoul, "tom").json()] == [TOREADOR]
+    assert caitiff in [c["character_id"] for c in choices(troupe.player, ghoul).json()]
+    # The troupe's staff see its NPCs, as they see its sheets.
+    staff_ghoul = ghoul_of(troupe.storyteller, typed())
+    assert [c["name"] for c in choices(troupe.storyteller, staff_ghoul, "VASQ").json()] == [
+        "Baron Vasquez"
+    ]
+    # Only the ghoul's player asks, and only for a ghoul.
+    assert choices(troupe.stranger, ghoul).status_code == 404
+    assert choices(troupe.player, theirs).status_code == 409
+
+
 def test_five_discipline_dots_in_the_domitors_in_clan_disciplines(troupe: Troupe) -> None:
     ghoul = ghoul_of(troupe.player, typed())
     state = troupe.player.client.get(f"/characters/{ghoul}/creation").json()
@@ -228,6 +277,29 @@ def test_a_linked_domitors_powers_limit_the_ghouls(troupe: Troupe) -> None:
     assert "does not have Celerity that high" in refused.json()["detail"]
     assert pick(troupe.player, ghoul, "disciplines", "Auspex", 2).status_code == 200
     assert pick(troupe.player, ghoul, "disciplines", "Celerity", 1).status_code == 200
+
+
+def test_the_wizard_asks_what_the_domitor_caps_each_discipline_at(troupe: Troupe) -> None:
+    ghoul = ghoul_of(troupe.player, {"character_id": vampire_domitor(troupe)})
+    place(troupe.player, ghoul, [("disciplines", "Auspex", 2), ("disciplines", "Presence", 1)])
+
+    def refused(rating: int) -> dict[str, str]:
+        found = troupe.player.client.get(
+            f"/characters/{ghoul}/refusals",
+            params={"category": "disciplines", "rating": rating, "as_if": "empty"},
+        )
+        assert found.status_code == 200, found.text
+        return {name: r["message"] for name, r in found.json().items() if name in TOREADOR}
+
+    # Each alone, so the dots already placed do not count against the 5.
+    assert refused(1) == {}
+    assert refused(2) == {
+        "Celerity": "The domitor does not have Celerity that high;"
+        " a ghoul learns only powers its domitor has. (p. 296)",
+        "Presence": "The domitor does not have Presence that high;"
+        " a ghoul learns only powers its domitor has. (p. 296)",
+    }
+    assert set(refused(5)) == set(TOREADOR)
 
 
 def test_dots_not_placed_at_creation_are_saved(troupe: Troupe) -> None:

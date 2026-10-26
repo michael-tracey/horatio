@@ -11,7 +11,7 @@ import { XpRangeCard } from "./XpRange";
 
 /**
  * The troupe at a glance: what it is, when it next plays, who leads it, which
- * sects and splats may join, and its XP floor and ceiling; for its staff, what is waiting
+ * splats and sects may join, and its XP floor and ceiling; for its staff, what is waiting
  * on them. The full profile is on the Profile tab.
  */
 export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
@@ -20,8 +20,8 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
     <div className="grid gap-6 md:grid-cols-2">
       {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
       <Summary troupe={troupe} />
-      <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       <SplatsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
+      <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       <div className="md:col-span-2">
         <XpRangeCard
           troupeId={troupe.id}
@@ -179,7 +179,7 @@ function SplatsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }
       ) : (
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 text-sm text-mist">
-            What may player characters be? New characters built for the troupe, and those joining it, must be one of these. NPCs are not limited.
+            Which splats may player characters be? Tick at least one: new characters built for the troupe, and those joining it, must be one of these. NPCs are not limited.
           </legend>
           {(splats.data ?? []).map(({ splat, label }) => (
             <label key={splat} className="flex items-center gap-2 text-sm">

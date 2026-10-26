@@ -23,11 +23,12 @@ from dataclasses import dataclass
 from typing import Literal
 
 from fastapi import HTTPException
-from sqlalchemy import delete, event, inspect, select
+from sqlalchemy import delete, event, exists, func, inspect, select
 from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.models import Character, CharacterTrait, TraitCategory, TraitDefinition, User
+from horatio.permissions import viewable_characters
 from horatio.rules.model import SheetTrait
 from horatio.rules.splats import DOMITOR_IN_CLAN, SPLATS
 from horatio.sheets import (
@@ -86,6 +87,52 @@ def domitor_info(db: Session, ghoul: Character) -> DomitorInfo | None:
     return DomitorInfo(
         linked, linked.name if linked is not None else ghoul.domitor_name, clan, in_clan
     )
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """A vampire a ghoul could be bound to, with what the ghoul would take from it."""
+
+    character: Character
+    clan: str
+    in_clan: list[str]
+
+
+# The most vampires one search for a domitor finds.
+CANDIDATES = 20
+
+
+def candidates(db: Session, user: User, ghoul: Character, query: str = "") -> list[Candidate]:
+    """The vampires `user` can see whose names hold `query`, that the ghoul could be
+    bound to: those with a clan, and not retired. For each, the in-clan disciplines
+    the ghoul would have: its clan's, or a Caitiff's three."""
+    vampires = [key for key, splat in SPLATS.items() if not splat.has_domitor]
+    has_clan = exists(
+        select(CharacterTrait.id)
+        .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
+        .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+        .where(CharacterTrait.character_id == Character.id, TraitCategory.key == "clan")
+    )
+    found = db.scalars(
+        select(Character)
+        .where(
+            viewable_characters(user),
+            Character.splat.in_(vampires),
+            Character.status != "retired",
+            Character.id != ghoul.id,
+            func.lower(Character.name).contains(query.strip().lower(), autoescape=True),
+            has_clan,
+        )
+        .order_by(func.lower(Character.name))
+        .limit(CANDIDATES)
+    )
+    rule_set = rules_for(db, ghoul).rule_set
+    out: list[Candidate] = []
+    for vampire in found:
+        clan = next(r.definition.name for r in sheet_rows(db, vampire) if r.category.key == "clan")
+        own = rule_set.trait_properties("clan", clan).get("in_clan", [])
+        out.append(Candidate(vampire, clan, [*own, *caitiff_three(db, vampire)]))
+    return out
 
 
 def caitiff_three(db: Session, vampire: Character) -> list[str]:
