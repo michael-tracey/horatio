@@ -14,6 +14,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     blood_per_turn: 1,
     herd: 2,
     blood: { value: 10, most: 10, start: 10 },
+    retainers: [],
     blood_usual: 10,
     half_blood: false,
     willpower: { value: 6, most: 6, start: 6 },

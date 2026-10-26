@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import diablerie, pictures, play, reference, retainers, sheets, titles
-from horatio.api.retainers import RetainerOut, listed
+from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, SheetVersion, TraitCategory, TraitDefinition, Troupe, User
 from horatio.permissions import visible_character
@@ -57,6 +57,8 @@ class PrintedSheet(BaseModel):
     traits: list[PrintedTrait]
     # Its Retainers, listed under the background.
     retainers: list[RetainerOut]
+    # Each Alternate Identity, with what its rating means.
+    identities: list[IdentityOut] = []
     # The test pools worked out from the sheet, and the player's modifiers that are on.
     pools: list[reference.TestPool]
     modifiers: list[ModifierOut]
@@ -148,6 +150,7 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         diablerie=[d.committed_on for d in diablerie.recorded(db, character)],
         traits=traits,
         retainers=listed(db, retainers.read(db, character), None),
+        identities=identities_out(db, character),
         pools=reference.reference(
             sheets.sheet_rows(db, character),
             sheets.rules_for(db, character).rule_set,

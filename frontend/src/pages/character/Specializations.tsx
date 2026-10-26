@@ -4,7 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { CharacterOut, SheetTraitOut } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { useAction } from "../../hooks";
-import { FIELD_PLACEHOLDER, fieldNeeded } from "./fields";
+import { detailNeed, FIELD_PLACEHOLDER, fieldNeeded } from "./fields";
 
 const CUSTOM = "Custom";
 
@@ -119,8 +119,9 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
   );
 }
 
-/** A Crafts, Performance or Science held without its field: set one. */
-export function SetField({ character, trait }: { character: CharacterOut; trait: Pick<SheetTraitOut, "category" | "name"> }) {
+/** A Crafts, Performance or Science held without its field: set one. Or a Retainer
+ * or identity held without a name, from before each was named: name it (`named`). */
+export function SetField({ character, trait, named }: { character: CharacterOut; trait: Pick<SheetTraitOut, "category" | "name">; named?: string }) {
   const [field, setField] = useState("");
   const save = useAction(() =>
     unwrap(
@@ -131,9 +132,15 @@ export function SetField({ character, trait }: { character: CharacterOut; trait:
     ),
   );
   return (
-    <div className="-mt-0.5 mb-1 ml-3 flex flex-wrap items-center gap-1.5 border-l border-blood/60 pl-3 text-xs">
-      <span className="text-blood-bright">{fieldNeeded(trait.name)}:</span>
-      <Input aria-label={`${trait.name} field`} value={field} onChange={(e) => setField(e.target.value)} placeholder={FIELD_PLACEHOLDER} className="min-h-8 w-40 py-1 text-xs" />
+    <div className={`-mt-0.5 mb-1 ml-3 flex flex-wrap items-center gap-1.5 border-l pl-3 text-xs ${named ? "border-ash" : "border-blood/60"}`}>
+      <span className={named ? "text-mist" : "text-blood-bright"}>{named ? `Name this ${named}` : fieldNeeded(trait.name)}:</span>
+      <Input
+        aria-label={`${trait.name} ${named ? "name" : "field"}`}
+        value={field}
+        onChange={(e) => setField(e.target.value)}
+        placeholder={named ? detailNeed({ name: trait.name, needs_field: false, instance: named })?.placeholder : FIELD_PLACEHOLDER}
+        className="min-h-8 w-40 py-1 text-xs"
+      />
       <Button variant="secondary" className="min-h-8 px-2 py-1 text-xs" disabled={!field.trim() || save.isPending} onClick={() => save.mutate(undefined)}>
         Set
       </Button>

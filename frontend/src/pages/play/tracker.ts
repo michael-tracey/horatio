@@ -95,6 +95,19 @@ export function temporaryLabel(t: { name: string; source: string }): string {
   return t.source ? `${t.name}, from ${t.source}` : t.name;
 }
 
+/** A Retainer's health and Blood: "retainer:Bocephus/health" (core p. 105). */
+export const RETAINER = "retainer:";
+
+/** The Retainer's tracker a tap names, or undefined for another tracker. */
+export function retainerTracker(view: PlayView, tracker: string) {
+  if (!tracker.startsWith(RETAINER)) return undefined;
+  const at = tracker.lastIndexOf("/");
+  const retainer = (view.retainers ?? []).find((r) => r.key === tracker.slice(0, at));
+  if (!retainer) return undefined;
+  const what = tracker.slice(at + 1);
+  return { retainer, what, track: what === "blood" ? retainer.blood : what === "health" ? retainer.health : null };
+}
+
 /** What a tracker is called, as the log names it. */
 export function trackerName(view: PlayView, tracker: string): string {
   const names: Record<string, string> = {
@@ -110,6 +123,8 @@ export function trackerName(view: PlayView, tracker: string): string {
   if (found) return found.detail ? `${found.name}: ${found.detail}` : found.name;
   const temporary = view.derangements.temporary.find((t) => t.key === tracker);
   if (temporary) return temporaryLabel(temporary);
+  const kept = retainerTracker(view, tracker);
+  if (kept) return `${kept.retainer.name || "Retainer"}: ${kept.what === "blood" ? "Blood" : "health"}`;
   const power = tracker.startsWith(SWITCH) ? view.powers.find((p) => SWITCH + p.key === tracker) : undefined;
   return power?.name ?? tracker;
 }
@@ -131,6 +146,7 @@ function most(view: PlayView, tracker: string): number | undefined {
       return healthMost(view);
   }
   if (tracker.startsWith(TEMPORARY)) return view.derangements.temporary.some((t) => t.key === tracker) ? 1 : undefined;
+  if (tracker.startsWith(RETAINER)) return retainerTracker(view, tracker)?.track?.most;
   return view.expendables.find((e) => e.key === tracker)?.uses;
 }
 
@@ -173,6 +189,12 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
     temporary.held = clamp(before + amount, top) > 0;
     return [before, temporary.held ? 1 : 0];
   }
+  const kept = retainerTracker(view, tracker)?.track;
+  if (kept) {
+    const before = kept.value;
+    kept.value = clamp(before + amount, top);
+    return [before, kept.value];
+  }
   const found = view.expendables.find((e) => e.key === tracker)!;
   const before = found.left;
   found.left = clamp(before + amount, top);
@@ -209,6 +231,7 @@ function copy(view: PlayView): Shown {
     morality: view.morality ? { ...view.morality } : null,
     health: { ...view.health, marks: [...view.health.marks] },
     expendables: view.expendables.map((e) => ({ ...e })),
+    retainers: (view.retainers ?? []).map((r) => ({ ...r, health: { ...r.health }, blood: r.blood ? { ...r.blood } : null })),
     powers: view.powers.map((p) => ({ ...p })),
     log: view.log.map((e) => ({ ...e })),
   };

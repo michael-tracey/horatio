@@ -439,6 +439,8 @@ category = "backgrounds"
 name = "Alternate Identity"
 description = "A second, well-established identity, with the papers, history and acquaintances to make it convincing. Each dot makes it stand up to closer scrutiny, from a quick internet search at 1 to a powerful public figure at 5, but it never fools powers such as Telepathy, or anyone who sees it's you. Bought once for each identity."
 page_reference = "98-99"
+# Bought once for each cover identity, each with its own name and dots (p. 99).
+properties = { instance = "identity" }
 
 [[traits]]
 category = "backgrounds"
@@ -498,7 +500,8 @@ category = "backgrounds"
 name = "Retainers"
 description = "Loyal servants, often ghouls, who serve you directly. A Retainer's test pool is twice its rating, with a health level and a specialty for each dot: +5 in one skill, or (just one) a discipline in-clan for you, to its rating. Bought once for each Retainer."
 page_reference = "104-105"
-properties = { requirement = "requires_specialization" }
+# Bought once for each Retainer, each with its own name and up to 5 dots (p. 104).
+properties = { requirement = "requires_specialization", instance = "Retainer" }
 
 [[traits]]
 category = "backgrounds"

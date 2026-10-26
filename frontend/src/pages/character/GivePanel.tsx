@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, GiveOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { detailNeed } from "./fields";
 
 const SHOWN = 40;
 
@@ -149,9 +150,9 @@ export function GivePanel({
               </Select>
             </Field>
           ) : (
-            <Field label="Detail" hint="Optional: a specialisation, subject, or name.">
+            <Field label={detailNeed(trait)?.label ?? "Detail"} hint={detailNeed(trait)?.hint ?? "Optional: a specialisation, subject, or name."}>
               <Input
-                required={!!trait.needs_field}
+                required={!!detailNeed(trait)}
                 value={detail}
                 onChange={(e) => {
                   setDetail(e.target.value);

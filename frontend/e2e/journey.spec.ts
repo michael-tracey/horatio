@@ -5048,7 +5048,7 @@ test("an attribute stops rising at the limit Generation gives", async ({ browser
   await expect(p.getByRole("button", { name: "Spend XP" })).toBeEnabled();
 });
 
-test("a player lists two Retainers with their dots, and a storyteller links one to an NPC", async ({ browser }) => {
+test("a player says who each Retainer bought is, and a storyteller links one to an NPC", async ({ browser }) => {
   const custodian = await person(browser, "ret-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "ret-lead");
@@ -5062,60 +5062,45 @@ test("a player lists two Retainers with their dots, and a storyteller links one 
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Retinue Row ${run}`, lead_handle: lead.handle });
 
-  // Dorothea, at home in the troupe with Retainers 3, which staff raise to 4.
+  // Dorothea, at home in the troupe with Marta as a Retainer at 3, and staff give her Pike at 1.
   const { id } = await send(owner.page, "POST", "/api/characters", { splat: "vampire", name: "Dorothea" });
   await send(owner.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
-  const picks: Record<string, [string, number][]> = {
+  const picks: Record<string, [string, number, string?][]> = {
     attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
     focus_physicals: [["Strength", 1]],
     focus_mentals: [["Wits", 1]],
     focus_socials: [["Charisma", 1]],
     skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
-    backgrounds: [["Retainers", 3], ["Haven", 2], ["Generation", 1]],
+    backgrounds: [["Retainers", 3, "Marta, the driver"], ["Haven", 2], ["Generation", 1]],
     disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
   };
   for (const [category, list] of Object.entries(picks))
-    await send(owner.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(owner.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating, detail]) => ({ name: n, rating, detail: detail ?? "" })) });
   await send(owner.page, "POST", `/api/characters/${id}/creation/complete`);
   const asked = await send(owner.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
-  await send(lead.page, "POST", `/api/characters/${id}/give`, { category: "backgrounds", name: "Retainers", rating: 4, free: true, reason: "A fourth dot" });
+  await send(lead.page, "POST", `/api/characters/${id}/give`, { category: "backgrounds", name: "Retainers", detail: "Pike", rating: 1, free: true, reason: "A second Retainer" });
   await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Marta Voss", wizard: false });
 
-  // The player lists Marta at 3 and Pike at 1.
+  // Both are listed, under the last of them, with the dots bought for each.
   const p = owner.page;
   await p.goto(`/characters/${id}`);
-  const row = p.locator("li[data-trait='Retainers']");
-  await row.getByRole("button", { name: "+ List Retainers" }).click();
-  await row.getByLabel("Retainer name").fill("Marta, the driver");
-  await row.getByLabel("Dots for Marta, the driver").selectOption("3");
-  await row.getByLabel("About Marta, the driver").fill("Drives at night");
-  await row.getByRole("button", { name: "+ Add a Retainer" }).click();
-  await row.getByLabel("Retainer name").last().fill("Pike");
-  await row.getByRole("button", { name: "Save Retainers" }).click();
-  await expect(row.getByRole("list", { name: "Retainers" }).getByRole("listitem")).toHaveCount(2);
-  await expect(row.getByText("Marta, the driver")).toBeVisible();
-  await expect(row.getByText("Drives at night")).toBeVisible();
-  await expect(row.getByRole("status")).toHaveCount(0);
-  await expect(row.getByRole("button", { name: /^NPC for/ })).toHaveCount(0);
-
-  // A dot split that does not match the rating warns.
-  await row.getByRole("button", { name: "Edit Retainers" }).click();
-  await row.getByLabel("Remove Pike").click();
-  await row.getByRole("button", { name: "Save Retainers" }).click();
-  await expect(row.getByRole("status")).toHaveText("1 dot of the Retainers background is not given to a Retainer yet.");
-  await row.getByRole("button", { name: "Edit Retainers" }).click();
-  await row.getByRole("button", { name: "+ Add a Retainer" }).click();
-  await row.getByLabel("Retainer name").last().fill("Pike");
-  await row.getByRole("button", { name: "Save Retainers" }).click();
-  await expect(row.getByRole("status")).toHaveCount(0);
+  const list = p.getByLabel("Retainers list");
+  await expect(list).toHaveCount(1);
+  await expect(list.getByRole("list", { name: "Retainers" }).getByRole("listitem")).toHaveCount(2);
+  // The player says who Marta is; her name and dots are the sheet's.
+  await list.getByRole("button", { name: "Edit Retainers" }).click();
+  await expect(list.getByLabel("Retainer name")).toHaveCount(0);
+  await list.getByLabel("About Marta, the driver").fill("Drives at night");
+  await list.getByRole("button", { name: "Save Retainers" }).click();
+  await expect(list.getByText("Drives at night")).toBeVisible();
+  await expect(list.getByRole("button", { name: /^NPC for/ })).toHaveCount(0);
   await p.screenshot(shots("retainers"));
 
   // Both show on the printed sheet and the Play View.
   await p.goto(`/print/characters/${id}`);
-  const printed = p.getByRole("list", { name: "Retainers" });
-  await expect(printed.getByText("Marta, the driver (3) – Drives at night")).toBeVisible();
-  await expect(printed.getByText("Pike (1)")).toBeVisible();
+  await expect(p.getByRole("article", { name: "Retainer: Marta, the driver" })).toContainText("Drives at night");
+  await expect(p.getByRole("article", { name: "Retainer: Pike" })).toContainText("Pool 2");
   await p.goto(`/play/characters/${id}`);
   await p.getByRole("tab", { name: "Sheet" }).click();
   const playing = p.getByRole("list", { name: "Retainers" });
@@ -5125,7 +5110,7 @@ test("a player lists two Retainers with their dots, and a storyteller links one 
   // A storyteller links Marta to the NPC, and the link opens it.
   const l = lead.page;
   await l.goto(`/characters/${id}`);
-  const his = l.locator("li[data-trait='Retainers']");
+  const his = l.getByLabel("Retainers list");
   await his.getByRole("button", { name: "Edit Retainers" }).click();
   await his.getByLabel("NPC for Marta, the driver").selectOption({ label: "Marta Voss" });
   await his.getByRole("button", { name: "Save Retainers" }).click();
@@ -5135,6 +5120,116 @@ test("a player lists two Retainers with their dots, and a storyteller links one 
   // The change is on the character's log.
   await l.goto(`/characters/${id}/log`);
   await expect(l.getByText("ret-lead linked Marta, the driver, one of Dorothea (ret-player)'s Retainers, to an NPC.")).toBeVisible();
+
+  // Pike is killed: the sheet says when his dot comes back (a game, and two
+  // weeks), and his block on the Play View is greyed out until then.
+  await p.goto(`/characters/${id}`);
+  await list.getByRole("button", { name: "Edit Retainers" }).click();
+  await list.getByLabel("Status of Pike").selectOption("killed");
+  await list.getByRole("button", { name: "Save Retainers" }).click();
+  await expect(list.getByText(/^Its dots come back once 1 game has gone by since, and not before /)).toBeVisible();
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  const pike = p.getByRole("article", { name: "Retainer: Pike" });
+  await expect(pike).toHaveAttribute("aria-disabled", "true");
+  await expect(pike.getByRole("status")).toContainText("Killed");
+  await expect(pike.getByRole("button", { name: "Spend Pike: health" })).toBeDisabled();
+  await expect(p.getByRole("article", { name: "Retainer: Marta, the driver" }).getByRole("button", { name: "Spend Marta, the driver: health" })).toBeEnabled();
+});
+
+test("in the cart, a second Retainer and a second Alternate Identity are each bought on their own, by name", async ({ browser }) => {
+  const { page: p } = await person(browser, "twofold-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // Ysolde starts with Bocephus as a Retainer at 3 and one cover identity at 2, at Generation 1.
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Ysolde" });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Nosferatu", rating: null });
+  const picks: Record<string, [string, number, string?][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Stealth", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Retainers", 3, "Bocephus"], ["Alternate Identity", 2, "Dr. Ellen Marsh, coroner"], ["Generation", 1]],
+    disciplines: [["Animalism", 2], ["Obfuscate", 1], ["Potence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating, detail]) => ({ name: n, rating, detail: detail ?? "" })) });
+  await send("POST", `/api/characters/${id}/creation/complete`);
+
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  // A second Retainer is named as it goes in, and priced from its own first dot: 1 + 2 at Generation 1.
+  await part("Backgrounds").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Backgrounds").fill("Retainers");
+  await p.getByRole("button", { name: "Retainers" }).first().click();
+  await expect(p.getByText("Each Retainer is bought on its own, with its own dots, up to 5.")).toBeVisible();
+  await p.getByPlaceholder("Such as Bocephus").fill("Rook");
+  await p.getByLabel("Rating").fill("2");
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await expect(cart.getByText("Add Retainers: Rook 2 · 3 XP")).toBeVisible();
+  // And a second identity, by its own name.
+  await part("Backgrounds").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Backgrounds").fill("Alternate");
+  await p.getByRole("button", { name: "Alternate Identity" }).first().click();
+  await p.getByPlaceholder("Such as Dr. Ellen Marsh, coroner").fill("Father Kell");
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await expect(cart.getByText("Add Alternate Identity: Father Kell 1 · 1 XP")).toBeVisible();
+  // Bocephus's fourth dot costs his own next dot, though it is the sixth Retainer dot in all.
+  await p.getByRole("button", { name: "Raise Retainers: Bocephus" }).click();
+  await expect(cart.getByText("Retainers: Bocephus 3 → 4 · 4 XP")).toBeVisible();
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 8 XP.")).toBeVisible();
+
+  // Each is on the sheet by name, with its own dots.
+  const backgrounds = part("Backgrounds");
+  for (const name of ["Retainers: Bocephus", "Retainers: Rook", "Alternate Identity: Dr. Ellen Marsh, coroner", "Alternate Identity: Father Kell"])
+    await expect(backgrounds.getByRole("button", { name: `Raise ${name}`, exact: true })).toBeVisible();
+  await expect(p.getByLabel("Retainers list").getByRole("listitem")).toHaveCount(2);
+
+  // Bocephus is a ghoul, with three skills and Obfuscate as his specialties (p. 105).
+  const list = p.getByLabel("Retainers list");
+  await list.getByRole("button", { name: "Edit Retainers" }).click();
+  await list.getByLabel("Bocephus is a ghoul").check();
+  for (const skill of ["Brawl", "Stealth", "Dodge"]) await list.getByLabel("Add a specialty for Bocephus").selectOption(skill);
+  await list.getByLabel("Discipline for Bocephus").selectOption("Obfuscate");
+  await expect(list.getByText("Specialties 4 of 4:")).toBeVisible();
+  await list.getByRole("button", { name: "Save Retainers" }).click();
+  await expect(list.getByText("Brawl, Stealth, Dodge, Obfuscate")).toBeVisible();
+  // Father Kell is Accepted by the Sabbat; each identity says what its rating stands up to.
+  await p.getByRole("button", { name: "Accepted by a sect or group?" }).last().click();
+  await p.getByLabel("Who Accepts Father Kell").fill("the Sabbat");
+  await p.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(p.getByLabel("About Father Kell")).toContainText("Accepted by the Sabbat.");
+  await expect(p.getByLabel("About Dr. Ellen Marsh, coroner")).toContainText("Well grounded");
+
+  // On the Play View, each Retainer has a pool of its own, and its health and Blood to tap.
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  const bocephus = p.getByRole("article", { name: "Retainer: Bocephus" });
+  const rook = p.getByRole("article", { name: "Retainer: Rook" });
+  await expect(bocephus.getByLabel("Bocephus's pool: 8")).toBeVisible();
+  await expect(rook.getByLabel("Rook's pool: 4")).toBeVisible();
+  await expect(bocephus.getByRole("listitem").filter({ hasText: "Brawl" })).toContainText("13");
+  await expect(bocephus.getByText("4. Vanish From the Mind's Eye")).toBeVisible();
+  await expect(bocephus.getByText("Cloak the Gathering")).toHaveCount(0);
+  await expect(rook.getByText("Blood")).toHaveCount(0);
+  await p.getByRole("checkbox", { name: "Quick notes" }).uncheck();
+  await bocephus.getByRole("button", { name: "Spend Bocephus: Blood" }).click();
+  await expect(bocephus.getByLabel("Bocephus: Blood: 4 of 5")).toBeVisible();
+  await rook.getByRole("button", { name: "Spend Rook: health" }).click();
+  await expect(rook.getByLabel("Rook: health: 1 of 2")).toBeVisible();
+
+  // And on the Sheet tab, both identities by name, with who Accepts one.
+  await p.getByRole("tab", { name: "Sheet" }).click();
+  await expect(p.getByText("Alternate Identity: Dr. Ellen Marsh, coroner")).toBeVisible();
+  await expect(p.getByText("Alternate Identity: Father Kell")).toBeVisible();
+  await expect(p.getByText("Accepted by the Sabbat.")).toBeVisible();
 });
 
 test("a page whose file is gone after a deploy reloads once, then says Horatio was updated", async ({ browser }) => {

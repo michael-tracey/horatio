@@ -8,7 +8,7 @@ import { AskStaff } from "./AskStaff";
 import type { CartLine, Exception } from "./cart";
 import { foundElsewhere, shownChips, useBarred, useChoices } from "./choices";
 import { QuickPicks } from "./creation/DotGrid";
-import { FIELD_PLACEHOLDER } from "./fields";
+import { detailNeed, isInstance } from "./fields";
 import { FreeChoicesFields } from "./FreeChoices";
 import { sayable, summary, toSend, type FreePick } from "./freeChoices";
 import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
@@ -74,7 +74,8 @@ export function AddTraitPanel({
   const unavailable = current?.refused ?? {};
   const all = current?.traits ?? [];
   const filterable = byKind(all);
-  const mine = new Set(held.filter((h) => h.category === category && !h.detail).map((h) => h.name));
+  // Held once, unless each is bought on its own with its own name (Retainers).
+  const mine = new Set(held.filter((h) => h.category === category && !h.detail && !isInstance(catalogue, h.category, h.name)).map((h) => h.name));
   const q = query.trim().toLowerCase();
   const barred = useBarred(character.id, current);
   const shown = applyFilter(all, filter, barred).filter((t) => !mine.has(t.name));
@@ -91,8 +92,9 @@ export function AddTraitPanel({
   };
   const trait = all.find((t) => t.name === name);
   const fixed = trait?.fixed_rating ?? null;
-  // Skills bought once per field, such as Performance: Singing (MET: VTM p. 92).
-  const needsField = !!trait?.needs_field;
+  // Skills bought once per field, such as Performance: Singing (MET: VTM p. 92), and
+  // a Retainer or identity, each bought with its own name (pp. 98-99, 104).
+  const need = detailNeed(trait);
   // After acceptance, discipline dots wait on the home troupe, who will want to know the teacher.
   const asksTeacher = category === "disciplines" && character.home_troupe_id !== null;
   // A merit that gives free traits the player chooses: choose them as it goes in.
@@ -233,8 +235,8 @@ export function AddTraitPanel({
               </Select>
             </Field>
           ) : (
-            <Field label={needsField ? "Field" : "Detail"} hint={needsField ? "Bought once per field." : "Optional: a specialisation, subject, or name."}>
-              <Input required={needsField} placeholder={needsField ? FIELD_PLACEHOLDER : undefined} value={detail} onChange={(e) => setDetail(e.target.value)} />
+            <Field label={need?.label ?? "Detail"} hint={need?.hint ?? "Optional: a specialisation, subject, or name."}>
+              <Input required={!!need} placeholder={need?.placeholder} value={detail} onChange={(e) => setDetail(e.target.value)} />
             </Field>
           )}
           {cat?.rated && fixed === null && (

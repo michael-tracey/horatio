@@ -291,6 +291,8 @@ MESSAGES: dict[str, str] = {
     "retainer.restored": "{actor} marked {name}, one of {character}'s Retainers, as serving again.",
     "retainer.linked": "{actor} linked {name}, one of {character}'s Retainers, to an NPC.",
     "retainer.unlinked": "{actor} unlinked {name}, one of {character}'s Retainers, from its NPC.",
+    "identity.accepted": "{actor} noted {character}'s identity {name} as Accepted by {by}.",
+    "identity.unaccepted": "{actor} noted {character}'s identity {name} as Accepted by no one.",
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",

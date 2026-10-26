@@ -30,10 +30,12 @@ from sqlalchemy.orm import Session
 
 from horatio import audit, notifications, repricing, xp_range
 from horatio.models import (
+    AlternateIdentity,
     Approval,
     Character,
     CharacterTrait,
     DisciplinePurchase,
+    Retainer,
     RuleSet,
     SheetVersion,
     TraitCategory,
@@ -325,6 +327,15 @@ def find_definition(
     if found is None:
         raise unprocessable(f"There is no {category_key} trait called {name!r}.")
     return found[0], found[1]
+
+
+def ensure_named(definition: TraitDefinition, detail: str) -> None:
+    """A trait bought once for each of several, such as Retainers (p. 104), is
+    named in its detail as each one is added. One held without a name from
+    before they were stays as it is."""
+    noun = definition.properties.get("instance")
+    if noun and not detail.strip():
+        raise unprocessable(f"Name each {noun}: each is bought on its own, with its own dots.")
 
 
 def check_context(
@@ -1508,6 +1519,8 @@ def set_trait(
             CharacterTrait.detail == detail,
         )
     )
+    if existing is None and rating:
+        ensure_named(definition, detail)
     # Generation before acceptance: still creation, so earlier buys follow it.
     reopened = open_until_accepted(db, character, category.key, definition.name)
     # After it, fixed: said before what it would cost. Staff may still give it.
@@ -1579,6 +1592,8 @@ def set_trait(
             + f", and the character has {xp_balance(db, character)}."
         )
 
+    # Which one, in the XP history: "Retainers: Bocephus 0 → 3".
+    labelled = f"{name}: {detail}" if detail else name
     trait = existing
     if trait is None:
         trait = CharacterTrait(
@@ -1601,7 +1616,7 @@ def set_trait(
                 character_id=character.id,
                 kind="purchase",
                 amount=-cost,
-                reason=f"{name} {current_rating} → {rating}"
+                reason=f"{labelled} {current_rating} → {rating}"
                 + (f", free by exception: {free}" if free is not None else ""),
                 entered_by=player.id,
                 trait_definition_id=definition.id,
@@ -1615,7 +1630,7 @@ def set_trait(
                 else {},
             )
         )
-    repricing.record(db, player, character.id, repriced, f"{name} {current_rating} → {rating}")
+    repricing.record(db, player, character.id, repriced, f"{labelled} {current_rating} → {rating}")
     if rating == 0 and trait.free_rating == 0:
         db.delete(trait)
         trait = None
@@ -1774,6 +1789,23 @@ def set_detail(
         raise conflict(f"The character already has {name}: {detail}.")
     before = trait.detail
     trait.detail = detail
+    if before and definition.properties.get("instance") == "Retainer":
+        # What is kept for a Retainer goes by its name (horatio.retainers).
+        for kept in db.scalars(
+            select(Retainer).where(
+                Retainer.character_id == character.id,
+                Retainer.name == before,
+                Retainer.from_merit == "",
+            )
+        ):
+            kept.name = detail
+    if before and definition.properties.get("instance") == "identity":
+        for held in db.scalars(
+            select(AlternateIdentity).where(
+                AlternateIdentity.character_id == character.id, AlternateIdentity.name == before
+            )
+        ):
+            held.name = detail
     db.flush()
     audit.record(
         db,

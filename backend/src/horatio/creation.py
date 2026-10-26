@@ -28,6 +28,7 @@ from horatio.rules.splats import SPLATS
 from horatio.sheets import (
     SheetRow,
     conflict,
+    ensure_named,
     ensure_unlocked,
     find_definition,
     held_at,
@@ -372,6 +373,7 @@ def place_pick(
     if trait is not None and (trait.creation_pick is not None or (trait.rating or 0) > 0):
         raise conflict(f"{name} already has dots; a pick goes on a trait that has none.")
     if trait is None:
+        ensure_named(definition, detail)
         trait = CharacterTrait(
             character_id=character.id, trait_definition_id=definition.id, detail=detail
         )
@@ -506,6 +508,8 @@ def set_category_picks(
             continue
         if row is not None and row.trait.creation_pick is None and (row.trait.rating or 0) > 0:
             raise conflict(f"{key[0]} already has dots; a pick goes on a trait that has none.")
+        if row is None:
+            ensure_named(definitions[key], key[1])
         db.add(
             CharacterTrait(
                 character_id=character.id,

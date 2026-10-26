@@ -2,7 +2,7 @@
 
 import pytest
 
-from horatio.rules.files import check_cost_rule
+from horatio.rules.files import DATA_DIR, check_cost_rule, load_rule_set
 from horatio.rules.model import (
     CategoryData,
     CostRuleData,
@@ -216,3 +216,64 @@ def test_conditions_may_only_test_the_splats_facts() -> None:
         check_cost_rule(
             CostRuleData("skills", "free", condition={"generation": {"about": 2}}), rule_set()
         )
+
+
+# Retainers and Alternate Identity are bought once for each Retainer or identity,
+# each priced on its own dots (MET: VTM pp. 98-99, 104), as any trait held more
+# than once is: by its own row.
+VAMPIRE = TroupeRules(load_rule_set(DATA_DIR / "bns_met_vampire.toml"))
+EACH = pytest.mark.parametrize("name", ["Retainers", "Alternate Identity"])
+
+
+def one(name: str, detail: str, rating: int) -> SheetTrait:
+    return SheetTrait(category="backgrounds", name=name, rating=rating, detail=detail)
+
+
+def raise_cost(sheet: list[SheetTrait], held: SheetTrait, to: int) -> int:
+    return purchase_cost(VAMPIRE, sheet, held, to).cost
+
+
+@EACH
+def test_one_is_priced_on_its_own_dots(name: str) -> None:
+    sheet = [generation(2)]
+
+    # 2 x each new dot: 2 + 4 + 6.
+    assert raise_cost(sheet, one(name, "Bocephus", 0), 3) == 12
+
+
+@EACH
+def test_a_second_is_priced_from_its_own_first_dot(name: str) -> None:
+    first = one(name, "Bocephus", 3)
+    sheet = [generation(2), first]
+
+    assert raise_cost(sheet, one(name, "Dr. Ellen Marsh", 0), 3) == 12
+    # Not the 30 that dots 4 to 6 of a single rating would cost.
+    assert raise_cost(sheet, one(name, "", 3), 6) == 30
+
+
+@EACH
+def test_the_sixth_dot_overall_costs_what_its_own_next_dot_does(name: str) -> None:
+    first, second = one(name, "Bocephus", 3), one(name, "Dr. Ellen Marsh", 2)
+    sheet = [generation(2), first, second]
+
+    # Dot 3 of the second, at 2 x 3, though it is the sixth in all.
+    assert raise_cost(sheet, second, 3) == 6
+    assert raise_cost(sheet, second, 1) == -4
+
+
+@EACH
+def test_at_generation_1_each_dot_is_one_times_its_number(name: str) -> None:
+    sheet = [generation(1), one(name, "Bocephus", 3)]
+
+    assert raise_cost(sheet, one(name, "Dr. Ellen Marsh", 0), 3) == 6
+
+
+@EACH
+def test_a_rating_held_without_a_name_is_the_first_and_costs_what_it_did(name: str) -> None:
+    carried = one(name, "", 4)
+    sheet = [generation(2), carried]
+
+    # Still 2 + 4 + 6 + 8, and the next one named is priced from its own first dot.
+    assert trait_cost(VAMPIRE, sheet, carried).cost == 20
+    assert raise_cost(sheet, one(name, "Pike", 0), 2) == 6
+    assert raise_cost([*sheet, one(name, "Pike", 2)], carried, 5) == 10

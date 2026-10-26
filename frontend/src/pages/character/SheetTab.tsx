@@ -44,6 +44,7 @@ import {
   SpecializationRow,
   useSpecializations,
 } from "./Specializations";
+import { IdentityPanel } from "./Identities";
 import { RetainersPanel } from "./Retainers";
 import { PowerChoices } from "./PowerChoices";
 import { InfluenceEffects } from "./InfluenceEffects";
@@ -183,6 +184,8 @@ export function SheetTab({
   const catalogue = useCatalogue(character);
   const creation = useCreation(character);
   const needsField = fieldSkills(catalogue.data);
+  // A Retainer or identity held without a name, from before each was named, can be named.
+  const instanceOf = (t: SheetTraitOut) => catalogue.data?.traits.find((x) => x.category === t.category && x.name === t.name)?.instance ?? null;
   const [adding, setAdding] = useState<string | null>(null);
   const [giving, setGiving] = useState<string | null>(null);
   // The category the Add panel opens on, when the sheet points to one.
@@ -228,6 +231,8 @@ export function SheetTab({
       : [];
   });
   const inCart = (t: SheetTraitOut) => t.id.startsWith("cart/");
+  // The Retainers listed once, under the last Retainer bought.
+  const lastRetainers = s.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1)?.id;
   // Identity (clan, sect...) is shown with the name, in the page title.
   // Specialisations show under their skill or background, not as traits of their own,
   // and health levels as boxes in a part of their own.
@@ -464,12 +469,15 @@ export function SheetTab({
                                   editable={mine && !locked && s.status !== "retired"}
                                 />
                               ),
-                              !inCart(t) && t.category === "backgrounds" && t.name === "Retainers" && (
+                              !inCart(t) && t.category === "backgrounds" && t.name === "Retainers" && t.id === lastRetainers && (
                                 <RetainersPanel
                                   key={`${t.id}/retainers`}
                                   character={character}
                                   merits={[...new Set(s.traits.filter((x) => x.category === "merits" && x.rating !== 0).map((x) => x.name))]}
                                 />
+                              ),
+                              !inCart(t) && t.category === "backgrounds" && t.name === "Alternate Identity" && (
+                                <IdentityPanel key={`${t.id}/identity`} character={character} detail={t.detail} />
                               ),
                               !inCart(t) && t.category === "disciplines" && (
                                 <PowerChoices key={`${t.id}/choices`} characterId={character.id} discipline={t.name} />
@@ -494,6 +502,9 @@ export function SheetTab({
                                     trait={t}
                                   />
                                 ),
+                              mine && !locked && !inCart(t) && !t.detail && instanceOf(t) && (
+                                <SetField key={`${t.id}/name`} character={character} trait={t} named={instanceOf(t)!} />
+                              ),
                             ]}
                           </div>
                         </li>
@@ -653,6 +664,8 @@ function TraitRow({
   const pending = trait.pending_from !== null;
   // Only in the cart: not on the saved sheet yet.
   const adding = trait.id.startsWith("cart/");
+  // Which one, for a trait held more than once: "Raise Retainers: Bocephus".
+  const which = trait.detail ? `${trait.name}: ${trait.detail}` : trait.name;
   if (points !== null) {
     const removing = planned === 0;
     return (
@@ -681,7 +694,7 @@ function TraitRow({
             !removing &&
             (adding || (trait.rating !== null && trait.rating > trait.min_rating)) && (
               <button
-                aria-label={`Remove ${trait.name}`}
+                aria-label={`Remove ${which}`}
                 className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment"
                 onClick={() => onChange(0)}
               >
@@ -760,7 +773,7 @@ function TraitRow({
           {!locked && (
             <span className="flex gap-1">
               <button
-                aria-label={`Lower ${trait.name}`}
+                aria-label={`Lower ${which}`}
                 title={
                   current <= trait.min_rating && !adding
                     ? "Accepted by the home troupe; only storytellers can take these dots away."
@@ -773,7 +786,7 @@ function TraitRow({
                 −
               </button>
               <button
-                aria-label={`Raise ${trait.name}`}
+                aria-label={`Raise ${which}`}
                 className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment disabled:opacity-30"
                 disabled={pending}
                 onClick={() => onChange(current + 1)}

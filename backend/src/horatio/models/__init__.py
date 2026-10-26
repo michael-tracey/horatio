@@ -42,7 +42,7 @@ from horatio.models.play import (
     PlayGame,
     PoolModifier,
 )
-from horatio.models.retainers import Retainer
+from horatio.models.retainers import AlternateIdentity, Retainer
 from horatio.models.rules import (
     ActionKind,
     AllowanceRule,
@@ -114,6 +114,7 @@ __all__ = [
     "ScheduledGame",
     "Session",
     "Retainer",
+    "AlternateIdentity",
     "SharedBackground",
     "SharedBackgroundEntry",
     "SheetVersion",

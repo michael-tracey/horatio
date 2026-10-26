@@ -5476,6 +5476,98 @@
         "title": "HomeTroupeRequest",
         "type": "object"
       },
+      "IdentitiesIn": {
+        "properties": {
+          "identities": {
+            "items": {
+              "$ref": "#/components/schemas/IdentityIn"
+            },
+            "maxItems": 30,
+            "title": "Identities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "identities"
+        ],
+        "title": "IdentitiesIn",
+        "type": "object"
+      },
+      "IdentitiesOut": {
+        "properties": {
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "identities": {
+            "items": {
+              "$ref": "#/components/schemas/IdentityOut"
+            },
+            "title": "Identities",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          }
+        },
+        "required": [
+          "identities",
+          "page",
+          "can_edit"
+        ],
+        "title": "IdentitiesOut",
+        "type": "object"
+      },
+      "IdentityIn": {
+        "properties": {
+          "accepted_by": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Accepted By",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "IdentityIn",
+        "type": "object"
+      },
+      "IdentityOut": {
+        "properties": {
+          "accepted_by": {
+            "title": "Accepted By",
+            "type": "string"
+          },
+          "dots": {
+            "title": "Dots",
+            "type": "integer"
+          },
+          "line": {
+            "title": "Line",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "dots",
+          "line",
+          "accepted_by"
+        ],
+        "title": "IdentityOut",
+        "type": "object"
+      },
       "InfluenceActionOut": {
         "properties": {
           "conflict": {
@@ -8646,6 +8738,14 @@
             "title": "Disciplines",
             "type": "array"
           },
+          "identities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/IdentityOut"
+            },
+            "title": "Identities",
+            "type": "array"
+          },
           "notes": {
             "items": {
               "type": "string"
@@ -8901,6 +9001,14 @@
               "$ref": "#/components/schemas/PowerOut"
             },
             "title": "Powers",
+            "type": "array"
+          },
+          "retainers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RetainerTrackOut"
+            },
+            "title": "Retainers",
             "type": "array"
           },
           "sect": {
@@ -9704,6 +9812,14 @@
           "home": {
             "title": "Home",
             "type": "boolean"
+          },
+          "identities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/IdentityOut"
+            },
+            "title": "Identities",
+            "type": "array"
           },
           "kind": {
             "title": "Kind",
@@ -10948,6 +11064,12 @@
             "title": "Description",
             "type": "string"
           },
+          "discipline": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Discipline",
+            "type": "string"
+          },
           "dots": {
             "title": "Dots",
             "type": "integer"
@@ -10957,6 +11079,11 @@
             "maxLength": 100,
             "title": "From Merit",
             "type": "string"
+          },
+          "ghoul": {
+            "default": false,
+            "title": "Ghoul",
+            "type": "boolean"
           },
           "id": {
             "anyOf": [
@@ -10995,7 +11122,7 @@
             "title": "Lost On"
           },
           "name": {
-            "maxLength": 100,
+            "maxLength": 200,
             "minLength": 1,
             "title": "Name",
             "type": "string"
@@ -11011,6 +11138,15 @@
               }
             ],
             "title": "Npc Id"
+          },
+          "specialties": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Specialties",
+            "type": "array"
           }
         },
         "required": [
@@ -11022,8 +11158,56 @@
       },
       "RetainerOut": {
         "properties": {
+          "away": {
+            "default": false,
+            "title": "Away",
+            "type": "boolean"
+          },
+          "back_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back From"
+          },
+          "back_games": {
+            "default": 0,
+            "title": "Back Games",
+            "type": "integer"
+          },
+          "back_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back On"
+          },
+          "blood": {
+            "default": 0,
+            "title": "Blood",
+            "type": "integer"
+          },
+          "bought": {
+            "title": "Bought",
+            "type": "boolean"
+          },
           "description": {
             "title": "Description",
+            "type": "string"
+          },
+          "discipline": {
+            "default": "",
+            "title": "Discipline",
             "type": "string"
           },
           "dots": {
@@ -11034,10 +11218,27 @@
             "title": "From Merit",
             "type": "string"
           },
+          "ghoul": {
+            "default": false,
+            "title": "Ghoul",
+            "type": "boolean"
+          },
+          "health": {
+            "default": 0,
+            "title": "Health",
+            "type": "integer"
+          },
           "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
           },
           "lost": {
             "anyOf": [
@@ -11088,12 +11289,39 @@
               }
             ],
             "title": "Npc Name"
+          },
+          "pool": {
+            "default": 0,
+            "title": "Pool",
+            "type": "integer"
+          },
+          "powers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RetainerPower"
+            },
+            "title": "Powers",
+            "type": "array"
+          },
+          "specialties": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Specialties",
+            "type": "array"
+          },
+          "tracker": {
+            "default": "",
+            "title": "Tracker",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "name",
           "dots",
+          "bought",
           "description",
           "from_merit",
           "lost",
@@ -11102,6 +11330,63 @@
           "npc_name"
         ],
         "title": "RetainerOut",
+        "type": "object"
+      },
+      "RetainerPower": {
+        "properties": {
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "name",
+          "note"
+        ],
+        "title": "RetainerPower",
+        "type": "object"
+      },
+      "RetainerTrackOut": {
+        "description": "One Retainer's health levels and (a ghoul's) Blood at this game, tapped as\n\"<key>/health\" and \"<key>/blood\" (horatio.play).",
+        "properties": {
+          "blood": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Tracker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "health": {
+            "$ref": "#/components/schemas/Tracker"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "health",
+          "blood"
+        ],
+        "title": "RetainerTrackOut",
         "type": "object"
       },
       "RetainersIn": {
@@ -11131,6 +11416,14 @@
             "title": "Can Link",
             "type": "boolean"
           },
+          "disciplines": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Disciplines",
+            "type": "array"
+          },
           "rating": {
             "title": "Rating",
             "type": "integer"
@@ -11142,14 +11435,17 @@
             "title": "Retainers",
             "type": "array"
           },
-          "total": {
-            "title": "Total",
-            "type": "integer"
+          "skills": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Skills",
+            "type": "array"
           }
         },
         "required": [
           "rating",
-          "total",
           "retainers",
           "can_edit",
           "can_link"
@@ -13381,6 +13677,17 @@
               }
             ],
             "title": "In Clan"
+          },
+          "instance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance"
           },
           "kind": {
             "anyOf": [
@@ -17158,6 +17465,101 @@
         ]
       }
     },
+    "/api/characters/{character_id}/identities": {
+      "get": {
+        "operationId": "read_identities_api_characters__character_id__identities_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentitiesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Identities",
+        "tags": [
+          "retainers"
+        ]
+      },
+      "put": {
+        "description": "Say which sect or group has Accepted each identity. The player and the\nstaff of its home troupe can.",
+        "operationId": "save_identities_api_characters__character_id__identities_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentitiesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentitiesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Identities",
+        "tags": [
+          "retainers"
+        ]
+      }
+    },
     "/api/characters/{character_id}/influence": {
       "get": {
         "description": "The character's own influence actions, newest first, from every troupe it\nhas acted in. Never another character's, nor blocks others placed.",
@@ -18847,7 +19249,7 @@
         ]
       },
       "put": {
-        "description": "Replace the list. The player edits names, descriptions, dots and losses;\nstaff do the same and alone link an NPC.",
+        "description": "Replace the list. The player edits descriptions and losses, and the names\nand dots of those not bought on the sheet; staff do the same and alone link\nan NPC.",
         "operationId": "save_retainers_api_characters__character_id__retainers_put",
         "parameters": [
           {

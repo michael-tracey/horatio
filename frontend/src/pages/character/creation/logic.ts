@@ -5,7 +5,7 @@
  */
 
 import type { CatalogueOut, CategoryOut } from "../../../api/types";
-import { fieldNeeded } from "../fields";
+import type { DetailNeed } from "../fields";
 
 export type Picks = Record<string, number>;
 export type Allowed = Record<number, number>;
@@ -152,24 +152,26 @@ export function keyed(traits: { name: string; detail: string; pick: number }[]):
   return { picks, details };
 }
 
-/** What stops a pick of a skill that needs a field: no field yet, or a field another
- * pick of that skill already has (`twice`, which cannot be saved at all). */
+/** What stops a pick of a trait that needs a detail (a skill's field, a Retainer's
+ * name): none yet, or one another pick of that trait already has (`twice`, which
+ * cannot be saved at all). */
 export type FieldProblem = { message: string; twice: boolean };
 
 export function fieldProblems(
   picks: Picks,
   details: Record<string, string>,
-  needsField: (name: string) => boolean,
+  needs: (name: string) => DetailNeed | null,
 ): Record<string, FieldProblem> {
   const problems: Record<string, FieldProblem> = {};
   const seen = new Set<string>();
   for (const key of Object.keys(picks).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
     const name = traitOf(key);
-    if (!needsField(name)) continue;
+    const need = needs(name);
+    if (!need) continue;
     const field = (details[key] ?? "").trim();
     const known = `${name}/${field.toLowerCase()}`;
-    if (!field) problems[key] = { message: `${fieldNeeded(name)}.`, twice: false };
-    else if (seen.has(known)) problems[key] = { message: `${name}: ${field} is picked already; give this one another field.`, twice: true };
+    if (!field) problems[key] = { message: `${need.missing}.`, twice: false };
+    else if (seen.has(known)) problems[key] = { message: `${name}: ${field} is picked already; give this one another ${need.kind}.`, twice: true };
     seen.add(known);
   }
   return problems;

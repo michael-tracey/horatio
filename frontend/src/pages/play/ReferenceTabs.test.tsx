@@ -18,6 +18,7 @@ const reference: PlayReference = {
   notes: [],
   blood_per_turn: 1,
   retainers: [],
+  identities: [],
   traits: [
     trait("archetype", "Archetype", "Identity", "Loner", { rating: null, description: "You'd rather work alone." }),
     trait("attributes", "Attributes", "Attributes", "Physical", { rating: 5, description: "Strength, speed and toughness." }),

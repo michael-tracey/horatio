@@ -1,16 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { mismatch } from "./retainers";
+import { backText, retainerName, retainerSource } from "./retainers";
 
-describe("mismatch", () => {
-  it("says nothing when the dots add up", () => {
-    expect(mismatch(4, 4)).toBeNull();
-    expect(mismatch(0, 0)).toBeNull();
+describe("a Retainer in a list", () => {
+  it("is named, or says it has no name yet", () => {
+    expect(retainerName({ name: "Bocephus" })).toBe("Bocephus");
+    expect(retainerName({ name: "" })).toBe("A Retainer not yet named");
   });
-  it("warns of dots not given to a Retainer", () => {
-    expect(mismatch(4, 3)).toBe("1 dot of the Retainers background is not given to a Retainer yet.");
-    expect(mismatch(4, 1)).toContain("3 dots");
+  it("says where its dots come from when they are not bought on the sheet", () => {
+    expect(retainerSource({ bought: true, from_merit: "" })).toBeNull();
+    expect(retainerSource({ bought: false, from_merit: "Ghostly Retainer" })).toBe("from Ghostly Retainer");
+    expect(retainerSource({ bought: false, from_merit: "" })).toBe("listed before each Retainer was bought on its own");
   });
-  it("warns of more dots listed than bought", () => {
-    expect(mismatch(2, 3)).toBe("The Retainers listed have 1 more dot than the Retainers background.");
+});
+
+describe("a lost Retainer", () => {
+  const date = (iso: string) => iso;
+  const lost = { lost: "killed", back_from: "2026-11-14", back_games: 3, back_on: null, away: true };
+  it("says when its dots come back, or what they wait on while the games are not scheduled", () => {
+    expect(backText(lost, date)).toBe("Its dots come back once 3 games have gone by since, and not before 2026-11-14.");
+    expect(backText({ ...lost, back_on: "2026-11-22" }, date)).toBe("Its dots come back on 2026-11-22.");
+    expect(backText({ ...lost, back_on: "2026-11-22", away: false }, date)).toBe("Its dots came back on 2026-11-22.");
+  });
+  it("says nothing for one serving", () => {
+    expect(backText({ ...lost, lost: null }, date)).toBeNull();
   });
 });
