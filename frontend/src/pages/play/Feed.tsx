@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui";
-import { clockText, fedBlood, feedNote, feedPlan, loadFeeding, loadSound, planText, resultText, saveFeeding, saveSound, type Feeding, type Plan } from "./feeding";
+import { clockText, fedBlood, feedChoices, feedName, feedNote, compareText, defaultPlan, giveText, loadFeeding, loadSound, planText, resultText, saveFeeding, saveSound, type Feeding, type Plan } from "./feeding";
 import { tapId, type makeTap, type Shown } from "./tracker";
 import { useWakeLock } from "./wakeLock";
 
@@ -87,13 +87,13 @@ export function Feed({ view, asking, onClose, tap }: { view: Shown; asking: bool
     return <Countdown feeding={feeding} left={feeding.endsAt - now} sound={sound} onSound={toggleSound} onCancel={() => change(null)} />;
   }
   if (!asking) return null;
-  const plan = feedPlan(view.herd);
   return (
     <StartSheet
-      plan={plan}
-      full={view.blood.value >= view.blood.most}
+      key={view.herd}
+      herd={view.herd}
+      blood={view.blood}
       onCancel={onClose}
-      onStart={() => {
+      onStart={(plan) => {
         // Starting is a tap, so the browser lets the page play sound and ask to notify.
         unlockSound();
         askToNotify();
@@ -104,17 +104,48 @@ export function Feed({ view, asking, onClose, tap }: { view: Shown; asking: bool
   );
 }
 
-function StartSheet({ plan, full, onStart, onCancel }: { plan: Plan; full: boolean; onStart: () => void; onCancel: () => void }) {
+function StartSheet({ herd, blood, onStart, onCancel }: { herd: number; blood: { value: number; most: number }; onStart: (plan: Plan) => void; onCancel: () => void }) {
+  const choices = feedChoices(herd);
+  const [chosen, setChosen] = useState(() => defaultPlan(herd));
+  const full = blood.value >= blood.most;
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gold/50 bg-dusk p-4 shadow-2xl" role="dialog" aria-label="Feed">
       <div className="mx-auto flex max-w-3xl flex-col gap-2">
-        <p className="text-base">
-          <strong className="font-display text-gold">Feed</strong> — {planText(plan)}.
-        </p>
+        {choices.length === 1 ? (
+          <>
+            <p className="text-base">
+              <strong className="font-display text-gold">Feed</strong> — {planText(chosen)}.
+            </p>
+            <p className="text-sm text-mist">{giveText(chosen, blood.value, blood.most)}.</p>
+          </>
+        ) : (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="font-display text-gold">Feed</legend>
+            {choices.map((plan) => (
+              <label key={plan.herd} className="flex min-h-12 items-start gap-3 rounded-md border border-parchment/20 p-2">
+                <input
+                  type="radio"
+                  name="feed-choice"
+                  className="mt-1 h-5 w-5 accent-[var(--color-gold)]"
+                  checked={chosen.herd === plan.herd}
+                  onChange={() => setChosen(plan)}
+                />
+                <span className="flex flex-col">
+                  <span>
+                    {plan.herd ? "Feed from your Herd" : "Hunt"}: {planText(plan)}
+                  </span>
+                  <span className="text-sm text-mist">{giveText(plan, blood.value, blood.most)}</span>
+                </span>
+              </label>
+            ))}
+            <p className="text-sm text-mist">{compareText(herd)}</p>
+          </fieldset>
+        )}
         <p className="text-sm text-mist">Tell a storyteller or narrator you're feeding first.</p>
         {full && <p className="text-sm text-mist">Blood is full now, so feeding adds nothing unless some is spent first.</p>}
+        <p className="text-xs text-mist">{choices.length > 1 ? "Hunting: core p. 294. Herd: core pp. 102–103." : "Hunting: core p. 294."}</p>
         <div className="flex gap-2">
-          <Button className="min-h-12 flex-1" onClick={onStart}>
+          <Button className="min-h-12 flex-1" onClick={() => onStart(chosen)}>
             Start
           </Button>
           <Button variant="ghost" className="min-h-12" onClick={onCancel}>
@@ -146,7 +177,7 @@ function Countdown({
       <div>
         <h2 className="text-xl text-gold">Feeding</h2>
         <p className="text-sm text-mist">
-          Out of game. +{feeding.plan.blood} Blood{feeding.plan.herd ? ` (Herd ${feeding.plan.herd})` : ""} when the time is up.
+          {feedName(feeding.plan)}, out of game. +{feeding.plan.blood} Blood when the time is up.
         </p>
       </div>
       <p role="timer" aria-label="Time left" className="font-display text-8xl leading-none text-parchment tabular-nums sm:text-9xl">

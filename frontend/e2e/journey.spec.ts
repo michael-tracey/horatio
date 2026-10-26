@@ -2294,7 +2294,10 @@ test("Feed on the Play View: 15 minutes for 2 Blood, kept through a reload, canc
   await page.getByRole("button", { name: "Feed", exact: true }).click();
   const sheet = page.getByRole("dialog", { name: "Feed" });
   await expect(sheet).toContainText("Feed — 15 minutes, +2 Blood.");
+  await expect(sheet).toContainText("+2 Blood: Blood 7 → 9");
   await expect(sheet).toContainText("Tell a storyteller or narrator you're feeding first.");
+  await expect(sheet).toContainText("core p. 294");
+  await expect(sheet.getByRole("radio")).toHaveCount(0);
   await page.screenshot(shots("feed-sheet"));
   await sheet.getByRole("button", { name: "Cancel" }).click();
   await expect(sheet).toHaveCount(0);
@@ -2324,7 +2327,7 @@ test("Feed on the Play View: 15 minutes for 2 Blood, kept through a reload, canc
   await sheet.getByRole("button", { name: "Start" }).click();
   await page.clock.fastForward("15:00");
   const fed = page.getByRole("dialog", { name: "You fed" });
-  await expect(fed).toContainText("You fed.+2 Blood: Blood 7 → 9.");
+  await expect(fed).toContainText("You fed.+2 Blood (hunted): Blood 7 → 9.");
   await expect(fed.getByTestId("feed-fill")).toHaveAttribute("data-motion", "fill");
   expect((await seen(page)).sounds).toBeGreaterThan(0);
   expect((await seen(page)).buzzes).toBe(1);
@@ -2334,7 +2337,7 @@ test("Feed on the Play View: 15 minutes for 2 Blood, kept through a reload, canc
   await expect(fed).toHaveCount(0);
   await expect(page.getByLabel("Blood: 9 of 10")).toBeVisible();
   await expect(page.getByText("Blood 7 → 9")).toBeVisible();
-  await expect(page.getByText("“Fed”")).toBeVisible();
+  await expect(page.getByText("“Fed (hunted)”")).toBeVisible();
   await expect(page.getByRole("status")).toHaveText("Saved");
 
   // Turned off on the timer, the sound stays off. Blood can't go above the most.
@@ -2344,7 +2347,7 @@ test("Feed on the Play View: 15 minutes for 2 Blood, kept through a reload, canc
   await page.reload();
   await expect(timer.getByLabel("Sound")).not.toBeChecked();
   await page.clock.fastForward("15:00");
-  await expect(fed).toContainText("+1 Blood, now full: Blood 9 → 10.");
+  await expect(fed).toContainText("+1 Blood (hunted), now full: Blood 9 → 10.");
   expect((await seen(page)).sounds).toBe(0); // a fresh page since the reload, and no sound made
   await fed.getByRole("button", { name: "Done" }).click();
   await expect(page.getByLabel("Blood: 10 of 10")).toBeVisible();
@@ -2388,7 +2391,14 @@ test("Feed with Herd: 5 minutes for Blood equal to Herd, waiting while the phone
 
   await p.getByRole("button", { name: "Feed", exact: true }).click();
   const sheet = p.getByRole("dialog", { name: "Feed" });
-  await expect(sheet).toContainText("Feed — 5 minutes, +3 Blood (Herd 3).");
+  // Both feeds are offered, the Herd one chosen to start with, each saying what it gives.
+  await expect(sheet.getByRole("radio")).toHaveCount(2);
+  await expect(sheet.getByRole("radio", { name: /Feed from your Herd: 5 minutes, \+3 Blood \(Herd 3\)/ })).toBeChecked();
+  await expect(sheet.getByRole("radio", { name: /Hunt: 15 minutes, \+2 Blood/ })).not.toBeChecked();
+  await expect(sheet).toContainText("+3 Blood: Blood 6 → 9");
+  await expect(sheet).toContainText("+2 Blood: Blood 6 → 8");
+  await expect(sheet).toContainText("Your Herd is quicker and gives more");
+  await expect(sheet).toContainText("core pp. 102–103");
   await sheet.getByRole("button", { name: "Start" }).click();
   const timer = p.getByRole("dialog", { name: "Feeding" });
   await expect(timer.getByRole("timer")).toHaveText(/^(05:00|04:5\d)$/);
@@ -2429,6 +2439,23 @@ test("Feed with Herd: 5 minutes for Blood equal to Herd, waiting while the phone
   await expect(p.getByLabel("Blood: 6 of 10")).toBeVisible();
   await expect(p.getByText("Undid: Blood 6 → 9")).toBeVisible();
   await expect.poll(blood).toBe(6);
+
+  // With Herd 1 the hunt is chosen to start with, and taking it gives +2 after 15 minutes.
+  const lowered = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category: "backgrounds", name: "Herd", rating: 1, detail: "" } });
+  expect(lowered.status(), await lowered.text()).toBe(200);
+  await p.reload();
+  await p.getByRole("button", { name: "Feed", exact: true }).click();
+  await expect(sheet.getByRole("radio", { name: /Hunt: 15 minutes, \+2 Blood/ })).toBeChecked();
+  await expect(sheet.getByRole("radio", { name: /Feed from your Herd: 5 minutes, \+1 Blood \(Herd 1\)/ })).not.toBeChecked();
+  await expect(sheet).toContainText("Your Herd is quicker, but hunting gives more Blood");
+  await sheet.getByRole("button", { name: "Start" }).click();
+  await expect(timer.getByRole("timer")).toHaveText(/^(15:00|14:5\d)$/);
+  await expect(timer).toContainText("Hunting");
+  await p.clock.fastForward("15:00");
+  await expect(fed).toContainText("You fed.+2 Blood (hunted): Blood 6 → 8.");
+  await expect.poll(blood).toBe(8);
+  const hunted = (await (await p.request.get(`/api/characters/${npc}/play`)).json()).log as { note: string }[];
+  expect(hunted.filter((e) => e.note === "Fed (hunted)")).toHaveLength(1);
 });
 
 test("a storyteller pins three NPCs in a Scene view, taps for two, and each full Play View agrees", async ({ browser }) => {
