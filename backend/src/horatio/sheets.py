@@ -25,8 +25,8 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, func, select, true
-from sqlalchemy.orm import Session
+from sqlalchemy import delete, event, func, inspect, select, true
+from sqlalchemy.orm import ORMExecuteState, Session
 
 from horatio import audit, notifications, repricing, xp_range
 from horatio.models import (
@@ -182,15 +182,49 @@ def sync_troupe_fixed_ratings(db: Session, troupe_id: uuid.UUID) -> None:
         sync_fixed_ratings(db, character)
 
 
+SHEET_ROWS_CACHE = "horatio.sheet_rows"
+
+
 def sheet_rows(db: Session, character: Character) -> list[SheetRow]:
-    rows = db.execute(
-        select(CharacterTrait, TraitDefinition, TraitCategory)
-        .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
-        .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
-        .where(CharacterTrait.character_id == character.id)
-        .order_by(TraitCategory.position, TraitDefinition.name, CharacterTrait.detail)
-    )
-    return [SheetRow(t, d, c) for t, d, c in rows]
+    """The character's traits, in sheet order. Read once until the session changes
+    something: one request asks for them dozens of times (a cart, a wizard step),
+    and reading them was most of its time. Anything that could change what the
+    query finds reads them afresh: changes not yet flushed, a flush, a rollback, a
+    commit, a statement that writes, or the rows having been expired."""
+    cache: dict[uuid.UUID, list[SheetRow]] = db.info.setdefault(SHEET_ROWS_CACHE, {})
+    kept = cache.get(character.id)
+    if (
+        kept is not None
+        and not (db.new or db.dirty or db.deleted)
+        and not any(inspect(r.trait).expired_attributes for r in kept)
+    ):
+        return list(kept)
+    rows = [
+        SheetRow(t, d, c)
+        for t, d, c in db.execute(
+            select(CharacterTrait, TraitDefinition, TraitCategory)
+            .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
+            .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+            .where(CharacterTrait.character_id == character.id)
+            .order_by(TraitCategory.position, TraitDefinition.name, CharacterTrait.detail)
+        )
+    ]
+    # Set after reading: the read may have flushed, which empties the cache.
+    db.info.setdefault(SHEET_ROWS_CACHE, {})[character.id] = rows
+    return list(rows)
+
+
+@event.listens_for(Session, "after_flush")
+@event.listens_for(Session, "after_soft_rollback")
+@event.listens_for(Session, "after_commit")
+def forget_sheet_rows(session: Session, *_: object) -> None:
+    session.info.pop(SHEET_ROWS_CACHE, None)
+
+
+@event.listens_for(Session, "do_orm_execute")
+def forget_sheet_rows_on_write(state: ORMExecuteState) -> None:
+    if not state.is_select:
+        forget_sheet_rows(state.session)
 
 
 def memberships(db: Session, character: Character) -> list[TroupeMembership]:

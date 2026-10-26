@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
@@ -205,24 +205,31 @@ function StepView({
     }),
   );
 
+  // The categories whose picks or fields differ from those saved.
+  const changed = step.categories.filter((category) => {
+    const mine = picks[category] ?? {};
+    const detail = details[category] ?? {};
+    return !(
+      JSON.stringify(Object.entries(mine).sort()) === JSON.stringify(Object.entries(before[category] ?? {}).sort()) &&
+      Object.keys(mine).every((key) => (detail[key] ?? "").trim() === (savedDetail[category]?.[key] ?? ""))
+    );
+  });
+  const client = useQueryClient();
   const save = useAction(async () => {
-    for (const category of step.categories) {
-      const mine = picks[category] ?? {};
+    let now: CreationOut | undefined;
+    for (const category of changed) {
       const detail = details[category] ?? {};
-      const same =
-        JSON.stringify(Object.entries(mine).sort()) === JSON.stringify(Object.entries(before[category] ?? {}).sort()) &&
-        Object.keys(mine).every((key) => (detail[key] ?? "").trim() === (savedDetail[category]?.[key] ?? ""));
-      if (same) continue;
-      await unwrap(
+      now = await unwrap(
         api.PUT("/api/characters/{character_id}/creation/categories/{category}", {
           params: { path: { character_id: character.id, category } },
-          body: { picks: Object.entries(mine).map(([key, rating]) => ({ name: traitOf(key), rating, detail: (detail[key] ?? "").trim() })) },
+          body: { picks: Object.entries(picks[category] ?? {}).map(([key, rating]) => ({ name: traitOf(key), rating, detail: (detail[key] ?? "").trim() })) },
         }),
       );
     }
-    // What this step still needs, now that it is saved.
-    const now = await unwrap(api.GET("/api/characters/{character_id}/creation", { params: { path: { character_id: character.id } } }));
-    return now.needs.filter((n) => step.categories.includes(n.step));
+    // The last save says what the step still needs. Shown at once (the notice below),
+    // not once every query on the page has been asked again.
+    client.setQueryData(["creation", character.id], now);
+    return now!.needs.filter((n) => step.categories.includes(n.step));
   });
   const needs = creation.needs.filter((n) => step.categories.includes(n.step));
   // Stay on the step if saving fails (save.error shows why), and going forward
@@ -231,6 +238,8 @@ function StepView({
   const twice = Object.values(problems).some((p) => Object.values(p).some((why) => why.twice));
   const move = (to: (() => void) | undefined, forward: boolean) => {
     if (twice) return;
+    // Nothing to save: what the step needs is shown already, so there is nothing to wait for.
+    if (!changed.length) return forward && needs.length ? undefined : to?.();
     save.mutate(undefined, { onSuccess: (left) => (forward && left.length ? undefined : to?.()) });
   };
 
