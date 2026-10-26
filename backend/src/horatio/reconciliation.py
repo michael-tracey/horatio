@@ -46,6 +46,7 @@ from horatio.models import (
 )
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
+from horatio.rules.splats import SPLATS
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import (
     HELD_KINDS,
@@ -153,6 +154,13 @@ def check_sect(db: Session, character: Character, troupe: Troupe) -> None:
         raise conflict(f"{troupe.name} does not take {sect} characters.")
 
 
+def check_splat(character: Character, troupe: Troupe) -> None:
+    """A troupe takes player characters of only the splats it allows. NPCs are its own."""
+    if character.kind == "pc" and character.splat not in troupe.allowed_splats:
+        label = SPLATS[character.splat].label.lower() if character.splat in SPLATS else ""
+        raise conflict(f"{troupe.name} does not take {label or character.splat} characters.")
+
+
 def join(db: Session, player: User, character: Character, troupe: Troupe) -> TroupeMembership:
     if character.kind == "npc" and character.owner_troupe_id != troupe.id:
         raise conflict("An NPC belongs to its own troupe and cannot join others.")
@@ -162,6 +170,7 @@ def join(db: Session, player: User, character: Character, troupe: Troupe) -> Tro
         raise conflict("This character is retired.")
     membership = current_membership(db, character, troupe)
     if membership is None:
+        check_splat(character, troupe)
         check_sect(db, character, troupe)
         membership = TroupeMembership(troupe_id=troupe.id, character_id=character.id)
         db.add(membership)

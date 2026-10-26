@@ -1,9 +1,9 @@
 """Reading rule sets from the TOML files in `horatio/rules/data/`, and checking them."""
 
 import tomllib
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from horatio.rules.checks import REQUIREMENT_KEY, CheckData, check_from_dict, validate_condition
 from horatio.rules.conditions import validate
@@ -215,8 +215,11 @@ def load_checks(
     raw_checks: list[dict[str, Any]],
     traits: Mapping[tuple[str, str], TraitData],
     categories: Mapping[str, CategoryData],
+    left_out: Sequence[Mapping[str, str]] = (),
 ) -> list[CheckData]:
-    """The rule set's checks, written and derived, each with a key and validated."""
+    """The rule set's checks, written and derived, each with a key and validated.
+    Those about traits the rule set leaves out are dropped once they have their key,
+    so the rest keep the keys they have where nothing is left out."""
     known = set(traits)
     checks: list[CheckData] = []
     seen: dict[str, int] = {}
@@ -226,6 +229,8 @@ def load_checks(
             base = f"{raw['category']}/{subject}"
             seen[base] = seen.get(base, 0) + 1
             raw = {**raw, "key": f"{base}/{seen[base]}"}
+        if names_left_out(raw, left_out):
+            continue
         if raw["category"] not in categories:
             raise ValueError(
                 f"{where}: check {raw['key']} is about unknown category {raw['category']!r}"
@@ -256,6 +261,7 @@ def load_grants(
     raw_grants: list[dict[str, Any]],
     traits: Mapping[tuple[str, str], TraitData],
     categories: Mapping[str, CategoryData],
+    left_out: Sequence[Mapping[str, str]] = (),
 ) -> list[GrantData]:
     grants: list[GrantData] = []
     seen: dict[str, int] = {}
@@ -264,6 +270,8 @@ def load_grants(
             base = f"{raw['source']['category']}/{raw['source']['name']}"
             seen[base] = seen.get(base, 0) + 1
             raw = {**raw, "key": f"{base}/{seen[base]}"}
+        if names_left_out(raw, left_out):
+            continue
         grant = grant_from_dict(raw)
         try:
             validate_grant(grant, set(traits), set(categories))
@@ -275,12 +283,57 @@ def load_grants(
     return grants
 
 
+# Sections a rule set can borrow whole from another rule set's file (`borrow`).
+BORROWABLE = ("action_kinds", "allowance_rules", "feeding_modifiers")
+
+
+def borrowed(path: Path, raw: dict[str, Any]) -> dict[str, Any]:
+    """The rule set with the sections it borrows from other files put ahead of its own:
+    `borrow = { action_kinds = "bns_met_vampire.toml" }` takes the vampire's."""
+    found = dict(raw)
+    for section, source in raw.get("borrow", {}).items():
+        if section not in BORROWABLE:
+            raise ValueError(f"{path.name}: cannot borrow {section!r}")
+        with (path.parent / source).open("rb") as f:
+            found[section] = tomllib.load(f).get(section, []) + raw.get(section, [])
+    return found
+
+
+def leaves_out(selector: Mapping[str, str], category: str, names: Iterable[str]) -> bool:
+    """Whether a `leave_out` selector ({category} or {category, name}) is about a
+    reference to these traits of a category (no names: the whole category)."""
+    return selector["category"] == category and (
+        "name" not in selector or selector["name"] in names
+    )
+
+
+def names_left_out(raw: Any, left_out: Sequence[Mapping[str, str]]) -> bool:
+    """Whether a check, grant or creation-only selector is about a trait the rule set
+    leaves out, or names one anywhere in its conditions: a table with a `category`,
+    and a `name` or `names`, that a `leave_out` selector covers."""
+    if isinstance(raw, Mapping):
+        table = cast(Mapping[str, Any], raw)
+        category = table.get("category")
+        if isinstance(category, str):
+            name, names = table.get("name"), table.get("names")
+            named = [name] if isinstance(name, str) else names if isinstance(names, list) else []
+            if any(leaves_out(s, category, cast(list[str], named)) for s in left_out):
+                return True
+        return any(names_left_out(v, left_out) for v in table.values())
+    if isinstance(raw, list):
+        return any(names_left_out(v, left_out) for v in cast(list[Any], raw))
+    return False
+
+
 def load_rule_set(path: Path) -> RuleSetData:
     with path.open("rb") as f:
-        raw = tomllib.load(f)
+        raw = borrowed(path, tomllib.load(f))
 
     if raw["splat"] not in SPLATS:
         raise ValueError(f"{path.name}: no splat {raw['splat']!r} in horatio.rules.splats")
+    # Traits the rule set leaves out of the files it includes (a ghoul's Generation and
+    # Paths), with the checks, grants and creation-only selectors about them.
+    left_out: list[dict[str, str]] = list(raw.get("leave_out", []))
 
     categories = {
         c["key"]: CategoryData(
@@ -310,6 +363,16 @@ def load_rule_set(path: Path) -> RuleSetData:
             included = tomllib.load(f)
         raw_traits += included.get("traits", [])
         titles += included.get("titles", [])
+    for selector in left_out:
+        if "category" not in selector or not any(
+            leaves_out(selector, t["category"], [t["name"]]) for t in raw_traits
+        ):
+            raise ValueError(f"{path.name}: leave_out {selector} leaves out nothing")
+    raw_traits = [
+        t
+        for t in raw_traits
+        if not any(leaves_out(s, t["category"], [t["name"]]) for s in left_out)
+    ]
     traits: dict[tuple[str, str], TraitData] = {}
     for t in raw_traits:
         if (t["category"], t["name"]) in traits:
@@ -319,7 +382,8 @@ def load_rule_set(path: Path) -> RuleSetData:
             name=t["name"],
             description=t.get("description"),
             page_reference=t.get("page_reference"),
-            properties=t.get("properties", {}),
+            # A trait's tags ("vampire_only") are kept with its properties.
+            properties={**t.get("properties", {}), **({"tags": t["tags"]} if "tags" in t else {})},
         )
     raw_checks = list(raw.get("checks", []))
     creation_only = list(raw.get("creation_only", []))
@@ -328,6 +392,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             included_checks = tomllib.load(f)
         raw_checks += included_checks.get("checks", [])
         creation_only += included_checks.get("creation_only", [])
+    creation_only = [c for c in creation_only if not names_left_out(c, left_out)]
     for selector in creation_only:
         if selector["category"] not in categories:
             raise ValueError(f"{path.name}: creation_only names unknown category")
@@ -335,12 +400,12 @@ def load_rule_set(path: Path) -> RuleSetData:
             raise ValueError(f"{path.name}: creation_only names unknown trait {selector['name']!r}")
         if selector.get("until", "accepted") != "accepted":
             raise ValueError(f"{path.name}: creation_only until can only be 'accepted'")
-    checks = load_checks(path.name, raw_checks, traits, categories)
+    checks = load_checks(path.name, raw_checks, traits, categories, left_out)
     raw_grants = list(raw.get("grants", []))
     for grant_file in raw.get("grant_files", []):
         with (path.parent / grant_file).open("rb") as f:
             raw_grants += tomllib.load(f).get("grants", [])
-    grants = load_grants(path.name, raw_grants, traits, categories)
+    grants = load_grants(path.name, raw_grants, traits, categories, left_out)
     action_kinds = {
         k["key"]: ActionKindData(
             key=k["key"],

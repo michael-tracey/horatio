@@ -24,9 +24,20 @@ Condition vocabulary (every key in one table must hold):
                                     level 1 one, p. 202)
     parent = { category, rating }   the trait named before the subject's ":" (an
                                     elder power's discipline) is held at `rating`
-    self = { names?, rating?, has_detail? }
-                                    the subject itself: one of these names, its
-                                    rating, whether it has a detail
+    self = { names?, name_prefix?, rating?, has_detail? }
+                                    the subject itself: one of these names, a name
+                                    starting with `name_prefix`, its rating,
+                                    whether it has a detail
+    kind = ["Clan", "Morality"]     the subject's catalogue type is one of these
+    tagged = "vampire_only"         the subject's catalogue `tags` include this one
+    dots = { category, name_prefix?, gt }
+                                    the dots the sheet holds in a category (whose
+                                    names start with `name_prefix`), added up
+    domitor_clan = true             the clan is the linked domitor's (a ghoul's,
+                                    horatio.domitors); true with none linked
+    domitor_has = true              the linked domitor holds the subject at its
+                                    rating or more (a ghoul's discipline is one of
+                                    its domitor's powers); true with none linked
     copies = { gte = 2 }            how many times the sheet holds the subject's
                                     trait (with different details), leaving out
                                     copies another trait gives (SheetTrait.granted)
@@ -94,7 +105,8 @@ CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count",
      "one_below", "parent", "self", "copies", "in_clan", "detail_in_clan", "accepted",
      "finished", "more_than_dots",
-     "above_in_clan", "same_value", "excess_over_generation", "any_of", "not"}
+     "above_in_clan", "same_value", "excess_over_generation", "any_of", "not",
+     "kind", "tagged", "dots", "domitor_clan", "domitor_has"}
 )  # fmt: skip
 
 
@@ -115,6 +127,14 @@ class Context:
     primary: frozenset[str] = frozenset()
     # Each trait's catalogue type, such as "Clan" for a clan merit.
     kinds: Mapping[tuple[str, str], str] = field(default_factory=dict[tuple[str, str], str])
+    # Each trait's catalogue tags, such as "vampire_only".
+    tags: Mapping[tuple[str, str], frozenset[str]] = field(
+        default_factory=dict[tuple[str, str], frozenset[str]]
+    )
+    # A ghoul's linked domitor (horatio.domitors): its clan, and the rating it holds
+    # each discipline at, by full name. None with no domitor linked.
+    domitor_clan: str | None = None
+    domitor_powers: Mapping[str, int] | None = None
 
 
 NO_CONTEXT = Context()
@@ -166,6 +186,7 @@ IMPLIED_TRAIT: dict[str, tuple[str, str | None]] = {
     "generation": ("backgrounds", "Generation"),
     "on_path": ("paths", None),
     "excess_over_generation": ("backgrounds", "Generation"),
+    "domitor_clan": ("clan", None),
 }
 
 
@@ -293,6 +314,7 @@ def matches(
         elif key == "self":
             ok = (
                 ("names" not in test or subject.name in test["names"])
+                and ("name_prefix" not in test or subject.name.startswith(test["name_prefix"]))
                 and ("rating" not in test or compare(subject.rating or 0, test["rating"]))
                 and ("has_detail" not in test or bool(subject.detail) == test["has_detail"])
             )
@@ -351,6 +373,27 @@ def matches(
             ok = excess > max(generation_of(sheet), 1)
         elif key == "same_value":
             ok = clashing(test, sheet, subject, context) is not None
+        elif key == "kind":
+            ok = context.kinds.get((subject.category, subject.name)) in test
+        elif key == "tagged":
+            ok = test in context.tags.get((subject.category, subject.name), frozenset())
+        elif key == "dots":
+            dots = sum(
+                t.rating or 0
+                for t in sheet
+                if t.category == test["category"] and t.name.startswith(test.get("name_prefix", ""))
+            )
+            ok = compare(dots, {k: v for k, v in test.items() if k in OPERATORS})
+        elif key == "domitor_clan":
+            ok = (context.domitor_clan is None or clan_of(sheet) == context.domitor_clan) == test
+        elif key == "domitor_has":
+            powers = context.domitor_powers
+            held = (
+                None
+                if powers is None
+                else max(powers.get(subject.full_name, 0), powers.get(subject.name, 0))
+            )
+            ok = (held is None or (subject.rating or 0) <= held) == test
         elif key == "any_of":
             ok = any(matches(c, sheet, subject, context) for c in test)
         elif key == "not":

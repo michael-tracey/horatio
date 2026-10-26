@@ -93,6 +93,12 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(delete(Retainer).where(Retainer.character_id == cid))
     db.execute(delete(AlternateIdentity).where(AlternateIdentity.character_id == cid))
     db.execute(update(Retainer).where(Retainer.npc_id == cid).values(npc_id=None))
+    # A ghoul bound to it keeps its domitor by name.
+    db.execute(
+        update(Character)
+        .where(Character.domitor_id == cid)
+        .values(domitor_id=None, domitor_name=name)
+    )
     db.execute(delete(CharacterTrait).where(CharacterTrait.character_id == cid))
     db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))

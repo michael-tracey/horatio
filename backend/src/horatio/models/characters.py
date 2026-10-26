@@ -61,6 +61,11 @@ class Character(Imported, Record):
     # Beast traits a diablerie adds to its next Play View game (horatio.diablerie),
     # which start there and are cleared when that game starts.
     beast_next_game: Mapped[int] = mapped_column(default=0, server_default="0")
+    # A ghoul's domitor (horatio.domitors): the vampire PC or NPC it is bound to, or,
+    # for one not in Horatio, its name as the player typed it. The domitor's clan and
+    # bloodline are the ghoul's clan trait. Both empty for a vampire.
+    domitor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"))
+    domitor_name: Mapped[str] = mapped_column(default="", server_default="")
 
 
 class CharacterTrait(Record):

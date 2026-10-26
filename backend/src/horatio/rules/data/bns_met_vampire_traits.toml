@@ -7,6 +7,10 @@
 # number, "rating" for one use per dot, or { category, name } for one use per
 # dot of another trait. Herd and the Influences count one per dot too, as the
 # troupe's monthly game spends them.
+#
+# `tags` sort traits for checks (horatio.rules.checks, `tagged`): "vampire_only" on
+# a merit or flaw about the vampiric condition, which a ghoul cannot take
+# (MET: VTM p. 296; bns_met_ghoul_checks.toml).
 
 # Titles a troupe can give its characters; each troupe can add its own.
 titles = [
@@ -1379,24 +1383,28 @@ category = "flaws"
 name = "Bastard Childe"
 description = "If gain negative Anarch status, lose access to backgrounds."
 properties = { rating = 2, type = "Anarch" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
 name = "Beacon of the Unholy"
 description = "Radiate conspicuous evil. Devout mortals and hunters with True Faith recognize as a vampire. Any time character uses the 4th dot or higher of a Discipline, aura shows infernal taint. Cannot enter sacred sites. Powers of Faith (True Faith, Salubri) deal +1 point of damage."
 properties = { rating = 3, type = "General", visible = "Radiates evil (Beacon of the Unholy)" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
 name = "Beast in the Mirror"
 description = "Everyone sees character's Beast in mirrors. Character gains a Beast trait each time they look in a mirror. Does not count towards Morality loss, but does count towards frenzy."
 properties = { rating = 2, type = "General", visible = "Beast shows in mirrors" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
 name = "Bestial Instinct"
 description = "Every time character gains 1 or more Beast traits, character takes 1 unsoakable aggravated damage."
 properties = { rating = 2, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1409,18 +1417,21 @@ category = "flaws"
 name = "Blood Rot"
 description = "Every time character spends Blood, character takes 1 unsoakable normal damage."
 properties = { rating = 5, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
 name = "Blunted Fangs"
 description = "Bite does not do aggravated damage and does not invoke the Kiss."
 properties = { rating = 2, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
 name = "Bound to the Earth"
 description = "Each day spent w/o contact with 2 handfuls of home soil = -1 to all attack test pools (max -5). Cannot be taken by Tzimisce or any Tzimisce Bloodline."
 properties = { rating = 2, type = "General", pools = [{ pool = "attack", amount = -1, when = "for each day without your home soil (to -5)" }] }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1463,6 +1474,7 @@ category = "flaws"
 name = "Cannot Cross Running Water"
 description = "Cannot cross a moving body of water 3 feet or larger across w/o spending 1 Willpower. Willpower is not regained w/o rest for a full day."
 properties = { rating = 2, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1499,6 +1511,7 @@ category = "flaws"
 name = "Conspicuous Consumption"
 description = "Start the evening with a Beast trait and gain an additional Beast trait each time the character feeds. Can eat flesh as if had Personal Masquerade."
 properties = { rating = 3, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1523,6 +1536,7 @@ category = "flaws"
 name = "Dark Fate"
 description = "If the character falls into torpor or is staked, they instead meet Final Death."
 properties = { rating = 5, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1559,6 +1573,7 @@ category = "flaws"
 name = "Deep Sleeper"
 description = "Morality counts as -2 for purpose of staying awake in the day and determining daytime penalties."
 properties = { rating = 2, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1571,6 +1586,7 @@ category = "flaws"
 name = "Disease Carrier"
 description = "Mortals fed from die, unless Stamina focused. Costs +1 downtime to feed safely. If the extra downtime isn't spent, gain a Beast trait. Feeding during game takes twice as long to do it safely. If the extra time isn't taken, gain a Beast trait. Cannot be taken by Bloodline: Lamia."
 properties = { rating = 4, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1595,12 +1611,14 @@ category = "flaws"
 name = "Escaped Shovelhead"
 description = "Reduce mental test pools by 2 (including defensive) when in a challenge against a known Sabbat member."
 properties = { rating = 2, type = "Anarch", pools = [{ pool = "defense:Mental", amount = -2, when = "against a known Sabbat member" }] }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
 name = "Flesh of the Corpse"
 description = "Skin retains signs of damage even after it is healed. Each time the character suffers a Physical attack that does 2+ damage, suffers -1 penalty to Physical. Penalty cannot be healed, only goes away after full day of rest."
 properties = { rating = 5, type = "General", visible = "Wounds never close (Flesh of the Corpse)" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1625,6 +1643,7 @@ category = "flaws"
 name = "Forgiven Diablerie"
 description = "Made enemies and many Elders want to see downfall."
 properties = { rating = 1, type = "Camarilla" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1673,6 +1692,7 @@ category = "flaws"
 name = "Gehenna Prophet"
 description = "Every time the character's Willpower decreases, they fall more into the waking visions. If all Willpower is lost the character falls into torpor."
 properties = { rating = 2, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1697,6 +1717,7 @@ category = "flaws"
 name = "Grip of the Damned"
 description = "Do not invoke the Kiss, must grapple prey, cannot seal feeding wound, and feeding from mortals is a level 1 Morality sin."
 properties = { rating = 2, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1733,12 +1754,14 @@ category = "flaws"
 name = "Inept"
 description = "Choose one in-clan Discipline, no free dot in it and it costs out of clan XP. This Flaw cannot be removed."
 properties = { rating = 3, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
 name = "Infamous Brood"
 description = "Any officer of character's sect can spend any status trait (abiding, innate, fleeting) to give character the Warned status trait."
 properties = { rating = 3, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1776,6 +1799,7 @@ name = "Lesser Generation 1"
 description = "Neonate is of the 12th Generation, Ancilla is of the 10th Generation. Flaw cannot be taken by any Elders."
 page_reference = "263"
 properties = { rating = 1, type = "General", requirement = "Neonate or Ancilla" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1783,6 +1807,7 @@ name = "Lesser Generation 2"
 description = "Neonate is of the 13th Generation. Flaw cannot be taken by Elders."
 page_reference = "263"
 properties = { rating = 2, type = "General", requirement = "Neonate" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1837,6 +1862,7 @@ category = "flaws"
 name = "Methuselah's Thirst"
 description = "Enters game with half Blood pool, no amount of downtimes can increase this. May feed to full only on other Vampires and cannot benefit from Herd."
 properties = { rating = 4, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1873,6 +1899,7 @@ category = "flaws"
 name = "Nightmares"
 description = "Recover from Beast traits at 1 per day of rest rather than all in 1 day of rest."
 properties = { rating = 1, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1939,12 +1966,14 @@ category = "flaws"
 name = "Poseidon's Call"
 description = "If character doesn't sleep on or under natural water, cannot spend Willpower the next night."
 properties = { rating = 3, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
 name = "Prey Exclusion"
 description = "Cannot feed from (or gain sustenance from) a specific type of mortal. If other vampires are seen feeding from this group, character must attempt to stop them. Gains Beat trait if fails to stop them. Cannot be taken by Ventrue or Ventrue Bloodlines."
 properties = { rating = 1, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -1969,6 +1998,7 @@ category = "flaws"
 name = "Repelled by Religion"
 description = "Cannot directly harm or effect with powers a mortal who formally presents a symbol of their faith, take 1 normal damage per turn in physical contact with a holy symbol, and if forced onto holy ground suffer 3 unsoakable agg per turn. Cannot be taken by Baali or Baali Bloodlines."
 properties = { rating = 3, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -2005,6 +2035,7 @@ category = "flaws"
 name = "Short Fuse"
 description = "Considered as having +1 Beast trait when determining frenzy. Cannot be taken by Brujah."
 properties = { rating = 2, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -2035,6 +2066,7 @@ category = "flaws"
 name = "Tainted Embrace"
 description = "Max fleeting Status is 1 less than normal."
 properties = { rating = 2, type = "Camarilla" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -2047,6 +2079,7 @@ category = "flaws"
 name = "Thin Blooded"
 description = "Neonate is of the 14th or 15th Generation and always Caitiff."
 properties = { rating = 3, type = "General", requirement = "Neonate" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -2149,6 +2182,7 @@ category = "flaws"
 name = "Weak Stomach"
 description = "Calculate Blood pool as if has -1 Generation. Neonates reduce Blood pool by 2 Blood."
 properties = { rating = 3, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "flaws"
@@ -2711,12 +2745,14 @@ category = "merits"
 name = "Additional Common Discipline"
 description = "Opens up List 1 for an additional Discipline slot."
 properties = { rating = 4, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
 name = "Additional Uncommon Discipline"
 description = "Opens up List 2 for an additional Discipline slot."
 properties = { rating = 5, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -2812,6 +2848,7 @@ name = "Baali"
 description = "Infernal Acolyte: you were Embraced into another common clan and reborn a Baali. One of your old clan's disciplines becomes Daimoinon; the three left are your in-clan disciplines. Creation only."
 page_reference = "46-47"
 properties = { rating = 1 }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3113,6 +3150,7 @@ category = "merits"
 name = "Calm Heart"
 description = "Considered as having -2 Beast Traits when resisting frenzy. Gain +3 to test pool to resist frenzy. Brujah cannot take this merit. Restriction does not apply to True Brujah."
 properties = { rating = 1, type = "General", pools = [{ pool = "frenzy", amount = 3, note = "+3 to resist frenzy, counting 2 fewer Beast traits" }] }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3208,6 +3246,7 @@ category = "merits"
 name = "Dhampir"
 description = "Build character as a Ghoul, except they gain 7 dots for their choice of Disciplines, cannot have more than 3 dots in any Discipline, aren't bound and cannot be Embraced."
 properties = { rating = 4, type = "Anarch", requirement = "No Generation" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3239,6 +3278,7 @@ category = "merits"
 name = "Efficient Digestion"
 description = "Animal Blood is not reduced by half. Mortal Blood is doubled. Herd effectiveness is doubled. Cannot exceed normal Blood pool maximum."
 properties = { rating = 1, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3251,6 +3291,7 @@ category = "merits"
 name = "Elder of the Revolution"
 description = "Must purchase this merit to be able to purchase the 7th or 6th Generation."
 properties = { rating = 2, type = "Anarch", requirement = "Master or Luminary Elder" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3366,6 +3407,7 @@ category = "merits"
 name = "Golconda Seeker"
 description = "Choose one item from List 10. Must be Humanity 5+ and have Lore 4+ w/ the Golconda Lore specialty."
 properties = { rating = 5, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3431,12 +3473,14 @@ category = "merits"
 name = "Intense Vitality"
 description = "Can spend 1 more Blood per turn than Generation allows."
 properties = { rating = 2, type = "General", requirement = "Neonate or Ancilla" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
 name = "Intense Vitality (Elder)"
 description = "Can spend 1 more Blood per turn than Generation allows."
 properties = { rating = 3, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3523,6 +3567,7 @@ category = "merits"
 name = "Light Sleeper"
 description = "Stay awake 1 hour after sunrise and up 1 hour before sunset. Awaken instantly at signs of trouble or danger. Ignore penalties for acting in daytime."
 properties = { rating = 1, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3716,6 +3761,7 @@ name = "Necromantic Training"
 description = "Opens up List 5 as an out of Clan Discipline, can never have Necromancy without this merit."
 page_reference = "252"
 properties = { rating = 5, type = "General", requirement = "requires_specialization" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3763,6 +3809,7 @@ category = "merits"
 name = "Old Dog"
 description = "You were Embraced prior to 1800"
 properties = { rating = 1, type = "Anarch" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3945,6 +3992,7 @@ category = "merits"
 name = "Personal Masquerade"
 description = "Appear alive and healthy. Can consume food and drink. Cannot be on a Path of Enlightenment."
 properties = { rating = 1, type = "General", visible = "Appears alive" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -3998,6 +4046,7 @@ category = "merits"
 name = "Prestigious Sire"
 description = "Bonus Status Trait Loyal."
 properties = { rating = 1, type = "Camarilla" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -4083,6 +4132,7 @@ category = "merits"
 name = "Revelator"
 description = "Once per hour, use simple action to increase max Blood expenditure rate by 5 for 1 turn. Must loudly proclaim faith in Caine and his Dark Church."
 properties = { rating = 3, type = "Sabbat" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -4110,6 +4160,7 @@ name = "Ritual Master"
 description = "A Giovanni may buy twice as many Necromancy rituals as their Necromancy dots, a Tremere twice as many Thaumaturgy rituals as their Thaumaturgy dots. Once only; may be taken with the clan's Expertise."
 page_reference = "41"
 properties = { rating = 1 }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -4417,6 +4468,7 @@ name = "Thaumaturgic Training"
 description = "Opens up List 4 as an out of Clan Discipline, can never have Thaumaturgy without this merit."
 page_reference = "243"
 properties = { rating = 4, type = "General", requirement = "requires_specialization" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -4540,6 +4592,7 @@ category = "merits"
 name = "Unbondable"
 description = "Immune to blood bonds and Vinculum. Cannot be taken by Tremere or any Tremere Bloodline."
 properties = { rating = 4, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -4597,6 +4650,7 @@ category = "merits"
 name = "Volatile"
 description = "Once per combat, gain a Willpower when entering frenzy."
 properties = { rating = 1, type = "Sabbat" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"
@@ -4643,6 +4697,7 @@ category = "merits"
 name = "Whisper of Life"
 description = "Register as mortal on all attempts to determine creature type, have unnaturally bright aura and animals can't sense Beast. Must have a Morality of at least 3 and cannot be on a Path of Enlightenment."
 properties = { rating = 1, type = "General" }
+tags = ["vampire_only"]
 
 [[traits]]
 category = "merits"

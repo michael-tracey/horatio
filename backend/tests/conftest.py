@@ -1,5 +1,6 @@
 import os
 from collections.abc import Callable, Iterator
+from functools import cache
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from horatio.config import get_settings
 from horatio.db import get_session
 from horatio.models import RuleSet
 from horatio.rules.files import DATA_DIR, load_rule_set
+from horatio.rules.model import RuleSetData
 from horatio.rules.store import forget_rules, sync_rule_set
 
 # The test client talks plain HTTP, which would never send a Secure cookie back.
@@ -122,6 +124,19 @@ def client_for(session: Session) -> Iterator[Callable[[], TestClient]]:
     for client in clients:
         client.close()
     app.dependency_overrides.clear()
+
+
+@cache
+def ghoul_rule_set() -> RuleSetData:
+    return load_rule_set(DATA_DIR / "bns_met_ghoul.toml")
+
+
+@pytest.fixture
+def ghoul_rules(session: Session) -> None:
+    """The ghoul rule set beside the vampire's, as a deployed Horatio has it, for one
+    test and rolled back after it. Not loaded for every test: its traits share the
+    vampire's names, so a test that looks a trait up by name alone would find two."""
+    sync_rule_set(session, ghoul_rule_set())
 
 
 @pytest.fixture

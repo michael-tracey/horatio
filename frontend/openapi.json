@@ -4026,6 +4026,97 @@
         "title": "DiscoveryBlockOut",
         "type": "object"
       },
+      "DomitorIn": {
+        "description": "A ghoul's domitor: a vampire PC or NPC in Horatio, or one that is not, by name\nand clan (\"Brujah: True Brujah\" for a bloodline).",
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "disciplines": {
+            "default": "keep",
+            "enum": [
+              "keep",
+              "move"
+            ],
+            "title": "Disciplines",
+            "type": "string"
+          },
+          "moved": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlacedDots"
+            },
+            "title": "Moved",
+            "type": "array"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "DomitorIn",
+        "type": "object"
+      },
+      "DomitorOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan"
+        ],
+        "title": "DomitorOut",
+        "type": "object"
+      },
       "EffectRef": {
         "properties": {
           "active": {
@@ -7748,6 +7839,16 @@
             ],
             "title": "Building Troupe Id"
           },
+          "domitor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DomitorIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "maxLength": 200,
             "minLength": 1,
@@ -8603,6 +8704,29 @@
           "uploaded_at"
         ],
         "title": "PictureOut",
+        "type": "object"
+      },
+      "PlacedDots": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "rating"
+        ],
+        "title": "PlacedDots",
         "type": "object"
       },
       "PlanOut": {
@@ -12581,6 +12705,29 @@
         "title": "Someone",
         "type": "object"
       },
+      "SplatOut": {
+        "properties": {
+          "has_domitor": {
+            "title": "Has Domitor",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "splat",
+          "label",
+          "has_domitor"
+        ],
+        "title": "SplatOut",
+        "type": "object"
+      },
       "StaffAssignment": {
         "properties": {
           "handle": {
@@ -13786,6 +13933,20 @@
             ],
             "title": "Allowed Sects"
           },
+          "allowed_splats": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed Splats"
+          },
           "description": {
             "anyOf": [
               {
@@ -13927,6 +14088,13 @@
             "title": "Allowed Sects",
             "type": "array"
           },
+          "allowed_splats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Splats",
+            "type": "array"
+          },
           "archived": {
             "title": "Archived",
             "type": "boolean"
@@ -14032,6 +14200,7 @@
           "lead_user_id",
           "archived",
           "allowed_sects",
+          "allowed_splats",
           "session_xp",
           "downtime_xp",
           "starting_xp",
@@ -16013,7 +16182,7 @@
         ]
       },
       "post": {
-        "description": "Players build characters on their own, outside any troupe.",
+        "description": "Players build characters on their own, outside any troupe: of any splat with\nno building troupe, else of a splat it takes.",
         "operationId": "create_character_api_characters_post",
         "requestBody": {
           "content": {
@@ -16912,6 +17081,118 @@
         "summary": "Withdraw Discipline",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/domitor": {
+      "get": {
+        "description": "A ghoul's domitor; None while it has none, and for a vampire.",
+        "operationId": "read_domitor_api_characters__character_id__domitor_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DomitorOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Read Domitor Api Characters  Character Id  Domitor Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Domitor",
+        "tags": [
+          "characters"
+        ]
+      },
+      "put": {
+        "description": "Bind a ghoul to its domitor (MET: VTM pp. 296\u2013297): its player, until a home\ntroupe accepts it; after that, the home troupe's running staff, once the old bond\nhas faded.",
+        "operationId": "change_domitor_api_characters__character_id__domitor_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DomitorIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DomitorOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Change Domitor Api Characters  Character Id  Domitor Put"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Domitor",
+        "tags": [
+          "characters"
         ]
       }
     },
@@ -23156,6 +23437,32 @@
         "summary": "Lookup",
         "tags": [
           "influence lookups"
+        ]
+      }
+    },
+    "/api/rules": {
+      "get": {
+        "description": "The splats there are rules for, vampires first: what a character can be.",
+        "operationId": "splats_api_rules_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SplatOut"
+                  },
+                  "title": "Response Splats Api Rules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Splats",
+        "tags": [
+          "rules"
         ]
       }
     },

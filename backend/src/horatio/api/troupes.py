@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from horatio import audit, handles, pictures, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import TraitCategory, TraitDefinition, Troupe, TroupeStaff, User
+from horatio.models import RuleSet, TraitCategory, TraitDefinition, Troupe, TroupeStaff, User
 from horatio.permissions import (
     Role,
     TroupeAction,
@@ -15,6 +15,7 @@ from horatio.permissions import (
     require_troupe_action,
     troupe_role,
 )
+from horatio.rules.splats import SPLATS, splat_order
 
 router = APIRouter(prefix="/troupes", tags=["troupes"])
 
@@ -29,6 +30,9 @@ class TroupeOut(BaseModel):
     archived: bool
     # Sects whose player characters may join; empty means any.
     allowed_sects: list[str]
+    # Splats whose player characters may join and be built for it ("vampire",
+    # "ghoul"); never empty.
+    allowed_splats: list[str]
     # The usual XP for a game session and for completing a downtime.
     session_xp: int
     downtime_xp: int
@@ -65,6 +69,7 @@ class TroupeChanges(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = None
     allowed_sects: list[str] | None = None
+    allowed_splats: list[str] | None = None
     session_xp: int | None = Field(default=None, ge=0, le=100)
     downtime_xp: int | None = Field(default=None, ge=0, le=100)
     starting_xp: int | None = Field(default=None, ge=0, le=10000)
@@ -95,6 +100,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         lead_user_id=troupe.lead_user_id,
         archived=troupe.archived_at is not None,
         allowed_sects=troupe.allowed_sects,
+        allowed_splats=troupe.allowed_splats,
         session_xp=troupe.session_xp,
         downtime_xp=troupe.downtime_xp,
         starting_xp=troupe.starting_xp,
@@ -190,6 +196,26 @@ def change_troupe(
             "troupe.sects_limited",
             troupe_id=troupe.id,
             sects=", ".join(troupe.allowed_sects) or "any",
+        )
+    if body.allowed_splats is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        known = set(db.scalars(select(RuleSet.splat)))
+        unknown = sorted(set(body.allowed_splats) - known)
+        if unknown:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, f"No such splat: {', '.join(unknown)}."
+            )
+        if not body.allowed_splats:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "A troupe takes at least one splat."
+            )
+        troupe.allowed_splats = sorted(set(body.allowed_splats), key=splat_order)
+        audit.record(
+            db,
+            user,
+            "troupe.splats_limited",
+            troupe_id=troupe.id,
+            splats=", ".join(SPLATS[s].label for s in troupe.allowed_splats),
         )
     if body.session_xp is not None or body.downtime_xp is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)

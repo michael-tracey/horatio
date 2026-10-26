@@ -224,7 +224,8 @@ export interface paths {
         put?: never;
         /**
          * Create Character
-         * @description Players build characters on their own, outside any troupe.
+         * @description Players build characters on their own, outside any troupe: of any splat with
+         *     no building troupe, else of a splat it takes.
          */
         post: operations["create_character_api_characters_post"];
         delete?: never;
@@ -501,6 +502,32 @@ export interface paths {
          * @description Take back discipline dots still waiting on the home troupe, and get the XP back.
          */
         delete: operations["withdraw_discipline_api_characters__character_id__disciplines__approval_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/domitor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Domitor
+         * @description A ghoul's domitor; None while it has none, and for a vampire.
+         */
+        get: operations["read_domitor_api_characters__character_id__domitor_get"];
+        /**
+         * Change Domitor
+         * @description Bind a ghoul to its domitor (MET: VTM pp. 296–297): its player, until a home
+         *     troupe accepts it; after that, the home troupe's running staff, once the old bond
+         *     has faded.
+         */
+        put: operations["change_domitor_api_characters__character_id__domitor_put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2540,6 +2567,26 @@ export interface paths {
          *     log, with the character's other answers it combines with.
          */
         get: operations["lookup_api_responses__response_id__lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Splats
+         * @description The splats there are rules for, vampires first: what a character can be.
+         */
+        get: operations["splats_api_rules_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5370,6 +5417,42 @@ export interface components {
             whose: ("own" | "other") | null;
             window: components["schemas"]["WindowOut"];
         };
+        /**
+         * DomitorIn
+         * @description A ghoul's domitor: a vampire PC or NPC in Horatio, or one that is not, by name
+         *     and clan ("Brujah: True Brujah" for a bloodline).
+         */
+        DomitorIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /** Clan */
+            clan?: string | null;
+            /**
+             * Disciplines
+             * @default keep
+             * @enum {string}
+             */
+            disciplines: "keep" | "move";
+            /**
+             * Moved
+             * @default []
+             */
+            moved: components["schemas"]["PlacedDots"][];
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
+        /** DomitorOut */
+        DomitorOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string | null;
+            /** Name */
+            name: string;
+        };
         /** EffectRef */
         EffectRef: {
             /** Active */
@@ -6822,6 +6905,7 @@ export interface components {
         NewCharacter: {
             /** Building Troupe Id */
             building_troupe_id?: string | null;
+            domitor?: components["schemas"]["DomitorIn"] | null;
             /** Name */
             name: string;
             /** Splat */
@@ -7172,6 +7256,18 @@ export interface components {
             uploaded_at: string | null;
             /** Uploaded By */
             uploaded_by: string | null;
+        };
+        /** PlacedDots */
+        PlacedDots: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
         };
         /**
          * PlanOut
@@ -8742,6 +8838,15 @@ export interface components {
             plays_here: boolean;
             staff_role?: components["schemas"]["Role"] | null;
         };
+        /** SplatOut */
+        SplatOut: {
+            /** Has Domitor */
+            has_domitor: boolean;
+            /** Label */
+            label: string;
+            /** Splat */
+            splat: string;
+        };
         /** StaffAssignment */
         StaffAssignment: {
             /** Handle */
@@ -9174,6 +9279,8 @@ export interface components {
         TroupeChanges: {
             /** Allowed Sects */
             allowed_sects?: string[] | null;
+            /** Allowed Splats */
+            allowed_splats?: string[] | null;
             /** Description */
             description?: string | null;
             /** Downtime Xp */
@@ -9212,6 +9319,8 @@ export interface components {
         TroupeOut: {
             /** Allowed Sects */
             allowed_sects: string[];
+            /** Allowed Splats */
+            allowed_splats: string[];
             /** Archived */
             archived: boolean;
             /** Banner */
@@ -10808,6 +10917,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_domitor_api_characters__character_id__domitor_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomitorOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_domitor_api_characters__character_id__domitor_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DomitorIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomitorOut"] | null;
+                };
             };
             /** @description Validation Error */
             422: {
@@ -14875,6 +15050,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    splats_api_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplatOut"][];
                 };
             };
         };

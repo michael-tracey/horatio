@@ -18,6 +18,14 @@ class Splat:
     in_clan: Callable[[TroupeRules, Sequence[SheetTrait]], list[str]] = lambda _r, _s: []
     # How each fact reads in plain words (horatio.rules.conditions.describe).
     fact_words: Mapping[str, Any] = field(default_factory=dict)
+    # The splat's name in the app: "Vampire".
+    label: str = ""
+    # A character of this splat is bound to a vampire, its domitor (horatio.domitors),
+    # whose clan and in-clan disciplines it takes.
+    has_domitor: bool = False
+    # The splat whose clans these are, where it has none of its own: a ghoul's clan
+    # is its domitor's, with the vampire's clan logos.
+    clans_from: str | None = None
 
 
 # --- Vampire ---------------------------------------------------------------
@@ -146,6 +154,24 @@ def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetT
     }
 
 
+# --- Ghoul ------------------------------------------------------------------
+# A ghoul has no clan of its own: its sheet holds its domitor's clan and bloodline
+# (MET: VTM p. 296), so its in-clan disciplines are its domitor's clan's.
+
+
+def ghoul_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Facts:
+    def work_out() -> tuple[frozenset[str], str]:
+        clan = next((t.name for t in sheet if t.category == "clan"), "")
+        return frozenset(clan_in_clan_disciplines(rules, sheet)), clan
+
+    in_clan, clan = rules.rule_set.remembered(("ghoul", tuple(sheet)), work_out)
+    return {
+        "in_clan": not in_clan_names(trait).isdisjoint(in_clan),
+        "clan": clan,
+        "clan_family": clan.split(":")[0].strip(),
+    }
+
+
 SPLATS: dict[str, Splat] = {
     "vampire": Splat(
         fact_names=frozenset({"generation", "in_clan", "clan", "clan_family"}),
@@ -157,5 +183,24 @@ SPLATS: dict[str, Splat] = {
             "clan": "{}",
             "clan_family": "{} clan",
         },
+        label="Vampire",
+    ),
+    "ghoul": Splat(
+        fact_names=frozenset({"in_clan", "clan", "clan_family"}),
+        facts=ghoul_facts,
+        in_clan=clan_in_clan_disciplines,
+        fact_words={
+            "in_clan": ("in-clan", "out-of-clan"),
+            "clan": "{}",
+            "clan_family": "{} clan",
+        },
+        label="Ghoul",
+        has_domitor=True,
+        clans_from="vampire",
     ),
 }
+
+
+def splat_order(splat: str) -> int:
+    """Where a splat comes in a list of them: as here, vampires first."""
+    return list(SPLATS).index(splat) if splat in SPLATS else len(SPLATS)

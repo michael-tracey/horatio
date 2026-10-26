@@ -244,6 +244,7 @@ MESSAGES: dict[str, str] = {
     "title.added": "{actor} added the title {title} to the troupe.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
     "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
+    "troupe.splats_limited": "{actor} set which splats may join: {splats}.",
     "house.check": "{actor} set the rule {check} to {strength}.",
     "house.cost_added": "{actor} priced {what} at {price}.",
     "house.cost_changed": "{actor} changed the price of {what} to {price}.",
@@ -280,6 +281,8 @@ MESSAGES: dict[str, str] = {
     "account.password_reset": "{actor} set a new password with a reset link.",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
+    "character.domitor": "{actor} made {domitor} {character}'s domitor, of {clan}; discipline"
+    " dots {disciplines}.",
     "picture.uploaded": "{actor} gave {character} a picture.",
     "picture.replaced": "{actor} gave {character} a new picture.",
     "picture.cropped": "{actor} moved the crop of {character}'s picture.",

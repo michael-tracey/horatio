@@ -1,0 +1,84 @@
+# What a ghoul's sheet may hold, beyond what it costs (horatio.rules.checks), before
+# the vampire's checks the ghoul rule set also takes. Page numbers are MET: Vampire
+# The Masquerade (core), "Playing a Ghoul". Each has its own key, so the vampire's
+# checks keep theirs.
+
+# --- the domitor ------------------------------------------------------------------
+
+# A ghoul has no clan of its own: it is of its domitor's clan and bloodline (p. 296).
+[[checks]]
+key = "ghoul/clan/domitor"
+category = "clan"
+requires = { domitor_clan = true }
+message = "A ghoul's clan and bloodline are its domitor's."
+page = "296"
+
+# --- disciplines ------------------------------------------------------------------
+
+[[checks]]
+key = "ghoul/disciplines/five-dots"
+category = "disciplines"
+forbids = { dots = { category = "disciplines", gt = 5 } }
+message = "A ghoul never has more than 5 dots of disciplines."
+page = "297"
+
+# Only the domitor's in-clan disciplines, and only powers the domitor has (p. 296).
+# Without a linked domitor, staff check the powers. Once a home troupe accepts the
+# ghoul its staff answer for them, as when a new domitor's ghoul keeps its dots
+# (p. 297).
+[[checks]]
+key = "ghoul/disciplines/in-clan"
+category = "disciplines"
+requires = { any_of = [{ in_clan = true }, { accepted = true }] }
+message = "A ghoul's disciplines are its domitor's in-clan disciplines, and {name} is not one."
+page = "296"
+
+[[checks]]
+key = "ghoul/disciplines/domitor-powers"
+category = "disciplines"
+requires = { any_of = [{ domitor_has = true }, { accepted = true }] }
+message = "The domitor does not have {name} that high; a ghoul learns only powers its domitor has."
+page = "296"
+
+# --- merits and flaws ---------------------------------------------------------------
+
+# No clan merits, but those the domitor's clan and bloodline need (p. 296): the
+# bloodline merit, and the rarity merits, which have no type. Clan merits are only
+# for vampires Embraced into the clan (p. 238).
+[[checks]]
+key = "ghoul/merits/clan"
+category = "merits"
+forbids = { kind = ["Clan"], not = { self = { name_prefix = "Bloodline:" } } }
+message = "{name} is a clan merit: a ghoul takes only the bloodline merit its domitor's bloodline needs."
+page = "296"
+
+[[checks]]
+key = "ghoul/flaws/clan"
+category = "flaws"
+forbids = { kind = ["Clan"] }
+message = "{name} is a clan flaw, for vampires of the clan, not their ghouls."
+page = "296"
+
+[[checks]]
+key = "ghoul/merits/morality"
+category = "merits"
+forbids = { kind = ["Morality"] }
+message = "A ghoul cannot take Morality merits."
+page = "296"
+
+# The catalogue tags the merits and flaws about the vampiric condition (p. 296; Beast
+# in the Mirror is the book's own example, p. 236). The Storyteller has the final
+# say: a troupe can switch these off, or give one trait by exception.
+[[checks]]
+key = "ghoul/merits/vampire-only"
+category = "merits"
+forbids = { tagged = "vampire_only" }
+message = "{name} is about the vampiric condition, so a ghoul cannot take it."
+page = "296"
+
+[[checks]]
+key = "ghoul/flaws/vampire-only"
+category = "flaws"
+forbids = { tagged = "vampire_only" }
+message = "{name} is about the vampiric condition, so a ghoul cannot take it."
+page = "296"
