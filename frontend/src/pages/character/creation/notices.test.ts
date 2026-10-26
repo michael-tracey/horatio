@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { CreationOut, PoolOut, SheetOut, SheetTraitOut } from "../../../api/types";
 import { inClanChoice, inClanChoices } from "./inClan";
-import { brokenChecks, stepNotices, strayPicks, type StepRef } from "./notices";
+import { disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
+import { brokenChecks, overBudget, stepNotices, strayPicks, type StepRef } from "./notices";
 
 const STEPS: StepRef[] = [
   { key: "concept", title: "Concept", categories: [], decides: ["clan", "extra_in_clan_disciplines"] },
@@ -12,7 +13,7 @@ const STEPS: StepRef[] = [
 ];
 
 function pool(over: Partial<PoolOut>): PoolOut {
-  return { category: "disciplines", category_name: "Disciplines", rating: 1, kind: "picks", allowed: 1, used: 0, remaining: 1, restriction: null, options: null, traits: [], ...over };
+  return { category: "disciplines", category_name: "Disciplines", rating: 1, kind: "picks", allowed: 1, used: 0, remaining: 1, restriction: null, options: null, without_dot: [], because: [], traits: [], ...over };
 }
 
 function trait(category: string, name: string, over: Partial<SheetTraitOut> = {}): SheetTraitOut {
@@ -23,11 +24,11 @@ function sheet(traits: SheetTraitOut[], problems: SheetOut["problems"] = []): Sh
   return { traits, problems } as SheetOut;
 }
 
-const creation = (pools: PoolOut[], needs: CreationOut["needs"] = []): CreationOut => ({ complete: false, pools, needs });
+const creation = (pools: PoolOut[], needs: CreationOut["needs"] = []): CreationOut => ({ complete: false, pools, needs, path_starts: [], budget_changes: [] });
 
 describe("strayPicks", () => {
   it("marks a starting dot on a discipline that is no longer in-clan, on Concept and on Disciplines", () => {
-    const pools = [pool({ rating: 2, restriction: "in_clan", traits: [{ name: "Celerity", detail: "", pick: 2, fits: false }] })];
+    const pools = [pool({ rating: 2, restriction: "in_clan", traits: [{ name: "Celerity", detail: "", pick: 2, fits: false, because: [] }] })];
 
     expect(strayPicks({ creation: creation(pools), sheet: sheet([]), steps: STEPS })).toEqual([
       {
@@ -40,10 +41,86 @@ describe("strayPicks", () => {
     ]);
   });
 
+  it("names what leaves a discipline without a free dot, and sends the player to it", () => {
+    const inept = { category: "flaws", name: "Inept" };
+    const pools = [pool({ rating: 1, restriction: "in_clan", traits: [{ name: "Presence", detail: "", pick: 1, fits: false, because: [inept] }] })];
+
+    expect(strayPicks({ creation: creation(pools), sheet: sheet([]), steps: STEPS })).toEqual([
+      {
+        key: "stray/disciplines/Presence/",
+        message: "Inept: Presence starts without a free dot, so your starting dot in it needs moving.",
+        on: ["disciplines", "merits"],
+        fix: "disciplines",
+        trait: { category: "disciplines", name: "Presence" },
+      },
+    ]);
+  });
+
   it("says nothing of picks that fit", () => {
-    const pools = [pool({ restriction: "in_clan", traits: [{ name: "Auspex", detail: "", pick: 1, fits: true }] })];
+    const pools = [pool({ restriction: "in_clan", traits: [{ name: "Auspex", detail: "", pick: 1, fits: true, because: [] }] })];
 
     expect(strayPicks({ creation: creation(pools), sheet: sheet([]), steps: STEPS })).toEqual([]);
+  });
+});
+
+describe("overBudget", () => {
+  const thin = [{ category: "flaws", name: "Thin Blooded" }];
+
+  it("keeps a dot at a rating the rules no longer give, and says what took it away", () => {
+    const pools = [
+      pool({ rating: 2, allowed: 0, used: 1, remaining: -1, because: thin, traits: [{ name: "Celerity", detail: "", pick: 2, fits: true, because: [] }] }),
+      pool({ rating: 1, allowed: 2, used: 2, remaining: 0 }),
+    ];
+
+    expect(overBudget({ creation: creation(pools), sheet: sheet([]), steps: STEPS })).toEqual([
+      {
+        key: "over/disciplines/2",
+        message: "Thin Blooded: starting disciplines no longer have a pick at 2. Your dot in Celerity needs moving.",
+        on: ["disciplines", "merits"],
+        fix: "disciplines",
+        trait: { category: "disciplines", name: "Celerity" },
+      },
+    ]);
+  });
+
+  it("counts the picks over at a rating that still has some", () => {
+    const inept = [{ category: "flaws", name: "Inept" }];
+    const pools = [pool({ rating: 1, allowed: 1, used: 2, remaining: -1, because: inept })];
+
+    expect(overBudget({ creation: creation(pools), sheet: sheet([]), steps: STEPS })[0]?.message).toBe(
+      "Inept: starting disciplines have 1 pick at 1 now, and 2 are placed. Take 1 back.",
+    );
+  });
+
+  it("says nothing while every pick fits", () => {
+    expect(overBudget({ creation: creation([pool({ remaining: 0 })]), sheet: sheet([]), steps: STEPS })).toEqual([]);
+  });
+});
+
+describe("the Disciplines step", () => {
+  const usual = [pool({ rating: 2, allowed: 1 }), pool({ rating: 1, allowed: 2 })];
+
+  it("words the budget the pools give", () => {
+    expect(disciplinesIntro(creation(usual))).toBe("Starting disciplines are your in-clan ones: one at 2 and two at 1.");
+  });
+
+  it("follows Thin Blooded's smaller budget, and says whose it is", () => {
+    const thin = { ...creation([pool({ rating: 1, allowed: 2 })]), budget_changes: [{ category: "disciplines", because: [{ category: "flaws", name: "Thin Blooded" }] }] };
+
+    expect(disciplinesIntro(thin)).toBe("Starting disciplines are your in-clan ones: two at 1 (Thin Blooded changes the usual).");
+  });
+
+  it("says why a discipline takes no free dot", () => {
+    const pools = [pool({ restriction: "in_clan", without_dot: [{ name: "Presence", because: [{ category: "flaws", name: "Inept" }] }] })];
+
+    expect(withoutDotReasons(creation(pools), "disciplines")).toEqual({ Presence: "Inept: Presence starts without a free dot." });
+  });
+
+  it("offers Inept the in-clan disciplines, and the one it names", () => {
+    const pools = [pool({ restriction: "in_clan", options: ["Celerity", "Potence"] })];
+
+    expect(ineptChoices(creation(pools))).toEqual(["Celerity", "Potence"]);
+    expect(ineptChoices(creation(pools), "Presence")).toEqual(["Celerity", "Potence", "Presence"]);
   });
 });
 

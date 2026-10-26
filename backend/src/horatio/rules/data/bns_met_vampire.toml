@@ -1021,7 +1021,8 @@ rating = 1
 picks = 1
 
 # Starting disciplines must be in-clan: one at 2, the other two at 1. Thin
-# Blooded vampires get only the two at 1 (p. 266).
+# Blooded vampires get only the two at 1 (p. 266). Inept leaves one in-clan
+# discipline without a free dot, so one pick at 1 less (p. 263).
 [[creation_rules]]
 category = "disciplines"
 rating = 2
@@ -1034,6 +1035,14 @@ category = "disciplines"
 rating = 1
 picks = 2
 restriction = "in_clan"
+when = { not = { has = { category = "flaws", name = "Inept" } } }
+
+[[creation_rules]]
+category = "disciplines"
+rating = 1
+picks = 1
+restriction = "in_clan"
+when = { has = { category = "flaws", name = "Inept" } }
 
 [[creation_rules]]
 category = "merits"

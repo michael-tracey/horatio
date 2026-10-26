@@ -11,9 +11,10 @@ A pick can only go on a trait with no purchased dots, and can only be taken
 back while the trait still has none, so free and paid dots never get tangled.
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -21,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.models import Character, CharacterTrait, User
-from horatio.rules.checks import matches
+from horatio.rules.checks import holds_trait, matches, traits_in
 from horatio.rules.model import CreationRuleData, SheetTrait, TroupeRules
 from horatio.rules.splats import SPLATS
 from horatio.sheets import (
@@ -30,7 +31,9 @@ from horatio.sheets import (
     ensure_unlocked,
     find_definition,
     held_at,
+    path_start,
     rules_for,
+    sheet_effects,
     sheet_rows,
     sheet_violations,
     unprocessable,
@@ -49,6 +52,9 @@ class Pool:
     traits: list[SheetRow] = field(default_factory=list)
     # A splat fact each trait must have to take a pick here, such as "in_clan".
     restriction: str | None = None
+    # For a pool the rules no longer give (see `stray_pools`): the traits held that
+    # took it away, as (category, name).
+    because: list[tuple[str, str]] = field(default_factory=list)
 
     @property
     def used(self) -> int:
@@ -65,6 +71,18 @@ def pool_key(rule: CreationRuleData) -> tuple[str, int]:
     return (rule.category, rule.rating or 0 if rule.points is None else 0)
 
 
+def held_in(
+    sheet: Sequence[SheetTrait], condition: Mapping[str, Any] | None
+) -> list[tuple[str, str]]:
+    """The traits a creation rule's condition names that the sheet holds, as (category,
+    name): what the rule is because of."""
+    return sorted(
+        (c, n)
+        for c, n in traits_in(condition)
+        if n and holds_trait(sheet, {"category": c, "name": n})
+    )
+
+
 def pools_for(
     rules: Sequence[CreationRuleData], rows: Sequence[SheetRow]
 ) -> dict[tuple[str, int], Pool]:
@@ -77,12 +95,26 @@ def pools_for(
         if rule.when and not matches(rule.when, sheet, SheetTrait(category="", name="")):
             continue
         key = pool_key(rule)
+        # A rule that holds because of a trait on the sheet says so (Inept's one pick fewer).
+        because = held_in(sheet, rule.when)
         if rule.points is not None:
-            pools[key] = Pool(rule.category, 0, "points", rule.points, restriction=rule.restriction)
+            pools[key] = Pool(
+                rule.category,
+                0,
+                "points",
+                rule.points,
+                restriction=rule.restriction,
+                because=because,
+            )
         else:
             assert rule.rating is not None and rule.picks is not None
             pools[key] = Pool(
-                rule.category, rule.rating, "picks", rule.picks, restriction=rule.restriction
+                rule.category,
+                rule.rating,
+                "picks",
+                rule.picks,
+                restriction=rule.restriction,
+                because=because,
             )
     for row in rows:
         if row.trait.creation_pick is None:
@@ -99,47 +131,132 @@ def pools(db: Session, character: Character) -> dict[tuple[str, int], Pool]:
     return pools_for(rules_for(db, character).creation_rules(), sheet_rows(db, character))
 
 
+def stray_pools(
+    rules: Sequence[CreationRuleData],
+    rows: Sequence[SheetRow],
+    placed: Mapping[tuple[str, int], Pool],
+) -> list[Pool]:
+    """Picks that fit no pool now, because a rule that gave their pool has switched off
+    (Thin Blooded takes away the pick at 2). They are kept, never dropped, each
+    rating as a pool with nothing allowed, so the wizard can show them and have them
+    moved. The pool says what took it away."""
+    seated = {id(r) for pool in placed.values() for r in pool.traits}
+    sheet = [row.as_rules_trait() for row in rows]
+    strays: dict[tuple[str, int], Pool] = {}
+    for row in rows:
+        pick, category = row.trait.creation_pick, row.category.key
+        if pick is None or id(row) in seated:
+            continue
+        beside = [p for p in placed.values() if p.category == category and p.kind == "picks"]
+        if not beside:
+            continue
+        if (category, pick) not in strays:
+            lost = {
+                trait
+                for rule in rules
+                if rule.category == category and rule.rating == pick and rule.when
+                for trait in held_in(sheet, rule.when)
+            }
+            strays[(category, pick)] = Pool(
+                category,
+                pick,
+                "picks",
+                0,
+                restriction=beside[0].restriction,
+                because=sorted(lost),
+            )
+        strays[(category, pick)].traits.append(row)
+    return list(strays.values())
+
+
+def budget_changes(db: Session, character: Character) -> dict[str, list[tuple[str, str]]]:
+    """For each category, the traits the sheet holds that change what its creation rules
+    give: Thin Blooded and Inept for the starting disciplines."""
+    sheet = [row.as_rules_trait() for row in sheet_rows(db, character)]
+    changes: dict[str, list[tuple[str, str]]] = {}
+    for rule in rules_for(db, character).creation_rules():
+        if rule.when:
+            found = changes.setdefault(rule.category, [])
+            found.extend(t for t in held_in(sheet, rule.when) if t not in found)
+    return {category: found for category, found in changes.items() if found}
+
+
+def pools_with_strays(db: Session, character: Character) -> list[Pool]:
+    rules = rules_for(db, character).creation_rules()
+    rows = sheet_rows(db, character)
+    placed = pools_for(rules, rows)
+    return [*placed.values(), *stray_pools(rules, rows, placed)]
+
+
 RESTRICTION_TEXT = {"in_clan": "in-clan"}
 
 
-Fits = Callable[[Pool, str, str], bool]
-
-
-def fitting(db: Session, character: Character) -> Fits:
+class Fitting:
     """Whether a trait may take a pick from a pool, given the sheet as it stands
     (for "in_clan", that means the character's clan and the merits that change
     its in-clan disciplines). Read once, for as many traits as are asked about."""
-    rules = rules_for(db, character)
-    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
-    facts = SPLATS[character.splat].facts
 
-    def fits(pool: Pool, name: str, detail: str) -> bool:
+    def __init__(self, db: Session, character: Character):
+        self.rules = rules_for(db, character)
+        self.sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+        self.facts = SPLATS[character.splat].facts
+
+    def _facts(self, pool: Pool, name: str, detail: str) -> Mapping[str, Any]:
+        trait = SheetTrait(category=pool.category, name=name, detail=detail, rating=0)
+        return self.facts(self.rules, self.sheet, trait)
+
+    def meets(self, pool: Pool, name: str, detail: str) -> bool:
+        """Whether the trait meets the pool's restriction (is in-clan)."""
         if pool.restriction is None:
             return True
-        trait = SheetTrait(category=pool.category, name=name, detail=detail, rating=0)
-        return bool(facts(rules, sheet, trait).get(pool.restriction))
+        return bool(self._facts(pool, name, detail).get(pool.restriction))
 
-    return fits
+    def without_dot(self, pool: Pool, name: str, detail: str) -> tuple[tuple[str, str], ...]:
+        """The traits that leave this one without a free starting dot, as (category,
+        name): Inept's discipline, or an extra in-clan discipline a merit gave."""
+        if pool.restriction is None:
+            return ()
+        return tuple(self._facts(pool, name, detail).get("no_free_dot_because", ()))
+
+    def __call__(self, pool: Pool, name: str, detail: str) -> bool:
+        return self.meets(pool, name, detail) and not self.without_dot(pool, name, detail)
 
 
-def allowed_by_restriction(
-    db: Session, character: Character, pool: Pool, name: str, detail: str
-) -> bool:
-    """Whether `name` may take a pick from `pool`, given the sheet as it stands."""
-    return fitting(db, character)(pool, name, detail)
+def fitting(db: Session, character: Character) -> Fitting:
+    return Fitting(db, character)
 
 
-def options(db: Session, character: Character, pool: Pool, fits: Fits) -> list[str] | None:
-    """The traits a restricted pool's picks can go on now, such as the in-clan
-    disciplines; None for a pool open to its whole category."""
+def category_names(db: Session, character: Character, pool: Pool) -> list[str]:
+    rule_set = rules_for(db, character).rule_set
+    return sorted(n for (c, n) in rule_set.traits if c == pool.category)
+
+
+def options(db: Session, character: Character, pool: Pool, fits: Fitting) -> list[str] | None:
+    """The traits a restricted pool's picks go on, such as the in-clan disciplines
+    (some of which can still take no free dot: see `without_dot`); None for a pool
+    open to its whole category."""
     if pool.restriction is None:
         return None
-    rule_set = rules_for(db, character).rule_set
-    return sorted(n for (c, n) in rule_set.traits if c == pool.category and fits(pool, n, ""))
+    return [n for n in category_names(db, character, pool) if fits.meets(pool, n, "")]
 
 
-def restriction_error(pool: Pool, name: str) -> HTTPException:
+def without_dot(
+    db: Session, character: Character, pool: Pool, fits: Fitting
+) -> dict[str, tuple[tuple[str, str], ...]]:
+    """The traits of a restricted pool that take no pick, though in-clan or priced as
+    in-clan, and what leaves each without: the extra discipline Additional Common
+    Discipline gives, and the one Inept names."""
+    if pool.restriction is None:
+        return {}
+    found = {n: fits.without_dot(pool, n, "") for n in category_names(db, character, pool)}
+    return {n: because for n, because in found.items() if because}
+
+
+def restriction_error(pool: Pool, name: str, fits: Fitting | None = None) -> HTTPException:
     kind = RESTRICTION_TEXT.get(pool.restriction or "", pool.restriction or "")
+    if fits is not None and (by := fits.without_dot(pool, name, "")):
+        causes = ", ".join(dict.fromkeys(n for _, n in by))
+        return unprocessable(f"{name} starts without a free dot ({causes}), so it takes no pick.")
     return unprocessable(
         f"{name} is not {kind}. Only {kind} {pool.category.replace('_', ' ')} can take these picks;"
         " choose the clan first if you have not."
@@ -193,8 +310,9 @@ def place_pick(
             raise unprocessable(f"There are no {trait_category.name} picks at {rating}.")
         if pool.remaining < 1:
             raise conflict(f"Every {trait_category.name} pick at {rating} is already placed.")
-    if not allowed_by_restriction(db, character, pool, definition.name, detail):
-        raise restriction_error(pool, definition.name)
+    fits = fitting(db, character)
+    if not fits(pool, definition.name, detail):
+        raise restriction_error(pool, definition.name, fits)
 
     trait = db.scalar(
         select(CharacterTrait).where(
@@ -273,6 +391,11 @@ def set_category_picks(
     points = all_pools.get((category, 0))
     is_points = points is not None and points.kind == "points"
 
+    rows = {
+        (r.definition.name, r.trait.detail): r
+        for r in sheet_rows(db, character)
+        if r.category.key == category
+    }
     wanted: dict[tuple[str, str], int] = {}
     definitions = {}
     for spec in picks:
@@ -294,15 +417,21 @@ def set_category_picks(
         for rating in set(wanted.values()):
             pool = all_pools.get((category, rating))
             if pool is None:
+                # A pick the rules no longer give a pool for (Thin Blooded's dot at 2) may
+                # stay as it was, until its player moves it; nothing new goes there.
+                kept = [
+                    k
+                    for k, r in wanted.items()
+                    if r == rating
+                    and (row := rows.get(k)) is not None
+                    and row.trait.creation_pick == rating
+                ]
+                if len(kept) == sum(1 for r in wanted.values() if r == rating):
+                    continue
                 raise unprocessable(f"There are no {category.replace('_', ' ')} picks at {rating}.")
             used = sum(1 for r in wanted.values() if r == rating)
             if used > pool.allowed:
                 raise conflict(f"Only {pool.allowed} at {rating}; that is {used}.")
-    rows = {
-        (r.definition.name, r.trait.detail): r
-        for r in sheet_rows(db, character)
-        if r.category.key == category
-    }
     # A pick kept as it was may stay where it no longer fits (a starting dot on a
     # discipline that is no longer in-clan): the wizard marks it, and finishing
     # refuses it. Only a new or moved pick must fit.
@@ -313,7 +442,7 @@ def set_category_picks(
             continue
         pool = all_pools.get((category, 0 if is_points else rating))
         if pool is not None and not fits(pool, name, detail):
-            raise restriction_error(pool, name)
+            raise restriction_error(pool, name, fits)
     for key, row in rows.items():
         pick = row.trait.creation_pick
         if pick is None or wanted.get(key) == pick:
@@ -352,7 +481,8 @@ def set_category_picks(
 
 def complete(db: Session, player: User, character: Character) -> None:
     ensure_creating(db, character)
-    unplaced = [p for p in pools(db, character).values() if p.kind == "picks" and p.remaining > 0]
+    every = pools_with_strays(db, character)
+    unplaced = [p for p in every if p.kind == "picks" and p.remaining > 0]
     if unplaced:
         raise conflict(
             "Place every pick first: "
@@ -360,11 +490,21 @@ def complete(db: Session, player: User, character: Character) -> None:
                 f"{p.remaining} {p.category.replace('_', ' ')} at {p.rating}" for p in unplaced
             )
         )
+    # More picks than the rules give: a merit may have taken a pool away, as Thin
+    # Blooded does the pick at 2. They are kept until their player moves them.
+    over = [
+        f"{row.definition.name} at {pool.rating}"
+        for pool in every
+        if pool.kind == "picks" and pool.remaining < 0
+        for row in pool.traits
+    ]
+    if over:
+        raise conflict("These picks are more than the rules now give: " + ", ".join(over))
     # The clan may have changed since the picks were placed.
     fits = fitting(db, character)
     stray = [
         row.definition.name
-        for pool in pools(db, character).values()
+        for pool in every
         for row in pool.traits
         if not fits(pool, row.definition.name, row.trait.detail)
     ]
@@ -381,3 +521,36 @@ def complete(db: Session, player: User, character: Character) -> None:
     character.creation_completed_at = datetime.now(UTC)
     db.flush()
     audit.record(db, player, "creation.complete", character_id=character.id)
+
+
+@dataclass
+class PathStart:
+    category: str
+    # The Path the character is on, and the merit that put them on it.
+    name: str
+    rating: int
+    because: tuple[str, str]
+    page: str | None = None
+
+
+def path_starts(db: Session, character: Character) -> list[PathStart]:
+    """The Paths whose Morality starts lower than Humanity's: bought in creation, a Path
+    merit starts its Path at 4 instead of 5 (core p. 306)."""
+    if character.kind != "pc" or character.creation_completed_at is not None:
+        return []
+    rules = rules_for(db, character)
+    found = sheet_effects(db, character)
+    rows = sheet_rows(db, character)
+    starts: list[PathStart] = []
+    for (category, origin), path in found.converts.items():
+        lowered = path_start(rules, category, origin)
+        by = found.converted_by.get((category, origin))
+        row = next(
+            (r for r in rows if (r.category.key, r.definition.name) == (category, path)), None
+        )
+        if path == origin or lowered is None or by is None or row is None:
+            continue
+        if row.trait.rating == row.trait.free_rating == lowered[0]:
+            page = rules.rule_set.trait_properties(category, origin).get("path_start_page")
+            starts.append(PathStart(category, path, lowered[0], by, page))
+    return starts

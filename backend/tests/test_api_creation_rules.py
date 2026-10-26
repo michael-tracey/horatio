@@ -219,7 +219,9 @@ def test_a_starting_dot_left_out_of_clan_is_kept_and_marked_until_it_moves(
 
     # The dot on Celerity is kept, marked as no longer fitting; the pools offer Dementation.
     at_two = next(p for p in disciplines() if p["rating"] == 2)
-    assert at_two["traits"] == [{"name": "Celerity", "detail": "", "pick": 2, "fits": False}]
+    assert at_two["traits"] == [
+        {"name": "Celerity", "detail": "", "pick": 2, "fits": False, "because": []}
+    ]
     assert at_two["options"] == ["Auspex", "Dementation", "Potence"]
     # Finishing refuses it, until it moves.
     refused = player.client.post(f"/characters/{character_id}/creation/complete")

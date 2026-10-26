@@ -970,6 +970,28 @@
         "title": "Body_upload_portrait_api_troupes__troupe_id__portrait_post",
         "type": "object"
       },
+      "BudgetChange": {
+        "description": "What changes a category's starting picks: the merits and flaws held that its\ncreation rules depend on (Thin Blooded, for the starting disciplines).",
+        "properties": {
+          "because": {
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Because",
+            "type": "array"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "because"
+        ],
+        "title": "BudgetChange",
+        "type": "object"
+      },
       "BuildingTroupe": {
         "properties": {
           "troupe_id": {
@@ -2528,6 +2550,14 @@
       },
       "CreationOut": {
         "properties": {
+          "budget_changes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BudgetChange"
+            },
+            "title": "Budget Changes",
+            "type": "array"
+          },
           "complete": {
             "title": "Complete",
             "type": "boolean"
@@ -2537,6 +2567,14 @@
               "$ref": "#/components/schemas/StepNeed"
             },
             "title": "Needs",
+            "type": "array"
+          },
+          "path_starts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PathStart"
+            },
+            "title": "Path Starts",
             "type": "array"
           },
           "pools": {
@@ -8063,6 +8101,49 @@
         "title": "PasswordResets",
         "type": "object"
       },
+      "PathStart": {
+        "description": "A Morality that starts lower because a Path merit was bought in creation.",
+        "properties": {
+          "because": {
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Because",
+            "type": "array"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "rating",
+          "because"
+        ],
+        "title": "PathStart",
+        "type": "object"
+      },
       "PendingDisciplineOut": {
         "properties": {
           "approval_id": {
@@ -8199,6 +8280,14 @@
       },
       "PickedTrait": {
         "properties": {
+          "because": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Because",
+            "type": "array"
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -8849,6 +8938,14 @@
             "title": "Allowed",
             "type": "integer"
           },
+          "because": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Because",
+            "type": "array"
+          },
           "category": {
             "title": "Category",
             "type": "string"
@@ -8904,6 +9001,14 @@
           "used": {
             "title": "Used",
             "type": "integer"
+          },
+          "without_dot": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/WithoutDot"
+            },
+            "title": "Without Dot",
+            "type": "array"
           }
         },
         "required": [
@@ -13900,6 +14005,28 @@
           "days"
         ],
         "title": "WindowOut",
+        "type": "object"
+      },
+      "WithoutDot": {
+        "description": "A trait of a restricted pool that takes no pick, though it may be in-clan.",
+        "properties": {
+          "because": {
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Because",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "because"
+        ],
+        "title": "WithoutDot",
         "type": "object"
       },
       "WorkCycle": {

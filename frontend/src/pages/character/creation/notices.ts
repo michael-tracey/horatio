@@ -40,13 +40,22 @@ export function inOrder(steps: StepRef[], keys: (string | undefined)[]): string[
   return steps.filter((s) => wanted.has(s.key)).map((s) => s.key);
 }
 
+/** Names in a sentence: "A, B and C". */
+export function listed(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
+}
+
+/** The traits a pool, or a pick, is because of, by name: "Thin Blooded". */
+const causes = (refs: { name?: string | null }[]): string[] => [...new Set(refs.map((r) => r.name).filter((n): n is string => !!n))];
+
 /** Where a pool's restriction is decided: "in_clan" by the clan and the merits on Concept. */
 const DECIDED_ON: Record<string, string> = { in_clan: "concept" };
 const RESTRICTION_WORDS: Record<string, string> = { in_clan: "in-clan" };
 
 /**
  * Picks kept where they no longer fit (rule 4): a starting dot on a discipline that
- * is no longer in-clan. Shown where it was placed, and where the change was made.
+ * is no longer in-clan, or that a merit or flaw leaves without a free dot (Inept).
+ * Shown where it was placed, and where the change was made.
  */
 export const strayPicks: NoticeSource = ({ creation, steps }) =>
   creation.pools.flatMap((pool) =>
@@ -56,17 +65,49 @@ export const strayPicks: NoticeSource = ({ creation, steps }) =>
         const placed = stepFor(steps, pool.category)?.key;
         if (!placed) return null;
         const dots = pool.rating === 1 ? "dot" : "dots";
+        const needs = pool.rating === 1 ? "needs" : "need";
         const words = RESTRICTION_WORDS[pool.restriction!] ?? pool.restriction!;
+        const because = causes(t.because);
         return {
           key: `stray/${pool.category}/${t.name}/${t.detail}`,
-          message: `Your starting ${dots} in ${t.name} ${pool.rating === 1 ? "needs" : "need"} moving: it is no longer ${words}.`,
-          on: inOrder(steps, [DECIDED_ON[pool.restriction!], placed]),
+          message: because.length
+            ? `${listed(because)}: ${t.name} starts without a free dot, so your starting ${dots} in it ${needs} moving.`
+            : `Your starting ${dots} in ${t.name} ${needs} moving: it is no longer ${words}.`,
+          on: inOrder(steps, [because.length ? undefined : DECIDED_ON[pool.restriction!], ...t.because.map((b) => stepFor(steps, b.category)?.key), placed]),
           fix: placed,
           trait: { category: pool.category, name: t.name },
         };
       })
       .filter((n): n is StepNotice => n !== null),
   );
+
+/**
+ * More picks than the rules give now (rule 4): Thin Blooded takes away the pick at 2,
+ * and Inept one pick at 1, once the starting dots are placed. The picks are kept, and
+ * the step and the one that changed it say which need moving.
+ */
+export const overBudget: NoticeSource = ({ creation, steps }) =>
+  creation.pools
+    .filter((pool) => pool.kind === "picks" && pool.remaining < 0)
+    .map((pool): StepNotice | null => {
+      const placed = stepFor(steps, pool.category)?.key;
+      if (!placed) return null;
+      const because = causes(pool.because);
+      const who = because.length ? listed(because) : "The rules";
+      const what = pool.category_name.toLowerCase();
+      const picked = listed(pool.traits.map((t) => t.name));
+      const message = pool.allowed
+        ? `${who}: starting ${what} have ${pool.allowed} ${pool.allowed === 1 ? "pick" : "picks"} at ${pool.rating} now, and ${pool.used} are placed. Take ${-pool.remaining} back.`
+        : `${who}: starting ${what} no longer have a pick at ${pool.rating}. Your dot in ${picked} needs moving.`;
+      return {
+        key: `over/${pool.category}/${pool.rating}`,
+        message,
+        on: inOrder(steps, [placed, ...pool.because.map((b) => stepFor(steps, b.category)?.key)]),
+        fix: placed,
+        trait: pool.traits.length === 1 ? { category: pool.category, name: pool.traits[0]!.name } : undefined,
+      };
+    })
+    .filter((n): n is StepNotice => n !== null);
 
 /**
  * Checks the sheet breaks that finishing needs settled (or that refuse outright),

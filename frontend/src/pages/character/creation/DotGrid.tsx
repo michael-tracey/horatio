@@ -213,8 +213,8 @@ export function DotGrid({
             const n = left(picks, allowed, r);
             return (
               <li key={r}>
-                <Badge tone={n > 0 ? "gold" : "mist"}>
-                  {n} at {r} left
+                <Badge tone={n > 0 ? "gold" : n < 0 ? "blood" : "mist"}>
+                  {n < 0 ? `${-n} too many at ${r}` : `${n} at ${r} left`}
                 </Badge>
               </li>
             );

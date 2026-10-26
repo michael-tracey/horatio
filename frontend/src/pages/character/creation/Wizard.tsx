@@ -17,17 +17,19 @@ import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, traitOf, type 
 import { FromMerits } from "./FromMerits";
 import { EXTRA_IN_CLAN, IN_CLAN_MERITS, inClanChoices } from "./inClan";
 import { InClanPicker } from "./InClanPicker";
-import { brokenChecks, stepFor, stepNotices, strayPicks, type NoticeSource, type StepNotice, type StepRef } from "./notices";
+import { DISCIPLINES_FROM_MERITS, INEPT, disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
+import { brokenChecks, listed, overBudget, stepFor, stepNotices, strayPicks, type NoticeSource, type StepNotice, type StepRef } from "./notices";
 
 /** A step: the categories it places picks in, and those it decides without picks. */
 type Step = StepRef & { intro?: string };
 
 /** Where cross-step notices come from (notices.ts): a step that needs a new kind adds its source here. */
-const NOTICE_SOURCES: NoticeSource[] = [inClanChoices, strayPicks, brokenChecks];
+const NOTICE_SOURCES: NoticeSource[] = [inClanChoices, strayPicks, overBudget, brokenChecks];
 
 /** Merits and flaws that change a step, offered on it as well as on Merits & flaws (#192). */
 const FROM_MERITS: Record<string, { category: string; name: string }[]> = {
   concept: IN_CLAN_MERITS.map((name) => ({ category: "merits", name })),
+  disciplines: DISCIPLINES_FROM_MERITS,
 };
 
 /** Wizard steps, in the order a player builds a character. Any category with
@@ -37,7 +39,7 @@ const ORDER: Step[] = [
   { key: "focuses", title: "Focuses", categories: ["focus_physicals", "focus_mentals", "focus_socials"], intro: "Choose one focus for each attribute." },
   { key: "skills", title: "Skills", categories: ["skills"], intro: "Tap the dot for each skill's rating. The counters show what is left." },
   { key: "backgrounds", title: "Backgrounds", categories: ["backgrounds"] },
-  { key: "disciplines", title: "Disciplines", categories: ["disciplines"], intro: "Starting disciplines are your clan's in-clan ones: one at 2, the others at 1." },
+  { key: "disciplines", title: "Disciplines", categories: ["disciplines"] },
   { key: "merits", title: "Merits & flaws", categories: ["merits", "flaws"], intro: "Each comes from its own budget of points. Both are optional." },
 ];
 
@@ -103,7 +105,8 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
     <div className="grid gap-6 lg:grid-cols-[12rem_minmax(0,1fr)]">
       {/* min-w-0: without it the step list's sideways scroller widens the page on phones. */}
       <nav aria-label="Creation steps" className="min-w-0">
-        <ol className="flex gap-1 overflow-x-auto lg:flex-col">
+        {/* relative: so the screen-reader-only marks past the right edge are clipped here, not left to widen the page. */}
+        <ol className="relative flex gap-1 overflow-x-auto lg:flex-col">
           {steps.map((s, i) => (
             <li key={s.key}>
               {stuck !== -1 && i > stuck ? (
@@ -215,7 +218,12 @@ function StepView({
     save.mutate(undefined, { onSuccess: (left) => (forward && left.length ? undefined : to?.()) });
   };
 
+  // The Disciplines step's budget is the pools', which Thin Blooded and Inept change.
+  const intro = step.key === "disciplines" ? disciplinesIntro(creation) : step.intro;
   const traitsOf = (category: string) => catalogue.traits.filter((t) => t.category === category);
+  // Inept names one of the in-clan disciplines now, not any discipline there is.
+  const narrowed = (category: string, traits: TraitOut[]) =>
+    category === "flaws" ? traits.map((t) => (t.name === INEPT ? { ...t, choices: ineptChoices(creation, details.flaws?.[INEPT]) } : t)) : traits;
   const nameOf = (category: string) => catalogue.categories.find((c) => c.key === category)?.name ?? category;
   // This step's notices, but for what it already holds the wizard to (its needs, below).
   const here = notices.filter((n) => n.on.includes(step.key) && !needs.some((need) => need.message === n.message));
@@ -225,13 +233,25 @@ function StepView({
 
   return (
     <Card title={step.title} className="min-w-0">
-      {step.intro && <p className="mb-4 text-sm text-mist">{step.intro}</p>}
+      {intro && <p className="mb-4 text-sm text-mist">{intro}</p>}
       {step.key !== "review" && <StepNotices character={character} notices={here} step={step} steps={steps} />}
       {step.key === "concept" && <ConceptStep character={character} creation={creation} sheet={sheet} catalogue={catalogue} />}
       {step.key === "review" && <ReviewStep character={character} creation={creation} catalogue={catalogue} steps={steps} notices={notices} />}
       {FROM_MERITS[step.key] && step.key !== "concept" && (
         <div className="mb-6">
-          <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS[step.key]!} />
+          <FromMerits
+            character={character}
+            creation={creation}
+            sheet={sheet}
+            catalogue={catalogue}
+            traits={FROM_MERITS[step.key]!}
+            choices={step.key === "disciplines" ? { [INEPT]: ineptChoices(creation) } : undefined}
+          />
+        </div>
+      )}
+      {step.key === "disciplines" && (
+        <div className="mb-6">
+          <InClanNow creation={creation} />
         </div>
       )}
       {/* Held while saving: the save reloads the picks, which would drop a tap made meanwhile. */}
@@ -247,7 +267,7 @@ function StepView({
                 characterId={character.id}
                 category={category}
                 title={nameOf(category)}
-                traits={traitsOf(category)}
+                traits={narrowed(category, traitsOf(category))}
                 budget={pools[0].allowed}
                 picks={mine}
                 onChange={set}
@@ -263,8 +283,10 @@ function StepView({
           // Picks restricted to some traits (in-clan disciplines) offer only those the
           // server says fit now, and any already placed that no longer do (marked).
           const restricted = pools.find((p) => p.options);
+          const withoutDot = withoutDotReasons(creation, category);
           if (restricted) {
-            const fit = new Set(restricted.options);
+            // The in-clan ones, those that take no free dot (shown, with why), and any already placed.
+            const fit = new Set([...restricted.options!, ...Object.keys(withoutDot)]);
             const placed = new Set(Object.keys(mine).map(traitOf));
             traits = traits.filter((t) => fit.has(t.name) || placed.has(t.name));
           }
@@ -289,6 +311,7 @@ function StepView({
               details={details[category] ?? {}}
               onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
               marks={strays[category]}
+              barredFor={withoutDot}
               sections={
                 traits.some((t) => t.attribute)
                   ? { order: ["Physical", "Social", "Mental"], of: (t: TraitOut) => t.attribute }
@@ -373,10 +396,6 @@ function InClanNow({ creation }: { creation: CreationOut }) {
   const options = creation.pools.find((p) => p.restriction === "in_clan")?.options;
   if (!options?.length) return null;
   return <p className="text-sm text-mist">In-clan now: {listed(options)}.</p>;
-}
-
-function listed(names: string[]): string {
-  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
 }
 
 /** An archetype of the player's own (p. 86): a name, and what it means for the character. */
@@ -468,6 +487,19 @@ function ReviewStep({
                 </li>
               );
             })}
+          </ul>
+        </section>
+      )}
+      {creation.path_starts.length > 0 && (
+        <section aria-label="Morality" className="flex flex-col gap-1">
+          <h3 className="text-sm text-gold">Morality</h3>
+          <ul className="flex flex-col gap-1 text-sm">
+            {creation.path_starts.map((s) => (
+              <li key={`${s.category}/${s.name}`}>
+                {listed(s.because.map((b) => b.name!))}: your path starts at {s.rating}
+                {s.page ? ` (p. ${s.page})` : ""}.
+              </li>
+            ))}
           </ul>
         </section>
       )}
@@ -594,9 +626,14 @@ function CheckedPointsList({
   return <PointsList {...props} unavailable={unavailable} barred={barred.data} why={why} />;
 }
 
-function CheckedDotGrid({ characterId, category, ...props }: { characterId: string; category: string } & Parameters<typeof DotGrid>[0]) {
+function CheckedDotGrid({
+  characterId,
+  category,
+  barredFor = {},
+  ...props
+}: { characterId: string; category: string; barredFor?: Record<string, string> } & Parameters<typeof DotGrid>[0]) {
   const unavailable = useUnavailable(characterId, category);
-  return <DotGrid {...props} unavailable={unavailable.data ?? {}} />;
+  return <DotGrid {...props} unavailable={{ ...unavailable.data, ...barredFor }} />;
 }
 
 /** Change which troupe's rules the character is built by, until a troupe accepts it. */

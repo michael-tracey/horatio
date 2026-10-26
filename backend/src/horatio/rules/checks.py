@@ -32,6 +32,8 @@ Condition vocabulary (every key in one table must hold):
                                     copies another trait gives (SheetTrait.granted)
     in_clan = true                  the subject is one of the character's in-clan
                                     disciplines
+    detail_in_clan = true           the subject's detail names one of the character's
+                                    native in-clan disciplines (Inept's discipline)
     accepted = true                 a home troupe has accepted the character
     more_than_dots = { count = { category, name_prefix }, dots = { category, name_prefix },
                        per_dot? }
@@ -89,7 +91,8 @@ Condition = Mapping[str, Any]
 
 CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count",
-     "one_below", "parent", "self", "copies", "in_clan", "accepted", "more_than_dots",
+     "one_below", "parent", "self", "copies", "in_clan", "detail_in_clan", "accepted",
+     "more_than_dots",
      "above_in_clan", "same_value", "excess_over_generation", "any_of", "not"}
 )  # fmt: skip
 
@@ -156,6 +159,7 @@ class CheckData:
 IMPLIED_TRAIT: dict[str, tuple[str, str | None]] = {
     "clan": ("clan", None),
     "clan_family": ("clan", None),
+    "detail_in_clan": ("clan", None),
     "generation": ("backgrounds", "Generation"),
     "on_path": ("paths", None),
     "excess_over_generation": ("backgrounds", "Generation"),
@@ -301,6 +305,8 @@ def matches(
             ok = compare(held, test)
         elif key == "in_clan":
             ok = (subject.name in context.in_clan or subject.full_name in context.in_clan) == test
+        elif key == "detail_in_clan":
+            ok = (subject.detail in context.native) == test
         elif key == "accepted":
             ok = context.accepted == test
         elif key == "more_than_dots":

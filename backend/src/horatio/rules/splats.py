@@ -32,9 +32,8 @@ def vampire_generation(sheet: Sequence[SheetTrait]) -> int:
     return 1
 
 
-def vampire_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> list[str]:
-    """The clan's in-clan disciplines (or the ones a merit sets in their place)
-    plus any extra in-clan disciplines on the sheet."""
+def clan_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> list[str]:
+    """The clan's own in-clan disciplines, or the ones a merit sets in their place."""
     from horatio.rules.grants import in_clan_replaced
 
     replaced = in_clan_replaced(rules.rule_set, sheet)
@@ -45,6 +44,13 @@ def vampire_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait])
                 rules.rule_set.trait_properties("clan", trait.name).get("in_clan", [])
             )
     disciplines.extend(replaced or [])
+    return disciplines
+
+
+def vampire_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> list[str]:
+    """The clan's in-clan disciplines (or the ones a merit sets in their place)
+    plus any extra in-clan disciplines on the sheet."""
+    disciplines = clan_in_clan_disciplines(rules, sheet)
     disciplines.extend(t.name for t in sheet if t.category == "extra_in_clan_disciplines")
     return disciplines
 
@@ -63,6 +69,10 @@ class VampireSheet:
     in_clan: frozenset[str]
     # What its grants price as in-clan (Thaumaturgic Expertise's extra path).
     priced_in_clan: Set[tuple[str, str, str | None]]
+    # What they price as out-of-clan (Inept's discipline), and the extra in-clan
+    # disciplines that start without a free dot, with what each is because of.
+    priced_out_of_clan: Mapping[tuple[str, str, str | None], tuple[tuple[str, str], ...]]
+    without_free_dot: Mapping[str, tuple[tuple[str, str], ...]]
 
 
 def vampire_sheet(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> VampireSheet:
@@ -70,11 +80,23 @@ def vampire_sheet(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> VampireShe
     from horatio.rules.grants import priced
 
     def work_out() -> VampireSheet:
+        found = priced(rules.rule_set, sheet)
+        # An extra in-clan discipline starts without a free dot when a grant says so,
+        # unless the clan has it in-clan itself.
+        own = set(clan_in_clan_disciplines(rules, sheet))
+        extras = {t.name for t in sheet if t.category == "extra_in_clan_disciplines"}
+        without = {
+            name: sources
+            for (category, name, _), sources in found.no_free_dot.items()
+            if category == "extra_in_clan_disciplines" and name in extras and name not in own
+        }
         return VampireSheet(
             generation=vampire_generation(sheet),
             clan=next((t.name for t in sheet if t.category == "clan"), ""),
             in_clan=frozenset(vampire_in_clan_disciplines(rules, sheet)),
-            priced_in_clan=priced(rules.rule_set, sheet).in_clan,
+            priced_in_clan=found.in_clan,
+            priced_out_of_clan=found.out_of_clan,
+            without_free_dot=without,
         )
 
     return rules.rule_set.remembered(("vampire", tuple(sheet)), work_out)
@@ -94,10 +116,30 @@ def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetT
     from horatio.rules.grants import matching
 
     found = vampire_sheet(rules, sheet)
+    inept = matching(found.priced_out_of_clan, trait)
+    # What stops a free starting dot, and what it is because of (Inept, or the merit
+    # that gave an extra in-clan discipline).
+    no_dot: tuple[tuple[str, str], ...] = (
+        found.priced_out_of_clan[inept]
+        if inept is not None
+        else next(
+            (
+                found.without_free_dot[n]
+                for n in in_clan_names(trait)
+                if n in found.without_free_dot
+            ),
+            (),
+        )
+    )
     return {
         "generation": found.generation,
-        "in_clan": not in_clan_names(trait).isdisjoint(found.in_clan)
-        or matching(found.priced_in_clan, trait) is not None,
+        "in_clan": inept is None
+        and (
+            not in_clan_names(trait).isdisjoint(found.in_clan)
+            or matching(found.priced_in_clan, trait) is not None
+        ),
+        "no_free_dot": bool(no_dot),
+        "no_free_dot_because": no_dot,
         # The clan or bloodline exactly ("Brujah: True Brujah"), and its clan ("Brujah").
         "clan": found.clan,
         "clan_family": found.clan.split(":")[0].strip(),

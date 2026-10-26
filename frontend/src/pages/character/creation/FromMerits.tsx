@@ -11,6 +11,8 @@ export type FromMeritsProps = {
   catalogue: CatalogueOut;
   /** The merits (or flaws) that change this step. */
   traits: { category: string; name: string }[];
+  /** The choices to offer for some of them, in place of the catalogue's (Inept: the in-clan disciplines). */
+  choices?: Record<string, string[]>;
 };
 
 /**
@@ -19,7 +21,7 @@ export type FromMeritsProps = {
  * flaws shows it as taken. What the character can take, and why not, is the
  * server's to say: what nothing could allow (another clan's merit) is left out.
  */
-export function FromMerits({ character, creation, sheet, catalogue, traits }: FromMeritsProps) {
+export function FromMerits({ character, creation, sheet, catalogue, traits, choices }: FromMeritsProps) {
   const categories = [...new Set(traits.map((t) => t.category))];
   const pools = categories
     .map((category) => creation.pools.find((p) => p.category === category && p.kind === "points"))
@@ -35,6 +37,7 @@ export function FromMerits({ character, creation, sheet, catalogue, traits }: Fr
           character={character}
           pool={pool}
           sheet={sheet}
+          choices={choices}
           traits={traits
             .filter((t) => t.category === pool.category)
             .map((t) => catalogue.traits.find((c) => c.category === t.category && c.name === t.name))
@@ -45,7 +48,20 @@ export function FromMerits({ character, creation, sheet, catalogue, traits }: Fr
   );
 }
 
-function FromBudget({ character, pool, sheet, traits }: { character: CharacterOut; pool: PoolOut; sheet: SheetOut; traits: TraitOut[] }) {
+function FromBudget({
+  character,
+  pool,
+  sheet,
+  traits: catalogued,
+  choices: offered,
+}: {
+  character: CharacterOut;
+  pool: PoolOut;
+  sheet: SheetOut;
+  traits: TraitOut[];
+  choices?: Record<string, string[]>;
+}) {
+  const traits = catalogued.map((t) => (offered?.[t.name] ? { ...t, choices: offered[t.name] } : t));
   const barred = useUnavailable(character.id, pool.category, true, { asIf: "empty" });
   const refusals = useRefusals(character.id, pool.category).data ?? {};
   // A choice the merit asks for (Bonds of Stolen Vitae: which discipline), before it is taken.

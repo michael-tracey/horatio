@@ -102,7 +102,9 @@ def check_feeding_modifier(modifier: FeedingModifierData, rule_set: RuleSetData)
 
 def check_creation_rules(rules: Iterable[CreationRuleData], rule_set: RuleSetData) -> None:
     """Refuse creation rules a character could not be built with."""
-    seen_picks: set[tuple[str, int]] = set()
+    # Two rules for one rating are fine when their conditions differ (Inept's one pick
+    # fewer at 1): whichever holds for the sheet is the one that counts.
+    seen_picks: set[tuple[str, int, str]] = set()
     kinds: dict[str, str] = {}
     for rule in rules:
         where = f"creation rule for {rule.category}"
@@ -120,9 +122,9 @@ def check_creation_rules(rules: Iterable[CreationRuleData], rule_set: RuleSetDat
         if kind == "points":
             if rule.rating is not None or rule.picks is not None or (rule.points or 0) < 1:
                 raise ValueError(f"{where}: a points rule gives only a positive number of points")
-            if (rule.category, 0) in seen_picks:
+            if (rule.category, 0, "") in seen_picks:
                 raise ValueError(f"{where}: only one points rule per category")
-            seen_picks.add((rule.category, 0))
+            seen_picks.add((rule.category, 0, ""))
         else:
             if rule.rating is None or rule.picks is None or rule.rating < 1 or rule.picks < 1:
                 raise ValueError(
@@ -130,9 +132,10 @@ def check_creation_rules(rules: Iterable[CreationRuleData], rule_set: RuleSetDat
                 )
             if category.max_rating is not None and rule.rating > category.max_rating:
                 raise ValueError(f"{where}: rating above the category's maximum")
-            if (rule.category, rule.rating) in seen_picks:
+            condition = repr(sorted((rule.when or {}).items()))
+            if (rule.category, rule.rating, condition) in seen_picks:
                 raise ValueError(f"{where}: two rules for picks at {rule.rating}")
-            seen_picks.add((rule.category, rule.rating))
+            seen_picks.add((rule.category, rule.rating, condition))
 
 
 def check_starting_trait(trait: StartingTraitData, rule_set: RuleSetData) -> None:

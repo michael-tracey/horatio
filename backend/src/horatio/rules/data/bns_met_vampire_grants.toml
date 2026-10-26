@@ -299,6 +299,81 @@ target = { category = "extra_in_clan_disciplines", choose = ["Animalism", "Auspe
 amount = 1
 page = "Vol. 2 Issue 1, p. 53"
 
+# --- the fourth in-clan discipline starts without a free dot ----------------------------
+# The extra in-clan discipline these merits give takes no free starting dot, though it
+# is in-clan in every other way (pp. 242, 248; the Vol. 2 Issue 1 merits say they work as
+# Additional Common or Uncommon Discipline does). A Caitiff's own choices are not held to
+# it: they have three starting picks and, with the merit, four to choose them from.
+# The supplement's text for Strength of Honor and Bonds of Stolen Vitae is cut short in
+# the PDF, so they are not listed.
+
+[[grants]]
+source = { category = "merits", name = "Additional Common Discipline" }
+kind = "no_free_dot"
+target = { category = "extra_in_clan_disciplines", names = ["Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"] }
+amount = 0
+when = { not = { clan = ["Caitiff"] } }
+page = "248"
+
+[[grants]]
+source = { category = "merits", name = "Additional Uncommon Discipline" }
+kind = "no_free_dot"
+target = { category = "extra_in_clan_disciplines", names = ["Protean", "Dementation", "Serpentis", "Quietus"] }
+amount = 0
+when = { not = { clan = ["Caitiff"] } }
+page = "248"
+
+[[grants]]
+source = { category = "merits", name = "Pliable Blood" }
+kind = "no_free_dot"
+target = { category = "extra_in_clan_disciplines", names = ["Auspex", "Celerity", "Dementation", "Dominate", "Fortitude", "Presence", "Protean", "Quietus", "Serpentis"] }
+amount = 0
+when = { not = { clan = ["Caitiff"] } }
+page = "242"
+
+[[grants]]
+source = { category = "merits", name = "Web of Knives" }
+kind = "no_free_dot"
+target = { category = "extra_in_clan_disciplines", names = ["Potence"] }
+amount = 0
+when = { not = { clan = ["Caitiff"] } }
+page = "Vol. 2 Issue 1, p. 26"
+
+[[grants]]
+source = { category = "merits", name = "Iron Scales" }
+kind = "no_free_dot"
+target = { category = "extra_in_clan_disciplines", names = ["Fortitude"] }
+amount = 0
+when = { not = { clan = ["Caitiff"] } }
+page = "Vol. 2 Issue 1, p. 31"
+
+[[grants]]
+source = { category = "merits", name = "Seekers of the Hidden" }
+kind = "no_free_dot"
+target = { category = "extra_in_clan_disciplines", names = ["Spiritus"] }
+amount = 0
+when = { not = { clan = ["Caitiff"] } }
+page = "Vol. 2 Issue 1, p. 32"
+
+[[grants]]
+source = { category = "merits", name = "Blessing of the Gorgons" }
+kind = "no_free_dot"
+target = { category = "extra_in_clan_disciplines", names = ["Serpentis"] }
+amount = 0
+when = { not = { clan = ["Caitiff"] } }
+page = "Vol. 2 Issue 1, p. 48"
+
+# --- Inept ---------------------------------------------------------------------------
+# The in-clan discipline the flaw's detail names takes no free dot and costs as if it
+# were out-of-clan (p. 263).
+
+[[grants]]
+source = { category = "flaws", name = "Inept" }
+kind = "price_out_of_clan"
+target = { category = "disciplines", choose = "any" }
+amount = 0
+page = "263"
+
 # --- in-clan disciplines replaced ----------------------------------------------------
 
 # The merit sets all of the character's in-clan disciplines, in place of the clan's.
@@ -808,18 +883,6 @@ why = "A discipline's focus benefit without the focus; the focus is not given."
 
 [[rules_only]]
 category = "merits"
-name = "Additional Common Discipline"
-page = "248"
-why = "The player adds the discipline they choose under Extra In-Clan Disciplines; the checks allow it."
-
-[[rules_only]]
-category = "merits"
-name = "Additional Uncommon Discipline"
-page = "248"
-why = "The player adds the discipline they choose under Extra In-Clan Disciplines; the checks allow it."
-
-[[rules_only]]
-category = "merits"
 name = "Arcane Branding"
 page = "Vol. 2 Issue 1, p. 53"
 why = "Magic Resistance's benefits except against Tremere blood magic; the merit is not given, and cannot be held with it."
@@ -871,12 +934,6 @@ category = "merits"
 name = "Paragon"
 page = "245"
 why = "A Ventrue lieutenant NPC built as a level 6 Retainer, more money from Resources and an extra action per Influence."
-
-[[rules_only]]
-category = "merits"
-name = "Pliable Blood"
-page = "242"
-why = "The player adds the discipline they choose under Extra In-Clan Disciplines; the checks allow it."
 
 [[rules_only]]
 category = "merits"
@@ -933,9 +990,3 @@ category = "flaws"
 name = "Conspicuous Consumption"
 page = "261"
 why = "Eats flesh as Personal Masquerade allows, and nothing else of it."
-
-[[rules_only]]
-category = "flaws"
-name = "Inept"
-page = "263"
-why = "No free dot in one in-clan discipline, and out-of-clan prices for it."
