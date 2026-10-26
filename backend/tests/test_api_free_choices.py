@@ -83,6 +83,17 @@ def ventrue_with_royalty(troupe: Troupe) -> str:
 # --- Ventrue Royalty: the shared mechanism -----------------------------------------
 
 
+def test_the_catalogue_does_not_ask_for_a_detail_where_the_merit_asks_for_choices(
+    troupe: Troupe,
+) -> None:
+    catalogue = troupe.player.client.get("/rules/vampire").json()["traits"]
+
+    royalty = next(t for t in catalogue if t["name"] == "Ventrue Royalty")
+    cult = next(t for t in catalogue if t["name"] == "Personal Cult")
+    assert royalty["choices"] is None
+    assert cult["choices"] == ["Haven", "Herd", "Resources"]
+
+
 def test_the_merit_offers_its_choices_before_any_are_made(troupe: Troupe) -> None:
     character_id = ventrue_with_royalty(troupe)
 

@@ -155,7 +155,11 @@ def set_choices(
         raise sheets.conflict(reason)
     rules = sheets.rules_for(db, character)
     sheet = [r.as_rules_trait() for r in sheets.sheet_rows(db, character)]
-    cleaned = [FreeChoice(p.grant, p.name, p.detail.strip(), p.amount) for p in picks]
+    # The biggest placed first, as they read: 4, 3, 2. Others keep their order.
+    cleaned = sorted(
+        (FreeChoice(p.grant, p.name, p.detail.strip(), p.amount) for p in picks),
+        key=lambda p: -p.amount,
+    )
     for offer in found:
         mine = [p for p in cleaned if p.grant == offer.grant.key]
         message = check_picks(offer.grant, mine, rules.rule_set, sheet)

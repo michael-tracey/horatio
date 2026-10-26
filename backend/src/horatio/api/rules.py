@@ -85,7 +85,8 @@ def catalogue(
     house_text = {(r.category, r.trait): r.text for r in rules.house_rules if r.trait and r.text}
     chooses: dict[tuple[str, str], list[str]] = {}
     for grant in rules.rule_set.grants:
-        options = choices(grant, rules.rule_set)
+        # The player of a free_choices grant chooses beside the merit, not in its detail.
+        options = choices(grant, rules.rule_set) if grant.kind != "free_choices" else []
         if options:
             source = (grant.source["category"], grant.source["name"])
             chooses[source] = sorted(set(chooses.get(source, [])) | set(options))

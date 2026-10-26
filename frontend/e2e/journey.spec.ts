@@ -1449,7 +1449,7 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   await expect(chosen).toContainText("Resources 4");
   await expect(chosen).toContainText("Herd 3");
   await expect(chosen).toContainText("Allies 2");
-  await expect(p.getByText("31", { exact: true })).toBeVisible();
+  await expect(p.getByText("28", { exact: true })).toBeVisible();
   await p.screenshot(shots("royalty-placed"));
 
   // Until a troupe accepts her, the choices change freely: Haven in place of Resources.
