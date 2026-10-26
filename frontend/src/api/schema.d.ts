@@ -2261,7 +2261,8 @@ export interface paths {
         };
         /**
          * Find Players
-         * @description Every account whose name, handle or email has `q` in it, for the custodian.
+         * @description Every account whose name, handle or email has `q` in it, for the custodian. With
+         *     `troupe_id`, only those with an active PC whose home troupe is that troupe.
          */
         get: operations["find_players_api_players_get"];
         put?: never;
@@ -14042,6 +14043,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
+                troupe_id?: string | null;
             };
             header?: never;
             path?: never;

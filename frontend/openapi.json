@@ -21884,7 +21884,7 @@
     },
     "/api/players": {
       "get": {
-        "description": "Every account whose name, handle or email has `q` in it, for the custodian.",
+        "description": "Every account whose name, handle or email has `q` in it, for the custodian. With\n`troupe_id`, only those with an active PC whose home troupe is that troupe.",
         "operationId": "find_players_api_players_get",
         "parameters": [
           {
@@ -21895,6 +21895,23 @@
               "default": "",
               "title": "Q",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
             }
           }
         ],

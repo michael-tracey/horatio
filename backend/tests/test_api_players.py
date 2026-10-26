@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio.models import AuditEvent, PasswordReset, User
+from horatio.models import AuditEvent, Character, PasswordReset, User
 from tests.api_helpers import PASSWORD, Person, Troupe, new_character
 
 
@@ -173,6 +173,43 @@ def test_the_custodian_finds_people_by_name_or_email(troupe: Troupe) -> None:
     assert found("") == sorted(found(""))
     assert found("player@example") == ["player"]
     assert troupe.lead.client.get("/players").status_code == 403
+
+
+def test_the_custodian_filters_people_by_the_troupe_their_active_pc_is_home_in(
+    troupe: Troupe,
+) -> None:
+    other = troupe.custodian.client.post(
+        "/troupes", json={"name": "Brujah Rabble", "lead_handle": troupe.lead.handle}
+    ).json()["id"]
+
+    def found(**params: str) -> list[str]:
+        response = troupe.custodian.client.get("/players", params=params)
+        assert response.status_code == 200, response.text
+        return [p["display_name"] for p in response.json()]
+
+    def character(person: Person, name: str, **changes: Any) -> None:
+        row = troupe.session.get_one(Character, uuid.UUID(new_character(troupe, person, name)))
+        for field, value in changes.items():
+            setattr(row, field, value)
+        troupe.session.flush()
+
+    here = uuid.UUID(troupe.id)
+    character(troupe.player, "Home", home_troupe_id=here)
+    character(troupe.lead, "Elsewhere", home_troupe_id=uuid.UUID(other))
+    character(troupe.storyteller, "Retired", home_troupe_id=here, status="retired")
+    character(troupe.assistant, "Building", building_troupe_id=here)
+    visiting = new_character(troupe, troupe.narrator, "Visiting")
+    troupe.narrator.client.post(f"/characters/{visiting}/troupes", json={"troupe_id": troupe.id})
+    npc = troupe.session.get_one(Character, uuid.UUID(new_character(troupe, troupe.stranger)))
+    npc.kind, npc.owner_troupe_id, npc.home_troupe_id = "npc", here, here
+    troupe.session.flush()
+
+    assert found(troupe_id=troupe.id) == ["player"]
+    assert found(troupe_id=other) == ["lead"]
+    assert found(troupe_id=troupe.id, q="play") == ["player"]
+    assert found(troupe_id=troupe.id, q="lead") == []
+    assert len(found()) == 7
+    assert troupe.lead.client.get("/players", params={"troupe_id": troupe.id}).status_code == 403
 
 
 # --- password resets -------------------------------------------------------------------------

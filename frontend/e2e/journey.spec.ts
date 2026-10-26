@@ -2225,6 +2225,64 @@ test("a player fills in their profile, and the custodian resets their password",
   await c.screenshot(shots("password-resets"));
 });
 
+test("the custodian filters People by the troupe a player's active character is home in", async ({ browser }) => {
+  const custodian = await person(browser, "tpf-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tpf-lead");
+  const alpha = await person(browser, "tpf-alpha");
+  const beta = await person(browser, "tpf-beta");
+  const visitor = await person(browser, "tpf-visitor");
+  const northName = `Court of Frost ${run}`;
+  const southName = `Court of Embers ${run}`;
+
+  const send = async (p: Page, method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const north = await send(custodian.page, "POST", "/api/troupes", { name: northName, lead_handle: lead.handle });
+  const south = await send(custodian.page, "POST", "/api/troupes", { name: southName, lead_handle: lead.handle });
+
+  // Alpha's character is accepted by the first troupe, beta's by the second. The
+  // visitor only visits the first.
+  const home = async (player: { page: Page }, name: string, troupeId: string) => {
+    const id = await builtVampire(player.page, name, "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });
+    const approval = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${approval.id}/approve`, {});
+    return id;
+  };
+  await home(alpha, "Frostbitten", north.id);
+  await home(beta, "Emberling", south.id);
+  const wanderer = await builtVampire(visitor.page, "Wanderer", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });
+  await send(visitor.page, "POST", `/api/characters/${wanderer}/troupes`, { troupe_id: north.id });
+
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  const list = c.locator("main li");
+  const filter = c.getByLabel("Active character in");
+  await expect(filter.locator("option").first()).toHaveText("Any troupe");
+
+  await filter.selectOption({ label: northName });
+  await expect(list.filter({ hasText: alpha.email })).toBeVisible();
+  await expect(list.filter({ hasText: beta.email })).toHaveCount(0);
+  await expect(list.filter({ hasText: visitor.email })).toHaveCount(0);
+  await c.screenshot(shots("people-by-troupe"));
+
+  // The search narrows it further: both apply.
+  await c.getByLabel("Search people").fill(beta.email);
+  await expect(c.getByText("No one matches.")).toBeVisible();
+  await filter.selectOption({ label: southName });
+  await expect(list.filter({ hasText: beta.email })).toBeVisible();
+  await expect(list.filter({ hasText: alpha.email })).toHaveCount(0);
+
+  await filter.selectOption({ label: "Any troupe" });
+  await c.getByLabel("Search people").fill(visitor.email);
+  await expect(list.filter({ hasText: visitor.email })).toBeVisible();
+});
+
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {
   const custodian = await person(browser, "filter-custodian");
   makeCustodian(custodian.email);
