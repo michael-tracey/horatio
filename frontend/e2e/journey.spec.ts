@@ -3767,3 +3767,28 @@ test("a skill's specialisations sit in its own list item, in the sheet's two col
   }
   await p.screenshot(shots("specializations-stay-together"));
 });
+
+test("an attribute stops rising at the limit Generation gives", async ({ browser }) => {
+  const { page: p } = await person(browser, "limit-player");
+  // A Neonate may take one attribute to 11 (core p. 102).
+  const id = await builtVampire(
+    p,
+    "Stoddard",
+    "Brujah",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 1], ["Herd", 2], ["Fame", 3]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] },
+    [["attributes", "Physical", 10]],
+  );
+  await p.goto(`/characters/${id}`);
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+
+  // One dot to 11 is fine for a Neonate; the next is refused on its line, and nothing can be spent.
+  await p.getByRole("button", { name: "Raise Physical" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Physical 10 → 11" })).not.toContainText("Generation rating");
+  await expect(p.getByRole("button", { name: "Spend XP" })).toBeEnabled();
+  await p.getByRole("button", { name: "Raise Physical" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Physical 10 → 12" })).toContainText("only as many dots, in all, as the Generation rating");
+  await expect(p.getByRole("button", { name: "Spend XP" })).toBeDisabled();
+  // Stepping back to 11 makes it fine again.
+  await p.getByRole("button", { name: "Lower Physical" }).click();
+  await expect(p.getByRole("button", { name: "Spend XP" })).toBeEnabled();
+});

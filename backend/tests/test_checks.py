@@ -3,6 +3,7 @@
 import pytest
 
 from horatio.rules.checks import CheckData, matches, violations
+from horatio.rules.files import DATA_DIR, load_rule_set
 from horatio.rules.model import SheetTrait
 
 
@@ -117,3 +118,44 @@ def test_what_a_check_looks_at() -> None:
 
     assert technique.looks_at == {("disciplines", "Potence"), ("disciplines", "Presence")}
     assert merit.looks_at == {("clan", None), ("flaws", None), ("backgrounds", "Generation")}
+
+
+def attributes(generation: int, physical: int, social: int, mental: int) -> list[SheetTrait]:
+    return [
+        t("backgrounds", "Generation", generation),
+        t("attributes", "Physical", physical),
+        t("attributes", "Social", social),
+        t("attributes", "Mental", mental),
+    ]
+
+
+def attribute_limit() -> CheckData:
+    rules = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+    return next(c for c in rules.checks if c.category == "attributes")
+
+
+@pytest.mark.parametrize(
+    ("sheet", "flagged"),
+    [
+        (attributes(1, 10, 10, 10), []),
+        (attributes(1, 11, 10, 10), []),
+        (attributes(1, 12, 10, 10), ["Physical"]),
+        (attributes(1, 11, 11, 10), ["Physical", "Social"]),
+        (attributes(3, 13, 10, 10), []),
+        (attributes(3, 14, 10, 10), ["Physical"]),
+        (attributes(3, 11, 12, 10), []),
+        (attributes(3, 11, 11, 11), []),
+        (attributes(3, 12, 12, 10), ["Physical", "Social"]),
+        (attributes(5, 15, 10, 10), []),
+        (attributes(5, 11, 11, 13), []),
+        (attributes(5, 12, 12, 12), ["Physical", "Social", "Mental"]),
+        # No Generation background reads as Generation 1.
+        (attributes(1, 11, 10, 10)[1:], []),
+        (attributes(1, 12, 10, 10)[1:], ["Physical"]),
+    ],
+)
+def test_attributes_may_go_above_10_by_as_many_dots_as_generation(
+    sheet: list[SheetTrait], flagged: list[str]
+) -> None:
+    found = violations([attribute_limit()], sheet)
+    assert [v.subject.name for v in found] == flagged

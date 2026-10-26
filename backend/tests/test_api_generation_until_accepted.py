@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from horatio.models import XpEntry
 from tests.api_helpers import Person, Troupe
-from tests.test_api_cart import rating, spend
+from tests.test_api_cart import rating, sheet, spend
 from tests.test_api_creation import build, creating
 
 # Balances here are about repricing, not banking creation XP.
@@ -224,3 +224,50 @@ def test_generation_4_with_a_technique_is_refused_until_the_technique_comes_out(
     )
     assert [line["cost"] for line in lines] == [-20, 8]
     assert balance(troupe.player, character_id) == 18 + 20 - 8
+
+
+def attribute(name: str, to: int, was: int) -> dict[str, Any]:
+    return rating("attributes", name, to, from_rating=was)
+
+
+def test_attributes_stop_at_the_limit_generation_gives(troupe: Troupe) -> None:
+    character_id = neonate(troupe)
+    give_xp(troupe, character_id, 500)
+    # Physical starts at 7 from creation: a Neonate may take one attribute to 11.
+    buy(troupe.player, character_id, attribute("Physical", 11, 7))
+    refused = spend(troupe.player, character_id, attribute("Physical", 12, 11))
+    assert refused.status_code == 200, refused.text
+    assert not refused.json()["applied"]
+    assert "Generation rating" in refused.json()["lines"][0]["refused"]
+    second = spend(troupe.player, character_id, attribute("Social", 11, 5))
+    assert not second.json()["applied"]
+
+    buy(troupe.player, character_id, generation(3, 1))
+    # A Pretender: 11 / 11 / 11 is fine, but 12 and 12 is not.
+    buy(troupe.player, character_id, attribute("Social", 11, 5), attribute("Mental", 11, 3))
+    held = {t["name"]: t["rating"] for t in sheet(troupe.player, character_id)["traits"]}
+    assert (held["Physical"], held["Social"], held["Mental"]) == (11, 11, 11)
+    assert not spend(troupe.player, character_id, attribute("Physical", 12, 11)).json()["applied"]
+    # Or all three points on one attribute, by bringing the others down.
+    buy(
+        troupe.player,
+        character_id,
+        attribute("Physical", 13, 11),
+        attribute("Social", 10, 11),
+        attribute("Mental", 10, 11),
+    )
+    assert not spend(
+        troupe.player, character_id, attribute("Social", 12, 10), attribute("Mental", 12, 10)
+    ).json()["applied"]
+
+
+def test_generation_cannot_drop_below_what_the_attributes_need(troupe: Troupe) -> None:
+    character_id = neonate(troupe)
+    give_xp(troupe, character_id, 500)
+    buy(troupe.player, character_id, generation(3, 1))
+    buy(troupe.player, character_id, attribute("Physical", 13, 7))
+
+    lowered = spend(troupe.player, character_id, generation(2, 3))
+    assert not lowered.json()["applied"]
+    # Bringing the attribute down in the same cart makes it fine.
+    buy(troupe.player, character_id, generation(2, 3), attribute("Physical", 12, 13))
