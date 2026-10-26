@@ -1,7 +1,7 @@
 """scenes: a troupe's named scenes, kept on the server, and who is pinned to each
 
 Revision ID: 0072
-Revises: 0069
+Revises: 0071
 Create Date: 2026-10-26 20:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0072"
-down_revision: str | None = "0069"
+down_revision: str | None = "0071"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
