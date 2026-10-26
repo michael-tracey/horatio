@@ -237,9 +237,11 @@ function Section({
   onChange: (c: Change) => void;
 }) {
   const [query, setQuery] = useState("");
-  // Why each power not held is out of reach, and (from the sheet's problems) why each held one is out of order.
-  const refusedFirst = useUnavailable(character.id, categories[0] ?? "", !!powers);
-  const refusedSecond = useUnavailable(character.id, categories[1] ?? "", !!powers && categories.length > 1);
+  // Why each power not held is out of reach (worked out only while searching, as it is slow), and
+  // from the sheet's problems, why each held one is out of order.
+  const searching = !!powers && query.trim() !== "";
+  const refusedFirst = useUnavailable(character.id, categories[0] ?? "", searching);
+  const refusedSecond = useUnavailable(character.id, categories[1] ?? "", searching && categories.length > 1);
   const marks = useMemo(() => {
     const found = new Map<string, string>();
     if (!powers) return found;

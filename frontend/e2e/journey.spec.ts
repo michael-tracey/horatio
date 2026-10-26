@@ -874,8 +874,8 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("button", { name: "Quick build" }).click();
   await expect(p.getByRole("heading", { name: "Prince Vasquez" })).toBeVisible();
 
-  await p.getByLabel("Clan").selectOption("Ventrue");
-  await expect(p.getByLabel("Clan")).toHaveValue("Ventrue");
+  await p.getByLabel("Clan", { exact: true }).selectOption("Ventrue");
+  await expect(p.getByLabel("Clan", { exact: true })).toHaveValue("Ventrue");
   await p.getByRole("button", { name: "Social 7", exact: true }).click(); // attributes: 3 a dot
   await expect(p.getByText("21 XP")).toBeVisible();
   // Each attribute's focus is chosen beside it, one of three; choosing again swaps it.
