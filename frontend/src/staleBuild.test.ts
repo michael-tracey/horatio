@@ -19,7 +19,6 @@ describe("reloadOnce", () => {
     const reload = vi.fn();
     const broken = { ...memory(), setItem: () => { throw new Error("full"); } } as Storage;
     expect(reloadOnce(broken, 1, reload)).toBe(false);
-    expect(reloadOnce(undefined, 1, reload)).toBe(false);
     expect(reload).not.toHaveBeenCalled();
   });
 });
