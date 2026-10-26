@@ -3246,6 +3246,55 @@
         "title": "DarkPackOut",
         "type": "object"
       },
+      "DebtIn": {
+        "properties": {
+          "amount": {
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "change": {
+            "enum": [
+              "add",
+              "forgive"
+            ],
+            "title": "Change",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "change",
+          "amount",
+          "reason"
+        ],
+        "title": "DebtIn",
+        "type": "object"
+      },
+      "DebtOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "debt": {
+            "title": "Debt",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "debt",
+          "can_change"
+        ],
+        "title": "DebtOut",
+        "type": "object"
+      },
       "Decision": {
         "properties": {
           "at_cost": {
@@ -4568,6 +4617,734 @@
           "available"
         ],
         "title": "EmailHelp",
+        "type": "object"
+      },
+      "EmbraceChoicesIn": {
+        "properties": {
+          "buy_back": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceDotsIn"
+            },
+            "maxItems": 2,
+            "title": "Buy Back",
+            "type": "array"
+          },
+          "buy_back_into_debt": {
+            "default": false,
+            "title": "Buy Back Into Debt",
+            "type": "boolean"
+          },
+          "caitiff_three": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Caitiff Three",
+            "type": "array"
+          },
+          "clan_merits": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan Merits"
+          },
+          "remove": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceNamedIn"
+            },
+            "maxItems": 50,
+            "title": "Remove",
+            "type": "array"
+          },
+          "sire": {
+            "$ref": "#/components/schemas/SireIn"
+          },
+          "sire_is_domitor": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Is Domitor"
+          },
+          "two_dots": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Two Dots"
+          },
+          "weakness": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Weakness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sire"
+        ],
+        "title": "EmbraceChoicesIn",
+        "type": "object"
+      },
+      "EmbraceDiedIn": {
+        "properties": {
+          "embraced_on": {
+            "format": "date",
+            "title": "Embraced On",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "sire_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Sire Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "embraced_on"
+        ],
+        "title": "EmbraceDiedIn",
+        "type": "object"
+      },
+      "EmbraceDotsIn": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "rating"
+        ],
+        "title": "EmbraceDotsIn",
+        "type": "object"
+      },
+      "EmbraceIn": {
+        "properties": {
+          "buy_back": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceDotsIn"
+            },
+            "maxItems": 2,
+            "title": "Buy Back",
+            "type": "array"
+          },
+          "buy_back_into_debt": {
+            "default": false,
+            "title": "Buy Back Into Debt",
+            "type": "boolean"
+          },
+          "caitiff_three": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Caitiff Three",
+            "type": "array"
+          },
+          "clan_merits": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan Merits"
+          },
+          "embraced_on": {
+            "format": "date",
+            "title": "Embraced On",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "remove": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceNamedIn"
+            },
+            "maxItems": 50,
+            "title": "Remove",
+            "type": "array"
+          },
+          "sire": {
+            "$ref": "#/components/schemas/SireIn"
+          },
+          "sire_is_domitor": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Is Domitor"
+          },
+          "two_dots": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Two Dots"
+          },
+          "weakness": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Weakness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sire",
+          "embraced_on"
+        ],
+        "title": "EmbraceIn",
+        "type": "object"
+      },
+      "EmbraceLineOut": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "xp": {
+            "title": "Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "text",
+          "xp"
+        ],
+        "title": "EmbraceLineOut",
+        "type": "object"
+      },
+      "EmbraceListOut": {
+        "properties": {
+          "can_embrace": {
+            "title": "Can Embrace",
+            "type": "boolean"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries",
+          "can_embrace"
+        ],
+        "title": "EmbraceListOut",
+        "type": "object"
+      },
+      "EmbraceNamedIn": {
+        "properties": {
+          "category": {
+            "enum": [
+              "merits",
+              "flaws"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "EmbraceNamedIn",
+        "type": "object"
+      },
+      "EmbraceOut": {
+        "properties": {
+          "debt": {
+            "title": "Debt",
+            "type": "integer"
+          },
+          "embraced_on": {
+            "format": "date",
+            "title": "Embraced On",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "recorded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded By"
+          },
+          "result": {
+            "title": "Result",
+            "type": "string"
+          },
+          "sire_clan": {
+            "title": "Sire Clan",
+            "type": "string"
+          },
+          "sire_generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Generation"
+          },
+          "sire_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Id"
+          },
+          "sire_name": {
+            "title": "Sire Name",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceStepOut"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "result",
+          "embraced_on",
+          "sire_id",
+          "sire_name",
+          "sire_clan",
+          "sire_generation",
+          "note",
+          "recorded_by",
+          "steps",
+          "debt"
+        ],
+        "title": "EmbraceOut",
+        "type": "object"
+      },
+      "EmbracePlanOut": {
+        "properties": {
+          "attribute_bonus": {
+            "title": "Attribute Bonus",
+            "type": "integer"
+          },
+          "balance_after": {
+            "title": "Balance After",
+            "type": "integer"
+          },
+          "balance_before": {
+            "title": "Balance Before",
+            "type": "integer"
+          },
+          "blood": {
+            "title": "Blood",
+            "type": "integer"
+          },
+          "blood_per_turn": {
+            "title": "Blood Per Turn",
+            "type": "integer"
+          },
+          "bought_back": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceRatedOut"
+            },
+            "title": "Bought Back",
+            "type": "array"
+          },
+          "buy_back_into_debt": {
+            "title": "Buy Back Into Debt",
+            "type": "boolean"
+          },
+          "caitiff": {
+            "title": "Caitiff",
+            "type": "boolean"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "clan_merit_choices": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clan Merit Choices",
+            "type": "array"
+          },
+          "clan_merits": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clan Merits",
+            "type": "array"
+          },
+          "debt": {
+            "title": "Debt",
+            "type": "integer"
+          },
+          "dies": {
+            "title": "Dies",
+            "type": "boolean"
+          },
+          "disciplines": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceRatedOut"
+            },
+            "title": "Disciplines",
+            "type": "array"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "generation_dots": {
+            "title": "Generation Dots",
+            "type": "integer"
+          },
+          "in_clan": {
+            "items": {
+              "type": "string"
+            },
+            "title": "In Clan",
+            "type": "array"
+          },
+          "lesser_flaw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lesser Flaw"
+          },
+          "lost": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceRatedOut"
+            },
+            "title": "Lost",
+            "type": "array"
+          },
+          "merit_limit": {
+            "title": "Merit Limit",
+            "type": "integer"
+          },
+          "merit_points": {
+            "title": "Merit Points",
+            "type": "integer"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused"
+          },
+          "removable": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceRemovableOut"
+            },
+            "title": "Removable",
+            "type": "array"
+          },
+          "sire_clan": {
+            "title": "Sire Clan",
+            "type": "string"
+          },
+          "sire_generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Generation"
+          },
+          "sire_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Id"
+          },
+          "sire_is_domitor": {
+            "title": "Sire Is Domitor",
+            "type": "boolean"
+          },
+          "sire_name": {
+            "title": "Sire Name",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceStepOut"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "two_dots": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Two Dots"
+          },
+          "weakness": {
+            "title": "Weakness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sire_id",
+          "sire_name",
+          "sire_clan",
+          "sire_generation",
+          "sire_is_domitor",
+          "generation",
+          "generation_dots",
+          "lesser_flaw",
+          "title",
+          "blood",
+          "blood_per_turn",
+          "attribute_bonus",
+          "clan",
+          "caitiff",
+          "in_clan",
+          "two_dots",
+          "clan_merit_choices",
+          "clan_merits",
+          "merit_points",
+          "merit_limit",
+          "dies",
+          "removable",
+          "lost",
+          "disciplines",
+          "bought_back",
+          "buy_back_into_debt",
+          "weakness",
+          "steps",
+          "balance_before",
+          "balance_after",
+          "debt",
+          "notes",
+          "refused"
+        ],
+        "title": "EmbracePlanOut",
+        "type": "object"
+      },
+      "EmbraceRatedOut": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "rating"
+        ],
+        "title": "EmbraceRatedOut",
+        "type": "object"
+      },
+      "EmbraceRemovableOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "xp": {
+            "title": "Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "detail",
+          "rating",
+          "xp"
+        ],
+        "title": "EmbraceRemovableOut",
+        "type": "object"
+      },
+      "EmbraceStepOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/EmbraceLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "xp": {
+            "title": "Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "lines",
+          "xp"
+        ],
+        "title": "EmbraceStepOut",
+        "type": "object"
+      },
+      "EmbracedOut": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/EmbracePlanOut"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetOut"
+          }
+        },
+        "required": [
+          "plan",
+          "sheet"
+        ],
+        "title": "EmbracedOut",
         "type": "object"
       },
       "ExceptionAskOut": {
@@ -14365,6 +15142,90 @@
         "title": "SignUp",
         "type": "object"
       },
+      "SireChoiceOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "clan",
+          "generation"
+        ],
+        "title": "SireChoiceOut",
+        "type": "object"
+      },
+      "SireIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Clan",
+            "type": "string"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "maximum": 15.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "SireIn",
+        "type": "object"
+      },
       "SkillPool": {
         "properties": {
           "name": {
@@ -17249,6 +18110,11 @@
             ],
             "title": "Corrects Id"
           },
+          "debt": {
+            "default": 0,
+            "title": "Debt",
+            "type": "integer"
+          },
           "detail": {
             "anyOf": [
               {
@@ -17288,6 +18154,11 @@
           "reason": {
             "title": "Reason",
             "type": "string"
+          },
+          "to_debt": {
+            "default": 0,
+            "title": "To Debt",
+            "type": "integer"
           },
           "to_rating": {
             "anyOf": [
@@ -17579,6 +18450,11 @@
         "properties": {
           "balance": {
             "title": "Balance",
+            "type": "integer"
+          },
+          "debt": {
+            "default": 0,
+            "title": "Debt",
             "type": "integer"
           },
           "earned": {
@@ -19474,6 +20350,268 @@
         "summary": "Submit",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/embrace": {
+      "get": {
+        "description": "The character's Embrace, once it has been Embraced, and whether this viewer can\nrun one now.",
+        "operationId": "list_embraces_api_characters__character_id__embrace_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbraceListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Embraces",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "post": {
+        "description": "The ghoul becomes a vampire of its sire's clan, all its steps at once or none\n(MET: VTM pp. 297\u2013299). Its player is told.",
+        "operationId": "embrace_ghoul_api_characters__character_id__embrace_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbraceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbracedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Embrace Ghoul",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/embrace/died": {
+      "post": {
+        "description": "The ghoul died in the attempted Embrace: it is retired, with a note in its log.",
+        "operationId": "died_in_embrace_api_characters__character_id__embrace_died_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbraceDiedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbraceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Died In Embrace",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/embrace/plan": {
+      "post": {
+        "description": "What the Embrace would do with these choices, step by step with its XP, for\nstaff to see before they confirm. Nothing is saved.",
+        "operationId": "embrace_plan_api_characters__character_id__embrace_plan_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbraceChoicesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbracePlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Embrace Plan",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/embrace/sires": {
+      "get": {
+        "description": "The vampires in Horatio the staff member can see, by name, that could be the\nsire: with their clan, and generation as their sheets have it.",
+        "operationId": "sire_choices_api_characters__character_id__embrace_sires_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SireChoiceOut"
+                  },
+                  "title": "Response Sire Choices Api Characters  Character Id  Embrace Sires Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sire Choices",
+        "tags": [
+          "sheets"
         ]
       }
     },
@@ -22818,6 +23956,101 @@
           }
         },
         "summary": "Award Xp",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/xp/debt": {
+      "get": {
+        "operationId": "xp_debt_of_api_characters__character_id__xp_debt_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebtOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Xp Debt Of",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "post": {
+        "description": "The home troupe's staff add XP debt, or forgive some of it, with a reason.",
+        "operationId": "change_xp_debt_api_characters__character_id__xp_debt_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DebtIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebtOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Xp Debt",
         "tags": [
           "sheets"
         ]

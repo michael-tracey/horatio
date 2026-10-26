@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, free_choices, house_traits, sheets, titles, xp_range
+from horatio import audit, free_choices, house_traits, sheets, titles, xp_debt, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     AppliedHouseTrait,
@@ -149,9 +149,12 @@ class SheetTraitOut(BaseModel):
 
 
 class XpSummary(BaseModel):
+    # Below 0 while the character is in XP debt (horatio.xp_debt).
     balance: int
     earned: int
     spent: int
+    # XP debt: what the balance is below 0.
+    debt: int = 0
     # Creation XP that would be lost if a first home troupe accepted it now.
     unbanked: int = 0
 
@@ -328,6 +331,10 @@ class XpEntryOut(BaseModel):
     corrected_to: int | None = None
     # An award the viewer may correct.
     correctable: bool = False
+    # Of what this line gave, how much went to XP debt (horatio.xp_debt); and the
+    # debt left after it.
+    to_debt: int = 0
+    debt: int = 0
 
 
 class XpAward(BaseModel):
@@ -534,6 +541,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             balance=earned - spent,
             earned=earned,
             spent=spent,
+            debt=xp_debt.owed(earned - spent),
             unbanked=unbanked_xp(db, character) if character.kind == "pc" else 0,
         ),
         pending_approvals=[approval_out(a) for a in pending],
@@ -792,6 +800,7 @@ def xp_history(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> lis
             corrected[e.corrects_id] = corrected.get(e.corrects_id, 0) + e.amount
     may_correct = home_troupe_awarding(db, user, character) is not None
     own = self_entering(db, user, character)
+    paid = xp_debt.running(e.amount for e, _ in rows)
     return [
         XpEntryOut(
             id=e.id,
@@ -807,8 +816,10 @@ def xp_history(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> lis
             corrected_to=e.amount + corrected[e.id] if e.id in corrected else None,
             correctable=(may_correct and e.kind in sheets.CORRECTABLE)
             or (own and e.kind == "self_entered"),
+            to_debt=debt.to_debt,
+            debt=debt.debt,
         )
-        for e, trait_name in rows
+        for (e, trait_name), debt in zip(rows, paid, strict=True)
     ]
 
 

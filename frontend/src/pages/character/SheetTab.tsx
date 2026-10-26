@@ -52,6 +52,7 @@ import { RetainersPanel } from "./Retainers";
 import { PowerChoices } from "./PowerChoices";
 import { InfluenceEffects } from "./InfluenceEffects";
 import { DomitorCard } from "./Domitor";
+import { EmbraceCard } from "./Embrace";
 import { useHasDomitor } from "./splats";
 
 function useSheet(characterId: string) {
@@ -544,13 +545,15 @@ export function SheetTab({
         {hasDomitor && (
           <DomitorCard character={character} sheet={s} catalogue={catalogue.data} canChange={!locked && character.kind === "pc" && character.home_troupe_id === null} />
         )}
+        {/* Staff run a ghoul's Embrace from here; once done, it shows what it did. */}
+        {(hasDomitor || character.splat === "vampire") && character.kind === "pc" && <EmbraceCard character={character} catalogue={catalogue.data} />}
         <InfluenceEffects characterId={character.id} />
         <Card dense title="Experience">
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
               <dt className="text-xs text-mist">Available</dt>
               <dd className="font-display text-2xl text-gold">
-                {lines.length > 0 && left != null ? left : s.xp.balance}
+                {lines.length > 0 && left != null ? left : Math.max(0, s.xp.balance)}
               </dd>
               {lines.length > 0 && left != null && (
                 <dd className="text-xs leading-tight text-gold">after these changes</dd>
@@ -565,6 +568,11 @@ export function SheetTab({
               <dd className="text-lg">{s.xp.spent}</dd>
             </div>
           </dl>
+          {s.xp.debt > 0 && (
+            <p className="mt-3 rounded-md border border-blood/60 bg-blood/10 px-2 py-1 text-sm text-blood-bright">
+              XP debt: {s.xp.debt}. The XP {character.name} earns pays it off first, and nothing new can be bought until it has.
+            </p>
+          )}
           {s.limits.length > 0 && (
             <ul className="mt-3 border-t border-ash pt-2 text-xs text-mist">
               {s.limits.map((l) => (

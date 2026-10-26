@@ -5554,6 +5554,111 @@ test("a player says they committed diablerie, staff approve it, and then record 
   expect(await held("Humanity")).toBe(2);
 });
 
+test("staff Embrace a ghoul: it becomes a vampire in XP debt, the cart waits, and an award pays the debt", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "emb-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "emb-lead");
+  const player = await person(browser, "emb-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT" | "PATCH", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: `Court of the Childe ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "PATCH", `/api/troupes/${troupeId}`, { allowed_splats: ["vampire", "ghoul"] });
+
+  // The book's Vivian (p. 299): an Assamite Vizier's ghoul with Uncommon Clan and Code of
+  // Honor, Auspex 3 and Quietus 2, all her creation XP spent, and accepted.
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", {
+    splat: "ghoul",
+    name: "Vivian",
+    building_troupe_id: troupeId,
+    domitor: { name: "The Vizier", clan: "Assamite: Vizier" },
+  });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Allies", 1]],
+    disciplines: [["Auspex", 3], ["Quietus", 2]],
+    merits: [["Uncommon Clan", 2], ["Code of Honor", 2]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send(p, "POST", `/api/characters/${id}/creation/complete`, {});
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "attributes", name: "Mental", rating: 10 });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "attributes", name: "Social", rating: 8 });
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+
+  // The lead Embraces her from her sheet, a step at a time, by a Malkavian not in Horatio.
+  const l = lead.page;
+  await l.goto(`/characters/${id}`);
+  await l.getByRole("button", { name: "Embrace…" }).click();
+  const form = l.getByRole("form", { name: "Embrace" });
+  await expect(form.getByRole("radio", { name: "Vivian becomes a vampire" })).toBeChecked();
+  await form.getByLabel("Date").fill("2026-10-24");
+  await form.getByRole("button", { name: "Next" }).click();
+  await form.getByRole("radio", { name: "Not in Horatio" }).check();
+  await form.getByLabel("Sire's name").fill("Doctor Mirth");
+  await form.getByLabel("Sire's clan").selectOption("Malkavian");
+  await form.getByLabel("Sire's generation").fill("10");
+  await expect(form.getByText("Vivian would be a vampire of Malkavian, 11th generation. In-clan: Auspex, Dementation and Obfuscate.")).toBeVisible();
+  await form.getByRole("button", { name: "Next" }).click();
+  const step = form.getByLabel("This step");
+  await expect(step).toContainText("Uncommon Clan stripped, its XP refunded");
+  await expect(step).toContainText("After it: 2 XP");
+  await form.getByRole("button", { name: "Next" }).click();
+  await expect(step).toContainText("After it: 1 XP");
+  await form.getByRole("button", { name: "Next" }).click();
+  await expect(step).toContainText("Quietus 2 lost, as every ghoul dot is");
+  await expect(step).toContainText("Auspex 2, free");
+  await form.getByRole("button", { name: "Next" }).click();
+  await form.getByRole("button", { name: "Next" }).click();
+  await form.getByLabel("Clan weakness").fill("Her derangement: paranoia");
+  await form.getByRole("checkbox", { name: /Take off Code of Honor/ }).check();
+  await expect(step).toContainText("After it: 3 XP");
+  await form.getByRole("button", { name: "Next" }).click();
+  // She keeps 2 dots of Quietus, out of clan for 12 XP, into debt as the Storyteller allows.
+  await form.getByLabel("Quietus, was 2").selectOption("2");
+  await form.getByRole("checkbox", { name: /The Storyteller lets lost dots be bought back into XP debt/ }).check();
+  await expect(step).toContainText("Quietus 0 → 2 bought back, no teacher needed");
+  await expect(step).toContainText("After it: 9 XP owed");
+  await form.getByRole("button", { name: "Next" }).click();
+  await expect(form).toContainText("0 XP before; 9 XP owed after.");
+  await l.screenshot(shots("embrace-confirm"));
+  await form.getByRole("button", { name: "Embrace Vivian" }).click();
+  await expect(l.getByRole("list", { name: "Embrace" })).toContainText("Embraced 24 Oct 2026 by Doctor Mirth, of Malkavian, 10th generation.");
+
+  // Her sheet is a vampire's, with the debt shown.
+  await p.goto(`/characters/${id}`);
+  await expect(p.getByText("XP debt: 9. The XP Vivian earns pays it off first, and nothing new can be bought until it has.")).toBeVisible();
+  await expect(p.getByText("vampire", { exact: true })).toBeVisible();
+  await p.screenshot(shots("embrace-sheet"));
+  // The cart refuses what costs XP while she owes it.
+  await p.getByRole("button", { name: "Raise Brawl" }).click();
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  await expect(cart).toContainText("The character owes 9 XP of debt.");
+  await expect(p.getByRole("button", { name: "Spend XP" })).toBeDisabled();
+
+  // An award pays the debt first, and the XP history says so.
+  await send(l, "POST", `/api/characters/${id}/xp`, { amount: 14, reason: "Game, 31 October" });
+  // The cart keeps Brawl while she looks at her XP history on its own tab.
+  await p.getByRole("link", { name: "Experience", exact: true }).click();
+  const award = p.getByRole("row").filter({ hasText: "Game, 31 October" });
+  await expect(award).toContainText("9 XP to the debt; it is paid off");
+  await p.getByRole("link", { name: "Sheet", exact: true }).click();
+  await expect(cart).toContainText("Brawl 4 → 5");
+  await expect(p.getByText(/XP debt: /)).toHaveCount(0);
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 5 XP.")).toBeVisible();
+});
+
 test("feeding in a downtime: Herd given to another character, both answered, and half Blood at the next game", async ({ browser }) => {
   const custodian = await person(browser, "dtfeed-custodian");
   makeCustodian(custodian.email);
