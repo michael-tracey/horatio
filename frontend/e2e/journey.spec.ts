@@ -27,6 +27,14 @@ async function person(browser: Browser, name: string, options: BrowserContextOpt
   return { page, email, handle };
 }
 
+// Playwright leaves contexts made from `browser` open after the test. Each page in
+// them goes on polling the API, so by the end of a worker's run hundreds of them
+// load the one server the later tests wait on. Screenshots and traces of a failure
+// are taken before this, and as each context closes.
+test.afterEach(async ({ browser }) => {
+  await Promise.all(browser.contexts().map((context) => context.close()));
+});
+
 /** How many pages a PDF that Chromium printed has, and the first one's size in points. */
 function pdfPages(pdf: Buffer): { count: number; size: string } {
   const text = pdf.toString("latin1");
@@ -4208,8 +4216,12 @@ test("the sheet points to the techniques and elder powers a character can take",
   await p.getByRole("button", { name: "Raise Presence" }).click();
   await p.getByLabel("Show").selectOption({ label: "What this character can take" });
   await p.getByRole("button", { name: /^Fearful Blow/ }).click();
+  // Pricing the cart is slow work for the server, the more so with the dry runs
+  // for each dot still going: wait for the one that prices all three lines.
+  const priced = p.waitForResponse((r) => r.url().endsWith(`/api/characters/${id}/cart`) && r.request().postDataJSON()?.changes?.length === 3);
   await p.getByRole("button", { name: "Add to cart" }).click();
   const cart = p.getByRole("list", { name: "Changes in the cart" });
+  await priced;
   await expect(cart.getByRole("listitem").filter({ hasText: "Add Fearful Blow" })).toContainText("20 XP");
 
   // A Pretender Elder learns one elder power: with one in the cart, none are left to take.

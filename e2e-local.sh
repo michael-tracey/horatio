@@ -62,11 +62,14 @@ cd "$ROOT/backend"
 # No connectors, whatever backend/.env sets up for development: the suite
 # expects Discord and email to be unavailable, and sends nothing outside.
 # Pictures go in a fresh directory of their own, like the database.
+# Keep-alive: Playwright's request contexts keep idle connections open with no
+# timeout of their own, so with uvicorn's 5 s one, a call made just as the server
+# drops the connection fails with ECONNRESET. 300 s outlasts the longest test.
 UPLOADS="$ROOT/.local/e2e-uploads"
 rm -rf "$UPLOADS" && mkdir -p "$UPLOADS"
 HORATIO_COOKIE_SECURE=false HORATIO_FRONTEND_DIST="$ROOT/frontend/dist" HORATIO_UPLOAD_DIR="$UPLOADS" \
   HORATIO_DISCORD_BOT_TOKEN= HORATIO_SMTP_HOST= \
-  setsid uv run uvicorn horatio.app:app --port "$PORT" >"$LOG" 2>&1 < /dev/null &
+  setsid uv run uvicorn horatio.app:app --port "$PORT" --timeout-keep-alive 300 >"$LOG" 2>&1 < /dev/null &
 api=$!
 stop_api() {
   kill -TERM -- "-$api" 2>/dev/null || kill -TERM "$api" 2>/dev/null || true

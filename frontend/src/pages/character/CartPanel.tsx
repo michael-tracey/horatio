@@ -10,24 +10,39 @@ import { askException, costText, describe, toChange, type Cart, type CartLine } 
 
 type CartOut = components["schemas"]["CartOut"];
 
-function post(characterId: string, lines: CartLine[], dryRun: boolean) {
+function post(characterId: string, lines: CartLine[], dryRun: boolean, signal?: AbortSignal) {
   return unwrap(
     api.POST("/api/characters/{character_id}/cart", {
       params: { path: { character_id: characterId } },
       body: { changes: lines.map(toChange), dry_run: dryRun },
+      signal,
     }),
   );
 }
 
 const pricesKey = (characterId: string, lines: CartLine[]) => ["cart", characterId, lines];
 
+/** How long the cart must stay as it is before it is priced. */
+const SETTLE_MS = 250;
+
 /** What each line in the cart costs, or why it is refused, as the server would
- * make them now: asked again whenever the cart or the saved sheet changes. */
+ * make them now: asked again whenever the cart or the saved sheet changes. Taps
+ * in quick succession (two dots raised) are priced once, for the cart they end
+ * with: the server prices each cart to the end even once it has changed, and
+ * that work held up the answer that counts. */
 export function useCartPrices(characterId: string, lines: CartLine[]) {
+  const now = JSON.stringify(lines);
+  const [settled, setSettled] = useState(now);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(now), SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [now]);
   const prices = useQuery({
     queryKey: pricesKey(characterId, lines),
-    queryFn: () => post(characterId, lines, true),
-    enabled: lines.length > 0,
+    // A cart that has changed since is not waited on: its request is dropped,
+    // which frees the browser's connection for the one that counts.
+    queryFn: ({ signal }) => post(characterId, lines, true, signal),
+    enabled: lines.length > 0 && settled === now,
   });
   // Only an answer for these very lines.
   const data = prices.data && prices.data.lines.length === lines.length ? prices.data : undefined;
@@ -130,7 +145,8 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
                     <span className="flex items-start justify-between gap-2">
                       <span className={priced?.refused ? "text-blood-bright" : undefined}>
                         {describe(line)}
-                        {cost && <span className="text-mist"> · {cost}</span>}
+                        {/* Not priced yet: say so, rather than look free. */}
+                        {!priced && !prices.error ? <span className="text-mist"> · …</span> : cost && <span className="text-mist"> · {cost}</span>}
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
                         {exception && <Badge tone="gold">exception</Badge>}
