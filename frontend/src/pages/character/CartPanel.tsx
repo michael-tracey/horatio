@@ -21,13 +21,25 @@ function post(characterId: string, lines: CartLine[], dryRun: boolean) {
 
 const pricesKey = (characterId: string, lines: CartLine[]) => ["cart", characterId, lines];
 
+/** How long the cart must stay as it is before it is priced. */
+const SETTLE_MS = 250;
+
 /** What each line in the cart costs, or why it is refused, as the server would
- * make them now: asked again whenever the cart or the saved sheet changes. */
+ * make them now: asked again whenever the cart or the saved sheet changes. Taps
+ * in quick succession (two dots raised) are priced once, for the cart they end
+ * with: the server prices each cart to the end even once it has changed, and
+ * that work held up the answer that counts. */
 export function useCartPrices(characterId: string, lines: CartLine[]) {
+  const now = JSON.stringify(lines);
+  const [settled, setSettled] = useState(now);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(now), SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [now]);
   const prices = useQuery({
     queryKey: pricesKey(characterId, lines),
     queryFn: () => post(characterId, lines, true),
-    enabled: lines.length > 0,
+    enabled: lines.length > 0 && settled === now,
   });
   // Only an answer for these very lines.
   const data = prices.data && prices.data.lines.length === lines.length ? prices.data : undefined;
