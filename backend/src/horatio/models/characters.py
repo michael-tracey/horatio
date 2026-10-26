@@ -98,6 +98,11 @@ class CharacterTrait(Record):
     # For a merit that gives free traits the player chooses (Ventrue Royalty): the
     # choices, as {"grant", "name", "detail", "amount"} each (horatio.rules.grants).
     choices: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+    # What the player chose when buying a power of this discipline, by the power:
+    # {"Shape of the Beast": {"fight": "bear", "template": "Huge"}} (horatio.api.power_choices).
+    power_choices: Mapped[dict[str, dict[str, str]]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
+    )
 
 
 class TraitException(Record):

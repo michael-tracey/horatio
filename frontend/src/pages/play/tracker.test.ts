@@ -14,6 +14,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     blood_per_turn: 1,
     herd: 2,
     blood: { value: 10, most: 10, start: 10 },
+    blood_usual: 10,
     half_blood: false,
     willpower: { value: 6, most: 6, start: 6 },
     health: {
@@ -30,6 +31,7 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     derangements: { value: 0, most: 3, start: 0, least: 0, flaws: [], temporary: [] },
     expendables: [{ key: "trait:backgrounds/Herd/", name: "Herd", detail: "", group: "Backgrounds", uses: 2, left: 2, counter_id: null, owed: 0 }],
     influence: [],
+    powers: [],
     game: null,
     log: [],
     ...overrides,

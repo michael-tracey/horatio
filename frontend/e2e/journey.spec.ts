@@ -2176,8 +2176,13 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await p.getByRole("tab", { name: "Pools" }).click();
   const initiative = p.getByRole("listitem").filter({ hasText: /^Initiative/ });
   await expect(initiative.getByText("5", { exact: true })).toBeVisible();
-  await expect(initiative.getByText("With Celerity active")).toBeVisible();
+  // Celerity switched on: Alacrity adds its two powers to initiative, until it is off.
+  await p.getByLabel("Celerity on").check();
   await expect(initiative.getByText("7", { exact: true })).toBeVisible();
+  await expect(initiative).toContainText("Physical 5 + Alacrity 2");
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Celerity");
+  await p.getByLabel("Celerity on").uncheck();
+  await expect(initiative.getByText("5", { exact: true })).toBeVisible();
   await expect(p.getByRole("listitem").filter({ hasText: /^Dodge/ }).getByText("7", { exact: true }).first()).toBeVisible();
   await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
   // Each attack shows what a hit does, with Potence's Might in the breakdown.
@@ -2275,6 +2280,122 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
   await expect(p.getByRole("img", { name: "2 dots" }).first()).toBeVisible();
   await p.screenshot(shots("play-pools-pips"));
+});
+
+test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels and Brawl, flight form ends it, and the Scene shows it", async ({ browser }) => {
+  const custodian = await person(browser, "beast-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "beast-lead");
+  const troupeName = `Hollow Hill ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // An NPC with Shape of the Beast: Physical 5, Brawl 3, Dodge 2, Protean 4, Celerity 2.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Ursa", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  for (const [category, name, rating] of [
+    ["clan", "Gangrel", null],
+    ["attributes", "Physical", 5],
+    ["attributes", "Mental", 3],
+    ["skills", "Brawl", 3],
+    ["skills", "Dodge", 2],
+    ["disciplines", "Protean", 4],
+    ["disciplines", "Celerity", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+
+  // On the sheet, under Protean: the fight form is a bear with the Huge template.
+  await p.goto(`/characters/${npc}/sheet`);
+  const choices = p.getByLabel("Shape of the Beast choices");
+  await expect(choices).toContainText("flight form bat · fight form wolf · fight form template none");
+  await choices.getByRole("button", { name: "choose" }).click();
+  await choices.getByLabel("Fight form", { exact: true }).fill("bear");
+  await choices.getByLabel("Fight form template").selectOption("Huge");
+  await choices.getByRole("button", { name: "Save" }).click();
+  await expect(choices).toContainText("fight form bear · fight form template Huge");
+
+  // The Pools tab lists the forms and powers, all off.
+  await p.goto(`/play/characters/${npc}?tab=pools`);
+  await expect(p.getByRole("heading", { name: "Ursa" })).toBeVisible();
+  const fight = p.getByLabel("Shape of the Beast: fight form (bear, Huge) on");
+  const flight = p.getByLabel("Shape of the Beast: flight form (bat) on");
+  await expect(fight).not.toBeChecked();
+  const unarmed = p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ });
+  await expect(unarmed.getByText("8", { exact: true })).toBeVisible();
+  await expect(unarmed.getByText("1 damage: 1 (unarmed)")).toBeVisible();
+
+  // Into the fight form: Brawl +2 with the reason, aggravated, and Feral Claws alongside.
+  await fight.check();
+  await expect(unarmed.getByText("10", { exact: true })).toBeVisible();
+  await expect(unarmed).toContainText("Physical 5 + Brawl 3 + Shape of the Beast 2");
+  await expect(unarmed.getByText("1 aggravated damage: 1 (unarmed), aggravated by Shape of the Beast")).toBeVisible();
+  await p.getByLabel("Feral Claws on").check();
+  await expect(fight).toBeChecked();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("In Shape of the Beast: fight form (bear, Huge)");
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Feral Claws");
+  // Celerity goes with a form too.
+  await p.getByLabel("Celerity on").check();
+  const initiative = p.getByRole("listitem").filter({ hasText: /^Initiative/ });
+  await expect(initiative).toContainText("Physical 5 + Alacrity 2");
+  await p.screenshot(shots("play-forms"));
+
+  // The health tracker has two more Healthy boxes, marked from the form; five damage reach into them.
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await p.getByLabel("Quick notes").uncheck();
+  await expect(p.getByText("+2 Healthy from Shape of the Beast: fight form (bear, Huge)")).toBeVisible();
+  await expect(p.getByLabel("unmarked, from the form")).toHaveCount(2);
+  for (let i = 0; i < 5; i++) await p.getByRole("button", { name: "+ Normal" }).click();
+  await expect(p.getByLabel("normal damage")).toHaveCount(5);
+  await expect(p.getByLabel("normal damage, from the form")).toHaveCount(2);
+
+  // Flight form ends the fight form: its levels go with the damage in them.
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await flight.check();
+  await expect(fight).not.toBeChecked();
+  await expect(p.getByLabel("Feral Claws on")).toBeChecked();
+  await expect(unarmed.getByText("6", { exact: true })).toBeVisible();
+  await expect(unarmed).toContainText("Physical (flight form) 3 + Brawl 3");
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await expect(p.getByLabel("normal damage")).toHaveCount(3);
+  await expect(
+    p.getByText("Turned into Shape of the Beast: flight form (bat): out of Shape of the Beast: fight form (bear, Huge), 2 damage in its levels gone"),
+  ).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // Undo puts the fight form back, with its damage; the Scene view on another page shows it as a badge.
+  await p.getByRole("button", { name: /^Undo Turned into Shape of the Beast: flight form/ }).click();
+  await expect(p.getByLabel("normal damage")).toHaveCount(5);
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  const scene = await p.context().newPage();
+  await scene.goto(`/play/troupes/${troupeId}/scene`);
+  await scene.getByRole("combobox", { name: "Add to the scene" }).fill("Ursa");
+  await scene.getByRole("option", { name: /Ursa/ }).click();
+  await expect(scene.getByRole("article", { name: "Ursa" }).getByText("Shape of the Beast: fight form (bear, Huge)")).toBeVisible();
+  await expect(scene.getByRole("article", { name: "Ursa" }).getByLabel("Health: 5 of 11 marked")).toBeVisible();
+  await scene.close();
+
+  // Reset for the next game turns every form and power off.
+  await p.getByRole("button", { name: "Reset for next game…" }).click();
+  await p.getByRole("button", { name: "Reset for next game", exact: true }).click();
+  await expect(p.getByText("Game 2")).toBeVisible();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toHaveCount(0);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(fight).not.toBeChecked();
+  await expect(p.getByLabel("Celerity on")).not.toBeChecked();
 });
 
 test("influence spent at a game goes in the troupe's influence log, and comes off the next downtime", async ({ browser }) => {

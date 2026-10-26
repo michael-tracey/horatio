@@ -446,6 +446,47 @@
         "title": "Assignment",
         "type": "object"
       },
+      "AttributeChange": {
+        "description": "A switch's change to an attribute in the pools made on it.",
+        "properties": {
+          "amount": {
+            "default": 0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "attribute": {
+            "title": "Attribute",
+            "type": "string"
+          },
+          "most": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Most"
+          },
+          "pools": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pools"
+          }
+        },
+        "required": [
+          "attribute"
+        ],
+        "title": "AttributeChange",
+        "type": "object"
+      },
       "AwardableCharacter": {
         "properties": {
           "character_id": {
@@ -1923,6 +1964,42 @@
         "title": "ChoiceChange",
         "type": "object"
       },
+      "ChoiceOut": {
+        "properties": {
+          "default": {
+            "title": "Default",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "default",
+          "options",
+          "value"
+        ],
+        "title": "ChoiceOut",
+        "type": "object"
+      },
       "ClanFeedingIn": {
         "properties": {
           "amount": {
@@ -2850,6 +2927,14 @@
               "$ref": "#/components/schemas/PoolPart"
             },
             "title": "Parts",
+            "type": "array"
+          },
+          "switched": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SwitchedDamage"
+            },
+            "title": "Switched",
             "type": "array"
           },
           "total": {
@@ -8621,6 +8706,11 @@
             "title": "Blood Per Turn",
             "type": "integer"
           },
+          "blood_usual": {
+            "default": 0,
+            "title": "Blood Usual",
+            "type": "integer"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -8710,6 +8800,14 @@
           "player_name": {
             "title": "Player Name",
             "type": "string"
+          },
+          "powers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PowerOut"
+            },
+            "title": "Powers",
+            "type": "array"
           },
           "sect": {
             "anyOf": [
@@ -9069,6 +9167,75 @@
         "title": "PoolVariant",
         "type": "object"
       },
+      "PowerChoicesIn": {
+        "properties": {
+          "discipline": {
+            "maxLength": 80,
+            "title": "Discipline",
+            "type": "string"
+          },
+          "power": {
+            "maxLength": 80,
+            "title": "Power",
+            "type": "string"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "discipline",
+          "power",
+          "values"
+        ],
+        "title": "PowerChoicesIn",
+        "type": "object"
+      },
+      "PowerChoicesOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "chosen": {
+            "title": "Chosen",
+            "type": "boolean"
+          },
+          "discipline": {
+            "title": "Discipline",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "power": {
+            "title": "Power",
+            "type": "string"
+          }
+        },
+        "required": [
+          "discipline",
+          "power",
+          "level",
+          "choices",
+          "chosen",
+          "can_change"
+        ],
+        "title": "PowerChoicesOut",
+        "type": "object"
+      },
       "PowerNote": {
         "properties": {
           "focus": {
@@ -9101,6 +9268,103 @@
           "note"
         ],
         "title": "PowerNote",
+        "type": "object"
+      },
+      "PowerOut": {
+        "description": "A form or power the character has, and whether it is on in this game.",
+        "properties": {
+          "attributes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AttributeChange"
+            },
+            "title": "Attributes",
+            "type": "array"
+          },
+          "blood_half": {
+            "default": false,
+            "title": "Blood Half",
+            "type": "boolean"
+          },
+          "blood_per_turn": {
+            "default": 0,
+            "title": "Blood Per Turn",
+            "type": "integer"
+          },
+          "changes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "combines": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Combines",
+            "type": "array"
+          },
+          "focuses": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Focuses",
+            "type": "array"
+          },
+          "form": {
+            "default": false,
+            "title": "Form",
+            "type": "boolean"
+          },
+          "health": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SwitchLevel"
+            },
+            "title": "Health",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "origin",
+          "page",
+          "on"
+        ],
+        "title": "PowerOut",
         "type": "object"
       },
       "Preferences": {
@@ -12224,6 +12488,108 @@
         "title": "SwapChangeIn",
         "type": "object"
       },
+      "SwitchLevel": {
+        "properties": {
+          "boxes": {
+            "title": "Boxes",
+            "type": "integer"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "boxes"
+        ],
+        "title": "SwitchLevel",
+        "type": "object"
+      },
+      "SwitchedDamage": {
+        "description": "What a switch does to an attack's damage while it is on.",
+        "properties": {
+          "amount": {
+            "default": 0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "exceptional": {
+            "default": 0,
+            "title": "Exceptional",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "switch": {
+            "title": "Switch",
+            "type": "string"
+          },
+          "type": {
+            "default": "normal",
+            "enum": [
+              "normal",
+              "aggravated"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "switch",
+          "label"
+        ],
+        "title": "SwitchedDamage",
+        "type": "object"
+      },
+      "SwitchedPart": {
+        "description": "What a switch adds to a pool while it is on: a part (\"Alacrity 4\"), or a\nchange to the attribute the pool is made on (Physical counts as 3).",
+        "properties": {
+          "attribute": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribute"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "most": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Most"
+          },
+          "switch": {
+            "title": "Switch",
+            "type": "string"
+          },
+          "value": {
+            "default": 0,
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "switch",
+          "label"
+        ],
+        "title": "SwitchedPart",
+        "type": "object"
+      },
       "SystemOut": {
         "properties": {
           "built_at": {
@@ -12689,6 +13055,14 @@
               "$ref": "#/components/schemas/PoolPart"
             },
             "title": "Parts",
+            "type": "array"
+          },
+          "switched": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SwitchedPart"
+            },
+            "title": "Switched",
             "type": "array"
           },
           "total": {
@@ -17947,6 +18321,109 @@
         "summary": "Give Influence Details",
         "tags": [
           "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/power-choices": {
+      "get": {
+        "operationId": "read_power_choices_api_characters__character_id__power_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PowerChoicesOut"
+                  },
+                  "title": "Response Read Power Choices Api Characters  Character Id  Power Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Power Choices",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "put": {
+        "description": "Choose, or for staff change, what a power was bought with.",
+        "operationId": "set_power_choices_api_characters__character_id__power_choices_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PowerChoicesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PowerChoicesOut"
+                  },
+                  "title": "Response Set Power Choices Api Characters  Character Id  Power Choices Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Power Choices",
+        "tags": [
+          "sheets"
         ]
       }
     },

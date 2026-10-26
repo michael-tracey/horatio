@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolModifier, TestPool } from "../../api/types";
-import { appliesTo, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, describePools, exceptionalText, grouped, total } from "./pools";
+import { appliesTo, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, describePools, exceptionalText, grouped, switchedDamage, total } from "./pools";
 
 const pool = (over: Partial<TestPool>): TestPool => ({
   key: "dodge",
@@ -16,6 +16,7 @@ const pool = (over: Partial<TestPool>): TestPool => ({
   willpower_floor: 0,
   variants: [],
   notes: [],
+  switched: [],
   ...over,
 });
 
@@ -89,6 +90,7 @@ describe("damage", () => {
   const melee = (over: Partial<NonNullable<TestPool["damage"]>> = {}): NonNullable<TestPool["damage"]> => ({
     kind: "melee",
     type: "normal",
+    switched: [],
     parts: [{ label: "melee", value: 1 }],
     total: 1,
     exceptional: 1,
@@ -114,5 +116,61 @@ describe("damage", () => {
   it("leaves a seam for damage a modifier adds", () => {
     expect(damageText(melee(), [{ label: "brass knuckles", value: 1 }])).toBe("2 damage: 1 (melee) + 1 (brass knuckles)");
     expect(damageTotal(melee(), [{ label: "brass knuckles", value: 1 }])).toBe(2);
+  });
+});
+
+describe("forms and powers switched on", () => {
+  const brawl = pool({
+    key: "attack:Brawl",
+    name: "Unarmed attack",
+    parts: [
+      { label: "Physical", value: 5 },
+      { label: "Brawl", value: 3 },
+    ],
+    total: 8,
+    switched: [
+      { switch: "fight form", label: "Shape of the Beast", value: 2, attribute: null, most: null },
+      { switch: "flight form", label: "Physical (flight form)", value: 0, attribute: "Physical", most: 3 },
+      { switch: "Celerity", label: "Alacrity", value: 0, attribute: null, most: null },
+    ],
+  });
+
+  it("adds what a form gives only while it is on, with the reason", () => {
+    expect(total(brawl, 0)).toBe(8);
+    expect(total(brawl, 0, [], ["fight form"])).toBe(10);
+    expect(breakdown(brawl, 0, [], ["fight form"])).toBe("Physical 5 + Brawl 3 + Shape of the Beast 2");
+  });
+
+  it("counts an attribute a form changes as it counts now", () => {
+    expect(total(brawl, 0, [], ["flight form"])).toBe(6);
+    expect(breakdown(brawl, 0, [], ["flight form"])).toBe("Physical (flight form) 3 + Brawl 3");
+    const weak = pool({ ...brawl, parts: [{ label: "Physical", value: 2 }, { label: "Brawl", value: 3 }], total: 5 });
+    expect(total(weak, 0, [], ["flight form"])).toBe(5); // reduced to 3, never raised
+  });
+
+  it("goes with the player's own modifiers", () => {
+    const fame = { id: "m", label: "Rage", amount: 1, pools: "attack", when: "", on: true };
+    expect(total(brawl, 0, [fame], ["fight form"])).toBe(11);
+    expect(breakdown(brawl, 0, [fame], ["fight form"])).toBe("Physical 5 + Brawl 3 + Shape of the Beast 2 + Rage 1");
+  });
+
+  it("makes damage aggravated through the damage seam while a power is on", () => {
+    const damage = {
+      kind: "unarmed",
+      type: "normal" as const,
+      parts: [{ label: "unarmed", value: 1 }],
+      total: 1,
+      exceptional: 1,
+      notes: [],
+      switched: [
+        { switch: "Feral Claws", label: "Feral Claws", amount: 0, exceptional: 0, type: "aggravated" as const },
+        { switch: "The Fourth Horseman", label: "The Fourth Horseman", amount: 1, exceptional: 0, type: "normal" as const },
+      ],
+    };
+    expect(damageText(damage, switchedDamage(damage, []))).toBe("1 damage: 1 (unarmed)");
+    expect(damageText(damage, switchedDamage(damage, ["Feral Claws"]))).toBe("1 aggravated damage: 1 (unarmed), aggravated by Feral Claws");
+    const both = switchedDamage(damage, ["Feral Claws", "The Fourth Horseman"]);
+    expect(damageText(damage, both)).toBe("2 aggravated damage: 1 (unarmed) + 1 (The Fourth Horseman), aggravated by Feral Claws");
+    expect(exceptionalText(damage, both)).toBe("An exceptional success adds 1 damage, 3 in all.");
   });
 });
