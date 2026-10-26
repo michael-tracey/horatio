@@ -22,6 +22,8 @@ import {
   Rating,
   Select,
 } from "../../components/ui";
+import { HouseMark } from "../../components/HouseMark";
+import { houseLabels } from "../../houseTraits";
 import { TraitInfo } from "../../components/TraitInfo";
 import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
@@ -36,6 +38,7 @@ import { DiablerieCard } from "./Diablerie";
 import { ExceptionMark, ExceptionsCard } from "./Exceptions";
 import { FreeChoicesRow } from "./FreeChoices";
 import { GivePanel } from "./GivePanel";
+import { HouseTraitsCard } from "./HouseTraitsCard";
 import { rulesTroupe } from "./rules";
 import { fieldSkills } from "./fields";
 import { byKind, countOf } from "./traitFilter";
@@ -576,8 +579,10 @@ export function SheetTab({
             cart={cart}
             balance={s.xp.balance}
             creating={!character.creation_complete}
+            houseLabels={houseLabels(catalogue.data)}
           />
         )}
+        {!mine && <HouseTraitsCard characterId={character.id} sheet={s} />}
         {(character.creation_complete || !mine) && (
           <TroupesCard character={character} sheet={s} mine={mine} />
         )}
@@ -666,6 +671,8 @@ function TraitRow({
   const adding = trait.id.startsWith("cart/");
   // Which one, for a trait held more than once: "Raise Retainers: Bocephus".
   const which = trait.detail ? `${trait.name}: ${trait.detail}` : trait.name;
+  // A troupe's own merit or flaw: "★ House merit of Night Court".
+  const houseLabel = trait.house?.label ?? about?.house?.label;
   if (points !== null) {
     const removing = planned === 0;
     return (
@@ -678,6 +685,10 @@ function TraitRow({
               {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
               <GrantedBy trait={trait} points />
               {exception && <ExceptionMark exception={exception} />}
+              {houseLabel && <HouseMark label={houseLabel} />}
+              {trait.house?.applied && (
+                <span className="ml-2 text-xs text-mist">given by staff{trait.house.applied.free ? ", free" : ""}</span>
+              )}
             </>
           }
           description={about?.description}
@@ -692,6 +703,8 @@ function TraitRow({
           )}
           {!locked &&
             !removing &&
+            // One staff applied, only staff take away.
+            !trait.house?.applied &&
             (adding || (trait.rating !== null && trait.rating > trait.min_rating)) && (
               <button
                 aria-label={`Remove ${which}`}

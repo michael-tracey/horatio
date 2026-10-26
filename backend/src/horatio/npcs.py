@@ -35,6 +35,7 @@ from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import (
     conflict,
+    ensure_offered,
     find_definition,
     held_at,
     replace_choice,
@@ -219,6 +220,8 @@ def set_rating(
             db.delete(trait)
         db.flush()
         return
+    if trait is None or not trait.rating:
+        ensure_offered(db, npc, category.key, definition.name)
     if trait is None and category.max_held == 1:
         # A choice such as a focus or a Path: the new one takes the place of the one
         # chosen before, as a PC's swap does (one a merit grants stays).

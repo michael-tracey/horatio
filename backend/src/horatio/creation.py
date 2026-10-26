@@ -29,6 +29,7 @@ from horatio.sheets import (
     SheetRow,
     conflict,
     ensure_named,
+    ensure_offered,
     ensure_unlocked,
     find_definition,
     held_at,
@@ -362,6 +363,7 @@ def place_pick(
     fits = fitting(db, character)
     if not fits(pool, definition.name, detail):
         raise restriction_error(pool, definition.name, fits)
+    ensure_offered(db, character, category, definition.name)
 
     trait = db.scalar(
         select(CharacterTrait).where(
@@ -388,7 +390,7 @@ def place_pick(
         "creation.pick",
         character_id=character.id,
         category=category,
-        name=name,
+        name=f"★ {name}" if definition.troupe_id else name,
         detail=detail,
         rating=rating,
     )
@@ -510,6 +512,7 @@ def set_category_picks(
             raise conflict(f"{key[0]} already has dots; a pick goes on a trait that has none.")
         if row is None:
             ensure_named(definitions[key], key[1])
+            ensure_offered(db, character, category, key[0])
         db.add(
             CharacterTrait(
                 character_id=character.id,

@@ -123,6 +123,29 @@ class CharacterTrait(Record):
     )
 
 
+class AppliedHouseTrait(Record):
+    """A house merit or flaw staff applied to a character (horatio.house_traits):
+    free or charged, whether a free one counts toward the merit limit, and why.
+    Only staff remove it; it goes when the trait does."""
+
+    __tablename__ = "applied_house_traits"
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), index=True
+    )
+    character_trait_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("character_traits.id", ondelete="CASCADE"), unique=True
+    )
+    house_trait_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("house_traits.id"), index=True)
+    free: Mapped[bool]
+    # A free merit counts toward the category's points limit unless staff say not.
+    counts_toward_limit: Mapped[bool] = mapped_column(default=True, server_default="true")
+    # XP it cost when applied: 0 when free, negative for a charged flaw's XP back.
+    cost: Mapped[int] = mapped_column(default=0, server_default="0")
+    reason: Mapped[str]
+    applied_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
 class TraitException(Record):
     """A trait held by exception (horatio.trait_exceptions): asked of the home
     troupe's staff from the cart, or given by them. It sets aside the checks it

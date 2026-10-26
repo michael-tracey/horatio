@@ -689,6 +689,102 @@ test("a troupe changes what new characters start with and their downtime actions
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
 
+test("a troupe's own merits: staff only, or taken when building for it, and marked ★ as the troupe's", async ({ browser }) => {
+  const custodian = await person(browser, "hm-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "hm-lead");
+  const player = await person(browser, "hm-player");
+  const troupeName = `Court of Stars ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const mark = `House merit of ${troupeName}`;
+
+  // The lead makes two on the Rules tab: one only staff give, one players can take when building.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/house-traits`);
+  const addOne = async (name: string, points: string, availability: string, description: string) => {
+    await l.getByRole("button", { name: "Add a merit or flaw" }).click();
+    await l.getByLabel("Name").fill(name);
+    await l.getByLabel("Points").selectOption(points);
+    await l.getByLabel(availability).check();
+    await l.getByLabel("Description").fill(description);
+    await l.getByRole("button", { name: "Add the merit" }).click();
+    await expect(l.getByRole("listitem").filter({ hasText: name })).toBeVisible();
+  };
+  await addOne("Favour of the Crossroads", "2", "Given by staff only", "The Prince owes you one.");
+  await addOne("Child of the Stars", "1", "Available when building for the troupe", "Born under a lucky sign.");
+  await expect(l.getByRole("listitem").filter({ hasText: "Favour of the Crossroads" })).toContainText(mark);
+  await l.screenshot(shots("house-traits"));
+
+  // Lune is built for the troupe through the API, and visits it so its staff see her.
+  const p = player.page;
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const build = async (name: string, buildingFor: string | null) => {
+    const { id } = await send("POST", "/api/characters", { splat: "vampire", name, building_troupe_id: buildingFor });
+    await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send("POST", `/api/characters/${id}/creation/complete`, {});
+    await send("POST", `/api/characters/${id}/troupes`, { troupe_id: troupeId });
+    return id as string;
+  };
+  const lune = await build("Lune", troupeId);
+
+  // Building for the troupe, she is offered the one players can take, not the one staff give.
+  await p.goto(`/characters/${lune}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Merits").fill("Favour of the");
+  await expect(p.getByRole("button", { name: /^Favour of the Crossroads/ })).toHaveCount(0);
+  await p.getByLabel("Search Merits").fill("Child of the");
+  await expect(p.getByRole("button", { name: /^Child of the Stars/ })).toContainText(mark);
+  await p.getByRole("button", { name: /^Child of the Stars/ }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(part("Merits and Flaws")).toContainText("Child of the Stars");
+  await expect(part("Merits and Flaws")).toContainText(`★${mark}`);
+
+  // The lead gives her the staff-only one, free, with a reason.
+  await l.goto(`/characters/${lune}`);
+  const house = l.locator("section").filter({ has: l.getByRole("heading", { name: "House merits and flaws", exact: true }) });
+  await house.getByRole("button", { name: "Apply Favour of the Crossroads" }).click();
+  await house.getByLabel("Reason").fill("Saved the Prince's ghoul");
+  await house.getByRole("button", { name: "Apply Favour of the Crossroads" }).click();
+  const merits = l.locator("section").filter({ has: l.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
+  await expect(merits).toContainText("Favour of the Crossroads");
+  await expect(merits).toContainText("given by staff, free");
+  await l.screenshot(shots("house-traits-applied"));
+  await p.reload();
+  await expect(part("Merits and Flaws")).toContainText("Favour of the Crossroads");
+  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText(/the house merit of .* ★ Favour of the Crossroads \(free\): Saved the Prince's ghoul/)).toBeVisible();
+
+  // A character only visiting the troupe is offered neither, by the player's list or by staff.
+  const visitor = await build("Isaure", null);
+  await p.goto(`/characters/${visitor}`);
+  await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Merits").fill("Child of the");
+  await expect(p.getByRole("button", { name: /^Child of the Stars/ })).toHaveCount(0);
+  await l.goto(`/characters/${visitor}`);
+  await expect(l.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
+  await expect(l.getByRole("heading", { name: "House merits and flaws", exact: true })).toHaveCount(0);
+});
+
 test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
   // A whole character creation, then a home troupe request.
   test.slow();

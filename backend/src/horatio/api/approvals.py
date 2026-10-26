@@ -11,6 +11,7 @@ from sqlalchemy import select
 from horatio import (
     diablerie,
     free_choices,
+    house_traits,
     pictures,
     sheets,
     social_age,
@@ -63,6 +64,8 @@ class DisciplineOut(BaseModel):
     to_rating: int
     cost: int
     teacher: str
+    # A troupe's own merit or flaw: "House merit of Night Court", shown with a ★.
+    house: str | None = None
 
 
 class ExceptionAskOut(BaseModel):
@@ -330,6 +333,7 @@ def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
         .where(DisciplinePurchase.approval_id == approval.id)
     ).one()
     bought, name = found
+    mark = house_traits.marks(db, [bought.trait_definition_id]).get(bought.trait_definition_id)
     return DisciplineOut(
         name=name,
         detail=bought.detail,
@@ -337,6 +341,7 @@ def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
         to_rating=bought.to_rating,
         cost=bought.cost,
         teacher=bought.teacher,
+        house=mark.label if mark is not None else None,
     )
 
 

@@ -725,6 +725,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/house-traits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character House Traits
+         * @description The house merits and flaws staff can apply to the character: its home troupe's
+         *     (or, while it is being built, the troupe it is built for), not archived.
+         */
+        get: operations["character_house_traits_api_characters__character_id__house_traits_get"];
+        put?: never;
+        /**
+         * Apply House Trait
+         * @description Running staff of the character's own troupe apply one of its house merits or
+         *     flaws: free or charged, and with a reason for the logs. Never to a character
+         *     only visiting the troupe.
+         */
+        post: operations["apply_house_trait_api_characters__character_id__house_traits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/house-traits/{house_trait_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove House Trait
+         * @description Running staff of the troupe take one of its house merits or flaws off the
+         *     character, with a reason.
+         */
+        post: operations["remove_house_trait_api_characters__character_id__house_traits__house_trait_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/identities": {
         parameters: {
             query?: never;
@@ -3321,6 +3369,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/house-traits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List House Traits
+         * @description The troupe's own merits and flaws, archived ones too, for its staff.
+         */
+        get: operations["list_house_traits_api_troupes__troupe_id__house_traits_get"];
+        put?: never;
+        /** Add House Trait */
+        post: operations["add_house_trait_api_troupes__troupe_id__house_traits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/house-traits/{house_trait_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change House Trait
+         * @description Change it for every character that holds it (`holders` lists them first).
+         *     Their ratings follow its points; XP already spent is not worked out again.
+         */
+        put: operations["change_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__put"];
+        post?: never;
+        /**
+         * Delete House Trait
+         * @description Only one nobody holds.
+         */
+        delete: operations["delete_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/house-traits/{house_trait_id}/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Archive House Trait
+         * @description Archive it, so no one new takes it while those who hold it keep it; or bring it back.
+         */
+        put: operations["archive_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__archived_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/house-traits/{house_trait_id}/holders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * House Trait Holders
+         * @description The characters a change to it would change.
+         */
+        get: operations["house_trait_holders_api_troupes__troupe_id__house_traits__house_trait_id__holders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/influence-blocks": {
         parameters: {
             query?: never;
@@ -4174,6 +4308,38 @@ export interface components {
             answers: components["schemas"]["AnswerIn"][];
             feeding?: components["schemas"]["FeedingIn"] | null;
         };
+        /**
+         * AppliedOut
+         * @description How staff applied a house merit or flaw (horatio.house_traits).
+         */
+        AppliedOut: {
+            /** Counts Toward Limit */
+            counts_toward_limit: boolean;
+            /** Free */
+            free: boolean;
+            /** Reason */
+            reason: string;
+        };
+        /** ApplyIn */
+        ApplyIn: {
+            /**
+             * Counts Toward Limit
+             * @default true
+             */
+            counts_toward_limit: boolean;
+            /**
+             * Free
+             * @default false
+             */
+            free: boolean;
+            /**
+             * House Trait Id
+             * Format: uuid
+             */
+            house_trait_id: string;
+            /** Reason */
+            reason: string;
+        };
         /** ApprovalOut */
         ApprovalOut: {
             /**
@@ -4199,6 +4365,11 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /** ArchiveIn */
+        ArchiveIn: {
+            /** Archived */
+            archived: boolean;
         };
         /** Assignment */
         Assignment: {
@@ -5452,6 +5623,8 @@ export interface components {
             detail: string;
             /** From Rating */
             from_rating: number;
+            /** House */
+            house?: string | null;
             /** Name */
             name: string;
             /** Teacher */
@@ -6138,6 +6311,18 @@ export interface components {
              */
             type: "elite" | "underworld";
         };
+        /** HolderOut */
+        HolderOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
         /** HomeTroupeRequest */
         HomeTroupeRequest: {
             /**
@@ -6155,6 +6340,143 @@ export interface components {
              * @default true
              */
             top_up: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
+        /**
+         * HouseMarkOut
+         * @description A troupe's own merit or flaw, marked ★ wherever it shows.
+         */
+        HouseMarkOut: {
+            applied?: components["schemas"]["AppliedOut"] | null;
+            /** Archived */
+            archived: boolean;
+            /** Availability */
+            availability: string;
+            /**
+             * House Trait Id
+             * Format: uuid
+             */
+            house_trait_id: string;
+            /** Label */
+            label: string;
+            /** Page */
+            page: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /**
+         * HouseOut
+         * @description A troupe's own merit or flaw (horatio.house_traits), marked ★ wherever it shows.
+         */
+        HouseOut: {
+            /** Archived */
+            archived: boolean;
+            /** Availability */
+            availability: string;
+            /** Creation Only */
+            creation_only: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Offered */
+            offered: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** HouseTraitIn */
+        HouseTraitIn: {
+            /**
+             * Availability
+             * @enum {string}
+             */
+            availability: "staff" | "building";
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "merits" | "flaws";
+            /**
+             * Creation Only
+             * @default false
+             */
+            creation_only: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Kind
+             * @default General
+             * @enum {string}
+             */
+            kind: "General" | "Clan" | "Sabbat";
+            /** Name */
+            name: string;
+            /** Points */
+            points: number;
+            /**
+             * Requirement
+             * @default
+             */
+            requirement: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+        };
+        /** HouseTraitOut */
+        HouseTraitOut: {
+            /** Archived */
+            archived: boolean;
+            /** Availability */
+            availability: string;
+            /** Category */
+            category: string;
+            /** Creation Only */
+            creation_only: boolean;
+            /** Description */
+            description: string;
+            /** Holders */
+            holders: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Page */
+            page: string;
+            /** Points */
+            points: number;
+            /** Requirement */
+            requirement: string;
+            /** Splat */
+            splat: string;
             /**
              * Troupe Id
              * Format: uuid
@@ -7206,6 +7528,33 @@ export interface components {
             /** Page */
             page: number;
         };
+        /**
+         * OfferOut
+         * @description A house merit or flaw staff can apply to the character.
+         */
+        OfferOut: {
+            /** Availability */
+            availability: string;
+            /** Category */
+            category: string;
+            /** Description */
+            description: string;
+            /** Held */
+            held: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Points */
+            points: number;
+        };
         /** OptionList */
         OptionList: {
             /** Names */
@@ -7545,6 +7894,8 @@ export interface components {
             detail: string;
             /** Group */
             group: string;
+            /** House */
+            house?: string | null;
             /** In Clan */
             in_clan?: string[] | null;
             /** Name */
@@ -8004,6 +8355,8 @@ export interface components {
             detail: string;
             /** Group */
             group: string;
+            /** House */
+            house?: string | null;
             /** Name */
             name: string;
             /** Pending From */
@@ -8341,6 +8694,11 @@ export interface components {
             because: components["schemas"]["TraitRefOut"][];
             /** Message */
             message: string;
+        };
+        /** RemoveIn */
+        RemoveIn: {
+            /** Reason */
+            reason: string;
         };
         /** RemovedOut */
         RemovedOut: {
@@ -8979,6 +9337,7 @@ export interface components {
             granted_rating: number;
             /** Group */
             group: string;
+            house?: components["schemas"]["HouseMarkOut"] | null;
             /**
              * Id
              * Format: uuid
@@ -9563,6 +9922,7 @@ export interface components {
             description: string | null;
             /** Fixed Rating */
             fixed_rating: number | null;
+            house?: components["schemas"]["HouseOut"] | null;
             /** House Rule */
             house_rule: string | null;
             /** In Clan */
@@ -11659,6 +12019,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["XpStandingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_house_traits_api_characters__character_id__house_traits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_house_trait_api_characters__character_id__house_traits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_house_trait_api_characters__character_id__house_traits__house_trait_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                house_trait_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetOut"];
                 };
             };
             /** @description Validation Error */
@@ -17010,6 +17472,206 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_house_traits_api_troupes__troupe_id__house_traits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseTraitOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_house_trait_api_troupes__troupe_id__house_traits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HouseTraitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseTraitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                house_trait_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HouseTraitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseTraitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                house_trait_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__archived_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                house_trait_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArchiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseTraitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    house_trait_holders_api_troupes__troupe_id__house_traits__house_trait_id__holders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                house_trait_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HolderOut"][];
+                };
             };
             /** @description Validation Error */
             422: {

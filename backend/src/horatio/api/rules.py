@@ -10,6 +10,7 @@ from sqlalchemy.exc import NoResultFound
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import RuleSet, Troupe
 from horatio.rules.grants import choices
+from horatio.rules.model import HouseTraitData
 from horatio.rules.splats import SPLATS, splat_order
 from horatio.rules.store import read_troupe_rules
 
@@ -32,6 +33,22 @@ class CategoryOut(BaseModel):
     derived: bool = False
     # For a specialisation category: the skill or background it specialises.
     specializes: dict[str, str] | None = None
+
+
+class HouseOut(BaseModel):
+    """A troupe's own merit or flaw (horatio.house_traits), marked ★ wherever it shows."""
+
+    id: uuid.UUID
+    troupe_id: uuid.UUID
+    troupe_name: str
+    # "House merit of Night Court".
+    label: str
+    # "staff" (given by staff only) or "building".
+    availability: str
+    archived: bool
+    creation_only: bool
+    # Whether a player can pick it: available when building, and not archived.
+    offered: bool
 
 
 class TraitOut(BaseModel):
@@ -60,6 +77,8 @@ class TraitOut(BaseModel):
     # A trait bought once for each of several, each named in its detail with its
     # own dots (Retainers, Alternate Identity, pp. 98-99, 104): what one is called.
     instance: str | None = None
+    # A troupe's own merit or flaw; its page reference reads "House rule — <troupe>".
+    house: HouseOut | None = None
 
 
 class CatalogueOut(BaseModel):
@@ -158,8 +177,24 @@ def catalogue(
                 needs_field=t.category == "skills"
                 and t.properties.get("requirement") == "requires_specialization",
                 instance=t.properties.get("instance"),
+                house=house_out(rules.house_trait(t.category, t.name)),
             )
             for t in traits
             if category is None or t.category == category
         ],
+    )
+
+
+def house_out(house: HouseTraitData | None) -> HouseOut | None:
+    if house is None:
+        return None
+    return HouseOut(
+        id=house.id,
+        troupe_id=house.troupe_id,
+        troupe_name=house.troupe_name,
+        label=house.label,
+        availability=house.availability,
+        archived=house.archived,
+        creation_only=house.creation_only,
+        offered=house.offered,
     )

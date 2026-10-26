@@ -38,7 +38,8 @@ export function GivePanel({
   const [reason, setReason] = useState("");
   const [trial, setTrial] = useState<GiveOut | null>(null);
   const cat = catalogue.categories.find((c) => c.key === category);
-  const all = useMemo(() => catalogue.traits.filter((t) => t.category === category), [catalogue, category]);
+  // A house merit is applied from the sheet's House merits and flaws card instead.
+  const all = useMemo(() => catalogue.traits.filter((t) => t.category === category && !t.house), [catalogue, category]);
   const q = query.trim().toLowerCase();
   const matching = all.filter((t) => !q || t.name.toLowerCase().includes(q));
   const trait = all.find((t) => t.name === name);

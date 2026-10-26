@@ -195,6 +195,25 @@ everyone gets), `min_rating`, `scheme` (`fixed` | `per_dot`), `amount` (may be
 negative, for flaws). A house rule for the same action kind and trait replaces
 the generic one.
 
+**`house_traits`**: a troupe's own merits and flaws (issue #232).
+`troupe_id`, `splat`, `category` (`merits` | `flaws`), `name`, `points` (1–7),
+`kind` (`General` | `Clan` | `Sabbat`), `availability` (`staff`: only staff
+apply it; `building`: characters built for the troupe take it like a book
+merit), `creation_only`, `description`, `requirement`, `effects` (JSONB effect
+blocks, each naming the engine kind it maps to; empty for description only),
+`archived_at` (no new picks; holders keep it), `trait_definition_id`. Unique on
+(`troupe_id`, `splat`, `category`, `name`), and no name the book has. Each has
+its own `trait_definitions` row with `troupe_id` set, which sheets, purchases
+and the XP history hold it by; the troupe's rules list it among the rule set's
+traits at its points, so only characters playing by that troupe's rules (home,
+building for it, or its NPCs) can find it. Deleting one nobody holds retires
+its definition.
+
+**`applied_house_traits`**: a house merit or flaw staff applied to a character.
+`character_id`, `character_trait_id` (goes with the trait), `house_trait_id`,
+`free`, `counts_toward_limit` (a free merit left outside the 7 points),
+`cost`, `reason`, `applied_by`. Only staff remove one.
+
 **`creation_rules`**: the starting dots a new character picks (Yorick's
 "skills: one at 4, two at 3…").
 `rule_set_id`, `troupe_id` (nullable), `category`, `rating`, `picks`.

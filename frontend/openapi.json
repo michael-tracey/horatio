@@ -377,6 +377,61 @@
         "title": "AnswersIn",
         "type": "object"
       },
+      "AppliedOut": {
+        "description": "How staff applied a house merit or flaw (horatio.house_traits).",
+        "properties": {
+          "counts_toward_limit": {
+            "title": "Counts Toward Limit",
+            "type": "boolean"
+          },
+          "free": {
+            "title": "Free",
+            "type": "boolean"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "free",
+          "counts_toward_limit",
+          "reason"
+        ],
+        "title": "AppliedOut",
+        "type": "object"
+      },
+      "ApplyIn": {
+        "properties": {
+          "counts_toward_limit": {
+            "default": true,
+            "title": "Counts Toward Limit",
+            "type": "boolean"
+          },
+          "free": {
+            "default": false,
+            "title": "Free",
+            "type": "boolean"
+          },
+          "house_trait_id": {
+            "format": "uuid",
+            "title": "House Trait Id",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "house_trait_id",
+          "reason"
+        ],
+        "title": "ApplyIn",
+        "type": "object"
+      },
       "ApprovalOut": {
         "properties": {
           "character_id": {
@@ -421,6 +476,19 @@
           "staff_note"
         ],
         "title": "ApprovalOut",
+        "type": "object"
+      },
+      "ArchiveIn": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "archived"
+        ],
+        "title": "ArchiveIn",
         "type": "object"
       },
       "Assignment": {
@@ -3957,6 +4025,17 @@
             "title": "From Rating",
             "type": "integer"
           },
+          "house": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -5686,6 +5765,30 @@
         "title": "HistoryEntryOut",
         "type": "object"
       },
+      "HolderOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind"
+        ],
+        "title": "HolderOut",
+        "type": "object"
+      },
       "HomeTroupeRequest": {
         "properties": {
           "note": {
@@ -5716,6 +5819,270 @@
           "troupe_id"
         ],
         "title": "HomeTroupeRequest",
+        "type": "object"
+      },
+      "HouseMarkOut": {
+        "description": "A troupe's own merit or flaw, marked \u2605 wherever it shows.",
+        "properties": {
+          "applied": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppliedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "availability": {
+            "title": "Availability",
+            "type": "string"
+          },
+          "house_trait_id": {
+            "format": "uuid",
+            "title": "House Trait Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "house_trait_id",
+          "troupe_id",
+          "troupe_name",
+          "label",
+          "page",
+          "availability",
+          "archived"
+        ],
+        "title": "HouseMarkOut",
+        "type": "object"
+      },
+      "HouseOut": {
+        "description": "A troupe's own merit or flaw (horatio.house_traits), marked \u2605 wherever it shows.",
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "availability": {
+            "title": "Availability",
+            "type": "string"
+          },
+          "creation_only": {
+            "title": "Creation Only",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "offered": {
+            "title": "Offered",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "troupe_name",
+          "label",
+          "availability",
+          "archived",
+          "creation_only",
+          "offered"
+        ],
+        "title": "HouseOut",
+        "type": "object"
+      },
+      "HouseTraitIn": {
+        "properties": {
+          "availability": {
+            "enum": [
+              "staff",
+              "building"
+            ],
+            "title": "Availability",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "merits",
+              "flaws"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "creation_only": {
+            "default": false,
+            "title": "Creation Only",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "kind": {
+            "default": "General",
+            "enum": [
+              "General",
+              "Clan",
+              "Sabbat"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "points": {
+            "maximum": 7.0,
+            "minimum": 1.0,
+            "title": "Points",
+            "type": "integer"
+          },
+          "requirement": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Requirement",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "points",
+          "availability"
+        ],
+        "title": "HouseTraitIn",
+        "type": "object"
+      },
+      "HouseTraitOut": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "availability": {
+            "title": "Availability",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "creation_only": {
+            "title": "Creation Only",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "holders": {
+            "title": "Holders",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "requirement": {
+            "title": "Requirement",
+            "type": "string"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "splat",
+          "category",
+          "name",
+          "points",
+          "kind",
+          "availability",
+          "creation_only",
+          "description",
+          "requirement",
+          "archived",
+          "label",
+          "page",
+          "holders"
+        ],
+        "title": "HouseTraitOut",
         "type": "object"
       },
       "IdentitiesIn": {
@@ -8630,6 +8997,61 @@
         "title": "NuminaOut",
         "type": "object"
       },
+      "OfferOut": {
+        "description": "A house merit or flaw staff can apply to the character.",
+        "properties": {
+          "availability": {
+            "title": "Availability",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "held": {
+            "title": "Held",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "name",
+          "points",
+          "kind",
+          "availability",
+          "description",
+          "label",
+          "held"
+        ],
+        "title": "OfferOut",
+        "type": "object"
+      },
       "OptionList": {
         "properties": {
           "names": {
@@ -9443,6 +9865,17 @@
           "group": {
             "title": "Group",
             "type": "string"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House"
           },
           "in_clan": {
             "anyOf": [
@@ -10591,6 +11024,17 @@
             "title": "Group",
             "type": "string"
           },
+          "house": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -11500,6 +11944,21 @@
           "because"
         ],
         "title": "RefusalOut",
+        "type": "object"
+      },
+      "RemoveIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "RemoveIn",
         "type": "object"
       },
       "RemovedOut": {
@@ -13090,6 +13549,16 @@
             "title": "Group",
             "type": "string"
           },
+          "house": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HouseMarkOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -14621,6 +15090,16 @@
               }
             ],
             "title": "Fixed Rating"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HouseOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "house_rule": {
             "anyOf": [
@@ -18565,6 +19044,170 @@
         "summary": "Preview Home Troupe Xp",
         "tags": [
           "membership"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/house-traits": {
+      "get": {
+        "description": "The house merits and flaws staff can apply to the character: its home troupe's\n(or, while it is being built, the troupe it is built for), not archived.",
+        "operationId": "character_house_traits_api_characters__character_id__house_traits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OfferOut"
+                  },
+                  "title": "Response Character House Traits Api Characters  Character Id  House Traits Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character House Traits",
+        "tags": [
+          "house traits"
+        ]
+      },
+      "post": {
+        "description": "Running staff of the character's own troupe apply one of its house merits or\nflaws: free or charged, and with a reason for the logs. Never to a character\nonly visiting the troupe.",
+        "operationId": "apply_house_trait_api_characters__character_id__house_traits_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply House Trait",
+        "tags": [
+          "house traits"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/house-traits/{house_trait_id}/remove": {
+      "post": {
+        "description": "Running staff of the troupe take one of its house merits or flaws off the\ncharacter, with a reason.",
+        "operationId": "remove_house_trait_api_characters__character_id__house_traits__house_trait_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "house_trait_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "House Trait Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove House Trait",
+        "tags": [
+          "house traits"
         ]
       }
     },
@@ -26761,6 +27404,336 @@
         "summary": "Remove Game",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-traits": {
+      "get": {
+        "description": "The troupe's own merits and flaws, archived ones too, for its staff.",
+        "operationId": "list_house_traits_api_troupes__troupe_id__house_traits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HouseTraitOut"
+                  },
+                  "title": "Response List House Traits Api Troupes  Troupe Id  House Traits Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List House Traits",
+        "tags": [
+          "house traits"
+        ]
+      },
+      "post": {
+        "operationId": "add_house_trait_api_troupes__troupe_id__house_traits_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HouseTraitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseTraitOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add House Trait",
+        "tags": [
+          "house traits"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-traits/{house_trait_id}": {
+      "delete": {
+        "description": "Only one nobody holds.",
+        "operationId": "delete_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "house_trait_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "House Trait Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete House Trait",
+        "tags": [
+          "house traits"
+        ]
+      },
+      "put": {
+        "description": "Change it for every character that holds it (`holders` lists them first).\nTheir ratings follow its points; XP already spent is not worked out again.",
+        "operationId": "change_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "house_trait_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "House Trait Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HouseTraitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseTraitOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change House Trait",
+        "tags": [
+          "house traits"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-traits/{house_trait_id}/archived": {
+      "put": {
+        "description": "Archive it, so no one new takes it while those who hold it keep it; or bring it back.",
+        "operationId": "archive_house_trait_api_troupes__troupe_id__house_traits__house_trait_id__archived_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "house_trait_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "House Trait Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseTraitOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive House Trait",
+        "tags": [
+          "house traits"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-traits/{house_trait_id}/holders": {
+      "get": {
+        "description": "The characters a change to it would change.",
+        "operationId": "house_trait_holders_api_troupes__troupe_id__house_traits__house_trait_id__holders_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "house_trait_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "House Trait Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HolderOut"
+                  },
+                  "title": "Response House Trait Holders Api Troupes  Troupe Id  House Traits  House Trait Id  Holders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "House Trait Holders",
+        "tags": [
+          "house traits"
         ]
       }
     },

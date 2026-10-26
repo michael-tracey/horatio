@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import type { CharacterOut } from "../../api/types";
+import { HouseMark } from "../../components/HouseMark";
 import { Badge, Button, Card, ErrorText, Notice } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AskStaff } from "./AskStaff";
@@ -82,7 +83,20 @@ const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
  * totals, and Spend XP (Apply picks during creation), which makes them all or
  * none.
  */
-export function CartPanel({ character, cart, balance, creating }: { character: CharacterOut; cart: Cart; balance: number; creating: boolean }) {
+export function CartPanel({
+  character,
+  cart,
+  balance,
+  creating,
+  houseLabels,
+}: {
+  character: CharacterOut;
+  cart: Cart;
+  balance: number;
+  creating: boolean;
+  /** The troupe's own merits and flaws, by "category/name", to mark with a ★. */
+  houseLabels?: Map<string, string>;
+}) {
   const prices = useCartPrices(character.id, cart.lines);
   const client = useQueryClient();
   const [message, setMessage] = useState<ReactNode>(null);
@@ -145,6 +159,9 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
                     <span className="flex items-start justify-between gap-2">
                       <span className={priced?.refused ? "text-blood-bright" : undefined}>
                         {describe(line)}
+                        {"name" in line && houseLabels?.get(`${line.category}/${line.name}`) && (
+                          <HouseMark label={houseLabels.get(`${line.category}/${line.name}`)!} short />
+                        )}
                         {/* Not priced yet: say so, rather than look free. */}
                         {!priced && !prices.error ? <span className="text-mist"> · …</span> : cost && <span className="text-mist"> · {cost}</span>}
                       </span>

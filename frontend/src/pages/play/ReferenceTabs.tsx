@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { DisciplinePowers, PlayReference, PoolModifier, PowerSwitch, TestPool } from "../../api/types";
+import { HouseMark } from "../../components/HouseMark";
 import { TraitInfo } from "../../components/TraitInfo";
 import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
@@ -45,7 +46,12 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
   return (
     <TraitInfo
       name={t.detail ? `${t.name}: ${t.detail}` : t.name}
-      after={shown.length > 0 && <span className="text-mist"> ({shown.join(", ")})</span>}
+      after={
+        <>
+          {shown.length > 0 && <span className="text-mist"> ({shown.join(", ")})</span>}
+          {t.house && <HouseMark label={t.house} short />}
+        </>
+      }
       description={discipline ? [discipline.pool && `${discipline.pool} against ${discipline.versus}.`, discipline.note ?? t.description].filter(Boolean).join(" ") : t.description}
       more={
         discipline ? (

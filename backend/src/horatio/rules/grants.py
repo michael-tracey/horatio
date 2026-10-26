@@ -264,6 +264,9 @@ def options(
             if c != category:
                 continue
             props = trait.properties
+            # A troupe's house merit no player can pick (horatio.house_traits).
+            if props.get("offered") is False:
+                continue
             requirement = props.get("requirement")
             if "types" in pool and props.get("type") not in pool["types"]:
                 continue
