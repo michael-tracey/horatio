@@ -6804,6 +6804,152 @@
         "title": "MergeIn",
         "type": "object"
       },
+      "ModifierChange": {
+        "description": "Whatever of a modifier is changing; the rest stays.",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "maximum": 9.0,
+                "minimum": -9.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
+          },
+          "pools": {
+            "anyOf": [
+              {
+                "pattern": "^(all|attack|defense|Physical|Social|Mental|pool:[\\w' :-]+)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pools"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When"
+          }
+        },
+        "title": "ModifierChange",
+        "type": "object"
+      },
+      "ModifierIn": {
+        "properties": {
+          "amount": {
+            "maximum": 9.0,
+            "minimum": -9.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "on": {
+            "default": true,
+            "title": "On",
+            "type": "boolean"
+          },
+          "pools": {
+            "pattern": "^(all|attack|defense|Physical|Social|Mental|pool:[\\w' :-]+)$",
+            "title": "Pools",
+            "type": "string"
+          },
+          "when": {
+            "default": "",
+            "maxLength": 80,
+            "title": "When",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "amount",
+          "pools"
+        ],
+        "title": "ModifierIn",
+        "type": "object"
+      },
+      "ModifierOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "pools": {
+            "title": "Pools",
+            "type": "string"
+          },
+          "when": {
+            "title": "When",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "amount",
+          "pools",
+          "when",
+          "on"
+        ],
+        "title": "ModifierOut",
+        "type": "object"
+      },
       "Morality": {
         "properties": {
           "name": {
@@ -8789,6 +8935,13 @@
             "title": "Kind",
             "type": "string"
           },
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/ModifierOut"
+            },
+            "title": "Modifiers",
+            "type": "array"
+          },
           "picture": {
             "anyOf": [
               {
@@ -8803,6 +8956,13 @@
           "player_name": {
             "title": "Player Name",
             "type": "string"
+          },
+          "pools": {
+            "items": {
+              "$ref": "#/components/schemas/TestPool"
+            },
+            "title": "Pools",
+            "type": "array"
           },
           "retainers": {
             "items": {
@@ -8866,7 +9026,9 @@
           "accepted_by",
           "diablerie",
           "traits",
-          "retainers"
+          "retainers",
+          "pools",
+          "modifiers"
         ],
         "title": "PrintedSheet",
         "type": "object"
@@ -16735,6 +16897,233 @@
           }
         },
         "summary": "Read Game",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/modifiers": {
+      "get": {
+        "description": "The player's own modifiers to the character's test pools, on or off.",
+        "operationId": "read_modifiers_api_characters__character_id__play_modifiers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModifierOut"
+                  },
+                  "title": "Response Read Modifiers Api Characters  Character Id  Play Modifiers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Modifiers",
+        "tags": [
+          "play"
+        ]
+      },
+      "post": {
+        "description": "Note a modifier. The player and the staff who can see the sheet may, as for taps.",
+        "operationId": "add_modifier_api_characters__character_id__play_modifiers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifierIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModifierOut"
+                  },
+                  "title": "Response Add Modifier Api Characters  Character Id  Play Modifiers Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Modifier",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/modifiers/{modifier_id}": {
+      "delete": {
+        "operationId": "remove_modifier_api_characters__character_id__play_modifiers__modifier_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "modifier_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Modifier Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModifierOut"
+                  },
+                  "title": "Response Remove Modifier Api Characters  Character Id  Play Modifiers  Modifier Id  Delete",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Modifier",
+        "tags": [
+          "play"
+        ]
+      },
+      "patch": {
+        "description": "Switch a modifier on or off, or edit it.",
+        "operationId": "change_modifier_api_characters__character_id__play_modifiers__modifier_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "modifier_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Modifier Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifierChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModifierOut"
+                  },
+                  "title": "Response Change Modifier Api Characters  Character Id  Play Modifiers  Modifier Id  Patch",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Modifier",
         "tags": [
           "play"
         ]

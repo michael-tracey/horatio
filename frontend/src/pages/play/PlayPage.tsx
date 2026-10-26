@@ -85,7 +85,7 @@ export function PlayPage() {
     <PlayShell characterId={characterId} sync={sync} awake={awake} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
-      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} />)}
+      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} />)}
       {tab === "tracker" && (
         <>
           <div className="grid gap-3 md:grid-cols-2">

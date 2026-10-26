@@ -100,3 +100,23 @@ class PlayDerangement(Record):
     # Where it came from: "Voice of Madness", a quest's consequence.
     source: Mapped[str] = mapped_column(default="", server_default="")
     created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class PoolModifier(Record):
+    """A bonus or penalty a player noted on their character's test pools, such as
+    "+2 Social, against mortals: Fame". Kept per character, across games and
+    Resets, and switched on and off at the table. Removed ones are deleted."""
+
+    __tablename__ = "pool_modifiers"
+    __table_args__ = (CheckConstraint("amount <> 0", name="amount_not_zero"),)
+
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    label: Mapped[str]
+    amount: Mapped[int]
+    # Which pools it changes: "all", "attack", "defense", an attribute ("Social"),
+    # or one pool's key ("pool:dodge"). The Pools tab works out the rest.
+    pools: Mapped[str]
+    # A note shown beside it, not worked out: "against mortals".
+    when: Mapped[str] = mapped_column(default="", server_default="")
+    on: Mapped[bool] = mapped_column(default=True, server_default="true")
+    created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))

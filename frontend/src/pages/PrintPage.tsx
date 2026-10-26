@@ -2,13 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
-import type { PrintedSheet } from "../api/types";
+import type { PoolModifier, PrintedSheet, TestPool } from "../api/types";
 import { Pips } from "../components/ui";
 import { useDates } from "../dates";
 import { HEALTH_RULE, healthRows } from "../health";
 import { DEFAULT_PREFERENCES, useMe, usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { choiceName } from "./character/creation/logic";
+import { changing, total } from "./play/pools";
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 
@@ -242,6 +243,13 @@ const SHOWN_ELSEWHERE = new Set([
   "disciplines", "merits", "flaws", "paths", "health_levels", "willpower_sources", "status_traits",
 ]);
 
+/** The modifiers the player has switched on that change a pool, printed beside it: "(+2 Fame)". */
+function Changes({ pool, modifiers }: { pool: TestPool; modifiers: PoolModifier[] }) {
+  const found = changing(pool, modifiers);
+  if (found.length === 0) return null;
+  return <em className="ml-1 text-neutral-600">({found.map((m) => `${m.amount < 0 ? "−" : "+"}${Math.abs(m.amount)} ${m.label}`).join(", ")})</em>;
+}
+
 function Sheet({ sheet }: { sheet: PrintedSheet }) {
   const paper = usePreferences().paper;
   const dates = useDates();
@@ -252,6 +260,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
   const path = by(t, "paths")[0];
   const physical = rating(t, "attributes", "Physical");
   const mental = rating(t, "attributes", "Mental");
+  const initiative = sheet.pools.find((p) => p.key === "initiative");
   const skills = by(t, "skills").sort((a, b) => a.name.localeCompare(b.name));
   const third = Math.ceil(skills.length / 3);
   // Specialisations print after their skill or background; only any whose parent
@@ -381,11 +390,24 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
         <Section title="Test Pools">
           <p className="text-[12px]">
             Initiative: <strong>{Math.max(physical, mental)}</strong>
+            {initiative && <Changes pool={initiative} modifiers={sheet.modifiers} />}
           </p>
-          <ul className="mt-1 text-[11px] leading-5">
-            {[0, 1, 2].map((i) => (
-              <li key={i} className="h-5 border-b border-dotted border-neutral-400" />
-            ))}
+          <ul className="mt-1 text-[10px] leading-4">
+            {sheet.pools
+              .filter((p) => p.key !== "initiative" && (p.group === "Combat" || p.group === "Defence"))
+              .map((p) => (
+                <li key={p.key} className="flex flex-wrap items-baseline justify-between gap-x-2 border-b border-dotted border-neutral-400">
+                  <span>
+                    {p.name}
+                    <Changes pool={p} modifiers={sheet.modifiers} />
+                  </span>
+                  <strong>
+                    {total(p, 0, sheet.modifiers)}
+                    {p.adds_willpower && " + Willpower"}
+                  </strong>
+                </li>
+              ))}
+            <li className="h-4 border-b border-dotted border-neutral-400" />
           </ul>
         </Section>
       </div>

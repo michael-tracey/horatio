@@ -9,11 +9,12 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import diablerie, pictures, retainers, sheets, titles
+from horatio import diablerie, pictures, play, reference, retainers, sheets, titles
 from horatio.api.retainers import RetainerOut, listed
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, SheetVersion, TraitCategory, TraitDefinition, Troupe, User
 from horatio.permissions import visible_character
+from horatio.pool_modifiers import ModifierOut, modifiers_out
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["printing"])
@@ -56,6 +57,9 @@ class PrintedSheet(BaseModel):
     traits: list[PrintedTrait]
     # Its Retainers, listed under the background.
     retainers: list[RetainerOut]
+    # The test pools worked out from the sheet, and the player's modifiers that are on.
+    pools: list[reference.TestPool]
+    modifiers: list[ModifierOut]
 
 
 @router.get("/print")
@@ -144,5 +148,11 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         diablerie=[d.committed_on for d in diablerie.recorded(db, character)],
         traits=traits,
         retainers=listed(db, retainers.read(db, character), None),
+        pools=reference.reference(
+            sheets.sheet_rows(db, character),
+            sheets.rules_for(db, character).rule_set,
+            play.limits(db, character).blood_per_turn,
+        ).pools,
+        modifiers=modifiers_out(db, character, only_on=True),
         picture=pictures.picture_url(character.id, character.picture_id),
     )

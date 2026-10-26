@@ -81,6 +81,7 @@ export type ExpendableOut = Schemas["ExpendableOut"];
 export type TroupePlayEntry = Schemas["TroupePlayEntry"];
 export type PlayReference = Schemas["PlayReference"];
 export type TestPool = Schemas["TestPool"];
+export type PoolModifier = Schemas["ModifierOut"];
 export type DisciplinePowers = Schemas["DisciplinePowers"];
 export type XpRangeOut = Schemas["XpRangeOut"];
 export type XpReviewOut = Schemas["XpReviewOut"];

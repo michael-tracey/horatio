@@ -968,6 +968,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play/modifiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Modifiers
+         * @description The player's own modifiers to the character's test pools, on or off.
+         */
+        get: operations["read_modifiers_api_characters__character_id__play_modifiers_get"];
+        put?: never;
+        /**
+         * Add Modifier
+         * @description Note a modifier. The player and the staff who can see the sheet may, as for taps.
+         */
+        post: operations["add_modifier_api_characters__character_id__play_modifiers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/modifiers/{modifier_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Modifier */
+        delete: operations["remove_modifier_api_characters__character_id__play_modifiers__modifier_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Change Modifier
+         * @description Switch a modifier on or off, or edit it.
+         */
+        patch: operations["change_modifier_api_characters__character_id__play_modifiers__modifier_id__patch"];
+        trace?: never;
+    };
     "/api/characters/{character_id}/play/reference": {
         parameters: {
             query?: never;
@@ -6286,6 +6331,59 @@ export interface components {
             /** Entry Ids */
             entry_ids: string[];
         };
+        /**
+         * ModifierChange
+         * @description Whatever of a modifier is changing; the rest stays.
+         */
+        ModifierChange: {
+            /** Amount */
+            amount?: number | null;
+            /** Label */
+            label?: string | null;
+            /** On */
+            on?: boolean | null;
+            /** Pools */
+            pools?: string | null;
+            /** When */
+            when?: string | null;
+        };
+        /** ModifierIn */
+        ModifierIn: {
+            /** Amount */
+            amount: number;
+            /** Label */
+            label: string;
+            /**
+             * On
+             * @default true
+             */
+            on: boolean;
+            /** Pools */
+            pools: string;
+            /**
+             * When
+             * @default
+             */
+            when: string;
+        };
+        /** ModifierOut */
+        ModifierOut: {
+            /** Amount */
+            amount: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** On */
+            on: boolean;
+            /** Pools */
+            pools: string;
+            /** When */
+            when: string;
+        };
         /** Morality */
         Morality: {
             /** Name */
@@ -7074,10 +7172,14 @@ export interface components {
             home: boolean;
             /** Kind */
             kind: string;
+            /** Modifiers */
+            modifiers: components["schemas"]["ModifierOut"][];
             /** Picture */
             picture: string | null;
             /** Player Name */
             player_name: string;
+            /** Pools */
+            pools: components["schemas"]["TestPool"][];
             /** Retainers */
             retainers: components["schemas"]["RetainerOut"][];
             /** Splat */
@@ -10841,6 +10943,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameLog"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_modifiers_api_characters__character_id__play_modifiers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_modifier_api_characters__character_id__play_modifiers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_modifier_api_characters__character_id__play_modifiers__modifier_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                modifier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_modifier_api_characters__character_id__play_modifiers__modifier_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                modifier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierOut"][];
                 };
             };
             /** @description Validation Error */
