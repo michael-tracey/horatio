@@ -32,6 +32,7 @@ import { PrintAndBadge } from "./Badge";
 import { CategoryInfo, PartInfo } from "./Info";
 import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart, type Cart, type CartLine } from "./cart";
 import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
+import { DiablerieCard } from "./Diablerie";
 import { ExceptionMark, ExceptionsCard } from "./Exceptions";
 import { GivePanel } from "./GivePanel";
 import { rulesTroupe } from "./rules";
@@ -346,6 +347,7 @@ export function SheetTab({
           </Card>
         )}
         <ExceptionsCard exceptions={s.exceptions} />
+        <DiablerieCard character={character} mine={mine} />
         {parts.length === 0 && (
           <Empty>
             The sheet is empty{mine ? "" : " until the player builds it"}.

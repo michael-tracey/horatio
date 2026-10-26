@@ -874,8 +874,8 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("button", { name: "Quick build" }).click();
   await expect(p.getByRole("heading", { name: "Prince Vasquez" })).toBeVisible();
 
-  await p.getByLabel("Clan").selectOption("Ventrue");
-  await expect(p.getByLabel("Clan")).toHaveValue("Ventrue");
+  await p.getByLabel("Clan", { exact: true }).selectOption("Ventrue");
+  await expect(p.getByLabel("Clan", { exact: true })).toHaveValue("Ventrue");
   await p.getByRole("button", { name: "Social 7", exact: true }).click(); // attributes: 3 a dot
   await expect(p.getByText("21 XP")).toBeVisible();
   // Each attribute's focus is chosen beside it, one of three; choosing again swaps it.
@@ -944,6 +944,80 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("link", { name: "Play Sheriff Ilse" }).click();
   await expect(p.getByRole("heading", { name: "Sheriff Ilse" })).toBeVisible();
   await expect(p.getByRole("tab", { name: "Tracker" })).toBeVisible();
+});
+
+test("storytellers give an NPC powers, and one out of order is marked until it is in order", async ({ browser }) => {
+  const custodian = await person(browser, "powers-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "powers-lead");
+  const troupeName = `Court of Embers ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  const created = custodian.page.waitForResponse((r) => r.url().endsWith("/api/troupes") && r.request().method() === "POST");
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  const troupeId = (await (await created).json()).id as string;
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  const p = lead.page;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Matriarch Odile", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  for (const [category, name, rating] of [
+    ["clan", "Toreador", null],
+    ["backgrounds", "Generation", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+
+  // Each tap saves and works the marks out again, which takes a while under load.
+  const slowly = expect.configure({ timeout: 20_000 });
+  await p.goto(`/characters/${npc}`);
+  await slowly(p.getByRole("heading", { name: "Techniques", exact: true })).toBeVisible();
+
+  // A technique is found by search and added at once; its disciplines are missing, so it is marked.
+  await p.getByLabel("Search Techniques").fill("Da Shealladh");
+  await p.getByRole("checkbox", { name: "An Da Shealladh" }).click();
+  await slowly(p.getByRole("checkbox", { name: "An Da Shealladh" })).toBeChecked();
+  await p.getByLabel("Search Techniques").fill("");
+  await slowly(p.getByRole("checkbox", { name: "An Da Shealladh" })).toBeChecked();
+  await slowly(p.getByText("Marked: An Da Shealladh needs Dementation 3 and Auspex 2.")).toBeVisible();
+
+  // Adding the disciplines clears the mark.
+  await p.getByLabel("Search Disciplines").fill("Dementation");
+  await p.getByRole("button", { name: "Dementation 3", exact: true }).click();
+  await slowly(p.getByRole("button", { name: "Dementation 3", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await p.getByLabel("Search Disciplines").fill("Auspex");
+  await p.getByRole("button", { name: "Auspex 2", exact: true }).click();
+  await slowly(p.getByRole("button", { name: "Auspex 2", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await slowly(p.getByText("Marked: An Da Shealladh")).toHaveCount(0);
+  await slowly(p.getByRole("checkbox", { name: "An Da Shealladh" })).toBeChecked();
+
+  // An elder power, a ritual (shown with its level) and an extra in-clan discipline.
+  await p.getByLabel("Search Elder & luminary powers").fill("Crimson Fury");
+  await p.getByRole("checkbox", { name: "Animalism: Crimson Fury" }).click();
+  await slowly(p.getByRole("checkbox", { name: "Animalism: Crimson Fury" })).toBeChecked();
+  await slowly(p.getByText("Marked: A Neonate's or Ancilla's blood is too thin for elder powers.")).toBeVisible();
+
+  await p.getByLabel("Search Rituals").fill("Abyssal Ichor");
+  await p.getByRole("checkbox", { name: "Abyssal: Abyssal Ichor" }).click();
+  await slowly(p.getByRole("checkbox", { name: "Abyssal: Abyssal Ichor" })).toBeChecked();
+
+  await p.getByLabel("Search Extra in-clan disciplines").fill("Fortitude");
+  await p.getByRole("checkbox", { name: "Fortitude", exact: true }).click();
+  await slowly(p.getByRole("checkbox", { name: "Fortitude", exact: true })).toBeChecked();
+
+  // They are on the sheet, and stay after a reload; one tap takes a power off.
+  await p.reload();
+  for (const name of ["An Da Shealladh", "Animalism: Crimson Fury", "Abyssal: Abyssal Ichor", "Fortitude"]) {
+    await slowly(p.getByRole("checkbox", { name, exact: true })).toBeChecked();
+  }
+  await p.getByRole("checkbox", { name: "An Da Shealladh" }).click();
+  await slowly(p.getByRole("checkbox", { name: "An Da Shealladh" })).toHaveCount(0);
 });
 
 test("storytellers log influence for PCs, NPCs and names only, and a player reads their character's", async ({ browser }) => {
@@ -3397,6 +3471,98 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   await p.goto("/");
   await p.getByRole("button", { name: "Notifications, 1 waiting" }).click();
   await expect(p.getByText("exc-lead gave Wren Calm Heart 1, free: Raised by a True Brujah")).toBeVisible();
+});
+
+test("a player says they committed diablerie, staff approve it, and then record another", async ({ browser }) => {
+  const custodian = await person(browser, "dia-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "dia-lead");
+  const player = await person(browser, "dia-player");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Cinders ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  // Sable is built through the API and accepted at Generation 1.
+  const p = player.page;
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Sable" });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+  const asked = await send("POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  const accepted = await lead.page.request.post(`/api/approvals/${asked.id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBe(200);
+  const held = async (name: string) => (await (await p.request.get(`/api/characters/${id}/sheet`)).json()).traits.find((t: { name: string }) => t.name === name).rating;
+
+  // The troupe's setting for a Lesser Generation holder starts at leaving the flaw.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/starting`);
+  await expect(l.getByText("Leave the flaw.")).toBeVisible();
+
+  // The player asks, with the date and a note.
+  await p.goto(`/characters/${id}`);
+  await p.getByRole("button", { name: "Ask staff: I committed diablerie" }).click();
+  const ask = p.getByRole("form", { name: "Ask staff about diablerie" });
+  await ask.getByLabel("Date").fill("2026-10-24");
+  await ask.getByLabel("Note").fill("Drank my sire at Elysium");
+  await ask.getByRole("button", { name: "Ask staff", exact: true }).click();
+  await expect(p.getByText("You said Sable committed diablerie.")).toBeVisible();
+  expect(await held("Generation")).toBe(1);
+
+  // The lead sees what approving does, changes the Beast traits, and approves.
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  await l.getByLabel("Kind").selectOption({ label: "Diablerie" });
+  const card = l.locator("section").filter({ hasText: "Sable" });
+  await expect(card).toContainText("committed diablerie on 24 Oct 2026");
+  await expect(card).toContainText("Generation 1 → 2, as a free dot. Earlier buys keep what they cost.");
+  await expect(card).toContainText("Humanity goes down 1");
+  await card.getByLabel("Beast traits at the next game").fill("2");
+  await card.getByLabel("Who was diablerized").fill("Her sire");
+  await l.screenshot(shots("diablerie-approval"));
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+
+  // Generation went up free, Humanity fell, and the date shows on the sheet and the printed sheet.
+  expect(await held("Generation")).toBe(2);
+  expect(await held("Humanity")).toBe(4);
+  await p.reload();
+  await expect(p.getByRole("list", { name: "Diablerie" })).toContainText("Diablerie: 24 Oct 2026");
+  await expect(p.getByRole("list", { name: "Diablerie" })).not.toContainText("Her sire");
+  await p.screenshot(shots("diablerie-sheet"));
+  await p.goto(`/print/characters/${id}`);
+  await expect(p.getByText("Diablerie: 24 Oct 2026")).toBeVisible();
+  // Two Beast traits wait for the next game on the Play View.
+  expect((await (await p.request.get(`/api/characters/${id}/play`)).json()).beast.value).toBe(2);
+
+  // The lead records another from the character's page, and takes more Humanity than filled in.
+  await l.goto(`/characters/${id}`);
+  await expect(l.getByRole("list", { name: "Diablerie" })).toContainText("Her sire");
+  await l.getByRole("button", { name: "Record diablerie" }).click();
+  const form = l.getByRole("form", { name: "Record diablerie" });
+  await form.getByLabel("Date").fill("2026-10-25");
+  await form.getByLabel("Who was diablerized").fill("The Prince");
+  await expect(form).toContainText("Generation 2 → 3, as a free dot.");
+  await form.getByLabel("Humanity lowered by").fill("2");
+  await expect(form).toContainText("Humanity goes down 2, with no XP back.");
+  await form.getByRole("button", { name: "Record diablerie" }).click();
+  await expect(l.getByRole("list", { name: "Diablerie" })).toContainText("Diablerie: 25 Oct 2026");
+  expect(await held("Generation")).toBe(3);
+  expect(await held("Humanity")).toBe(2);
 });
 
 test("feeding in a downtime: Herd given to another character, both answered, and half Blood at the next game", async ({ browser }) => {

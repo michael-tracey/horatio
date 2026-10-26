@@ -10,7 +10,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
-from horatio import audit
+from horatio import audit, diablerie
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -697,6 +697,35 @@ def set_starting_blood(
         "house.starting_blood",
         troupe_id=troupe.id,
         blood="full" if body.blood is None else str(body.blood),
+    )
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
+# --- Diablerie ----------------------------------------------------------------
+
+
+class DiablerieFlaws(BaseModel):
+    # What recording a diablerie does to a Lesser Generation or Thin Blooded flaw the
+    # character holds: leave it, remove it with the XP it gave, or remove it and keep
+    # that XP (horatio.diablerie).
+    setting: Literal["leave", "remove", "keep_xp"]
+
+
+@router.put("/diablerie-flaws")
+def set_diablerie_flaws(
+    troupe_id: uuid.UUID, body: DiablerieFlaws, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """How this troupe handles a Lesser Generation or Thin Blooded flaw when a holder
+    commits diablerie."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    troupe.diablerie_flaws = body.setting
+    audit.record(
+        db,
+        user,
+        "house.diablerie_flaws",
+        troupe_id=troupe.id,
+        setting=diablerie.SETTING_TEXT[body.setting],
     )
     db.commit()
     return troupe_out(db, user, troupe)

@@ -303,6 +303,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
                     ? `Visiting ${sheet.troupe_name}`
                     : "No home troupe yet"}
             </p>
+            {sheet.diablerie.length > 0 && <p className="text-[10px]">Diablerie: {sheet.diablerie.map((d) => dates.day(d)).join(", ")}</p>}
           </div>
           {sheet.picture && <img src={`${sheet.picture}/128.webp`} alt="" className="h-[0.8in] w-[0.8in] rounded-full border border-black object-cover" />}
         </div>

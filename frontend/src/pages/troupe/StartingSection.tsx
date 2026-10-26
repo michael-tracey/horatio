@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { StartingCategoryOut, StartingRule } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { DiablerieFlaws } from "./DiablerieFlaws";
 import { XpRangeCard } from "./XpRange";
 
 /**
@@ -51,6 +52,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
         }
       />
       <StartingBlood troupeId={troupeId} canEdit={canEdit} />
+      <DiablerieFlaws troupeId={troupeId} canEdit={canEdit} />
     </div>
   );
 }

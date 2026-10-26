@@ -35,6 +35,8 @@ class PlayGame(Record):
     state: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Blood starts at half, rounded up: the character fed short last downtime.
     half_blood: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Beast traits the game starts with: a diablerie added them (horatio.diablerie).
+    beast_start: Mapped[int] = mapped_column(default=0, server_default="0")
 
 
 class PlayEvent(Record):

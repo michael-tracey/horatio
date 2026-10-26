@@ -2,14 +2,14 @@
 dots still waiting on the home troupe marked."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import pictures, play, reference, retainers, sheets, titles
+from horatio import diablerie, pictures, play, reference, retainers, sheets, titles
 from horatio.api.retainers import RetainerOut, listed
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, SheetVersion, TraitCategory, TraitDefinition, Troupe, User
@@ -52,6 +52,8 @@ class PrintedSheet(BaseModel):
     home: bool
     accepted_at: datetime | None
     accepted_by: str | None
+    # When the character committed diablerie (p. 306 asks for the date on the sheet).
+    diablerie: list[date]
     traits: list[PrintedTrait]
     # Its Retainers, listed under the background.
     retainers: list[RetainerOut]
@@ -143,6 +145,7 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         home=troupe is not None and troupe == character.home_troupe_id,
         accepted_at=version.approved_at if version else None,
         accepted_by=db.get_one(User, version.approved_by).display_name if version else None,
+        diablerie=[d.committed_on for d in diablerie.recorded(db, character)],
         traits=traits,
         retainers=listed(db, retainers.read(db, character), None),
         pools=reference.reference(

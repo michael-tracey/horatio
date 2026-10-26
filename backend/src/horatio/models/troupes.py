@@ -22,6 +22,11 @@ class Troupe(Imported, Record):
     """The top-level group. Archived rather than deleted."""
 
     __tablename__ = "troupes"
+    __table_args__ = (
+        CheckConstraint(
+            "diablerie_flaws in ('leave', 'remove', 'keep_xp')", name="diablerie_flaws"
+        ),
+    )
 
     name: Mapped[str]
     description: Mapped[str] = mapped_column(default="", server_default="")
@@ -45,6 +50,10 @@ class Troupe(Imported, Record):
     # Street look in the influence log, from the close of the lookup's cycle
     # (horatio.influence_lookups). The rules' "within the last 3 months".
     influence_lookback_days: Mapped[int] = mapped_column(default=90, server_default="90")
+    # House rule: what a diablerie does to a Lesser Generation or Thin Blooded flaw
+    # (horatio.diablerie): "leave" it, "remove" it and the XP it gave, or "keep_xp"
+    # to remove it and keep that XP.
+    diablerie_flaws: Mapped[str] = mapped_column(default="leave", server_default="leave")
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a

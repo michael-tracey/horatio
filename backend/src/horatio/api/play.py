@@ -483,7 +483,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         )
         if limits.morality_name
         else None,
-        beast=Tracker(value=state["beast"], most=play.BEAST_TRAITS, start=0),
+        beast=Tracker(value=state["beast"], most=play.BEAST_TRAITS, start=limits.beast_start),
         derangements=Derangements(
             value=state["derangements"],
             most=play.DERANGEMENT_TRAITS,
