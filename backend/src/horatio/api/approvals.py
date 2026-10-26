@@ -79,6 +79,14 @@ class XpReviewOut(BaseModel):
     extra: int | None = None
 
 
+class LockedOut(BaseModel):
+    """A trait accepting the character fixes, such as Generation, at the rating it
+    is accepted at."""
+
+    name: str
+    rating: int | None
+
+
 class QueuedApproval(ApprovalOut):
     character_name: str
     # The character's picture (horatio.pictures) and clan, for its placeholder.
@@ -93,6 +101,8 @@ class QueuedApproval(ApprovalOut):
     reconciliation: list[ReconciliationOut]
     # For a player character's home troupe change: its XP against the floor and ceiling.
     xp: XpReviewOut | None = None
+    # For a first home troupe request still waiting: the traits accepting it fixes.
+    locks: list[LockedOut] = []
 
 
 class SettlementOverride(BaseModel):
@@ -176,6 +186,22 @@ def xp_review_out(db: DbSession, approval: Approval, character: Character) -> Xp
     return XpReviewOut(**xp_range.review(db, character, troupe, change.top_up).as_record())
 
 
+def locks_out(db: DbSession, approval: Approval, character: Character) -> list[LockedOut]:
+    if (
+        approval.kind != "home_troupe_change"
+        or approval.status != "pending"
+        or character.kind != "pc"
+        or sheets.ever_accepted(db, character)
+    ):
+        return []
+    rule_set = sheets.rules_for(db, character).rule_set
+    return [
+        LockedOut(name=r.definition.name, rating=r.trait.rating)
+        for r in sheets.sheet_rows(db, character)
+        if sheets.locks_at(rule_set, r.category.key, r.definition.name) == "accepted"
+    ]
+
+
 def exception_out(db: DbSession, approval: Approval) -> ExceptionAskOut | None:
     if approval.kind != "exception":
         return None
@@ -242,6 +268,7 @@ def troupe_approvals(
             exception=exception_out(db, a),
             reconciliation=reconciliation_out(db, a),
             xp=xp_review_out(db, a, c),
+            locks=locks_out(db, a, c),
         )
         for a, c in rows
     ]

@@ -29,7 +29,7 @@ class RuleSet(Record):
     feeding_modifiers: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, default=list, server_default="[]"
     )
-    # Traits chosen at creation only, as {category, name?, name_prefix?}.
+    # Traits chosen at creation only, as {category, name?, name_prefix?, until?}.
     creation_only: Mapped[list[dict[str, str]]] = mapped_column(
         JSONB, default=list, server_default="[]"
     )

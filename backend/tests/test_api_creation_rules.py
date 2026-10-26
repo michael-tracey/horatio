@@ -66,15 +66,25 @@ def test_finishing_creation_needs_a_dot_of_generation(troupe: Troupe) -> None:
     assert "at least 1 dot of Generation" in refused.json()["detail"]
 
 
-def test_generation_and_bloodline_are_creation_only(troupe: Troupe) -> None:
+def test_bloodline_is_creation_only(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player, clan="Toreador")
 
-    for change in (
-        take(troupe.player, character_id, "backgrounds", "Generation", 2),
-        take(troupe.player, character_id, "merits", "Bloodline: Ishtarri", 2),
-    ):
-        assert change.status_code == 409
-        assert "can only be chosen during character creation" in change.json()["detail"]
+    change = take(troupe.player, character_id, "merits", "Bloodline: Ishtarri", 2)
+
+    assert change.status_code == 409
+    assert "can only be chosen during character creation" in change.json()["detail"]
+
+
+def test_generation_is_fixed_once_a_home_troupe_accepts_the_character(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Toreador")
+    # Until then the build is still creation (test_api_generation_until_accepted).
+    assert take(troupe.player, character_id, "backgrounds", "Generation", 1).status_code == 200
+    make_home(troupe, character_id)
+
+    change = take(troupe.player, character_id, "backgrounds", "Generation", 2)
+
+    assert change.status_code == 409
+    assert "once a home troupe has accepted the character" in change.json()["detail"]
 
 
 def test_before_acceptance_out_of_clan_is_common_only_and_up_to_three(troupe: Troupe) -> None:

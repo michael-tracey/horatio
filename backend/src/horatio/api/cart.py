@@ -79,6 +79,15 @@ class CartIn(BaseModel):
     dry_run: bool = False
 
 
+class RepricedOut(BaseModel):
+    """An earlier purchase a Generation change reprices."""
+
+    # The purchase: "Brawl 0 → 2".
+    purchase: str
+    # What it costs more (negative: less) at the new Generation.
+    cost: int
+
+
 class CartLineOut(BaseModel):
     # XP the change spends (negative: refunds). For a refused change, what it
     # would have cost where that can be told.
@@ -89,6 +98,9 @@ class CartLineOut(BaseModel):
     needs_approval: bool
     # Asked as an exception: the rules it breaks, set aside if staff approve.
     breaks: list[str] = []
+    # Earlier purchases it reprices, each its own line in the XP history; their
+    # total is in `cost`.
+    repriced: list[RepricedOut] = []
 
 
 class CartOut(BaseModel):
@@ -147,6 +159,7 @@ def spend_cart(character_id: uuid.UUID, body: CartIn, db: DbSession, user: Curre
                 refused=o.refused,
                 needs_approval=o.needs_approval,
                 breaks=list(o.breaks),
+                repriced=[RepricedOut(purchase=r.label, cost=r.cost) for r in o.repriced],
             )
             for o in outcomes
         ],

@@ -334,14 +334,18 @@ page = "101"
 
 # --- chosen at creation only ---------------------------------------------------
 # These reflect the Embrace and cannot be added, removed or changed once
-# creation is finished (pp. 100, 107, 235–236, 246, 263, 265).
+# creation is finished (pp. 100, 107, 235–236, 246, 263, 265). `until = "accepted"`
+# keeps one open until a first home troupe accepts the character instead.
 
 [[creation_only]]
 category = "clan"
 
+# Bought at creation, with initial XP too, and fixed once the character enters
+# play (pp. 99, 106): until then the build is still creation.
 [[creation_only]]
 category = "backgrounds"
 name = "Generation"
+until = "accepted"
 
 [[creation_only]]
 category = "merits"

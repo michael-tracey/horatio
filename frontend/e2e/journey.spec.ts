@@ -762,6 +762,78 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await expect(p.getByText("above a ceiling", { exact: true })).toBeVisible();
 });
 
+test("Generation changes in the cart until a home troupe accepts the character, repricing earlier buys", async ({ browser }) => {
+  const custodian = await person(browser, "gen-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "gen-lead");
+  const player = await person(browser, "gen-player");
+  const troupeName = `Court of the Unaccepted ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  // Ottoline, a Neonate (Generation 1), finishes creation and buys Brawl and Herd at a Neonate's prices: 5 and 3 XP.
+  const p = player.page;
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "vampire", name: "Ottoline" });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const build: Record<string, [string, number][]> = {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send("POST", `/api/characters/${id}/creation/complete`, {});
+  await send("PUT", `/api/characters/${id}/traits`, { category: "skills", name: "Brawl", rating: 5 });
+  await send("PUT", `/api/characters/${id}/traits`, { category: "backgrounds", name: "Herd", rating: 3 });
+  await p.goto(`/characters/${id}`);
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+
+  // No troupe has accepted her yet, so Generation still goes up in the cart: 4 XP, and the earlier buys at Generation 2's prices.
+  await p.getByRole("button", { name: "Raise Generation" }).click();
+  const line = cart.getByRole("listitem").filter({ hasText: "Generation 1 → 2" });
+  await expect(line).toContainText("Generation 1 → 2 · 12 XP");
+  await expect(line).toContainText("Earlier buys repriced at the new Generation, 8 XP in all: Brawl 4 → 5 (5 XP), Herd 2 → 3 (3 XP).");
+  await p.screenshot(shots("generation-repriced"));
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 12 XP.")).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
+  await expect(p.getByText("Generation 1 → 2: Brawl 4 → 5 repriced")).toBeVisible();
+  await expect(p.getByText("Generation 1 → 2: Herd 2 → 3 repriced")).toBeVisible();
+
+  // Down again refunds the dot and reprices back; the creation pick stays.
+  await p.goto(`/characters/${id}`);
+  await p.getByRole("button", { name: "Lower Generation" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Generation 2 → 1" })).toContainText("8 XP back in all");
+  await expect(p.getByRole("button", { name: "Lower Generation" })).toBeDisabled();
+  await p.getByRole("button", { name: "Clear" }).click();
+
+  // The lead sees the Generation being accepted, and that accepting locks it.
+  const asked = await send("POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  expect(asked.id).toBeTruthy();
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  const card = l.locator("section").filter({ hasText: "Ottoline" });
+  await expect(card).toContainText("Accepting at Generation 2.");
+  await expect(card).toContainText("Accepting locks it");
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+
+  // Once accepted, Generation is fixed.
+  await p.reload();
+  await p.getByRole("button", { name: "Raise Generation" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Generation 2 → 3" })).toContainText(
+    "Generation can't change once a home troupe has accepted the character.",
+  );
+  await expect(p.getByRole("button", { name: "Spend XP" })).toBeDisabled();
+});
+
 test("a character in no troupe can be deleted from the vault", async ({ browser }) => {
   const { page } = await person(browser, "deleter");
   await page.getByLabel("Name").fill("Short-lived");

@@ -148,6 +148,7 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
                       </span>
                     </span>
                     {priced?.refused && <span className="text-xs text-blood-bright">{priced.refused}</span>}
+                    {priced && priced.repriced.length > 0 && <Repriced lines={priced.repriced} />}
                     {exception && (
                       <span className="text-xs text-mist">
                         Asked of staff{exception.free ? ", free" : ""}: {exception.reason}
@@ -212,6 +213,17 @@ export function CartPanel({ character, cart, balance, creating }: { character: C
         )}
       </div>
     </Card>
+  );
+}
+
+/** Earlier buys a Generation change reprices, before acceptance: their total is in the line's cost, and each is its own line in the XP history. */
+function Repriced({ lines }: { lines: CartOut["lines"][number]["repriced"] }) {
+  const total = lines.reduce((n, r) => n + r.cost, 0);
+  return (
+    <span className="text-xs text-mist">
+      Earlier buys repriced at the new Generation{total ? `, ${costText(total)} in all` : ""}:{" "}
+      {lines.map((r) => `${r.purchase} (${costText(r.cost)})`).join(", ")}.
+    </span>
   );
 }
 

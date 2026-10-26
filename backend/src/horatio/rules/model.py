@@ -198,7 +198,9 @@ class RuleSetData:
     checks: Sequence["CheckData"] = ()
     # Traits that give other traits (horatio.rules.grants).
     grants: Sequence["GrantData"] = ()
-    # Traits chosen at creation only: {category, name?, name_prefix?} each.
+    # Traits chosen at creation only: {category, name?, name_prefix?, until?} each.
+    # They lock when creation is finished, or with until = "accepted" when a first
+    # home troupe accepts the character.
     creation_only: Sequence[Mapping[str, str]] = ()
     # Unspent creation XP kept when a first home troupe accepts the character;
     # None keeps it all.

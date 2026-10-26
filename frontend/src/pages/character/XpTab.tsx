@@ -6,7 +6,7 @@ import { Button, Card, ErrorText, Field, Input, Loading } from "../../components
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
-const KINDS: Record<string, string> = { self_entered: "self-entered", cap: "above a ceiling" };
+const KINDS: Record<string, string> = { self_entered: "self-entered", cap: "above a ceiling", reprice: "repriced" };
 
 /** The character's XP history. `selfEntering`: its player, while it has no home
  * troupe, may add XP to it themselves; the troupe it joins accepts or removes it. */
@@ -44,7 +44,7 @@ export function XpTab({ characterId, selfEntering = false }: { characterId: stri
                   <td className="py-2 pr-3">
                     {e.reason}
                     {e.kind !== "purchase" && <span className="ml-2 text-xs text-mist">{KINDS[e.kind] ?? e.kind}</span>}
-                    {e.corrects_id && <span className="block text-xs text-mist">Corrects “{reasons.get(e.corrects_id)}”</span>}
+                    {e.kind === "correction" && e.corrects_id && <span className="block text-xs text-mist">Corrects “{reasons.get(e.corrects_id)}”</span>}
                     {e.corrected_to != null && <span className="block text-xs text-gold">Corrected: now gives {e.corrected_to} XP</span>}
                     {e.correctable && <Correct characterId={characterId} entry={e} />}
                   </td>
