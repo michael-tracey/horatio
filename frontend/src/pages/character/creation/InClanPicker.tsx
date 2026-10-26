@@ -65,7 +65,9 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   const options = loaded ? inClanOptions(names, choice, barred) : [];
   if (loaded && !options.length && !choice.chooses) return null;
   if (!loaded && !choice.chooses) return null;
-  const busy = toggle.isPending || swapIn.isPending;
+  // Held, too, while the refusals are asked again after a change (taking the merit that
+  // adds a choice): a tap on the answer from before would offer swaps it doesn't need.
+  const busy = toggle.isPending || swapIn.isPending || barring.isFetching || refusing.isFetching;
   return (
     <fieldset className="flex flex-col gap-2 rounded-md border border-ash p-3">
       <legend className="px-1 text-sm text-parchment">
