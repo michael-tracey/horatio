@@ -3720,6 +3720,80 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   await expect.poll(async () => (await state("Alder")).blood.value).toBe(8);
 });
 
+test("a Scene card shows an NPC's best attacks and defences, and its Pools and Powers sections follow a form", async ({ browser }) => {
+  const custodian = await person(browser, "pools-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "pools-lead");
+  const troupeName = `Court of Hounds ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // An NPC with four attacks and Shape of the Beast: Physical 5, Brawl 3, Melee 2, Firearms 1, Athletics 1, Dodge 2.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Vesper", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  for (const [category, name, rating] of [
+    ["clan", "Gangrel", null],
+    ["attributes", "Physical", 5],
+    ["attributes", "Mental", 3],
+    ["skills", "Brawl", 3],
+    ["skills", "Melee", 2],
+    ["skills", "Firearms", 1],
+    ["skills", "Athletics", 1],
+    ["skills", "Dodge", 2],
+    ["disciplines", "Protean", 4],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+  await p.goto(`/characters/${npc}/sheet`);
+  const choices = p.getByLabel("Shape of the Beast choices");
+  await choices.getByRole("button", { name: "choose" }).click();
+  await choices.getByLabel("Fight form", { exact: true }).fill("bear");
+  await choices.getByLabel("Fight form template").selectOption("Huge");
+  await choices.getByRole("button", { name: "Save" }).click();
+  await expect(choices).toContainText("fight form bear · fight form template Huge");
+
+  // Pinned: the top three attacks (Thrown, the fourth, is left out) and the defences are on the card.
+  await p.goto(`/play/troupes/${troupeId}/scene`);
+  await p.getByRole("combobox", { name: "Add to the scene" }).fill("Vesper");
+  await p.getByRole("option", { name: /Vesper/ }).click();
+  const card = p.getByRole("article", { name: "Vesper" });
+  await expect(card).toContainText("Attack Unarmed 8 (1 dmg) · Melee 7");
+  await expect(card).toContainText("Firearms 6");
+  await expect(card).not.toContainText("Thrown");
+  await expect(card).toContainText("Defence Dodge 7");
+
+  // A form in Powers raises the attack and shows as a badge; Undo takes it back.
+  await card.getByRole("button", { name: /^Powers/ }).click();
+  await card.getByLabel("Shape of the Beast: fight form (bear, Huge) on").check();
+  await expect(card).toContainText("Attack Unarmed 10");
+  await expect(card.getByText("Shape of the Beast: fight form (bear, Huge)", { exact: true }).first()).toBeVisible();
+  await expect(card.getByRole("status")).toHaveText("Saved");
+  await card.getByRole("button", { name: /^Undo Turned into Shape of the Beast/ }).click();
+  await expect(card).toContainText("Attack Unarmed 8 (1 dmg)");
+  await expect(card.getByLabel("Shape of the Beast: fight form (bear, Huge) on")).not.toBeChecked();
+
+  // Pools lists every pool, Combat and Defence first, and stays open over a reload.
+  await card.getByRole("button", { name: /^Pools/ }).click();
+  await expect(card.getByRole("region", { name: "Combat" })).toContainText("Thrown attack");
+  await expect(card.getByRole("region", { name: "Defence" })).toContainText("Resisting Social powers");
+  await p.reload();
+  await expect(card.getByRole("region", { name: "Combat" })).toBeVisible();
+  await expect(card.getByRole("button", { name: /^Powers/ })).toHaveAttribute("aria-expanded", "true");
+});
+
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "profile-custodian");

@@ -43,3 +43,34 @@ export function findPins<T extends { character_name: string }>(characters: T[], 
   const starts = (c: T) => (c.character_name.toLocaleLowerCase().startsWith(q) ? 0 : 1);
   return [...named].sort((a, b) => starts(a) - starts(b));
 }
+
+/** The parts of a card that can be open; several at once. */
+export type Section = "pools" | "powers" | "log" | "reset";
+
+const openKey = (characterId: string) => `horatio.scene.open.${characterId}`;
+const sections: readonly string[] = ["pools", "powers", "log", "reset"];
+
+/** The sections left open on a character's card; none if the browser keeps nothing. */
+export function loadOpen(characterId: string, storage: Storage | undefined = globalThis.localStorage): Section[] {
+  try {
+    const raw = storage?.getItem(openKey(characterId));
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((s): s is Section => sections.includes(s)) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveOpen(characterId: string, open: Section[], storage: Storage | undefined = globalThis.localStorage): void {
+  try {
+    if (open.length) storage?.setItem(openKey(characterId), JSON.stringify(open));
+    else storage?.removeItem(openKey(characterId));
+  } catch {
+    // Private windows and full storage keep nothing; the card stays as it is in memory.
+  }
+}
+
+/** The sections with one opened, or closed if it was open. */
+export function toggleOpen(open: Section[], section: Section): Section[] {
+  return open.includes(section) ? open.filter((s) => s !== section) : [...open, section];
+}

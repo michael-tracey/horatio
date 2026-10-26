@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findPins, loadScene, pin, saveScene, unpin } from "./scene";
+import { findPins, loadOpen, loadScene, pin, saveOpen, saveScene, toggleOpen, unpin } from "./scene";
 
 function memory(): Storage {
   const data = new Map<string, string>();
@@ -54,5 +54,21 @@ describe("the scene's pins", () => {
     expect(findPins(all, "").map((c) => c.character_name)).toEqual(["Sheriff Ilse", "Ilona", "Marcus"]);
     expect(findPins(all, " IL").map((c) => c.character_name)).toEqual(["Ilona", "Sheriff Ilse"]);
     expect(findPins(all, "zzz")).toEqual([]);
+  });
+
+  it("keeps the open sections of each card, several at once", () => {
+    const storage = memory();
+    saveOpen("a", ["pools", "log"], storage);
+    expect(loadOpen("a", storage)).toEqual(["pools", "log"]);
+    expect(loadOpen("b", storage)).toEqual([]);
+    saveOpen("a", [], storage);
+    expect(storage.getItem("horatio.scene.open.a")).toBeNull();
+    storage.setItem("horatio.scene.open.a", JSON.stringify(["pools", "bogus", 3]));
+    expect(loadOpen("a", storage)).toEqual(["pools"]);
+  });
+
+  it("opens a section, or closes it if open", () => {
+    expect(toggleOpen(["pools"], "powers")).toEqual(["pools", "powers"]);
+    expect(toggleOpen(["pools", "powers"], "pools")).toEqual(["powers"]);
   });
 });

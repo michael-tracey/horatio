@@ -2,14 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { RosterEntry } from "../../api/types";
+import type { PoolModifier, RosterEntry, TestPool } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
+import { ModifiersPanel } from "./Modifiers";
+import { attackGlance, defenceGlance, fightFirst, grouped, topAttacks } from "./pools";
+import { PowersList } from "./Powers";
 import { formsOn, healthMost } from "./powers";
-import { findPins, loadScene, pin, saveScene, unpin } from "./scene";
+import { PoolRow } from "./ReferenceTabs";
+import { findPins, loadOpen, loadScene, pin, saveOpen, saveScene, toggleOpen, unpin, type Section } from "./scene";
 import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracker";
+import { useModifiers } from "./useModifiers";
 import { usePlay } from "./usePlay";
+import { useReference } from "./useReference";
 import { useWakeLock } from "./wakeLock";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
@@ -257,6 +263,30 @@ function HealthRow({ view, damage }: { view: Shown; damage: (kind: Damage, amoun
   );
 }
 
+const SECTIONS = [
+  ["pools", "Pools"],
+  ["powers", "Powers"],
+  ["log", "Log"],
+  ["reset", "Reset"],
+] as const;
+
+/** The top three attacks and the defences, a line each, as the Pools tab works them out. */
+function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; willpower: number; modifiers: PoolModifier[]; on: string[] }) {
+  const attacks = topAttacks(pools, willpower, modifiers, on).map((p) => attackGlance(p, willpower, modifiers, on));
+  return (
+    <div className="flex flex-col gap-0.5 text-sm">
+      <p>
+        <span className="text-gold">Attack </span>
+        {attacks.length > 0 ? attacks.join(" · ") : <span className="text-mist">none</span>}
+      </p>
+      <p>
+        <span className="text-gold">Defence </span>
+        {defenceGlance(pools, willpower, modifiers, on).join(" · ")}
+      </p>
+    </div>
+  );
+}
+
 /**
  * One character in the scene: the same `usePlay` as the full Play View (so its
  * one query, its refresh and its queue of unsent taps are the same), with the
@@ -264,8 +294,12 @@ function HealthRow({ view, damage }: { view: Shown; damage: (kind: Damage, amoun
  */
 function SceneCard({ characterId, troupeId, onRemove }: { characterId: string; troupeId: string; onRemove: () => void }) {
   const { view, shown, tap, sync, accept } = usePlay(characterId);
-  const [panel, setPanel] = useState<"log" | "reset" | null>(null);
-  const toggle = (next: "log" | "reset") => setPanel((now) => (now === next ? null : next));
+  const { reference } = useReference(characterId);
+  const modifiers = useModifiers(characterId);
+  // Which sections are open is kept on this device, per card, like the pins.
+  const [open, setOpen] = useState(() => loadOpen(characterId));
+  useEffect(() => saveOpen(characterId, open), [characterId, open]);
+  const toggle = (next: Section) => setOpen((now) => toggleOpen(now, next));
 
   if (!shown) {
     return (
@@ -280,6 +314,8 @@ function SceneCard({ characterId, troupeId, onRemove }: { characterId: string; t
   const change = (tracker: string, amount: number, damage?: Damage) => tap({ kind: "change", tracker, amount, damage: damage ?? null });
   const last = latestUndoable(shown.log);
   const name = shown.character_name;
+  const on = shown.powers.filter((p) => p.on).map((p) => p.key);
+  const willpower = shown.willpower.value;
   return (
     <article className="flex flex-col gap-3 rounded-lg border border-ash bg-dusk p-3" aria-label={name}>
       <header className="flex items-start justify-between gap-2">
@@ -301,6 +337,7 @@ function SceneCard({ characterId, troupeId, onRemove }: { characterId: string; t
       <Counter title="Blood" value={shown.blood.value} most={shown.blood.most} fill="border-blood bg-blood" onChange={(n) => change("blood", n)} />
       <Counter title="Willpower" value={shown.willpower.value} most={shown.willpower.most} fill="border-gold/70 bg-gold/70" onChange={(n) => change("willpower", n)} />
       <HealthRow view={shown} damage={(kind, amount) => change("health", amount, kind)} />
+      {reference && <PoolsGlance pools={reference.pools} willpower={willpower} modifiers={modifiers.modifiers} on={on} />}
       <Counter title="Beast traits" value={shown.beast.value} most={shown.beast.most} fill="border-gold/70 bg-gold/70" spendIsUp onChange={(n) => change("beast", n)} />
       <div className="flex flex-wrap items-center gap-1.5 border-t border-ash pt-2">
         <Button
@@ -313,22 +350,44 @@ function SceneCard({ characterId, troupeId, onRemove }: { characterId: string; t
         >
           Undo
         </Button>
-        <Button variant="ghost" className="min-h-10 px-3" aria-expanded={panel === "log"} onClick={() => toggle("log")}>
-          Log {panel === "log" ? "▴" : "▾"}
-        </Button>
-        <Button variant="ghost" className="min-h-10 px-3" aria-expanded={panel === "reset"} onClick={() => toggle("reset")}>
-          Reset {panel === "reset" ? "▴" : "▾"}
-        </Button>
+        {SECTIONS.map(([section, label]) => (
+          <Button key={section} variant="ghost" className="min-h-10 px-3" aria-expanded={open.includes(section)} onClick={() => toggle(section)}>
+            {label} {open.includes(section) ? "▴" : "▾"}
+          </Button>
+        ))}
         <Link to={`/play/characters/${characterId}?scene=${troupeId}`} className="ml-auto inline-flex min-h-10 items-center text-sm text-mist underline hover:text-parchment" aria-label={`Open the full Play View of ${name}`}>
           Full view
         </Link>
       </div>
-      {panel === "log" && (
+      {open.includes("pools") &&
+        (reference ? (
+          <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">
+            {fightFirst(grouped(reference.pools)).map(([group, pools]) => (
+              <section key={group} aria-label={group}>
+                <h3 className="text-xs tracking-wide text-mist uppercase">{group}</h3>
+                <ul>
+                  {pools.map((p) => (
+                    <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={modifiers.modifiers} on={on} />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-mist">Loading the pools…</p>
+        ))}
+      {open.includes("powers") && (
+        <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
+          <PowersList powers={shown.powers} tap={tap} />
+          <ModifiersPanel pools={reference?.pools ?? []} modifiers={modifiers} />
+        </div>
+      )}
+      {open.includes("log") && (
         <div className="max-h-56 overflow-y-auto">
           <LogEntries log={shown.log} />
         </div>
       )}
-      {panel === "reset" && <ResetGame view={shown} sync={sync} onReset={accept} />}
+      {open.includes("reset") && <ResetGame view={shown} sync={sync} onReset={accept} />}
       <ErrorText error={view.error} />
       <button type="button" className="self-start text-xs text-mist underline hover:text-parchment" onClick={onRemove} aria-label={`Remove ${name} from the scene`}>
         Remove from the scene

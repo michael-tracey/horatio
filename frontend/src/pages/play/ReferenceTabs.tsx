@@ -113,7 +113,7 @@ function IdentityLine({ reference, detail }: { reference: PlayReference; detail:
   return identity ? <IdentityNote identity={identity} /> : null;
 }
 
-function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; willpower: number; modifiers: PoolModifier[]; on: string[] }) {
+export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; willpower: number; modifiers: PoolModifier[]; on: string[] }) {
   const hurt = pool.damage ? switchedDamage(pool.damage, on) : [];
   return (
     <li className="border-b border-ash/60 py-2 last:border-0">

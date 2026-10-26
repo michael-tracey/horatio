@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolModifier, TestPool } from "../../api/types";
-import { appliesTo, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, describePools, exceptionalText, grouped, switchedDamage, total } from "./pools";
+import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, exceptionalText, fightFirst, grouped, switchedDamage, topAttacks, total } from "./pools";
 
 const pool = (over: Partial<TestPool>): TestPool => ({
   key: "dodge",
@@ -172,5 +172,77 @@ describe("forms and powers switched on", () => {
     const both = switchedDamage(damage, ["Feral Claws", "The Fourth Horseman"]);
     expect(damageText(damage, both)).toBe("2 aggravated damage: 1 (unarmed) + 1 (The Fourth Horseman), aggravated by Feral Claws");
     expect(exceptionalText(damage, both)).toBe("An exceptional success adds 1 damage, 3 in all.");
+  });
+});
+
+describe("the Scene view's glance", () => {
+  const attack = (name: string, value: number, over: Partial<TestPool> = {}) =>
+    pool({
+      key: `attack:${name}`,
+      name: `${name} attack`,
+      parts: [{ label: name, value }],
+      total: value,
+      ...over,
+    });
+  const names = (pools: TestPool[]) => pools.map((p) => p.key);
+
+  it("picks the three highest attacks, equal totals in the book's order", () => {
+    const pools = [pool({}), attack("Brawl", 7), attack("Melee", 9), attack("Firearms", 7), attack("Athletics", 7)];
+    expect(names(topAttacks(pools, 0))).toEqual(["attack:Melee", "attack:Brawl", "attack:Firearms"]);
+  });
+
+  it("shows what there is when there are fewer than three, and nothing when there are none", () => {
+    expect(names(topAttacks([attack("Brawl", 5), pool({})], 0))).toEqual(["attack:Brawl"]);
+    expect(topAttacks([pool({})], 0)).toEqual([]);
+  });
+
+  it("follows a form that is on", () => {
+    const brawl = attack("Brawl", 5, {
+      switched: [
+        {
+          switch: "fight form",
+          label: "Shape of the Beast",
+          value: 3,
+          attribute: null,
+          most: null,
+        },
+      ],
+    });
+    const pools = [brawl, attack("Melee", 7)];
+    expect(names(topAttacks(pools, 0))).toEqual(["attack:Melee", "attack:Brawl"]);
+    expect(names(topAttacks(pools, 0, [], ["fight form"]))).toEqual(["attack:Brawl", "attack:Melee"]);
+  });
+
+  it("says an attack with its damage, and the defences in a line", () => {
+    const damage = {
+      kind: "unarmed",
+      type: "normal" as const,
+      parts: [{ label: "unarmed", value: 1 }],
+      total: 1,
+      exceptional: 1,
+      notes: [],
+      switched: [],
+    };
+    expect(attackGlance(attack("Unarmed", 9, { damage }), 0)).toBe("Unarmed 9 (1 dmg)");
+    expect(attackGlance(attack("Thrown", 4), 0)).toBe("Thrown 4");
+    const social = pool({
+      key: "defense:Social",
+      name: "Resisting Social powers",
+      group: "Defence",
+      parts: [{ label: "Social", value: 4 }],
+      total: 4,
+      adds_willpower: true,
+    });
+    expect(defenceGlance([pool({}), social], 3)).toEqual(["Dodge 9", "vs Social 7"]);
+  });
+
+  it("puts Combat and Defence before the other groups", () => {
+    const groups: [string, TestPool[]][] = [
+      ["Disciplines", []],
+      ["Defence", []],
+      ["Other", []],
+      ["Combat", []],
+    ];
+    expect(fightFirst(groups).map(([g]) => g)).toEqual(["Combat", "Defence", "Disciplines", "Other"]);
   });
 });
