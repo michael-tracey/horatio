@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import type { RetainerOut, RetainerTrackOut } from "../../api/types";
-import { retainerName, retainerSource } from "../character/retainers";
+import { useDates } from "../../dates";
+import { backText, LOST_WORDS, retainerName, retainerSource } from "../character/retainers";
 import { HEALTH_NOTE, NO_WILLPOWER, SPECIALTY_BONUS, bloodNote } from "./retainerPools";
 
 type Tap = (change: { tracker: string; amount: number; label: string }) => void;
@@ -25,8 +26,11 @@ export function RetainerPools({ retainers, tracks, tap }: { retainers: RetainerO
 function RetainerBlock({ retainer: r, track, tap }: { retainer: RetainerOut; track?: RetainerTrackOut; tap: Tap }) {
   const name = retainerName(r);
   const source = retainerSource(r);
+  const dates = useDates();
+  // A lost Retainer is greyed out until its dots come back (p. 104).
+  const back = backText(r, dates.date);
   return (
-    <article aria-label={`Retainer: ${name}`} className="rounded-lg border border-ash bg-dusk p-3">
+    <article aria-label={`Retainer: ${name}`} aria-disabled={r.away || undefined} className={`rounded-lg border border-ash bg-dusk p-3 ${r.away ? "opacity-50" : ""}`}>
       <header className="mb-2 flex items-baseline justify-between gap-2">
         <h2 className="text-base text-gold">
           {name}
@@ -44,6 +48,12 @@ function RetainerBlock({ retainer: r, track, tap }: { retainer: RetainerOut; tra
           <span className="block text-xs text-mist">most actions</span>
         </span>
       </header>
+      {r.lost && (
+        <p className="mb-1 text-xs text-blood-bright" role="status">
+          {LOST_WORDS[r.lost]}
+          {r.lost_on ? ` ${dates.date(r.lost_on)}` : ""}. {back}
+        </p>
+      )}
       {r.npc_id && (
         <p className="mb-1 text-xs">
           Has its own sheet:{" "}
@@ -81,9 +91,9 @@ function RetainerBlock({ retainer: r, track, tap }: { retainer: RetainerOut; tra
       )}
       {track && (
         <div className="mt-2 flex flex-col gap-2">
-          <Track label={`${name}: health`} title="Health" tracker={`${track.key}/health`} value={track.health.value} most={track.health.most} tap={tap} />
+          <Track label={`${name}: health`} title="Health" tracker={`${track.key}/health`} value={track.health.value} most={track.health.most} tap={tap} off={r.away} />
           {track.health.value === 0 && <p className="text-xs text-blood-bright">{HEALTH_NOTE}</p>}
-          {track.blood && <Track label={`${name}: Blood`} title="Blood" tracker={`${track.key}/blood`} value={track.blood.value} most={track.blood.most} tap={tap} />}
+          {track.blood && <Track label={`${name}: Blood`} title="Blood" tracker={`${track.key}/blood`} value={track.blood.value} most={track.blood.most} tap={tap} off={r.away} />}
           {track.blood && <p className="text-xs text-mist">{bloodNote()}</p>}
         </div>
       )}
@@ -92,7 +102,7 @@ function RetainerBlock({ retainer: r, track, tap }: { retainer: RetainerOut; tra
   );
 }
 
-function Track({ label, title, tracker, value, most, tap }: { label: string; title: string; tracker: string; value: number; most: number; tap: Tap }) {
+function Track({ label, title, tracker, value, most, tap, off = false }: { label: string; title: string; tracker: string; value: number; most: number; tap: Tap; off?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-sm">
@@ -106,7 +116,7 @@ function Track({ label, title, tracker, value, most, tap }: { label: string; tit
         <button
           type="button"
           aria-label={`Spend ${label}`}
-          disabled={value <= 0}
+          disabled={off || value <= 0}
           onClick={() => tap({ tracker, amount: -1, label })}
           className="grid h-9 min-w-9 place-items-center rounded-full border border-ash bg-night text-parchment hover:border-mist disabled:opacity-35"
         >
@@ -115,7 +125,7 @@ function Track({ label, title, tracker, value, most, tap }: { label: string; tit
         <button
           type="button"
           aria-label={`Restore ${label}`}
-          disabled={value >= most}
+          disabled={off || value >= most}
           onClick={() => tap({ tracker, amount: 1, label })}
           className="grid h-9 min-w-9 place-items-center rounded-full border border-ash bg-night text-parchment hover:border-mist disabled:opacity-35"
         >

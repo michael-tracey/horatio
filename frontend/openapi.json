@@ -11158,6 +11158,40 @@
       },
       "RetainerOut": {
         "properties": {
+          "away": {
+            "default": false,
+            "title": "Away",
+            "type": "boolean"
+          },
+          "back_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back From"
+          },
+          "back_games": {
+            "default": 0,
+            "title": "Back Games",
+            "type": "integer"
+          },
+          "back_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Back On"
+          },
           "blood": {
             "default": 0,
             "title": "Blood",

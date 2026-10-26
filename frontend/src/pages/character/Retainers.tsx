@@ -6,7 +6,7 @@ import type { CharacterOut, RetainerOut } from "../../api/types";
 import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { LOST_NOTE, LOST_WORDS, retainerName, retainerSource } from "./retainers";
+import { backText, LOST_NOTE, LOST_WORDS, retainerName, retainerSource } from "./retainers";
 
 export function useRetainers(characterId: string) {
   return useQuery({
@@ -84,6 +84,7 @@ export function RetainerLines({ retainers }: { retainers: RetainerOut[] }) {
             </span>
           )}
           <NpcLinks retainer={r} />
+          {backText(r, dates.date) && <p className="text-xs text-blood-bright">{backText(r, dates.date)}</p>}
           {r.description && <p className="text-xs text-mist">{r.description}</p>}
         </li>
       ))}

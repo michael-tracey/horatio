@@ -8157,6 +8157,20 @@ export interface components {
         /** RetainerOut */
         RetainerOut: {
             /**
+             * Away
+             * @default false
+             */
+            away: boolean;
+            /** Back From */
+            back_from?: string | null;
+            /**
+             * Back Games
+             * @default 0
+             */
+            back_games: number;
+            /** Back On */
+            back_on?: string | null;
+            /**
              * Blood
              * @default 0
              */

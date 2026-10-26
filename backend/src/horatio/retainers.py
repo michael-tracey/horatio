@@ -11,20 +11,23 @@ Retainers a merit gives are listed too, with their own dots, and are not part
 of the background. A row of the background's that no Retainer bought is named
 for (listed before they were bought one by one) stays listed with its own dots
 until it is removed; no new one can be added. A lost Retainer stays listed (the
-book takes its dots away for a while, which staff decide). Staff alone link a
-Retainer to an NPC.
+book takes its dots away for one game or two weeks for each dot, whichever is
+longer, which `Return` works out from the home troupe's schedule). Staff alone
+link a Retainer to an NPC.
 """
 
+import dataclasses
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import audit
-from horatio.models import Character, Retainer, Troupe, User
+from horatio.models import Character, Retainer, ScheduledGame, Troupe, User
 from horatio.permissions import (
     TroupeAction,
     allows,
@@ -61,6 +64,51 @@ class Draft:
     discipline: str = ""
 
 
+# A lost Retainer's dots are out of reach for one game or two weeks for each dot
+# bought for it, whichever is longer (p. 104).
+WEEKS_A_DOT = 2
+
+
+@dataclass(frozen=True)
+class Return:
+    """When a lost Retainer's dots come back: not before `earliest` (two weeks a
+    dot from the day it was lost), and not until `games` games have gone by
+    (one a dot). `on` is the day they do, once the troupe's schedule has that
+    many games after the loss; None until it has."""
+
+    earliest: date
+    games: int
+    on: date | None
+
+    def away(self, today: date) -> bool:
+        return self.on is None or today < self.on
+
+
+def returns(lost_on: date, dots: int, games: Sequence[date]) -> Return:
+    """`games`: the day each of the troupe's scheduled games ends, in order."""
+    earliest = lost_on + timedelta(weeks=WEEKS_A_DOT * dots)
+    after = sorted(g for g in games if g > lost_on)
+    if dots > len(after):
+        return Return(earliest, dots, None)
+    # Back the day after the last game missed ends, or at the two weeks a dot.
+    return Return(earliest, dots, max(earliest, after[dots - 1] + timedelta(days=1)))
+
+
+def schedule(db: Session, character: Character) -> list[date]:
+    """The day each game of the character's home troupe (an NPC's own) ends."""
+    troupe_id = character.home_troupe_id or character.owner_troupe_id
+    if troupe_id is None:
+        return []
+    return [
+        ends.date()
+        for ends in db.scalars(
+            select(ScheduledGame.ends_at)
+            .where(ScheduledGame.troupe_id == troupe_id)
+            .order_by(ScheduledGame.ends_at)
+        )
+    ]
+
+
 def tracker(listed: "Listed") -> str:
     """What a Retainer's taps on the Play View are kept under: "retainer:Bocephus"
     for one bought, by its row for one from a merit or listed before."""
@@ -78,6 +126,8 @@ class Listed:
     name: str
     dots: int
     bought: bool
+    # For one lost: when its dots come back.
+    back: Return | None = None
 
 
 def rows(db: Session, character: Character) -> list[Retainer]:
@@ -117,7 +167,15 @@ def read(db: Session, character: Character) -> list[Listed]:
             used.add(row.id)
         listed.append(Listed(row, name, dots, bought=True))
     listed += [Listed(r, r.name, r.dots, bought=False) for r in kept if r.id not in used]
-    return listed
+    if not any(e.row and e.row.lost and e.row.lost_on for e in listed):
+        return listed
+    games = schedule(db, character)
+    return [
+        dataclasses.replace(e, back=returns(e.row.lost_on, e.dots, games))
+        if e.row and e.row.lost and e.row.lost_on
+        else e
+        for e in listed
+    ]
 
 
 def skills(db: Session, character: Character) -> list[str]:

@@ -4,14 +4,15 @@ what is kept for each, who may link an NPC, and the log."""
 
 import uuid
 from collections.abc import Callable
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from horatio import sheets
-from horatio.models import Character, CharacterTrait, Retainer, XpEntry
+from horatio import retainers, sheets
+from horatio.models import Character, CharacterTrait, Retainer, ScheduledGame, XpEntry
 from tests.api_helpers import Person, Troupe, new_character
 
 
@@ -459,3 +460,46 @@ def test_each_identity_is_listed_with_its_rating_and_who_accepts_it(troupe: Trou
             "Dr. Ellen Marsh, coroner",
             "Father Kell",
         ]
+
+
+def test_a_lost_retainer_is_back_after_two_weeks_or_one_game_a_dot_whichever_is_longer() -> None:
+    lost = date(2026, 10, 3)
+    fortnightly = [date(2026, 10, 3), date(2026, 10, 10), date(2026, 10, 24), date(2026, 11, 21)]
+
+    # Two dots: four weeks, by which time two games have gone by.
+    assert retainers.returns(lost, 2, fortnightly) == retainers.Return(
+        date(2026, 10, 31), 2, date(2026, 10, 31)
+    )
+    # Three dots: six weeks are up on 14 November, but the third game is the 21st.
+    assert retainers.returns(lost, 3, fortnightly).on == date(2026, 11, 22)
+    # Four: the schedule doesn't have a fourth game yet.
+    four = retainers.returns(lost, 4, fortnightly)
+    assert (four.earliest, four.games, four.on) == (date(2026, 11, 28), 4, None)
+    assert four.away(date(2027, 1, 1))
+    # One dot with no games scheduled: still out, however long.
+    assert retainers.returns(lost, 1, []).away(date(2027, 1, 1))
+
+
+def test_a_lost_retainer_says_when_its_dots_come_back(troupe: Troupe, session: Session) -> None:
+    character_id = with_both(troupe)
+    lost_on = date.today() - timedelta(days=7)
+    for days in (3, 10):
+        ends = datetime.combine(lost_on + timedelta(days=days), time(23), tzinfo=UTC)
+        session.add(
+            ScheduledGame(
+                troupe_id=uuid.UUID(troupe.id), starts_at=ends - timedelta(hours=5), ends_at=ends
+            )
+        )
+    session.flush()
+
+    body = put(
+        troupe.player,
+        character_id,
+        [{**MARTA, "lost": "killed", "lost_on": lost_on.isoformat()}, PIKE],
+    ).json()
+
+    marta, pike = body["retainers"]
+    # Three dots: six weeks, and three games, of which two are scheduled.
+    assert marta["back_from"] == (lost_on + timedelta(weeks=6)).isoformat()
+    assert (marta["back_games"], marta["back_on"], marta["away"]) == (3, None, True)
+    assert (pike["back_on"], pike["away"]) == (None, False)

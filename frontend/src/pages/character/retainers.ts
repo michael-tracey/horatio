@@ -16,6 +16,18 @@ export function retainerSource(r: Pick<RetainerOut, "bought" | "from_merit">): s
 
 /** What the book says of a lost Retainer, for the note beside it. */
 export const LOST_NOTE =
-  "A lost Retainer's dots are out of reach for one game or two weeks, whichever is longer, for each dot, unless a replacement is found (p. 104). Staff decide when.";
+  "A lost Retainer's dots are out of reach for one game or two weeks for each dot, whichever is longer, while a replacement is found (p. 104). The games are the home troupe's, as its profile schedules them.";
+
+/** When a lost Retainer's dots come back, in words; null for one not lost, or lost on no day. */
+export function backText(
+  r: Pick<RetainerOut, "lost" | "back_from" | "back_games" | "back_on" | "away">,
+  date: (iso: string) => string,
+): string | null {
+  if (!r.lost) return null;
+  if (r.back_on) return r.away ? `Its dots come back on ${date(r.back_on)}.` : `Its dots came back on ${date(r.back_on)}.`;
+  if (!r.back_from) return null;
+  const games = r.back_games === 1 ? "1 game has" : `${r.back_games} games have`;
+  return `Its dots come back once ${games} gone by since, and not before ${date(r.back_from)}.`;
+}
 
 export const LOST_WORDS: Record<string, string> = { released: "Released", killed: "Killed" };

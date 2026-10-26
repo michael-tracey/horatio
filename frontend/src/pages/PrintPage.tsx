@@ -9,7 +9,7 @@ import { HEALTH_RULE, healthRows } from "../health";
 import { DEFAULT_PREFERENCES, useMe, usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { choiceName } from "./character/creation/logic";
-import { retainerName, retainerSource } from "./character/retainers";
+import { backText, retainerName, retainerSource } from "./character/retainers";
 import { NO_WILLPOWER, poolLine } from "./play/retainerPools";
 import { changing, damageShort, total } from "./play/pools";
 import { printedRatings } from "../ratings";
@@ -227,6 +227,7 @@ function TraitList({
 /** One Retainer as the NPC it is (MET: VtM core p. 105), with boxes for its health and Blood. */
 function PrintedRetainer({ retainer: r }: { retainer: PrintedSheet["retainers"][number] }) {
   const source = retainerSource(r);
+  const dates = useDates();
   return (
     <article className="break-inside-avoid text-[10px] leading-4" aria-label={`Retainer: ${retainerName(r)}`}>
       <p className="border-b border-dotted border-neutral-400 text-[11px]">
@@ -236,6 +237,7 @@ function PrintedRetainer({ retainer: r }: { retainer: PrintedSheet["retainers"][
         {r.lost && ` · ${r.lost}`}
       </p>
       {r.description && <p className="text-neutral-600">{r.description}</p>}
+      {backText(r, dates.date) && <p>{backText(r, dates.date)}</p>}
       <p>{poolLine(r)}</p>
       {r.discipline && (
         <p>

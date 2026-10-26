@@ -5120,6 +5120,21 @@ test("a player says who each Retainer bought is, and a storyteller links one to 
   // The change is on the character's log.
   await l.goto(`/characters/${id}/log`);
   await expect(l.getByText("ret-lead linked Marta, the driver, one of Dorothea (ret-player)'s Retainers, to an NPC.")).toBeVisible();
+
+  // Pike is killed: the sheet says when his dot comes back (a game, and two
+  // weeks), and his block on the Play View is greyed out until then.
+  await p.goto(`/characters/${id}`);
+  await list.getByRole("button", { name: "Edit Retainers" }).click();
+  await list.getByLabel("Status of Pike").selectOption("killed");
+  await list.getByRole("button", { name: "Save Retainers" }).click();
+  await expect(list.getByText(/^Its dots come back once 1 game has gone by since, and not before /)).toBeVisible();
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  const pike = p.getByRole("article", { name: "Retainer: Pike" });
+  await expect(pike).toHaveAttribute("aria-disabled", "true");
+  await expect(pike.getByRole("status")).toContainText("Killed");
+  await expect(pike.getByRole("button", { name: "Spend Pike: health" })).toBeDisabled();
+  await expect(p.getByRole("article", { name: "Retainer: Marta, the driver" }).getByRole("button", { name: "Spend Marta, the driver: health" })).toBeEnabled();
 });
 
 test("in the cart, a second Retainer and a second Alternate Identity are each bought on their own, by name", async ({ browser }) => {

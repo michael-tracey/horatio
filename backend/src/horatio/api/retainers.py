@@ -50,6 +50,14 @@ class RetainerOut(BaseModel):
     health: int = 0
     blood: int = 0
     tracker: str = ""
+    # For one lost (p. 104): its dots are back not before `back_from` (two weeks a
+    # dot), and not until `back_games` games (one a dot) have gone by; `back_on`
+    # is the day they are, once the home troupe's schedule has those games.
+    # `away` while they are out of reach.
+    back_from: date | None = None
+    back_games: int = 0
+    back_on: date | None = None
+    away: bool = False
 
 
 class RetainersOut(BaseModel):
@@ -109,6 +117,10 @@ def listed(db: Session, entries: list[retainers.Listed], viewer: User | None) ->
                 health=e.dots,
                 blood=retainers.GHOUL_BLOOD if r and r.ghoul else 0,
                 tracker=retainers.tracker(e),
+                back_from=e.back.earliest if e.back else None,
+                back_games=e.back.games if e.back else 0,
+                back_on=e.back.on if e.back else None,
+                away=e.back.away(date.today()) if e.back else False,
             )
         )
     return out
