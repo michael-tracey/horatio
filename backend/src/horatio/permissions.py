@@ -60,6 +60,7 @@ class TroupeAction(StrEnum):
     MANAGE_SHARED_BACKGROUNDS = "manage_shared_backgrounds"
     RUN_SCENES = "run_scenes"
     CHANGE_ANY_SCENE = "change_any_scene"
+    VIEW_LINES_VEILS = "view_lines_veils"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -105,6 +106,10 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.RUN_SCENES: frozenset(_RUNNING),
     # Renaming or removing a scene someone else made, and clearing old ones.
     TroupeAction.CHANGE_ANY_SCENE: frozenset(_LEAD),
+    # The lines and veils of the troupe's players, each and all together, since staff
+    # need them to run games. Other players see a player's only if that player
+    # shares them (horatio.lines_veils).
+    TroupeAction.VIEW_LINES_VEILS: frozenset(_ALL_STAFF),
 }
 
 
@@ -239,3 +244,53 @@ def visible_character(db: Session, user: User, character_id: uuid.UUID) -> Chara
     if character is None or not can_view_character(db, user, character):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character.")
     return character
+
+
+def _plays_in(db: Session, player_id: uuid.UUID) -> set[uuid.UUID]:
+    """The troupes, not archived, where `player_id` has an active character now, home
+    or visiting."""
+    return set(
+        db.scalars(
+            select(TroupeMembership.troupe_id)
+            .join(Character, TroupeMembership.character_id == Character.id)
+            .join(Troupe, TroupeMembership.troupe_id == Troupe.id)
+            .where(
+                TroupeMembership.left_at.is_(None),
+                Character.kind == "pc",
+                Character.player_id == player_id,
+                Character.status == "active",
+                Troupe.archived_at.is_(None),
+            )
+        )
+    )
+
+
+def can_see_lines_veils(db: Session, user: User, player: User) -> bool:
+    """A player's lines and veils are never public. They see them themself, as do
+    the custodian and the staff of every troupe they play in. Other players in those
+    troupes see them only if the player shares them (horatio.lines_veils)."""
+    if user.id == player.id or user.is_custodian:
+        return True
+    theirs = _plays_in(db, player.id)
+    if not theirs:
+        return False
+    roles = [r.value for r in TROUPE_POLICY[TroupeAction.VIEW_LINES_VEILS]]
+    staffs = exists().where(
+        TroupeStaff.troupe_id.in_(theirs),
+        TroupeStaff.user_id == user.id,
+        TroupeStaff.role.in_(roles),
+    )
+    leads = exists().where(Troupe.id.in_(theirs), Troupe.lead_user_id == user.id)
+    if db.scalar(select(staffs | leads)):
+        return True
+    return player.share_lines_veils and bool(theirs & _plays_in(db, user.id))
+
+
+def lines_veils_shown_here(user: User, role: Role | None, player: User) -> bool:
+    """On the Who's Who of a troupe `player` plays in, as someone who may see it with
+    `role` there: staff always see their lines and veils, others only if they share."""
+    return (
+        user.id == player.id
+        or allows(role, TroupeAction.VIEW_LINES_VEILS, is_custodian=user.is_custodian)
+        or player.share_lines_veils
+    )

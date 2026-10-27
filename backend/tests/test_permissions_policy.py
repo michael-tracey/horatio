@@ -17,7 +17,12 @@ STORYTELLERS_ONLY = {
     TroupeAction.MANAGE_CONNECTORS,
     TroupeAction.EDIT_PROFILE,
 }
-NARRATOR_CAN = {TroupeAction.VIEW_STAFF, TroupeAction.ANSWER_ASSIGNED_RESPONSES}
+NARRATOR_CAN = {
+    TroupeAction.VIEW_STAFF,
+    TroupeAction.ANSWER_ASSIGNED_RESPONSES,
+    # Players' lines and veils, which every member of staff needs at a game (#266).
+    TroupeAction.VIEW_LINES_VEILS,
+}
 
 
 def test_every_action_has_a_policy() -> None:
@@ -46,7 +51,7 @@ def test_assistant_storytellers_cannot_manage_staff_house_rules_connectors_or_pr
 
 
 @pytest.mark.parametrize("action", list(TroupeAction))
-def test_narrators_only_see_the_staff_and_answer_assigned_downtimes(
+def test_narrators_only_see_the_staff_and_lines_and_veils_and_answer_assigned_downtimes(
     action: TroupeAction,
 ) -> None:
     assert allows(Role.NARRATOR, action) == (action in NARRATOR_CAN)

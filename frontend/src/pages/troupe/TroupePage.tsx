@@ -8,6 +8,7 @@ import { ApprovalsTab } from "./ApprovalsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
+import { LinesVeilsTab } from "./LinesVeilsTab";
 import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
 import { NpcsTab } from "./NpcsTab";
@@ -94,7 +95,10 @@ export function TroupePage() {
           },
           {
             label: "Players",
-            tabs: [...(can.running ? [{ to: `${base}/players`, label: "Players" }] : [])],
+            tabs: [
+              ...(can.running ? [{ to: `${base}/players`, label: "Players" }] : []),
+              ...(can.staff ? [{ to: `${base}/lines-veils`, label: "Lines and veils" }] : []),
+            ],
           },
           {
             label: "Downtimes",
@@ -122,6 +126,7 @@ export function TroupePage() {
         {t.whos_who && <Route path="whos-who" element={<WhosWhoTab troupeId={t.id} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
+        {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}

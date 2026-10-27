@@ -1733,6 +1733,93 @@ test("the Who's Who: a player sees the court in rank order, their clan and Other
   expect(refused.status()).toBe(403);
 });
 
+test("lines and veils: a player adds them, staff see them, another player only once shared, and no one outside the troupe", async ({ browser }) => {
+  const custodian = await person(browser, "lv-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "lv-lead");
+  const ana = await person(browser, "lv-ana");
+  const bea = await person(browser, "lv-bea");
+  const outsider = await person(browser, "lv-outsider");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Veiled Court ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // Each has a character visiting the troupe.
+  for (const [who, name] of [[ana, "Odile"], [bea, "Petra"]] as const) {
+    const { id } = await send(who.page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(who.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Toreador", rating: null });
+    await send(who.page, "POST", `/api/characters/${id}/troupes`, { troupe_id: troupeId });
+  }
+  const anaId = (await send(ana.page, "GET", "/api/auth/me")).id;
+
+  // Ana writes a line and a veil on her account, with sharing off as it starts.
+  const a = ana.page;
+  await a.goto("/account");
+  await expect(a.getByText("A veil can happen in the story, but off-screen")).toBeVisible();
+  await expect(a.getByLabel("Line 1", { exact: true })).toHaveAttribute("placeholder", "e.g. spiders");
+  await a.getByLabel("Line 1", { exact: true }).fill("Spiders in the dark");
+  await a.getByRole("button", { name: "Add a line" }).click();
+  await a.getByLabel("Line 2", { exact: true }).fill("Drowning");
+  await a.getByLabel("Veil 1", { exact: true }).fill("Needles");
+  const share = a.getByRole("checkbox", { name: /Share my lines and veils with other players in my troupes/ });
+  await expect(share).not.toBeChecked();
+  await expect(a.getByText("Off: only the staff of the troupes you play in see them.")).toBeVisible();
+  await a.getByRole("button", { name: "Save lines and veils" }).click();
+  await expect(a.getByText("Saved.")).toBeVisible();
+  await a.screenshot(shots("lines-veils-account"));
+
+  // The lead sees them on the Who's Who, the Characters tab and the troupe's list.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/whos-who`);
+  const odile = l.getByRole("article", { name: "Odile" });
+  await expect(odile.getByRole("definition").filter({ hasText: "Spiders in the dark, Drowning" })).toBeVisible();
+  await expect(odile.getByRole("definition").filter({ hasText: "Needles" })).toBeVisible();
+  await l.goto(`/troupes/${troupeId}/characters`);
+  await expect(l.getByLabel("Lines and veils of lv-ana")).toContainText("Spiders in the dark");
+  await l.goto(`/troupes/${troupeId}/players`);
+  await l.getByRole("link", { name: "Lines and veils" }).click();
+  await expect(l.getByRole("list", { name: "Lines" })).toContainText("Spiders in the dark");
+  await expect(l.getByRole("list", { name: "Veils" })).toContainText("Needles");
+  // Not shared, so the list doesn't say whose they are; the lead opens Ana for that.
+  await expect(l.getByRole("list", { name: "Lines" }).getByRole("link")).toHaveCount(0);
+  await l.screenshot(shots("lines-veils-troupe"));
+  await l.getByRole("link", { name: /lv-ana/ }).click();
+  await expect(l.getByLabel("Lines and veils of lv-ana")).toContainText("Needles");
+  // Never printed.
+  await l.goto(`/print/troupes/${troupeId}/whos-who`);
+  await expect(l.getByRole("region", { name: "Toreador" })).toBeVisible();
+  await expect(l.getByText("Spiders in the dark")).toHaveCount(0);
+
+  // Bea, another player, doesn't see them until Ana shares them.
+  const b = bea.page;
+  await b.goto(`/troupes/${troupeId}/whos-who`);
+  await expect(b.getByRole("article", { name: "Odile" })).toBeVisible();
+  await expect(b.getByText("Spiders in the dark")).toHaveCount(0);
+  expect((await send(b, "GET", `/api/players/${anaId}`)).lines_veils).toBeNull();
+  expect((await b.request.get(`/api/troupes/${troupeId}/lines-veils`, { headers })).status()).toBe(403);
+
+  await share.check();
+  await expect(a.getByText("On: the other players in your troupes see them on the Who’s Who, as well as the staff.")).toBeVisible();
+  await a.getByRole("button", { name: "Save lines and veils" }).click();
+  await expect(a.getByText("Saved.")).toBeVisible();
+  await b.reload();
+  await expect(b.getByRole("article", { name: "Odile" }).getByLabel("Lines and veils of lv-ana")).toContainText("Spiders in the dark");
+
+  // Someone outside the troupe never sees them, and the API refuses them.
+  const o = outsider.page;
+  await o.goto(`/players/${anaId}`);
+  await expect(o.getByRole("heading", { name: "lv-ana" })).toBeVisible();
+  await expect(o.getByText("Spiders in the dark")).toHaveCount(0);
+  expect((await send(o, "GET", `/api/players/${anaId}`)).lines_veils).toBeNull();
+  expect((await o.request.get(`/api/troupes/${troupeId}/lines-veils`, { headers })).status()).toBe(403);
+  expect((await o.request.get(`/api/troupes/${troupeId}/whos-who`, { headers })).status()).toBe(403);
+});
+
 test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own, and a house title gives status", async ({ browser }) => {
   const custodian = await person(browser, "sects-custodian");
   makeCustodian(custodian.email);

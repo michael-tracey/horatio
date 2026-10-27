@@ -5,6 +5,7 @@ import { api, unwrap } from "../api/client";
 import type { PlayerOut, ProfileLink } from "../api/types";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Tabs, Textarea } from "../components/ui";
 import { useAction, useMe } from "../hooks";
+import { LinesVeilsForm } from "./LinesVeilsForm";
 import { SettingsPage } from "./settings/SettingsPage";
 
 const MAX_LINKS = 6;
@@ -41,7 +42,15 @@ export function AccountPage() {
         ]}
       />
       <Routes>
-        <Route index element={<ProfileForm key={player.data.id} player={player.data} />} />
+        <Route
+          index
+          element={
+            <>
+              <ProfileForm key={player.data.id} player={player.data} />
+              {player.data.lines_veils && <LinesVeilsForm key={`${player.data.id}-lines-veils`} value={player.data.lines_veils} />}
+            </>
+          }
+        />
         <Route path="settings" element={<SettingsPage />} />
       </Routes>
     </>

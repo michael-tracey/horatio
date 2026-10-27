@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { PoolModifier, RosterEntry, SceneOut, TestPool } from "../../api/types";
+import { LinesVeilsNote } from "../../components/LinesVeils";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
@@ -471,6 +472,7 @@ function SceneCard({ characterId, back, onRemove }: { characterId: string; back:
             {shown.kind === "npc" ? "NPC" : shown.player_name}
             {shown.clan ? ` · ${shown.clan}` : ""}
           </p>
+          <LinesVeilsNote value={reference?.lines_veils} who={shown.player_name} />
           {/* The form they are in (issue #200), switched on the full Play View. */}
           {formsOn(shown).map((f) => (
             <span key={f.key} className="mt-1 inline-block rounded-full border border-gold/60 bg-gold/10 px-2 py-0.5 text-xs text-gold" title={f.notes.join(" ")}>

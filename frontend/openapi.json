@@ -6914,6 +6914,32 @@
         "title": "GameOut",
         "type": "object"
       },
+      "GatheredOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "shared_by": {
+            "items": {
+              "$ref": "#/components/schemas/Owner"
+            },
+            "title": "Shared By",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "count",
+          "shared_by"
+        ],
+        "title": "GatheredOut",
+        "type": "object"
+      },
       "GiftIn": {
         "properties": {
           "amount": {
@@ -9051,6 +9077,62 @@
         "title": "LimitOut",
         "type": "object"
       },
+      "LinesVeils": {
+        "properties": {
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "shared": {
+            "title": "Shared",
+            "type": "boolean"
+          },
+          "veils": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Veils",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines",
+          "veils",
+          "shared"
+        ],
+        "title": "LinesVeils",
+        "type": "object"
+      },
+      "LinesVeilsIn": {
+        "properties": {
+          "lines": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "shared": {
+            "default": false,
+            "title": "Shared",
+            "type": "boolean"
+          },
+          "veils": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Veils",
+            "type": "array"
+          }
+        },
+        "title": "LinesVeilsIn",
+        "type": "object"
+      },
       "Link": {
         "properties": {
           "label": {
@@ -11028,6 +11110,30 @@
         "title": "OwnEntryOut",
         "type": "object"
       },
+      "Owner": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "handle"
+        ],
+        "title": "Owner",
+        "type": "object"
+      },
       "PanelsOut": {
         "description": "The panels of the sheet and Play View a kind has (horatio.rules.npc_kinds).",
         "properties": {
@@ -11759,6 +11865,16 @@
             "title": "Identities",
             "type": "array"
           },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "notes": {
             "items": {
               "type": "string"
@@ -12390,6 +12506,16 @@
             "title": "Is Custodian",
             "type": "boolean"
           },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "links": {
             "items": {
               "$ref": "#/components/schemas/Link"
@@ -12426,6 +12552,7 @@
           "is_custodian",
           "email",
           "characters",
+          "lines_veils",
           "reset_expires_at"
         ],
         "title": "PlayerOut",
@@ -15072,6 +15199,16 @@
             "title": "Kind",
             "type": "string"
           },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "out_of_sect_titles": {
             "items": {
               "type": "string"
@@ -15165,7 +15302,8 @@
           "home",
           "waiting",
           "disciplines_waiting",
-          "joined_at"
+          "joined_at",
+          "lines_veils"
         ],
         "title": "RosterEntry",
         "type": "object"
@@ -18934,6 +19072,38 @@
         "title": "TroupeKindOut",
         "type": "object"
       },
+      "TroupeLinesVeils": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/GatheredOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/Owner"
+            },
+            "title": "Players",
+            "type": "array"
+          },
+          "veils": {
+            "items": {
+              "$ref": "#/components/schemas/GatheredOut"
+            },
+            "title": "Veils",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines",
+          "veils",
+          "players"
+        ],
+        "title": "TroupeLinesVeils",
+        "type": "object"
+      },
       "TroupeOut": {
         "properties": {
           "allowed_sects": {
@@ -19929,6 +20099,16 @@
             ],
             "title": "Left Reason"
           },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -20071,7 +20251,8 @@
           "pronouns",
           "player_pronouns",
           "represented_by",
-          "left_reason"
+          "left_reason",
+          "lines_veils"
         ],
         "title": "WhosWhoEntry",
         "type": "object"
@@ -29703,6 +29884,48 @@
         ]
       }
     },
+    "/api/profile/lines-veils": {
+      "put": {
+        "description": "The signed-in player's own lines and veils, and whether they share them with\nother players. Not logged: they are the player's private settings.",
+        "operationId": "set_lines_veils_api_profile_lines_veils_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinesVeilsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinesVeils"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Lines Veils",
+        "tags": [
+          "lines-veils"
+        ]
+      }
+    },
     "/api/responses/{response_id}": {
       "get": {
         "operationId": "read_response_api_responses__response_id__get",
@@ -33793,6 +34016,50 @@
         "summary": "Appoint Lead",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/lines-veils": {
+      "get": {
+        "description": "Every line and veil across the troupe's players, for its staff to plan games.\nWhose each one is shows only for players who share theirs.",
+        "operationId": "troupe_lines_veils_api_troupes__troupe_id__lines_veils_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeLinesVeils"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Lines Veils",
+        "tags": [
+          "lines-veils"
         ]
       }
     },

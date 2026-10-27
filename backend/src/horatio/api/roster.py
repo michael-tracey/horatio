@@ -11,10 +11,11 @@ from sqlalchemy import Select, select
 
 from horatio import character_filter, pictures, social_age, titles
 from horatio.api.downtimes import staff_troupe
+from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Approval, AuditEvent, Character, RuleSet, TroupeMembership, User
-from horatio.permissions import TroupeAction
+from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules.model import RuleSetData
 from horatio.rules.store import read_troupe_rules
 
@@ -49,6 +50,8 @@ class RosterEntry(BaseModel):
     # Discipline dots waiting on this troupe.
     disciplines_waiting: int
     joined_at: datetime
+    # The player's lines and veils, on an active PC (horatio.lines_veils).
+    lines_veils: LinesVeils | None
 
 
 class LogEntry(BaseModel):
@@ -69,7 +72,10 @@ class LogEntry(BaseModel):
 @router.get("/characters")
 def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[RosterEntry]:
     """Every character in the troupe now: those whose home it is first, then visitors."""
-    staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    shows_lines_veils = allows(
+        troupe_role(db, user, troupe), TroupeAction.VIEW_LINES_VEILS, is_custodian=user.is_custodian
+    )
     rows = list(
         db.execute(
             select(TroupeMembership, Character, User)
@@ -110,6 +116,9 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             waiting=(c.id, "home_troupe_change") in pending,
             disciplines_waiting=sum(1 for p in pending if p == (c.id, "discipline")),
             joined_at=m.joined_at,
+            lines_veils=lines_veils_of(player)
+            if shows_lines_veils and c.kind == "pc" and c.status == "active"
+            else None,
         )
         for m, c, player in rows
     ]

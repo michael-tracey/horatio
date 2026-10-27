@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { WhosWhoEntry } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
+import { LinesVeilsNote } from "../../components/LinesVeils";
 import { Badge, Empty, ErrorText, Input, Loading, Select } from "../../components/ui";
 import { NO_FILTER, clanText, filterChoices, sections, type Section, type WhosWhoFilter } from "./whosWho";
 
@@ -155,6 +156,7 @@ function EntryCard({ entry: e, kind }: { entry: WhosWhoEntry; kind: Section["kin
             {e.visiting && <Badge>{e.visiting_from ? `Visiting from ${e.visiting_from}` : "Visiting"}</Badge>}
           </span>
         )}
+        {e.player_name && <LinesVeilsNote value={e.lines_veils} who={e.player_name} />}
         {kind === "other" && <span className="text-mist">Represented by: {e.represented_by ?? "nobody yet"}</span>}
         {kind === "departed" && e.left_reason && <span className="text-mist">{e.left_reason}</span>}
         {(e.visible.length > 0 || e.bans.length > 0 || e.negative.length > 0) && (

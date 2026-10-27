@@ -19,6 +19,10 @@ _Avoid_: Bio page, user page
 The unique name a person is found and shown by, such as @night_owl, in place of their email. They choose it, can sign in with it, and can change it once in 30 days; an old handle stays theirs for 90.
 _Avoid_: Username, login
 
+**Lines and Veils**:
+A player's content boundaries, in their own words: a **line** is something that must not happen in play around them; a **veil** may happen, but off-screen. They belong to the player, not a character. Never public or printed: the staff of the troupes they play in always see them, and other players there only if the player shares them.
+_Avoid_: Triggers, limits, content warnings (for a player's own)
+
 **Troupe**:
 The top-level group: it runs games, has its own staff and house rules, and characters join it. No group sits above a troupe.
 _Avoid_: Game, chapter, chronicle, organisation
