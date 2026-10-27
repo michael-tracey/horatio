@@ -1,13 +1,26 @@
 /**
  * The effect blocks of a house merit or flaw, as the editor shows them: each one a
- * form for one thing it does on the sheet (horatio.rules.house_effects on the
- * server, which checks them and says what they do).
+ * form for one thing it does on the sheet, at a game or between games
+ * (horatio.rules.house_effects on the server, which checks them and says what they do).
  */
 
-import type { CatalogueOut, EffectBlock } from "../../api/types";
+import type { CatalogueOut, EffectBlock, EffectChoicesOut, PoolChoiceOut } from "../../api/types";
 
 /** What a block does, as the editor offers it. Prices cover three engine kinds. */
-export type BlockType = "free" | "picks" | "raise" | "price" | "in_clan" | "health" | "requires" | "forbids";
+export type BlockType =
+  | "free"
+  | "picks"
+  | "raise"
+  | "price"
+  | "in_clan"
+  | "health"
+  | "requires"
+  | "forbids"
+  | "pool"
+  | "switch"
+  | "uses"
+  | "downtime"
+  | "feeding";
 
 export const BLOCK_TYPES: { type: BlockType; label: string }[] = [
   { type: "free", label: "Gives free dots" },
@@ -18,6 +31,11 @@ export const BLOCK_TYPES: { type: BlockType; label: string }[] = [
   { type: "health", label: "Adds or takes away health levels" },
   { type: "requires", label: "Requires…" },
   { type: "forbids", label: "Not with…" },
+  { type: "pool", label: "Pool bonus, always on" },
+  { type: "switch", label: "Pool changes while switched on in play" },
+  { type: "uses", label: "Uses per game" },
+  { type: "downtime", label: "Extra downtime actions of a kind" },
+  { type: "feeding", label: "Changes feeding between games" },
 ];
 
 export const PRICE_KINDS: { kind: EffectBlock["kind"]; label: string }[] = [
@@ -52,6 +70,12 @@ export function typeOf(block: EffectBlock): BlockType {
       return "in_clan";
     case "add":
       return "health";
+    case "pool_bonus":
+      return "pool";
+    case "uses_per_game":
+      return "uses";
+    case "downtime_action":
+      return "downtime";
     default:
       return block.kind;
   }
@@ -68,6 +92,13 @@ const BLANK: EffectBlock = {
   name: "",
   rating: null,
   strength: "refuse",
+  pools: [],
+  when: "",
+  changes: [],
+  note: "",
+  action_kind: "",
+  herd_factor: 1,
+  always_half: false,
 };
 
 /** A new block of the type, with sensible starting values. */
@@ -88,7 +119,34 @@ export function newBlock(type: BlockType): EffectBlock {
     case "requires":
     case "forbids":
       return { ...BLANK, kind: type, test: "trait", category: "backgrounds", rating: 1 };
+    case "pool":
+      return { ...BLANK, kind: "pool_bonus", amount: 1 };
+    case "switch":
+      return { ...BLANK, kind: "switch", changes: [{ pool: "", amount: 1 }] };
+    case "uses":
+      return { ...BLANK, kind: "uses_per_game", amount: 1 };
+    case "downtime":
+      return { ...BLANK, kind: "downtime_action", action_kind: "general", amount: 1 };
+    case "feeding":
+      return { ...BLANK, kind: "feeding", amount: -1 };
   }
+}
+
+/** The pools a block can change: an always-on bonus, or a switch, as the server lists them. */
+export function poolChoices(choices: EffectChoicesOut | undefined, type: BlockType): PoolChoiceOut[] {
+  return (choices?.pools ?? []).filter((p) => (type === "switch" ? p.switch : p.always));
+}
+
+/** The pools in their groups, for a picker: [group, pools] in the server's order. */
+export function poolGroups(pools: PoolChoiceOut[]): [string, PoolChoiceOut[]][] {
+  const groups = new Map<string, PoolChoiceOut[]>();
+  for (const p of pools) groups.set(p.group, [...(groups.get(p.group) ?? []), p]);
+  return [...groups];
+}
+
+/** "+2", "−2". */
+export function signed(n: number): string {
+  return n < 0 ? `−${-n}` : `+${n}`;
 }
 
 /** The kinds of trait a block can give dots in, raise or price: rated ones bought dot by dot. */

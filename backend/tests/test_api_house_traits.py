@@ -11,7 +11,9 @@ from sqlalchemy.orm import Session
 from tests.api_helpers import Person, Troupe, finish, new_character
 from tests.test_api_cart import rating, spend
 from tests.test_api_creation import creating, pick
+from tests.test_api_downtimes import my_downtime, new_cycle, open_cycle
 from tests.test_api_npcs_titles import make_npc
+from tests.test_api_play import send, tap, texts, view
 from tests.test_api_renames import character_log, other_troupe, troupe_log, visit
 from tests.test_api_sheets import buy, make_home_troupe_member, sheet
 
@@ -616,3 +618,160 @@ def test_changing_its_effects_changes_every_holder_and_xp_stays(troupe: Troupe) 
         assert (herd["rating"], herd["granted_by"]) == (1, ["Old Money"])
         assert sheet(troupe.player, character_id)["xp"]["balance"] == balance
     assert any("(description, effects)" in line for line in troupe_log(troupe.lead, troupe.id))
+
+
+# --- At a game, and between games -----------------------------------------------------------
+
+BATTLE_TRANCE = [
+    {
+        "kind": "switch",
+        "changes": [
+            {"pool": "attack:Brawl", "amount": 2},
+            {"pool": "attribute:Mental", "amount": -2},
+        ],
+        "note": "One scene at most.",
+    },
+    {"kind": "uses_per_game", "amount": 1},
+]
+
+
+def battle_trance(troupe: Troupe, effects: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    return made(
+        troupe,
+        name="Battle Trance",
+        points=2,
+        availability="staff",
+        description="The red haze, called up at will.",
+        effects=BATTLE_TRANCE if effects is None else effects,
+    )
+
+
+def test_a_holders_play_view_has_its_switch_and_its_uses(troupe: Troupe) -> None:
+    house = battle_trance(troupe)
+    assert house["summary"] == (
+        "Switched on in play: +2 to Brawl attacks and −2 to Mental pools. 1 use a game."
+    )
+    character_id = homed(troupe)
+    assert apply(troupe, character_id, house["id"], free=True).status_code == 200
+
+    state = view(troupe.player, character_id)
+
+    trance = next(p for p in state["powers"] if p["key"] == "Battle Trance")
+    assert (trance["name"], trance["page"], trance["on"]) == (
+        "Battle Trance",
+        "House rule — Lords of the Night",
+        False,
+    )
+    assert trance["changes"] == ["+2 Brawl attacks", "-2 Mental"]
+    assert trance["notes"] == ["One scene at most."]
+    [uses] = [e for e in state["expendables"] if e["name"] == "Battle Trance"]
+    assert uses["uses"] == 1
+    found = troupe.player.client.get(f"/characters/{character_id}/play/reference").json()
+    brawl = next(p for p in found["pools"] if p["key"] == "attack:Brawl")
+    assert [(s["switch"], s["value"]) for s in brawl["switched"]] == [("Battle Trance", 2)]
+
+    # Switched on with a tap, as a book power is.
+    after = send(troupe.player, character_id, tap("power:Battle Trance", 1))
+    assert "Battle Trance on" in texts(after)
+    assert next(p for p in after["powers"] if p["key"] == "Battle Trance")["on"]
+
+
+def test_a_change_to_its_uses_reaches_every_holder(troupe: Troupe) -> None:
+    house = battle_trance(troupe)
+    first, second = homed(troupe), homed(troupe, "Bram")
+    for character_id in (first, second):
+        assert apply(troupe, character_id, house["id"], free=True).status_code == 200
+
+    changed = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/house-traits/{house['id']}",
+        json={
+            "category": "merits",
+            "name": "Battle Trance",
+            "points": 2,
+            "availability": "staff",
+            "effects": [{"kind": "uses_per_game", "amount": 3}],
+        },
+    )
+
+    assert changed.status_code == 200, changed.text
+    for character_id in (first, second):
+        state = view(troupe.player, character_id)
+        assert [e["uses"] for e in state["expendables"] if e["name"] == "Battle Trance"] == [3]
+        assert not any(p["key"] == "Battle Trance" for p in state["powers"])
+
+
+def test_its_downtime_actions_and_feeding_count_in_a_cycle(troupe: Troupe) -> None:
+    house = made(
+        troupe,
+        name="Night Errands",
+        points=2,
+        availability="staff",
+        effects=[
+            {"kind": "downtime_action", "action_kind": "general", "amount": 1},
+            {"kind": "feeding", "amount": -1},
+        ],
+    )
+    assert house["summary"] == ("1 more Downtime action. Feeding: 1 fewer feeding action needed.")
+    # A Brujah, who feeds between games.
+    character_id = new_character(troupe, troupe.player, "Agnes", clan="Brujah")
+    make_home_troupe_member(troupe.session, troupe, character_id)
+    assert apply(troupe, character_id, house["id"], free=True).status_code == 200
+
+    cycle = new_cycle(troupe)
+    open_cycle(troupe, cycle)
+
+    participants = troupe.assistant.client.get(f"/cycles/{cycle['id']}/participants").json()
+    assert participants[0]["allowance"]["general"] == 4
+    assert {"action_kind": "general", "source": "Night Errands", "amount": 1} in participants[0][
+        "breakdown"
+    ]
+    lines = my_downtime(troupe.player, character_id).json()["feeding"]["need"]["lines"]
+    assert [(line["source"], line["amount"]) for line in lines if line["kind"] == "trait"] == [
+        ("Night Errands", -1)
+    ]
+
+
+def test_the_choices_list_the_pools_and_the_troupes_kinds_of_action(troupe: Troupe) -> None:
+    url = f"/troupes/{troupe.id}/house-traits/choices"
+    assert troupe.assistant.client.get(url).status_code == 403
+
+    found = troupe.storyteller.client.get(url).json()
+
+    pools = {p["key"]: p for p in found["pools"]}
+    assert pools["attack:Brawl"]["label"] == "Unarmed attack (Brawl)"
+    assert (pools["attribute:Mental"]["always"], pools["attribute:Mental"]["switch"]) == (
+        False,
+        True,
+    )
+    assert (pools["skill:Computer"]["always"], pools["skill:Computer"]["switch"]) == (True, False)
+    assert "discipline:Auspex" in pools
+    assert [k["key"] for k in found["action_kinds"]][:1] == ["general"]
+
+
+def test_the_preview_shows_its_pools_switch_uses_and_actions(troupe: Troupe) -> None:
+    response = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/house-traits/preview",
+        json={
+            "trait": {
+                "category": "merits",
+                "name": "Battle Trance",
+                "points": 2,
+                "availability": "staff",
+                "effects": [
+                    *BATTLE_TRANCE,
+                    {"kind": "pool_bonus", "pools": ["dodge"], "amount": 1},
+                    {"kind": "downtime_action", "action_kind": "general", "amount": 1},
+                ],
+            }
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    changes = response.json()["changes"]
+    assert changes == [
+        "Dodge: 0 → 1.",
+        "A switch on the Play View, Battle Trance: +2 Brawl attacks, -2 Mental.",
+        "With it on: Unarmed attack 0 → 2.",
+        "1 use a game, under Uses this game on the Play View.",
+        "Downtime actions each downtime: 3 → 4.",
+    ]

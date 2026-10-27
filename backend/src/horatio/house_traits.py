@@ -165,7 +165,8 @@ def trial(db: Session, troupe: Troupe, spec: Spec, house: HouseTrait | None) -> 
     traits = dict(base.traits)
     if house is not None and house.splat == spec.splat:
         traits.pop((house.category, house.name), None)
-    without_set, without_house = merged(replace(base, traits=traits), others)
+    kinds = rules.action_kinds()
+    without_set, without_house = merged(replace(base, traits=traits), others, kinds)
     shape = HouseTrait(
         points=spec.points,
         kind=spec.kind,
@@ -196,12 +197,12 @@ def trial(db: Session, troupe: Troupe, spec: Spec, house: HouseTrait | None) -> 
         effects=spec.effects,
     )
     with_traits = replace(base, traits=traits)
-    with_set, with_house = merged(with_traits, [*others, draft])
+    with_set, with_house = merged(with_traits, [*others, draft], kinds)
     return Trial(
         without=replace(rules, rule_set=without_set, house_traits=without_house, unmerged=None),
         with_it=replace(rules, rule_set=with_set, house_traits=with_house, unmerged=None),
         draft=next(h for h in with_house if h.id == draft.id),
-        compiled=compile_effects(draft, with_traits),
+        compiled=compile_effects(draft, with_traits, kinds),
     )
 
 

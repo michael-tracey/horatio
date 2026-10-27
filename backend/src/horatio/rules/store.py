@@ -700,13 +700,16 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is None],
         starting_traits=[starting_data(r) for r in starting_rows if r.troupe_id is None],
     )
-    # The house traits' effects, as grants and checks beside the book's.
+    # The house traits' effects, as grants, checks, play properties, allowance rules
+    # and feeding modifiers beside the book's.
     unmerged = data
-    data, house_data = merged(data, house_data)
+    house_kinds = [kind_data(r) for r in kind_rows if r.troupe_id is not None]
+    kinds = {**data.action_kinds, **{k.key: k for k in house_kinds}}
+    data, house_data = merged(data, house_data, kinds)
     return TroupeRules(
         rule_set=data,
         house_rules=house_costs,
-        house_action_kinds=[kind_data(r) for r in kind_rows if r.troupe_id is not None],
+        house_action_kinds=house_kinds,
         house_allowance_rules=[
             allowance_data(r) for r in allowance_rows if r.troupe_id is not None
         ],

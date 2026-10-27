@@ -200,8 +200,10 @@ the generic one.
 `kind` (`General` | `Clan` | `Sabbat`), `availability` (`staff`: only staff
 apply it; `building`: characters built for the troupe take it like a book
 merit), `creation_only`, `description`, `requirement`, `effects` (JSONB effect
-blocks, each naming the engine kind it maps to, turned into grants and checks
-by `horatio.rules.house_effects` when the troupe's rules are read; empty for
+blocks, each naming the engine kind it maps to, turned by
+`horatio.rules.house_effects` when the troupe's rules are read into grants and
+checks, the `pools`, `active` (a Play View switch) and `uses_per_game` a book
+merit has in the catalogue, allowance rules and feeding modifiers; empty for
 description only),
 `archived_at` (no new picks; holders keep it), `trait_definition_id`. Unique on
 (`troupe_id`, `splat`, `category`, `name`), and no name the book has. Each has

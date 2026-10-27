@@ -24,6 +24,10 @@ and the rest. Each pool says what each switch would change in it (`switched`), a
 the Play View adds what is on, since being on is a tap in the game
 (horatio.play). A switch can also add wound levels, change an attribute, give a
 focus or more Blood; `switches` lists those the sheet has, with what they change.
+
+A troupe's house merits and flaws carry `pools` and `active` in their catalogue
+properties, as the troupe's rules read them (horatio.rules.house_effects), and are
+read here like a book merit's.
 """
 
 import tomllib
@@ -36,7 +40,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from horatio.rules.model import RuleSetData
+from horatio.rules.model import RuleSetData, SheetTrait
 from horatio.sheets import SheetRow
 
 POWERS_FILE = Path(__file__).parent / "rules" / "data" / "bns_met_vampire_powers.toml"
@@ -306,6 +310,11 @@ class Sheet:
             c["key"]: made.get(c["key"]) or c.get("default", "") for c in power.get("choices", [])
         }
 
+    @property
+    def switch_keys(self) -> frozenset[str]:
+        """Every switch's key: the powers file's, and the house merits' this sheet has."""
+        return catalogue().switch_keys | {a["key"] for e in house_entries(self) for a in actives(e)}
+
     def with_focus(self, focus: str) -> "Sheet":
         return Sheet(
             ratings=self.ratings,
@@ -320,24 +329,53 @@ class Sheet:
     def read(cls, rows: Iterable[SheetRow], rule_set: RuleSetData) -> "Sheet":
         sheet = cls()
         for row in rows:
-            category, name = row.category.key, row.definition.name
-            rating = row.trait.rating if row.trait.rating is not None else 1
-            if rating <= 0:
-                continue
-            key = (category, name)
-            sheet.ratings[key] = max(sheet.ratings.get(key, 0), rating)
-            if category in FOCUS_CATEGORIES:
-                sheet.focuses.add(name)
-            elif category == "disciplines":
-                sheet.disciplines[name] = max(sheet.disciplines.get(name, 0), rating)
-                if row.trait.power_choices:
-                    sheet.choices[name] = row.trait.power_choices
-            elif category in (*POWER_CATEGORIES, "techniques"):
-                sheet.others.append((category, row.category.name, name))
-            properties = rule_set.trait_properties(category, name)
-            if properties:
-                sheet.traits.append((category, name, properties))
+            sheet.add(
+                row.category.key,
+                row.category.name,
+                row.definition.name,
+                row.trait.rating,
+                rule_set,
+                row.trait.power_choices,
+            )
         return sheet
+
+    @classmethod
+    def of(cls, traits: Iterable[SheetTrait], rule_set: RuleSetData) -> "Sheet":
+        """The pools' makings from the rules' own view of a sheet, for trying one out
+        (horatio.house_preview) where there are no rows."""
+        sheet = cls()
+        for t in traits:
+            category = rule_set.categories.get(t.category)
+            sheet.add(
+                t.category, category.name if category else t.category, t.name, t.rating, rule_set
+            )
+        return sheet
+
+    def add(
+        self,
+        category: str,
+        category_name: str,
+        name: str,
+        rating: int | None,
+        rule_set: RuleSetData,
+        power_choices: Mapping[str, Mapping[str, str]] | None = None,
+    ) -> None:
+        rating = rating if rating is not None else 1
+        if rating <= 0:
+            return
+        key = (category, name)
+        self.ratings[key] = max(self.ratings.get(key, 0), rating)
+        if category in FOCUS_CATEGORIES:
+            self.focuses.add(name)
+        elif category == "disciplines":
+            self.disciplines[name] = max(self.disciplines.get(name, 0), rating)
+            if power_choices:
+                self.choices[name] = power_choices
+        elif category in (*POWER_CATEGORIES, "techniques"):
+            self.others.append((category, category_name, name))
+        properties = rule_set.trait_properties(category, name)
+        if properties:
+            self.traits.append((category, name, properties))
 
 
 def technique_bases(rule_set: RuleSetData) -> dict[str, set[str]]:
@@ -413,9 +451,19 @@ class Owner:
     chosen: Mapping[str, str] = field(default_factory=dict[str, str])
 
 
+def house_entries(sheet: Sheet) -> list[Mapping[str, Any]]:
+    """The house merits and flaws on the sheet with a switch, as [[others]] entries."""
+    return [
+        {"category": category, "name": name, "active": properties["active"]}
+        for category, name, properties in sheet.traits
+        if category in ("merits", "flaws") and "active" in properties
+    ]
+
+
 def owners(sheet: Sheet) -> Iterable[Owner]:
     """Every entry the character has: its disciplines, the powers it has reached,
-    and its techniques, elder powers and merits from [[others]]."""
+    its techniques, elder powers and merits from [[others]], and its house merits
+    with a switch (their `pools` are read with the other merits')."""
     book = catalogue()
     for name, rating in sheet.disciplines.items():
         if name in book.disciplines:
@@ -429,6 +477,8 @@ def owners(sheet: Sheet) -> Iterable[Owner]:
         if sheet.held(category, name) and _needs(other, sheet):
             short = name.split(": ", 1)[-1]
             yield Owner(other, short, name)
+    for entry in house_entries(sheet):
+        yield Owner(entry, entry["name"], entry["name"])
 
 
 def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
@@ -485,7 +535,9 @@ def damage_effects(sheet: Sheet) -> list[DamageEffect]:
     return found
 
 
-def damage(skill: str, found: Sequence[DamageEffect]) -> Damage | None:
+def damage(
+    skill: str, found: Sequence[DamageEffect], keys: frozenset[str] | None = None
+) -> Damage | None:
     """What a hit with the attack made on `skill` does: its base (core p. 279) plus
     each power that always adds to it. What a switch changes is kept apart, for
     the Play View to add while it is on; other powers that hold only some of the
@@ -498,10 +550,11 @@ def damage(skill: str, found: Sequence[DamageEffect]) -> Damage | None:
     kind: Literal["normal", "aggravated"] = "normal"
     notes: list[str] = []
     switched: list[SwitchedDamage] = []
+    keys = catalogue().switch_keys if keys is None else keys
     for e in found:
         if skill not in e.attacks:
             continue
-        if e.when in catalogue().switch_keys:
+        if e.when in keys:
             switched.append(
                 SwitchedDamage(
                     switch=e.when,
@@ -554,6 +607,7 @@ def _pool(
     group: str,
     base: list[PoolPart],
     found: Sequence[Effect],
+    keys: frozenset[str],
     **extra: Any,
 ) -> TestPool:
     """A pool from its base parts and the effects that change it: those that
@@ -568,7 +622,7 @@ def _pool(
             continue
         if e.note:
             notes.append(f"{e.note} ({e.source})")
-        elif e.when in catalogue().switch_keys:
+        elif e.when in keys:
             if e.amount:
                 switched.append(SwitchedPart(switch=e.when, label=e.source, value=e.amount))
         elif e.when:
@@ -630,11 +684,12 @@ def pools(
     def attr(name: str) -> PoolPart:
         return PoolPart(label=name, value=attrs[name])
 
+    keys = sheet.switch_keys
     out: list[TestPool] = []
     initiative_attr = next(
         (e.attribute for e in found if e.pool == "initiative" and e.attribute), None
     ) or ("Mental" if attrs["Mental"] > attrs["Physical"] else "Physical")
-    out.append(_pool("initiative", "Initiative", "Combat", [attr(initiative_attr)], found))
+    out.append(_pool("initiative", "Initiative", "Combat", [attr(initiative_attr)], found, keys))
     blood = f"Spend Blood for +1 Physical each, up to {blood_per_turn} a turn."
     out.append(
         _pool(
@@ -643,6 +698,7 @@ def pools(
             "Combat",
             [attr("Physical"), skill("Dodge")],
             found,
+            keys,
             notes=["Give up your standard action for +2 to one Dodge pool this round.", blood],
         )
     )
@@ -656,9 +712,10 @@ def pools(
                     "Combat",
                     [attr("Physical"), part],
                     found,
+                    keys,
                     versus="Physical + Dodge",
                     notes=[blood],
-                    damage=damage(name, hurts),
+                    damage=damage(name, hurts, keys),
                 )
             )
     floor = max((e.willpower_floor for e in found if e.pool == "defense"), default=0)
@@ -670,6 +727,7 @@ def pools(
                 "Defence",
                 [attr(name)],
                 found,
+                keys,
                 adds_willpower=True,
                 willpower_floor=floor,
             )
@@ -687,6 +745,7 @@ def pools(
                 "Disciplines",
                 [attr(attribute), skill(skill_name)],
                 found,
+                keys,
                 versus=spec.get("versus"),
             )
         )
@@ -709,6 +768,9 @@ def pools(
 
 
 def _page(entry: Mapping[str, Any]) -> str:
+    """ "p. 155", "Vol. 2, p. 82", or a house switch's "House rule — Night Court"."""
+    if "reference" in entry:
+        return entry["reference"]
     book = entry.get("book", BOOK)
     return f"p. {entry['page']}" if book == BOOK else f"{book}, p. {entry['page']}"
 

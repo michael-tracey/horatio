@@ -643,9 +643,10 @@ def allowances_out(db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire") 
         kind = order.get(rule.action_kind, len(order))
         return (kind, rule.trait is not None, rule.trait or "", rule.house)
 
+    # The rule set's own: not those of house merits, which say theirs on the merit.
     generic = [
         allowance_out(kinds, r, None, replaced=r.key in house_keys)
-        for r in rules.rule_set.allowance_rules
+        for r in (rules.unmerged or rules.rule_set).allowance_rules
     ]
     return AllowancesOut(
         action_kinds=[ActionKindOut(key=k.key, name=k.name) for k in kinds.values()],

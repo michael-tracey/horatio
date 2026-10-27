@@ -29,15 +29,47 @@ merit does exactly what the book merit it copies does. Blocks, by `kind`:
 
 `detail` narrows the trait of a raise or a price to one field (Performance:
 Singing). Every block names its category, but extra_in_clan and the checks.
+
+The rest are what it does at a game and between them. They become what a book
+merit has in the catalogue and the rules file, so the Play View and downtimes treat
+it exactly as they treat one:
+
+    pool_bonus     `amount` on each of `pools`, always (Slow Reactions); with
+                   `when`, only then, shown beside the pool ("against Telepathy")
+    switch         a switch on the Play View (horatio.reference): while it is on,
+                   each of `changes` adds its `amount` to a pool, or to the
+                   attribute of every pool made on it ("attribute:Mental"), as
+                   Bullet Time and Steal the Mind do; `note` says what else it does
+    uses_per_game  `amount` uses a game, under Uses this game (Oracular Ability)
+    downtime_action
+                   `amount` more (or fewer) actions of `action_kind` a downtime, an
+                   allowance rule like Hunted's
+    feeding        a feeding modifier like Efficient Digestion's: `amount` more (or
+                   fewer) feeding actions needed, what each dot of Herd counts for
+                   (`herd_factor`), and `always_half`
+
+Pools are named as in bns_met_vampire_powers.toml: initiative, dodge, attack,
+attack:<Skill>, defense, defense:<Attribute> or discipline:<Name>; an always-on
+bonus can also be to skill:<Name>, frenzy or all, which the Pools tab shows as
+notes, and a switch to attribute:<Attribute>.
 """
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
+from functools import cached_property
 from typing import Any
 
 from horatio.rules.checks import CheckData, check_from_dict, validate_condition
+from horatio.rules.files import check_allowance_rule
 from horatio.rules.grants import GrantData, grant_from_dict, validate_grant
-from horatio.rules.model import HouseTraitData, RuleSetData, house_page
+from horatio.rules.model import (
+    ActionKindData,
+    AllowanceRuleData,
+    FeedingModifierData,
+    HouseTraitData,
+    RuleSetData,
+    house_page,
+)
 
 EXTRA_IN_CLAN = "extra_in_clan_disciplines"
 # The book merit whose rules an extra_in_clan block follows, and the others that add
@@ -55,7 +87,23 @@ GRANT_KINDS = (
     "price_out_of_clan",
 )
 CHECK_KINDS = ("requires", "forbids")
-KINDS = (*GRANT_KINDS, "extra_in_clan", *CHECK_KINDS)
+PLAY_KINDS = ("pool_bonus", "switch", "uses_per_game", "downtime_action", "feeding")
+KINDS = (*GRANT_KINDS, "extra_in_clan", *CHECK_KINDS, *PLAY_KINDS)
+# Kinds a merit has at most one block of.
+ONCE = {
+    "switch": "A merit has one switch; put all it changes in it.",
+    "uses_per_game": "A merit has one number of uses a game.",
+    "feeding": "A merit has one feeding block; put all it changes in it.",
+}
+ATTRIBUTES = ("Physical", "Social", "Mental")
+ATTACKS = {"Brawl": "Brawl", "Melee": "Melee", "Firearms": "Firearms", "Athletics": "thrown"}
+# As the Pools tab names them (horatio.reference.ATTACKS), with the skill.
+ATTACK_LABELS = {
+    "Brawl": "Unarmed attack (Brawl)",
+    "Melee": "Melee attack",
+    "Firearms": "Firearms attack",
+    "Athletics": "Thrown attack (Athletics)",
+}
 STRENGTHS = ("refuse", "complete", "review", "note")
 TESTS = ("clan", "sect", "trait")
 
@@ -71,6 +119,11 @@ FIELDS: dict[str, tuple[str, ...]] = {
     "extra_in_clan": ("names",),
     "requires": ("test", "names", "category", "name", "rating", "strength"),
     "forbids": ("test", "names", "category", "name", "rating", "strength"),
+    "pool_bonus": ("pools", "amount", "when"),
+    "switch": ("changes", "note"),
+    "uses_per_game": ("amount",),
+    "downtime_action": ("action_kind", "amount"),
+    "feeding": ("amount", "herd_factor", "always_half"),
 }
 DEFAULTS: dict[str, Any] = {
     "category": "",
@@ -82,6 +135,20 @@ DEFAULTS: dict[str, Any] = {
     "name": "",
     "rating": None,
     "strength": "refuse",
+    "pools": [],
+    "when": "",
+    "changes": [],
+    "note": "",
+    "action_kind": "",
+    "herd_factor": 1,
+    "always_half": False,
+}
+
+
+HERD_WORDS = {
+    0: "Herd counts for nothing",
+    2: "each dot of Herd counts twice",
+    3: "each dot of Herd counts three times",
 }
 
 
@@ -97,6 +164,18 @@ class Problem:
 
 
 @dataclass(frozen=True)
+class Played:
+    """What a play or downtime block becomes."""
+
+    line: str
+    # `pools` entries for the trait's catalogue properties, and the rest of them.
+    pools: list[dict[str, Any]] = field(default_factory=list[dict[str, Any]])
+    properties: dict[str, Any] = field(default_factory=dict[str, Any])
+    allowance: list[AllowanceRuleData] = field(default_factory=list[AllowanceRuleData])
+    feeding: list[FeedingModifierData] = field(default_factory=list[FeedingModifierData])
+
+
+@dataclass(frozen=True)
 class Compiled:
     """What a house trait's blocks become."""
 
@@ -104,6 +183,11 @@ class Compiled:
     checks: tuple[CheckData, ...] = ()
     # The disciplines its extra_in_clan block lets it add in-clan.
     in_clan: tuple[str, ...] = ()
+    # What it adds to the trait's catalogue properties, as a book merit has them:
+    # `pools`, `active` (its switch) and `uses_per_game`.
+    properties: Mapping[str, Any] = field(default_factory=dict[str, Any])
+    allowance_rules: tuple[AllowanceRuleData, ...] = ()
+    feeding_modifiers: tuple[FeedingModifierData, ...] = ()
     problems: tuple[Problem, ...] = ()
     # What it does, a sentence a block.
     lines: tuple[str, ...] = ()
@@ -122,9 +206,16 @@ def normalised(block: Mapping[str, Any]) -> dict[str, Any]:
     for name in FIELDS[kind]:
         value = block.get(name, DEFAULTS[name])
         found[name] = list(value) if isinstance(value, list | tuple) else value
-    if "names" in found:
-        found["names"] = [str(n).strip() for n in found["names"] if str(n).strip()]
-    for name in ("detail", "name", "category"):
+    for name in ("names", "pools"):
+        if name in found:
+            found[name] = [str(n).strip() for n in found[name] if str(n).strip()]
+    if "changes" in found:
+        found["changes"] = [
+            {"pool": str(c.get("pool", "")).strip(), "amount": c.get("amount", 0)}
+            for c in found["changes"]
+            if isinstance(c, Mapping)
+        ]
+    for name in ("detail", "name", "category", "when", "note", "action_kind"):
         if isinstance(found.get(name), str):
             found[name] = found[name].strip()
     return found
@@ -150,12 +241,86 @@ def are(amount: int) -> str:
     return "is" if amount == 1 else "are"
 
 
+def signed(amount: int) -> str:
+    return f"+{amount}" if amount >= 0 else f"\u2212{-amount}"
+
+
+def plural(amount: int, word: str) -> str:
+    return f"{abs(amount)} {word}" if abs(amount) == 1 else f"{abs(amount)} {word}s"
+
+
+@dataclass(frozen=True)
+class PoolChoice:
+    """A pool a play block can change, as the Pools tab has it."""
+
+    key: str
+    label: str
+    group: str
+    # Whether an always-on bonus, and a switch, can change it.
+    always: bool = True
+    switch: bool = True
+
+
+def pool_choices(rule_set: RuleSetData) -> list[PoolChoice]:
+    """The pools a house merit's play blocks can change: the Pools tab's, by key."""
+    # horatio.reference reads sheets, which read these rules: so imported here.
+    from horatio.reference import catalogue
+
+    disciplines = sorted(
+        name
+        for name, d in catalogue().disciplines.items()
+        if d.get("pool") and ("disciplines", name) in rule_set.traits
+    )
+    skills = sorted(n for c, n in rule_set.traits if c == "skills")
+    return [
+        PoolChoice("initiative", "Initiative", "Combat"),
+        PoolChoice("dodge", "Dodge", "Combat"),
+        PoolChoice("attack", "Every attack", "Combat"),
+        *(PoolChoice(f"attack:{skill}", label, "Combat") for skill, label in ATTACK_LABELS.items()),
+        PoolChoice("defense", "Every defence", "Defence"),
+        *(PoolChoice(f"defense:{a}", f"Resisting {a} powers", "Defence") for a in ATTRIBUTES),
+        *(
+            PoolChoice(f"attribute:{a}", f"Every pool made on {a}", "Attributes", always=False)
+            for a in ATTRIBUTES
+        ),
+        *(PoolChoice(f"discipline:{d}", d, "Disciplines") for d in disciplines),
+        *(
+            PoolChoice(f"skill:{n}", f"{n} (a note: it has no pool)", "Skills", switch=False)
+            for n in skills
+        ),
+        PoolChoice("frenzy", "Resisting frenzy (a note)", "Other", switch=False),
+        PoolChoice("all", "Every pool (a note)", "Other", switch=False),
+    ]
+
+
+def pool_words(key: str) -> str:
+    """How a summary names a pool: "Brawl attacks", "Mental defence", "Mental pools"."""
+    family, _, which = key.partition(":")
+    if family == "attack":
+        return f"{ATTACKS.get(which, which)} attacks" if which else "every attack"
+    if family == "defense":
+        return f"{which} defence" if which else "every defence"
+    if family == "attribute":
+        return f"{which} pools"
+    if family in ("discipline", "skill"):
+        return which
+    words = {"dodge": "Dodge", "frenzy": "resisting frenzy", "all": "every pool"}
+    return words.get(key, key)
+
+
 class Compiler:
     """Turns one house trait's blocks into grants and checks against a rule set."""
 
-    def __init__(self, house: HouseTraitData, rule_set: RuleSetData) -> None:
+    def __init__(
+        self,
+        house: HouseTraitData,
+        rule_set: RuleSetData,
+        kinds: Mapping[str, ActionKindData] | None = None,
+    ) -> None:
         self.house = house
         self.rule_set = rule_set
+        # The troupe's action kinds, its own among them.
+        self.kinds = rule_set.action_kinds if kinds is None else kinds
         self.source = {"category": house.category, "name": house.name}
         self.page = house_page(house.troupe_name)
         known = set(rule_set.traits) | {(house.category, house.name)}
@@ -206,11 +371,30 @@ class Compiler:
         in_clan: list[str] = []
         problems: list[Problem] = []
         lines: list[str] = []
+        properties: dict[str, Any] = {}
+        allowance: list[AllowanceRuleData] = []
+        feeding: list[FeedingModifierData] = []
+        seen: set[str] = set()
         for index, raw in enumerate(blocks):
             try:
                 block = normalised(raw)
                 if block["kind"] == "extra_in_clan" and in_clan:
                     raise BlockProblem("One merit adds one in-clan discipline.")
+                if block["kind"] in ONCE and block["kind"] in seen:
+                    raise BlockProblem(ONCE[block["kind"]])
+                if block["kind"] in PLAY_KINDS:
+                    played = self.play(block)
+                    if any(
+                        r.action_kind == a.action_kind for r in played.allowance for a in allowance
+                    ):
+                        raise BlockProblem("That kind of action is given twice.")
+                    seen.add(block["kind"])
+                    properties["pools"] = [*properties.get("pools", []), *played.pools]
+                    properties.update(played.properties)
+                    allowance += played.allowance
+                    feeding += played.feeding
+                    lines.append(played.line)
+                    continue
                 key = f"house/{self.house.id}/{index}"
                 made_grants, made_checks, adds, line = self.block(key, block)
                 for grant in made_grants:
@@ -232,7 +416,18 @@ class Compiler:
             checks += made_checks
             in_clan += adds
             lines.append(line)
-        return Compiled(tuple(grants), tuple(checks), tuple(in_clan), tuple(problems), tuple(lines))
+        if not properties.get("pools"):
+            properties.pop("pools", None)
+        return Compiled(
+            grants=tuple(grants),
+            checks=tuple(checks),
+            in_clan=tuple(in_clan),
+            properties=properties,
+            allowance_rules=tuple(allowance),
+            feeding_modifiers=tuple(feeding),
+            problems=tuple(problems),
+            lines=tuple(lines),
+        )
 
     def grant(
         self, key: str, kind: str, target: dict[str, Any], amount: int, **more: Any
@@ -385,6 +580,134 @@ class Compiler:
         line = f"Adds one in-clan discipline, chosen from {either(names)}."
         return [grant], checks, names, line
 
+    # --- at a game, and between games -----------------------------------------------
+
+    @cached_property
+    def pools(self) -> dict[str, PoolChoice]:
+        return {c.key: c for c in pool_choices(self.rule_set)}
+
+    def pool(self, key: str, *, switch: bool) -> str:
+        choice = self.pools.get(key)
+        if choice is None:
+            raise BlockProblem(f"{key or 'That'} is not one of the Play View's pools.")
+        if switch and not choice.switch:
+            raise BlockProblem(f"A switch cannot change {choice.label}.")
+        if not switch and not choice.always:
+            raise BlockProblem(f"Only a switch can change {choice.label}.")
+        return key
+
+    def switch_key(self) -> str:
+        """What the Play View calls its switch: its name, unless a book switch has it."""
+        from horatio.reference import catalogue
+
+        name = self.house.name
+        return f"{name} ({self.house.troupe_name})" if name in catalogue().switch_keys else name
+
+    def play(self, block: Mapping[str, Any]) -> "Played":
+        kind = block["kind"]
+        if kind == "pool_bonus":
+            pools: list[str] = block["pools"]
+            if not pools:
+                raise BlockProblem("Choose at least one pool.")
+            if len(set(pools)) < len(pools):
+                raise BlockProblem("A pool is listed twice.")
+            for pool in pools:
+                self.pool(pool, switch=False)
+            amount = self.amount(block, -5, 5, "The bonus")
+            if amount == 0:
+                raise BlockProblem("A bonus of 0 changes nothing.")
+            when: str = block["when"]
+            entries = [
+                {"pool": p, "amount": amount, **({"when": when} if when else {})} for p in pools
+            ]
+            words = either([pool_words(p) for p in pools], "and")
+            line = f"{signed(amount)} to {words}{f' {when}' if when else ''}."
+            return Played(line, pools=entries)
+        if kind == "switch":
+            changes: list[dict[str, Any]] = block["changes"]
+            if not changes:
+                raise BlockProblem("Choose at least one pool it changes.")
+            if len({c["pool"] for c in changes}) < len(changes):
+                raise BlockProblem("A pool is listed twice.")
+            key = self.switch_key()
+            entries: list[dict[str, Any]] = []
+            attributes: list[dict[str, Any]] = []
+            for change in changes:
+                pool = self.pool(change["pool"], switch=True)
+                amount = change["amount"]
+                if not isinstance(amount, int) or not -5 <= amount <= 5 or amount == 0:
+                    raise BlockProblem("Each change is \u22125 to +5, and not 0.")
+                if pool.startswith("attribute:"):
+                    attributes.append(
+                        {"attribute": pool.removeprefix("attribute:"), "amount": amount}
+                    )
+                else:
+                    entries.append({"pool": pool, "amount": amount, "when": key})
+            note: str = block["note"]
+            active: dict[str, Any] = {
+                "key": key,
+                "name": self.house.name,
+                "reference": self.page,
+                **({"attributes": attributes} if attributes else {}),
+                **({"notes": [note]} if note else {}),
+            }
+            words = either(
+                [f"{signed(c['amount'])} to {pool_words(c['pool'])}" for c in changes], "and"
+            )
+            return Played(
+                f"Switched on in play: {words}.", pools=entries, properties={"active": active}
+            )
+        if kind == "uses_per_game":
+            amount = self.amount(block, 1, 10, "Uses a game")
+            return Played(f"{plural(amount, 'use')} a game.", properties={"uses_per_game": amount})
+        if kind == "downtime_action":
+            action = self.kinds.get(block["action_kind"])
+            if action is None:
+                raise BlockProblem("Choose a kind of downtime action.")
+            amount = self.amount(block, -5, 5, "The change")
+            if amount == 0:
+                raise BlockProblem("Add or take away at least one.")
+            rule = AllowanceRuleData(
+                action_kind=action.key,
+                scheme="fixed",
+                amount=amount,
+                category=self.house.category,
+                trait=self.house.name,
+            )
+            # The rules files' own check, but for its trait, which is this one.
+            check_allowance_rule(
+                replace(rule, category=None, trait=None), self.rule_set, extra_kinds=self.kinds
+            )
+            more = "more" if amount > 0 else "fewer"
+            return Played(
+                f"{plural(amount, action.name).replace(' ', f' {more} ', 1)}.",
+                allowance=[rule],
+            )
+        amount = self.amount(block, -3, 3, "The change in feeding actions")
+        herd = block["herd_factor"]
+        if not isinstance(herd, int) or not 0 <= herd <= 3:
+            raise BlockProblem("Each dot of Herd counts 0 to 3 times.")
+        half = block["always_half"] is True
+        modifier = FeedingModifierData(
+            category=self.house.category,
+            trait=self.house.name,
+            amount=amount,
+            herd_factor=herd,
+            always_half=half,
+            page=self.page,
+        )
+        if not (amount or herd != 1 or half):
+            raise BlockProblem("Choose what it changes when feeding.")
+        parts: list[str] = []
+        if amount:
+            more = "more" if amount > 0 else "fewer"
+            parts.append(f"{plural(amount, 'feeding action').replace(' ', f' {more} ', 1)} needed")
+        if herd != 1:
+            parts.append(HERD_WORDS[herd])
+        if half:
+            parts.append("never more than half Blood")
+        return Played(f"Feeding: {either(parts, 'and')}.", feeding=[modifier])
+
     def check(self, key: str, block: Mapping[str, Any]) -> tuple[CheckData, str]:
         kind, test = block["kind"], block["test"]
         strength = block["strength"]
@@ -453,10 +776,15 @@ class Compiler:
         return check, f"{text}{when}."
 
 
-def compile_effects(house: HouseTraitData, rule_set: RuleSetData) -> Compiled:
-    """The grants and checks a house trait's blocks make, and what it does in words;
-    with the blocks that cannot be used and why."""
-    return Compiler(house, rule_set).compile(house.effects)
+def compile_effects(
+    house: HouseTraitData,
+    rule_set: RuleSetData,
+    kinds: Mapping[str, ActionKindData] | None = None,
+) -> Compiled:
+    """The grants and checks a house trait's blocks make, what it does at a game and
+    between games, and what it does in words; with the blocks that cannot be used and
+    why. `kinds` are the troupe's action kinds, its own among them."""
+    return Compiler(house, rule_set, kinds).compile(house.effects)
 
 
 def widened(check: CheckData, house: HouseTraitData, names: Sequence[str]) -> CheckData:
@@ -485,21 +813,41 @@ def widened(check: CheckData, house: HouseTraitData, names: Sequence[str]) -> Ch
 
 
 def merged(
-    rule_set: RuleSetData, house: Sequence[HouseTraitData]
+    rule_set: RuleSetData,
+    house: Sequence[HouseTraitData],
+    kinds: Mapping[str, ActionKindData] | None = None,
 ) -> tuple[RuleSetData, list[HouseTraitData]]:
-    """The rule set with the house traits' grants and checks added, and the house
-    traits with what each does. A block that cannot be used (a trait the book has
-    since lost) is left out; storytellers see why when they next change it."""
+    """The rule set with the house traits' grants, checks, play properties,
+    allowance rules and feeding modifiers added, as a book merit has them, and the
+    house traits with what each does. A block that cannot be used (a trait the book
+    has since lost) is left out; storytellers see why when they next change it."""
     grants = list(rule_set.grants)
     checks = list(rule_set.checks)
+    traits = dict(rule_set.traits)
+    allowance = list(rule_set.allowance_rules)
+    feeding = list(rule_set.feeding_modifiers)
     found: list[HouseTraitData] = []
     for trait in house:
-        compiled = compile_effects(trait, rule_set)
+        compiled = compile_effects(trait, rule_set, kinds)
         grants += compiled.grants
         if compiled.in_clan:
             checks = [widened(c, trait, compiled.in_clan) for c in checks]
         checks += compiled.checks
+        held = traits.get((trait.category, trait.name))
+        if compiled.properties and held is not None:
+            traits[(trait.category, trait.name)] = replace(
+                held, properties={**held.properties, **compiled.properties}
+            )
+        allowance += compiled.allowance_rules
+        feeding += compiled.feeding_modifiers
         found.append(replace(trait, summary=compiled.summary, in_clan=compiled.in_clan))
     if not any(t.effects for t in house):
         return rule_set, found
-    return replace(rule_set, grants=tuple(grants), checks=tuple(checks)), found
+    return replace(
+        rule_set,
+        grants=tuple(grants),
+        checks=tuple(checks),
+        traits=traits,
+        allowance_rules=tuple(allowance),
+        feeding_modifiers=tuple(feeding),
+    ), found

@@ -187,6 +187,10 @@ function HouseTraitEditor({
     queryKey: ["catalogue", draft.splat, troupeId],
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
   });
+  const choices = useQuery({
+    queryKey: ["house-trait-choices", troupeId, draft.splat],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-traits/choices", { params: { path: { troupe_id: troupeId }, query: { splat: draft.splat } } })),
+  });
   const preview = useHousePreview(troupeId, body, editing === "new" ? null : editing.id, sample);
   const problems = new Map((preview.data?.problems ?? []).map((p) => [p.index, p.message] as const));
 
@@ -289,11 +293,12 @@ function HouseTraitEditor({
         <EffectsEditor
           blocks={draft.effects}
           catalogue={catalogue.data}
+          choices={choices.data}
           self={{ category: draft.category, name: draft.name.trim() }}
           problems={problems}
           onChange={(effects) => set("effects", effects)}
         />
-        <ErrorText error={catalogue.error} />
+        <ErrorText error={catalogue.error ?? choices.error} />
         <HousePreview preview={preview.data} error={preview.error} characterId={sample} onCharacter={setSample} />
         <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={!draft.name.trim() || save.isPending || ask.isPending}>

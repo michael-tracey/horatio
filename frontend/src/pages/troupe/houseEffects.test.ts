@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CatalogueOut } from "../../api/types";
-import { clanFamilies, dotCategories, hasRating, newBlock, retype, traitNames, typeOf } from "./houseEffects";
+import type { CatalogueOut, EffectChoicesOut } from "../../api/types";
+import { clanFamilies, dotCategories, hasRating, newBlock, poolChoices, poolGroups, retype, signed, traitNames, typeOf } from "./houseEffects";
 
 const category = (key: string, over: Partial<CatalogueOut["categories"][number]> = {}) => ({
   key,
@@ -72,5 +72,30 @@ describe("house effect blocks", () => {
     expect(retype(free, "requires")).toMatchObject({ kind: "requires", names: [] });
     expect(typeOf(newBlock("price"))).toBe("price");
     expect(typeOf(newBlock("health"))).toBe("health");
+  });
+
+  it("starts each play and downtime block ready to use, and knows it again", () => {
+    expect(newBlock("pool")).toMatchObject({ kind: "pool_bonus", amount: 1, pools: [] });
+    expect(newBlock("switch")).toMatchObject({ kind: "switch", changes: [{ pool: "", amount: 1 }] });
+    expect(newBlock("uses")).toMatchObject({ kind: "uses_per_game", amount: 1 });
+    expect(newBlock("downtime")).toMatchObject({ kind: "downtime_action", action_kind: "general", amount: 1 });
+    expect(newBlock("feeding")).toMatchObject({ kind: "feeding", amount: -1, herd_factor: 1, always_half: false });
+    for (const type of ["pool", "switch", "uses", "downtime", "feeding"] as const) expect(typeOf(newBlock(type))).toBe(type);
+  });
+
+  it("offers a switch the pools it can change, and an always-on bonus the rest", () => {
+    const choices = {
+      pools: [
+        { key: "attack:Brawl", label: "Unarmed attack (Brawl)", group: "Combat", always: true, switch: true },
+        { key: "attribute:Mental", label: "Every pool made on Mental", group: "Attributes", always: false, switch: true },
+        { key: "skill:Computer", label: "Computer (a note: it has no pool)", group: "Skills", always: true, switch: false },
+      ],
+      action_kinds: [],
+    } as EffectChoicesOut;
+    expect(poolChoices(choices, "switch").map((p) => p.key)).toEqual(["attack:Brawl", "attribute:Mental"]);
+    expect(poolChoices(choices, "pool").map((p) => p.key)).toEqual(["attack:Brawl", "skill:Computer"]);
+    expect(poolGroups(choices.pools).map(([group]) => group)).toEqual(["Combat", "Attributes", "Skills"]);
+    expect(poolChoices(undefined, "pool")).toEqual([]);
+    expect([signed(2), signed(-2)]).toEqual(["+2", "−2"]);
   });
 });
