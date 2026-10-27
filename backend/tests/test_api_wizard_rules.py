@@ -99,6 +99,19 @@ def test_a_troupe_without_the_sabbat_does_not_see_rituals(troupe: Troupe) -> Non
     assert any(t["name"] == "Rituals" for t in plain["traits"])
 
 
+def test_a_troupe_sees_the_status_of_its_sects_and_the_general_status(troupe: Troupe) -> None:
+    def status() -> set[str]:
+        return {t["name"] for t in catalogue(troupe)["traits"] if t["category"] == "status_traits"}
+
+    limit_sects(troupe, ["Camarilla"])
+    shown = status()
+
+    assert {"Authority", "Warned", "Sovereign", "Acknowledged"} <= shown
+    assert not {"Glorious", "Mandate", "Chairman", "Initiated"} & shown
+    limit_sects(troupe, [])
+    assert {"Glorious", "Mandate", "Chairman"} <= status()
+
+
 def test_only_the_sabbat_take_rituals(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player, clan="Lasombra")
     choose(troupe.player, character_id, "sect", "Camarilla")

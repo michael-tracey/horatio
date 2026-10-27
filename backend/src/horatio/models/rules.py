@@ -21,7 +21,12 @@ class RuleSet(Record):
     starting_xp: Mapped[int] = mapped_column(default=0, server_default="0")
     # Unspent creation XP kept on a first home troupe's acceptance; None keeps all.
     banked_xp: Mapped[int | None]
+    # The names of the titles a troupe can give; what those that are more than a
+    # name are (sect, status) is in `status_rules`.
     titles: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Sect status beyond the status traits (horatio.rules.status): {caps, sects,
+    # social_ages, titles}, as written in the rule set's files.
+    status_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # What a sheet may hold (horatio.rules.checks), as written in the rule set file.
     checks: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
     # Traits that give other traits (horatio.rules.grants), as written in the files.

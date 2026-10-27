@@ -12,6 +12,7 @@ from horatio.models import RuleSet, Troupe
 from horatio.rules.grants import choices
 from horatio.rules.model import HouseTraitData
 from horatio.rules.splats import SPLATS, splat_order
+from horatio.rules.status import GENERAL
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(prefix="/rules", tags=["rules"])
@@ -138,10 +139,11 @@ def catalogue(
             source = (grant.source["category"], grant.source["name"])
             chooses[source] = sorted(set(chooses.get(source, [])) | set(options))
     sects = set(troupe.allowed_sects) if troupe is not None else set()
+    # General status is every sect's (horatio.rules.status).
     traits = [
         t
         for t in sorted(rules.rule_set.traits.values(), key=lambda t: (t.category, t.name))
-        if not (sects and "sect" in t.properties and t.properties["sect"] not in sects)
+        if not (sects and t.properties.get("sect", GENERAL) not in sects | {GENERAL})
     ]
     emptied = {c for c, _ in rules.rule_set.traits} - {t.category for t in traits}
     return CatalogueOut(

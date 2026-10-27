@@ -45,6 +45,7 @@ from horatio.rules.model import (
     TroupeRules,
     house_page,
 )
+from horatio.rules.status import status_rules_from_dict, status_rules_to_dict, titles_from
 
 RULES_CACHE = "horatio.troupe_rules"
 
@@ -86,7 +87,8 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         rule_set.splat, rule_set.name, rule_set.version = data.splat, data.name, data.version
     rule_set.starting_xp = data.starting_xp
     rule_set.banked_xp = data.banked_xp
-    rule_set.titles = list(data.titles)
+    rule_set.titles = [t.name for t in data.titles]
+    rule_set.status_rules = status_rules_to_dict(data.status_rules, data.titles)
     rule_set.checks = [check_to_dict(c) for c in data.checks]
     rule_set.grants = [grant_to_dict(g) for g in data.grants]
     rule_set.feeding_modifiers = [feeding_modifier_to_dict(m) for m in data.feeding_modifiers]
@@ -666,7 +668,8 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         name=rule_set.name,
         version=rule_set.version,
         starting_xp=rule_set.starting_xp,
-        titles=tuple(rule_set.titles),
+        titles=titles_from([*rule_set.titles, *rule_set.status_rules.get("titles", [])]),
+        status_rules=status_rules_from_dict(rule_set.status_rules),
         checks=tuple(check_from_dict(c) for c in rule_set.checks),
         grants=tuple(grant_from_dict(g) for g in rule_set.grants),
         feeding_modifiers=tuple(feeding_modifier_from_dict(m) for m in rule_set.feeding_modifiers),

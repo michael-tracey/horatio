@@ -214,7 +214,7 @@ page = "Vol. 2 Issue 1, p. 26"
 [[grants]]
 source = { category = "merits", name = "Architect of the Tower" }
 kind = "free_up_to"
-target = { category = "status_traits", name = "Architech" }
+target = { category = "status_traits", name = "Architect" }
 amount = 1
 page = "404"
 
@@ -244,7 +244,7 @@ page = "453"
 [[grants]]
 source = { category = "merits", name = "Keeper of a Sacred Text" }
 kind = "free_up_to"
-target = { category = "status_traits", name = "Annointed" }
+target = { category = "status_traits", name = "Anointed" }
 amount = 1
 page = "453"
 

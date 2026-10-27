@@ -33,8 +33,9 @@ version = 1
 starting_xp = 30
 banked_xp = 5
 
-# The vampire's clans (in its rule set file) and the rest of its catalogue.
-trait_files = ["bns_met_vampire.toml", "bns_met_vampire_traits.toml"]
+# The vampire's clans (in its rule set file) and the rest of its catalogue, sect
+# status included.
+trait_files = ["bns_met_vampire.toml", "bns_met_vampire_traits.toml", "bns_met_vampire_status.toml"]
 
 # The ghoul's own checks first, so a discipline a ghoul cannot take says why in a
 # ghoul's words before the vampire's.

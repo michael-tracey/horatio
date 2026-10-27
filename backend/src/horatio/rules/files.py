@@ -22,6 +22,7 @@ from horatio.rules.model import (
     TraitData,
 )
 from horatio.rules.splats import SPLATS
+from horatio.rules.status import check_status_rules, status_rules_from, titles_from
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -357,12 +358,20 @@ def load_rule_set(path: Path) -> RuleSetData:
         for c in raw["categories"]
     }
     raw_traits = list(raw.get("traits", []))
+    # Titles, as names or as tables saying their sect and status, and the rest of
+    # the status rules (horatio.rules.status), from the file and those it includes.
     titles = list(raw.get("titles", []))
+    sects = list(raw.get("sects", []))
+    social_ages = list(raw.get("social_ages", []))
+    status_caps = raw.get("status_caps")
     for trait_file in raw.get("trait_files", []):
         with (path.parent / trait_file).open("rb") as f:
             included = tomllib.load(f)
         raw_traits += included.get("traits", [])
         titles += included.get("titles", [])
+        sects += included.get("sects", [])
+        social_ages += included.get("social_ages", [])
+        status_caps = included.get("status_caps", status_caps)
     # A category can hold the traits of another, by name, even one left out: a ghoul's
     # domitor's in-clan disciplines are those a vampire's extra ones can be.
     for c in raw["categories"]:
@@ -428,6 +437,12 @@ def load_rule_set(path: Path) -> RuleSetData:
         check_named_actions(path.name, kind)
     allowance_rules = [allowance_rule_from_dict(r) for r in raw.get("allowance_rules", [])]
     feeding_modifiers = [feeding_modifier_from_dict(r) for r in raw.get("feeding_modifiers", [])]
+    try:
+        title_data = titles_from(titles)
+        status_rules = status_rules_from(status_caps, sects, social_ages)
+        check_status_rules(traits, status_rules, title_data)
+    except ValueError as error:
+        raise ValueError(f"{path.name}: {error}") from error
     rule_set = RuleSetData(
         key=raw["key"],
         splat=raw["splat"],
@@ -455,7 +470,8 @@ def load_rule_set(path: Path) -> RuleSetData:
             StartingTraitData(category=t["category"], name=t["name"], rating=t.get("rating"))
             for t in raw.get("starting_traits", [])
         ],
-        titles=tuple(sorted(set(titles))),
+        titles=title_data,
+        status_rules=status_rules,
         checks=checks,
         grants=grants,
         creation_only=tuple(creation_only),
@@ -506,13 +522,15 @@ def check_named_actions(source: str, kind: ActionKindData) -> None:
 
 
 def all_rule_set_files() -> Iterable[Path]:
-    """Rule set files; `*_traits.toml`, `*_checks.toml` and `*_grants.toml` are parts
-    they include, `*_powers.toml` is horatio.reference's quick notes, and
-    `*_npc_kinds.toml` is horatio.rules.npc_kinds' NPC kinds."""
-    return sorted(
-        p
-        for p in DATA_DIR.glob("*.toml")
-        if not p.name.endswith(
-            ("_traits.toml", "_checks.toml", "_grants.toml", "_powers.toml", "_npc_kinds.toml")
-        )
+    """Rule set files; `*_traits.toml`, `*_status.toml`, `*_checks.toml` and
+    `*_grants.toml` are parts they include, `*_powers.toml` is horatio.reference's
+    quick notes, and `*_npc_kinds.toml` is horatio.rules.npc_kinds' NPC kinds."""
+    parts = (
+        "_traits.toml",
+        "_status.toml",
+        "_checks.toml",
+        "_grants.toml",
+        "_powers.toml",
+        "_npc_kinds.toml",
     )
+    return sorted(p for p in DATA_DIR.glob("*.toml") if not p.name.endswith(parts))
