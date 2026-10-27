@@ -5166,6 +5166,23 @@
         "title": "EmailHelp",
         "type": "object"
       },
+      "Emailed": {
+        "properties": {
+          "email_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Error"
+          }
+        },
+        "title": "Emailed",
+        "type": "object"
+      },
       "EmbraceChoicesIn": {
         "properties": {
           "buy_back": {
@@ -9513,6 +9530,40 @@
         "title": "LearnIn",
         "type": "object"
       },
+      "LedTroupe": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "LedTroupe",
+        "type": "object"
+      },
+      "LiftIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "LiftIn",
+        "type": "object"
+      },
       "LimitOut": {
         "description": "Points held in a category with a limit: merits held, or flaws paying XP.",
         "properties": {
@@ -13090,6 +13141,11 @@
               }
             ],
             "title": "Reset Expires At"
+          },
+          "suspended": {
+            "default": false,
+            "title": "Suspended",
+            "type": "boolean"
           }
         },
         "required": [
@@ -15741,6 +15797,11 @@
             "title": "Player Name",
             "type": "string"
           },
+          "player_suspended": {
+            "default": false,
+            "title": "Player Suspended",
+            "type": "boolean"
+          },
           "retired": {
             "title": "Retired",
             "type": "boolean"
@@ -18248,6 +18309,118 @@
           "ending"
         ],
         "title": "SuppressionOut",
+        "type": "object"
+      },
+      "SuspendIn": {
+        "properties": {
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SuspendIn",
+        "type": "object"
+      },
+      "Suspended": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "leads": {
+            "items": {
+              "$ref": "#/components/schemas/LedTroupe"
+            },
+            "title": "Leads",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          },
+          "suspended_by": {
+            "title": "Suspended By",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name",
+          "handle",
+          "reason",
+          "since",
+          "ends_at",
+          "suspended_by",
+          "leads"
+        ],
+        "title": "Suspended",
+        "type": "object"
+      },
+      "Suspensions": {
+        "properties": {
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "suspended": {
+            "items": {
+              "$ref": "#/components/schemas/Suspended"
+            },
+            "title": "Suspended",
+            "type": "array"
+          }
+        },
+        "required": [
+          "suspended",
+          "log"
+        ],
+        "title": "Suspensions",
         "type": "object"
       },
       "SwapChangeIn": {
@@ -30314,6 +30487,114 @@
         ]
       }
     },
+    "/api/players/{user_id}/suspension": {
+      "post": {
+        "description": "Suspend someone: signed out everywhere at once, and kept out until the\ncustodian lifts it or `ends_at` passes. They are emailed, without the reason.",
+        "operationId": "suspend_api_players__user_id__suspension_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Emailed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Suspend",
+        "tags": [
+          "suspensions"
+        ]
+      }
+    },
+    "/api/players/{user_id}/suspension/lift": {
+      "post": {
+        "description": "Lift someone's suspension, so they can sign in again. They are emailed.",
+        "operationId": "lift_api_players__user_id__suspension_lift_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiftIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Emailed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lift",
+        "tags": [
+          "suspensions"
+        ]
+      }
+    },
     "/api/preferences": {
       "get": {
         "operationId": "read_preferences_api_preferences_get",
@@ -31352,6 +31633,50 @@
         "summary": "Log Entry",
         "tags": [
           "shared backgrounds"
+        ]
+      }
+    },
+    "/api/suspensions": {
+      "get": {
+        "description": "For the custodian: who is suspended now, and the log of suspensions.",
+        "operationId": "list_suspensions_api_suspensions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suspensions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Suspensions",
+        "tags": [
+          "suspensions"
         ]
       }
     },

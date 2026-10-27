@@ -3550,6 +3550,61 @@ test("the custodian filters People by the troupe a player's active character is 
   await expect(list.filter({ hasText: visitor.email })).toBeVisible();
 });
 
+test("the custodian suspends a lead storyteller, who can't sign in until it is lifted", async ({ browser }) => {
+  const custodian = await person(browser, "susp-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "susp-lead");
+  const troupeName = `Court of Exile ${run}`;
+  const c = custodian.page;
+  await c.reload();
+  const made = await c.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+
+  // The custodian suspends them from People, with a reason only they see.
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(lead.email);
+  const row = c.locator("main li").filter({ hasText: lead.email });
+  await row.getByRole("button", { name: "Suspend susp-lead" }).click();
+  await row.getByLabel("Reason").fill("Threatened another player at the last game");
+  await row.getByRole("button", { name: "Suspend susp-lead" }).last().click();
+  await expect(row.getByText("suspended", { exact: true })).toBeVisible();
+
+  // They are listed as suspended, with the troupe that wants a new lead, and it is logged.
+  // Other tests may suspend people at the same time, so look only at this one.
+  const suspended = c.getByRole("list", { name: "Suspended people" }).getByRole("listitem").filter({ hasText: `@${lead.handle}` });
+  await expect(suspended.getByText("“Threatened another player at the last game”")).toBeVisible();
+  await expect(suspended.getByRole("link", { name: troupeName })).toBeVisible();
+  await expect(c.getByText("susp-custodian suspended susp-lead (Threatened another player at the last game).").first()).toBeVisible();
+  await c.screenshot(shots("suspended"));
+
+  // The troupe list marks the troupe.
+  await c.getByRole("link", { name: "Troupes", exact: true }).click();
+  await expect(c.locator("main li").filter({ hasText: troupeName }).getByText("lead suspended")).toBeVisible();
+
+  // The lead is signed out at once, and told why they can't sign in, but not the reason.
+  const l = lead.page;
+  await l.goto("/characters");
+  await expect(l.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await l.getByLabel("Email or handle").fill(lead.email);
+  await l.getByLabel("Password").fill(PASSWORD);
+  await l.getByRole("button", { name: "Sign in" }).click();
+  await expect(l.getByText("Your account is suspended. To ask about it, contact the custodian.")).toBeVisible();
+  await l.screenshot(shots("suspended-sign-in"));
+
+  // The custodian lifts it, and they can sign in again.
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(lead.email);
+  await row.getByRole("button", { name: "Lift the suspension of susp-lead" }).click();
+  await row.getByLabel("Why lift it").fill("Apologised and agreed to the code of conduct");
+  await row.getByRole("button", { name: "Lift suspension", exact: true }).click();
+  await expect(row.getByText("suspended", { exact: true })).toHaveCount(0);
+  await expect(suspended).toHaveCount(0);
+  await l.getByRole("button", { name: "Sign in" }).click();
+  await expect(l.getByRole("heading", { name: "Your characters" })).toBeVisible();
+});
+
 test("the custodian moves a character to another player, not while its game is under way, and back again", async ({ browser }) => {
   const custodian = await person(browser, "mvc-custodian");
   makeCustodian(custodian.email);

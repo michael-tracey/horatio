@@ -19,6 +19,10 @@ _Avoid_: Bio page, user page
 The unique name a person is found and shown by, such as @night_owl, in place of their email. They choose it, can sign in with it, and can change it once in 30 days; an old handle stays theirs for 90.
 _Avoid_: Username, login
 
+**Suspended Account**:
+A person the custodian has shut out for a while, with a reason only the custodian sees: signed out, unable to sign in and sent no notifications until the custodian lifts it or its end date passes. Their characters stay in their troupes but take no new actions, and nothing they did is hidden.
+_Avoid_: Ban, block, disabled account
+
 **Troupe**:
 The top-level group: it runs games, has its own staff and house rules, and characters join it. No group sits above a troupe.
 _Avoid_: Game, chapter, chronicle, organisation
