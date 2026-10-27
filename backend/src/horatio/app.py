@@ -37,6 +37,7 @@ from horatio.api import (
     npcs,
     pictures,
     play,
+    play_others,
     players,
     power_choices,
     preferences,
@@ -147,6 +148,7 @@ for module in (
     unsubscribe,
     system,
     play,
+    play_others,
     scenes,
     waiting,
 ):

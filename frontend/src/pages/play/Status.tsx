@@ -7,6 +7,7 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { endingText, suppressedText } from "../character/status";
 import { AddStatus, useStatus } from "../character/StatusCard";
+import { Others } from "./Others";
 import type { Shown } from "./tracker";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
@@ -45,7 +46,8 @@ function gives(status: { name: string; condition: string }[]): string {
  * into this game, each with what it does held and spent, and a tap to spend it, with
  * Undo; the choices for the game (one source of abiding status, a title's status for
  * the night, a ruler away); its titles in the game's troupe; and adding status at the
- * game, where the troupe lets players keep their own.
+ * game, where the troupe lets players keep their own; and the others at the game,
+ * whose status a member of the same sect knows.
  */
 export function StatusTab({
   view,
@@ -115,6 +117,7 @@ export function StatusTab({
       })}
       {status.carried.length === 0 && !status.choosing && <p className="text-sm text-mist">No status to carry into this game.</p>}
       <Titles status={status} />
+      <Others view={view} undo={undo} online={online} />
     </div>
   );
 }

@@ -1284,6 +1284,87 @@ export interface paths {
         patch: operations["change_modifier_api_characters__character_id__play_modifiers__modifier_id__patch"];
         trace?: never;
     };
+    "/api/characters/{character_id}/play/others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Others
+         * @description The others at the character's game: its troupe's PCs and titled NPCs.
+         */
+        get: operations["list_others_api_characters__character_id__play_others_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/others/{other_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Other
+         * @description Another character's status, as the character knows it.
+         */
+        get: operations["read_other_api_characters__character_id__play_others__other_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/others/{other_id}/learn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Learn Status
+         * @description Spend a Leadership use for the game to learn a fleeting status's patron, where
+         *     it was earned and the story (MET: VTM p. 310).
+         */
+        post: operations["learn_status_api_characters__character_id__play_others__other_id__learn_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/others/{other_id}/status/{held_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Given Status
+         * @description Remove early a negative status the person's own character gave (p. 313).
+         */
+        post: operations["remove_given_status_api_characters__character_id__play_others__other_id__status__held_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/play/reference": {
         parameters: {
             query?: never;
@@ -8023,6 +8104,16 @@ export interface components {
             /** Parent Rating */
             parent_rating: number;
         };
+        /** LearnIn */
+        LearnIn: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+        };
         /**
          * LimitOut
          * @description Points held in a category with a limit: merits held, or flaws paying XP.
@@ -8672,6 +8763,29 @@ export interface components {
             names: string[];
         };
         /**
+         * OtherOut
+         * @description Another character at the game. Of another sect, only its name and sect.
+         */
+        OtherOut: {
+            /** Accepted */
+            accepted: string | null;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Same Sect */
+            same_sect: boolean;
+            /** Sect */
+            sect: string | null;
+            /** Titles */
+            titles: string[];
+        };
+        /**
          * OtherPower
          * @description A technique, elder or luminary power: named, rated as held.
          */
@@ -8682,6 +8796,12 @@ export interface components {
             name: string;
             /** Note */
             note: string | null;
+        };
+        /** OtherStatusOut */
+        OtherStatusOut: {
+            other: components["schemas"]["OtherOut"];
+            /** Status */
+            status: components["schemas"]["SeenOut"][] | null;
         };
         /** OwedOut */
         OwedOut: {
@@ -10416,6 +10536,39 @@ export interface components {
              * Format: date-time
              */
             starts_at: string;
+        };
+        /**
+         * SeenOut
+         * @description One status the other carries into its game. Its details (patron, where, the
+         *     story) are there only when `known`: a negative status, or a fleeting one the
+         *     viewer has learned about with Leadership.
+         */
+        SeenOut: {
+            ending: components["schemas"]["EndingOut"] | null;
+            /** Held Id */
+            held_id: string | null;
+            /** Key */
+            key: string;
+            /** Known */
+            known: boolean;
+            /** Learnable */
+            learnable: boolean;
+            /** Learned By */
+            learned_by: string | null;
+            /** Name */
+            name: string;
+            /** Patron */
+            patron: string | null;
+            /** Place */
+            place: string | null;
+            /** Removable */
+            removable: boolean;
+            /** Spent */
+            spent: boolean;
+            /** Story */
+            story: string | null;
+            /** Type */
+            type: string;
         };
         /**
          * SetChangeIn
@@ -14884,6 +15037,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModifierOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_others_api_characters__character_id__play_others_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_other_api_characters__character_id__play_others__other_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                other_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    learn_status_api_characters__character_id__play_others__other_id__learn_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                other_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LearnIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_given_status_api_characters__character_id__play_others__other_id__status__held_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                other_id: string;
+                held_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherStatusOut"];
                 };
             };
             /** @description Validation Error */

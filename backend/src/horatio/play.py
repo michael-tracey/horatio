@@ -44,7 +44,9 @@ domitor's ghoul has no Derangement trait from it.
 
 Spending sect status is a tap too (horatio.play_status): "status:<name>" spends an
 abiding or innate status for the game, as a use is spent, and "held:<id>" spends a
-fleeting one for good, taking it off the character; its Undo gives it back.
+fleeting one for good, taking it off the character; its Undo gives it back. So is
+learning about another character's status: a Leadership use, which keeps what it
+learned (horatio.play_others).
 """
 
 import uuid
@@ -777,6 +779,13 @@ def describe(
     if event.kind == "undo":
         return f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"
     name = limits.name(event.tracker)
+    if event.learned is not None:
+        about = f"{event.learned['name']}'s {event.learned['status']}"
+        if event.before is None or event.after is None:
+            return f"Learned about {about}"
+        if event.after < event.before:
+            return f"Learned about {about}: {name} {event.before} → {event.after}"
+        return f"Learned nothing about {about}: no {name} left"
     if play_status.is_status(event.tracker):
         if event.held_status is not None:
             name = event.held_status["name"]
@@ -889,6 +898,8 @@ class Tap:
     influence: play_influence.Details | None = None
     # Adding a temporary derangement: its name and where it came from.
     derangement: tuple[str, str] | None = None
+    # A Leadership use spent learning about another's status (horatio.play_others).
+    learned: dict[str, Any] | None = None
 
 
 def name_temporary(db: Session, character: Character, actor: User, tap: Tap) -> None:
@@ -981,6 +992,7 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
             damage=tap.damage if tap.tracker == "health" and tap.kind == "change" else None,
             note=tap.note.strip(),
             undoes_id=target.id if target is not None else None,
+            learned=tap.learned if tap.kind == "change" else None,
         )
         db.add(event)
         db.flush()
