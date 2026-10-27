@@ -43,6 +43,9 @@ check_files = ["bns_met_ghoul_checks.toml", "bns_met_vampire_checks.toml"]
 
 grant_files = ["bns_met_vampire_grants.toml"]
 
+# A ghoul's equipment is a vampire's (MET: VTM pp. 515-524).
+equipment_file = "bns_met_vampire_equipment.toml"
+
 # Downtime action kinds and allowances are the vampire's.
 borrow = { action_kinds = "bns_met_vampire.toml", allowance_rules = "bns_met_vampire.toml" }
 

@@ -5942,6 +5942,497 @@
         "title": "EndingOut",
         "type": "object"
       },
+      "EquipmentCheckIn": {
+        "properties": {
+          "crafted": {
+            "default": false,
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "grade": {
+            "title": "Grade",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQuality"
+            },
+            "title": "Qualities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "grade"
+        ],
+        "title": "EquipmentCheckIn",
+        "type": "object"
+      },
+      "EquipmentCheckOut": {
+        "properties": {
+          "aggravated_against": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aggravated Against",
+            "type": "array"
+          },
+          "damage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Damage"
+          },
+          "hands": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hands"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range"
+          },
+          "shots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shots"
+          }
+        },
+        "required": [
+          "hands",
+          "damage",
+          "shots",
+          "range",
+          "aggravated_against",
+          "problems"
+        ],
+        "title": "EquipmentCheckOut",
+        "type": "object"
+      },
+      "EquipmentFactsOut": {
+        "properties": {
+          "aggravated_against": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aggravated Against",
+            "type": "array"
+          },
+          "damage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Damage"
+          },
+          "hands": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hands"
+          },
+          "range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range"
+          },
+          "shots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shots"
+          }
+        },
+        "required": [
+          "hands",
+          "damage",
+          "shots",
+          "range",
+          "aggravated_against"
+        ],
+        "title": "EquipmentFactsOut",
+        "type": "object"
+      },
+      "EquipmentGradeOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "max_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Qualities"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "description",
+          "max_qualities",
+          "page"
+        ],
+        "title": "EquipmentGradeOut",
+        "type": "object"
+      },
+      "EquipmentItemQuality": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "EquipmentItemQuality",
+        "type": "object"
+      },
+      "EquipmentKindOut": {
+        "properties": {
+          "damage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Damage"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "hands": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hands"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range"
+          },
+          "shots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shots"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "description",
+          "hands",
+          "damage",
+          "shots",
+          "range",
+          "note",
+          "page"
+        ],
+        "title": "EquipmentKindOut",
+        "type": "object"
+      },
+      "EquipmentOut": {
+        "properties": {
+          "grades": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentGradeOut"
+            },
+            "title": "Grades",
+            "type": "array"
+          },
+          "kinds": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentKindOut"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentTemplateOut"
+            },
+            "title": "Templates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kinds",
+          "grades",
+          "qualities",
+          "templates"
+        ],
+        "title": "EquipmentOut",
+        "type": "object"
+      },
+      "EquipmentQualityOut": {
+        "properties": {
+          "ammo": {
+            "title": "Ammo",
+            "type": "boolean"
+          },
+          "detail_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail Prompt"
+          },
+          "effect": {
+            "title": "Effect",
+            "type": "string"
+          },
+          "excludes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Excludes",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_detail": {
+            "title": "Needs Detail",
+            "type": "boolean"
+          },
+          "needs_one_hand": {
+            "title": "Needs One Hand",
+            "type": "boolean"
+          },
+          "no_slot_when_crafted": {
+            "title": "No Slot When Crafted",
+            "type": "boolean"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "repeatable": {
+            "title": "Repeatable",
+            "type": "boolean"
+          },
+          "two_handed": {
+            "title": "Two Handed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "effect",
+          "page",
+          "two_handed",
+          "needs_one_hand",
+          "no_slot_when_crafted",
+          "repeatable",
+          "needs_detail",
+          "detail_prompt",
+          "ammo",
+          "excludes"
+        ],
+        "title": "EquipmentQualityOut",
+        "type": "object"
+      },
+      "EquipmentTemplateOut": {
+        "properties": {
+          "facts": {
+            "$ref": "#/components/schemas/EquipmentFactsOut"
+          },
+          "grade": {
+            "title": "Grade",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQuality"
+            },
+            "title": "Qualities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "grade",
+          "qualities",
+          "page",
+          "facts"
+        ],
+        "title": "EquipmentTemplateOut",
+        "type": "object"
+      },
       "ExceptionAskOut": {
         "description": "A trait asked for by exception: the rules it breaks, why, and whether free.",
         "properties": {
@@ -30299,6 +30790,102 @@
         "summary": "Catalogue",
         "tags": [
           "rules"
+        ]
+      }
+    },
+    "/api/rules/{splat}/equipment": {
+      "get": {
+        "description": "The kinds of item, the grades, every quality of each kind and the book's\nsample items, each with its facts.",
+        "operationId": "equipment_api_rules__splat__equipment_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "splat",
+            "required": true,
+            "schema": {
+              "title": "Splat",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Equipment",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/rules/{splat}/equipment/check": {
+      "post": {
+        "description": "An item's facts and every rule it breaks, without making it: what an editor\nshows as the item is built.",
+        "operationId": "check_api_rules__splat__equipment_check_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "splat",
+            "required": true,
+            "schema": {
+              "title": "Splat",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check",
+        "tags": [
+          "equipment"
         ]
       }
     },
