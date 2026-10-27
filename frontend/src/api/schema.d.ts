@@ -3550,6 +3550,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/house-traits/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * House Trait Choices
+         * @description The pools a house merit's play blocks can change, and the troupe's kinds of
+         *     downtime action, its own among them.
+         */
+        get: operations["house_trait_choices_api_troupes__troupe_id__house_traits_choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/house-traits/preview": {
         parameters: {
             query?: never;
@@ -4409,6 +4430,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionKindChoiceOut */
+        ActionKindChoiceOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+        };
         /** ActionKindOut */
         ActionKindOut: {
             /** Key */
@@ -6041,10 +6069,20 @@ export interface components {
         };
         /**
          * EffectBlock
-         * @description One thing a house merit or flaw does on the sheet (horatio.rules.house_effects).
-         *     Each kind reads only its own fields.
+         * @description One thing a house merit or flaw does on the sheet, at a game or between games
+         *     (horatio.rules.house_effects). Each kind reads only its own fields.
          */
         EffectBlock: {
+            /**
+             * Action Kind
+             * @default
+             */
+            action_kind: string;
+            /**
+             * Always Half
+             * @default false
+             */
+            always_half: boolean;
             /**
              * Amount
              * @default 0
@@ -6055,6 +6093,8 @@ export interface components {
              * @default
              */
             category: string;
+            /** Changes */
+            changes?: components["schemas"]["PoolChange"][];
             /**
              * Count
              * @default 1
@@ -6066,10 +6106,15 @@ export interface components {
              */
             detail: string;
             /**
+             * Herd Factor
+             * @default 1
+             */
+            herd_factor: number;
+            /**
              * Kind
              * @enum {string}
              */
-            kind: "free_up_to" | "free_choices" | "add" | "raise_max" | "cost_percent" | "price_in_clan" | "price_out_of_clan" | "extra_in_clan" | "requires" | "forbids";
+            kind: "free_up_to" | "free_choices" | "add" | "raise_max" | "cost_percent" | "price_in_clan" | "price_out_of_clan" | "extra_in_clan" | "requires" | "forbids" | "pool_bonus" | "switch" | "uses_per_game" | "downtime_action" | "feeding";
             /**
              * Name
              * @default
@@ -6077,6 +6122,13 @@ export interface components {
             name: string;
             /** Names */
             names?: string[];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Pools */
+            pools?: string[];
             /** Rating */
             rating?: number | null;
             /**
@@ -6091,6 +6143,21 @@ export interface components {
              * @enum {string}
              */
             test: "clan" | "sect" | "trait";
+            /**
+             * When
+             * @default
+             */
+            when: string;
+        };
+        /**
+         * EffectChoicesOut
+         * @description What the play and downtime blocks can name.
+         */
+        EffectChoicesOut: {
+            /** Action Kinds */
+            action_kinds: components["schemas"]["ActionKindChoiceOut"][];
+            /** Pools */
+            pools: components["schemas"]["PoolChoiceOut"][];
         };
         /** EffectRef */
         EffectRef: {
@@ -8753,6 +8820,33 @@ export interface components {
             member_since: string;
             /** Reset Expires At */
             reset_expires_at: string | null;
+        };
+        /**
+         * PoolChange
+         * @description What a switch changes while it is on: a pool, or "attribute:Mental" for every
+         *     pool made on the attribute, by `amount`.
+         */
+        PoolChange: {
+            /**
+             * Amount
+             * @default 0
+             */
+            amount: number;
+            /** Pool */
+            pool: string;
+        };
+        /** PoolChoiceOut */
+        PoolChoiceOut: {
+            /** Always */
+            always: boolean;
+            /** Group */
+            group: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Switch */
+            switch: boolean;
         };
         /** PoolOut */
         PoolOut: {
@@ -18796,6 +18890,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HouseTraitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    house_trait_choices_api_troupes__troupe_id__house_traits_choices_get: {
+        parameters: {
+            query?: {
+                splat?: string;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EffectChoicesOut"];
                 };
             };
             /** @description Validation Error */

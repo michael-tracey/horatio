@@ -2,7 +2,8 @@
 would…". Its blocks (horatio.rules.house_effects) are run against a sample sheet,
 a new character's or one of the troupe's own, by the troupe's rules with the merit
 as staff are making it and without it; what differs is what it does there: free
-dots, maximums, prices, in-clan disciplines and checks. Nothing is saved."""
+dots, maximums, prices, in-clan disciplines and checks; the Play View's pools, its
+switch and its uses a game; and its downtime actions and feeding. Nothing is saved."""
 
 import uuid
 from collections.abc import Sequence
@@ -11,12 +12,14 @@ from dataclasses import dataclass, replace
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from horatio import house_traits, sheets
+from horatio import house_traits, reference, sheets
 from horatio.models import Character, HouseTrait, Troupe
+from horatio.rules.allowance import allowance
 from horatio.rules.checks import Context, violations
+from horatio.rules.feeding import HERD, basis
 from horatio.rules.grants import Effects, GrantData, effects, raised_by
-from horatio.rules.house_effects import EXTRA_IN_CLAN, either
-from horatio.rules.model import FreeChoice, SheetTrait, TroupeRules
+from horatio.rules.house_effects import EXTRA_IN_CLAN, Compiled, either, plural
+from horatio.rules.model import FreeChoice, RuleSetData, SheetTrait, TroupeRules
 from horatio.rules.pricing import PricingError, fixed_rating, purchase_cost
 from horatio.rules.splats import SPLATS
 from horatio.sheets import conflict
@@ -143,6 +146,10 @@ def preview(
         + in_clan(trial, sheet, compiled.in_clan)
     )
     with_it = [t for _, t in now.values()]
+    held_before = [t for _, t in was.values()]
+    changes += at_a_game(trial, held_before, with_it, compiled) + between_games(
+        trial, held_before, with_it, compiled
+    )
     native = frozenset(SPLATS[spec.splat].in_clan(trial.with_it, with_it))
     context = Context(
         accepted=character is not None and character.home_troupe_id is not None,
@@ -313,6 +320,116 @@ def in_clan(
     held = f"In-clan now: {', '.join(now)}" if now else "No in-clan disciplines yet"
     extra = f" (with {', '.join(chosen)} already added)" if chosen else ""
     return [f"{held}{extra}; one more could be chosen from {either(list(names))}."]
+
+
+def pools_of(
+    rule_set: RuleSetData, sheet: Sequence[SheetTrait]
+) -> tuple[dict[str, reference.TestPool], reference.Worked]:
+    """The Play View's pools for the sheet, by key, and what changes them."""
+    made = reference.Sheet.of(sheet, rule_set)
+    worked = reference.work_out(made, reference.technique_bases(rule_set))
+    found = reference.pools(made, worked.effects, 1, worked.hurts, worked.switches)
+    return {p.key: p for p in found}, worked
+
+
+def switched_total(pool: reference.TestPool, key: str) -> int:
+    """The pool's total with one switch on, as the Play View works it out
+    (frontend/src/pages/play/pools.ts)."""
+    now = [s for s in pool.switched if s.switch == key]
+    total = pool.total + sum(s.value for s in now if not s.attribute)
+    for part in pool.parts:
+        changes = [s for s in now if s.attribute == part.label]
+        if not changes:
+            continue
+        value = part.value + sum(c.value for c in changes)
+        for c in changes:
+            if c.most is not None:
+                value = min(value, c.most)
+        total += max(0, value) - part.value
+    return total
+
+
+def at_a_game(
+    trial: house_traits.Trial,
+    sheet: Sequence[SheetTrait],
+    with_it: Sequence[SheetTrait],
+    compiled: Compiled,
+) -> list[str]:
+    """What it changes on the Play View: its pools, its switch, its uses a game."""
+    properties = compiled.properties
+    if not properties:
+        return []
+    before, was = pools_of(trial.without.rule_set, sheet)
+    after, worked = pools_of(trial.with_it.rule_set, with_it)
+    found: list[str] = []
+    for key, pool in after.items():
+        old = before.get(key)
+        if old is None:
+            continue
+        also = " (and Willpower)" if pool.adds_willpower else ""
+        if pool.total != old.total:
+            found.append(f"{pool.name}: {old.total} → {pool.total}{also}.")
+        had = {v.when for v in old.variants}
+        for variant in pool.variants:
+            if variant.when not in had:
+                when = variant.when[:1].lower() + variant.when[1:]
+                found.append(f"{pool.name}: {variant.total} {when}{also}.")
+    notes = set(reference.other_notes(was.effects))
+    found += [f"{n}." for n in reference.other_notes(worked.effects) if n not in notes]
+    active = properties.get("active")
+    switch = next((s for s in worked.switches if active and s.key == active["key"]), None)
+    if switch is not None:
+        found.append(f"A switch on the Play View, {switch.name}: {', '.join(switch.changes)}.")
+        on = [
+            f"{p.name} {p.total} → {now}"
+            for p in after.values()
+            if (now := switched_total(p, switch.key)) != p.total
+        ]
+        if on:
+            found.append(f"With it on: {', '.join(on)}.")
+    uses = properties.get("uses_per_game")
+    if uses:
+        found.append(f"{plural(uses, 'use')} a game, under Uses this game on the Play View.")
+    return found
+
+
+def between_games(
+    trial: house_traits.Trial,
+    sheet: Sequence[SheetTrait],
+    with_it: Sequence[SheetTrait],
+    compiled: Compiled,
+) -> list[str]:
+    """What it changes in a downtime: actions of each kind, and feeding."""
+    found: list[str] = []
+    if compiled.allowance_rules:
+        was, _ = allowance(trial.without, sheet)
+        now, _ = allowance(trial.with_it, with_it)
+        kinds = trial.with_it.action_kinds()
+        for kind in dict.fromkeys(r.action_kind for r in compiled.allowance_rules):
+            name = kinds[kind].name
+            found.append(f"{name}s each downtime: {was.get(kind, 0)} → {now.get(kind, 0)}.")
+    if compiled.feeding_modifiers:
+        before, after = basis(trial.without, sheet), basis(trial.with_it, with_it)
+        if after["clan"] is None and not after["modifiers"]:
+            found.append("Nothing when feeding: this sheet does not feed between games.")
+            return found
+        modifier = compiled.feeding_modifiers[0]
+        if modifier.amount:
+            more = "more" if modifier.amount > 0 else "fewer"
+            actions = plural(modifier.amount, "feeding action").replace(" ", f" {more} ", 1)
+            found.append(f"Feeding: {actions} needed each downtime.")
+        herd = max((t.rating or 0 for t in with_it if (t.category, t.name) == HERD), default=0)
+        factor = 1
+        for m in before["modifiers"]:
+            factor *= m["herd_factor"]
+        if modifier.herd_factor != 1:
+            stands, otherwise = herd * factor * modifier.herd_factor, herd * factor
+            found.append(
+                f"Herd {herd} would stand in for {stands} feeding actions (otherwise {otherwise})."
+            )
+        if modifier.always_half:
+            found.append("No feeding would bring them above half Blood.")
+    return found
 
 
 def sample_character(db: Session, character_id: uuid.UUID | None) -> Character | None:

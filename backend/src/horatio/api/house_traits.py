@@ -15,15 +15,25 @@ from horatio.api.sheets import SheetOut, sheet_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, CharacterTrait, HouseTrait, Troupe
 from horatio.permissions import TroupeAction, require_troupe_action, visible_character
-from horatio.rules.house_effects import DEFAULTS, normalised
+from horatio.rules.house_effects import DEFAULTS, normalised, pool_choices
 from horatio.rules.model import house_label, house_page
+from horatio.rules.splats import SPLATS
+from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(tags=["house traits"])
 
 
+class PoolChange(BaseModel):
+    """What a switch changes while it is on: a pool, or "attribute:Mental" for every
+    pool made on the attribute, by `amount`."""
+
+    pool: str = Field(max_length=100)
+    amount: int = 0
+
+
 class EffectBlock(BaseModel):
-    """One thing a house merit or flaw does on the sheet (horatio.rules.house_effects).
-    Each kind reads only its own fields."""
+    """One thing a house merit or flaw does on the sheet, at a game or between games
+    (horatio.rules.house_effects). Each kind reads only its own fields."""
 
     # free_up_to: the first `amount` dots of `names` (one, or the player's choice of
     # one) are free; free_choices: the player picks `count` of `names`, each with
@@ -31,7 +41,11 @@ class EffectBlock(BaseModel):
     # levels); raise_max: `names` (none: the whole category) go `amount` higher;
     # cost_percent, price_in_clan, price_out_of_clan: what `names` cost; extra_in_clan:
     # one more in-clan discipline from `names`; requires, forbids: a clan, a sect or a
-    # trait at a rating (`test`), with a check's `strength`.
+    # trait at a rating (`test`), with a check's `strength`. At a game: pool_bonus,
+    # `amount` on `pools` (with `when`, only then); switch, a switch on the Play View
+    # with its `changes` and a `note`; uses_per_game, `amount` uses. Between games:
+    # downtime_action, `amount` more actions of `action_kind`; feeding, `amount` more
+    # feeding actions needed, `herd_factor` and `always_half`.
     kind: Literal[
         "free_up_to",
         "free_choices",
@@ -43,6 +57,11 @@ class EffectBlock(BaseModel):
         "extra_in_clan",
         "requires",
         "forbids",
+        "pool_bonus",
+        "switch",
+        "uses_per_game",
+        "downtime_action",
+        "feeding",
     ]
     category: str = Field(default="", max_length=100)
     names: list[str] = Field(default_factory=list[str], max_length=60)
@@ -57,6 +76,17 @@ class EffectBlock(BaseModel):
     # As a check's: "refuse", "complete" (by the end of creation), "review" (or staff
     # approve it), "note".
     strength: Literal["refuse", "complete", "review", "note"] = "refuse"
+    # Pool keys, as the Play View has them (`choices` lists them).
+    pools: list[str] = Field(default_factory=list[str], max_length=30)
+    # Only some of the time: "against Telepathy".
+    when: str = Field(default="", max_length=200)
+    changes: list[PoolChange] = Field(default_factory=list[PoolChange], max_length=10)
+    # What else a switch does, in words.
+    note: str = Field(default="", max_length=300)
+    action_kind: str = Field(default="", max_length=100)
+    # What each dot of Herd counts for when feeding: 0 for nothing, 2 for twice.
+    herd_factor: int = 1
+    always_half: bool = False
 
 
 def block_out(stored: dict[str, Any]) -> EffectBlock:
@@ -266,6 +296,49 @@ def preview_house_trait(
         checks=[CheckPreviewOut(text=c.text, met=c.met, strength=c.strength) for c in found.checks],
         problems=[BlockProblemOut(index=i, message=m) for i, m in found.problems],
         samples=[SampleOut(character_id=c.id, name=c.name, kind=c.kind) for c in found.samples],
+    )
+
+
+class PoolChoiceOut(BaseModel):
+    key: str
+    label: str
+    # Combat, Defence, Attributes, Disciplines, Skills, Other.
+    group: str
+    # Whether an always-on bonus can change it, and a switch.
+    always: bool
+    switch: bool
+
+
+class ActionKindChoiceOut(BaseModel):
+    key: str
+    name: str
+
+
+class EffectChoicesOut(BaseModel):
+    """What the play and downtime blocks can name."""
+
+    pools: list[PoolChoiceOut]
+    action_kinds: list[ActionKindChoiceOut]
+
+
+@router.get("/troupes/{troupe_id}/house-traits/choices")
+def house_trait_choices(
+    troupe_id: uuid.UUID, db: DbSession, user: CurrentUser, splat: str = "vampire"
+) -> EffectChoicesOut:
+    """The pools a house merit's play blocks can change, and the troupe's kinds of
+    downtime action, its own among them."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    if splat not in SPLATS:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such splat.")
+    rules = read_troupe_rules(db, splat, troupe.id)
+    return EffectChoicesOut(
+        pools=[
+            PoolChoiceOut(key=c.key, label=c.label, group=c.group, always=c.always, switch=c.switch)
+            for c in pool_choices(rules.rule_set)
+        ],
+        action_kinds=[
+            ActionKindChoiceOut(key=k.key, name=k.name) for k in rules.action_kinds().values()
+        ],
     )
 
 

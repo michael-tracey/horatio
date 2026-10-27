@@ -1,6 +1,24 @@
 {
   "components": {
     "schemas": {
+      "ActionKindChoiceOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "ActionKindChoiceOut",
+        "type": "object"
+      },
       "ActionKindOut": {
         "properties": {
           "key": {
@@ -4527,8 +4545,19 @@
         "type": "object"
       },
       "EffectBlock": {
-        "description": "One thing a house merit or flaw does on the sheet (horatio.rules.house_effects).\nEach kind reads only its own fields.",
+        "description": "One thing a house merit or flaw does on the sheet, at a game or between games\n(horatio.rules.house_effects). Each kind reads only its own fields.",
         "properties": {
+          "action_kind": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "always_half": {
+            "default": false,
+            "title": "Always Half",
+            "type": "boolean"
+          },
           "amount": {
             "default": 0,
             "title": "Amount",
@@ -4539,6 +4568,14 @@
             "maxLength": 100,
             "title": "Category",
             "type": "string"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/PoolChange"
+            },
+            "maxItems": 10,
+            "title": "Changes",
+            "type": "array"
           },
           "count": {
             "default": 1,
@@ -4551,6 +4588,11 @@
             "title": "Detail",
             "type": "string"
           },
+          "herd_factor": {
+            "default": 1,
+            "title": "Herd Factor",
+            "type": "integer"
+          },
           "kind": {
             "enum": [
               "free_up_to",
@@ -4562,7 +4604,12 @@
               "price_out_of_clan",
               "extra_in_clan",
               "requires",
-              "forbids"
+              "forbids",
+              "pool_bonus",
+              "switch",
+              "uses_per_game",
+              "downtime_action",
+              "feeding"
             ],
             "title": "Kind",
             "type": "string"
@@ -4579,6 +4626,20 @@
             },
             "maxItems": 60,
             "title": "Names",
+            "type": "array"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "pools": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Pools",
             "type": "array"
           },
           "rating": {
@@ -4612,12 +4673,43 @@
             ],
             "title": "Test",
             "type": "string"
+          },
+          "when": {
+            "default": "",
+            "maxLength": 200,
+            "title": "When",
+            "type": "string"
           }
         },
         "required": [
           "kind"
         ],
         "title": "EffectBlock",
+        "type": "object"
+      },
+      "EffectChoicesOut": {
+        "description": "What the play and downtime blocks can name.",
+        "properties": {
+          "action_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/ActionKindChoiceOut"
+            },
+            "title": "Action Kinds",
+            "type": "array"
+          },
+          "pools": {
+            "items": {
+              "$ref": "#/components/schemas/PoolChoiceOut"
+            },
+            "title": "Pools",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pools",
+          "action_kinds"
+        ],
+        "title": "EffectChoicesOut",
         "type": "object"
       },
       "EffectRef": {
@@ -11495,6 +11587,59 @@
           "reset_expires_at"
         ],
         "title": "PlayerSummary",
+        "type": "object"
+      },
+      "PoolChange": {
+        "description": "What a switch changes while it is on: a pool, or \"attribute:Mental\" for every\npool made on the attribute, by `amount`.",
+        "properties": {
+          "amount": {
+            "default": 0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "pool": {
+            "maxLength": 100,
+            "title": "Pool",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pool"
+        ],
+        "title": "PoolChange",
+        "type": "object"
+      },
+      "PoolChoiceOut": {
+        "properties": {
+          "always": {
+            "title": "Always",
+            "type": "boolean"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "switch": {
+            "title": "Switch",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "group",
+          "always",
+          "switch"
+        ],
+        "title": "PoolChoiceOut",
         "type": "object"
       },
       "PoolOut": {
@@ -29801,6 +29946,60 @@
           }
         },
         "summary": "Add House Trait",
+        "tags": [
+          "house traits"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-traits/choices": {
+      "get": {
+        "description": "The pools a house merit's play blocks can change, and the troupe's kinds of\ndowntime action, its own among them.",
+        "operationId": "house_trait_choices_api_troupes__troupe_id__house_traits_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "splat",
+            "required": false,
+            "schema": {
+              "default": "vampire",
+              "title": "Splat",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EffectChoicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "House Trait Choices",
         "tags": [
           "house traits"
         ]

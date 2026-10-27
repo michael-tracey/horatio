@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
-import type { CatalogueOut, EffectBlock, HousePreviewOut, HouseTraitIn } from "../../api/types";
+import type { CatalogueOut, EffectBlock, EffectChoicesOut, HousePreviewOut, HouseTraitIn, PoolChange, PoolChoiceOut } from "../../api/types";
 import { Button, ErrorText, Input, Select } from "../../components/ui";
 import {
   BLOCK_TYPES,
@@ -15,8 +15,11 @@ import {
   dotCategories,
   hasRating,
   newBlock,
+  poolChoices,
+  poolGroups,
   retype,
   sects,
+  signed,
   traitNames,
   typeOf,
   type BlockType,
@@ -80,6 +83,101 @@ function TraitList({
   );
 }
 
+/** The pools to choose from, in their groups. */
+function PoolOptions({ pools }: { pools: PoolChoiceOut[] }) {
+  return (
+    <>
+      {poolGroups(pools).map(([group, list]) => (
+        <optgroup key={group} label={group}>
+          {list.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </>
+  );
+}
+
+/** Pools chosen from the Play View's: each with × to take it off, and a picker to add another. */
+function PoolList({ name, options, pools, onChange }: { name: string; options: PoolChoiceOut[]; pools: string[]; onChange: (pools: string[]) => void }) {
+  const left = options.filter((o) => !pools.includes(o.key));
+  const label = (key: string) => options.find((o) => o.key === key)?.label ?? key;
+  return (
+    <div className="flex flex-col gap-1 text-sm sm:col-span-2">
+      <span className="text-mist">Which pools</span>
+      {pools.length > 0 && (
+        <ul className="flex flex-wrap gap-1" aria-label={`${name}: pools`}>
+          {pools.map((key) => (
+            <li key={key} className="inline-flex items-center gap-1 rounded border border-ash px-2 py-0.5 text-parchment">
+              {label(key)}
+              <button type="button" className="text-mist hover:text-parchment" aria-label={`${name}: take ${label(key)} off`} onClick={() => onChange(pools.filter((x) => x !== key))}>
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {left.length > 0 && (
+        <Select aria-label={`${name}: add a pool`} value="" onChange={(e) => e.target.value && onChange([...pools, e.target.value])} className="sm:w-72">
+          <option value="">Add…</option>
+          <PoolOptions pools={left} />
+        </Select>
+      )}
+    </div>
+  );
+}
+
+const AMOUNTS = [5, 4, 3, 2, 1, -1, -2, -3, -4, -5];
+
+/** What a switch changes while it is on: a pool or an attribute's pools, each by an amount. */
+function ChangesList({ name, options, changes, onChange }: { name: string; options: PoolChoiceOut[]; changes: PoolChange[]; onChange: (changes: PoolChange[]) => void }) {
+  const set = (i: number, change: Partial<PoolChange>) => onChange(changes.map((c, j) => (j === i ? { ...c, ...change } : c)));
+  return (
+    <div className="flex flex-col gap-2 text-sm sm:col-span-2">
+      <span className="text-mist">While it is on</span>
+      <ul className="flex flex-col gap-2">
+        {changes.map((c, i) => (
+          <li key={i} className="flex flex-wrap items-center gap-2">
+            <Select aria-label={`${name}: change ${i + 1} amount`} value={c.amount} onChange={(e) => set(i, { amount: Number(e.target.value) })} className="w-20">
+              {AMOUNTS.map((n) => (
+                <option key={n} value={n}>
+                  {signed(n)}
+                </option>
+              ))}
+            </Select>
+            <span className="text-mist">on</span>
+            <Select aria-label={`${name}: change ${i + 1} pool`} value={c.pool} onChange={(e) => set(i, { pool: e.target.value })} className="sm:w-72">
+              <option value="">Choose…</option>
+              <PoolOptions pools={options} />
+            </Select>
+            {changes.length > 1 && (
+              <button type="button" className="text-mist hover:text-parchment" aria-label={`${name}: take change ${i + 1} off`} onClick={() => onChange(changes.filter((_, j) => j !== i))}>
+                ×
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {changes.length < 10 && (
+        <div>
+          <Button type="button" variant="ghost" className="min-h-8 px-2" aria-label={`${name}: add a change`} onClick={() => onChange([...changes, { pool: "", amount: 1 }])}>
+            Add a change
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const HERD = [
+  { factor: 1, label: "Once, as usual" },
+  { factor: 2, label: "Twice" },
+  { factor: 3, label: "Three times" },
+  { factor: 0, label: "For nothing" },
+];
+
 /**
  * One effect block as a form: what it does, then the traits, amounts and lists that
  * say how. The server checks it and says, under it, why it cannot be used.
@@ -88,6 +186,7 @@ function BlockForm({
   index,
   block,
   catalogue,
+  choices,
   self,
   problem,
   onChange,
@@ -96,6 +195,7 @@ function BlockForm({
   index: number;
   block: EffectBlock;
   catalogue: CatalogueOut;
+  choices: EffectChoicesOut | undefined;
   self: { category: string; name: string };
   problem?: string;
   onChange: (block: EffectBlock) => void;
@@ -203,6 +303,95 @@ function BlockForm({
         )}
       </>
     );
+  } else if (type === "pool") {
+    body = (
+      <>
+        <PoolList name={name} options={poolChoices(choices, type)} pools={block.pools ?? []} onChange={(pools) => set({ pools })} />
+        <Labelled label="Bonus">
+          <Select aria-label={`${name}: bonus`} value={block.amount} onChange={(e) => set({ amount: Number(e.target.value) })}>
+            {AMOUNTS.map((n) => (
+              <option key={n} value={n}>
+                {signed(n)}
+              </option>
+            ))}
+          </Select>
+        </Labelled>
+        <Labelled label="Only when (optional)">
+          <Input aria-label={`${name}: only when`} placeholder="against Telepathy" maxLength={200} value={block.when} onChange={(e) => set({ when: e.target.value })} />
+        </Labelled>
+      </>
+    );
+  } else if (type === "switch") {
+    body = (
+      <>
+        <ChangesList name={name} options={poolChoices(choices, type)} changes={block.changes ?? []} onChange={(changes) => set({ changes })} />
+        <Labelled label="What else it does (optional)">
+          <Input aria-label={`${name}: what else it does`} placeholder="Lasts one scene." maxLength={300} value={block.note} onChange={(e) => set({ note: e.target.value })} />
+        </Labelled>
+      </>
+    );
+  } else if (type === "uses") {
+    body = (
+      <Labelled label="Uses a game">
+        <Select aria-label={`${name}: uses a game`} value={block.amount} onChange={(e) => set({ amount: Number(e.target.value) })}>
+          {numbers(1, 10).map((n) => (
+            <option key={n} value={n}>
+              {n === 1 ? "1 use" : `${n} uses`}
+            </option>
+          ))}
+        </Select>
+      </Labelled>
+    );
+  } else if (type === "downtime") {
+    body = (
+      <>
+        <Labelled label="Kind of action">
+          <Select aria-label={`${name}: kind of action`} value={block.action_kind} onChange={(e) => set({ action_kind: e.target.value })}>
+            {(choices?.action_kinds ?? []).map((k) => (
+              <option key={k.key} value={k.key}>
+                {k.name}
+              </option>
+            ))}
+          </Select>
+        </Labelled>
+        <Labelled label="Each downtime">
+          <Select aria-label={`${name}: how many`} value={block.amount} onChange={(e) => set({ amount: Number(e.target.value) })}>
+            {AMOUNTS.map((n) => (
+              <option key={n} value={n}>
+                {n > 0 ? `${n} more` : `${-n} fewer`}
+              </option>
+            ))}
+          </Select>
+        </Labelled>
+      </>
+    );
+  } else if (type === "feeding") {
+    body = (
+      <>
+        <Labelled label="Feeding actions needed">
+          <Select aria-label={`${name}: feeding actions needed`} value={block.amount} onChange={(e) => set({ amount: Number(e.target.value) })}>
+            {[-3, -2, -1, 0, 1, 2, 3].map((n) => (
+              <option key={n} value={n}>
+                {n === 0 ? "As usual" : n > 0 ? `${n} more` : `${-n} fewer`}
+              </option>
+            ))}
+          </Select>
+        </Labelled>
+        <Labelled label="Each dot of Herd counts">
+          <Select aria-label={`${name}: each dot of Herd counts`} value={block.herd_factor} onChange={(e) => set({ herd_factor: Number(e.target.value) })}>
+            {HERD.map((h) => (
+              <option key={h.factor} value={h.factor}>
+                {h.label}
+              </option>
+            ))}
+          </Select>
+        </Labelled>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+          <input type="checkbox" checked={block.always_half} onChange={(e) => set({ always_half: e.target.checked })} />
+          Never more than half Blood after feeding
+        </label>
+      </>
+    );
   } else if (type === "in_clan") {
     body = (
       <TraitList name={name} label="The disciplines it can add (one of them)" options={traitNames(catalogue, EXTRA_IN_CLAN)} names={names} onChange={(n) => set({ names: n })} />
@@ -308,19 +497,21 @@ function BlockForm({
 export function EffectsEditor({
   blocks,
   catalogue,
+  choices,
   self,
   problems,
   onChange,
 }: {
   blocks: EffectBlock[];
   catalogue: CatalogueOut | undefined;
+  choices: EffectChoicesOut | undefined;
   self: { category: string; name: string };
   problems: Map<number, string>;
   onChange: (blocks: EffectBlock[]) => void;
 }) {
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1 text-sm text-mist">What it does on the sheet</legend>
+      <legend className="mb-1 text-sm text-mist">What it does, on the sheet, at a game and between games</legend>
       {blocks.length === 0 && <p className="text-xs text-mist">Nothing yet: it does what its description says, for you to rule on at the table.</p>}
       {catalogue && (
         <ul className="flex flex-col gap-2">
@@ -330,6 +521,7 @@ export function EffectsEditor({
               index={i}
               block={b}
               catalogue={catalogue}
+              choices={choices}
               self={self}
               problem={problems.get(i)}
               onChange={(next) => onChange(blocks.map((x, j) => (j === i ? next : x)))}
