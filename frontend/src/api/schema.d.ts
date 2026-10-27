@@ -3968,6 +3968,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/characters/{character_id}/represented-by": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Represented By
+         * @description Say who speaks at court for a character of a clan without a seat. Its player
+         *     sets it, and staff who give titles can change it.
+         */
+        put: operations["set_represented_by_api_troupes__troupe_id__characters__character_id__represented_by_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/characters/{character_id}/titles": {
         parameters: {
             query?: never;
@@ -5036,6 +5057,31 @@ export interface paths {
          * @description Take a character off the scene. It stays in the troupe, as it was.
          */
         delete: operations["unpin_api_troupes__troupe_id__scenes__scene_id__characters__character_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/seats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Seats
+         * @description Which clans have a seat at the troupe's court, and which it could seat.
+         */
+        get: operations["read_seats_api_troupes__troupe_id__seats_get"];
+        /**
+         * Set Seats
+         * @description Choose the clans with a seat at court, or go back to those whose Primogen is
+         *     held here. Characters of the others are listed under Other on the Who's Who.
+         */
+        put: operations["set_seats_api_troupes__troupe_id__seats_put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -11724,6 +11770,11 @@ export interface components {
             /** Note */
             note: string | null;
         };
+        /** RepresentedBy */
+        RepresentedBy: {
+            /** Represented By */
+            represented_by: string | null;
+        };
         /**
          * RepricedOut
          * @description An earlier purchase a Generation change reprices.
@@ -12021,8 +12072,12 @@ export interface components {
             player_suspended: boolean;
             /** Pronouns */
             pronouns: string | null;
+            /** Represented By */
+            represented_by: string | null;
             /** Retired */
             retired: boolean;
+            /** Seated */
+            seated: boolean;
             /** Sect */
             sect: string | null;
             /** Social Age */
@@ -12149,6 +12204,22 @@ export interface components {
              * Format: date-time
              */
             starts_at: string;
+        };
+        /** Seats */
+        Seats: {
+            /** Clans */
+            clans: string[] | null;
+        };
+        /** SeatsOut */
+        SeatsOut: {
+            /** Chosen */
+            chosen: boolean;
+            /** Clans */
+            clans: string[];
+            /** Primogen */
+            primogen: string[];
+            /** Seated */
+            seated: string[] | null;
         };
         /**
          * SeenOut
@@ -13983,6 +14054,8 @@ export interface components {
         };
         /** WhosWhoOut */
         WhosWhoOut: {
+            /** Can Represent */
+            can_represent: string[];
             /** Clans */
             clans: components["schemas"]["ClanSection"][];
             /** Court */
@@ -22107,6 +22180,42 @@ export interface operations {
             };
         };
     };
+    set_represented_by_api_troupes__troupe_id__characters__character_id__represented_by_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepresentedBy"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepresentedBy"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     set_titles_api_troupes__troupe_id__characters__character_id__titles_put: {
         parameters: {
             query?: never;
@@ -24511,6 +24620,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_seats_api_troupes__troupe_id__seats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeatsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_seats_api_troupes__troupe_id__seats_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Seats"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeatsOut"];
                 };
             };
             /** @description Validation Error */

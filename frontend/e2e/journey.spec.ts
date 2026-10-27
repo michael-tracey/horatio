@@ -1634,6 +1634,80 @@ test("at a game, a Camarilla character with Leadership 2 learns about two of a r
   await s.screenshot(shots("play-others-sabbat"));
 });
 
+test("represented by: a Ravnos's player says the Brujah speak for them at court, and seating the Ravnos gives them their own section", async ({ browser }) => {
+  const custodian = await person(browser, "repby-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "repby-lead");
+  const bruno = await person(browser, "repby-bruno");
+  const ravi = await person(browser, "repby-ravi");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Seats ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // A Camarilla character of `clan`, built through the API and accepted home.
+  const build = async (page: Page, name: string, clan: string, inClan: [string, number][]): Promise<string> => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: clan, rating: null });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: inClan,
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+  // The Brujah hold a Primogen, so they have a seat; the Ravnos don't.
+  const roth = await build(bruno.page, "Rothgar", "Brujah", [["Celerity", 2], ["Potence", 1], ["Presence", 1]]);
+  await build(ravi.page, "Ravindra", "Ravnos", [["Chimerstry", 2], ["Animalism", 1], ["Fortitude", 1]]);
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${roth}/titles`, { titles: ["Primogen"] });
+
+  // Ravindra's player says the Brujah speak for them.
+  const p = ravi.page;
+  await p.goto(`/troupes/${troupeId}/whos-who`);
+  const section = (name: string) => p.getByRole("region", { name, exact: true });
+  const card = section("Other").getByRole("article", { name: "Ravindra" });
+  await expect(card.getByText("Represented by: nobody yet")).toBeVisible();
+  await card.getByRole("button", { name: "Change who represents Ravindra" }).click();
+  await card.getByLabel("Who represents Ravindra").selectOption("Brujah");
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(card.getByText("Represented by: Brujah")).toBeVisible();
+  await p.screenshot(shots("represented-by"));
+  // Only their own: Rothgar's Brujah have a seat, and nothing to choose.
+  await expect(section("Brujah").getByRole("button", { name: /Change who represents/ })).toHaveCount(0);
+
+  // Staff see it on the Characters tab.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/characters`);
+  await expect(l.getByRole("listitem").filter({ hasText: "Ravindra" }).getByText("Represented by: Brujah")).toBeVisible();
+
+  // Seating the Ravnos moves Ravindra into their own section.
+  await l.goto(`/troupes/${troupeId}/titles`);
+  const seats = l.getByRole("group", { name: "Clans with a seat at court" });
+  await expect(seats.getByLabel("Brujah", { exact: true })).toBeChecked();
+  await expect(seats.getByLabel("Ravnos", { exact: true })).not.toBeChecked();
+  // It saves, then shows ticked.
+  await seats.getByLabel("Ravnos", { exact: true }).click();
+  await expect(l.getByText("You chose these clans.")).toBeVisible();
+  await expect(seats.getByLabel("Ravnos", { exact: true })).toBeChecked();
+  await p.reload();
+  await expect(section("Ravnos").getByRole("article", { name: "Ravindra" })).toBeVisible();
+  await expect(section("Other")).toHaveCount(0);
+});
+
 test("the Who's Who: a player sees the court in rank order, their clan and Other, finds a character by its player, and prints it; others are refused", async ({ browser }) => {
   const custodian = await person(browser, "whoswho-cust");
   makeCustodian(custodian.email);

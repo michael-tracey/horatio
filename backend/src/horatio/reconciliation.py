@@ -200,7 +200,9 @@ def end_membership(
     troupe if this was it, and its requests waiting there are withdrawn. Its sheet,
     XP and history stay as they are. The caller logs why."""
     membership.left_at = datetime.now(UTC)
+    # Its titles and who spoke for it at court were this troupe's.
     titles.drop_all(db, troupe.id, character.id)
+    membership.represented_by = None
     if character.home_troupe_id == troupe.id:
         character.home_troupe_id = None
         sync_fixed_ratings(db, character)
