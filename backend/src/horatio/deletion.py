@@ -4,8 +4,9 @@ Only a character in no troupe can be deleted, so its player must first leave
 every troupe, and each of those troupes' logs records that it left. Deletion
 then records one last entry in every troupe the character was ever in, and
 removes the character and everything that is only about it: its sheet, XP,
-approvals, and its downtime submissions and their responses. The troupe logs
-keep their entries, with the character's name.
+approvals, diableries, its downtime submissions and their responses, and its games
+on the Play View with their taps, counters, modifiers and derangements. The troupe
+logs keep their entries, with the character's name.
 """
 
 from sqlalchemy import delete, select, update
@@ -23,9 +24,16 @@ from horatio.models import (
     CharacterTrait,
     CycleParticipant,
     Delivery,
+    Diablerie,
     DisciplinePurchase,
     Embrace,
+    FeedingAdjustment,
     HomeTroupeChange,
+    PlayCounter,
+    PlayDerangement,
+    PlayEvent,
+    PlayGame,
+    PoolModifier,
     ReconciliationItem,
     Response,
     Retainer,
@@ -75,6 +83,7 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(
         delete(AllowanceAdjustment).where(AllowanceAdjustment.participant_id.in_(participants))
     )
+    db.execute(delete(FeedingAdjustment).where(FeedingAdjustment.participant_id.in_(participants)))
     db.execute(delete(CycleParticipant).where(CycleParticipant.character_id == cid))
     db.execute(delete(XpEntry).where(XpEntry.character_id == cid))
     db.execute(
@@ -83,6 +92,7 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(delete(TraitException).where(TraitException.character_id == cid))
     db.execute(delete(HomeTroupeChange).where(HomeTroupeChange.approval_id.in_(approvals)))
     db.execute(delete(DisciplinePurchase).where(DisciplinePurchase.approval_id.in_(approvals)))
+    db.execute(delete(Diablerie).where(Diablerie.character_id == cid))
     db.execute(delete(Approval).where(Approval.character_id == cid))
     db.execute(
         update(TroupeMembership)
@@ -103,6 +113,13 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     # Its own Embrace goes with it; a childe it sired keeps its sire by name.
     db.execute(delete(Embrace).where(Embrace.character_id == cid))
     db.execute(update(Embrace).where(Embrace.sire_id == cid).values(sire_id=None))
+    # Its games on the Play View, with their taps, and what the player kept there.
+    games = select(PlayGame.id).where(PlayGame.character_id == cid)
+    db.execute(delete(PlayEvent).where(PlayEvent.game_id.in_(games)))
+    db.execute(delete(PlayGame).where(PlayGame.character_id == cid))
+    db.execute(delete(PlayCounter).where(PlayCounter.character_id == cid))
+    db.execute(delete(PlayDerangement).where(PlayDerangement.character_id == cid))
+    db.execute(delete(PoolModifier).where(PoolModifier.character_id == cid))
     db.execute(delete(CharacterTrait).where(CharacterTrait.character_id == cid))
     db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))
