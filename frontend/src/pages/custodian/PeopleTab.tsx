@@ -80,7 +80,7 @@ function Person({ person }: { person: PlayerSummary }) {
             @{person.handle} · {person.email} · since {memberSince(person.member_since, dates)}
           </span>
         </Link>
-        <span className="flex items-center gap-2">
+        <span className="flex flex-wrap items-center gap-2">
           {person.suspended && <Badge tone="blood">suspended</Badge>}
           {person.reset_expires_at && <Badge tone="gold">reset link out</Badge>}
           {person.email_change_to && <Badge tone="gold">new email waiting</Badge>}
