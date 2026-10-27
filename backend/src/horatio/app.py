@@ -60,6 +60,7 @@ from horatio.api import (
     troupes,
     unsubscribe,
     waiting,
+    whos_who,
     xp_awards,
     xp_range,
 )
@@ -153,6 +154,7 @@ for module in (
     play_others,
     scenes,
     waiting,
+    whos_who,
 ):
     api.include_router(module.router)
 

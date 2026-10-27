@@ -45,6 +45,9 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
     setName("");
     await queryClient.invalidateQueries({ queryKey: ["npcs", troupeId] });
   });
+  const listOnWhosWho = useAction(({ id, listed }: { id: string; listed: boolean }) =>
+    unwrap(api.PUT("/api/troupes/{troupe_id}/npcs/{character_id}/whos-who", { params: { path: { troupe_id: troupeId, character_id: id } }, body: { listed } })),
+  );
   const ready = !!name && !(kind?.custom && !custom.name) && !create.isPending;
   const all = npcs.data ?? [];
   const shown = filterNpcs(all, filter);
@@ -112,6 +115,16 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
                   <Badge>{FORM_NAMES[(n.npc_form ?? "sheeted") as NpcForm]}</Badge>
                   {n.stock_rating != null && <Badge>Rating {n.stock_rating}</Badge>}
                 </span>
+                <label className="flex items-center gap-1.5 text-xs text-mist" title="Titled NPCs are on the Who's Who anyway.">
+                  <input
+                    type="checkbox"
+                    aria-label={`List ${n.name} on the Who's Who`}
+                    checked={n.on_whos_who}
+                    disabled={listOnWhosWho.isPending}
+                    onChange={(e) => listOnWhosWho.mutate({ id: n.id, listed: e.target.checked })}
+                  />
+                  Who’s Who
+                </label>
                 <Link
                   to={`/play/characters/${n.id}`}
                   aria-label={`Play ${n.name}`}
@@ -126,6 +139,8 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
           <Empty>{all.length ? "No NPCs of that kind." : "No NPCs yet."}</Empty>
         )}
         <ErrorText error={npcs.error} />
+        <ErrorText error={listOnWhosWho.error} />
+        {all.length > 0 && <p className="mt-3 text-xs text-mist">NPCs with a title here are on the Who’s Who. Tick Who’s Who to list one without.</p>}
       </Card>
       <Card title="New NPC">
         <form

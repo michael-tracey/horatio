@@ -3688,6 +3688,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/court-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Court Order
+         * @description Put the troupe's own titles in order at court, after the rule sets' titles.
+         */
+        put: operations["set_court_order_api_troupes__troupe_id__court_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/creation": {
         parameters: {
             query?: never;
@@ -4157,6 +4177,26 @@ export interface paths {
         put?: never;
         /** Create Npc */
         post: operations["create_npc_api_troupes__troupe_id__npcs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/npcs/{character_id}/whos-who": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * List Npc
+         * @description List an NPC on the troupe's Who's Who though it holds no title, or stop.
+         */
+        put: operations["list_npc_api_troupes__troupe_id__npcs__character_id__whos_who_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4654,6 +4694,27 @@ export interface paths {
          * @description What is waiting on the viewer in this troupe, for its staff only.
          */
         get: operations["read_waiting_api_troupes__troupe_id__waiting_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/whos-who": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Whos Who
+         * @description The troupe's active characters: its court, by clan, and Other. Only its staff
+         *     and the players of active characters in it see it.
+         */
+        get: operations["read_whos_who_api_troupes__troupe_id__whos_who_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5706,6 +5767,13 @@ export interface components {
             /** Dark Pack */
             dark_pack: boolean;
         };
+        /** ClanSection */
+        ClanSection: {
+            /** Character Ids */
+            character_ids: string[];
+            /** Clan */
+            clan: string | null;
+        };
         /** Cleared */
         Cleared: {
             /** Removed */
@@ -5892,6 +5960,11 @@ export interface components {
             name: string;
             /** Uses */
             uses: number;
+        };
+        /** CourtOrder */
+        CourtOrder: {
+            /** Titles */
+            titles: string[];
         };
         /** CreationOut */
         CreationOut: {
@@ -8315,6 +8388,11 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** Listed */
+        Listed: {
+            /** Listed */
+            listed: boolean;
+        };
         /** LiveReset */
         LiveReset: {
             /** Asked Themselves */
@@ -8883,6 +8961,8 @@ export interface components {
             npc_kind: string | null;
             /** Npc Kind Name */
             npc_kind_name: string | null;
+            /** On Whos Who */
+            on_whos_who: boolean;
             /** Owner Troupe Id */
             owner_troupe_id: string | null;
             /** Picture */
@@ -8982,6 +9062,8 @@ export interface components {
             other: components["schemas"]["OtherOut"];
             /** Status */
             status: components["schemas"]["SeenOut"][] | null;
+            /** Troupe Id */
+            troupe_id: string | null;
         };
         /** OwedOut */
         OwedOut: {
@@ -9827,6 +9909,11 @@ export interface components {
             text_size: "normal" | "large";
             /** Time Zone */
             time_zone?: string | null;
+            /**
+             * Whos Who Handle
+             * @default false
+             */
+            whos_who_handle: boolean;
         };
         /** PreviewIn */
         PreviewIn: {
@@ -11893,6 +11980,8 @@ export interface components {
         };
         /** TitlesOut */
         TitlesOut: {
+            /** Court Order */
+            court_order: string[];
             /** Sects */
             sects: string[];
             /** Status Choices */
@@ -11992,6 +12081,8 @@ export interface components {
             starting_xp?: number | null;
             /** Status By */
             status_by?: ("players" | "staff") | null;
+            /** Whos Who Negative */
+            whos_who_negative?: boolean | null;
         };
         /** TroupeChoice */
         TroupeChoice: {
@@ -12063,6 +12154,10 @@ export interface components {
             starting_xp: number;
             /** Status By */
             status_by: string;
+            /** Whos Who */
+            whos_who: boolean;
+            /** Whos Who Negative */
+            whos_who_negative: boolean;
             /** Xp Ceiling */
             xp_ceiling: number;
             /** Xp Floor */
@@ -12362,6 +12457,74 @@ export interface components {
             status: string[];
             /** Title */
             title: string;
+        };
+        /** WhosWhoEntry */
+        WhosWhoEntry: {
+            /** Bans */
+            bans: string[];
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Kind */
+            kind: string;
+            /** Left Reason */
+            left_reason: string | null;
+            /** Name */
+            name: string;
+            /** Negative */
+            negative: string[];
+            /** Picture */
+            picture: string | null;
+            /** Player Id */
+            player_id: string | null;
+            /** Player Name */
+            player_name: string | null;
+            /** Player Pronouns */
+            player_pronouns: string | null;
+            /** Pronouns */
+            pronouns: string | null;
+            /** Represented By */
+            represented_by: string | null;
+            /** Sect */
+            sect: string | null;
+            /** Social Age */
+            social_age: string;
+            /** Titles */
+            titles: string[];
+            /** Visible */
+            visible: string[];
+            /** Visiting */
+            visiting: boolean;
+            /** Visiting From */
+            visiting_from: string | null;
+        };
+        /** WhosWhoOut */
+        WhosWhoOut: {
+            /** Clans */
+            clans: components["schemas"]["ClanSection"][];
+            /** Court */
+            court: string[];
+            /** Departed */
+            departed: string[];
+            /** Entries */
+            entries: components["schemas"]["WhosWhoEntry"][];
+            /** Other */
+            other: string[];
+            /** Seated */
+            seated: string[] | null;
+            /** Shows Negative */
+            shows_negative: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /**
          * WindowOut
@@ -20062,6 +20225,41 @@ export interface operations {
             };
         };
     };
+    set_court_order_api_troupes__troupe_id__court_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourtOrder"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_starting_api_troupes__troupe_id__creation_get: {
         parameters: {
             query?: {
@@ -21060,6 +21258,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_npc_api_troupes__troupe_id__npcs__character_id__whos_who_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Listed"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Listed"];
                 };
             };
             /** @description Validation Error */
@@ -22240,6 +22474,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WaitingLine"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_whos_who_api_troupes__troupe_id__whos_who_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhosWhoOut"];
                 };
             };
             /** @description Validation Error */
