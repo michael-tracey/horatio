@@ -126,11 +126,11 @@ def test_statuses(troupe: Troupe, court: dict[str, Any]) -> None:
 
 def test_titles_players_experience_and_counts(troupe: Troupe, court: dict[str, Any]) -> None:
     troupe.assistant.client.put(
-        f"/troupes/{troupe.id}/characters/{court['agnes']}/titles", json={"titles": ["Harpy"]}
+        f"/troupes/{troupe.id}/characters/{court['agnes']}/titles", json={"titles": ["Soldier"]}
     )
     buy(court["other"], court["mara"], "merits", "Acute Sense", 1)
 
-    assert names(troupe, {"what": "title", "op": "has", "value": "Harpy"}) == ["Agnes"]
+    assert names(troupe, {"what": "title", "op": "has", "value": "Soldier"}) == ["Agnes"]
     assert names(troupe, {"what": "title", "op": "has"}) == ["Agnes"]
     assert names(troupe, {"what": "title", "op": "lacks"}) == ["Mara", "Nell"]
     other = court["other"].id

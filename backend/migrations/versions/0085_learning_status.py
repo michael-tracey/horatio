@@ -2,7 +2,7 @@
 whose status it learned about, and which
 
 Revision ID: 0085
-Revises: 0083
+Revises: 0084
 Create Date: 2026-10-27 18:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0085"
-down_revision: str | None = "0083"
+down_revision: str | None = "0084"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

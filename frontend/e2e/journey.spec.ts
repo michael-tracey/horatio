@@ -1181,6 +1181,9 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
 
   await p.getByLabel("Clan", { exact: true }).selectOption("Ventrue");
   await expect(p.getByLabel("Clan", { exact: true })).toHaveValue("Ventrue");
+  // A Prince must be Camarilla: a title of a sect goes only to its characters.
+  await p.getByLabel("Sect", { exact: true }).selectOption("Camarilla");
+  await expect(p.getByLabel("Sect", { exact: true })).toHaveValue("Camarilla");
   await p.getByRole("button", { name: "Social 7", exact: true }).click(); // attributes: 3 a dot
   await expect(p.getByText("21 XP")).toBeVisible();
   // Each attribute's focus is chosen beside it, one of three; choosing again swaps it.
@@ -1338,6 +1341,68 @@ test("a player keeps their own sect status, naming its patron from the home trou
   await expect(card.getByRole("button", { name: "Add status" })).toHaveCount(0);
   const refused = await p.request.post(`/api/characters/${id}/status`, { headers, data: { name: "Loyal", patron_text: "The Prince" } });
   expect(refused.status()).toBe(409);
+});
+
+test("a troupe chooses whether its badges print titles and status: by default all of it, or negative status only", async ({ browser }) => {
+  const custodian = await person(browser, "badgeset-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "badgeset-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Ribbons ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const l = lead.page;
+  const send = async (url: string, data: object, method: "POST" | "PUT" = "POST") => {
+    const response = await l.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+
+  // Two Camarilla NPCs: Prince Ottavio, and Lisette, the Sheriff, Loyal and Warned.
+  const npc = async (name: string, title: string) => {
+    const { id } = await send(`/api/troupes/${troupeId}/npcs`, { name, wizard: false });
+    await send(`/api/characters/${id}/npc/ratings`, { category: "sect", name: "Camarilla", rating: null, detail: "" }, "PUT");
+    await send(`/api/troupes/${troupeId}/characters/${id}/titles`, { titles: [title] }, "PUT");
+    return id as string;
+  };
+  const prince = await npc("Prince Ottavio", "Prince");
+  const lisette = await npc("Lisette Marchand", "Sheriff");
+  for (const name of ["Loyal", "Warned"]) await send(`/api/characters/${lisette}/status`, { name, patron_text: "Prince Ottavio" });
+
+  // By default, a badge prints the titles held here and the status carried into a game, negative status marked out.
+  await l.goto(`/print/troupes/${troupeId}/badges?characters=${prince},${lisette}`);
+  let ottavio = l.getByRole("article", { name: "Badge for Prince Ottavio" });
+  let warned = l.getByRole("article", { name: "Badge for Lisette Marchand" });
+  await expect(ottavio.getByText("Prince", { exact: true })).toBeVisible();
+  await expect(ottavio.getByText("Status: Authority, Commander, Sovereign")).toBeVisible();
+  await expect(warned.getByText("Sheriff", { exact: true })).toBeVisible();
+  await expect(warned.getByText(/^Status: .*Loyal, Warned$/)).toBeVisible();
+  await expect(warned.getByLabel("Negative status: Warned")).toBeVisible();
+  await l.screenshot(shots("badges-status"));
+
+  // On About, the lead turns titles off and prints negative status only.
+  await l.goto(`/troupes/${troupeId}`);
+  const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
+  await expect(setting.getByLabel("Print titles")).toBeChecked();
+  await expect(setting.getByLabel(/^All/)).toBeChecked();
+  // Each saves as it is clicked, and shows once saved.
+  await setting.getByLabel("Print titles").click();
+  await expect(setting.getByLabel("Print titles")).not.toBeChecked();
+  await setting.getByLabel(/^Negative only/).click();
+  await expect(setting.getByLabel(/^Negative only/)).toBeChecked();
+  await l.screenshot(shots("badge-setting"));
+
+  // Now Lisette's badge shows her Warned and nothing else from either section; the Prince's, neither.
+  await l.goto(`/print/troupes/${troupeId}/badges?characters=${prince},${lisette}`);
+  ottavio = l.getByRole("article", { name: "Badge for Prince Ottavio" });
+  warned = l.getByRole("article", { name: "Badge for Lisette Marchand" });
+  await expect(warned.getByText("Status: Warned", { exact: true })).toBeVisible();
+  await expect(warned.getByLabel("Negative status: Warned")).toBeVisible();
+  await expect(warned.getByText("Sheriff", { exact: true })).toHaveCount(0);
+  await expect(warned.getByText(/Loyal/)).toHaveCount(0);
+  await expect(ottavio.getByText("Neonate", { exact: true })).toBeVisible();
+  await expect(ottavio.getByText("Prince", { exact: true })).toHaveCount(0);
+  await expect(ottavio.getByText(/^Status:/)).toHaveCount(0);
 });
 
 test("at a game, a Seneschal and Primogen chooses one source of status, spends Authority and Loyal with Undo, and adds Courageous from the Prince", async ({ browser }) => {
@@ -1566,6 +1631,74 @@ test("at a game, a Camarilla character with Leadership 2 learns about two of a r
   await expect(theirs.getByText("Only the Camarilla’s own know their status.")).toBeVisible();
   for (const name of ["Warned", "Loyal", "Courageous", "Sheriff Hale"]) await expect(theirs.getByText(name)).toHaveCount(0);
   await s.screenshot(shots("play-others-sabbat"));
+});
+
+test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own, and a house title gives status", async ({ browser }) => {
+  const custodian = await person(browser, "sects-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "sects-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Elysium ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const p = lead.page;
+  const limited = await p.request.patch(`/api/troupes/${troupeId}`, { headers, data: { allowed_sects: ["Camarilla"] } });
+  expect(limited.status(), await limited.text()).toBe(200);
+  const npc = async (name: string, sect: string) => {
+    const response = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(response.status(), await response.text()).toBe(201);
+    const id = (await response.json()).id;
+    const rated = await p.request.put(`/api/characters/${id}/npc/ratings`, { headers, data: { category: "sect", name: sect, rating: null } });
+    expect(rated.status(), await rated.text()).toBe(200);
+    return id as string;
+  };
+  await npc("Elena Varga", "Camarilla");
+  const tomas = await npc("Tomas Reyes", "Anarch");
+
+  // The Titles tab: the Camarilla's titles and those of any sect, with the status each gives.
+  await p.goto(`/troupes/${troupeId}/titles`);
+  await expect(p.getByRole("heading", { name: "Camarilla titles" })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Titles of any sect" })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Sabbat titles" })).toHaveCount(0);
+  await expect(p.getByRole("listitem", { name: "Prince", exact: true }).getByText("Gives Authority · Commander · Sovereign")).toBeVisible();
+
+  // A house title of the Camarilla, giving Guardian.
+  const adding = p.locator("section").filter({ has: p.getByRole("heading", { name: "Add a title" }) });
+  await adding.getByLabel("Name").fill("Master of Elysium");
+  await adding.getByLabel("Sect").selectOption("Camarilla");
+  await adding.getByLabel("Guardian").check();
+  await adding.getByRole("button", { name: "Add", exact: true }).click();
+  const master = p.getByRole("listitem", { name: "Master of Elysium" });
+  await expect(master.getByText("Gives Guardian")).toBeVisible();
+  await expect(master.getByText("ours")).toBeVisible();
+  await expect(master.getByText("No one")).toBeVisible();
+
+  // The picker offers each character the titles of its sect and of any sect.
+  await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await p.getByRole("button", { name: "Give Elena Varga a title" }).click();
+  const dialog = p.getByRole("dialog");
+  await expect(dialog.getByText("Elena Varga is Camarilla: Camarilla titles and those of any sect.")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Prince", exact: true })).toBeVisible();
+  await p.screenshot(shots("give-title-by-sect"));
+  await dialog.getByRole("button", { name: "Master of Elysium", exact: true }).click();
+  await expect(p.getByRole("button", { name: "Take the title Master of Elysium from Elena Varga" })).toBeVisible();
+  await p.getByRole("button", { name: "Give Tomas Reyes a title" }).click();
+  await expect(dialog.getByText("Tomas Reyes is Anarch: Anarch titles and those of any sect.")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Prince", exact: true })).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Close" }).click();
+  // And the API refuses Prince to an Anarch.
+  const refused = await p.request.put(`/api/troupes/${troupeId}/characters/${tomas}/titles`, { headers, data: { titles: ["Prince"] } });
+  expect(refused.status()).toBe(409);
+  expect((await refused.json()).detail).toBe("Prince is a Camarilla title, and Tomas Reyes is Anarch.");
+
+  // Who holds what; and changing what the house title gives changes it for its holders.
+  await p.goto(`/troupes/${troupeId}/titles`);
+  await expect(master.getByRole("link", { name: "Elena Varga" })).toBeVisible();
+  await master.getByRole("button", { name: "Change the title Master of Elysium" }).click();
+  await dialog.getByLabel("Prominent").check();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(master.getByText("Gives Guardian · Prominent")).toBeVisible();
+  await p.screenshot(shots("titles-by-sect"));
 });
 
 test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the list by kind and form", async ({ browser }) => {

@@ -32,8 +32,12 @@ class BadgeOut(BaseModel):
     clan: str | None
     # Neonate, Ancilla or Elder.
     social_age: str
+    # The titles it holds in the troupe, if the troupe prints them.
     titles: list[str]
+    # The status it carries into a game in the troupe, as much as the troupe prints
+    # ("Loyal ×2" for one held twice): its negative status apart, to be marked out.
     status: list[str]
+    negative: list[str]
     # What others can see or sense, from the rules data and the staff's note.
     visible: list[str]
     # Where the picture is (horatio.pictures; "/portrait.jpg" prints), or None.
@@ -47,6 +51,10 @@ class BadgeOut(BaseModel):
 
 class BadgesOut(BaseModel):
     troupe_name: str | None
+    # What the troupe's badges print: its titles or not, and "all" status, the
+    # "negative" status only, or "none".
+    print_titles: bool
+    print_status: str
     badges: list[BadgeOut]
 
 
@@ -67,9 +75,11 @@ class VisibleNote(BaseModel):
 
 
 def badges_out(db: DbSession, troupe: Troupe | None, characters: list[Character]) -> BadgesOut:
-    found = badges.badges(db, troupe.id if troupe else None, characters)
+    found = badges.badges(db, troupe, characters)
     return BadgesOut(
         troupe_name=troupe.name if troupe else None,
+        print_titles=troupe.badge_titles if troupe else True,
+        print_status=troupe.badge_status if troupe else "all",
         badges=[BadgeOut(**vars(b)) for b in found],
     )
 

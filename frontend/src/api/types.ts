@@ -67,6 +67,7 @@ export type LogEntry = Schemas["LogEntry"];
 export type PrintedSheet = Schemas["PrintedSheet"];
 export type Tally = Schemas["Tally"];
 export type TitlesOut = Schemas["TitlesOut"];
+export type TitleOut = Schemas["TitleOut"];
 export type NotificationOut = Schemas["NotificationOut"];
 export type CheckOut = Schemas["CheckOut"];
 export type ConnectorOut = Schemas["ConnectorOut"];

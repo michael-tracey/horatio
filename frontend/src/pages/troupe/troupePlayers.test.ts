@@ -11,6 +11,8 @@ const entry = (over: Partial<RosterEntry>): RosterEntry => ({
   kind: "pc",
   retired: false,
   titles: [],
+  out_of_sect_titles: [],
+  sect: null,
   picture: null,
   clan: null,
   social_age: "Neonate",
