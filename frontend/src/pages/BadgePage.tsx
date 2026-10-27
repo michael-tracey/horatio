@@ -26,6 +26,7 @@ export function TroupeBadgesPage() {
     <Sheets
       back={`/troupes/${troupeId}/characters`}
       troupe={badges.data.troupe_name}
+      printStatus={badges.data.print_status}
       items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))}
     />
   );
@@ -47,7 +48,12 @@ export function CharacterBadgePage() {
   if (badges.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (badges.error) return <p className="p-8 text-black">{badges.error.message}</p>;
   return (
-    <Sheets back={`/characters/${characterId}`} troupe={badges.data.troupe_name} items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))} />
+    <Sheets
+      back={`/characters/${characterId}`}
+      troupe={badges.data.troupe_name}
+      printStatus={badges.data.print_status}
+      items={badges.data.badges.map((b) => ({ key: b.character_id, badge: b }))}
+    />
   );
 }
 
@@ -72,7 +78,7 @@ type Item = { key: string; badge?: BadgeOut; staff?: StaffBadgeOut };
  * Print above; printed, as many to a page as the person's paper holds, touching,
  * with cut marks in the margin along every cut line.
  */
-function Sheets({ items, back, troupe }: { items: Item[]; back: string; troupe: string | null }) {
+function Sheets({ items, back, troupe, printStatus = "all" }: { items: Item[]; back: string; troupe: string | null; printStatus?: string }) {
   const prefs = usePreferences();
   const [look, setLook] = useState<Look>("horatio");
   // The person's badge size, unless they pick another for this print.
@@ -128,7 +134,7 @@ function Sheets({ items, back, troupe }: { items: Item[]; back: string; troupe: 
             >
               {page.map((item) =>
                 item.badge ? (
-                  <CharacterBadge key={`${item.key}/${size}`} badge={item.badge} troupe={troupe} look={look} size={size} />
+                  <CharacterBadge key={`${item.key}/${size}`} badge={item.badge} troupe={troupe} printStatus={printStatus} look={look} size={size} />
                 ) : item.staff ? (
                   <StaffBadge key={`${item.key}/${size}`} staff={item.staff} troupe={troupe} look={look} size={size} />
                 ) : null,
@@ -310,8 +316,27 @@ function Initials({ name, colour, size, step }: { name: string; colour: string; 
   );
 }
 
-function CharacterBadge({ badge, troupe, look, size }: { badge: BadgeOut; troupe: string | null; look: Look; size: BadgeSize }) {
+/**
+ * A character's badge. Its troupe chooses what prints (`printStatus`): all the status
+ * it carries into a game, "—" for none; only negative status, and the line only
+ * if it has some; or no status line. Negative status is marked out in reversed
+ * text, as the visible traits are.
+ */
+function CharacterBadge({
+  badge,
+  troupe,
+  printStatus,
+  look,
+  size,
+}: {
+  badge: BadgeOut;
+  troupe: string | null;
+  printStatus: string;
+  look: Look;
+  size: BadgeSize;
+}) {
   const l = LOOKS[look];
+  const anyStatus = badge.status.length + badge.negative.length > 0;
   const [card, step] = useSqueeze();
   const { inch, pt, name } = scale(size, step);
   return (
@@ -328,9 +353,20 @@ function CharacterBadge({ badge, troupe, look, size }: { badge: BadgeOut; troupe
           {badge.titles.join(", ")}
         </p>
       )}
-      <p className="leading-snug" style={{ marginTop: inch(0.1), fontSize: pt(10.5) }}>
-        <span className={`font-bold ${l.accent}`}>Status:</span> {badge.status.join(", ") || "—"}
-      </p>
+      {(printStatus === "all" || anyStatus) && (
+        <p className="leading-snug" style={{ marginTop: inch(0.1), fontSize: pt(10.5) }}>
+          <span className={`font-bold ${l.accent}`}>Status:</span> {badge.status.join(", ")}
+          {!anyStatus && "—"}
+          {badge.negative.map((n, i) => (
+            <Fragment key={n}>
+              {i > 0 || badge.status.length > 0 ? ", " : ""}
+              <span aria-label={`Negative status: ${n}`} style={{ ...exact, paddingInline: inch(0.04) }} className={`font-semibold whitespace-nowrap ${l.band}`}>
+                {n}
+              </span>
+            </Fragment>
+          ))}
+        </p>
+      )}
       {/* Left empty for the stickers most troupes mark status with. */}
       <div className="flex-1" style={{ minHeight: inch(0.4) }} />
       {badge.visible.length > 0 && (

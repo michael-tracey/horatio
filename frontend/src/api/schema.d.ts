@@ -4846,6 +4846,8 @@ export interface components {
             logo_white: string | null;
             /** Name */
             name: string;
+            /** Negative */
+            negative: string[];
             /** Picture */
             picture: string | null;
             /** Social Age */
@@ -4861,6 +4863,10 @@ export interface components {
         BadgesOut: {
             /** Badges */
             badges: components["schemas"]["BadgeOut"][];
+            /** Print Status */
+            print_status: string;
+            /** Print Titles */
+            print_titles: boolean;
             /** Troupe Name */
             troupe_name: string | null;
         };
@@ -11296,6 +11302,10 @@ export interface components {
             allowed_sects?: string[] | null;
             /** Allowed Splats */
             allowed_splats?: string[] | null;
+            /** Badge Status */
+            badge_status?: ("all" | "negative" | "none") | null;
+            /** Badge Titles */
+            badge_titles?: boolean | null;
             /** Description */
             description?: string | null;
             /** Downtime Xp */
@@ -11340,6 +11350,10 @@ export interface components {
             allowed_splats: string[];
             /** Archived */
             archived: boolean;
+            /** Badge Status */
+            badge_status: string;
+            /** Badge Titles */
+            badge_titles: boolean;
             /** Banner */
             banner: string | null;
             /** Description */

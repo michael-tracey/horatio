@@ -1340,6 +1340,68 @@ test("a player keeps their own sect status, naming its patron from the home trou
   expect(refused.status()).toBe(409);
 });
 
+test("a troupe chooses whether its badges print titles and status: by default all of it, or negative status only", async ({ browser }) => {
+  const custodian = await person(browser, "badgeset-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "badgeset-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Ribbons ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const l = lead.page;
+  const send = async (url: string, data: object, method: "POST" | "PUT" = "POST") => {
+    const response = await l.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+
+  // Two Camarilla NPCs: Prince Ottavio, and Lisette, the Sheriff, Loyal and Warned.
+  const npc = async (name: string, title: string) => {
+    const { id } = await send(`/api/troupes/${troupeId}/npcs`, { name, wizard: false });
+    await send(`/api/characters/${id}/npc/ratings`, { category: "sect", name: "Camarilla", rating: null, detail: "" }, "PUT");
+    await send(`/api/troupes/${troupeId}/characters/${id}/titles`, { titles: [title] }, "PUT");
+    return id as string;
+  };
+  const prince = await npc("Prince Ottavio", "Prince");
+  const lisette = await npc("Lisette Marchand", "Sheriff");
+  for (const name of ["Loyal", "Warned"]) await send(`/api/characters/${lisette}/status`, { name, patron_text: "Prince Ottavio" });
+
+  // By default, a badge prints the titles held here and the status carried into a game, negative status marked out.
+  await l.goto(`/print/troupes/${troupeId}/badges?characters=${prince},${lisette}`);
+  let ottavio = l.getByRole("article", { name: "Badge for Prince Ottavio" });
+  let warned = l.getByRole("article", { name: "Badge for Lisette Marchand" });
+  await expect(ottavio.getByText("Prince", { exact: true })).toBeVisible();
+  await expect(ottavio.getByText("Status: Authority, Commander, Sovereign")).toBeVisible();
+  await expect(warned.getByText("Sheriff", { exact: true })).toBeVisible();
+  await expect(warned.getByText(/^Status: .*Loyal, Warned$/)).toBeVisible();
+  await expect(warned.getByLabel("Negative status: Warned")).toBeVisible();
+  await l.screenshot(shots("badges-status"));
+
+  // On About, the lead turns titles off and prints negative status only.
+  await l.goto(`/troupes/${troupeId}`);
+  const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
+  await expect(setting.getByLabel("Print titles")).toBeChecked();
+  await expect(setting.getByLabel(/^All/)).toBeChecked();
+  // Each saves as it is clicked, and shows once saved.
+  await setting.getByLabel("Print titles").click();
+  await expect(setting.getByLabel("Print titles")).not.toBeChecked();
+  await setting.getByLabel(/^Negative only/).click();
+  await expect(setting.getByLabel(/^Negative only/)).toBeChecked();
+  await l.screenshot(shots("badge-setting"));
+
+  // Now Lisette's badge shows her Warned and nothing else from either section; the Prince's, neither.
+  await l.goto(`/print/troupes/${troupeId}/badges?characters=${prince},${lisette}`);
+  ottavio = l.getByRole("article", { name: "Badge for Prince Ottavio" });
+  warned = l.getByRole("article", { name: "Badge for Lisette Marchand" });
+  await expect(warned.getByText("Status: Warned", { exact: true })).toBeVisible();
+  await expect(warned.getByLabel("Negative status: Warned")).toBeVisible();
+  await expect(warned.getByText("Sheriff", { exact: true })).toHaveCount(0);
+  await expect(warned.getByText(/Loyal/)).toHaveCount(0);
+  await expect(ottavio.getByText("Neonate", { exact: true })).toBeVisible();
+  await expect(ottavio.getByText("Prince", { exact: true })).toHaveCount(0);
+  await expect(ottavio.getByText(/^Status:/)).toHaveCount(0);
+});
+
 test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the list by kind and form", async ({ browser }) => {
   const custodian = await person(browser, "kinds-custodian");
   makeCustodian(custodian.email);

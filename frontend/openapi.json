@@ -712,6 +712,13 @@
             "title": "Name",
             "type": "string"
           },
+          "negative": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Negative",
+            "type": "array"
+          },
           "picture": {
             "anyOf": [
               {
@@ -756,6 +763,7 @@
           "social_age",
           "titles",
           "status",
+          "negative",
           "visible",
           "picture",
           "logo",
@@ -773,6 +781,14 @@
             "title": "Badges",
             "type": "array"
           },
+          "print_status": {
+            "title": "Print Status",
+            "type": "string"
+          },
+          "print_titles": {
+            "title": "Print Titles",
+            "type": "boolean"
+          },
           "troupe_name": {
             "anyOf": [
               {
@@ -787,6 +803,8 @@
         },
         "required": [
           "troupe_name",
+          "print_titles",
+          "print_status",
           "badges"
         ],
         "title": "BadgesOut",
@@ -17720,6 +17738,33 @@
             ],
             "title": "Allowed Splats"
           },
+          "badge_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "all",
+                  "negative",
+                  "none"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Badge Status"
+          },
+          "badge_titles": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Badge Titles"
+          },
           "description": {
             "anyOf": [
               {
@@ -17887,6 +17932,14 @@
             "title": "Archived",
             "type": "boolean"
           },
+          "badge_status": {
+            "title": "Badge Status",
+            "type": "string"
+          },
+          "badge_titles": {
+            "title": "Badge Titles",
+            "type": "boolean"
+          },
           "banner": {
             "anyOf": [
               {
@@ -18002,6 +18055,8 @@
           "influence_lookback_days",
           "diablerie_flaws",
           "status_by",
+          "badge_titles",
+          "badge_status",
           "portrait",
           "banner",
           "public",
