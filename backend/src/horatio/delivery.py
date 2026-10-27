@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 import horatio.connectors.discord
 import horatio.connectors.email
+from horatio import suspensions
 from horatio.config import get_settings
 from horatio.connectors import CONNECTORS, Message, Recipient, SendError
 from horatio.models import (
@@ -137,6 +138,8 @@ def send_one(db: Session, delivery: Delivery, at: datetime) -> None:
             raise SendError(f"The troupe has no {delivery.channel} connector.", retry=False)
         if (reason := connector.unavailable()) is not None:
             raise SendError(reason, retry=False)
+        if suspensions.current(db, player.id) is not None:
+            raise SendError(f"{player.display_name}'s account is suspended.", retry=False)
         recipient = Recipient(
             character_id=character.id,
             character_name=character.name,
@@ -219,12 +222,15 @@ def mark_sent(delivery: Delivery, user: User) -> None:
 
 def send_due_now() -> int:
     """`send_due` in a session of its own, for the worker; then the notifications
-    people asked for by email (horatio.notification_emails)."""
+    people asked for by email (horatio.notification_emails), and the suspensions
+    whose end date has passed (horatio.suspensions)."""
     from horatio import notification_emails
     from horatio.db import get_sessionmaker
 
     with get_sessionmaker()() as db:
-        return send_due(db) + notification_emails.send_due(db)
+        sent = send_due(db) + notification_emails.send_due(db)
+    suspensions.end_due_now()
+    return sent
 
 
 async def send_forever(interval: float) -> None:

@@ -9,7 +9,9 @@ reversed text what others can see or sense about it, and the troupe's name (#84)
 
 Each troupe chooses what prints (#255): its titles or not, and all the status,
 the negative status only (which must be shown, MET: VTM p. 312), or none, leaving
-the space for stickers. Negative status is marked out on the badge.
+the space for stickers. Negative status is marked out on the badge. It can print
+the character's pronouns under its name (#265), off unless it chooses; a badge
+never prints the player's.
 
 What others can see comes from the rules data: a trait with a `visible`
 property shows on the badge in those words, `{detail}` filled in with the
@@ -35,6 +37,8 @@ from horatio.rules.splats import SPLATS
 class Badge:
     character_id: uuid.UUID
     name: str
+    # Its pronouns, if the troupe prints them and it has some.
+    pronouns: str | None
     clan: str | None
     social_age: str
     titles: list[str]
@@ -136,6 +140,7 @@ def badges(db: Session, troupe: Troupe | None, characters: Sequence[Character]) 
     troupe_id = troupe.id if troupe else None
     print_titles = troupe.badge_titles if troupe else True
     print_status = troupe.badge_status if troupe else "all"
+    print_pronouns = troupe.badge_pronouns if troupe else False
     standing = social_age.standings(db, [c.id for c in characters])
     visible = visible_to_others(db, characters)
     found_logos = {splat: logos(db, splat) for splat in {c.splat for c in characters}}
@@ -148,6 +153,7 @@ def badges(db: Session, troupe: Troupe | None, characters: Sequence[Character]) 
             Badge(
                 character_id=c.id,
                 name=c.name,
+                pronouns=c.pronouns if print_pronouns else None,
                 clan=clan,
                 social_age=standing[c.id].age,
                 titles=titles.held(db, troupe_id, c.id) if troupe_id and print_titles else [],

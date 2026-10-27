@@ -7,6 +7,7 @@ import { Avatar } from "../../components/Avatar";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { AtHandle } from "../../components/PersonPicker";
 import { Dialog } from "../../components/Dialog";
+import { Pronouns } from "../../components/PronounsInput";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { FilterBuilder } from "./FilterBuilder";
@@ -221,16 +222,20 @@ function RosterRow({
         <Link to={`/characters/${entry.character_id}`} className="truncate font-medium hover:text-gold">
           {entry.character_name}
         </Link>
+        <Pronouns pronouns={entry.pronouns} />
         {entry.player_id && (
           <Link to={`/players/${entry.player_id}`} className="truncate text-xs text-mist hover:text-gold">
             {entry.player_name} {entry.player_handle && <AtHandle handle={entry.player_handle} />}
+            <Pronouns pronouns={entry.player_pronouns} className="" />
           </Link>
         )}
       </span>
       <span className="text-xs whitespace-nowrap text-parchment/80">
         {entry.clan ?? "No clan yet"} · {entry.social_age}
       </span>
+      {!entry.seated && <span className="text-xs text-mist">Represented by: {entry.represented_by ?? "nobody yet"}</span>}
       {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
+      {entry.player_suspended && <Badge tone="blood">player suspended</Badge>}
       {entry.waiting && <Badge tone="blood">asking to make this home</Badge>}
       {entry.disciplines_waiting > 0 && (
         <Badge tone="blood">

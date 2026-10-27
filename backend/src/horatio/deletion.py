@@ -4,9 +4,9 @@ Only a character in no troupe can be deleted, so its player must first leave
 every troupe, and each of those troupes' logs records that it left. Deletion
 then records one last entry in every troupe the character was ever in, and
 removes the character and everything that is only about it: its sheet, XP,
-approvals, diableries, its downtime submissions and their responses, and its games
-on the Play View with their taps, counters, modifiers and derangements. The troupe
-logs keep their entries, with the character's name.
+approvals, diableries, equipment, its downtime submissions and their responses, and
+its games on the Play View with their taps, counters, modifiers and derangements.
+The troupe logs keep their entries, with the character's name.
 """
 
 from sqlalchemy import delete, select, update
@@ -27,6 +27,8 @@ from horatio.models import (
     Diablerie,
     DisciplinePurchase,
     Embrace,
+    EquipmentEvent,
+    EquipmentItem,
     FeedingAdjustment,
     HomeTroupeChange,
     PlayCounter,
@@ -120,6 +122,10 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(delete(PlayCounter).where(PlayCounter.character_id == cid))
     db.execute(delete(PlayDerangement).where(PlayDerangement.character_id == cid))
     db.execute(delete(PoolModifier).where(PoolModifier.character_id == cid))
+    # Its equipment, with each item's history; another item's history keeps its name.
+    held = select(EquipmentItem.id).where(EquipmentItem.character_id == cid)
+    db.execute(delete(EquipmentEvent).where(EquipmentEvent.item_id.in_(held)))
+    db.execute(delete(EquipmentItem).where(EquipmentItem.character_id == cid))
     db.execute(delete(CharacterTrait).where(CharacterTrait.character_id == cid))
     db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))

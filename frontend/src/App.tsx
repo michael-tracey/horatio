@@ -5,6 +5,7 @@ import { Loading } from "./components/ui";
 import { AboutPage } from "./pages/AboutPage";
 import { useMe } from "./hooks";
 import { CharactersPage } from "./pages/CharactersPage";
+import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
@@ -72,6 +73,7 @@ export function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
+        <Route path="/confirm-email/:token" element={<ConfirmEmailPage />} />
         {/* A troupe's profile, for anyone if the troupe has made it public. */}
         <Route
           path="/t/:troupeId"

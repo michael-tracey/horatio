@@ -61,6 +61,7 @@ class TroupeAction(StrEnum):
     RUN_SCENES = "run_scenes"
     CHANGE_ANY_SCENE = "change_any_scene"
     VIEW_LINES_VEILS = "view_lines_veils"
+    MANAGE_EQUIPMENT = "manage_equipment"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -110,6 +111,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # need them to run games. Other players see a player's only if that player
     # shares them (horatio.lines_veils).
     TroupeAction.VIEW_LINES_VEILS: frozenset(_ALL_STAFF),
+    # Giving the troupe's home characters equipment, making it special, changing it
+    # and taking it back, and keeping the troupe's own templates (horatio.equipment).
+    TroupeAction.MANAGE_EQUIPMENT: frozenset(_RUNNING),
 }
 
 

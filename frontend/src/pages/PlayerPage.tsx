@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PlayerOut } from "../api/types";
 import { LinesVeilsNote, hasLinesVeils } from "../components/LinesVeils";
+import { Pronouns } from "../components/PronounsInput";
 import { Badge, Card, Empty, ErrorText, Loading, PageTitle } from "../components/ui";
 import { useDates } from "../dates";
 import { useMe } from "../hooks";
@@ -35,7 +36,8 @@ export function PlayerPage() {
           )
         }
       >
-        {p.display_name} {p.is_custodian && <Badge tone="gold">custodian</Badge>}
+        {p.display_name}
+        <Pronouns pronouns={p.pronouns} className="text-base text-mist" /> {p.is_custodian && <Badge tone="gold">custodian</Badge>}
       </PageTitle>
       <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-6">

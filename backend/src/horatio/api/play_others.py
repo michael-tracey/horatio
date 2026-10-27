@@ -23,6 +23,8 @@ class OtherOut(BaseModel):
 
     character_id: uuid.UUID
     name: str
+    # Its pronouns, whatever its sect; None for none given.
+    pronouns: str | None
     kind: str
     sect: str | None
     same_sect: bool
@@ -74,6 +76,7 @@ def other_out(other: play_others.Other) -> OtherOut:
     return OtherOut(
         character_id=other.character.id,
         name=other.character.name,
+        pronouns=other.character.pronouns,
         kind=other.character.kind,
         sect=other.sect,
         same_sect=other.same_sect,

@@ -12,7 +12,7 @@ A person who plays one or more characters. A player sees only their own characte
 _Avoid_: User (for the person in the game), member
 
 **Profile**:
-What anyone signed in can see about a player: their display name, handle, when they joined, a bio, social media links and their Discord username. Never their email, which only they and the custodian see.
+What anyone signed in can see about a player: their display name, handle, pronouns, when they joined, a bio, social media links and their Discord username. Never their email, which only they and the custodian see.
 _Avoid_: Bio page, user page
 
 **Handle**:
@@ -23,6 +23,10 @@ _Avoid_: Username, login
 A player's content boundaries, in their own words: a **line** is something that must not happen in play around them; a **veil** may happen, but off-screen. They belong to the player, not a character. Never public or printed: the staff of the troupes they play in always see them, and other players there only if the player shares them.
 _Avoid_: Triggers, limits, content warnings (for a player's own)
 
+**Suspended Account**:
+A person the custodian has shut out for a while, with a reason only the custodian sees: signed out, unable to sign in and sent no notifications until the custodian lifts it or its end date passes. Their characters stay in their troupes but take no new actions, and nothing they did is hidden.
+_Avoid_: Ban, block, disabled account
+
 **Troupe**:
 The top-level group: it runs games, has its own staff and house rules, and characters join it. No group sits above a troupe.
 _Avoid_: Game, chapter, chronicle, organisation
@@ -32,12 +36,16 @@ What a troupe tells players and people thinking of joining: its portrait, links,
 _Avoid_: Troupe page, listing
 
 **Archived Troupe**:
-A troupe its lead storyteller has deleted: closed to all use, but kept with its full history. Troupes are never truly deleted.
+A troupe its lead storyteller or the custodian has deleted: closed to all use but the custodian's, and kept with its full history. Archiving lets its player characters go, those it was home to left with no home troupe, and ends its open downtime cycle and games under way; its NPCs stay with it. The custodian can reopen it, which brings no characters back. Troupes are never truly deleted.
 _Avoid_: Deleted troupe, closed troupe
 
 **Custodian**:
 The site administrator, above all troupes, who appoints lead storytellers, manages the system itself, and can do anything in any troupe.
 _Avoid_: Admin, superuser, site owner
+
+**View As**:
+The custodian seeing Horatio exactly as one person does, with their permissions, to help them with a question: read-only, for at most 30 minutes, with a reason they are told. Never as another custodian.
+_Avoid_: Impersonate, log in as, masquerade
 
 **Staff**:
 The people who run a troupe: its lead storyteller, storytellers, assistant storytellers and narrators.
@@ -166,6 +174,18 @@ _Avoid_: Override, custom rule, homebrew
 **Check**:
 A rule about what a sheet may hold rather than what it costs, such as a clan-only merit or two flaws that cannot be taken together. A change that breaks one is refused, with the reason and the page.
 _Avoid_: Validation, restriction, prerequisite (one kind of check)
+
+**Equipment Quality**:
+A special property of an item of equipment, such as Accurate or Concealable, from the book's list for its kind: melee weapon, ranged weapon, protective gear or miscellaneous gear. A cheap item has one, a standard or expensive item up to two, and a special item, made by storytellers, any number.
+_Avoid_: Perk, tag, trait (a trait is on the sheet)
+
+**Equipment**:
+The items a character holds: weapons, protective gear and miscellaneous gear, each with its qualities. Only the character's home troupe's storytellers and assistant storytellers give it equipment, change it or take it back, and an item belongs to the character, going with it to a new home troupe. Every item keeps its history.
+_Avoid_: Inventory, gear (for the whole), loot
+
+**Special Item**:
+An item a troupe's storytellers or assistant storytellers make exceptional, such as a blade of Kindred legend: any number of qualities, still keeping the rules between them, and special effects of the troupe's own, marked as made by that troupe.
+_Avoid_: Magic item, artefact, unique item
 
 **House Merit**:
 A merit or flaw a troupe makes itself, marked ★ as that troupe's wherever it shows. Only the troupe's own characters hold one: those whose home troupe it is, those being built for it, and its NPCs; never one only visiting. Each is either given by staff only, or available when building for the troupe.

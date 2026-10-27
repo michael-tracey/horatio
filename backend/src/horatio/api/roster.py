@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Select, select
 
-from horatio import character_filter, pictures, social_age, titles
+from horatio import character_filter, pictures, social_age, suspensions, titles, whos_who
 from horatio.api.downtimes import staff_troupe
 from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.printing import PrintedSheet, print_sheet
@@ -29,6 +29,12 @@ class RosterEntry(BaseModel):
     # None for an NPC, whose player_name is "NPC".
     player_id: uuid.UUID | None
     player_handle: str | None
+    # The character's pronouns, and its player's (None for an NPC); None for none.
+    pronouns: str | None
+    player_pronouns: str | None
+    # The player's account is suspended (horatio.suspensions): the character takes
+    # no new actions until it is lifted.
+    player_suspended: bool = False
     kind: str  # pc | npc
     # The player has retired the character.
     retired: bool
@@ -45,6 +51,9 @@ class RosterEntry(BaseModel):
     social_age: str
     # The troupe holds the character's sheet; otherwise the character visits.
     home: bool
+    # Its clan has a seat at court here (horatio.whos_who); if not, who speaks for it.
+    seated: bool
+    represented_by: str | None
     # Waiting for this troupe to accept it as home.
     waiting: bool
     # Discipline dots waiting on this troupe.
@@ -85,8 +94,10 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         )
     )
     standing = social_age.standings(db, [c.id for _, c, _ in rows])
+    suspended = suspensions.suspended_ids(db, [c.player_id for _, c, _ in rows if c.kind == "pc"])
     sects = titles.character_sects(db, [c.id for _, c, _ in rows])
     known = titles.title_data(db, troupe_id)
+    seated = whos_who.seated_clans(db, troupe)
     held = {c.id: titles.held(db, troupe_id, c.id) for _, c, _ in rows}
     pending = list(
         db.execute(
@@ -102,6 +113,9 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_name=player.display_name if c.kind == "pc" else "NPC",
             player_id=player.id if c.kind == "pc" else None,
             player_handle=player.handle if c.kind == "pc" else None,
+            pronouns=c.pronouns,
+            player_pronouns=player.pronouns if c.kind == "pc" else None,
+            player_suspended=c.kind == "pc" and player.id in suspended,
             kind=c.kind,
             retired=c.status == "retired",
             titles=held[c.id],
@@ -113,6 +127,10 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             clan=standing[c.id].clan,
             social_age=standing[c.id].age,
             home=c.home_troupe_id == troupe_id,
+            seated=whos_who.has_seat(seated, standing[c.id].clan),
+            represented_by=None
+            if whos_who.has_seat(seated, standing[c.id].clan)
+            else m.represented_by,
             waiting=(c.id, "home_troupe_change") in pending,
             disciplines_waiting=sum(1 for p in pending if p == (c.id, "discipline")),
             joined_at=m.joined_at,
@@ -245,7 +263,14 @@ MESSAGES: dict[str, str] = {
     "staff.removed": "{actor} removed {member} from the staff.",
     "troupe.lead_appointed": "{actor} appointed {member} lead storyteller.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
-    "troupe.archived": "{actor} archived the troupe.",
+    "troupe.archived": "{actor} archived the troupe{because}.",
+    "troupe.settled.home": "{character} left {troupe} as it was archived, and has no home troupe"
+    " now{because}.",
+    "troupe.settled.visit": "{character}'s visit to {troupe} ended as it was archived{because}.",
+    "troupe.settled_later": "{actor} settled what the archived troupe still held{because}.",
+    "troupe.reopened": "{actor} reopened the troupe{because}.",
+    "downtime.cycle_ended": "{actor} ended the downtime cycle {name} unanswered, as the troupe"
+    " was archived.",
     "troupe.profile_changed": "{actor} changed the troupe's profile.",
     "troupe.public": "{actor} made the troupe's profile {state}.",
     "troupe.game_added": "{actor} added a game to the troupe's schedule.",
@@ -284,6 +309,8 @@ MESSAGES: dict[str, str] = {
     "title.changed": "{actor} changed the title {title}: now {what}.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
     "title.court_order": "{actor} set the court order of the troupe's own titles: {order}.",
+    "troupe.seats": "{actor} gave seats at court to {clans}.",
+    "character.represented_by": "{actor} set who represents {character} at court: {by}.",
     "status.added": "{actor} gave {character} the {type} status {status}, from {patron}"
     "{at_game}{because}.",
     "status.removed": "{actor} removed {character}'s {status} (from {patron}){because}.",
@@ -302,6 +329,7 @@ MESSAGES: dict[str, str] = {
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
     "troupe.status_by": "{actor} set Status on sheets: {setting}.",
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
+    "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
     "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
     "scene.created": "{actor} made the scene {name}.",
@@ -352,8 +380,42 @@ MESSAGES: dict[str, str] = {
     "no account uses it.",
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
+    "account.suspended": "{actor} suspended {member}{because}.",
+    "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
+    "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
+    "account.suspension_lifted.ended": "{member}'s suspension ended.",
+    "account.suspension_email_failed": "Horatio could not email {member} about their "
+    "suspension: {error}",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
+    "account.view_as": "{actor} viewed Horatio as {member}, read-only{because}.",
+    "account.view_as_ended": "{actor} stopped viewing as {member}.",
+    "account.view_as_ended.signed_out": "{actor} signed out, which ended viewing as {member}.",
+    "account.view_as_ended.timed_out": "{actor}'s viewing as {member} ended after 30 minutes.",
+    "account.view_as_ended.not_custodian": "{actor}'s viewing as {member} ended: they are"
+    " no longer custodian.",
+    "account.email_change_started": "{actor} started changing {member}'s email from "
+    "{from_email} to {to_email}{because}.",
+    "account.email_change_started.self": "{actor} asked to change their email from "
+    "{from_email} to {to_email}.",
+    "account.email_change_resent": "{actor} made a new link for {member} to confirm {to_email}.",
+    "account.email_change_resent.self": "{actor} asked for a new link to confirm {to_email}.",
+    "account.email_change_email_failed": "Horatio could not email {to_email} the link to "
+    "confirm {member}'s new email: {error}",
+    "account.email_change_cancelled": "{actor} cancelled changing {member}'s email to {to_email}.",
+    "account.email_change_cancelled.self": "{actor} cancelled changing their email to {to_email}.",
+    "account.email_changed": "{member} confirmed their new email, {to_email}, changed by "
+    "{made_by} from {from_email}{because}.",
+    "account.email_changed.self": "{member} confirmed their new email, {to_email}, changed "
+    "from {from_email}.",
+    "account.email_change_notice_failed": "Horatio could not tell {from_email} that "
+    "{member}'s email changed: {error}",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
+    "account.merged": "The custodian, {actor}, merged @{merged_handle} into @{kept_handle},"
+    " the same person, moving {moved}: {reason}",
+    "account.merge_email_failed": "Horatio could not email @{kept_handle} at {to} about"
+    " their merged accounts: {error}",
+    "character.moved": "The custodian, {actor}, moved {character} from @{from_handle} to"
+    " @{to_handle}: {reason}",
     "character.domitor": "{actor} made {domitor} {character}'s domitor, of {clan}; discipline"
     " dots {disciplines}.",
     "embrace.step": "{actor} Embraced {character}, {step}: {summary} ({xp} XP).",
@@ -377,8 +439,10 @@ MESSAGES: dict[str, str] = {
     "identity.accepted": "{actor} noted {character}'s identity {name} as Accepted by {by}.",
     "identity.unaccepted": "{actor} noted {character}'s identity {name} as Accepted by no one.",
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
+    "character.pronouns": "{actor} set {character}'s pronouns: {pronouns}.",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
+    "audit.exported": "{actor} exported {count} events from the audit log.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
     "play.status_chosen": "{actor} chose {character}'s status for game {game}: {choice}.",
     "play.troupe_reset": "{actor} reset {count} characters for the next game.",
@@ -414,6 +478,11 @@ MESSAGES: dict[str, str] = {
     "shared_background.unlogged.withdrawal": "{actor} took {character} taking {dots} out of"
     " {shared} off its log.",
     "shared_background.unlogged.use": "{actor} took {character}'s use of {shared} off its log.",
+    "equipment.given": "{actor} gave {character} {item} ({what}).",
+    "equipment.changed": "{actor} changed {character}'s {item}: {changes}{because}.",
+    "equipment.taken_back": "{actor} took {item} back from {character}: {reason}",
+    "equipment.template_saved": "{actor} saved {item} ({what}) as one of the troupe's templates.",
+    "equipment.template_deleted": "{actor} deleted the troupe's template {item}.",
 }
 
 

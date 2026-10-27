@@ -2,7 +2,7 @@
 other players
 
 Revision ID: 0098
-Revises: 0087
+Revises: 0097
 Create Date: 2026-10-27 23:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0098"
-down_revision: str | None = "0087"
+down_revision: str | None = "0097"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

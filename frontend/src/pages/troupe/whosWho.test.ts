@@ -45,6 +45,7 @@ const DATA: WhosWhoOut = {
   other: ["g"],
   departed: [],
   seated: ["Brujah", "Ventrue"],
+  can_represent: [],
   shows_negative: false,
 };
 
