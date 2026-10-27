@@ -22,7 +22,8 @@ carries into a game here, which is public in the sect anyway (p. 312).
 - by clan: one section per seated clan, by name;
 - Other: the characters of clans with no seat at court, each with who speaks for
   it there;
-- no longer with us: retired characters the troupe lists.
+- no longer with us: the retired characters that were in the troupe and are listed,
+  with why they left (horatio.leaving), as their players chose.
 
 **Seats at court** (#267) are the court's custom, not the sect's rules. The troupe's
 staff choose which clans have one (Troupe.seated_clans). Until they do, a clan has
@@ -44,7 +45,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, badges, feeding, preferences, sect_status, social_age, titles
+from horatio import audit, badges, feeding, leaving, preferences, sect_status, social_age, titles
 from horatio.models import Character, CharacterTitle, Troupe, TroupeMembership, User
 from horatio.sheets import conflict, membership, rules_for, sheet_rows, unprocessable
 
@@ -85,7 +86,7 @@ class Entry:
 
 @dataclass
 class WhosWho:
-    # Everyone on it, by name.
+    # Everyone on it, by name: those here, then those no longer with us.
     entries: list[Entry]
     # Titled characters, in court order.
     court: list[uuid.UUID] = field(default_factory=list[uuid.UUID])
@@ -135,6 +136,25 @@ def members(db: Session, troupe: Troupe, held: dict[uuid.UUID, list[str]]) -> li
         .order_by(Character.name, Character.id)
     )
     return [c for c in found if c.kind == "pc" or c.on_whos_who or held.get(c.id)]
+
+
+def departed(db: Session, troupe: Troupe) -> list[Character]:
+    """The retired characters that were in the troupe and are listed under "No longer
+    with us", with a reason, by name."""
+    return list(
+        db.scalars(
+            select(Character)
+            .join(TroupeMembership, TroupeMembership.character_id == Character.id)
+            .where(
+                TroupeMembership.troupe_id == troupe.id,
+                TroupeMembership.left_at.is_(None),
+                Character.status == "retired",
+                Character.left_listed.is_(True),
+                Character.left_reason.is_not(None),
+            )
+            .order_by(Character.name, Character.id)
+        )
+    )
 
 
 # --- seats at court ------------------------------------------------------------------------
@@ -239,14 +259,17 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
     for names in held.values():
         names.sort(key=lambda n: titles.court_key(order, n))
     characters = members(db, troupe, held)
-    ids = [c.id for c in characters]
+    gone = departed(db, troupe)
+    ids = [c.id for c in characters + gone]
     standing = social_age.standings(db, ids)
     sects = titles.character_sects(db, ids)
     visible = badges.visible_to_others(db, characters)
     players = {
         u.id: u
         for u in db.scalars(
-            select(User).where(User.id.in_({c.player_id for c in characters if c.kind == "pc"}))
+            select(User).where(
+                User.id.in_({c.player_id for c in characters + gone if c.kind == "pc"})
+            )
         )
     }
     homes = {
@@ -294,7 +317,25 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
                 else None,
             )
         )
-    found = WhosWho(entries=entries, seated=seated)
+    # Who it was, who played it and why it left: no more.
+    left = [
+        Entry(
+            character=c,
+            clan=standing[c.id].clan,
+            social_age=standing[c.id].age,
+            sect=sects.get(c.id),
+            player=player_name(players[c.player_id]) if c.kind == "pc" else None,
+            titles=[],
+            visible=[],
+            bans=[],
+            negative=[],
+            visiting=False,
+            visiting_from=None,
+            left_reason=leaving.reason_name(c.left_reason),
+        )
+        for c in gone
+    ]
+    found = WhosWho(entries=entries + left, seated=seated, departed=[c.id for c in gone])
     titled = [e for e in entries if e.titles]
     titled.sort(key=lambda e: (titles.court_key(order, e.titles[0]), e.character.name.lower()))
     found.court = [e.character.id for e in titled]

@@ -15,6 +15,7 @@ import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
 import { KindBadge } from "./NpcKindBadge";
 import { CharacterMenu } from "./Actions";
+import { LeavingCard } from "./Leaving";
 import { RenameCharacter } from "./Rename";
 import { CharacterPronouns } from "./Pronouns";
 import { Pronouns } from "../../components/PronounsInput";
@@ -90,6 +91,7 @@ export function CharacterPage() {
                   canRename={!renaming}
                   renameOn={null}
                   onRename={() => setRenaming(true)}
+                  canRetire={c.status === "active"}
                   onPronouns={saying ? undefined : () => setSaying(true)}
                   canDelete
                 />
@@ -100,6 +102,7 @@ export function CharacterPage() {
           </PageTitle>
         </Header>
         {rename}
+        {c.status === "retired" && <LeavingCard character={c} canChange />}
         {pronouns}
         <Tabs
           tabs={[
@@ -144,6 +147,7 @@ export function CharacterPage() {
                 canRename={canRename && !renaming && !renameOn}
                 renameOn={renameOn}
                 onRename={() => setRenaming(true)}
+                canRetire={mine && c.status === "active"}
                 onPronouns={mine && c.status === "active" && !saying ? () => setSaying(true) : undefined}
                 canDelete={mine || custodian}
                 canMove={custodian}
@@ -155,6 +159,7 @@ export function CharacterPage() {
         </PageTitle>
       </Header>
       {rename}
+      {c.status === "retired" && <LeavingCard character={c} canChange={mine || custodian || (!!home.data && abilities(home.data.my_role, custodian).running)} />}
       {pronouns}
       <Tabs
         tabs={[

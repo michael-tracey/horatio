@@ -1141,6 +1141,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/leaving": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Leaving
+         * @description Change why a retired character left, or whether its troupes' Who's Who lists
+         *     it: its player, or its home troupe's running staff.
+         */
+        put: operations["change_leaving_api_characters__character_id__leaving_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/log": {
         parameters: {
             query?: never;
@@ -1850,7 +1871,9 @@ export interface paths {
         put?: never;
         /**
          * Retire Character
-         * @description Characters are never deleted, only retired.
+         * @description Characters are never deleted, only retired: for a reason, which goes in the log
+         *     with the note, and listed on its troupes' Who's Who if the player chooses. With
+         *     no reason it is not listed.
          */
         post: operations["retire_character_api_characters__character_id__retire_post"];
         delete?: never;
@@ -6541,6 +6564,10 @@ export interface components {
             id: string;
             /** Kind */
             kind: string;
+            /** Left Listed */
+            left_listed: boolean;
+            /** Left Reason */
+            left_reason: string | null;
             /** Name */
             name: string;
             /** Next Rename On */
@@ -9632,6 +9659,24 @@ export interface components {
             /** Key */
             key: string;
         };
+        /**
+         * Leaving
+         * @description Why a character left, and whether its troupes' Who's Who lists it.
+         */
+        Leaving: {
+            /** Listed */
+            listed: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "final_death" | "off_field" | "inactive";
+        };
         /** LedTroupe */
         LedTroupe: {
             /**
@@ -10335,6 +10380,10 @@ export interface components {
             id: string;
             /** Kind */
             kind: string;
+            /** Left Listed */
+            left_listed: boolean;
+            /** Left Reason */
+            left_reason: string | null;
             /** Name */
             name: string;
             /** Next Rename On */
@@ -16719,6 +16768,41 @@ export interface operations {
             };
         };
     };
+    change_leaving_api_characters__character_id__leaving_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Leaving"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     character_log_api_characters__character_id__log_get: {
         parameters: {
             query?: {
@@ -18094,7 +18178,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Leaving"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

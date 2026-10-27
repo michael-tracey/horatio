@@ -110,8 +110,8 @@ A ghoul PC made a vampire in play by its sire. The home troupe's lead storytelle
 _Avoid_: Conversion, turning, siring (in names)
 
 **Retired Character**:
-A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history.
-_Avoid_: Deleted, dead, inactive
+A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history. Retiring gives a reason, which is in-game information: Final Death, Off-field (alive, but away from the domain) or Inactive (the player stopped; it says nothing in game). The player chooses whether the troupe's Who's Who lists it under "No longer with us".
+_Avoid_: Deleted, dead, inactive (except as the reason)
 
 **Splat**:
 The kind of supernatural a character is, such as Vampire, Werewolf or Changeling.

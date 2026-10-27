@@ -410,6 +410,8 @@ MESSAGES: dict[str, str] = {
     "account.email_change_notice_failed": "Horatio could not tell {from_email} that "
     "{member}'s email changed: {error}",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
+    "character.retired": "{actor} retired {character}: {why}, {listing}. {note}",
+    "character.leaving": "{actor} changed why {character} left: {why}, {listing}. {note}",
     "account.merged": "The custodian, {actor}, merged @{merged_handle} into @{kept_handle},"
     " the same person, moving {moved}: {reason}",
     "account.merge_email_failed": "Horatio could not email @{kept_handle} at {to} about"
