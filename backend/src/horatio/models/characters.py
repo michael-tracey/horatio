@@ -79,6 +79,9 @@ class Character(Imported, Record):
     # A custom kind as staff set it up for this NPC: {"name", "nature", "resource":
     # {"name", "size", "per_turn", "regains"}}. Null for every other kind.
     npc_custom_kind: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # Staff list this NPC on its troupe's Who's Who though it holds no title there
+    # (horatio.whos_who). Titled NPCs are listed anyway.
+    on_whos_who: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class CharacterTrait(Record):

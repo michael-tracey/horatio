@@ -1,7 +1,7 @@
 """viewings: the custodian viewing Horatio as someone, read-only, for support
 
 Revision ID: 0094
-Revises: 0085
+Revises: 0093
 Create Date: 2026-10-27 20:00:00.000000
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0094"
-down_revision: str | None = "0085"
+down_revision: str | None = "0093"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

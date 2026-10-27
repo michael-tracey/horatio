@@ -7,12 +7,14 @@ import { PersonPicker } from "../components/PersonPicker";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Textarea } from "../components/ui";
 import { useDates } from "../dates";
 import { useAction, useMe } from "../hooks";
+import { useSuspendedIds } from "./custodian/Suspension";
 import { roleLabel } from "./troupe/roles";
 import { requestStatus } from "./troupeRequests";
 
 export function TroupesPage() {
   const me = useMe();
   const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
+  const suspended = useSuspendedIds(!!me.data?.is_custodian);
 
   return (
     <>
@@ -30,7 +32,10 @@ export function TroupesPage() {
                       <Avatar name={t.name} picture={t.portrait} size="sm" />
                       {t.name}
                     </span>
-                    {t.my_role && <Badge tone="gold">{roleLabel(t.my_role)}</Badge>}
+                    <span className="flex items-center gap-2">
+                      {suspended.has(t.lead_user_id) && <Badge tone="blood">lead suspended</Badge>}
+                      {t.my_role && <Badge tone="gold">{roleLabel(t.my_role)}</Badge>}
+                    </span>
                   </Link>
                 </li>
               ))}

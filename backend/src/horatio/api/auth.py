@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import handles, preferences
+from horatio import handles, preferences, suspensions
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
@@ -171,6 +171,7 @@ def reset_user(db: DbSession, token: str) -> User:
             status.HTTP_404_NOT_FOUND,
             "This reset link has expired or been used. Ask for a new one.",
         )
+    suspensions.refuse(db, user)
     return user
 
 

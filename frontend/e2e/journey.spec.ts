@@ -1634,6 +1634,106 @@ test("at a game, a Camarilla character with Leadership 2 learns about two of a r
   await s.screenshot(shots("play-others-sabbat"));
 });
 
+test("the Who's Who: a player sees the court in rank order, their clan and Other, finds a character by its player, and prints it; others are refused", async ({ browser }) => {
+  const custodian = await person(browser, "whoswho-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "whoswho-lead");
+  const ana = await person(browser, "whoswho-ana");
+  const bea = await person(browser, "whoswho-bea");
+  const cy = await person(browser, "whoswho-cy");
+  const outsider = await person(browser, "whoswho-outsider");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Hall of Names ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // A Camarilla character of `clan`, built through the API and accepted home.
+  const build = async (page: Page, name: string, clan: string, inClan: [string, number][]): Promise<string> => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: clan, rating: null });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: inClan,
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+  const brujah: [string, number][] = [["Celerity", 2], ["Potence", 1], ["Presence", 1]];
+  // Varga is the Prince and the Ventrue Primogen, Roth the Brujah Primogen, and the
+  // Gangrel, with no Primogen, have no seat: Wren is under Other.
+  const varga = await build(ana.page, "Varga", "Ventrue", [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]]);
+  const roth = await build(bea.page, "Roth", "Brujah", brujah);
+  await build(cy.page, "Wren", "Gangrel", [["Animalism", 2], ["Fortitude", 1], ["Protean", 1]]);
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${roth}/titles`, { titles: ["Primogen"] });
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${varga}/titles`, { titles: ["Primogen", "Prince"] });
+
+  // Ana opens it from the troupe's page.
+  const p = ana.page;
+  await p.goto(`/troupes/${troupeId}`);
+  await p.getByRole("link", { name: "Who's Who" }).click();
+  const section = (name: string) => p.getByRole("region", { name, exact: true });
+  const named = (name: string) => section(name).getByRole("article").evaluateAll((cards) => cards.map((c) => c.getAttribute("aria-label")));
+  await expect(section("Court").getByRole("article")).toHaveCount(2);
+  // The court in rank order, the Prince first with both titles.
+  expect(await named("Court")).toEqual(["Varga", "Roth"]);
+  await expect(section("Court").getByRole("article", { name: "Varga" }).getByText("Prince")).toBeVisible();
+  expect(await named("Ventrue")).toEqual(["Varga"]);
+  expect(await named("Brujah")).toEqual(["Roth"]);
+  const wren = section("Other").getByRole("article", { name: "Wren" });
+  await expect(wren.getByText("Represented by: nobody yet")).toBeVisible();
+  await expect(wren.getByRole("link", { name: "whoswho-cy" })).toBeVisible();
+  // The Camarilla bans a non-pillar clan's status, which others see.
+  await expect(wren.getByText(/Lesser status ban: Not Embraced into a pillar clan/)).toBeVisible();
+  await p.screenshot(shots("whos-who"));
+
+  // Searching by a player's name finds their character, in each section it is in.
+  await p.getByLabel("Search the Who's Who").fill("whoswho-bea");
+  await expect(section("Brujah").getByRole("article", { name: "Roth" })).toBeVisible();
+  await expect(p.getByRole("article", { name: "Varga" })).toHaveCount(0);
+  await expect(p.getByRole("article", { name: "Wren" })).toHaveCount(0);
+  await p.getByLabel("Search the Who's Who").fill("");
+  await p.getByLabel("Clan", { exact: true }).selectOption("Gangrel");
+  expect(await named("Other")).toEqual(["Wren"]);
+  await expect(section("Court")).toHaveCount(0);
+
+  // The print view prints every section.
+  const printed = await p.context().newPage();
+  await printed.goto(`/print/troupes/${troupeId}/whos-who`);
+  for (const name of ["Court", "Brujah", "Ventrue", "Other"]) await expect(printed.getByRole("region", { name, exact: true })).toBeVisible();
+  await expect(printed.getByRole("region", { name: "Other" }).getByText("Nobody yet")).toBeVisible();
+  await printed.screenshot(shots("whos-who-print"));
+
+  // From the Play View, another at the game links to their entry.
+  await p.goto(`/play/characters/${varga}?tab=status`);
+  const others = p.locator("section").filter({ has: p.getByRole("heading", { name: "Others at this game" }) });
+  await others.getByRole("button", { name: /Roth/ }).click();
+  await others.getByRole("link", { name: "Roth on the Who’s Who" }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/whos-who#c-${roth}$`));
+  await expect(section("Brujah").getByRole("article", { name: "Roth" })).toBeInViewport();
+
+  // Someone with no character in the troupe sees no Who's Who, and the API refuses them.
+  const o = outsider.page;
+  await o.goto(`/troupes/${troupeId}`);
+  await expect(o.getByRole("link", { name: "Profile", exact: true })).toBeVisible();
+  await expect(o.getByRole("link", { name: "Who's Who" })).toHaveCount(0);
+  const refused = await o.request.get(`/api/troupes/${troupeId}/whos-who`, { headers });
+  expect(refused.status()).toBe(403);
+});
+
 test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own, and a house title gives status", async ({ browser }) => {
   const custodian = await person(browser, "sects-custodian");
   makeCustodian(custodian.email);
@@ -3392,6 +3492,72 @@ test("a player fills in their profile, and the custodian resets their password",
   await c.screenshot(shots("password-resets"));
 });
 
+test("the custodian changes a player's email, and the player confirms it from the new address", async ({ browser }) => {
+  const custodian = await person(browser, "chmail-custodian");
+  makeCustodian(custodian.email);
+  const player = await person(browser, "chmail-player");
+  const newEmail = `chmail-new-${run}@example.com`;
+
+  // Email is off in this suite, so the player can't change their own: their link
+  // could only go to the new address by email.
+  const p = player.page;
+  await p.getByRole("link", { name: "chmail-player" }).click();
+  await expect(p.getByText(`You sign in with ${player.email}`)).toBeVisible();
+  await expect(p.getByText("Horatio can't send email here, so ask the custodian to change your email.")).toBeVisible();
+
+  // The custodian changes it from the People list, with a reason. An address
+  // another account uses is refused.
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(player.email);
+  const row = c
+    .locator("main li")
+    .filter({ hasText: player.email })
+    .filter({ has: c.getByRole("button", { name: "Change email for chmail-player" }) });
+  await row.getByRole("button", { name: "Change email for chmail-player" }).click();
+  await row.getByLabel("New email").fill(custodian.email);
+  await row.getByLabel("Reason").fill("Lost access to the old address");
+  await row.getByRole("button", { name: "Change email", exact: true }).click();
+  await expect(row.getByText(`uses ${custodian.email} already. If both accounts are the same person's, merge them instead.`, { exact: false })).toBeVisible();
+  await row.getByLabel("New email").fill(newEmail);
+  await row.getByRole("button", { name: "Change email", exact: true }).click();
+
+  // Nothing changes until the link is opened: the custodian sends it on.
+  await expect(row.getByText(`Waiting for chmail-player to confirm ${newEmail}`, { exact: false })).toBeVisible();
+  await expect(row.getByText("new email waiting")).toBeVisible();
+  const changes = c.locator("section", { has: c.getByRole("heading", { name: "Email changes" }) });
+  await expect(changes.getByText(`${player.email} → ${newEmail}`, { exact: false })).toBeVisible();
+  const url = await row.getByLabel("Link to confirm the new email").inputValue();
+  expect(url).toContain("/confirm-email/");
+  await expect(changes.getByText(`chmail-custodian started changing chmail-player's email from ${player.email} to ${newEmail} (Lost access to the old address).`)).toBeVisible();
+  await c.screenshot(shots("email-change"));
+
+  // The player opens it, signed out, confirms, and signs in with the new address.
+  const fresh = await (await browser.newContext()).newPage();
+  await fresh.goto(new URL(url).pathname);
+  await expect(fresh.getByText(`Change the email of chmail-player's Horatio account (@${player.handle}) to ${newEmail}?`)).toBeVisible();
+  await fresh.getByRole("button", { name: "Confirm new email" }).click();
+  await expect(fresh.getByText(`Done: your email is now ${newEmail}.`, { exact: false })).toBeVisible();
+  await fresh.screenshot(shots("email-confirmed"));
+  await fresh.getByRole("link", { name: "Sign in" }).click();
+  await fresh.getByLabel("Email or handle").fill(player.email);
+  await fresh.getByLabel("Password").fill(PASSWORD);
+  await fresh.getByRole("button", { name: "Sign in" }).click();
+  await expect(fresh.getByText("Wrong email, handle or password.")).toBeVisible();
+  await fresh.getByLabel("Email or handle").fill(newEmail);
+  await fresh.getByRole("button", { name: "Sign in" }).click();
+  await expect(fresh.getByRole("heading", { name: "Your characters" })).toBeVisible();
+
+  // The link is spent, and the custodian sees the change confirmed.
+  await fresh.goto(new URL(url).pathname);
+  await expect(fresh.getByText("This link has expired, been used or been replaced by a newer one.")).toBeVisible();
+  await c.reload();
+  await expect(changes.getByText(`chmail-player confirmed their new email, ${newEmail}, changed by chmail-custodian from ${player.email} (Lost access to the old address).`)).toBeVisible();
+  await expect(changes.getByText(`${player.email} → ${newEmail}`, { exact: false })).toHaveCount(0);
+});
+
 test("the custodian filters People by the troupe a player's active character is home in", async ({ browser }) => {
   const custodian = await person(browser, "tpf-custodian");
   makeCustodian(custodian.email);
@@ -3500,6 +3666,243 @@ test("the custodian views Horatio as a player, read-only, and the player sees th
   await expect(visits.getByText("Can't find her character")).toBeVisible();
   await expect(visits.getByText(/, by viewas-custodian$/)).toBeVisible();
   await p.screenshot(shots("viewed-as"));
+});
+
+test("the custodian searches the audit log across troupes by person, days and character, and exports it", async ({ browser }) => {
+  const custodian = await person(browser, "logsearch-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "logsearch-lead");
+  const player = await person(browser, "logsearch-play");
+  const inkwells = `Court of Inkwells ${run}`;
+  const seals = `Court of Seals ${run}`;
+  const character = `Wilhelmina ${run}`;
+
+  const send = async (p: Page, method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  // The lead makes the player a narrator in each of two troupes: one change in each.
+  for (const name of [inkwells, seals]) {
+    const troupe = await send(custodian.page, "POST", "/api/troupes", { name, lead_handle: lead.handle });
+    await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: player.handle, role: "narrator" });
+  }
+  // And the player's character has two changes of its own.
+  const made = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: character });
+  await send(player.page, "PUT", `/api/characters/${made.id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  await send(player.page, "PUT", `/api/characters/${made.id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+
+  // Only the custodian can search it.
+  expect((await lead.page.request.get("/api/audit")).status()).toBe(403);
+  expect((await lead.page.request.get("/api/audit/export")).status()).toBe(403);
+
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Audit", exact: true }).click();
+  const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem");
+
+  // Everything the lead did today, in both troupes.
+  const today = await c.evaluate(() => new Date().toLocaleDateString("en-CA"));
+  await c.getByLabel("Who did it").fill(lead.handle);
+  await c.getByRole("option").filter({ hasText: lead.handle }).click();
+  await c.getByLabel("From", { exact: true }).fill(today);
+  await c.getByLabel("To", { exact: true }).fill(today);
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(found).toHaveCount(2);
+  await expect(found.filter({ hasText: seals })).toContainText("logsearch-lead made logsearch-play narrator.");
+  await expect(found.filter({ hasText: inkwells })).toContainText("logsearch-lead made logsearch-play narrator.");
+  await expect(c).toHaveURL(new RegExp(`person=${lead.handle}`));
+  await c.screenshot(shots("audit-by-person"));
+
+  const exported = async () => {
+    const download = c.waitForEvent("download");
+    await c.getByRole("link", { name: "Export as CSV" }).click();
+    const chunks: Buffer[] = [];
+    for await (const chunk of await (await download).createReadStream()) chunks.push(chunk as Buffer);
+    return Buffer.concat(chunks).toString("utf8");
+  };
+  const byLead = await exported();
+  expect(byLead.split("\n").filter((line) => line.trim())).toHaveLength(3);
+  expect(byLead).toContain(inkwells);
+  expect(byLead).toContain(seals);
+
+  // The same days, nothing yesterday.
+  await c.getByLabel("To", { exact: true }).fill(await c.evaluate(() => new Date(Date.now() - 86_400_000).toLocaleDateString("en-CA")));
+  await c.getByLabel("From", { exact: true }).fill("");
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(c.getByText("Nothing in the log matches.")).toBeVisible();
+
+  // Every change to one character, whoever made it.
+  await c.getByRole("button", { name: "Clear" }).click();
+  // The form is filled in afresh from the cleared address before anything is typed.
+  await expect(c.getByLabel("Who did it")).toHaveValue("");
+  await c.getByLabel("Character", { exact: true }).fill(character);
+  await c.getByRole("option").filter({ hasText: character }).click();
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(found).toHaveCount(2);
+  await expect(found.first()).toContainText(`logsearch-play chose Camarilla as ${character}'s sect.`);
+  await expect(found.nth(1)).toContainText(`logsearch-play chose Brujah as ${character}'s clan.`);
+  const byCharacter = await exported();
+  expect(byCharacter).toContain(`chose Camarilla as ${character}'s sect.`);
+  expect(byCharacter).toContain(`chose Brujah as ${character}'s clan.`);
+
+  // Each change leads to its character.
+  await found.first().getByRole("link", { name: /Camarilla/ }).click();
+  await expect(c).toHaveURL(new RegExp(`/characters/${made.id}`));
+});
+
+test("the custodian suspends a lead storyteller, who can't sign in until it is lifted", async ({ browser }) => {
+  const custodian = await person(browser, "susp-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "susp-lead");
+  const troupeName = `Court of Exile ${run}`;
+  const c = custodian.page;
+  await c.reload();
+  const made = await c.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+
+  // The custodian suspends them from People, with a reason only they see.
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(lead.email);
+  const row = c.locator("main li").filter({ hasText: lead.email });
+  await row.getByRole("button", { name: "Suspend susp-lead" }).click();
+  await row.getByLabel("Reason").fill("Threatened another player at the last game");
+  await row.getByRole("button", { name: "Suspend susp-lead" }).last().click();
+  await expect(row.getByText("suspended", { exact: true })).toBeVisible();
+
+  // They are listed as suspended, with the troupe that wants a new lead, and it is logged.
+  // Other tests may suspend people at the same time, so look only at this one.
+  const suspended = c.getByRole("list", { name: "Suspended people" }).getByRole("listitem").filter({ hasText: `@${lead.handle}` });
+  await expect(suspended.getByText("“Threatened another player at the last game”")).toBeVisible();
+  await expect(suspended.getByRole("link", { name: troupeName })).toBeVisible();
+  await expect(c.getByText("susp-custodian suspended susp-lead (Threatened another player at the last game).").first()).toBeVisible();
+  await c.screenshot(shots("suspended"));
+
+  // The troupe list marks the troupe.
+  await c.getByRole("link", { name: "Troupes", exact: true }).click();
+  await expect(c.locator("main li").filter({ hasText: troupeName }).getByText("lead suspended")).toBeVisible();
+
+  // The lead is signed out at once, and told why they can't sign in, but not the reason.
+  const l = lead.page;
+  await l.goto("/characters");
+  await expect(l.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await l.getByLabel("Email or handle").fill(lead.email);
+  await l.getByLabel("Password").fill(PASSWORD);
+  await l.getByRole("button", { name: "Sign in" }).click();
+  await expect(l.getByText("Your account is suspended. To ask about it, contact the custodian.")).toBeVisible();
+  await l.screenshot(shots("suspended-sign-in"));
+
+  // The custodian lifts it, and they can sign in again.
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(lead.email);
+  await row.getByRole("button", { name: "Lift the suspension of susp-lead" }).click();
+  await row.getByLabel("Why lift it").fill("Apologised and agreed to the code of conduct");
+  await row.getByRole("button", { name: "Lift suspension", exact: true }).click();
+  await expect(row.getByText("suspended", { exact: true })).toHaveCount(0);
+  await expect(suspended).toHaveCount(0);
+  await l.getByRole("button", { name: "Sign in" }).click();
+  await expect(l.getByRole("heading", { name: "Your characters" })).toBeVisible();
+});
+
+test("the custodian moves a character to another player, not while its game is under way, and back again", async ({ browser }) => {
+  const custodian = await person(browser, "mvc-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mvc-lead");
+  const before = await person(browser, "mvc-before");
+  const after = await person(browser, "mvc-after");
+  const troupeName = `Court of Second Hands ${run}`;
+  const send = async (p: Page, method: "GET" | "POST", url: string, data?: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  // The character was built on the wrong account, and is at home in the troupe.
+  const id = await builtVampire(before.page, "Ottilie Marsh", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });
+  const approval = await send(before.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${approval.id}/approve`, {});
+  // Its player is at a game with it: a tap on the Play View.
+  await send(before.page, "GET", `/api/characters/${id}/play`);
+  await send(before.page, "POST", `/api/characters/${id}/play/taps`, {
+    taps: [{ id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: "blood", amount: -1 }],
+  });
+
+  // The custodian finds the player on People, opens their characters and moves it.
+  const c = custodian.page;
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(before.email);
+  const row = c.locator("main li").filter({ hasText: before.email }).first();
+  await row.getByRole("button", { name: "Characters of mvc-before" }).click();
+  await expect(row.getByRole("link", { name: /Ottilie Marsh/ })).toContainText(troupeName);
+  await row.getByRole("button", { name: "Move Ottilie Marsh to another player" }).click();
+  const dialog = c.getByRole("dialog", { name: "Move Ottilie Marsh to another player" });
+  await expect(dialog.getByText(`Ottilie Marsh is played by mvc-before @${before.handle}.`)).toBeVisible();
+  await dialog.getByLabel("New player").fill(after.handle);
+  await dialog.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${after.handle}` }).click();
+  await dialog.getByLabel("Reason").fill("Signed up twice; this is their real account");
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(dialog.getByText(`Its home troupe is ${troupeName}.`, { exact: false })).toBeVisible();
+  await expect(dialog.getByText("Its sheet, XP, history, titles and status go with it.")).toBeVisible();
+  await expect(dialog.getByText(`@${before.handle} can no longer open it; @${after.handle} can, at once.`)).toBeVisible();
+  // Its game is under way, so the move waits until the game ends.
+  await expect(dialog.getByText("Ottilie Marsh is in a game on the Play View. End it first with Reset for next game, so the game isn't split between two people.")).toBeVisible();
+  const confirm = dialog.getByRole("button", { name: `Move Ottilie Marsh to @${after.handle}` });
+  await expect(confirm).toBeDisabled();
+  await c.screenshot(shots("move-character-refused"));
+
+  // The lead ends the troupe's games, and the move goes ahead.
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/play/reset`);
+  await dialog.getByRole("button", { name: "Back" }).click();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(confirm).toBeEnabled();
+  await c.screenshot(shots("move-character-confirm"));
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+
+  // The new player has it in their vault, with its history and the move in its log.
+  const a = after.page;
+  await a.reload();
+  await a.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(a.getByText(`The custodian moved Ottilie Marsh to you from @${before.handle}: Signed up twice; this is their real account`)).toBeVisible();
+  await a.keyboard.press("Escape");
+  await a.locator("main").getByRole("link", { name: /Ottilie Marsh/ }).click();
+  await a.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(
+    a.getByText(`The custodian, mvc-custodian, moved Ottilie Marsh (mvc-after) from @${before.handle} to @${after.handle}: Signed up twice; this is their real account`),
+  ).toBeVisible();
+  await expect(a.getByText(/^mvc-lead accepted Ottilie Marsh/)).toBeVisible();
+  await a.screenshot(shots("move-character-log"));
+
+  // The old player can no longer open it, and they and the lead are told.
+  const b = before.page;
+  await b.goto(`/characters/${id}`);
+  await expect(b.getByText("No such character.")).toBeVisible();
+  await b.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(b.getByText(`The custodian moved Ottilie Marsh to @${after.handle}: Signed up twice; this is their real account`)).toBeVisible();
+  await lead.page.reload();
+  await lead.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(lead.page.getByText(`The custodian moved Ottilie Marsh from @${before.handle} to @${after.handle}`, { exact: false })).toBeVisible();
+
+  // Undoing it is another move, back, from the character's own page.
+  await c.goto(`/characters/${id}`);
+  await c.getByRole("button", { name: "More for Ottilie Marsh" }).click();
+  await c.getByRole("menuitem", { name: "Move to another player…" }).click();
+  const back = c.getByRole("dialog", { name: "Move Ottilie Marsh to another player" });
+  await expect(back.getByText(`Ottilie Marsh is played by mvc-after @${after.handle}.`)).toBeVisible();
+  await back.getByLabel("New player").fill(before.handle);
+  await back.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${before.handle}` }).click();
+  await back.getByLabel("Reason").fill("Moved by mistake");
+  await back.getByRole("button", { name: "Continue" }).click();
+  await back.getByRole("button", { name: `Move Ottilie Marsh to @${before.handle}` }).click();
+  await expect(back).toBeHidden();
+  await b.goto(`/characters/${id}`);
+  await expect(b.getByRole("heading", { name: "Ottilie Marsh", level: 1 })).toBeVisible();
 });
 
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {
@@ -3612,6 +4015,113 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await expect(mine.getByText("Approved", { exact: true })).toBeVisible();
   await a.locator("main").getByRole("link", { name: troupeName }).first().click();
   await expect(a.getByText("Lead Storyteller").first()).toBeVisible();
+});
+
+test("archiving a troupe lets its characters go and ends its cycle, and the custodian reopens it", async ({ browser }) => {
+  const custodian = await person(browser, "closing-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "closing-lead");
+  const player = await person(browser, "closing-player");
+  const visitor = await person(browser, "closing-visit");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const troupeName = `Court of Last Lamps ${run}`;
+  const troupeId = (await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle })).id;
+  const otherId = (await send(custodian.page, "POST", "/api/troupes", { name: `Court of Far Lamps ${run}`, lead_handle: lead.handle })).id;
+  // A Brujah built through the API and accepted home in `home`.
+  const build = async (page: Page, name: string, home: string): Promise<string> => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: home });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+
+  // Mireille is at home here, mid-game and in an open cycle; Tobias, at home in
+  // another troupe, visits.
+  const mireille = await build(player.page, "Mireille", troupeId);
+  const tobias = await build(visitor.page, "Tobias", otherId);
+  await send(visitor.page, "POST", `/api/characters/${tobias}/troupes`, { troupe_id: troupeId });
+  const tap = { id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: "blood", amount: -1 };
+  await send(player.page, "POST", `/api/characters/${mireille}/play/taps`, { taps: [tap] });
+  const day = 24 * 60 * 60 * 1000;
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupeId}/cycles`, {
+    name: "Lamplight",
+    closes_at: new Date(Date.now() + 7 * day).toISOString(),
+    grace_ends_at: new Date(Date.now() + 14 * day).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`, {});
+
+  // The lead archives it from the Profile tab, seeing first what that settles.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/profile`);
+  await l.getByRole("button", { name: "Archive troupe…" }).click();
+  const dialog = l.getByRole("dialog", { name: `Archive ${troupeName}` });
+  await expect(dialog.getByText("leave these characters with no home troupe: Mireille (closing-player)")).toBeVisible();
+  await expect(dialog.getByText("end these characters' visits: Tobias (closing-visit)")).toBeVisible();
+  await expect(dialog.getByText("end the open downtime cycle, Lamplight, without answering or delivering it")).toBeVisible();
+  await expect(dialog.getByText(/end the games under way .*: Mireille/)).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Archive troupe" })).toBeDisabled();
+  await dialog.getByLabel("Reason").fill("The chronicle has ended");
+  await l.screenshot(shots("archive-troupe"));
+  await dialog.getByRole("button", { name: "Archive troupe" }).click();
+  await expect(l).toHaveURL(/\/troupes$/);
+  await expect(l.locator("main").getByRole("link", { name: troupeName })).toHaveCount(0);
+
+  // Both players are told; Mireille has no home troupe now and Tobias still has his.
+  const p = player.page;
+  await p.reload();
+  await p.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(p.getByText(`${troupeName} is archived (The chronicle has ended): Mireille has no home troupe now`, { exact: false })).toBeVisible();
+  await p.keyboard.press("Escape");
+  const memberships = await p.request.get(`/api/characters/${mireille}/troupes`, { headers });
+  expect(await memberships.json()).toEqual([]);
+  await visitor.page.reload();
+  await visitor.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(visitor.page.getByText(`${troupeName} is archived (The chronicle has ended): Tobias no longer visits it`)).toBeVisible();
+
+  // The custodian finds it under Archived troupes, with who archived it, why, and
+  // the characters it had; its log is still there to read.
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Archived troupes" }).click();
+  const card = c.getByRole("listitem").filter({ has: c.getByRole("heading", { name: troupeName }) });
+  await expect(card.getByText("The chronicle has ended")).toBeVisible();
+  await expect(card.getByRole("link", { name: "closing-lead" })).toBeVisible();
+  await expect(card.getByRole("link", { name: "Mireille" })).toBeVisible();
+  await expect(card.getByRole("link", { name: "Tobias" })).toBeVisible();
+  await c.screenshot(shots("archived-troupes"));
+  await card.getByRole("link", { name: "Log", exact: true }).click();
+  await expect(c.getByText("closing-lead archived the troupe (The chronicle has ended).")).toBeVisible();
+  await expect(c.getByText("closing-lead ended the downtime cycle Lamplight unanswered, as the troupe was archived.")).toBeVisible();
+
+  // Reopened, it is running again, but Mireille does not come back by herself.
+  await c.goBack();
+  await card.getByRole("button", { name: "Reopen…" }).click();
+  const reopen = c.getByRole("dialog", { name: `Reopen ${troupeName}` });
+  await reopen.getByLabel("Reason").fill("A new chronicle");
+  await reopen.getByRole("button", { name: "Reopen troupe" }).click();
+  await expect(c.getByRole("heading", { name: troupeName })).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}`);
+  await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
+  expect(await (await p.request.get(`/api/characters/${mireille}/troupes`, { headers })).json()).toEqual([]);
 });
 
 test("a player renames their character once in three months, and the custodian any time", async ({ browser }) => {
@@ -6079,7 +6589,7 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   // The lead finds it among the exceptions, with the rule broken and the reason, and approves it.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/approvals`);
-  await l.getByLabel("Kind").selectOption({ label: "Exceptions" });
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Exceptions" });
   const card = l.locator("section").filter({ hasText: "Wren" });
   await expect(card.getByText("exception, free")).toBeVisible();
   await expect(card).toContainText("Celerity: Zephyr 0 → 1, asked for free");
@@ -6177,7 +6687,7 @@ test("a player says they committed diablerie, staff approve it, and then record 
 
   // The lead sees what approving does, changes the Beast traits, and approves.
   await l.goto(`/troupes/${troupeId}/approvals`);
-  await l.getByLabel("Kind").selectOption({ label: "Diablerie" });
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Diablerie" });
   const card = l.locator("section").filter({ hasText: "Sable" });
   await expect(card).toContainText("committed diablerie on 24 Oct 2026");
   await expect(card).toContainText("Generation 1 → 2, as a free dot. Earlier buys keep what they cost.");
@@ -6709,6 +7219,159 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   await dots.getByRole("button", { name: "Log dots" }).click();
   await expect(l.getByText("2 of 5 dots")).toBeVisible();
   await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
+});
+
+test("a troupe gives equipment: a dagger from a template, a rifle by hand, refused when it breaks the rules, and a special blade from the character's page", async ({ browser }) => {
+  const custodian = await person(browser, "equip-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "equip-lead");
+  const assistant = await person(browser, "equip-assistant");
+  const player = await person(browser, "equip-player");
+  const headers = { "X-Horatio": "1" };
+  const call = (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => page.request.fetch(url, { method, headers, data });
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await call(page, method, url, data);
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Armoury ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: assistant.handle, role: "assistant_storyteller" });
+
+  // Agnes is at home in the troupe; Vera only visits it.
+  const build = async (name: string, home: boolean) => {
+    const { id } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(player.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(player.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(player.page, "POST", `/api/characters/${id}/creation/complete`);
+    if (home) {
+      const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+      await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    } else {
+      await send(player.page, "POST", `/api/characters/${id}/troupes`, { troupe_id: troupe.id });
+    }
+    return id as string;
+  };
+  const agnes = await build("Agnes", true);
+  const vera = await build("Vera", false);
+  // An NPC of the troupe's, holding a stake.
+  const bram = await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Bram" });
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/equipment`, {
+    character_id: bram.id,
+    name: "Wooden Stake",
+    kind: "melee",
+    grade: "standard",
+    qualities: [{ name: "Concealable" }, { name: "Staking" }],
+  });
+
+  // The lead gives Agnes the book's Silver Dagger from the troupe's Equipment tab.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Equipment", exact: true }).click();
+  await l.getByRole("button", { name: "Give equipment" }).click();
+  let form = l.getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Character").selectOption({ label: "Agnes (equip-player)" });
+  await form.getByLabel("Start from").selectOption({ label: "Silver Dagger" });
+  await expect(form.getByLabel("Name", { exact: true })).toHaveValue("Silver Dagger");
+  await expect(form.getByRole("list", { name: "Qualities chosen" })).toContainText("Concealable");
+  await expect(form.getByLabel("What it is")).toHaveText("1 hand · 1 damage · range 2 steps");
+  await form.getByRole("button", { name: "Give to Agnes" }).click();
+  await expect(l.getByText("Given Silver Dagger.")).toBeVisible();
+
+  // And a hunting rifle by hand. Quick Draw breaks the rules, and is refused.
+  await l.getByRole("button", { name: "Give equipment" }).click();
+  form = l.getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Character").selectOption({ label: "Agnes (equip-player)" });
+  await form.getByLabel("Name", { exact: true }).fill("Hunting rifle");
+  await form.getByLabel("Kind").selectOption({ label: "Ranged weapon" });
+  for (const quality of ["Accurate", "Long Range", "Quick Draw"]) await form.getByLabel("Add a quality").selectOption({ label: quality });
+  await expect(form.getByRole("list", { name: "Rules it breaks" })).toContainText("Long Range needs two hands, so it can't be Quick Draw.");
+  await form.getByRole("button", { name: "Give to Agnes" }).click();
+  await expect(form.getByRole("alert")).toContainText("Long Range needs two hands, so it can't be Quick Draw.");
+  await form.getByRole("button", { name: "Remove Quick Draw" }).click();
+  await expect(form.getByRole("list", { name: "Rules it breaks" })).toHaveCount(0);
+  await expect(form.getByLabel("What it is")).toHaveText("2 hands · 2 damage · 12 shots · range half a mile");
+  await form.getByRole("button", { name: "Give to Agnes" }).click();
+  await expect(l.getByText("Given Hunting rifle.")).toBeVisible();
+
+  // The API refuses giving to the visiting Vera, and lets no player give or change.
+  const visiting = await call(l, "POST", `/api/troupes/${troupe.id}/equipment`, { character_id: vera, name: "Knife", kind: "melee", grade: "cheap", qualities: [] });
+  expect(visiting.status()).toBe(422);
+  expect((await visiting.json()).detail).toContain("not Vera's home troupe");
+
+  // The assistant makes a special blade from Agnes's page: four qualities and an effect of the troupe's.
+  const a = assistant.page;
+  await a.goto(`/characters/${agnes}`);
+  await a.getByRole("button", { name: "Give equipment" }).click();
+  form = a.getByRole("dialog").getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Name", { exact: true }).fill("Blade of Saulot");
+  await form.getByLabel("Grade").selectOption({ label: "Special (any number)" });
+  for (const quality of ["Accurate", "Concealable", "Silver", "Masterwork"]) await form.getByLabel("Add a quality").selectOption({ label: quality });
+  await form.getByLabel("Masterwork detail (optional)").fill("cuts through chains");
+  await form.getByRole("button", { name: "Add a special effect" }).click();
+  await form.getByLabel("Effect 1", { exact: true }).fill("Drinks the Blood");
+  await form.getByLabel("What effect 1 does").fill("Once a game, heal 1 normal damage when it draws blood.");
+  await expect(form.getByRole("list", { name: "Rules it breaks" })).toHaveCount(0);
+  await form.getByRole("button", { name: "Give to Agnes" }).click();
+  await expect(a.getByText("Gave Agnes Blade of Saulot.")).toBeVisible();
+
+  const p = player.page;
+  const blade = (await (await p.request.get(`/api/characters/${agnes}/equipment`)).json()).items.find((i: { name: string }) => i.name === "Blade of Saulot");
+  expect(blade.special).toBe(true);
+  expect(blade.staff_note).toBeNull();
+  const made = await call(p, "POST", `/api/troupes/${troupe.id}/equipment`, { character_id: agnes, name: "Mine", kind: "melee", grade: "special", qualities: [] });
+  expect(made.status()).toBe(403);
+  const changed = await call(p, "PUT", `/api/troupes/${troupe.id}/equipment/${blade.id}`, { name: "Mine", kind: "melee", grade: "special", qualities: [], reason: "Mine" });
+  expect(changed.status()).toBe(403);
+  const told = (await (await p.request.get("/api/notifications")).json()).items.map((i: { summary: string }) => i.summary);
+  expect(told).toContain("equip-lead gave Agnes Silver Dagger (melee weapon: Concealable, Silver).");
+
+  // The troupe's tab lists them all; filtering by holder and kind finds the dagger.
+  await l.reload();
+  const held = l.getByRole("list", { name: "Equipment held" });
+  for (const name of ["Silver Dagger", "Hunting rifle", "Blade of Saulot"]) await expect(held.getByRole("listitem", { name: `${name}, held by Agnes` })).toBeVisible();
+  await expect(held.getByRole("listitem", { name: "Wooden Stake, held by Bram" })).toBeVisible();
+  const special = held.getByRole("listitem", { name: "Blade of Saulot, held by Agnes" });
+  await expect(special.getByText("Special, by Armoury")).toBeVisible();
+  await expect(special.getByRole("list", { name: "Blade of Saulot's special effects" })).toContainText("Drinks the Blood: Once a game");
+  await l.getByLabel("Held by", { exact: true }).selectOption({ label: "Agnes" });
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Melee weapons" });
+  await expect(held.getByRole("listitem", { name: /, held by / })).toHaveCount(2);
+  await expect(held.getByRole("listitem", { name: "Silver Dagger, held by Agnes" })).toBeVisible();
+  await expect(held.getByRole("listitem", { name: "Wooden Stake, held by Bram" })).toHaveCount(0);
+  await l.screenshot(shots("troupe-equipment"));
+
+  // The lead changes the dagger with a reason, and takes the rifle back.
+  const dagger = held.getByRole("listitem", { name: "Silver Dagger, held by Agnes" });
+  await dagger.getByRole("button", { name: "Change" }).click();
+  const change = dagger.getByRole("form", { name: "Change Silver Dagger" });
+  await change.getByLabel("Name", { exact: true }).fill("Grandmother's dagger");
+  await change.getByLabel("Why it changes").fill("An heirloom");
+  await change.getByRole("button", { name: "Save changes" }).click();
+  const heirloom = held.getByRole("listitem", { name: "Grandmother's dagger, held by Agnes" });
+  await heirloom.getByRole("button", { name: "History" }).click();
+  await expect(heirloom.getByRole("list", { name: "Grandmother's dagger's history" })).toContainText("Changed: renamed from Silver Dagger (An heirloom)");
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Every kind" });
+  const rifle = held.getByRole("listitem", { name: "Hunting rifle, held by Agnes" });
+  await rifle.getByRole("button", { name: "Take back" }).click();
+  await rifle.getByLabel("Why it is taken back").fill("Lost in the river");
+  await rifle.getByRole("button", { name: "Take back Hunting rifle" }).click();
+  await expect(held.getByRole("listitem", { name: "Hunting rifle, held by Agnes" })).toHaveCount(0);
+
+  await p.goto(`/characters/${agnes}/log`);
+  await expect(p.getByText("equip-lead took Hunting rifle back from Agnes (equip-player): Lost in the river")).toBeVisible();
+  await expect(p.getByText("equip-lead changed Agnes (equip-player)'s Silver Dagger: renamed from Silver Dagger (An heirloom).")).toBeVisible();
 });
 
 test("a skill's specialisations sit in its own list item, in the sheet's two columns and on a phone", async ({ browser }) => {

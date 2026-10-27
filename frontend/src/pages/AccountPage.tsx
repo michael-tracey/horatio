@@ -5,6 +5,7 @@ import { api, unwrap } from "../api/client";
 import type { PlayerOut, ProfileLink } from "../api/types";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Tabs, Textarea } from "../components/ui";
 import { useAction, useMe } from "../hooks";
+import { AccountEmail } from "./AccountEmail";
 import { SettingsPage } from "./settings/SettingsPage";
 import { ViewedAs } from "./ViewedAs";
 
@@ -47,6 +48,7 @@ export function AccountPage() {
           element={
             <>
               <ProfileForm key={player.data.id} player={player.data} />
+              <AccountEmail player={player.data} />
               <ViewedAs />
             </>
           }

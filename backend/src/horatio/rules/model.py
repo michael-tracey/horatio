@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, get_args
 
+from horatio.rules.equipment import NO_EQUIPMENT, EquipmentRules
 from horatio.rules.status import (
     NO_STATUS_RULES,
     StatusData,
@@ -267,6 +268,8 @@ class RuleSetData:
     # Unspent creation XP kept when a first home troupe accepts the character;
     # None keeps it all.
     banked_xp: int | None = None
+    # Equipment's kinds, grades, qualities and sample items (horatio.rules.equipment).
+    equipment: EquipmentRules = NO_EQUIPMENT
 
     @cached_property
     def memo(self) -> dict[Hashable, Any]:

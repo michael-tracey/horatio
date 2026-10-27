@@ -128,9 +128,11 @@ def test_removing_staff(troupe: Troupe) -> None:
 
 
 def test_deleting_a_troupe_archives_it(troupe: Troupe) -> None:
-    assert troupe.storyteller.client.delete(f"/troupes/{troupe.id}").status_code == 403
+    archive = f"/troupes/{troupe.id}/archive"
+    assert troupe.storyteller.client.post(archive, json={"reason": "Done"}).status_code == 403
+    assert troupe.lead.client.post(archive, json={}).status_code == 422
 
-    assert troupe.lead.client.delete(f"/troupes/{troupe.id}").status_code == 204
+    assert troupe.lead.client.post(archive, json={"reason": "Done"}).status_code == 200
 
     assert troupe.player.client.get("/troupes").json() == []
     assert troupe.player.client.get(f"/troupes/{troupe.id}").status_code == 404
