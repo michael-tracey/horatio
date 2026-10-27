@@ -136,7 +136,9 @@ def request_reset(db: Session, address: str, ip: str | None) -> tuple[User, str]
     """Someone asks for a link to `address` themselves. Logs the request, and if an
     account uses the address, makes it a link: the account and the link, to email."""
     address = address.strip().lower()
-    user = db.scalar(select(User).where(func.lower(User.email) == address))
+    user = db.scalar(
+        select(User).where(func.lower(User.email) == address, User.merged_into_id.is_(None))
+    )
     if user is None:
         record(db, None, REQUESTED, kind="unknown", email=address, ip=ip)
         return None

@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from horatio import delivery
 from horatio.api import (
+    account_merges,
     approvals,
     audit,
     auth,
@@ -165,6 +166,7 @@ for module in (
     play,
     play_others,
     character_moves,
+    account_merges,
     scenes,
     waiting,
     viewing,

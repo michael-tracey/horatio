@@ -35,8 +35,8 @@ def start_session(db: Session, user: User) -> str:
 
 
 def user_for_token(db: Session, token: str) -> User | None:
-    """The user a live session token belongs to, or None. Never someone suspended:
-    their sessions are deleted, and this makes sure."""
+    """The user a live session token belongs to, or None. Never a merged account,
+    nor someone suspended: their sessions are ended, and this makes sure."""
     return db.scalar(
         select(User)
         .join(SignInSession, SignInSession.user_id == User.id)
@@ -44,6 +44,7 @@ def user_for_token(db: Session, token: str) -> User | None:
             SignInSession.token_hash == hash_token(token),
             SignInSession.revoked_at.is_(None),
             SignInSession.expires_at > datetime.now(UTC),
+            User.merged_into_id.is_(None),
             ~suspensions.suspended_user(),
         )
     )

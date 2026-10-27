@@ -14,10 +14,22 @@ class User(Imported, Record):
 
     __tablename__ = "users"
     __table_args__ = (
-        # Emails are unique regardless of case.
-        Index("uq_users_email_lower", text("lower(email)"), unique=True),
-        # So are handles.
-        Index("uq_users_handle_lower", text("lower(handle)"), unique=True),
+        # Emails are unique regardless of case, among accounts not merged into
+        # another: a merged account keeps its email for the record, freed for use.
+        Index(
+            "uq_users_email_lower",
+            text("lower(email)"),
+            unique=True,
+            postgresql_where=text("merged_into_id is null"),
+        ),
+        # So are handles. A merged account's handle is held for good by the account
+        # it was merged into, as a former handle (horatio.account_merges).
+        Index(
+            "uq_users_handle_lower",
+            text("lower(handle)"),
+            unique=True,
+            postgresql_where=text("merged_into_id is null"),
+        ),
     )
 
     email: Mapped[str]
@@ -46,6 +58,11 @@ class User(Imported, Record):
     # Signs the unsubscribe links in their notification emails
     # (horatio.notification_emails). A new key cancels every link sent so far.
     unsubscribe_key: Mapped[uuid.UUID] = mapped_column(server_default=text("gen_random_uuid()"))
+    # The account this one was merged into by the custodian, the same person signed
+    # up twice (horatio.account_merges): closed, kept only as the record of what
+    # it did.
+    merged_into_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    merged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class FormerHandle(Record):

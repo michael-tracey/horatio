@@ -47,7 +47,10 @@ to argon2 on the user's next sign-in. The profile: `bio` (nullable), `links`
 (JSONB list of `{label, url}`, http or https only, at most 6) and
 `discord_handle` (nullable; the username the player gives, not checked against
 Discord). "Member since" is `created_at`, which the Yorick importer should set
-from Parse's `createdAt`.
+from Parse's `createdAt`. `merged_into_id` → users and `merged_at` (both
+nullable) mark an account the custodian merged into another (#272): closed, it
+keeps its email and handle for the record, and only open accounts' emails and
+handles are unique.
 
 **`auth_identities`**: linked sign-in providers.
 `user_id`, `provider` (`discord` | `google`), `subject`; unique on

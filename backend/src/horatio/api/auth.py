@@ -99,7 +99,10 @@ def set_session_cookie(response: Response, token: str) -> None:
 
 
 def user_by_email(db: DbSession, email: str) -> User | None:
-    return db.scalar(select(User).where(func.lower(User.email) == email.lower()))
+    """The account using an email. A merged account's email is free for use."""
+    return db.scalar(
+        select(User).where(func.lower(User.email) == email.lower(), User.merged_into_id.is_(None))
+    )
 
 
 def user_by_login(db: DbSession, login: str) -> User | None:
@@ -108,7 +111,9 @@ def user_by_login(db: DbSession, login: str) -> User | None:
     if "@" in login.removeprefix("@"):
         return user_by_email(db, login)
     handle = login.removeprefix("@").lower()
-    return db.scalar(select(User).where(func.lower(User.handle) == handle))
+    return db.scalar(
+        select(User).where(func.lower(User.handle) == handle, User.merged_into_id.is_(None))
+    )
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)

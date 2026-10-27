@@ -24,6 +24,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/accounts/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Merge
+         * @description What merging whoever has the handle `merge` into whoever has `keep` would do,
+         *     for the custodian to confirm.
+         */
+        get: operations["preview_merge_api_accounts_merge_get"];
+        put?: never;
+        /**
+         * Merge Accounts
+         * @description Merge one account into the other and close it. Only the custodian can, and only
+         *     with a reason. It can't be undone.
+         */
+        post: operations["merge_accounts_api_accounts_merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/approvals/{approval_id}/approve": {
         parameters: {
             query?: never;
@@ -3048,8 +3074,9 @@ export interface paths {
         };
         /**
          * Find Players
-         * @description Every account whose name, handle or email has `q` in it, for the custodian. With
-         *     `troupe_id`, only those with an active PC whose home troupe is that troupe.
+         * @description Every account whose name, handle or email has `q` in it, or who holds it as a
+         *     former handle, for the custodian. With `troupe_id`, only those with an active PC
+         *     whose home troupe is that troupe. Never a merged account.
          */
         get: operations["find_players_api_players_get"];
         put?: never;
@@ -3070,7 +3097,8 @@ export interface paths {
         /**
          * View Player
          * @description A player's profile. Anyone signed in may see it; it never shows their email
-         *     to anyone but themself and the custodian.
+         *     to anyone but themself and the custodian. A merged account's is the profile of
+         *     the account it was merged into.
          */
         get: operations["view_player_api_players__user_id__get"];
         put?: never;
@@ -9760,10 +9788,47 @@ export interface components {
             /** Troupe Name */
             troupe_name: string;
         };
-        /** MergeIn */
-        MergeIn: {
-            /** Entry Ids */
-            entry_ids: string[];
+        /** MergeCharacter */
+        MergeCharacter: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Retired */
+            retired: boolean;
+            /** Troupes */
+            troupes: components["schemas"]["MoveTroupe"][];
+        };
+        /** MergePreview */
+        MergePreview: {
+            /** Characters */
+            characters: components["schemas"]["MergeCharacter"][];
+            /** Handles */
+            handles: string[];
+            keep: components["schemas"]["Someone"];
+            merge: components["schemas"]["Someone"];
+            /** Others */
+            others: string[];
+            /** Refusals */
+            refusals: string[];
+            /** Settings */
+            settings: string[];
+            /** Sign In */
+            sign_in: string[];
+            /** Staff */
+            staff: components["schemas"]["MergeStaff"][];
+        };
+        /** MergeStaff */
+        MergeStaff: {
+            had: components["schemas"]["Role"] | null;
+            keeps: components["schemas"]["Role"];
+            role: components["schemas"]["Role"];
+            /** Summary */
+            summary: string;
+            troupe: components["schemas"]["MoveTroupe"];
         };
         /**
          * ModifierChange
@@ -14236,6 +14301,15 @@ export interface components {
              */
             unbanked: number;
         };
+        /** MergeIn */
+        horatio__api__account_merges__MergeIn: {
+            /** Keep */
+            keep: string;
+            /** Merge */
+            merge: string;
+            /** Reason */
+            reason: string;
+        };
         /** BlockIn */
         horatio__api__influence_effects__BlockIn: {
             /** Activity */
@@ -14254,6 +14328,11 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /** MergeIn */
+        horatio__api__influence_log__MergeIn: {
+            /** Entry Ids */
+            entry_ids: string[];
         };
         /** BlockIn */
         horatio__api__influence_lookups__BlockIn: {
@@ -14301,6 +14380,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ViewedAs"][];
+                };
+            };
+        };
+    };
+    preview_merge_api_accounts_merge_get: {
+        parameters: {
+            query: {
+                keep: string;
+                merge: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_accounts_api_accounts_merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__account_merges__MergeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -19940,7 +20082,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MergeIn"];
+                "application/json": components["schemas"]["horatio__api__influence_log__MergeIn"];
             };
         };
         responses: {

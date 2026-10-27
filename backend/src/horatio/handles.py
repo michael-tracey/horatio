@@ -8,7 +8,8 @@ at most once in 30 days. Changing only its case is not a change.
 
 A handle someone changes from is held for them for 90 days: no one else can
 take it, and finding someone by it still finds them, so links and memories of
-it keep working. They can take it back themselves.
+it keep working. They can take it back themselves. The handle of an account
+merged into theirs is held for them for good (horatio.account_merges).
 """
 
 import re
@@ -44,9 +45,12 @@ def clean(handle: str) -> str:
 
 
 def holder(db: Session, handle: str) -> User | None:
-    """Whoever has the handle, or held it in the last 90 days, regardless of case."""
+    """Whoever has the handle, or held it in the last 90 days, regardless of case.
+    A merged account has none: its handle finds the account it was merged into."""
     wanted = handle.strip().removeprefix("@").lower()
-    current = db.scalar(select(User).where(func.lower(User.handle) == wanted))
+    current = db.scalar(
+        select(User).where(func.lower(User.handle) == wanted, User.merged_into_id.is_(None))
+    )
     if current is not None:
         return current
     return db.scalar(
@@ -55,6 +59,15 @@ def holder(db: Session, handle: str) -> User | None:
         .where(func.lower(FormerHandle.handle) == wanted, FormerHandle.held_until > func.now())
         .order_by(FormerHandle.held_until.desc())
         .limit(1)
+    )
+
+
+def held(handle: str) -> ColumnElement[bool]:
+    """Whether the person holds `handle` as a former handle, regardless of case."""
+    return exists().where(
+        FormerHandle.user_id == User.id,
+        func.lower(FormerHandle.handle) == handle.strip().removeprefix("@").lower(),
+        FormerHandle.held_until > func.now(),
     )
 
 
@@ -113,6 +126,11 @@ def change(db: Session, user: User, wanted: str) -> None:
     )
     db.add(FormerHandle(user_id=user.id, handle=user.handle, held_until=now + HELD_FOR))
     record(db, user, "account.handle_changed", from_handle=user.handle, handle=handle)
+    # Accounts merged into theirs are named after their handle (horatio.account_merges).
+    for merged in db.scalars(select(User).where(User.merged_into_id == user.id)):
+        merged.display_name = merged.display_name.replace(
+            f"(merged into @{user.handle})", f"(merged into @{handle})"
+        )
     user.handle = handle
     user.handle_changed_at = now
 
@@ -132,9 +150,9 @@ def find(
     db: Session, q: str = "", *, troupe: Troupe | None = None, offset: int = 0, limit: int = 20
 ) -> list[Found]:
     """People to pick from, a page at a time: everyone, or with `q` those whose
-    handle starts with it, then those whose display name has it in it. With a
-    troupe, the people who play there come first. Then alphabetically by display
-    name."""
+    handle starts with it (or who hold it as a former handle), then those whose
+    display name has it in it. With a troupe, the people who play there come
+    first. Then alphabetically by display name. Never a merged account."""
     q = q.strip().removeprefix("@").lower()
     plays_here: ColumnElement[bool] = false()
     staff_role: ColumnElement[Any] = null()
@@ -155,9 +173,9 @@ def find(
             .scalar_subquery(),
         )
         order.append(case((plays_here, 0), else_=1))
-    query = select(User, plays_here, staff_role)
+    query = select(User, plays_here, staff_role).where(User.merged_into_id.is_(None))
     if q:
-        by_handle = func.lower(User.handle).startswith(q, autoescape=True)
+        by_handle = or_(func.lower(User.handle).startswith(q, autoescape=True), held(q))
         query = query.where(
             or_(by_handle, func.lower(User.display_name).contains(q, autoescape=True))
         )

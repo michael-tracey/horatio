@@ -11658,23 +11658,144 @@
         "title": "MembershipOut",
         "type": "object"
       },
-      "MergeIn": {
+      "MergeCharacter": {
         "properties": {
-          "entry_ids": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "troupes": {
             "items": {
-              "format": "uuid",
-              "type": "string"
+              "$ref": "#/components/schemas/MoveTroupe"
             },
-            "maxItems": 100,
-            "minItems": 1,
-            "title": "Entry Ids",
+            "title": "Troupes",
             "type": "array"
           }
         },
         "required": [
-          "entry_ids"
+          "id",
+          "name",
+          "retired",
+          "troupes"
         ],
-        "title": "MergeIn",
+        "title": "MergeCharacter",
+        "type": "object"
+      },
+      "MergePreview": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/MergeCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "handles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Handles",
+            "type": "array"
+          },
+          "keep": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "merge": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "others": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Others",
+            "type": "array"
+          },
+          "refusals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Refusals",
+            "type": "array"
+          },
+          "settings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Settings",
+            "type": "array"
+          },
+          "sign_in": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sign In",
+            "type": "array"
+          },
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/MergeStaff"
+            },
+            "title": "Staff",
+            "type": "array"
+          }
+        },
+        "required": [
+          "keep",
+          "merge",
+          "characters",
+          "staff",
+          "sign_in",
+          "settings",
+          "handles",
+          "others",
+          "refusals"
+        ],
+        "title": "MergePreview",
+        "type": "object"
+      },
+      "MergeStaff": {
+        "properties": {
+          "had": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keeps": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "troupe": {
+            "$ref": "#/components/schemas/MoveTroupe"
+          }
+        },
+        "required": [
+          "troupe",
+          "role",
+          "had",
+          "keeps",
+          "summary"
+        ],
+        "title": "MergeStaff",
         "type": "object"
       },
       "ModifierChange": {
@@ -23554,6 +23675,29 @@
         "title": "XpSummary",
         "type": "object"
       },
+      "horatio__api__account_merges__MergeIn": {
+        "properties": {
+          "keep": {
+            "title": "Keep",
+            "type": "string"
+          },
+          "merge": {
+            "title": "Merge",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "keep",
+          "merge",
+          "reason"
+        ],
+        "title": "MergeIn",
+        "type": "object"
+      },
       "horatio__api__influence_effects__BlockIn": {
         "properties": {
           "activity": {
@@ -23601,6 +23745,25 @@
           "starts_at"
         ],
         "title": "BlockIn",
+        "type": "object"
+      },
+      "horatio__api__influence_log__MergeIn": {
+        "properties": {
+          "entry_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Entry Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entry_ids"
+        ],
+        "title": "MergeIn",
         "type": "object"
       },
       "horatio__api__influence_lookups__BlockIn": {
@@ -23677,6 +23840,91 @@
         "summary": "Viewed As",
         "tags": [
           "viewing"
+        ]
+      }
+    },
+    "/api/accounts/merge": {
+      "get": {
+        "description": "What merging whoever has the handle `merge` into whoever has `keep` would do,\nfor the custodian to confirm.",
+        "operationId": "preview_merge_api_accounts_merge_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "keep",
+            "required": true,
+            "schema": {
+              "title": "Keep",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "merge",
+            "required": true,
+            "schema": {
+              "title": "Merge",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Merge",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "post": {
+        "description": "Merge one account into the other and close it. Only the custodian can, and only\nwith a reason. It can't be undone.",
+        "operationId": "merge_accounts_api_accounts_merge_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__account_merges__MergeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Merge Accounts",
+        "tags": [
+          "custodian"
         ]
       }
     },
@@ -32512,7 +32760,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MergeIn"
+                "$ref": "#/components/schemas/horatio__api__influence_log__MergeIn"
               }
             }
           },
@@ -32838,7 +33086,7 @@
     },
     "/api/players": {
       "get": {
-        "description": "Every account whose name, handle or email has `q` in it, for the custodian. With\n`troupe_id`, only those with an active PC whose home troupe is that troupe.",
+        "description": "Every account whose name, handle or email has `q` in it, or who holds it as a\nformer handle, for the custodian. With `troupe_id`, only those with an active PC\nwhose home troupe is that troupe. Never a merged account.",
         "operationId": "find_players_api_players_get",
         "parameters": [
           {
@@ -32903,7 +33151,7 @@
     },
     "/api/players/{user_id}": {
       "get": {
-        "description": "A player's profile. Anyone signed in may see it; it never shows their email\nto anyone but themself and the custodian.",
+        "description": "A player's profile. Anyone signed in may see it; it never shows their email\nto anyone but themself and the custodian. A merged account's is the profile of\nthe account it was merged into.",
         "operationId": "view_player_api_players__user_id__get",
         "parameters": [
           {
