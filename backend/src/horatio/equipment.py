@@ -876,36 +876,123 @@ def home_characters(db: Session, troupe_id: uuid.UUID) -> list[Character]:
     )
 
 
+# --- searching items (issue #284) --------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ItemMatch:
+    """What a search asks of an item: the troupe's Equipment tab, and the Characters
+    filter's equipment condition (horatio.character_filter). A field left empty
+    matches anything."""
+
+    kind: str | None = None
+    # A quality it has, by name, with these words in its detail ("hacking" for
+    # Customized: hacking).
+    quality: str | None = None
+    detail: str = ""
+    grade: str | None = None
+    special: bool = False
+    # Words in its name.
+    name: str = ""
+    # Words anywhere in it: its name, description, qualities and their details,
+    # special effects and staff note.
+    text: str = ""
+
+    def matches(self, item: EquipmentItem) -> bool:
+        if self.kind and item.kind != self.kind:
+            return False
+        if self.grade and item.grade != self.grade:
+            return False
+        if self.special and item.grade != "special":
+            return False
+        if self.quality and not any(
+            q.name == self.quality and has_words(q.detail, self.detail)
+            for q in item_qualities(item.qualities)
+        ):
+            return False
+        return has_words(item.name, self.name) and has_words(searched_text(item), self.text)
+
+
+def has_words(text: str, words: str) -> bool:
+    """Every word of `words` is somewhere in `text`, whatever the case."""
+    found = text.casefold()
+    return all(word in found for word in words.casefold().split())
+
+
+def searched_text(item: EquipmentItem) -> str:
+    qualities = (quality_text(q) for q in item_qualities(item.qualities))
+    effects = (f"{e.get('name', '')}: {e.get('effect', '')}" for e in item.effects)
+    return "\n".join([item.name, item.description, *qualities, *effects, item.staff_note])
+
+
+SORTS = {
+    "holder": (func.lower(Character.name), Character.id),
+    "name": (func.lower(EquipmentItem.name),),
+    "date": (EquipmentItem.given_at.desc(),),
+}
+
+
 def troupe_items(
     db: Session,
     troupe_id: uuid.UUID,
     *,
-    character_id: uuid.UUID | None = None,
-    kind: str | None = None,
+    character_ids: Sequence[uuid.UUID] = (),
+    match: ItemMatch | None = None,
     statuses: Sequence[str] = ("held",),
+    given_by: uuid.UUID | None = None,
+    given_after: datetime | None = None,
+    given_before: datetime | None = None,
+    retired: bool = False,
+    sort: str = "holder",
 ) -> list[tuple[EquipmentItem, Character]]:
-    """Items of the troupe's active home characters, whichever troupe gave them, by
-    holder and then name."""
+    """Items of the troupe's active home characters (and retired ones too, if
+    asked), whichever troupe gave them, that match: of those characters, given by
+    that person between those times. By holder and then name, unless sorted by name
+    or by when they were given, newest first."""
     query = (
         select(EquipmentItem, Character)
         .join(Character, EquipmentItem.character_id == Character.id)
         .where(
             func.coalesce(Character.home_troupe_id, Character.owner_troupe_id) == troupe_id,
-            Character.status == "active",
+            Character.status.in_(["active", "retired"] if retired else ["active"]),
             EquipmentItem.status.in_(list(statuses)),
         )
         .order_by(
+            *SORTS[sort],
             func.lower(Character.name),
-            Character.id,
             func.lower(EquipmentItem.name),
             EquipmentItem.id,
         )
     )
-    if character_id is not None:
-        query = query.where(EquipmentItem.character_id == character_id)
-    if kind is not None:
-        query = query.where(EquipmentItem.kind == kind)
-    return [(item, character) for item, character in db.execute(query)]
+    match = match or ItemMatch()
+    if character_ids:
+        query = query.where(EquipmentItem.character_id.in_(list(character_ids)))
+    if match.kind is not None:
+        query = query.where(EquipmentItem.kind == match.kind)
+    if match.grade is not None:
+        query = query.where(EquipmentItem.grade == match.grade)
+    if given_by is not None:
+        query = query.where(EquipmentItem.given_by == given_by)
+    if given_after is not None:
+        query = query.where(EquipmentItem.given_at >= given_after)
+    if given_before is not None:
+        query = query.where(EquipmentItem.given_at < given_before)
+    return [(item, character) for item, character in db.execute(query) if match.matches(item)]
+
+
+def givers(db: Session, troupe_id: uuid.UUID) -> list[User]:
+    """Everyone who gave an item the troupe's home characters hold or held, by name,
+    for searching by who gave it."""
+    given = (
+        select(EquipmentItem.given_by)
+        .join(Character, EquipmentItem.character_id == Character.id)
+        .where(func.coalesce(Character.home_troupe_id, Character.owner_troupe_id) == troupe_id)
+    )
+    return list(
+        db.scalars(
+            select(User).where(User.id.in_(given)).order_by(func.lower(User.display_name), User.id)
+        )
+    )
 
 
 def items_of(

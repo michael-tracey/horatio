@@ -962,6 +962,7 @@
           "influence",
           "play",
           "npcs",
+          "equipment",
           "staff",
           "house_rules",
           "troupes",
@@ -7107,6 +7108,26 @@
         "title": "EquipmentFactsOut",
         "type": "object"
       },
+      "EquipmentGiverOut": {
+        "description": "Someone who gave an item the troupe's home characters hold or held.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "EquipmentGiverOut",
+        "type": "object"
+      },
       "EquipmentGradeOut": {
         "properties": {
           "description": {
@@ -7714,6 +7735,69 @@
           "page"
         ],
         "title": "EquipmentKindOut",
+        "type": "object"
+      },
+      "EquipmentMatch": {
+        "additionalProperties": false,
+        "description": "What an equipment condition asks of an item; empty fields match anything.",
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "special": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special"
+          }
+        },
+        "title": "EquipmentMatch",
         "type": "object"
       },
       "EquipmentOut": {
@@ -8401,6 +8485,9 @@
                 "type": "array"
               },
               {
+                "$ref": "#/components/schemas/EquipmentMatch"
+              },
+              {
                 "type": "null"
               }
             ],
@@ -8470,6 +8557,13 @@
             "title": "Character Id",
             "type": "string"
           },
+          "equipment": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Equipment",
+            "type": "array"
+          },
           "values": {
             "additionalProperties": {
               "type": "integer"
@@ -8480,7 +8574,8 @@
         },
         "required": [
           "character_id",
-          "values"
+          "values",
+          "equipment"
         ],
         "title": "FilterMatch",
         "type": "object"
@@ -22072,17 +22167,33 @@
             "title": "Characters",
             "type": "array"
           },
+          "givers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentGiverOut"
+            },
+            "title": "Givers",
+            "type": "array"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/EquipmentItemOut"
             },
             "title": "Items",
             "type": "array"
+          },
+          "not_shown": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Not Shown",
+            "type": "object"
           }
         },
         "required": [
           "items",
-          "characters"
+          "characters",
+          "givers",
+          "not_shown"
         ],
         "title": "TroupeEquipmentOut",
         "type": "object"
@@ -37766,7 +37877,7 @@
     },
     "/api/troupes/{troupe_id}/equipment": {
       "get": {
-        "description": "Every item the troupe's home characters hold, whichever troupe gave it, by\nholder: of one character, or one kind, if asked. `status` asks for those taken\nback (or discarded) as well or instead.",
+        "description": "The items the troupe's home characters hold, whichever troupe gave them, by\nholder (issue #284): those of some characters, of a kind, quality or grade, with\nwords (`q`) in their name, description, qualities, special effects or staff\nnote, given by someone between two times. `status` asks for those taken back\nor discarded as well or instead; `retired` for retired characters' too. Sorted\nby holder, name or the date given, newest first.",
         "operationId": "troupe_equipment_api_troupes__troupe_id__equipment_get",
         "parameters": [
           {
@@ -37786,8 +37897,11 @@
             "schema": {
               "anyOf": [
                 {
-                  "format": "uuid",
-                  "type": "string"
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"
@@ -37820,6 +37934,55 @@
           },
           {
             "in": "query",
+            "name": "quality",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quality"
+            }
+          },
+          {
+            "in": "query",
+            "name": "grade",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "cheap",
+                    "standard",
+                    "special"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Grade"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "status",
             "required": false,
             "schema": {
@@ -37840,6 +38003,82 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "given_by",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Given By"
+            }
+          },
+          {
+            "in": "query",
+            "name": "given_after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Given After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "given_before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Given Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "retired",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Retired",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "holder",
+              "enum": [
+                "holder",
+                "name",
+                "date"
+              ],
+              "title": "Sort",
+              "type": "string"
             }
           }
         ],

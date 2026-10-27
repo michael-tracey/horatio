@@ -4380,9 +4380,12 @@ export interface paths {
         };
         /**
          * Troupe Equipment
-         * @description Every item the troupe's home characters hold, whichever troupe gave it, by
-         *     holder: of one character, or one kind, if asked. `status` asks for those taken
-         *     back (or discarded) as well or instead.
+         * @description The items the troupe's home characters hold, whichever troupe gave them, by
+         *     holder (issue #284): those of some characters, of a kind, quality or grade, with
+         *     words (`q`) in their name, description, qualities, special effects or staff
+         *     note, given by someone between two times. `status` asks for those taken back
+         *     or discarded as well or instead; `retired` for retired characters' too. Sorted
+         *     by holder, name or the date given, newest first.
          */
         get: operations["troupe_equipment_api_troupes__troupe_id__equipment_get"];
         put?: never;
@@ -5998,7 +6001,7 @@ export interface components {
          * AuditGroup
          * @enum {string}
          */
-        AuditGroup: "approvals" | "xp" | "sheets" | "creation" | "status" | "titles" | "downtimes" | "influence" | "play" | "npcs" | "staff" | "house_rules" | "troupes" | "accounts" | "system";
+        AuditGroup: "approvals" | "xp" | "sheets" | "creation" | "status" | "titles" | "downtimes" | "influence" | "play" | "npcs" | "equipment" | "staff" | "house_rules" | "troupes" | "accounts" | "system";
         /** AuditGroupOut */
         AuditGroupOut: {
             key: components["schemas"]["AuditGroup"];
@@ -8163,6 +8166,19 @@ export interface components {
             /** Shots */
             shots: number | null;
         };
+        /**
+         * EquipmentGiverOut
+         * @description Someone who gave an item the troupe's home characters hold or held.
+         */
+        EquipmentGiverOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** EquipmentGradeOut */
         EquipmentGradeOut: {
             /** Description */
@@ -8368,6 +8384,22 @@ export interface components {
             range: string | null;
             /** Shots */
             shots: number | null;
+        };
+        /**
+         * EquipmentMatch
+         * @description What an equipment condition asks of an item; empty fields match anything.
+         */
+        EquipmentMatch: {
+            /** Detail */
+            detail?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Quality */
+            quality?: string | null;
+            /** Special */
+            special?: boolean | null;
         };
         /** EquipmentOut */
         EquipmentOut: {
@@ -8645,7 +8677,7 @@ export interface components {
             /** Op */
             op: string;
             /** Value */
-            value?: number | string | string[] | null;
+            value?: number | string | string[] | components["schemas"]["EquipmentMatch"] | null;
             /** What */
             what: string;
             /** Which */
@@ -8672,6 +8704,8 @@ export interface components {
              * Format: uuid
              */
             character_id: string;
+            /** Equipment */
+            equipment: string[];
             /** Values */
             values: {
                 [key: string]: number;
@@ -13871,8 +13905,14 @@ export interface components {
         TroupeEquipmentOut: {
             /** Characters */
             characters: components["schemas"]["EquipmentHolderOut"][];
+            /** Givers */
+            givers: components["schemas"]["EquipmentGiverOut"][];
             /** Items */
             items: components["schemas"]["EquipmentItemOut"][];
+            /** Not Shown */
+            not_shown: {
+                [key: string]: number;
+            };
         };
         /** TroupeKindOut */
         TroupeKindOut: {
@@ -23346,9 +23386,17 @@ export interface operations {
     troupe_equipment_api_troupes__troupe_id__equipment_get: {
         parameters: {
             query?: {
-                character_id?: string | null;
+                character_id?: string[] | null;
                 kind?: ("melee" | "ranged" | "protective" | "miscellaneous") | null;
+                quality?: string | null;
+                grade?: ("cheap" | "standard" | "special") | null;
+                q?: string;
                 status?: ("held" | "taken_back" | "discarded")[] | null;
+                given_by?: string | null;
+                given_after?: string | null;
+                given_before?: string | null;
+                retired?: boolean;
+                sort?: "holder" | "name" | "date";
             };
             header?: never;
             path: {

@@ -211,7 +211,8 @@ def test_export_is_a_csv_of_what_the_filters_find(troupe: Troupe, session: Sessi
 
 def test_filters_and_characters_to_pick(troupe: Troupe) -> None:
     other = second_troupe(troupe, "Court of Ash")
-    assert troupe.lead.client.delete(f"/troupes/{other}").status_code == 204
+    archived = troupe.lead.client.post(f"/troupes/{other}/archive", json={"reason": "Done"})
+    assert archived.status_code == 200
     agnes = new_character(troupe, troupe.player)
     troupe.player.client.post(f"/characters/{agnes}/home-troupe", json={"troupe_id": troupe.id})
     new_character(troupe, troupe.stranger, "Agatha")

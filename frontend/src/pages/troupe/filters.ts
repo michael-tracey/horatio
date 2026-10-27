@@ -5,9 +5,11 @@
  * a condition or another group.
  */
 
-export type What = "status" | "trait" | "choice" | "title" | "player" | "xp" | "count";
+export type What = "status" | "trait" | "choice" | "title" | "player" | "xp" | "count" | "character" | "equipment";
 export type Op = "is" | "is_not" | "family" | "lt" | "lte" | "eq" | "gte" | "gt" | "has" | "lacks";
-export type Condition = { what: What; which?: string | null; op: Op; value?: number | string | string[] | null };
+/** What an equipment condition asks of an item it holds; whatever is left out matches anything. */
+export type EquipmentMatch = { kind?: string | null; quality?: string | null; detail?: string; special?: boolean; name?: string };
+export type Condition = { what: What; which?: string | null; op: Op; value?: number | string | string[] | EquipmentMatch | null };
 export type Group = { match: "all" | "any"; items: Item[] };
 export type Item = Group | Condition;
 
@@ -33,6 +35,8 @@ export const WHATS: Record<What, string> = {
   player: "Player",
   xp: "Experience",
   count: "How many",
+  character: "Character",
+  equipment: "Equipment",
 };
 
 export const COMPARE: Op[] = ["lt", "lte", "eq", "gte", "gt"];
@@ -66,6 +70,10 @@ export function blank(what: What): Condition {
       return { what, which: "earned", op: "gte", value: 0 };
     case "count":
       return { what, which: "merits", op: "gte", value: 1 };
+    case "character":
+      return { what, op: "is", value: [] };
+    case "equipment":
+      return { what, op: "has", value: {} };
   }
 }
 
@@ -88,6 +96,10 @@ export function complete(c: Condition): boolean {
     case "xp":
     case "count":
       return !!c.which && typeof c.value === "number";
+    case "character":
+      return Array.isArray(c.value) && c.value.length > 0;
+    case "equipment":
+      return true;
   }
 }
 
@@ -119,8 +131,8 @@ export function columns(group: Group): Condition[] {
   return found;
 }
 
-/** Names the sentence needs: categories by key, players by id. */
-export type Names = { category: (key: string) => string; player: (id: string) => string };
+/** Names the sentence needs: categories by key, players and characters by id. */
+export type Names = { category: (key: string) => string; player: (id: string) => string; character: (id: string) => string };
 
 /** "trait:skills/Occult" → "Occult"; a detail shows after a colon. */
 export function traitName(which: string | null | undefined): string {
@@ -160,7 +172,43 @@ export function describe(c: Condition, names: Names): string {
       return `${c.which === "unspent" ? "Unspent XP" : "XP earned"} ${op} ${c.value}`;
     case "count":
       return `Number of ${names.category(c.which ?? "").toLowerCase()} ${op} ${c.value}`;
+    case "character":
+      return `Character ${op} ${list((Array.isArray(c.value) ? c.value : []).map(names.character), "or")}`;
+    case "equipment":
+      return `${c.op === "has" ? "Has" : "Lacks"} ${equipmentText(matchOf(c))}`;
   }
+}
+
+/** The kinds of item, as a sentence names one. */
+const KIND_WORDS: Record<string, [string, boolean]> = {
+  melee: ["melee weapon", true],
+  ranged: ["ranged weapon", true],
+  protective: ["protective gear", false],
+  miscellaneous: ["miscellaneous gear", false],
+};
+
+export function matchOf(c: Condition): EquipmentMatch {
+  return c.value && typeof c.value === "object" && !Array.isArray(c.value) ? c.value : {};
+}
+
+/** An equipment match as words: "a ranged weapon with Silver Ammunition", "protective gear", "equipment". */
+export function equipmentText(m: EquipmentMatch): string {
+  const [noun, countable] = (m.kind && KIND_WORDS[m.kind]) || ["equipment", false];
+  const special = m.special ? `special ${noun}` : noun;
+  const words = [countable ? `a ${special}` : special];
+  if (m.quality) words.push(`with ${m.quality}${m.detail?.trim() ? `: ${m.detail.trim()}` : ""}`);
+  if (m.name?.trim()) words.push(`named “${m.name.trim()}”`);
+  return words.join(" ");
+}
+
+/** Whether the filter asks about equipment, so the list shows what each character holds. */
+export function asksEquipment(group: Group): boolean {
+  return group.items.some((item) => (isGroup(item) ? asksEquipment(item) : item.what === "equipment"));
+}
+
+/** A filter for just these characters, as the Equipment tab's Find these characters sends. */
+export function charactersFilter(ids: string[]): Group {
+  return { match: "all", items: [{ what: "character", op: "is", value: ids }] };
 }
 
 /** The whole filter as a sentence; sub-groups in brackets. */

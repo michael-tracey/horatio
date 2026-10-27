@@ -36,6 +36,7 @@ class AuditGroup(StrEnum):
     INFLUENCE = "influence"
     PLAY = "play"
     NPCS = "npcs"
+    EQUIPMENT = "equipment"
     STAFF = "staff"
     HOUSE_RULES = "house_rules"
     TROUPES = "troupes"
@@ -62,6 +63,7 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
     ),
     AuditGroup.PLAY: ("Play", ("play.", "scene.")),
     AuditGroup.NPCS: ("NPCs", ("npc.",)),
+    AuditGroup.EQUIPMENT: ("Equipment", ("equipment.",)),
     AuditGroup.STAFF: ("Staff", ("staff.", "troupe.lead_appointed")),
     AuditGroup.HOUSE_RULES: (
         "House rules",

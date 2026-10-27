@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { columns, complete, decode, DEFAULT_FILTER, encode, ready, sentence, type Group } from "./filters";
+import { asksEquipment, charactersFilter, columns, complete, decode, DEFAULT_FILTER, encode, ready, sentence, type Group } from "./filters";
 
 const names = {
   category: (key: string) => ({ clan: "Clan", merits: "Merits" })[key] ?? key,
   player: (id: string) => ({ u1: "Jane" })[id] ?? id,
+  character: (id: string) => ({ c1: "Agnes", c2: "Bram" })[id] ?? id,
 };
 
 const OCCULT = { what: "trait", which: "skills/Occult", op: "lt", value: 3 } as const;
@@ -32,6 +33,29 @@ describe("sentence", () => {
     expect(read({ what: "player", op: "is", value: "u1" })).toBe("Player is Jane");
     expect(read({ what: "xp", which: "unspent", op: "gt", value: 5 })).toBe("Unspent XP above 5");
     expect(read({ what: "count", which: "merits", op: "gte", value: 2 })).toBe("Number of merits at least 2");
+    expect(read({ what: "character", op: "is", value: ["c1", "c2"] })).toBe("Character is Agnes or Bram");
+  });
+
+  it("reads an equipment condition", () => {
+    const read = (op: "has" | "lacks", value: object) => sentence({ match: "all", items: [{ what: "equipment", op, value }] }, names);
+    expect(read("has", {})).toBe("Has equipment");
+    expect(read("has", { kind: "ranged", quality: "Silver Ammunition" })).toBe("Has a ranged weapon with Silver Ammunition");
+    expect(read("lacks", { kind: "protective" })).toBe("Lacks protective gear");
+    expect(read("has", { quality: "Customized", detail: " hacking " })).toBe("Has equipment with Customized: hacking");
+    expect(read("has", { kind: "melee", special: true, name: "stake" })).toBe("Has a special melee weapon named “stake”");
+  });
+});
+
+describe("equipment links", () => {
+  it("knows a filter asking about equipment, in a group or not", () => {
+    expect(asksEquipment(DEFAULT_FILTER)).toBe(false);
+    expect(asksEquipment({ match: "all", items: [{ match: "any", items: [{ what: "equipment", op: "lacks", value: {} }] }] })).toBe(true);
+  });
+
+  it("filters to the characters given, and waits for one", () => {
+    expect(charactersFilter(["c1"])).toEqual({ match: "all", items: [{ what: "character", op: "is", value: ["c1"] }] });
+    expect(complete({ what: "character", op: "is", value: [] })).toBe(false);
+    expect(complete({ what: "equipment", op: "has", value: {} })).toBe(true);
   });
 });
 

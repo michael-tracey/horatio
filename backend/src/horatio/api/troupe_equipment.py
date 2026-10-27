@@ -5,6 +5,7 @@ which its player or staff give to another home character or discard, and staff
 restore."""
 
 import uuid
+from collections import Counter
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -33,6 +34,8 @@ router = APIRouter(tags=["equipment"])
 
 Status = Literal["held", "taken_back", "discarded"]
 Kind = Literal["melee", "ranged", "protective", "miscellaneous"]
+Grade = Literal["cheap", "standard", "special"]
+STATUSES: tuple[Status, ...] = ("held", "taken_back", "discarded")
 
 
 class SpecialEffectModel(BaseModel):
@@ -131,10 +134,21 @@ class EquipmentHolderOut(BaseModel):
     splat: str
 
 
+class EquipmentGiverOut(BaseModel):
+    """Someone who gave an item the troupe's home characters hold or held."""
+
+    id: uuid.UUID
+    name: str
+
+
 class TroupeEquipmentOut(BaseModel):
     items: list[EquipmentItemOut]
     # The troupe's active home characters, PCs and NPCs, by name.
     characters: list[EquipmentHolderOut]
+    # Who gave the troupe's items, by name, to search by.
+    givers: list[EquipmentGiverOut]
+    # How many more items match with a status not asked for: {"discarded": 2}.
+    not_shown: dict[str, int]
 
 
 class EquipmentReceiverOut(BaseModel):
@@ -403,20 +417,41 @@ def troupe_equipment(
     troupe_id: uuid.UUID,
     db: DbSession,
     user: CurrentUser,
-    character_id: uuid.UUID | None = None,
+    character_id: Annotated[list[uuid.UUID] | None, Query()] = None,
     kind: Kind | None = None,
+    quality: Annotated[str | None, Query(max_length=100)] = None,
+    grade: Grade | None = None,
+    q: Annotated[str, Query(max_length=200)] = "",
     status: Annotated[list[Status] | None, Query()] = None,
+    given_by: uuid.UUID | None = None,
+    given_after: datetime | None = None,
+    given_before: datetime | None = None,
+    retired: bool = False,
+    sort: Literal["holder", "name", "date"] = "holder",
 ) -> TroupeEquipmentOut:
-    """Every item the troupe's home characters hold, whichever troupe gave it, by
-    holder: of one character, or one kind, if asked. `status` asks for those taken
-    back (or discarded) as well or instead."""
+    """The items the troupe's home characters hold, whichever troupe gave them, by
+    holder (issue #284): those of some characters, of a kind, quality or grade, with
+    words (`q`) in their name, description, qualities, special effects or staff
+    note, given by someone between two times. `status` asks for those taken back
+    or discarded as well or instead; `retired` for retired characters' too. Sorted
+    by holder, name or the date given, newest first."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_EQUIPMENT)
     reader = Reader(db, user)
+    asked = set(status or ["held"])
     found = equipment.troupe_items(
-        db, troupe.id, character_id=character_id, kind=kind, statuses=status or ["held"]
+        db,
+        troupe.id,
+        character_ids=character_id or [],
+        match=equipment.ItemMatch(kind=kind, quality=quality, grade=grade, text=q),
+        statuses=STATUSES,
+        given_by=given_by,
+        given_after=given_after,
+        given_before=given_before,
+        retired=retired,
+        sort=sort,
     )
     return TroupeEquipmentOut(
-        items=[reader.item(item, character) for item, character in found],
+        items=[reader.item(item, character) for item, character in found if item.status in asked],
         characters=[
             EquipmentHolderOut(
                 id=c.id,
@@ -427,6 +462,10 @@ def troupe_equipment(
             )
             for c in equipment.home_characters(db, troupe.id)
         ],
+        givers=[
+            EquipmentGiverOut(id=u.id, name=u.display_name) for u in equipment.givers(db, troupe.id)
+        ],
+        not_shown=dict(Counter(item.status for item, _ in found if item.status not in asked)),
     )
 
 

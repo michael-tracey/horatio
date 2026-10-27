@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { EquipmentItemOut, EquipmentOut, EquipmentHolderOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
@@ -9,6 +9,8 @@ import { useAction } from "../../hooks";
 import { ItemActions } from "../character/ItemActions";
 import { EquipmentEditor, useEquipmentRules, useTroupeTemplates } from "./EquipmentEditor";
 import { factsText, kindText, qualityText, type Kind } from "./equipment";
+import { itemsCsv, readSearch, searchQuery, STATUS_NAMES, writeSearch, type ItemSearch, type Sort, type Status } from "./equipmentSearch";
+import { charactersFilter, encode } from "./filters";
 
 const KINDS: { key: Kind; name: string }[] = [
   { key: "melee", name: "Melee weapons" },
@@ -16,43 +18,42 @@ const KINDS: { key: Kind; name: string }[] = [
   { key: "protective", name: "Protective gear" },
   { key: "miscellaneous", name: "Miscellaneous gear" },
 ];
+const GRADES = [
+  { key: "cheap", name: "Cheap" },
+  { key: "standard", name: "Standard" },
+  { key: "special", name: "Special" },
+];
+const SORT_NAMES: Record<Sort, string> = { holder: "Holder", name: "Name", date: "Date given, newest first" };
+
+// The results' columns, a table from a small tablet up; cards on a phone.
+const COLUMNS = "sm:grid sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.6fr)_4.5rem_minmax(0,1.2fr)] sm:gap-3";
 
 /**
  * Every item the troupe's home characters hold, for its storytellers and
  * assistants: give one, change it, move it to another home character, discard it
- * or take it back, with filters by holder and kind. Discarded items are kept below,
- * with their history, to restore. Items go with a character whose home troupe
- * changes.
+ * or take it back. A search finds items by words in them, holder, kind, quality,
+ * grade, who gave them and when, held or discarded (kept in the URL); each opens
+ * with its history, the list exports as a CSV, and Find these characters opens
+ * the Characters list on their holders. Items go with a character whose home
+ * troupe changes.
  */
 export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troupeName: string }) {
-  const [holder, setHolder] = useState("");
-  const [kind, setKind] = useState("");
+  const dates = useDates();
+  const [params, setParams] = useSearchParams();
+  const search = readSearch(params);
+  const update = (change: Partial<ItemSearch>) => setParams(writeSearch({ ...search, ...change }), { replace: true });
   const [giving, setGiving] = useState(false);
   const [given, setGiven] = useState("");
+  const query = searchQuery(search, (day) => dates.fromInput(`${day}T00:00`));
   const list = useQuery({
-    queryKey: ["troupe-equipment", troupeId, holder, kind],
-    queryFn: () =>
-      unwrap(
-        api.GET("/api/troupes/{troupe_id}/equipment", {
-          params: { path: { troupe_id: troupeId }, query: { character_id: holder || undefined, kind: (kind as Kind) || undefined } },
-        }),
-      ),
-    placeholderData: (previous) => previous,
-  });
-  const discarded = useQuery({
-    queryKey: ["troupe-equipment", troupeId, holder, kind, "discarded"],
-    queryFn: () =>
-      unwrap(
-        api.GET("/api/troupes/{troupe_id}/equipment", {
-          params: { path: { troupe_id: troupeId }, query: { character_id: holder || undefined, kind: (kind as Kind) || undefined, status: ["discarded"] } },
-        }),
-      ),
+    queryKey: ["troupe-equipment", troupeId, query],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/equipment", { params: { path: { troupe_id: troupeId }, query } })),
     placeholderData: (previous) => previous,
   });
   const rules = useEquipmentRules("vampire");
   if (list.isPending) return <Loading />;
   if (list.error) return <ErrorText error={list.error} />;
-  const { items, characters } = list.data;
+  const { items, characters, givers, not_shown } = list.data;
 
   return (
     <div className="flex flex-col gap-4">
@@ -89,58 +90,306 @@ export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troup
         )}
         {given && <Notice>Given {given}.</Notice>}
       </Card>
-      <div className="flex flex-wrap gap-3">
-        <div className="min-w-48 flex-1 sm:max-w-xs sm:flex-none">
-          <Field label="Held by">
-            <Select value={holder} onChange={(e) => setHolder(e.target.value)}>
-              <option value="">Every character</option>
-              {characters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-        <div className="min-w-48 flex-1 sm:max-w-xs sm:flex-none">
-          <Field label="Kind">
-            <Select value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="">Every kind</option>
-              {KINDS.map((k) => (
-                <option key={k.key} value={k.key}>
-                  {k.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-      </div>
-      {items.length === 0 ? (
-        <Empty>{holder || kind ? "No equipment matches." : "No equipment yet."}</Empty>
-      ) : (
-        <ul aria-label="Equipment held" className="flex flex-col gap-2">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} rules={rules.data} troupeId={troupeId} troupeName={troupeName} holders={characters} />
-          ))}
-        </ul>
-      )}
-      {!!discarded.data?.items.length && (
-        <Card title="Discarded">
-          <p className="mb-2 text-sm text-mist">Items their players or staff discarded, kept with their history. Restore one if it was a mistake: it goes back to the character that discarded it.</p>
-          <ul aria-label="Equipment discarded" className="flex flex-col gap-2">
-            {discarded.data.items.map((item) => (
-              <ItemCard key={item.id} item={item} rules={rules.data} troupeId={troupeId} troupeName={troupeName} holders={characters} />
-            ))}
-          </ul>
-        </Card>
-      )}
+      <SearchForm search={search} update={update} rules={rules.data} holders={holderChoices(characters, items)} givers={givers} />
+      <Results troupeId={troupeId} troupeName={troupeName} search={search} update={update} items={items} notShown={not_shown} rules={rules.data} holders={characters} />
       <TroupeTemplates troupeId={troupeId} troupeName={troupeName} rules={rules.data} />
     </div>
   );
 }
 
-/** One item, with what it is and does, and staff's changes. */
-function ItemCard({
+/** The characters to search by: the troupe's home characters, and any other holder found (a retired one). */
+function holderChoices(characters: EquipmentHolderOut[], items: EquipmentItemOut[]): { id: string; name: string }[] {
+  const found = new Map(characters.map((c) => [c.id, c.name]));
+  for (const i of items) if (!found.has(i.character_id)) found.set(i.character_id, i.character_name);
+  return [...found].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function SearchForm({
+  search,
+  update,
+  rules,
+  holders,
+  givers,
+}: {
+  search: ItemSearch;
+  update: (change: Partial<ItemSearch>) => void;
+  rules: EquipmentOut | undefined;
+  holders: { id: string; name: string }[];
+  givers: { id: string; name: string }[];
+}) {
+  // Typing waits a moment before it searches.
+  const [words, setWords] = useState(search.q);
+  useEffect(() => {
+    if (words === search.q) return;
+    const wait = setTimeout(() => update({ q: words }), 300);
+    return () => clearTimeout(wait);
+  });
+  const qualities = [...new Set((rules?.qualities ?? []).filter((q) => !search.kind || q.kind === search.kind).map((q) => q.name))].sort((a, b) => a.localeCompare(b));
+  const nameOf = (id: string) => holders.find((h) => h.id === id)?.name ?? "another character";
+  const toggle = (status: Status, on: boolean) => {
+    const statuses = on ? [...search.statuses, status] : search.statuses.filter((s) => s !== status);
+    update({ statuses: statuses.length ? statuses : ["held"] });
+  };
+  const narrow = "min-w-40 flex-1 sm:max-w-56 sm:flex-none";
+  return (
+    <Card title="Find items">
+      <div className="flex flex-col gap-3">
+        <Input
+          type="search"
+          aria-label="Search equipment"
+          placeholder="Name, quality, special effect, description or staff note…"
+          value={words}
+          onChange={(e) => setWords(e.target.value)}
+        />
+        <div className="flex flex-wrap gap-3">
+          <div className={narrow}>
+            <Field label="Held by">
+              <Select value="" onChange={(e) => e.target.value && update({ holders: [...search.holders, e.target.value] })}>
+                <option value="">{search.holders.length ? "And…" : "Every character"}</option>
+                {holders
+                  .filter((h) => !search.holders.includes(h.id))
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+          </div>
+          <div className={narrow}>
+            <Field label="Kind">
+              <Select
+                value={search.kind}
+                onChange={(e) => {
+                  const kind = e.target.value;
+                  const keeps = !kind || (rules?.qualities ?? []).some((q) => q.kind === kind && q.name === search.quality);
+                  update({ kind, ...(keeps ? {} : { quality: "" }) });
+                }}
+              >
+                <option value="">Every kind</option>
+                {KINDS.map((k) => (
+                  <option key={k.key} value={k.key}>
+                    {k.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <div className={narrow}>
+            <Field label="Quality">
+              <Select value={search.quality} onChange={(e) => update({ quality: e.target.value })}>
+                <option value="">Any quality</option>
+                {qualities.map((q) => (
+                  <option key={q}>{q}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <div className={narrow}>
+            <Field label="Grade">
+              <Select value={search.grade} onChange={(e) => update({ grade: e.target.value })}>
+                <option value="">Any grade</option>
+                {GRADES.map((g) => (
+                  <option key={g.key} value={g.key}>
+                    {g.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <div className={narrow}>
+            <Field label="Given by">
+              <Select value={search.givenBy} onChange={(e) => update({ givenBy: e.target.value })}>
+                <option value="">Anyone</option>
+                {givers.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <div className={narrow}>
+            <Field label="Given from">
+              <Input type="date" value={search.from} onChange={(e) => update({ from: e.target.value })} />
+            </Field>
+          </div>
+          <div className={narrow}>
+            <Field label="Given until">
+              <Input type="date" value={search.to} onChange={(e) => update({ to: e.target.value })} />
+            </Field>
+          </div>
+          <div className={narrow}>
+            <Field label="Sort by">
+              <Select value={search.sort} onChange={(e) => update({ sort: e.target.value as Sort })}>
+                {Object.entries(SORT_NAMES).map(([key, name]) => (
+                  <option key={key} value={key}>
+                    {name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </div>
+        {search.holders.length > 0 && (
+          <ul aria-label="Holders searched" className="flex flex-wrap gap-2">
+            {search.holders.map((id) => (
+              <li key={id} className="inline-flex h-8 items-center gap-1 rounded-full border border-gold/50 px-2 text-xs text-gold">
+                {nameOf(id)}
+                <button type="button" aria-label={`Remove ${nameOf(id)}`} className="text-mist hover:text-parchment" onClick={() => update({ holders: search.holders.filter((h) => h !== id) })}>
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <legend className="sr-only">Which items</legend>
+          {(Object.keys(STATUS_NAMES) as Status[]).map((status) => (
+            <label key={status} className="flex items-center gap-1.5">
+              <input type="checkbox" checked={search.statuses.includes(status)} onChange={(e) => toggle(status, e.target.checked)} />
+              {STATUS_NAMES[status]}
+            </label>
+          ))}
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={search.retired} onChange={(e) => update({ retired: e.target.checked })} />
+            Held by retired characters
+          </label>
+        </fieldset>
+      </div>
+    </Card>
+  );
+}
+
+/** What is found: a table from a small tablet up, cards on a phone, each opening with its details and history. */
+function Results({
+  troupeId,
+  troupeName,
+  search,
+  update,
+  items,
+  notShown,
+  rules,
+  holders,
+}: {
+  troupeId: string;
+  troupeName: string;
+  search: ItemSearch;
+  update: (change: Partial<ItemSearch>) => void;
+  items: EquipmentItemOut[];
+  notShown: Record<string, number>;
+  rules: EquipmentOut | undefined;
+  holders: EquipmentHolderOut[];
+}) {
+  const dates = useDates();
+  const searching = writeSearch(search).toString() !== "";
+  const hidden = (Object.keys(notShown) as Status[]).filter((s) => notShown[s]);
+  const owners = [...new Set(items.map((i) => i.character_id))];
+  const exportCsv = () => {
+    const csv = itemsCsv(items, (at) => dates.toInput(at).slice(0, 10));
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    link.download = `${troupeName} equipment.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+  return (
+    <section aria-label="Equipment found" className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <span className="text-mist">{items.length === 1 ? "1 item" : `${items.length} items`}</span>
+        {items.length > 0 && (
+          <>
+            <Button variant="secondary" className="min-h-8" onClick={exportCsv}>
+              Export CSV
+            </Button>
+            <Link to={`/troupes/${troupeId}/characters?${new URLSearchParams({ filter: encode(charactersFilter(owners)) })}`} className="text-gold underline hover:text-parchment">
+              Find these characters
+            </Link>
+          </>
+        )}
+        {hidden.length > 0 && (
+          <span className="text-mist">
+            · {hidden.map((s) => `${notShown[s]} ${STATUS_NAMES[s].toLowerCase()}`).join(" and ")} not shown{" "}
+            <button type="button" className="underline hover:text-parchment" onClick={() => update({ statuses: [...search.statuses, ...hidden] })}>
+              Show {hidden.length === 1 && notShown[hidden[0]!] === 1 ? "it" : "them"}
+            </button>
+          </span>
+        )}
+      </div>
+      {items.length === 0 ? (
+        <Empty>{searching ? "No equipment matches." : "No equipment yet."}</Empty>
+      ) : (
+        <div className="rounded-md border border-ash bg-dusk">
+          <div aria-hidden="true" className={`hidden border-b border-ash px-3 py-2 text-xs text-mist ${COLUMNS}`}>
+            <span>Item</span>
+            <span>Held by</span>
+            <span>Kind</span>
+            <span>Qualities</span>
+            <span>Grade</span>
+            <span>Given</span>
+          </div>
+          <ul aria-label="Equipment" className="divide-y divide-ash">
+            {items.map((item) => (
+              <ItemRow key={item.id} item={item} rules={rules} troupeId={troupeId} troupeName={troupeName} holders={holders} />
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** One item: what it is, who holds it and where it came from, opening with what it does, staff's changes and its history. */
+function ItemRow({
+  item,
+  rules,
+  troupeId,
+  troupeName,
+  holders,
+}: {
+  item: EquipmentItemOut;
+  rules: EquipmentOut | undefined;
+  troupeId: string;
+  troupeName: string;
+  holders: EquipmentHolderOut[];
+}) {
+  const dates = useDates();
+  const [open, setOpen] = useState(false);
+  const label = `${item.name}, held by ${item.character_name}`;
+  return (
+    <li aria-label={label} className="p-3 text-sm">
+      <div className={`flex flex-col gap-0.5 ${COLUMNS}`}>
+        <span className="flex flex-wrap items-baseline gap-2">
+          <button type="button" aria-expanded={open} aria-label={label} className="text-left font-medium text-gold hover:underline" onClick={() => setOpen(!open)}>
+            {item.name}
+          </button>
+          {item.status !== "held" && <Badge tone="blood">{STATUS_NAMES[item.status]}</Badge>}
+        </span>
+        <span className="min-w-0">
+          <span className="text-mist sm:hidden">{item.status === "held" ? "held by " : "last held by "}</span>
+          <Link to={`/characters/${item.character_id}`} className="hover:text-gold">
+            {item.character_name}
+          </Link>
+          <span className="text-xs text-mist">{item.character_kind === "npc" ? " (NPC)" : item.player_name ? ` (${item.player_name})` : ""}</span>
+        </span>
+        <span>{item.kind_name}</span>
+        <span className={item.qualities.length ? "" : "text-mist"}>{item.qualities.length ? item.qualities.map(qualityText).join(", ") : "No qualities"}</span>
+        <span>
+          {item.grade.charAt(0).toUpperCase() + item.grade.slice(1)}
+          <span className="sm:hidden"> grade</span>
+        </span>
+        <span className="text-xs text-mist">
+          {dates.date(item.given_at)}, by {item.given_by_name ?? "someone"}
+          {item.troupe_name !== troupeName && ` of ${item.troupe_name}`}
+        </span>
+      </div>
+      {open && <ItemDetails item={item} rules={rules} troupeId={troupeId} troupeName={troupeName} holders={holders} />}
+    </li>
+  );
+}
+
+/** What an item does, and staff's changes to it. */
+function ItemDetails({
   item,
   rules,
   troupeId,
@@ -164,22 +413,19 @@ function ItemCard({
   const restore = useAction(() =>
     unwrap(api.POST("/api/troupes/{troupe_id}/equipment/{item_id}/restore", { params: { path: { troupe_id: troupeId, item_id: item.id } } })),
   );
+  const history = (
+    <Button variant="ghost" aria-expanded={doing === "history"} onClick={() => setDoing(doing === "history" ? "" : "history")}>
+      History
+    </Button>
+  );
   return (
-    <li aria-label={`${item.name}, held by ${item.character_name}`} className="rounded-md border border-ash bg-dusk p-3 text-sm">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <span className="font-medium text-gold">{item.name}</span>{" "}
-          <span className="text-mist">
-            held by{" "}
-            <Link to={`/characters/${item.character_id}`} className="hover:text-gold">
-              {item.character_name}
-            </Link>
-            {item.character_kind === "npc" ? " (NPC)" : item.player_name ? ` (${item.player_name})` : ""}
-          </span>
-        </div>
-        {item.special && <Badge tone="gold">Special, by {item.special_troupe_name}</Badge>}
-      </div>
-      <p className="mt-1">
+    <div className="mt-2 rounded-md border border-ash/60 bg-night/40 p-3">
+      {item.special && (
+        <p className="mb-1">
+          <Badge tone="gold">Special, by {item.special_troupe_name}</Badge>
+        </p>
+      )}
+      <p>
         {kindText(rules, item)}
         {item.qualities.length > 0 && `: ${item.qualities.map(qualityText).join(", ")}`}
       </p>
@@ -213,9 +459,7 @@ function ItemCard({
           <Button variant="secondary" disabled={restore.isPending} onClick={() => restore.mutate(undefined)}>
             Restore to {item.character_name}
           </Button>
-          <Button variant="ghost" onClick={() => setDoing(doing === "history" ? "" : "history")}>
-            History
-          </Button>
+          {history}
         </div>
       )}
       <ErrorText error={restore.error} />
@@ -227,11 +471,10 @@ function ItemCard({
           <Button variant="secondary" onClick={() => setDoing(doing === "take" ? "" : "take")}>
             Take back
           </Button>
-          <Button variant="ghost" onClick={() => setDoing(doing === "history" ? "" : "history")}>
-            History
-          </Button>
+          {history}
         </div>
       )}
+      {item.status === "taken_back" && <div className="mt-2">{history}</div>}
       {item.can_change && (
         <div className="mt-2">
           <ItemActions
@@ -249,7 +492,7 @@ function ItemCard({
       )}
       {doing === "take" && <TakeBack troupeId={troupeId} item={item} onDone={() => setDoing("")} />}
       {doing === "history" && <History troupeId={troupeId} item={item} />}
-    </li>
+    </div>
   );
 }
 
