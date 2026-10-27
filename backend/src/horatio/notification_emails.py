@@ -35,7 +35,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from horatio import delivery, preferences
+from horatio import delivery, preferences, suspensions
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
 from horatio.models import EmailNotice, Troupe, User
@@ -112,7 +112,8 @@ def queue(
         return
     troupe = db.get_one(Troupe, troupe_id).name if troupe_id is not None else None
     at = delivery.now()
-    for user in db.scalars(select(User).where(User.id.in_(ids))):
+    # Someone suspended gets no notification emails (horatio.suspensions).
+    for user in db.scalars(select(User).where(User.id.in_(ids), ~suspensions.suspended_user())):
         prefs = preferences.read(user)
         if not wants(prefs, topic):
             continue
@@ -231,10 +232,11 @@ def send_to(db: Session, user: User, notices: list[EmailNotice], at: datetime) -
     """Send `user` the notices of theirs that are due (locked). Returns how many
     emails were tried."""
     prefs = preferences.read(user)
+    suspended = suspensions.current(db, user.id) is not None
     wanted: list[EmailNotice] = []
     for notice in notices:
         topic = BY_NAME.get(notice.topic)
-        if topic is None or not wants(prefs, topic):
+        if suspended or topic is None or not wants(prefs, topic):
             db.delete(notice)
         else:
             wanted.append(notice)

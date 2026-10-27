@@ -3,11 +3,17 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { LiveReset, PlayerSummary } from "../../api/types";
+import { Dialog } from "../../components/Dialog";
 import { LogList } from "../../components/LogList";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { memberSince } from "../players";
+import { ChangeEmail, EmailChanges } from "./ChangeEmail";
+import { MergeAccounts } from "./MergeAccounts";
+import { PersonCharacters } from "./MoveCharacter";
 import { ResetPassword, useCancelReset } from "./ResetPassword";
+import { SuspendedPeople, SuspendPerson } from "./Suspension";
+import { ViewAs } from "./ViewAs";
 
 /** Every account, for the custodian: find someone by name, handle or email, or by the troupe an active character
  * of theirs is home in, open their
@@ -52,13 +58,18 @@ export function PeopleTab() {
         )}
         <ErrorText error={people.error} />
       </Card>
+      <SuspendedPeople />
       <PasswordResets />
+      <EmailChanges />
     </div>
   );
 }
 
 function Person({ person }: { person: PlayerSummary }) {
-  const [open, setOpen] = useState(false);
+  const [changing, setChanging] = useState(false);
+  const [open, setOpen] = useState<"reset" | "suspend" | null>(null);
+  const [characters, setCharacters] = useState(false);
+  const [merging, setMerging] = useState(false);
   const dates = useDates();
   return (
     <li className="py-2">
@@ -70,24 +81,79 @@ function Person({ person }: { person: PlayerSummary }) {
           </span>
         </Link>
         <span className="flex items-center gap-2">
+          {person.suspended && <Badge tone="blood">suspended</Badge>}
           {person.reset_expires_at && <Badge tone="gold">reset link out</Badge>}
+          {person.email_change_to && <Badge tone="gold">new email waiting</Badge>}
+          <ViewAs person={person} />
           <Button
             type="button"
             variant="ghost"
             className="min-h-8 px-2 text-xs"
-            aria-expanded={open}
+            aria-expanded={changing}
+            aria-label={`Change email for ${person.display_name}`}
+            onClick={() => setChanging(!changing)}
+          >
+            Change email
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-8 px-2 text-xs"
+            aria-expanded={characters}
+            aria-label={`Characters of ${person.display_name}`}
+            onClick={() => setCharacters(!characters)}
+          >
+            Characters
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-8 px-2 text-xs"
+            aria-expanded={open === "reset"}
             aria-label={`Reset password for ${person.display_name}`}
-            onClick={() => setOpen(!open)}
+            onClick={() => setOpen(open === "reset" ? null : "reset")}
           >
             Reset password
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-8 px-2 text-xs"
+            aria-expanded={open === "suspend"}
+            aria-label={`${person.suspended ? "Lift the suspension of" : "Suspend"} ${person.display_name}`}
+            onClick={() => setOpen(open === "suspend" ? null : "suspend")}
+          >
+            {person.suspended ? "Lift suspension" : "Suspend"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-8 px-2 text-xs"
+            aria-label={`Merge ${person.display_name} with another account`}
+            onClick={() => setMerging(true)}
+          >
+            Merge…
           </Button>
         </span>
       </div>
       {open && (
         <div className="mt-2 rounded-md border border-ash bg-night/40 p-3">
-          <ResetPassword player={person} />
+          {open === "reset" ? <ResetPassword player={person} /> : <SuspendPerson person={person} />}
         </div>
       )}
+      {characters && (
+        <div className="mt-2 rounded-md border border-ash bg-night/40 p-3">
+          <PersonCharacters playerId={person.id} />
+        </div>
+      )}
+      {changing && (
+        <div className="mt-2 rounded-md border border-ash bg-night/40 p-3">
+          <ChangeEmail person={person} />
+        </div>
+      )}
+      <Dialog title={`Merge ${person.display_name} with another account`} open={merging} onClose={() => setMerging(false)}>
+        {merging && <MergeAccounts person={person} onDone={() => setMerging(false)} />}
+      </Dialog>
     </li>
   );
 }

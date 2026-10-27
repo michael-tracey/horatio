@@ -14,17 +14,20 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import aliased
 
-from horatio import handles
+from horatio import account_merges, handles, pronouns, suspensions
 from horatio.api.auth import Me, me
+from horatio.api.email_changes import PendingEmail, pending
+from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.resets import cancel_reset, email_reset, issue_reset, live_reset, reset_url
 from horatio.connectors import email
-from horatio.models import AuditEvent, Character, PasswordReset, Troupe, User
+from horatio.models import AuditEvent, Character, EmailChange, PasswordReset, Troupe, User
 from horatio.permissions import (
     Role,
     TroupeAction,
+    can_see_lines_veils,
     can_view_character,
     require_custodian,
     require_troupe_action,
@@ -56,6 +59,8 @@ class PlayerOut(BaseModel):
     handle: str
     # When they joined: the account's creation, carried over from Yorick if imported.
     member_since: datetime
+    # Such as "they/them"; None for none given.
+    pronouns: str | None
     bio: str | None
     links: list[Link]
     discord_handle: str | None
@@ -64,8 +69,13 @@ class PlayerOut(BaseModel):
     email: str | None
     # Their characters that the viewer may see.
     characters: list[PlayerCharacter]
+    # Never public: only for themself, the custodian, the staff of the troupes they
+    # play in, and other players there if they share them (horatio.lines_veils).
+    lines_veils: LinesVeils | None
     # When their live reset link expires, if they have one. Only for the custodian.
     reset_expires_at: datetime | None
+    # A change of email waiting to be confirmed. Only for the player themself and the custodian.
+    email_change: PendingEmail | None = None
 
 
 class PlayerSummary(BaseModel):
@@ -76,10 +86,18 @@ class PlayerSummary(BaseModel):
     member_since: datetime
     # When their live reset link expires, if they have one.
     reset_expires_at: datetime | None
+    # A custodian, whom no one views as (horatio.auth.viewing).
+    is_custodian: bool = False
+    # The address a change of email waiting would change it to.
+    email_change_to: str | None = None
+    # Their account is suspended now (horatio.suspensions).
+    suspended: bool = False
 
 
 class ProfileIn(BaseModel):
     display_name: str = Field(min_length=1, max_length=100)
+    # Empty for none; None leaves them as they are.
+    pronouns: str | None = None
     bio: str | None = None
     links: list[Link] = []
     discord_handle: str | None = None
@@ -148,8 +166,9 @@ ACCOUNT_ACTIONS = (
 
 
 def player(db: DbSession, user_id: uuid.UUID) -> User:
+    """An account still open: a merged one is no one now."""
     found = db.get(User, user_id)
-    if found is None:
+    if found is None or found.merged_into_id is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such player.")
     return found
 
@@ -166,6 +185,7 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
         display_name=user.display_name,
         handle=user.handle,
         member_since=user.created_at,
+        pronouns=user.pronouns,
         bio=user.bio,
         links=[Link(**link) for link in user.links],
         discord_handle=user.discord_handle,
@@ -177,6 +197,8 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
             if can_view_character(db, viewer, c)
         ],
         reset_expires_at=reset_expiry(db, user) if viewer.is_custodian else None,
+        lines_veils=lines_veils_of(user) if can_see_lines_veils(db, viewer, user) else None,
+        email_change=pending(db, user) if viewer.is_custodian or viewer.id == user.id else None,
     )
 
 
@@ -218,14 +240,25 @@ def clean_handle(handle: str | None) -> str | None:
 def find_players(
     db: DbSession, user: CurrentUser, q: str = "", troupe_id: uuid.UUID | None = None
 ) -> list[PlayerSummary]:
-    """Every account whose name, handle or email has `q` in it, for the custodian. With
-    `troupe_id`, only those with an active PC whose home troupe is that troupe."""
+    """Every account whose name, handle or email has `q` in it, or who holds it as a
+    former handle, for the custodian. With `troupe_id`, only those with an active PC
+    whose home troupe is that troupe. Never a merged account."""
     require_custodian(user)
-    query = select(User).order_by(func.lower(User.display_name)).limit(50)
+    query = (
+        select(User)
+        .where(User.merged_into_id.is_(None))
+        .order_by(func.lower(User.display_name))
+        .limit(50)
+    )
     if q.strip():
         like = f"%{q.strip().removeprefix('@')}%"
         query = query.where(
-            or_(User.display_name.ilike(like), User.handle.ilike(like), User.email.ilike(like))
+            or_(
+                User.display_name.ilike(like),
+                User.handle.ilike(like),
+                User.email.ilike(like),
+                handles.held(q),
+            )
         )
     if troupe_id is not None:
         query = query.where(
@@ -248,6 +281,16 @@ def find_players(
             )
         )
     }
+    changing = {
+        user_id: new_email
+        for user_id, new_email in db.execute(
+            select(EmailChange.user_id, EmailChange.new_email).where(
+                EmailChange.user_id.in_([u.id for u in found]),
+                EmailChange.expires_at > datetime.now(UTC),
+            )
+        )
+    }
+    suspended = suspensions.suspended_ids(db, [u.id for u in found])
     return [
         PlayerSummary(
             id=u.id,
@@ -256,6 +299,9 @@ def find_players(
             email=u.email,
             member_since=u.created_at,
             reset_expires_at=expiries.get(u.id),
+            is_custodian=u.is_custodian,
+            email_change_to=changing.get(u.id),
+            suspended=u.id in suspended,
         )
         for u in found
     ]
@@ -310,8 +356,12 @@ def change_handle(body: HandleIn, db: DbSession, user: CurrentUser) -> Me:
 @router.get("/players/{user_id}")
 def view_player(user_id: uuid.UUID, db: DbSession, user: CurrentUser) -> PlayerOut:
     """A player's profile. Anyone signed in may see it; it never shows their email
-    to anyone but themself and the custodian."""
-    return profile(db, user, player(db, user_id))
+    to anyone but themself and the custodian. A merged account's is the profile of
+    the account it was merged into."""
+    found = db.get(User, user_id)
+    if found is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such player.")
+    return profile(db, user, account_merges.staying(db, found))
 
 
 @router.put("/profile")
@@ -320,6 +370,7 @@ def edit_profile(body: ProfileIn, db: DbSession, user: CurrentUser) -> PlayerOut
     name = body.display_name.strip()
     if not name:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Give a display name.")
+    said = user.pronouns if body.pronouns is None else pronouns.clean(body.pronouns)
     bio = (body.bio or "").strip()
     if len(bio) > MAX_BIO:
         raise HTTPException(
@@ -331,6 +382,7 @@ def edit_profile(body: ProfileIn, db: DbSession, user: CurrentUser) -> PlayerOut
             status.HTTP_422_UNPROCESSABLE_CONTENT, f"Give at most {MAX_LINKS} links."
         )
     user.display_name = name
+    user.pronouns = said
     user.bio = bio or None
     user.links = [clean_link(link).model_dump() for link in links]
     user.discord_handle = clean_handle(body.discord_handle)

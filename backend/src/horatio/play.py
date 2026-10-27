@@ -74,6 +74,7 @@ from horatio import (
     retainers,
     sect_status,
     sheets,
+    suspensions,
 )
 from horatio.models import (
     Character,
@@ -952,7 +953,9 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
     those games. A tap already recorded (sent again after a lost reply) is
     skipped, as is an undo of something already undone. The caller holds the
     character's lock. Influence spent, and undone, is logged and owed as it
-    arrives (horatio.play_influence)."""
+    arrives (horatio.play_influence). A character whose player is suspended takes
+    none (horatio.suspensions)."""
+    suspensions.refuse_character(db, character)
     ids = [t.id for t in taps] + [t.undoes for t in taps if t.undoes is not None]
     existing = {
         e.client_id: (e, character_id)

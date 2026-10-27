@@ -12,12 +12,20 @@ A person who plays one or more characters. A player sees only their own characte
 _Avoid_: User (for the person in the game), member
 
 **Profile**:
-What anyone signed in can see about a player: their display name, handle, when they joined, a bio, social media links and their Discord username. Never their email, which only they and the custodian see.
+What anyone signed in can see about a player: their display name, handle, pronouns, when they joined, a bio, social media links and their Discord username. Never their email, which only they and the custodian see.
 _Avoid_: Bio page, user page
 
 **Handle**:
 The unique name a person is found and shown by, such as @night_owl, in place of their email. They choose it, can sign in with it, and can change it once in 30 days; an old handle stays theirs for 90.
 _Avoid_: Username, login
+
+**Lines and Veils**:
+A player's content boundaries, in their own words: a **line** is something that must not happen in play around them; a **veil** may happen, but off-screen. They belong to the player, not a character. Never public or printed: the staff of the troupes they play in always see them, and other players there only if the player shares them.
+_Avoid_: Triggers, limits, content warnings (for a player's own)
+
+**Suspended Account**:
+A person the custodian has shut out for a while, with a reason only the custodian sees: signed out, unable to sign in and sent no notifications until the custodian lifts it or its end date passes. Their characters stay in their troupes but take no new actions, and nothing they did is hidden.
+_Avoid_: Ban, block, disabled account
 
 **Troupe**:
 The top-level group: it runs games, has its own staff and house rules, and characters join it. No group sits above a troupe.
@@ -28,12 +36,16 @@ What a troupe tells players and people thinking of joining: its portrait, links,
 _Avoid_: Troupe page, listing
 
 **Archived Troupe**:
-A troupe its lead storyteller has deleted: closed to all use, but kept with its full history. Troupes are never truly deleted.
+A troupe its lead storyteller or the custodian has deleted: closed to all use but the custodian's, and kept with its full history. Archiving lets its player characters go, those it was home to left with no home troupe, and ends its open downtime cycle and games under way; its NPCs stay with it. The custodian can reopen it, which brings no characters back. Troupes are never truly deleted.
 _Avoid_: Deleted troupe, closed troupe
 
 **Custodian**:
 The site administrator, above all troupes, who appoints lead storytellers, manages the system itself, and can do anything in any troupe.
 _Avoid_: Admin, superuser, site owner
+
+**View As**:
+The custodian seeing Horatio exactly as one person does, with their permissions, to help them with a question: read-only, for at most 30 minutes, with a reason they are told. Never as another custodian.
+_Avoid_: Impersonate, log in as, masquerade
 
 **Staff**:
 The people who run a troupe: its lead storyteller, storytellers, assistant storytellers and narrators.
@@ -98,8 +110,8 @@ A ghoul PC made a vampire in play by its sire. The home troupe's lead storytelle
 _Avoid_: Conversion, turning, siring (in names)
 
 **Retired Character**:
-A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history.
-_Avoid_: Deleted, dead, inactive
+A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history. Retiring gives a reason, which is in-game information: Final Death, Off-field (alive, but away from the domain) or Inactive (the player stopped; it says nothing in game). The player chooses whether the troupe's Who's Who lists it under "No longer with us".
+_Avoid_: Deleted, dead, inactive (except as the reason)
 
 **Splat**:
 The kind of supernatural a character is, such as Vampire, Werewolf or Changeling.

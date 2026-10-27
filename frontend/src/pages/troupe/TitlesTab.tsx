@@ -6,6 +6,7 @@ import type { TitleOut, TitlesOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { SeatsSetting } from "./SeatsSetting";
 import { titleGroups, titleStatus } from "./titleGroups";
 
 /** The titles this troupe gives, by sect: the rule set's and its own, each with the
@@ -46,6 +47,8 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
           </ul>
         </Card>
       ))}
+      {titles.data.court_order.length > 1 && <CourtOrder troupeId={troupeId} order={titles.data.court_order} />}
+      <SeatsSetting troupeId={troupeId} />
       <Card title="Add a title">
         <TitleFields
           data={titles.data}
@@ -65,6 +68,45 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
 }
 
 type TitleForm = { name: string; sect: string | null; status: string[] };
+
+/** The troupe's own titles in their order on the Who's Who, after the rule set's,
+ * each moved up or down one place. */
+function CourtOrder({ troupeId, order }: { troupeId: string; order: string[] }) {
+  const save = useAction((titles: string[]) =>
+    unwrap(api.PUT("/api/troupes/{troupe_id}/court-order", { params: { path: { troupe_id: troupeId } }, body: { titles } })),
+  );
+  const move = (i: number, by: number) => {
+    const next = [...order];
+    [next[i], next[i + by]] = [next[i + by]!, next[i]!];
+    save.mutate(next);
+  };
+  return (
+    <Card title="Court order of our titles">
+      <p className="mb-2 text-sm text-mist">On the Who’s Who, the court is in rank order: the rule set’s titles, then ours in this order.</p>
+      <ol aria-label="Court order of our titles" className="flex flex-col gap-1 text-sm">
+        {order.map((name, i) => (
+          <li key={name} className="flex items-center gap-2">
+            <span className="w-5 text-right text-mist tabular-nums">{i + 1}.</span>
+            <span className="flex-1 text-parchment">{name}</span>
+            <Button variant="ghost" className="min-h-8 px-2" aria-label={`Move ${name} up`} disabled={i === 0 || save.isPending} onClick={() => move(i, -1)}>
+              ↑
+            </Button>
+            <Button
+              variant="ghost"
+              className="min-h-8 px-2"
+              aria-label={`Move ${name} down`}
+              disabled={i === order.length - 1 || save.isPending}
+              onClick={() => move(i, 1)}
+            >
+              ↓
+            </Button>
+          </li>
+        ))}
+      </ol>
+      <ErrorText error={save.error} />
+    </Card>
+  );
+}
 
 /** A title, what it gives, and who holds it; one the troupe added can be changed or removed. */
 function TitleRow({ troupeId, title, data }: { troupeId: string; title: TitleOut; data: TitlesOut }) {

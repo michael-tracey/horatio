@@ -47,7 +47,10 @@ to argon2 on the user's next sign-in. The profile: `bio` (nullable), `links`
 (JSONB list of `{label, url}`, http or https only, at most 6) and
 `discord_handle` (nullable; the username the player gives, not checked against
 Discord). "Member since" is `created_at`, which the Yorick importer should set
-from Parse's `createdAt`.
+from Parse's `createdAt`. `merged_into_id` → users and `merged_at` (both
+nullable) mark an account the custodian merged into another (#272): closed, it
+keeps its email and handle for the record, and only open accounts' emails and
+handles are unique.
 
 **`auth_identities`**: linked sign-in providers.
 `user_id`, `provider` (`discord` | `google`), `subject`; unique on
@@ -60,6 +63,25 @@ from Parse's `createdAt`.
 `user_id`, `token_hash` (unique), `expires_at` (a day on), `created_by_id` →
 users. At most one per user: a new link deletes the old, and using it deletes
 it and revokes every session the user had.
+
+**`viewings`**: the custodian viewing Horatio as someone, read-only, for support.
+`custodian_id` → users, `user_id` → users (whom they view as), `session_id` →
+sessions (the custodian's sign-in it belongs to; set null if that is deleted),
+`reason`, `ends_at` (30 minutes on), `ended_at` (nullable: stopped, signed out
+or found timed out). Kept once ended, so the person sees it on their account page.
+
+**`email_changes`**: a change of someone's email waiting to be confirmed at the
+new address. `user_id` (unique) and `created_by_id` → users (the person or the
+custodian), `new_email`, `token_hash` (unique), `expires_at` (7 days on),
+`reason` (the custodian's; null when the person changes their own). Confirmed,
+cancelled or replaced, the row is deleted; the audit log keeps every step.
+
+**`suspensions`**: the custodian suspending someone's account.
+`user_id`, `reason` (for the custodian only), `ends_at` (nullable: until lifted),
+`suspended_by_id`, then `lifted_at`, `lifted_by_id` and `lift_reason` once
+lifted (by hand, or at `ends_at` with no one and no reason). At most one not yet
+lifted per user (a partial unique index); rows are kept once lifted. Suspending
+deletes the user's sessions.
 
 **`troupes`**
 `name`, `description`, `lead_user_id` (**not null**), `archived_at` (nullable),

@@ -399,6 +399,8 @@ def test_it_dies_in_the_embrace(troupe: Troupe) -> None:
     assert died.status_code == 200, died.text
     character = troupe.player.client.get(f"/characters/{ghoul}").json()
     assert (character["status"], character["splat"]) == ("retired", "ghoul")
+    # Final Death, listed on its troupe's Who's Who until its player says otherwise.
+    assert (character["left_reason"], character["left_listed"]) == ("final_death", True)
     messages = [e["message"] for e in troupe.player.client.get(f"/characters/{ghoul}/log").json()]
     assert (
         "storyteller recorded that Vivian (player) died in the Embrace; it is retired."

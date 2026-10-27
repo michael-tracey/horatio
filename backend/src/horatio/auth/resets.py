@@ -19,6 +19,7 @@ from email.utils import formataddr
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
+from horatio import suspensions
 from horatio.audit import record
 from horatio.auth.sessions import hash_token
 from horatio.config import get_settings
@@ -135,11 +136,16 @@ def request_reset(db: Session, address: str, ip: str | None) -> tuple[User, str]
     """Someone asks for a link to `address` themselves. Logs the request, and if an
     account uses the address, makes it a link: the account and the link, to email."""
     address = address.strip().lower()
-    user = db.scalar(select(User).where(func.lower(User.email) == address))
+    user = db.scalar(
+        select(User).where(func.lower(User.email) == address, User.merged_into_id.is_(None))
+    )
     if user is None:
         record(db, None, REQUESTED, kind="unknown", email=address, ip=ip)
         return None
     record(db, user, REQUESTED, email=address, ip=ip, member=user.display_name, user_id=user.id)
+    if suspensions.current(db, user.id) is not None:
+        # The link would not work; the answer is the same as ever.
+        return None
     token, _ = issue_reset(db, user, user)
     return user, reset_url(token)
 

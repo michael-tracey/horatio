@@ -9,7 +9,9 @@ reversed text what others can see or sense about it, and the troupe's name (#84)
 
 Each troupe chooses what prints (#255): its titles or not, and all the status,
 the negative status only (which must be shown, MET: VTM p. 312), or none, leaving
-the space for stickers. Negative status is marked out on the badge.
+the space for stickers. Negative status is marked out on the badge. It can print
+the character's pronouns under its name (#265), off unless it chooses; a badge
+never prints the player's.
 
 What others can see comes from the rules data: a trait with a `visible`
 property shows on the badge in those words, `{detail}` filled in with the
@@ -35,6 +37,8 @@ from horatio.rules.splats import SPLATS
 class Badge:
     character_id: uuid.UUID
     name: str
+    # Its pronouns, if the troupe prints them and it has some.
+    pronouns: str | None
     clan: str | None
     social_age: str
     titles: list[str]
@@ -109,32 +113,39 @@ def carried(
     return innate + [(h.name, h.type) for h in negative + fleeting]
 
 
+def visible_to_others(db: Session, characters: Sequence[Character]) -> dict[uuid.UUID, list[str]]:
+    """What others can see or sense about each character: its traits' `visible`
+    wording, then the staff's note, a line each."""
+    visible: dict[uuid.UUID, list[str]] = defaultdict(list)
+    rows = db.execute(
+        select(CharacterTrait, TraitDefinition)
+        .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
+        .where(CharacterTrait.character_id.in_([c.id for c in characters]))
+        .order_by(TraitDefinition.name, CharacterTrait.detail)
+    )
+    for trait, definition in rows:
+        if trait.rating == 0:
+            continue
+        said = definition.properties.get("visible")
+        if isinstance(said, str):
+            visible[trait.character_id].append(wording(said, trait.detail))
+    for c in characters:
+        visible[c.id] += [line.strip() for line in c.visible_note.splitlines() if line.strip()]
+    return visible
+
+
 def badges(db: Session, troupe: Troupe | None, characters: Sequence[Character]) -> list[Badge]:
     """The characters' badges, in the order given, with their titles and status in
     `troupe`, as much of them as it prints."""
     troupe_id = troupe.id if troupe else None
     print_titles = troupe.badge_titles if troupe else True
     print_status = troupe.badge_status if troupe else "all"
-    ids = [c.id for c in characters]
-    standing = social_age.standings(db, ids)
-    visible: dict[uuid.UUID, list[str]] = defaultdict(list)
-    rows = db.execute(
-        select(CharacterTrait, TraitDefinition)
-        .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
-        .where(CharacterTrait.character_id.in_(ids))
-        .order_by(TraitDefinition.name, CharacterTrait.detail)
-    )
-    for trait, definition in rows:
-        if trait.rating == 0:
-            continue
-        who = trait.character_id
-        said = definition.properties.get("visible")
-        if isinstance(said, str):
-            visible[who].append(wording(said, trait.detail))
+    print_pronouns = troupe.badge_pronouns if troupe else False
+    standing = social_age.standings(db, [c.id for c in characters])
+    visible = visible_to_others(db, characters)
     found_logos = {splat: logos(db, splat) for splat in {c.splat for c in characters}}
     out: list[Badge] = []
     for c in characters:
-        note = [line.strip() for line in c.visible_note.splitlines() if line.strip()]
         clan = standing[c.id].clan
         logo, logo_white = logo_for(found_logos[c.splat], clan)
         status = carried(db, c, troupe_id) if print_status != "none" else []
@@ -142,6 +153,7 @@ def badges(db: Session, troupe: Troupe | None, characters: Sequence[Character]) 
             Badge(
                 character_id=c.id,
                 name=c.name,
+                pronouns=c.pronouns if print_pronouns else None,
                 clan=clan,
                 social_age=standing[c.id].age,
                 titles=titles.held(db, troupe_id, c.id) if troupe_id and print_titles else [],
@@ -149,7 +161,7 @@ def badges(db: Session, troupe: Troupe | None, characters: Sequence[Character]) 
                 if print_status == "all"
                 else [],
                 negative=counted([n for n, t in status if t == "Negative"]),
-                visible=visible[c.id] + note,
+                visible=visible[c.id],
                 picture=pictures.picture_url(c.id, c.picture_id),
                 logo=logo,
                 logo_white=logo_white,
