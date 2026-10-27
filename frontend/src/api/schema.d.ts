@@ -6001,7 +6001,7 @@ export interface components {
          * AuditGroup
          * @enum {string}
          */
-        AuditGroup: "approvals" | "xp" | "sheets" | "creation" | "status" | "titles" | "downtimes" | "influence" | "play" | "npcs" | "staff" | "house_rules" | "troupes" | "accounts" | "system";
+        AuditGroup: "approvals" | "xp" | "sheets" | "creation" | "status" | "titles" | "downtimes" | "influence" | "play" | "npcs" | "equipment" | "staff" | "house_rules" | "troupes" | "accounts" | "system";
         /** AuditGroupOut */
         AuditGroupOut: {
             key: components["schemas"]["AuditGroup"];
