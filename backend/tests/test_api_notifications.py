@@ -99,7 +99,7 @@ def test_archived_troupes_ask_nothing(troupe: Troupe) -> None:
         f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
     )
 
-    troupe.lead.client.delete(f"/troupes/{troupe.id}")
+    troupe.lead.client.post(f"/troupes/{troupe.id}/archive", json={"reason": "Wound up"})
 
     assert bell(troupe.lead)["count"] == 0
 

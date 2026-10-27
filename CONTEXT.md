@@ -28,7 +28,7 @@ What a troupe tells players and people thinking of joining: its portrait, links,
 _Avoid_: Troupe page, listing
 
 **Archived Troupe**:
-A troupe its lead storyteller has deleted: closed to all use, but kept with its full history. Troupes are never truly deleted.
+A troupe its lead storyteller or the custodian has deleted: closed to all use but the custodian's, and kept with its full history. Archiving lets its player characters go, those it was home to left with no home troupe, and ends its open downtime cycle and games under way; its NPCs stay with it. The custodian can reopen it, which brings no characters back. Troupes are never truly deleted.
 _Avoid_: Deleted troupe, closed troupe
 
 **Custodian**:

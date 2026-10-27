@@ -541,6 +541,138 @@
         "title": "ArchiveIn",
         "type": "object"
       },
+      "ArchivedCharacter": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "home": {
+            "title": "Home",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "left": {
+            "title": "Left",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "player_id",
+          "player_name",
+          "home",
+          "left"
+        ],
+        "title": "ArchivedCharacter",
+        "type": "object"
+      },
+      "ArchivedTroupeOut": {
+        "properties": {
+          "archived_at": {
+            "format": "date-time",
+            "title": "Archived At",
+            "type": "string"
+          },
+          "archived_by_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived By Id"
+          },
+          "archived_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived By Name"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/ArchivedCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lead_name": {
+            "title": "Lead Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "unsettled": {
+            "title": "Unsettled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived_at",
+          "archived_by_id",
+          "archived_by_name",
+          "reason",
+          "lead_name",
+          "characters",
+          "unsettled"
+        ],
+        "title": "ArchivedTroupeOut",
+        "type": "object"
+      },
       "Assignment": {
         "properties": {
           "any_narrator": {
@@ -2622,6 +2754,83 @@
           "removed"
         ],
         "title": "Cleared",
+        "type": "object"
+      },
+      "ClosingCharacter": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "player_name"
+        ],
+        "title": "ClosingCharacter",
+        "type": "object"
+      },
+      "ClosingOut": {
+        "description": "What archiving the troupe settles, or settled (horatio.closing).",
+        "properties": {
+          "cycle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingCharacter"
+            },
+            "title": "Games",
+            "type": "array"
+          },
+          "home": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingCharacter"
+            },
+            "title": "Home",
+            "type": "array"
+          },
+          "npcs": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingCharacter"
+            },
+            "title": "Npcs",
+            "type": "array"
+          },
+          "visiting": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingCharacter"
+            },
+            "title": "Visiting",
+            "type": "array"
+          }
+        },
+        "required": [
+          "home",
+          "visiting",
+          "npcs",
+          "cycle",
+          "games"
+        ],
+        "title": "ClosingOut",
         "type": "object"
       },
       "ConditionOut": {
@@ -14084,6 +14293,21 @@
           }
         },
         "title": "ReadIds",
+        "type": "object"
+      },
+      "Reason": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "Reason",
         "type": "object"
       },
       "ReceivedOut": {
@@ -30453,42 +30677,33 @@
         ]
       }
     },
-    "/api/troupes/{troupe_id}": {
-      "delete": {
-        "description": "Deleting a troupe archives it: closed to use, history kept.",
-        "operationId": "archive_troupe_api_troupes__troupe_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "troupe_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Troupe Id",
-              "type": "string"
-            }
-          }
-        ],
+    "/api/troupes/archived": {
+      "get": {
+        "description": "The custodian's list of archived troupes, latest first, with what each had.",
+        "operationId": "list_archived_api_troupes_archived_get",
         "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "items": {
+                    "$ref": "#/components/schemas/ArchivedTroupeOut"
+                  },
+                  "title": "Response List Archived Api Troupes Archived Get",
+                  "type": "array"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Successful Response"
           }
         },
-        "summary": "Archive Troupe",
+        "summary": "List Archived",
         "tags": [
           "troupes"
         ]
-      },
+      }
+    },
+    "/api/troupes/{troupe_id}": {
       "get": {
         "operationId": "read_troupe_api_troupes__troupe_id__get",
         "parameters": [
@@ -30908,6 +31123,60 @@
         "summary": "Troupe Approvals",
         "tags": [
           "approvals"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/archive": {
+      "post": {
+        "description": "Deleting a troupe archives it: closed to use, history kept. What it held is\nsettled first (horatio.closing), and everyone affected is told.",
+        "operationId": "archive_troupe_api_troupes__troupe_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reason"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Troupe",
+        "tags": [
+          "troupes"
         ]
       }
     },
@@ -31394,6 +31663,50 @@
         "summary": "Change Check",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/closing": {
+      "get": {
+        "description": "What archiving the troupe would settle; for an archived one, what is left to.",
+        "operationId": "preview_closing_api_troupes__troupe_id__closing_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Closing",
+        "tags": [
+          "troupes"
         ]
       }
     },
@@ -34194,6 +34507,60 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/reopen": {
+      "post": {
+        "description": "The custodian reopens an archived troupe. Its characters do not come back.",
+        "operationId": "reopen_troupe_api_troupes__troupe_id__reopen_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reason"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reopen Troupe",
+        "tags": [
+          "troupes"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/scenes": {
       "delete": {
         "description": "Remove every scene in the troupe not used since `unused_since`.",
@@ -34636,6 +35003,60 @@
         "summary": "Pin",
         "tags": [
           "scenes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/settle": {
+      "post": {
+        "description": "The custodian settles a troupe archived before archiving settled anything.",
+        "operationId": "settle_archived_api_troupes__troupe_id__settle_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reason"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Settle Archived",
+        "tags": [
+          "troupes"
         ]
       }
     },
