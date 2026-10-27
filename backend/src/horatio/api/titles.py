@@ -62,6 +62,8 @@ class TitlesOut(BaseModel):
     titles: list[TitleOut]
     # Abiding status of those sects, and general status.
     status_choices: list[StatusChoice]
+    # The troupe's own titles in their order on the Who's Who, after the rule sets'.
+    court_order: list[str]
 
 
 class TitleChange(BaseModel):
@@ -100,7 +102,8 @@ def title_out(
 
 def titles_out(db: DbSession, troupe: Troupe) -> TitlesOut:
     known = titles.title_data(db, troupe.id)
-    house = {t.name for t in titles.house_titles(db, troupe.id)}
+    own = [t.name for t in titles.house_titles(db, troupe.id)]
+    house = set(own)
     holders: dict[str, list[TitleHolderOut]] = {}
     for h in titles.holdings(db, troupe.id):
         holders.setdefault(h.title, []).append(
@@ -127,6 +130,7 @@ def titles_out(db: DbSession, troupe: Troupe) -> TitlesOut:
             for name, sect in titles.abiding_status(db).items()
             if sect in sects or sect == GENERAL
         ],
+        court_order=own,
     )
 
 

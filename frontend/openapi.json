@@ -2611,6 +2611,35 @@
         "title": "ClanLogosOut",
         "type": "object"
       },
+      "ClanSection": {
+        "properties": {
+          "character_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Character Ids",
+            "type": "array"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          }
+        },
+        "required": [
+          "clan",
+          "character_ids"
+        ],
+        "title": "ClanSection",
+        "type": "object"
+      },
       "Cleared": {
         "properties": {
           "removed": {
@@ -3177,6 +3206,22 @@
           "uses"
         ],
         "title": "CounterIn",
+        "type": "object"
+      },
+      "CourtOrder": {
+        "properties": {
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "titles"
+        ],
+        "title": "CourtOrder",
         "type": "object"
       },
       "CreationOut": {
@@ -9024,6 +9069,19 @@
         "title": "Link",
         "type": "object"
       },
+      "Listed": {
+        "properties": {
+          "listed": {
+            "title": "Listed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "listed"
+        ],
+        "title": "Listed",
+        "type": "object"
+      },
       "LiveReset": {
         "properties": {
           "asked_themselves": {
@@ -10587,6 +10645,10 @@
             ],
             "title": "Npc Kind Name"
           },
+          "on_whos_who": {
+            "title": "On Whos Who",
+            "type": "boolean"
+          },
           "owner_troupe_id": {
             "anyOf": [
               {
@@ -10652,7 +10714,8 @@
           "npc_kind",
           "npc_kind_name",
           "npc_form",
-          "stock_rating"
+          "stock_rating",
+          "on_whos_who"
         ],
         "title": "NpcOut",
         "type": "object"
@@ -10871,11 +10934,24 @@
               }
             ],
             "title": "Status"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
           }
         },
         "required": [
           "other",
-          "status"
+          "status",
+          "troupe_id"
         ],
         "title": "OtherStatusOut",
         "type": "object"
@@ -12934,6 +13010,11 @@
               }
             ],
             "title": "Time Zone"
+          },
+          "whos_who_handle": {
+            "default": false,
+            "title": "Whos Who Handle",
+            "type": "boolean"
           }
         },
         "title": "Preferences",
@@ -18343,6 +18424,13 @@
       },
       "TitlesOut": {
         "properties": {
+          "court_order": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Court Order",
+            "type": "array"
+          },
           "sects": {
             "items": {
               "type": "string"
@@ -18368,7 +18456,8 @@
         "required": [
           "sects",
           "titles",
-          "status_choices"
+          "status_choices",
+          "court_order"
         ],
         "title": "TitlesOut",
         "type": "object"
@@ -18764,6 +18853,17 @@
               }
             ],
             "title": "Status By"
+          },
+          "whos_who_negative": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whos Who Negative"
           }
         },
         "title": "TroupeChanges",
@@ -18951,6 +19051,14 @@
             "title": "Status By",
             "type": "string"
           },
+          "whos_who": {
+            "title": "Whos Who",
+            "type": "boolean"
+          },
+          "whos_who_negative": {
+            "title": "Whos Who Negative",
+            "type": "boolean"
+          },
           "xp_ceiling": {
             "title": "Xp Ceiling",
             "type": "integer"
@@ -18979,6 +19087,8 @@
           "status_by",
           "badge_titles",
           "badge_status",
+          "whos_who_negative",
+          "whos_who",
           "portrait",
           "banner",
           "public",
@@ -19777,6 +19887,275 @@
           "note"
         ],
         "title": "WhileAbsentOut",
+        "type": "object"
+      },
+      "WhosWhoEntry": {
+        "properties": {
+          "bans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Bans",
+            "type": "array"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negative": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Negative",
+            "type": "array"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "player_pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Pronouns"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
+          "represented_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Represented By"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "social_age": {
+            "title": "Social Age",
+            "type": "string"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
+          "visible": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Visible",
+            "type": "array"
+          },
+          "visiting": {
+            "title": "Visiting",
+            "type": "boolean"
+          },
+          "visiting_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visiting From"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "picture",
+          "clan",
+          "social_age",
+          "sect",
+          "player_id",
+          "player_name",
+          "titles",
+          "visible",
+          "bans",
+          "negative",
+          "visiting",
+          "visiting_from",
+          "pronouns",
+          "player_pronouns",
+          "represented_by",
+          "left_reason"
+        ],
+        "title": "WhosWhoEntry",
+        "type": "object"
+      },
+      "WhosWhoOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanSection"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "court": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Court",
+            "type": "array"
+          },
+          "departed": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Departed",
+            "type": "array"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/WhosWhoEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "other": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Other",
+            "type": "array"
+          },
+          "seated": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seated"
+          },
+          "shows_negative": {
+            "title": "Shows Negative",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "entries",
+          "court",
+          "clans",
+          "other",
+          "departed",
+          "seated",
+          "shows_negative"
+        ],
+        "title": "WhosWhoOut",
         "type": "object"
       },
       "WindowOut": {
@@ -31749,6 +32128,60 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/court-order": {
+      "put": {
+        "description": "Put the troupe's own titles in order at court, after the rule sets' titles.",
+        "operationId": "set_court_order_api_troupes__troupe_id__court_order_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourtOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Court Order",
+        "tags": [
+          "whos-who"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/creation": {
       "get": {
         "description": "What new characters of `splat` start with in this troupe.",
@@ -33533,6 +33966,70 @@
         "summary": "Create Npc",
         "tags": [
           "npcs"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/npcs/{character_id}/whos-who": {
+      "put": {
+        "description": "List an NPC on the troupe's Who's Who though it holds no title, or stop.",
+        "operationId": "list_npc_api_troupes__troupe_id__npcs__character_id__whos_who_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Listed"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Listed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Npc",
+        "tags": [
+          "whos-who"
         ]
       }
     },
@@ -35394,6 +35891,50 @@
         "summary": "Read Waiting",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/whos-who": {
+      "get": {
+        "description": "The troupe's active characters: its court, by clan, and Other. Only its staff\nand the players of active characters in it see it.",
+        "operationId": "read_whos_who_api_troupes__troupe_id__whos_who_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhosWhoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Whos Who",
+        "tags": [
+          "whos-who"
         ]
       }
     },

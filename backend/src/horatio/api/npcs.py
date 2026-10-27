@@ -76,6 +76,8 @@ class NewNpc(BaseModel):
 class NpcOut(CharacterOut):
     # A Stock NPC's rating; None for a sheeted one.
     stock_rating: int | None
+    # Staff list it on the troupe's Who's Who though it holds no title there.
+    on_whos_who: bool
 
 
 class ResourceOut(BaseModel):
@@ -292,8 +294,9 @@ def list_npcs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Np
             select(StockNpc).where(StockNpc.character_id.in_([c.id for c in found]))
         )
     }
+    listed = {c.id for c in found if c.on_whos_who}
     return [
-        NpcOut(**out.model_dump(), stock_rating=ratings.get(out.id))
+        NpcOut(**out.model_dump(), stock_rating=ratings.get(out.id), on_whos_who=out.id in listed)
         for out in characters_out(db, found)
     ]
 

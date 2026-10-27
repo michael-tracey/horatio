@@ -170,3 +170,5 @@ export type StatusChoiceIn = Schemas["StatusChoiceIn"];
 export type OtherOut = Schemas["OtherOut"];
 export type OtherStatusOut = Schemas["OtherStatusOut"];
 export type SeenOut = Schemas["SeenOut"];
+export type WhosWhoOut = Schemas["WhosWhoOut"];
+export type WhosWhoEntry = Schemas["WhosWhoEntry"];

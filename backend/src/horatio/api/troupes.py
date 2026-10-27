@@ -12,6 +12,7 @@ from horatio.models import RuleSet, TraitCategory, TraitDefinition, Troupe, Trou
 from horatio.permissions import (
     Role,
     TroupeAction,
+    can_see_whos_who,
     require_custodian,
     require_troupe_action,
     troupe_role,
@@ -58,6 +59,11 @@ class TroupeOut(BaseModel):
     # the status carried into a game here: "all", "negative" only, or "none".
     badge_titles: bool
     badge_status: str
+    # Its Who's Who (horatio.whos_who) shows the negative status each character
+    # carries into a game here.
+    whos_who_negative: bool
+    # The caller may see its Who's Who: its staff, and the players of its characters.
+    whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
     portrait: str | None
     # Its banner, across the top of its page (add "/1500.webp" or "/750.webp"), or None.
@@ -86,6 +92,7 @@ class TroupeChanges(BaseModel):
     status_by: Literal["players", "staff"] | None = None
     badge_titles: bool | None = None
     badge_status: Literal["all", "negative", "none"] | None = None
+    whos_who_negative: bool | None = None
 
 
 class NewLead(BaseModel):
@@ -125,6 +132,8 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         status_by=troupe.status_by,
         badge_titles=troupe.badge_titles,
         badge_status=troupe.badge_status,
+        whos_who_negative=troupe.whos_who_negative,
+        whos_who=can_see_whos_who(db, user, troupe),
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
         public=troupe.public,
@@ -271,6 +280,17 @@ def change_troupe(
             titles="titles" if troupe.badge_titles else "no titles",
             status=BADGE_STATUS_TEXT[troupe.badge_status],
         )
+    if body.whos_who_negative is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.whos_who_negative != troupe.whos_who_negative:
+            troupe.whos_who_negative = body.whos_who_negative
+            audit.record(
+                db,
+                user,
+                "troupe.whos_who",
+                troupe_id=troupe.id,
+                status="negative status" if body.whos_who_negative else "no sect status",
+            )
     if body.starting_xp is not None:
         # The floor and ceiling both start from it, so both move with it.
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
