@@ -61,6 +61,12 @@ from Parse's `createdAt`.
 users. At most one per user: a new link deletes the old, and using it deletes
 it and revokes every session the user had.
 
+**`email_changes`**: a change of someone's email waiting to be confirmed at the
+new address. `user_id` (unique) and `created_by_id` → users (the person or the
+custodian), `new_email`, `token_hash` (unique), `expires_at` (7 days on),
+`reason` (the custodian's; null when the person changes their own). Confirmed,
+cancelled or replaced, the row is deleted; the audit log keeps every step.
+
 **`troupes`**
 `name`, `description`, `lead_user_id` (**not null**), `archived_at` (nullable),
 `allowed_sects` (JSON list of sect names; empty means any).

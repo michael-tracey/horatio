@@ -341,6 +341,22 @@ MESSAGES: dict[str, str] = {
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
+    "account.email_change_started": "{actor} started changing {member}'s email from "
+    "{from_email} to {to_email}{because}.",
+    "account.email_change_started.self": "{actor} asked to change their email from "
+    "{from_email} to {to_email}.",
+    "account.email_change_resent": "{actor} made a new link for {member} to confirm {to_email}.",
+    "account.email_change_resent.self": "{actor} asked for a new link to confirm {to_email}.",
+    "account.email_change_email_failed": "Horatio could not email {to_email} the link to "
+    "confirm {member}'s new email: {error}",
+    "account.email_change_cancelled": "{actor} cancelled changing {member}'s email to {to_email}.",
+    "account.email_change_cancelled.self": "{actor} cancelled changing their email to {to_email}.",
+    "account.email_changed": "{member} confirmed their new email, {to_email}, changed by "
+    "{made_by} from {from_email}{because}.",
+    "account.email_changed.self": "{member} confirmed their new email, {to_email}, changed "
+    "from {from_email}.",
+    "account.email_change_notice_failed": "Horatio could not tell {from_email} that "
+    "{member}'s email changed: {error}",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
     "character.domitor": "{actor} made {domitor} {character}'s domitor, of {clan}; discipline"
     " dots {disciplines}.",

@@ -2684,6 +2684,42 @@
         "title": "ConditionOut",
         "type": "object"
       },
+      "ConfirmFor": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "new_email": {
+            "title": "New Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name",
+          "handle",
+          "new_email"
+        ],
+        "title": "ConfirmFor",
+        "type": "object"
+      },
+      "Confirmed": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "Confirmed",
+        "type": "object"
+      },
       "ConnectorChange": {
         "properties": {
           "enabled": {
@@ -5106,6 +5142,128 @@
           "active"
         ],
         "title": "EffectRef",
+        "type": "object"
+      },
+      "EmailChangeIn": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "EmailChangeIn",
+        "type": "object"
+      },
+      "EmailChangeOut": {
+        "properties": {
+          "asked_themselves": {
+            "title": "Asked Themselves",
+            "type": "boolean"
+          },
+          "email_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Error"
+          },
+          "emailed_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emailed To"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "new_email": {
+            "title": "New Email",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "new_email",
+          "expires_at",
+          "made_by",
+          "asked_themselves"
+        ],
+        "title": "EmailChangeOut",
+        "type": "object"
+      },
+      "EmailChanges": {
+        "properties": {
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "pending": {
+            "items": {
+              "$ref": "#/components/schemas/PendingEmailFor"
+            },
+            "title": "Pending",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pending",
+          "log"
+        ],
+        "title": "EmailChanges",
         "type": "object"
       },
       "EmailHelp": {
@@ -11309,6 +11467,81 @@
         "title": "PendingDisciplineOut",
         "type": "object"
       },
+      "PendingEmail": {
+        "description": "A change of email waiting to be confirmed at the new address.",
+        "properties": {
+          "asked_themselves": {
+            "title": "Asked Themselves",
+            "type": "boolean"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "new_email": {
+            "title": "New Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_email",
+          "expires_at",
+          "made_by",
+          "asked_themselves"
+        ],
+        "title": "PendingEmail",
+        "type": "object"
+      },
+      "PendingEmailFor": {
+        "properties": {
+          "asked_themselves": {
+            "title": "Asked Themselves",
+            "type": "boolean"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "new_email": {
+            "title": "New Email",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_email",
+          "expires_at",
+          "made_by",
+          "asked_themselves",
+          "user_id",
+          "display_name",
+          "email"
+        ],
+        "title": "PendingEmailFor",
+        "type": "object"
+      },
       "People": {
         "properties": {
           "next_offset": {
@@ -12301,6 +12534,16 @@
             ],
             "title": "Email"
           },
+          "email_change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingEmail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "handle": {
             "title": "Handle",
             "type": "string"
@@ -12364,6 +12607,17 @@
           "email": {
             "title": "Email",
             "type": "string"
+          },
+          "email_change_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Change To"
           },
           "handle": {
             "title": "Handle",
@@ -20681,6 +20935,90 @@
         ]
       }
     },
+    "/api/auth/email-change/{token}": {
+      "get": {
+        "description": "Whose email a link changes, and to what, so the page can ask first.",
+        "operationId": "email_change_for_api_auth_email_change__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmFor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Email Change For",
+        "tags": [
+          "players"
+        ]
+      },
+      "post": {
+        "description": "Confirm a change from the link sent to the new address: the email changes,\nand the old address is told.",
+        "operationId": "confirm_email_change_api_auth_email_change__token__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Confirmed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Email Change",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/api/auth/forgot": {
       "get": {
         "description": "Whether someone who forgot their password can ask Horatio for a link.",
@@ -28332,6 +28670,50 @@
         ]
       }
     },
+    "/api/email-changes": {
+      "get": {
+        "description": "For the custodian: the changes waiting to be confirmed, and every step of\nchanges made, with both addresses.",
+        "operationId": "list_email_changes_api_email_changes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChanges"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Email Changes",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/api/handle": {
       "put": {
         "description": "Change the signed-in person's handle: at most once in 30 days, and to one no\none has or has held in the last 90.",
@@ -29096,6 +29478,139 @@
           }
         },
         "summary": "View Player",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/players/{user_id}/email-change": {
+      "delete": {
+        "description": "Cancel the change waiting: the email stays as it is, and the link stops working.",
+        "operationId": "cancel_email_change_api_players__user_id__email_change_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Email Change",
+        "tags": [
+          "players"
+        ]
+      },
+      "post": {
+        "description": "Start changing someone's email: it changes when the link sent to the new\naddress is opened. The custodian gives a reason; someone changing their own\ngives their password, and needs Horatio to be able to email.",
+        "operationId": "change_email_api_players__user_id__email_change_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChangeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Email",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/players/{user_id}/email-change/resend": {
+      "post": {
+        "description": "A new link for the change waiting, good for another 7 days; the old one stops\nworking.",
+        "operationId": "resend_email_change_api_players__user_id__email_change_resend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChangeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resend Email Change",
         "tags": [
           "players"
         ]

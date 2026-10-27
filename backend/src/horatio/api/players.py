@@ -16,12 +16,13 @@ from sqlalchemy.orm import aliased
 
 from horatio import handles
 from horatio.api.auth import Me, me
+from horatio.api.email_changes import PendingEmail, pending
 from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.resets import cancel_reset, email_reset, issue_reset, live_reset, reset_url
 from horatio.connectors import email
-from horatio.models import AuditEvent, Character, PasswordReset, Troupe, User
+from horatio.models import AuditEvent, Character, EmailChange, PasswordReset, Troupe, User
 from horatio.permissions import (
     Role,
     TroupeAction,
@@ -66,6 +67,8 @@ class PlayerOut(BaseModel):
     characters: list[PlayerCharacter]
     # When their live reset link expires, if they have one. Only for the custodian.
     reset_expires_at: datetime | None
+    # A change of email waiting to be confirmed. Only for the player themself and the custodian.
+    email_change: PendingEmail | None = None
 
 
 class PlayerSummary(BaseModel):
@@ -76,6 +79,8 @@ class PlayerSummary(BaseModel):
     member_since: datetime
     # When their live reset link expires, if they have one.
     reset_expires_at: datetime | None
+    # The address a change of email waiting would change it to.
+    email_change_to: str | None = None
 
 
 class ProfileIn(BaseModel):
@@ -177,6 +182,7 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
             if can_view_character(db, viewer, c)
         ],
         reset_expires_at=reset_expiry(db, user) if viewer.is_custodian else None,
+        email_change=pending(db, user) if viewer.is_custodian or viewer.id == user.id else None,
     )
 
 
@@ -248,6 +254,15 @@ def find_players(
             )
         )
     }
+    changing = {
+        user_id: new_email
+        for user_id, new_email in db.execute(
+            select(EmailChange.user_id, EmailChange.new_email).where(
+                EmailChange.user_id.in_([u.id for u in found]),
+                EmailChange.expires_at > datetime.now(UTC),
+            )
+        )
+    }
     return [
         PlayerSummary(
             id=u.id,
@@ -256,6 +271,7 @@ def find_players(
             email=u.email,
             member_since=u.created_at,
             reset_expires_at=expiries.get(u.id),
+            email_change_to=changing.get(u.id),
         )
         for u in found
     ]
