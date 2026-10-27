@@ -90,6 +90,9 @@ class Character(Imported, Record):
     left_reason: Mapped[str | None]
     # Its troupes' Who's Who lists it under "No longer with us".
     left_listed: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Its pronouns, as its player (or an NPC's staff) wrote them: "she/her", "any".
+    # None for none given (horatio.pronouns).
+    pronouns: Mapped[str | None]
 
 
 class CharacterTrait(Record):

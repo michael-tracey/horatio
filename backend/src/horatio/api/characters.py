@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import deletion, domitors, leaving, pictures, renames, social_age
+from horatio import deletion, domitors, leaving, pictures, pronouns, renames, social_age
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
 from horatio.models import Character, RuleSet, Troupe, User
@@ -38,6 +38,8 @@ class CharacterOut(BaseModel):
     player_id: uuid.UUID
     splat: str
     name: str
+    # Its pronouns, such as "she/her"; None for none given.
+    pronouns: str | None
     status: str
     home_troupe_id: uuid.UUID | None
     # Until a home troupe accepts it, the troupe whose rules it is built by.
@@ -135,6 +137,11 @@ class Leaving(BaseModel):
     listed: bool
 
 
+class PronounsIn(BaseModel):
+    # Free text, such as "she/her" or "any"; empty or None for none.
+    pronouns: str | None = Field(default=None, max_length=200)
+
+
 def character_out(db: Session, character: Character) -> CharacterOut:
     return characters_out(db, [character])[0]
 
@@ -148,6 +155,7 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
             player_id=character.player_id,
             splat=character.splat,
             name=character.name,
+            pronouns=character.pronouns,
             status=character.status,
             home_troupe_id=character.home_troupe_id,
             building_troupe_id=character.building_troupe_id,
@@ -226,6 +234,17 @@ def change_character(
     if not user.is_custodian:
         character = editable_character(db, user, character_id)
     renames.rename(db, user, lock_character(db, character.id), body.name)
+    db.commit()
+    return character_out(db, character)
+
+
+@router.put("/{character_id}/pronouns")
+def set_pronouns(
+    character_id: uuid.UUID, body: PronounsIn, db: DbSession, user: CurrentUser
+) -> CharacterOut:
+    """Set the character's pronouns: its player, or for an NPC its troupe's staff."""
+    character = editable_character(db, user, character_id)
+    pronouns.set_character(db, user, character, body.pronouns)
     db.commit()
     return character_out(db, character)
 

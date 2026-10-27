@@ -20,14 +20,21 @@ carries into a game here, which is public in the sect anyway (p. 312).
 - the court: every titled character, once, in the order of its highest title
   (horatio.titles.court_order);
 - by clan: one section per seated clan, by name;
-- Other: the characters of clans with no seat at court. A clan has a seat when
-  someone holds Primogen for it here; a troupe where no one does seats every clan;
+- Other: the characters of clans with no seat at court, each with who speaks for
+  it there;
 - no longer with us: the retired characters that were in the troupe and are listed,
   with why they left (horatio.leaving), as their players chose.
 
-Character and player pronouns (#265), who represents a clan without a seat (#267)
-and why a character left (#268) each have their place in an entry, empty until
-those land.
+**Seats at court** (#267) are the court's custom, not the sect's rules. The troupe's
+staff choose which clans have one (Troupe.seated_clans). Until they do, a clan has
+one when someone holds Primogen for it here, and a troupe where no one does seats
+every clan. A character of a clan without a seat is **represented by** a seated
+clan, or by what its player says ("Anarch"). Its player sets it, and staff can
+change it. It is kept on the character's membership of the troupe, so it goes when
+the character leaves.
+
+Each entry has the character's pronouns and its player's (horatio.pronouns). Why
+a character left (#268) has its place in an entry, empty until that lands.
 """
 
 import uuid
@@ -38,12 +45,14 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import badges, leaving, preferences, sect_status, social_age, titles
+from horatio import audit, badges, feeding, leaving, preferences, sect_status, social_age, titles
 from horatio.models import Character, CharacterTitle, Troupe, TroupeMembership, User
-from horatio.sheets import rules_for, sheet_rows
+from horatio.sheets import conflict, membership, rules_for, sheet_rows, unprocessable
 
-# The title whose holders give their clan a seat at court.
+# The title whose holders give their clan a seat at court, until staff choose.
 PRIMOGEN = "Primogen"
+# The longest a character's Represented by can be, in characters.
+REPRESENTED_BY_LENGTH = 60
 
 
 @dataclass(frozen=True)
@@ -62,9 +71,10 @@ class Entry:
     # Its home troupe's name, for a visiting character.
     visiting_from: str | None
     visiting: bool
-    # Filled in by #265, #267 and #268.
+    # The character's pronouns and its player's, if they gave them.
     pronouns: str | None = None
     player_pronouns: str | None = None
+    # Filled in by #267 and #268.
     represented_by: str | None = None
     left_reason: str | None = None
 
@@ -147,11 +157,94 @@ def departed(db: Session, troupe: Troupe) -> list[Character]:
     )
 
 
-def seated_clans(entries: Sequence[Entry]) -> list[str] | None:
-    """The clans with a seat at court: those someone holds Primogen for. None, for
-    every clan, where no one holds Primogen."""
-    found = {e.family for e in entries if PRIMOGEN in e.titles and e.family}
-    return sorted(found) if found else None
+# --- seats at court ------------------------------------------------------------------------
+
+
+def primogen_clans(db: Session, troupe: Troupe) -> list[str]:
+    """The clans someone active holds Primogen for here, by clan without the bloodline."""
+    holders = db.scalars(
+        select(CharacterTitle.character_id)
+        .join(Character, CharacterTitle.character_id == Character.id)
+        .where(
+            CharacterTitle.troupe_id == troupe.id,
+            CharacterTitle.name == PRIMOGEN,
+            Character.status == "active",
+        )
+    )
+    standing = social_age.standings(db, list(holders))
+    return sorted({f for s in standing.values() if (f := clan_family(s.clan))})
+
+
+def seated_clans(db: Session, troupe: Troupe) -> list[str] | None:
+    """The clans with a seat at court: those staff chose, or else those someone holds
+    Primogen for. None, for every clan, where staff haven't chosen and no one holds
+    Primogen."""
+    if troupe.seated_clans is not None:
+        return sorted(troupe.seated_clans)
+    return primogen_clans(db, troupe) or None
+
+
+def has_seat(seated: Sequence[str] | None, clan: str | None) -> bool:
+    """Whether a character of this clan sits with its clan: one with no clan yet does."""
+    family = clan_family(clan)
+    return seated is None or family is None or family in seated
+
+
+def set_seats(db: Session, staff: User, troupe: Troupe, clans: Sequence[str] | None) -> None:
+    """Choose the clans with a seat at court, each one of the troupe's clans; None goes
+    back to the clans whose Primogen is held here."""
+    if clans is not None:
+        known = feeding.troupe_clans(db, troupe)
+        unknown = sorted(set(clans) - set(known))
+        if unknown:
+            raise unprocessable(f"Not a clan here: {', '.join(unknown)}.")
+        if not clans:
+            raise unprocessable(
+                "Give at least one clan a seat; to seat every clan, choose them all."
+            )
+        clans = sorted(set(clans))
+    if troupe.seated_clans == clans:
+        return
+    troupe.seated_clans = list(clans) if clans is not None else None
+    db.flush()
+    audit.record(
+        db,
+        staff,
+        "troupe.seats",
+        troupe_id=troupe.id,
+        clans=", ".join(clans) if clans is not None else "those whose Primogen is held here",
+    )
+
+
+def set_represented_by(
+    db: Session, actor: User, troupe: Troupe, character: Character, words: str | None
+) -> str | None:
+    """Say who speaks at court for a character of a clan without a seat: a seated
+    clan, or a few words of the player's own. Blank leaves it to nobody yet."""
+    found = membership(db, character, troupe.id)
+    if found is None or character.status != "active":
+        raise conflict(f"{character.name} is not in this troupe.")
+    clan = social_age.standings(db, [character.id])[character.id].clan
+    if has_seat(seated_clans(db, troupe), clan):
+        raise conflict(f"{character.name}'s clan has a seat at court here.")
+    words = " ".join((words or "").split()) or None
+    if words is not None and len(words) > REPRESENTED_BY_LENGTH:
+        raise unprocessable(f"Keep it to {REPRESENTED_BY_LENGTH} characters.")
+    if found.represented_by != words:
+        found.represented_by = words
+        db.flush()
+        audit.record(
+            db,
+            actor,
+            "character.represented_by",
+            troupe_id=troupe.id,
+            character_id=character.id,
+            by=words or "nobody yet",
+        )
+    return words
+
+
+# --- the Who's Who ---------------------------------------------------------------------------
 
 
 def whos_who(db: Session, troupe: Troupe) -> WhosWho:
@@ -185,6 +278,15 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
             select(Troupe).where(Troupe.id.in_({c.home_troupe_id for c in characters}))
         )
     }
+    seated = seated_clans(db, troupe)
+    represented = {
+        who: by
+        for who, by in db.execute(
+            select(TroupeMembership.character_id, TroupeMembership.represented_by).where(
+                TroupeMembership.troupe_id == troupe.id, TroupeMembership.left_at.is_(None)
+            )
+        )
+    }
     entries: list[Entry] = []
     for c in characters:
         visiting = c.kind == "pc" and c.home_troupe_id != troupe.id
@@ -200,9 +302,14 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
                 social_age=standing[c.id].age,
                 sect=sects.get(c.id),
                 player=player_name(players[c.player_id]) if c.kind == "pc" else None,
+                pronouns=c.pronouns,
+                player_pronouns=players[c.player_id].pronouns if c.kind == "pc" else None,
                 titles=held.get(c.id, []),
                 visible=visible[c.id],
                 bans=bans(db, c),
+                represented_by=None
+                if has_seat(seated, standing[c.id].clan)
+                else represented.get(c.id),
                 negative=negative,
                 visiting=visiting,
                 visiting_from=homes.get(c.home_troupe_id)
@@ -228,16 +335,14 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
         )
         for c in gone
     ]
-    found = WhosWho(
-        entries=entries + left, seated=seated_clans(entries), departed=[c.id for c in gone]
-    )
+    found = WhosWho(entries=entries + left, seated=seated, departed=[c.id for c in gone])
     titled = [e for e in entries if e.titles]
     titled.sort(key=lambda e: (titles.court_key(order, e.titles[0]), e.character.name.lower()))
     found.court = [e.character.id for e in titled]
     by_clan: dict[str | None, list[uuid.UUID]] = defaultdict(list)
     other: list[Entry] = []
     for e in entries:
-        if found.seated is None or e.family is None or e.family in found.seated:
+        if has_seat(seated, e.clan):
             by_clan[e.family].append(e.character.id)
         else:
             other.append(e)

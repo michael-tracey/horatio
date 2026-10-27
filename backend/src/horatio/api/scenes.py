@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from horatio import audit
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.auth.viewing import read_only
 from horatio.models import (
     Character,
     Scene,
@@ -251,7 +252,8 @@ def read_scene(
 ) -> SceneOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.RUN_SCENES)
     scene = troupe_scene(db, troupe, scene_id)
-    if datetime.now(UTC) - scene.last_used_at > USED_EVERY:
+    # Not while the custodian views as someone: that changes nothing (horatio.auth.viewing).
+    if datetime.now(UTC) - scene.last_used_at > USED_EVERY and not read_only(db):
         used(scene)
         db.commit()
     return scene_out(db, user, troupe, scene)

@@ -7,7 +7,9 @@ import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
+import { EquipmentTab } from "./EquipmentTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
+import { LinesVeilsTab } from "./LinesVeilsTab";
 import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
 import { NpcsTab } from "./NpcsTab";
@@ -89,12 +91,16 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
               ...(can.running ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
+              ...(can.running ? [{ to: `${base}/equipment`, label: "Equipment" }] : []),
               ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
             ],
           },
           {
             label: "Players",
-            tabs: [...(can.running ? [{ to: `${base}/players`, label: "Players" }] : [])],
+            tabs: [
+              ...(can.running ? [{ to: `${base}/players`, label: "Players" }] : []),
+              ...(can.staff ? [{ to: `${base}/lines-veils`, label: "Lines and veils" }] : []),
+            ],
           },
           {
             label: "Downtimes",
@@ -122,12 +128,14 @@ export function TroupePage() {
         {t.whos_who && <Route path="whos-who" element={<WhosWhoTab troupeId={t.id} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
+        {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
         {can.running && <Route path="npcs/:characterId" element={<StockNpcBuilder troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
+        {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
         {can.running && <Route path="rules/*" element={<RulesTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}

@@ -6,6 +6,7 @@ import type { TitleOut, TitlesOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { SeatsSetting } from "./SeatsSetting";
 import { titleGroups, titleStatus } from "./titleGroups";
 
 /** The titles this troupe gives, by sect: the rule set's and its own, each with the
@@ -47,6 +48,7 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
         </Card>
       ))}
       {titles.data.court_order.length > 1 && <CourtOrder troupeId={troupeId} order={titles.data.court_order} />}
+      <SeatsSetting troupeId={troupeId} />
       <Card title="Add a title">
         <TitleFields
           data={titles.data}

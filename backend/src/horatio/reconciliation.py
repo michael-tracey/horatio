@@ -189,8 +189,20 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
         raise conflict("Withdraw the request to make this the home troupe first.")
     if character.kind == "npc":
         raise conflict("An NPC stays in its troupe until it is deleted.")
+    end_membership(db, player, character, troupe, membership)
+    audit.record(db, player, "troupe.leave", troupe_id=troupe.id, character_id=character.id)
+
+
+def end_membership(
+    db: Session, actor: User, character: Character, troupe: Troupe, membership: TroupeMembership
+) -> None:
+    """Take the character out of the troupe: its titles there end, it has no home
+    troupe if this was it, and its requests waiting there are withdrawn. Its sheet,
+    XP and history stay as they are. The caller logs why."""
     membership.left_at = datetime.now(UTC)
+    # Its titles and who spoke for it at court were this troupe's.
     titles.drop_all(db, troupe.id, character.id)
+    membership.represented_by = None
     if character.home_troupe_id == troupe.id:
         character.home_troupe_id = None
         sync_fixed_ratings(db, character)
@@ -203,11 +215,10 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
         )
     ):
         if approval.kind in HELD_KINDS:
-            undo_discipline(db, player, character, approval, "withdrawn")
+            undo_discipline(db, actor, character, approval, "withdrawn")
         approval.status = "withdrawn"
         approval.decided_at = datetime.now(UTC)
     db.flush()
-    audit.record(db, player, "troupe.leave", troupe_id=troupe.id, character_id=character.id)
 
 
 # --- finding differences ----------------------------------------------------------------

@@ -6,12 +6,14 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import handles, preferences
+from horatio import handles, preferences, suspensions
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
 from horatio.auth.resets import email_reset, limited, request_reset, use_reset, user_for_reset
 from horatio.auth.sessions import end_session, start_session
+from horatio.auth.viewing import allowed_while_viewing, viewing_for
+from horatio.auth.viewing import end as end_viewing
 from horatio.config import get_settings
 from horatio.connectors import email
 from horatio.db import get_sessionmaker
@@ -97,7 +99,10 @@ def set_session_cookie(response: Response, token: str) -> None:
 
 
 def user_by_email(db: DbSession, email: str) -> User | None:
-    return db.scalar(select(User).where(func.lower(User.email) == email.lower()))
+    """The account using an email. A merged account's email is free for use."""
+    return db.scalar(
+        select(User).where(func.lower(User.email) == email.lower(), User.merged_into_id.is_(None))
+    )
 
 
 def user_by_login(db: DbSession, login: str) -> User | None:
@@ -106,7 +111,9 @@ def user_by_login(db: DbSession, login: str) -> User | None:
     if "@" in login.removeprefix("@"):
         return user_by_email(db, login)
     handle = login.removeprefix("@").lower()
-    return db.scalar(select(User).where(func.lower(User.handle) == handle))
+    return db.scalar(
+        select(User).where(func.lower(User.handle) == handle, User.merged_into_id.is_(None))
+    )
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
@@ -144,10 +151,14 @@ def sign_in(body: SignIn, db: DbSession, response: Response) -> Me:
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@allowed_while_viewing
 def sign_out(request: Request, db: DbSession, response: Response) -> None:
     settings = get_settings()
     token = request.cookies.get(settings.session_cookie_name)
     if token:
+        viewing = viewing_for(request, db)
+        if viewing is not None:
+            end_viewing(db, viewing, "signed_out")
         end_session(db, token)
         db.commit()
     response.delete_cookie(settings.session_cookie_name, path="/")
@@ -165,6 +176,7 @@ def reset_user(db: DbSession, token: str) -> User:
             status.HTTP_404_NOT_FOUND,
             "This reset link has expired or been used. Ask for a new one.",
         )
+    suspensions.refuse(db, user)
     return user
 
 
