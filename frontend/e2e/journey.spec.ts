@@ -3517,6 +3517,8 @@ test("the custodian searches the audit log across troupes by person, days and ch
 
   // Every change to one character, whoever made it.
   await c.getByRole("button", { name: "Clear" }).click();
+  // The form is filled in afresh from the cleared address before anything is typed.
+  await expect(c.getByLabel("Who did it")).toHaveValue("");
   await c.getByLabel("Character", { exact: true }).fill(character);
   await c.getByRole("option").filter({ hasText: character }).click();
   await c.getByRole("button", { name: "Search", exact: true }).click();
