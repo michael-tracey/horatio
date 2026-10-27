@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Avatar } from "../components/Avatar";
@@ -13,7 +13,13 @@ import { requestStatus } from "./troupeRequests";
 
 export function TroupesPage() {
   const me = useMe();
+  const client = useQueryClient();
   const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
+  // Asked afresh on opening the page: a list another page asked for earlier can
+  // still be on its way, and would be shown without a troupe made since.
+  useEffect(() => {
+    void client.invalidateQueries({ queryKey: ["troupes"] });
+  }, [client]);
   const suspended = useSuspendedIds(!!me.data?.is_custodian);
 
   return (

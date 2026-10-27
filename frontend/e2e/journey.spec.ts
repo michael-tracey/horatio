@@ -7354,11 +7354,9 @@ test("Derangement traits on the Play View: a temporary derangement added, warnin
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
   // Two NPCs the lead runs, neither with the Derangement flaw: a Malkavian, whose
-  // clan weakness is a derangement, and a Toreador. The Troupes page is loaded
-  // afresh: the list the lead's first page asked for, before the troupe was made,
-  // can still be on its way and would be shown without it.
+  // clan weakness is a derangement, and a Toreador.
   const p = lead.page;
-  await p.goto("/troupes");
+  await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
