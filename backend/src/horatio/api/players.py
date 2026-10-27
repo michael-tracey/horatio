@@ -17,6 +17,7 @@ from sqlalchemy.orm import aliased
 from horatio import account_merges, handles, pronouns, suspensions
 from horatio.api.auth import Me, me
 from horatio.api.email_changes import PendingEmail, pending
+from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
@@ -26,6 +27,7 @@ from horatio.models import AuditEvent, Character, EmailChange, PasswordReset, Tr
 from horatio.permissions import (
     Role,
     TroupeAction,
+    can_see_lines_veils,
     can_view_character,
     require_custodian,
     require_troupe_action,
@@ -67,6 +69,9 @@ class PlayerOut(BaseModel):
     email: str | None
     # Their characters that the viewer may see.
     characters: list[PlayerCharacter]
+    # Never public: only for themself, the custodian, the staff of the troupes they
+    # play in, and other players there if they share them (horatio.lines_veils).
+    lines_veils: LinesVeils | None
     # When their live reset link expires, if they have one. Only for the custodian.
     reset_expires_at: datetime | None
     # A change of email waiting to be confirmed. Only for the player themself and the custodian.
@@ -192,6 +197,7 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
             if can_view_character(db, viewer, c)
         ],
         reset_expires_at=reset_expiry(db, user) if viewer.is_custodian else None,
+        lines_veils=lines_veils_of(user) if can_see_lines_veils(db, viewer, user) else None,
         email_change=pending(db, user) if viewer.is_custodian or viewer.id == user.id else None,
     )
 

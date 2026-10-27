@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PlayerOut } from "../api/types";
+import { LinesVeilsNote, hasLinesVeils } from "../components/LinesVeils";
 import { Pronouns } from "../components/PronounsInput";
 import { Badge, Card, Empty, ErrorText, Loading, PageTitle } from "../components/ui";
 import { useDates } from "../dates";
@@ -44,6 +45,7 @@ export function PlayerPage() {
             {p.bio ? <p className="text-sm leading-relaxed whitespace-pre-line">{p.bio}</p> : <Empty>No bio yet.</Empty>}
           </Card>
           <Characters player={p} />
+          <Boundaries player={p} mine={mine} />
         </div>
         <div className="flex flex-col gap-6">
           <Contact player={p} />
@@ -107,6 +109,29 @@ function Characters({ player }: { player: PlayerOut }) {
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+/** Their lines and veils, which the server sends only to those who may see them:
+ * themself, the staff of their troupes, and other players there if they share. */
+function Boundaries({ player, mine }: { player: PlayerOut; mine: boolean }) {
+  const value = player.lines_veils;
+  if (!value || (!mine && !hasLinesVeils(value))) return null;
+  return (
+    <Card title="Lines and veils">
+      <p className="mb-2 text-xs text-mist">
+        {mine
+          ? `Never public. Your troupes’ staff see them${value.shared ? ", and so do the other players in your troupes" : ""}.`
+          : "Never public: only for the staff of their troupes, and other players there if they share them."}
+      </p>
+      {hasLinesVeils(value) ? (
+        <LinesVeilsNote value={value} who={player.display_name} className="text-sm" />
+      ) : (
+        <Empty>
+          None yet. <Link to="/account" className="text-gold underline">Add them</Link>.
+        </Empty>
+      )}
     </Card>
   );
 }

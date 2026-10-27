@@ -25,6 +25,7 @@ const entry = (over: Partial<RosterEntry>): RosterEntry => ({
   waiting: false,
   disciplines_waiting: 0,
   joined_at: "2026-01-01T00:00:00Z",
+  lines_veils: null,
   ...over,
 });
 

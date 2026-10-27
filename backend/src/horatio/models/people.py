@@ -50,6 +50,13 @@ class User(Imported, Record):
     # The Discord username the player gives, such as "mrcarbuncle". Not checked
     # against Discord; `discord_user_id` is the account they sign in with.
     discord_handle: Mapped[str | None]
+    # Their lines and veils (horatio.lines_veils): what must not happen in play around
+    # them, and what may happen only off-screen, each in their own words. Never
+    # public: staff of the troupes they play in see them, and other players there
+    # only if they share them.
+    lines: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    veils: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    share_lines_veils: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Their pronouns, shown beside their name to other players (horatio.pronouns).
     pronouns: Mapped[str | None]
     # Their settings (horatio.preferences): only those they have changed, so a

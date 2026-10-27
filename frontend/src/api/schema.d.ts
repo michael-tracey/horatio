@@ -3305,6 +3305,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/profile/lines-veils": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Lines Veils
+         * @description The signed-in player's own lines and veils, and whether they share them with
+         *     other players. Not logged: they are the player's private settings.
+         */
+        put: operations["set_lines_veils_api_profile_lines_veils_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/responses/{response_id}": {
         parameters: {
             query?: never;
@@ -4704,6 +4725,27 @@ export interface paths {
          * @description The custodian appoints a troupe's lead storyteller.
          */
         put: operations["appoint_lead_api_troupes__troupe_id__lead_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/lines-veils": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Lines Veils
+         * @description Every line and veil across the troupe's players, for its staff to plan games.
+         *     Whose each one is shows only for players who share theirs.
+         */
+        get: operations["troupe_lines_veils_api_troupes__troupe_id__lines_veils_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -8705,6 +8747,15 @@ export interface components {
             /** Taps */
             taps: number;
         };
+        /** GatheredOut */
+        GatheredOut: {
+            /** Count */
+            count: number;
+            /** Shared By */
+            shared_by: components["schemas"]["Owner"][];
+            /** Text */
+            text: string;
+        };
         /** GiftIn */
         GiftIn: {
             /** Amount */
@@ -9610,6 +9661,33 @@ export interface components {
             /** Used */
             used: number;
         };
+        /** LinesVeils */
+        LinesVeils: {
+            /** Lines */
+            lines: string[];
+            /** Shared */
+            shared: boolean;
+            /** Veils */
+            veils: string[];
+        };
+        /** LinesVeilsIn */
+        LinesVeilsIn: {
+            /**
+             * Lines
+             * @default []
+             */
+            lines: string[];
+            /**
+             * Shared
+             * @default false
+             */
+            shared: boolean;
+            /**
+             * Veils
+             * @default []
+             */
+            veils: string[];
+        };
         /** Link */
         Link: {
             /** Label */
@@ -10420,6 +10498,18 @@ export interface components {
              */
             type: "elite" | "underworld";
         };
+        /** Owner */
+        Owner: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
         /**
          * PanelsOut
          * @description The panels of the sheet and Play View a kind has (horatio.rules.npc_kinds).
@@ -10764,6 +10854,7 @@ export interface components {
              * @default []
              */
             identities: components["schemas"]["IdentityOut"][];
+            lines_veils?: components["schemas"]["LinesVeils"] | null;
             /** Notes */
             notes: string[];
             /** Other Powers */
@@ -10967,6 +11058,7 @@ export interface components {
             id: string;
             /** Is Custodian */
             is_custodian: boolean;
+            lines_veils: components["schemas"]["LinesVeils"] | null;
             /** Links */
             links: components["schemas"]["Link"][];
             /**
@@ -12053,6 +12145,7 @@ export interface components {
             joined_at: string;
             /** Kind */
             kind: string;
+            lines_veils: components["schemas"]["LinesVeils"] | null;
             /** Out Of Sect Titles */
             out_of_sect_titles: string[];
             /** Picture */
@@ -13589,6 +13682,15 @@ export interface components {
             /** Troupe */
             troupe: string[] | null;
         };
+        /** TroupeLinesVeils */
+        TroupeLinesVeils: {
+            /** Lines */
+            lines: components["schemas"]["GatheredOut"][];
+            /** Players */
+            players: components["schemas"]["Owner"][];
+            /** Veils */
+            veils: components["schemas"]["GatheredOut"][];
+        };
         /** TroupeOut */
         TroupeOut: {
             /** Allowed Sects */
@@ -14023,6 +14125,7 @@ export interface components {
             kind: string;
             /** Left Reason */
             left_reason: string | null;
+            lines_veils: components["schemas"]["LinesVeils"] | null;
             /** Name */
             name: string;
             /** Negative */
@@ -20787,6 +20890,39 @@ export interface operations {
             };
         };
     };
+    set_lines_veils_api_profile_lines_veils_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinesVeilsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinesVeils"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_response_api_responses__response_id__get: {
         parameters: {
             query?: never;
@@ -23760,6 +23896,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_lines_veils_api_troupes__troupe_id__lines_veils_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeLinesVeils"];
                 };
             };
             /** @description Validation Error */

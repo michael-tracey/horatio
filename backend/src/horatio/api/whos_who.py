@@ -11,13 +11,15 @@ from pydantic import BaseModel
 
 from horatio import audit, feeding, pictures, titles, whos_who
 from horatio.api.downtimes import staff_troupe
+from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.titles import TitlesOut, titles_out
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Character, Troupe
+from horatio.models import Character, Troupe, User
 from horatio.permissions import (
     TroupeAction,
     allows,
     can_see_whos_who,
+    lines_veils_shown_here,
     require_troupe_action,
     troupe_role,
 )
@@ -57,6 +59,9 @@ class WhosWhoEntry(BaseModel):
     # (#268): None until those are kept.
     represented_by: str | None
     left_reason: str | None
+    # The player's lines and veils: for staff, and for other players only if the
+    # player shares them. Never printed. None for an NPC, or when not shown.
+    lines_veils: LinesVeils | None
 
 
 class ClanSection(BaseModel):
@@ -117,7 +122,7 @@ class RepresentedBy(BaseModel):
     represented_by: str | None
 
 
-def entry_out(entry: whos_who.Entry) -> WhosWhoEntry:
+def entry_out(entry: whos_who.Entry, lines_veils: LinesVeils | None = None) -> WhosWhoEntry:
     c = entry.character
     return WhosWhoEntry(
         character_id=c.id,
@@ -139,6 +144,7 @@ def entry_out(entry: whos_who.Entry) -> WhosWhoEntry:
         player_pronouns=entry.player_pronouns,
         represented_by=entry.represented_by,
         left_reason=entry.left_reason,
+        lines_veils=lines_veils,
     )
 
 
@@ -155,14 +161,21 @@ def read_whos_who(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Who
             "The Who's Who is for the troupe's staff and the players of its characters.",
         )
     found = whos_who.whos_who(db, troupe)
-    staff = allows(
-        troupe_role(db, user, troupe), TroupeAction.MANAGE_TITLES, is_custodian=user.is_custodian
-    )
+    role = troupe_role(db, user, troupe)
+    staff = allows(role, TroupeAction.MANAGE_TITLES, is_custodian=user.is_custodian)
     characters = {e.character.id: e.character for e in found.entries}
+    entries: list[WhosWhoEntry] = []
+    for e in found.entries:
+        # The players are already loaded, so this asks the database nothing more.
+        player = db.get_one(User, e.character.player_id) if e.character.kind == "pc" else None
+        if player is not None and lines_veils_shown_here(user, role, player):
+            entries.append(entry_out(e, lines_veils_of(player)))
+        else:
+            entries.append(entry_out(e))
     return WhosWhoOut(
         troupe_id=troupe.id,
         troupe_name=troupe.name,
-        entries=[entry_out(e) for e in found.entries],
+        entries=entries,
         court=found.court,
         clans=[ClanSection(clan=clan, character_ids=ids) for clan, ids in found.clans],
         other=found.other,

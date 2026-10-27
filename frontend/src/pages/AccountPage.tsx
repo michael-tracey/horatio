@@ -7,6 +7,7 @@ import { PronounsInput } from "../components/PronounsInput";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Tabs, Textarea } from "../components/ui";
 import { useAction, useMe } from "../hooks";
 import { AccountEmail } from "./AccountEmail";
+import { LinesVeilsForm } from "./LinesVeilsForm";
 import { SettingsPage } from "./settings/SettingsPage";
 import { ViewedAs } from "./ViewedAs";
 
@@ -51,6 +52,7 @@ export function AccountPage() {
               <ProfileForm key={player.data.id} player={player.data} />
               <AccountEmail player={player.data} />
               <ViewedAs />
+              {player.data.lines_veils && <LinesVeilsForm key={`${player.data.id}-lines-veils`} value={player.data.lines_veils} />}
             </>
           }
         />

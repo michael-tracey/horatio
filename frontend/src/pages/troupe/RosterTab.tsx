@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
+import { LinesVeilsNote } from "../../components/LinesVeils";
 import { AtHandle } from "../../components/PersonPicker";
 import { Dialog } from "../../components/Dialog";
 import { Pronouns } from "../../components/PronounsInput";
@@ -250,6 +251,7 @@ function RosterRow({
         <Titles troupeId={troupeId} entry={entry} />
         {entry.home && entry.kind === "pc" && <AwardXp troupeId={troupeId} entry={entry} />}
       </span>
+      <LinesVeilsNote value={entry.lines_veils} who={entry.player_name} className="basis-full pl-7 text-xs text-parchment/80" />
     </li>
   );
 }
