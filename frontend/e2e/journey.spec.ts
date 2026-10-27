@@ -5774,7 +5774,7 @@ test("a Scene card shows an NPC's best attacks and defences, and its Pools and P
 
   // Pools lists every pool, Combat and Defence first, and stays open over a reload.
   await card.getByRole("button", { name: /^Pools/ }).click();
-  await expect(card.getByRole("region", { name: "Combat" })).toContainText("Thrown attack");
+  await expect(card.getByRole("region", { name: "Combat" })).toContainText("Thrown or bow attack");
   await expect(card.getByRole("region", { name: "Defence" })).toContainText("Resisting Social powers");
   await p.reload();
   await expect(card.getByRole("region", { name: "Combat" })).toBeVisible();
@@ -7878,6 +7878,7 @@ test("a player equips a katana and a flak vest in the Pools drawer, and the pool
   await give({ name: "Flak Vest", kind: "protective", qualities: [{ name: "Ballistic" }, { name: "Chest Plate" }] });
   await give({ name: "Chain Mail", kind: "protective", qualities: [{ name: "Chest Plate" }, { name: "Hardened" }] });
   await give({ name: "Pistol", kind: "ranged", qualities: [{ name: "Fast" }, { name: "Quick Draw" }] });
+  await give({ name: "Bow", kind: "ranged", archaic: true, qualities: [{ name: "Accurate" }, { name: "Deadly" }] });
 
   const p = player.page;
   await p.goto(`/play/characters/${brunhild}?tab=pools`);
@@ -7930,11 +7931,18 @@ test("a player equips a katana and a flak vest in the Pools drawer, and the pool
   await expect(p.getByText("+3 Chain Mail: Hardened against Brawl, Melee and thrown weapons")).toBeVisible();
   await expect(p.getByText("(+3 Pistol: Fast)")).toBeVisible();
 
-  // Put away, the pools are as they were.
+  // An archaic bow shoots with Firearms or Athletics (p. 279): its Accurate counts on both.
   await p.goto(`/play/characters/${brunhild}?tab=pools`);
   await switches.click();
+  await p.getByLabel("Bow equipped").check();
+  await expect(equipment.getByText("Put away Pistol (two hands at most).")).toBeVisible();
+  await expect(row(/^Firearms attack/)).toContainText("Bow: Accurate 2");
+  await expect(row(/^Thrown or bow attack/)).toContainText("Bow: Accurate 2");
+  await expect(melee).not.toContainText("Bow");
+
+  // Put away, the pools are as they were.
   await p.getByLabel("Chain Mail equipped").uncheck();
-  await p.getByLabel("Pistol equipped").uncheck();
+  await p.getByLabel("Bow equipped").uncheck();
   await expect(switches).toHaveAccessibleDescription("Nothing in use");
   await expect(dodge.getByRole("listitem").filter({ hasText: /^Against/ })).toHaveCount(0);
   await expect.poll(() => totalOf(/^Initiative/)).toBe(initiativeBefore);

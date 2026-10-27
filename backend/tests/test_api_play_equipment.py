@@ -19,7 +19,8 @@ from tests.api_helpers import Person, Troupe
 from tests.test_api_downtimes import member_character
 from tests.test_api_equipment_passing import give_to
 from tests.test_api_play import send, tap, texts, view
-from tests.test_api_troupe_equipment import DAGGER, given, path
+from tests.test_api_renames import summaries
+from tests.test_api_troupe_equipment import DAGGER, change, give, given, path
 
 KATANA = {
     "name": "Katana",
@@ -44,6 +45,19 @@ PISTOL = {
     "kind": "ranged",
     "grade": "standard",
     "qualities": [{"name": "Fast"}, {"name": "Accurate"}],
+}
+BOW = {
+    "name": "Bow",
+    "kind": "ranged",
+    "grade": "standard",
+    "qualities": [{"name": "Accurate"}, {"name": "Deadly"}],
+    "archaic": True,
+}
+THROWING_KNIFE = {
+    "name": "Throwing Knife",
+    "kind": "melee",
+    "grade": "standard",
+    "qualities": [{"name": "Balanced"}, {"name": "Accurate"}],
 }
 KNIFE = {"name": "Knife", "kind": "melee", "grade": "cheap", "qualities": [{"name": "Fast"}]}
 LAPTOP = {
@@ -122,6 +136,44 @@ def test_each_item_says_what_its_qualities_do_to_the_pools_while_equipped(
     assert state["equipment"][0]["modifiers"] == vest["modifiers"]
     assert [i["hands"] for i in state["equipment"]] == [None, 2, None, 1]
     assert state["equipped"] == []
+
+
+def test_a_weapons_bonus_counts_on_every_attack_it_can_make(troupe: Troupe, agnes: str) -> None:
+    bow = given(troupe, agnes, **BOW)
+    knife = given(troupe, agnes, **THROWING_KNIFE)
+    pistol = given(troupe, agnes, **PISTOL)
+
+    # A bow is archaic: it shoots with Firearms or Athletics (MET: VTM p. 279).
+    assert bow["archaic"]
+    assert [(m["quality"], m["pools"]) for m in bow["modifiers"]] == [
+        ("Accurate", "pool:attack:Firearms"),
+        ("Accurate", "pool:attack:Athletics"),
+        ("Deadly", "pool:attack:Firearms"),
+        ("Deadly", "pool:attack:Athletics"),
+    ]
+    # A Balanced knife is thrown with Athletics, or used in hand with Melee.
+    assert [(m["quality"], m["pools"]) for m in knife["modifiers"]] == [
+        ("Accurate", "pool:attack:Melee"),
+        ("Accurate", "pool:attack:Athletics"),
+    ]
+    # A pistol only with Firearms.
+    assert [m["pools"] for m in pistol["modifiers"] if m["quality"] == "Accurate"] == [
+        "pool:attack:Firearms"
+    ]
+
+
+def test_only_a_ranged_weapon_is_archaic(troupe: Troupe, agnes: str) -> None:
+    refused = give(troupe, agnes, **{**THROWING_KNIFE, "archaic": True})
+    assert refused.status_code == 422, refused.text
+    assert "Only a ranged weapon is archaic (a bow or crossbow)." in refused.text
+    # The book's Bow is archaic, and a change says so.
+    rules = troupe.storyteller.client.get("/rules/vampire/equipment").json()
+    assert [t["archaic"] for t in rules["templates"] if t["name"] == "Bow"] == [True]
+    pistol = given(troupe, agnes, **PISTOL)
+    changed = change(troupe, pistol, archaic=True, reason="It's a crossbow")
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["archaic"]
+    assert any("now archaic" in s for s in summaries(troupe.player)), summaries(troupe.player)
 
 
 def test_equipping_is_a_tap_with_undo_kept_from_game_to_game(troupe: Troupe, agnes: str) -> None:

@@ -35,7 +35,7 @@ describe("equipment", () => {
   });
 
   it("starts from a template, the book's or the troupe's", () => {
-    expect(fromTemplate({ name: "Silver Dagger", kind: "melee", grade: "standard", qualities: [{ name: "Concealable", detail: "" }, { name: "Silver", detail: "" }], page: "521", facts: {} as never })).toEqual({
+    expect(fromTemplate({ name: "Silver Dagger", kind: "melee", grade: "standard", qualities: [{ name: "Concealable", detail: "" }, { name: "Silver", detail: "" }], page: "521", facts: {} as never, archaic: false })).toEqual({
       ...NEW_ITEM,
       name: "Silver Dagger",
       qualities: [
@@ -50,10 +50,19 @@ describe("equipment", () => {
       grade: "special",
       qualities: [],
       crafted: true,
+      archaic: false,
       effects: [{ name: "Glows", effect: "Sheds light." }],
       description: "Old.",
     });
     expect([own.grade, own.crafted, own.effects, own.description]).toEqual(["special", true, [{ name: "Glows", effect: "Sheds light." }], "Old."]);
+  });
+
+  it("marks the book's Bow archaic, and sends archaic only for a ranged weapon", () => {
+    const bow = fromTemplate({ name: "Bow", kind: "ranged", grade: "standard", qualities: [], page: "524", facts: {} as never, archaic: true });
+    expect(bow.archaic).toBe(true);
+    expect(body(bow).archaic).toBe(true);
+    expect(body({ ...bow, kind: "melee" }).archaic).toBe(false);
+    expect(kindText(RULES, { kind: "ranged", kind_name: "Ranged weapon", grade: "standard", crafted: false, archaic: true })).toBe("Archaic ranged weapon");
   });
 
   it("sends a special item's effects only", () => {

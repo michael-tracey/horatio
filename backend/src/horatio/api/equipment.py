@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import NoResultFound
 
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.equipment import ItemModifier, ItemQuality, assess, equipment_rules
+from horatio.equipment import ARCHAIC_REFUSED, ItemModifier, ItemQuality, assess, equipment_rules
 from horatio.rules.equipment import EquipmentRules, Facts
 
 router = APIRouter(prefix="/rules/{splat}/equipment", tags=["equipment"])
@@ -106,6 +106,8 @@ class EquipmentTemplateOut(BaseModel):
     qualities: list[EquipmentItemQuality]
     page: str | None
     facts: EquipmentFactsOut
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool = False
 
 
 class EquipmentOut(BaseModel):
@@ -122,6 +124,8 @@ class EquipmentCheckIn(BaseModel):
     qualities: list[EquipmentItemQuality] = Field(default_factory=list[EquipmentItemQuality])
     # Its Artisan and Masterwork were added while crafting, and take no slot.
     crafted: bool = False
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool = False
 
 
 class EquipmentCheckOut(EquipmentFactsOut):
@@ -202,6 +206,7 @@ def equipment(splat: str, db: DbSession, user: CurrentUser) -> EquipmentOut:
                 qualities=[EquipmentItemQuality(name=q.name, detail=q.detail) for q in t.qualities],
                 page=t.page,
                 facts=facts_out(assess(rules, t.kind, t.qualities, t.grade).facts),
+                archaic=t.archaic,
             )
             for t in rules.templates
         ],
@@ -221,4 +226,7 @@ def check(
         body.grade,
         crafted=body.crafted,
     )
-    return EquipmentCheckOut(**facts_out(found.facts).model_dump(), problems=list(found.problems))
+    problems = list(found.problems)
+    if body.archaic and body.kind != "ranged":
+        problems.append(ARCHAIC_REFUSED)
+    return EquipmentCheckOut(**facts_out(found.facts).model_dump(), problems=problems)

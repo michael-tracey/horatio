@@ -176,6 +176,7 @@ function ItemCard({
         </span>
         <span className="text-xs text-mist">
           {item.kind_name}
+          {item.archaic && " · archaic: shoots with Firearms or Athletics"}
           {facts && ` · ${facts}`}
         </span>
         {item.qualities.length > 0 && (

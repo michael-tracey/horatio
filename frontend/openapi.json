@@ -2279,6 +2279,11 @@
       },
       "ChangeEquipmentIn": {
         "properties": {
+          "archaic": {
+            "default": false,
+            "title": "Archaic",
+            "type": "boolean"
+          },
           "crafted": {
             "default": false,
             "title": "Crafted",
@@ -6843,6 +6848,11 @@
       },
       "EquipmentCheckIn": {
         "properties": {
+          "archaic": {
+            "default": false,
+            "title": "Archaic",
+            "type": "boolean"
+          },
           "crafted": {
             "default": false,
             "title": "Crafted",
@@ -7219,6 +7229,10 @@
       },
       "EquipmentItemDetailOut": {
         "properties": {
+          "archaic": {
+            "title": "Archaic",
+            "type": "boolean"
+          },
           "can_change": {
             "title": "Can Change",
             "type": "boolean"
@@ -7392,6 +7406,7 @@
           "special_troupe_name",
           "qualities",
           "crafted",
+          "archaic",
           "effects",
           "description",
           "staff_note",
@@ -7411,6 +7426,10 @@
       },
       "EquipmentItemOut": {
         "properties": {
+          "archaic": {
+            "title": "Archaic",
+            "type": "boolean"
+          },
           "can_change": {
             "title": "Can Change",
             "type": "boolean"
@@ -7577,6 +7596,7 @@
           "special_troupe_name",
           "qualities",
           "crafted",
+          "archaic",
           "effects",
           "description",
           "staff_note",
@@ -8029,6 +8049,11 @@
       },
       "EquipmentTemplateIn": {
         "properties": {
+          "archaic": {
+            "default": false,
+            "title": "Archaic",
+            "type": "boolean"
+          },
           "crafted": {
             "default": false,
             "title": "Crafted",
@@ -8096,6 +8121,11 @@
       },
       "EquipmentTemplateOut": {
         "properties": {
+          "archaic": {
+            "default": false,
+            "title": "Archaic",
+            "type": "boolean"
+          },
           "facts": {
             "$ref": "#/components/schemas/EquipmentFactsOut"
           },
@@ -9173,6 +9203,11 @@
       },
       "GiveEquipmentIn": {
         "properties": {
+          "archaic": {
+            "default": false,
+            "title": "Archaic",
+            "type": "boolean"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -23020,6 +23055,10 @@
       },
       "TroupeTemplateOut": {
         "properties": {
+          "archaic": {
+            "title": "Archaic",
+            "type": "boolean"
+          },
           "crafted": {
             "title": "Crafted",
             "type": "boolean"
@@ -23067,6 +23106,7 @@
           "grade",
           "qualities",
           "crafted",
+          "archaic",
           "effects",
           "description"
         ],

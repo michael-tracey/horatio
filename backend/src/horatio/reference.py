@@ -51,7 +51,8 @@ ATTACKS = (
     ("Brawl", "Unarmed"),
     ("Melee", "Melee"),
     ("Firearms", "Firearms"),
-    ("Athletics", "Thrown"),
+    # Athletics throws a weapon, or shoots a bow or crossbow (MET: VTM p. 279).
+    ("Athletics", "Thrown or bow"),
 )
 # Categories whose traits are powers of a discipline, named "Discipline: Power".
 POWER_CATEGORIES = ("elder_disciplines", "luminary_disciplines")

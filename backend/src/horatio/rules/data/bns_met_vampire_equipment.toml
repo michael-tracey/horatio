@@ -16,21 +16,23 @@
 #                horatio.rules.equipment lists at its top: two_handed,
 #                needs_one_hand, no_slot_when_crafted, repeatable, needs_detail,
 #                detail_prompt, ammo, excludes, shots, max_shots, range,
-#                aggravated_against. An exclusion is written on both qualities.
+#                aggravated_against, thrown. An exclusion is written on both qualities.
 #                And pool: what the quality does to the character's test pools while
 #                its item is equipped (issue #306), a list of { amount, pools, when,
 #                situational }, or [] for a quality that changes no pool (damage,
 #                range, shots, concealment, a story effect). `pools` is as a
 #                player's own modifier names them ("pool:dodge", "attack"), or
-#                "weapon" for the item's own attack (Melee for a melee weapon,
-#                Firearms for a ranged one), or "purpose" for the challenges a piece
-#                of miscellaneous gear is for, which no pool on the Pools tab is.
+#                "weapon" for every attack the item can make (Melee for a melee
+#                weapon, and Thrown if it can be thrown; Firearms for a ranged one,
+#                and Athletics too if it is archaic, p. 279), or "purpose" for the
+#                challenges a piece of miscellaneous gear is for, which no pool on
+#                the Pools tab is.
 #                `when` says when it counts, "{detail}" being the quality's detail;
 #                `situational` is for one that counts only in a situation the Pools
 #                tab can't tell (against firearms), shown on a line of its own under
 #                the pool rather than in its total.
-# [[templates]]  name, kind, grade (standard if left out), page, and qualities: each
-#                a name, or { name, detail }.
+# [[templates]]  name, kind, grade (standard if left out), page, qualities (each a
+#                name, or { name, detail }), and archaic for a bow or crossbow.
 
 # --- kinds -------------------------------------------------------------------------
 
@@ -135,6 +137,7 @@ effect = "Made for throwing: hurl it at a target within 10 steps, Physical + Ath
 play = "Throw it up to 10 steps"
 page = "516"
 pool = []
+thrown = true
 
 [[qualities]]
 kind = "melee"
@@ -768,10 +771,12 @@ grade = "cheap"
 qualities = ["Staking"]
 page = "524"
 
+# An archaic weapon: it may shoot with Athletics instead of Firearms (p. 279).
 [[templates]]
 name = "Bow"
 kind = "ranged"
 qualities = ["Accurate", "Deadly"]
+archaic = true
 page = "524"
 
 [[templates]]

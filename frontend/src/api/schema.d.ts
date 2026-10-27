@@ -6442,6 +6442,11 @@ export interface components {
         /** ChangeEquipmentIn */
         ChangeEquipmentIn: {
             /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
              * Crafted
              * @default false
              */
@@ -8092,6 +8097,11 @@ export interface components {
         /** EquipmentCheckIn */
         EquipmentCheckIn: {
             /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
              * Crafted
              * @default false
              */
@@ -8213,6 +8223,8 @@ export interface components {
         };
         /** EquipmentItemDetailOut */
         EquipmentItemDetailOut: {
+            /** Archaic */
+            archaic: boolean;
             /** Can Change */
             can_change: boolean;
             /**
@@ -8281,6 +8293,8 @@ export interface components {
         };
         /** EquipmentItemOut */
         EquipmentItemOut: {
+            /** Archaic */
+            archaic: boolean;
             /** Can Change */
             can_change: boolean;
             /**
@@ -8486,6 +8500,11 @@ export interface components {
         /** EquipmentTemplateIn */
         EquipmentTemplateIn: {
             /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
              * Crafted
              * @default false
              */
@@ -8519,6 +8538,11 @@ export interface components {
         };
         /** EquipmentTemplateOut */
         EquipmentTemplateOut: {
+            /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
             facts: components["schemas"]["EquipmentFactsOut"];
             /** Grade */
             grade: string;
@@ -8973,6 +8997,11 @@ export interface components {
         };
         /** GiveEquipmentIn */
         GiveEquipmentIn: {
+            /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
             /**
              * Character Id
              * Format: uuid
@@ -14207,6 +14236,8 @@ export interface components {
         };
         /** TroupeTemplateOut */
         TroupeTemplateOut: {
+            /** Archaic */
+            archaic: boolean;
             /** Crafted */
             crafted: boolean;
             /** Description */

@@ -330,6 +330,9 @@ class EquipmentTemplate(Record):
     position: Mapped[int] = mapped_column(default=0, server_default="0")
     # A troupe's own template keeps the rest of the item it was saved from.
     crafted: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # An archaic ranged weapon (a bow, a crossbow) may shoot with Athletics instead
+    # of Firearms (MET: VTM p. 279).
+    archaic: Mapped[bool] = mapped_column(default=False, server_default="false")
     # A special item's own effects: each {name, effect}.
     effects: Mapped[list[dict[str, str]]] = mapped_column(JSONB, default=list, server_default="[]")
     description: Mapped[str] = mapped_column(default="", server_default="")

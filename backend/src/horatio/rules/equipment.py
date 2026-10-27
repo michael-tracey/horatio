@@ -24,6 +24,8 @@ A quality is per kind: the same name can mean different things on different kind
                           more (Spread: 6 unless it has Ammo Capacity)
     range                 its range instead of the kind's (Long Range: half a mile)
     aggravated_against    whom it does aggravated damage to; "{detail}" is the detail
+    thrown                it can be thrown: a Thrown attack, Physical + Athletics
+                          (Balanced; MET: VTM pp. 279, 516)
     pool                  what it does to the character's test pools while its item
                           is equipped (issue #306), each a `PoolEffect`; the file
                           gives every quality one, with `pool = []` for a quality
@@ -53,17 +55,20 @@ QUALITY_PROPERTIES = (
     "max_shots",
     "range",
     "aggravated_against",
+    "thrown",
     "pool",
 )
 
 # What a pool effect applies to, besides the pools a player's own modifier names
-# (horatio.pool_modifiers): the item's own attack, and the challenges a piece of
-# miscellaneous gear is for, which no pool on the Pools tab is.
+# (horatio.pool_modifiers): every attack the item can make, and the challenges a
+# piece of miscellaneous gear is for, which no pool on the Pools tab is.
 WEAPON = "weapon"
 PURPOSE = "purpose"
-# The attack each kind of weapon makes: a ranged weapon's is Firearms (MET: VTM
-# p. 517), though an archaic one may use Athletics instead.
+# The attack each kind of weapon makes (MET: VTM p. 279): Melee, or Firearms for a
+# ranged weapon. Athletics is the attack of a weapon thrown (Balanced) and of an
+# archaic ranged weapon such as a bow, which may shoot with it instead.
 WEAPON_POOLS = {"melee": "pool:attack:Melee", "ranged": "pool:attack:Firearms"}
+ATHLETICS_POOL = "pool:attack:Athletics"
 MODIFIER_POOLS = ("all", "attack", "defense", "Physical", "Social", "Mental")
 
 
@@ -159,6 +164,7 @@ class QualityData:
     max_shots: int | None = None
     range: str | None = None
     aggravated_against: str | None = None
+    thrown: bool = False
     pool: tuple[PoolEffect, ...] = ()
 
     @property
@@ -195,6 +201,8 @@ class TemplateData:
     grade: str
     qualities: tuple[ItemQuality, ...]
     page: str | None = None
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool = False
 
 
 @dataclass(frozen=True)
@@ -432,8 +440,11 @@ def equipment_from(raw: Mapping[str, Any], *, source: str = "") -> EquipmentRule
             grade=t.get("grade", "standard"),
             qualities=item_qualities(t["qualities"]),
             page=t.get("page"),
+            archaic=t.get("archaic", False),
         )
-        problems = assess(rules, template.kind, template.qualities, template.grade).problems
+        problems = list(assess(rules, template.kind, template.qualities, template.grade).problems)
+        if template.archaic and template.kind != "ranged":
+            problems.append("Only a ranged weapon is archaic.")
         if problems:
             raise ValueError(f"{where}template {template.name!r}: {' '.join(problems)}")
         templates.append(template)

@@ -88,6 +88,8 @@ class EquipmentItemOut(BaseModel):
     qualities: list[EquipmentItemQualityOut]
     # Its Artisan and Masterwork were added while crafting, and take no slot.
     crafted: bool
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool
     effects: list[SpecialEffectModel]
     description: str
     # None unless the reader is staff of the holder's home troupe.
@@ -193,6 +195,8 @@ class EquipmentFieldsIn(BaseModel):
         default_factory=list[EquipmentItemQuality], max_length=30
     )
     crafted: bool = False
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool = False
     # Only a special item has them.
     effects: list[SpecialEffectModel] = Field(
         default_factory=list[SpecialEffectModel], max_length=20
@@ -242,6 +246,8 @@ class TroupeTemplateOut(BaseModel):
     grade: str
     qualities: list[EquipmentItemQuality]
     crafted: bool
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool
     effects: list[SpecialEffectModel]
     description: str
 
@@ -259,6 +265,7 @@ def fields_in(body: EquipmentFieldsIn) -> ItemFields:
         effects=tuple(SpecialEffect(e.name, e.effect) for e in body.effects),
         description=body.description,
         staff_note=body.staff_note if isinstance(body, EquipmentItemFieldsIn) else "",
+        archaic=body.archaic,
     )
 
 
@@ -342,6 +349,7 @@ class Reader:
                 for quality in [rules.qualities.get((item.kind, q.name))]
             ],
             crafted=item.crafted,
+            archaic=item.archaic,
             effects=[SpecialEffectModel(**e) for e in item.effects],
             description=item.description,
             staff_note=item.staff_note if manages else None,
@@ -413,6 +421,7 @@ def template_out(t: EquipmentTemplate) -> TroupeTemplateOut:
             EquipmentItemQuality(name=q.name, detail=q.detail) for q in item_qualities(t.qualities)
         ],
         crafted=t.crafted,
+        archaic=t.archaic,
         effects=[SpecialEffectModel(**e) for e in t.effects],
         description=t.description,
     )

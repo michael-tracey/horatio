@@ -102,7 +102,7 @@ ATTACK_LABELS = {
     "Brawl": "Unarmed attack (Brawl)",
     "Melee": "Melee attack",
     "Firearms": "Firearms attack",
-    "Athletics": "Thrown attack (Athletics)",
+    "Athletics": "Thrown or bow attack (Athletics)",
 }
 STRENGTHS = ("refuse", "complete", "review", "note")
 TESTS = ("clan", "sect", "trait")
