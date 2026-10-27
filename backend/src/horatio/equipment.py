@@ -22,7 +22,7 @@ it are those of the holder's home troupe now. Each item keeps its history in
 
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -43,6 +43,8 @@ from horatio.models import (
 )
 from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules.equipment import (
+    WEAPON,
+    WEAPON_POOLS,
     Assessment,
     EquipmentRules,
     Facts,
@@ -148,6 +150,72 @@ def fields_of(item: EquipmentItem | EquipmentTemplate) -> ItemFields:
         description=item.description,
         staff_note=item.staff_note if isinstance(item, EquipmentItem) else "",
     )
+
+
+@dataclass(frozen=True)
+class ItemModifier:
+    """What one of an item's qualities does to its holder's test pools while it is
+    equipped (issue #306): a modifier, as a player's own is (horatio.pool_modifiers),
+    named for the item and quality: "Katana: Accurate"."""
+
+    quality: str
+    label: str
+    amount: int
+    # As a player's own modifier names them, the item's own attack worked out
+    # ("pool:attack:Melee"); or "purpose", the challenges it is for.
+    pools: str
+    when: str
+    # It counts only in a situation the Pools tab can't tell (against firearms).
+    situational: bool = False
+
+
+def item_modifiers(rules: EquipmentRules, item: EquipmentItem) -> list[ItemModifier]:
+    """The pool modifiers the item's qualities make while it is equipped, from the
+    holder's rules. A quality taken again (Superior) adds to its own modifier. A
+    special item's own effects are words for the table, not modifiers."""
+    found: dict[tuple[str, str, str, bool], ItemModifier] = {}
+    for chosen in item_qualities(item.qualities):
+        quality = rules.qualities.get((item.kind, chosen.name))
+        for effect in quality.pool if quality else ():
+            pools = (
+                WEAPON_POOLS.get(item.kind, effect.pools)
+                if effect.pools == WEAPON
+                else effect.pools
+            )
+            when = effect.when.replace("{detail}", chosen.detail or "its circumstance")
+            key = (chosen.name, pools, when, effect.situational)
+            if key in found:
+                found[key] = replace(found[key], amount=found[key].amount + effect.amount)
+            else:
+                found[key] = ItemModifier(
+                    quality=chosen.name,
+                    label=f"{item.name}: {chosen.name}",
+                    amount=effect.amount,
+                    pools=pools,
+                    when=when,
+                    situational=effect.situational,
+                )
+    return list(found.values())
+
+
+def arrived(
+    db: Session, character: Character, items: Sequence[EquipmentItem]
+) -> dict[uuid.UUID, datetime]:
+    """When each item last came to the character: given by its troupe, passed to it,
+    or restored to it."""
+    if not items:
+        return {}
+    return {
+        item_id: at
+        for item_id, at in db.execute(
+            select(EquipmentEvent.item_id, func.max(EquipmentEvent.created_at))
+            .where(
+                EquipmentEvent.item_id.in_([i.id for i in items]),
+                EquipmentEvent.to_character_id == character.id,
+            )
+            .group_by(EquipmentEvent.item_id)
+        )
+    }
 
 
 def home_of(character: Character) -> uuid.UUID | None:

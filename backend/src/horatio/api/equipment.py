@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import NoResultFound
 
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.equipment import ItemQuality, assess, equipment_rules
+from horatio.equipment import ItemModifier, ItemQuality, assess, equipment_rules
 from horatio.rules.equipment import EquipmentRules, Facts
 
 router = APIRouter(prefix="/rules/{splat}/equipment", tags=["equipment"])
@@ -67,6 +67,36 @@ class EquipmentFactsOut(BaseModel):
     range: str | None
     # Whom it does aggravated damage to.
     aggravated_against: list[str]
+
+
+class EquipmentModifierOut(BaseModel):
+    """What one of an item's qualities does to its holder's test pools while it is
+    equipped (issue #306): a modifier, as a player's own is."""
+
+    quality: str
+    # The item and quality: "Katana: Accurate".
+    label: str
+    amount: int
+    # As a player's own modifier names them ("pool:attack:Melee", "pool:dodge"), or
+    # "purpose": the challenges a piece of miscellaneous gear is for, which no pool
+    # on the Pools tab is.
+    pools: str
+    # When it counts: "attacks with it", "against firearms".
+    when: str
+    # It counts only in a situation the Pools tab can't tell, so the pool shows it
+    # on a line of its own rather than in its total.
+    situational: bool
+
+
+def modifier_out(modifier: ItemModifier) -> EquipmentModifierOut:
+    return EquipmentModifierOut(
+        quality=modifier.quality,
+        label=modifier.label,
+        amount=modifier.amount,
+        pools=modifier.pools,
+        when=modifier.when,
+        situational=modifier.situational,
+    )
 
 
 class EquipmentTemplateOut(BaseModel):

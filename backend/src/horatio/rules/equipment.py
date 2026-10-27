@@ -24,6 +24,10 @@ A quality is per kind: the same name can mean different things on different kind
                           more (Spread: 6 unless it has Ammo Capacity)
     range                 its range instead of the kind's (Long Range: half a mile)
     aggravated_against    whom it does aggravated damage to; "{detail}" is the detail
+    pool                  what it does to the character's test pools while its item
+                          is equipped (issue #306), each a `PoolEffect`; the file
+                          gives every quality one, with `pool = []` for a quality
+                          that changes no pool (damage, range, a story effect)
 
 `assess` checks an item's qualities against these rules and works out its facts:
 hands, damage, shots and range. `horatio.equipment.check` refuses what it finds.
@@ -49,7 +53,62 @@ QUALITY_PROPERTIES = (
     "max_shots",
     "range",
     "aggravated_against",
+    "pool",
 )
+
+# What a pool effect applies to, besides the pools a player's own modifier names
+# (horatio.pool_modifiers): the item's own attack, and the challenges a piece of
+# miscellaneous gear is for, which no pool on the Pools tab is.
+WEAPON = "weapon"
+PURPOSE = "purpose"
+# The attack each kind of weapon makes: a ranged weapon's is Firearms (MET: VTM
+# p. 517), though an archaic one may use Athletics instead.
+WEAPON_POOLS = {"melee": "pool:attack:Melee", "ranged": "pool:attack:Firearms"}
+MODIFIER_POOLS = ("all", "attack", "defense", "Physical", "Social", "Mental")
+
+
+@dataclass(frozen=True)
+class PoolEffect:
+    """What a quality does to a test pool while its item is equipped: a modifier,
+    as a player's own is, made by the item (issue #306)."""
+
+    amount: int
+    # As a player's own modifier names them ("pool:dodge", "attack"), or WEAPON or
+    # PURPOSE.
+    pools: str
+    # When it counts, in a few words of our own: "against firearms". "{detail}" is
+    # the quality's detail (Customized's circumstance).
+    when: str
+    # It counts only in a situation the Pools tab can't tell (against firearms, for
+    # an exceptional success), so the pool shows it on a line of its own rather
+    # than in its total.
+    situational: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        found: dict[str, Any] = {"amount": self.amount, "pools": self.pools, "when": self.when}
+        if self.situational:
+            found["situational"] = True
+        return found
+
+
+def pool_effect(kind: str, raw: Mapping[str, Any]) -> PoolEffect:
+    """A pool effect as the rules data writes it, checked."""
+    unknown = set(raw) - {"amount", "pools", "when", "situational"}
+    if unknown:
+        raise ValueError(f"unknown pool effect properties {sorted(unknown)}")
+    amount, pools, when = raw.get("amount"), raw.get("pools"), raw.get("when")
+    if not isinstance(amount, int) or isinstance(amount, bool) or not amount:
+        raise ValueError("a pool effect needs an amount other than 0")
+    if not isinstance(pools, str) or not (
+        pools in MODIFIER_POOLS
+        or pools.startswith("pool:")
+        or (pools == WEAPON and kind in WEAPON_POOLS)
+        or (pools == PURPOSE and kind == "miscellaneous")
+    ):
+        raise ValueError(f"a {kind} pool effect can't apply to {pools!r}")
+    if not isinstance(when, str) or not when:
+        raise ValueError("a pool effect needs its when")
+    return PoolEffect(amount, pools, when, bool(raw.get("situational", False)))
 
 
 @dataclass(frozen=True)
@@ -100,6 +159,7 @@ class QualityData:
     max_shots: int | None = None
     range: str | None = None
     aggravated_against: str | None = None
+    pool: tuple[PoolEffect, ...] = ()
 
     @property
     def takes_detail(self) -> bool:
@@ -111,7 +171,9 @@ class QualityData:
         found: dict[str, Any] = {}
         for name in QUALITY_PROPERTIES:
             value = getattr(self, name)
-            if value:
+            if value and name == "pool":
+                found[name] = [e.to_dict() for e in self.pool]
+            elif value:
                 found[name] = list(value) if isinstance(value, tuple) else value
         return found
 
@@ -281,6 +343,13 @@ def quality_from_dict(kind: str, name: str, raw: Mapping[str, Any]) -> QualityDa
     found: dict[str, Any] = dict(raw)
     if "excludes" in found:
         found["excludes"] = tuple(cast(list[str], found["excludes"]))
+    if "pool" in found:
+        try:
+            found["pool"] = tuple(
+                pool_effect(kind, e) for e in cast(list[Mapping[str, Any]], found["pool"])
+            )
+        except ValueError as error:
+            raise ValueError(f"{kind} quality {name!r}: {error}") from error
     return QualityData(kind=kind, name=name, effect="", **found)
 
 
@@ -329,6 +398,10 @@ def equipment_from(raw: Mapping[str, Any], *, source: str = "") -> EquipmentRule
             raise ValueError(f"{where}{kind} quality {name!r} needs its effect")
         if not q.get("play"):
             raise ValueError(f"{where}{kind} quality {name!r} needs its play line")
+        if "pool" not in q:
+            raise ValueError(
+                f"{where}{kind} quality {name!r} needs its pool effect, or pool = [] for none"
+            )
         properties = {
             k: v for k, v in q.items() if k not in ("kind", "name", "effect", "play", "page")
         }

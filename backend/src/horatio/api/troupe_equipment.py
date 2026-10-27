@@ -16,7 +16,13 @@ from sqlalchemy.orm import Session
 
 from horatio import equipment
 from horatio.api.downtimes import staff_troupe
-from horatio.api.equipment import EquipmentFactsOut, EquipmentItemQuality, facts_out
+from horatio.api.equipment import (
+    EquipmentFactsOut,
+    EquipmentItemQuality,
+    EquipmentModifierOut,
+    facts_out,
+    modifier_out,
+)
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.equipment import EquipmentRefused, ItemFields, ItemQuality, SpecialEffect
 from horatio.models import (
@@ -87,6 +93,8 @@ class EquipmentItemOut(BaseModel):
     # None unless the reader is staff of the holder's home troupe.
     staff_note: str | None
     facts: EquipmentFactsOut
+    # What its qualities do to the holder's test pools while it is equipped.
+    modifiers: list[EquipmentModifierOut]
     status: Status
     # The troupe that gave it, who gave it and when.
     troupe_id: uuid.UUID
@@ -338,6 +346,7 @@ class Reader:
             description=item.description,
             staff_note=item.staff_note if manages else None,
             facts=facts_out(found.facts),
+            modifiers=[modifier_out(m) for m in equipment.item_modifiers(rules, item)],
             status=item.status,  # type: ignore[arg-type]  # checked by the database
             troupe_id=item.troupe_id,
             troupe_name=self.troupe(item.troupe_id).name,

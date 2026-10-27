@@ -7304,6 +7304,13 @@
             "title": "Kind Name",
             "type": "string"
           },
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentModifierOut"
+            },
+            "title": "Modifiers",
+            "type": "array"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -7389,6 +7396,7 @@
           "description",
           "staff_note",
           "facts",
+          "modifiers",
           "status",
           "troupe_id",
           "troupe_name",
@@ -7481,6 +7489,13 @@
             "title": "Kind Name",
             "type": "string"
           },
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentModifierOut"
+            },
+            "title": "Modifiers",
+            "type": "array"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -7566,6 +7581,7 @@
           "description",
           "staff_note",
           "facts",
+          "modifiers",
           "status",
           "troupe_id",
           "troupe_name",
@@ -7798,6 +7814,45 @@
           }
         },
         "title": "EquipmentMatch",
+        "type": "object"
+      },
+      "EquipmentModifierOut": {
+        "description": "What one of an item's qualities does to its holder's test pools while it is\nequipped (issue #306): a modifier, as a player's own is.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "pools": {
+            "title": "Pools",
+            "type": "string"
+          },
+          "quality": {
+            "title": "Quality",
+            "type": "string"
+          },
+          "situational": {
+            "title": "Situational",
+            "type": "boolean"
+          },
+          "when": {
+            "title": "When",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quality",
+          "label",
+          "amount",
+          "pools",
+          "when",
+          "situational"
+        ],
+        "title": "EquipmentModifierOut",
         "type": "object"
       },
       "EquipmentOut": {
@@ -14559,6 +14614,51 @@
         "title": "PlanOut",
         "type": "object"
       },
+      "PlayItemOut": {
+        "description": "An item the character holds, to equip at a game (issue #306).",
+        "properties": {
+          "hands": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hands"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentModifierOut"
+            },
+            "title": "Modifiers",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "hands",
+          "modifiers"
+        ],
+        "title": "PlayItemOut",
+        "type": "object"
+      },
       "PlayReference": {
         "description": "The Play View's Sheet and Pools tabs: everything there is to look up at a\ngame, which changes only between games, so the page loads it once.",
         "properties": {
@@ -14934,6 +15034,23 @@
           },
           "derangements": {
             "$ref": "#/components/schemas/Derangements"
+          },
+          "equipment": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlayItemOut"
+            },
+            "title": "Equipment",
+            "type": "array"
+          },
+          "equipped": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Equipped",
+            "type": "array"
           },
           "expendables": {
             "items": {
@@ -16170,6 +16287,15 @@
               "$ref": "#/components/schemas/EquipmentItemOut"
             },
             "title": "Equipment",
+            "type": "array"
+          },
+          "equipped": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Equipped",
             "type": "array"
           },
           "home": {

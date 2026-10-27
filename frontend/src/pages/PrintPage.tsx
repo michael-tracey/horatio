@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
-import type { PoolModifier, PrintedSheet, TestPool } from "../api/types";
+import type { PrintedSheet, TestPool } from "../api/types";
 import { Pips } from "../components/ui";
 import { useDates } from "../dates";
 import { HEALTH_RULE, healthRows } from "../health";
@@ -11,7 +11,8 @@ import { PAPERS, pageRule } from "../paper";
 import { choiceName } from "./character/creation/logic";
 import { backText, retainerName, retainerSource } from "./character/retainers";
 import { NO_WILLPOWER, poolLine } from "./play/retainerPools";
-import { changing, damageShort, total } from "./play/pools";
+import { equipmentModifiers } from "./play/equipped";
+import { changing, damageShort, situations, total, type Modifier } from "./play/pools";
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 import { factsText, kindText, playText } from "./troupe/equipment";
@@ -284,11 +285,18 @@ const SHOWN_ELSEWHERE = new Set([
   "disciplines", "merits", "flaws", "paths", "health_levels", "willpower_sources", "status_traits",
 ]);
 
-/** The modifiers the player has switched on that change a pool, printed beside it: "(+2 Fame)". */
-function Changes({ pool, modifiers }: { pool: TestPool; modifiers: PoolModifier[] }) {
-  const found = changing(pool, modifiers);
-  if (found.length === 0) return null;
-  return <em className="ml-1 text-neutral-600">({found.map((m) => `${m.amount < 0 ? "−" : "+"}${Math.abs(m.amount)} ${m.label}`).join(", ")})</em>;
+const signed = (amount: number) => `${amount < 0 ? "−" : "+"}${Math.abs(amount)}`;
+
+/**
+ * The modifiers switched on that change a pool, printed beside it: the player's own
+ * and the equipped items' ("(+2 Fame, +2 Katana: Accurate)"), then an item's bonus
+ * that counts only sometimes, with when ("+3 Flak Vest: Ballistic against firearms").
+ */
+function Changes({ pool, modifiers }: { pool: TestPool; modifiers: Modifier[] }) {
+  const found = changing(pool, modifiers).map((m) => `${signed(m.amount)} ${m.label}`);
+  const sometimes = situations(pool, modifiers).flatMap((s) => s.parts.map((p) => `${signed(p.value)} ${p.label} ${s.when}`));
+  if (found.length + sometimes.length === 0) return null;
+  return <em className="ml-1 text-neutral-600">({[...found, ...sometimes].join("; ")})</em>;
 }
 
 function Sheet({ sheet }: { sheet: PrintedSheet }) {
@@ -302,6 +310,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
   const physical = rating(t, "attributes", "Physical");
   const mental = rating(t, "attributes", "Mental");
   const initiative = sheet.pools.find((p) => p.key === "initiative");
+  // The player's own modifiers on, then what the items equipped make (issue #306).
+  const modifiers = [...sheet.modifiers, ...equipmentModifiers(sheet.equipment, sheet.equipped)];
   const skills = by(t, "skills").sort((a, b) => a.name.localeCompare(b.name));
   const third = Math.ceil(skills.length / 3);
   // Specialisations print after their skill or background; only any whose parent
@@ -460,8 +470,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
         </Section>
         <Section title="Test Pools">
           <p className="text-[12px]">
-            Initiative: <strong>{Math.max(physical, mental)}</strong>
-            {initiative && <Changes pool={initiative} modifiers={sheet.modifiers} />}
+            Initiative: <strong>{initiative ? total(initiative, 0, modifiers) : Math.max(physical, mental)}</strong>
+            {initiative && <Changes pool={initiative} modifiers={modifiers} />}
           </p>
           <ul className="mt-1 text-[10px] leading-4">
             {sheet.pools
@@ -470,11 +480,11 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
                 <li key={p.key} className="flex flex-wrap items-baseline justify-between gap-x-2 border-b border-dotted border-neutral-400">
                   <span>
                     {p.name}
-                    <Changes pool={p} modifiers={sheet.modifiers} />
+                    <Changes pool={p} modifiers={modifiers} />
                     {p.damage && <span className="block text-neutral-600">{damageShort(p.damage)}</span>}
                   </span>
                   <strong>
-                    {total(p, 0, sheet.modifiers)}
+                    {total(p, 0, modifiers)}
                     {p.adds_willpower && " + Willpower"}
                   </strong>
                 </li>

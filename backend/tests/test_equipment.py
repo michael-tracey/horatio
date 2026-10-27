@@ -369,3 +369,68 @@ def test_loading_refuses_bad_data() -> None:
         equipment_from(with_quality(raw, "melee", "Fast", needs_detail=True))
     with pytest.raises(ValueError, match="template 'Two-Handed Sword'"):
         equipment_from(with_quality(raw, "melee", "Accurate", needs_one_hand=True))
+
+
+# --- what each quality does to the pools (issue #306) ----------------------------------
+
+# Every quality with a pool effect: (amount, pools, when, situational) for each. The
+# rest change no pool. MET: VTM pp. 516-521; Ballistic and Hardened as the Vol. II
+# Issue 1 update has them (p. 23).
+POOL_EFFECTS = {
+    ("melee", "Accurate"): [(2, "weapon", "attacks with it", False)],
+    ("melee", "Deadly"): [(5, "weapon", "for an exceptional success with it", True)],
+    ("melee", "Fast"): [(3, "pool:initiative", "fighting with it", False)],
+    ("melee", "Flaming"): [(-2, "attack", "while it burns", True)],
+    ("ranged", "Accurate"): [(2, "weapon", "attacks with it", False)],
+    ("ranged", "Deadly"): [(5, "weapon", "for an exceptional success with it", True)],
+    ("ranged", "Fast"): [(3, "pool:initiative", "fighting with it", False)],
+    ("protective", "Ballistic"): [
+        (3, "pool:dodge", "against firearms", True),
+        (1, "pool:dodge", "against Brawl, Melee and thrown weapons", True),
+    ],
+    ("protective", "Hardened"): [
+        (3, "pool:dodge", "against Brawl, Melee and thrown weapons", True),
+        (1, "pool:dodge", "against firearms", True),
+    ],
+    ("protective", "Full Body"): [
+        (3, "pool:dodge", "against an exceptional success from Brawl, Melee or Firearms", True)
+    ],
+    ("miscellaneous", "Customized"): [(2, "purpose", "for {detail}, with the skill", False)],
+    ("miscellaneous", "Secure"): [
+        (3, "purpose", "to resist finding or getting into what it protects", False)
+    ],
+    ("miscellaneous", "Superior"): [(1, "purpose", "for its purpose, with the skill", False)],
+}
+
+
+def test_every_quality_has_its_pool_effect_or_is_marked_as_having_none() -> None:
+    for q in raw_data()["qualities"]:
+        assert "pool" in q, f"{q['kind']} {q['name']} says nothing of the pools"
+    found = {
+        key: [(e.amount, e.pools, e.when, e.situational) for e in quality.pool]
+        for key, quality in RULES.qualities.items()
+        if quality.pool
+    }
+    assert found == POOL_EFFECTS
+
+
+def test_loading_refuses_a_quality_without_a_pool_effect_or_a_bad_one() -> None:
+    raw = raw_data()
+    missing = {
+        **raw,
+        "qualities": [
+            {k: v for k, v in q.items() if k != "pool"} if q["name"] == "Trip" else q
+            for q in raw["qualities"]
+        ],
+    }
+    with pytest.raises(ValueError, match="'Trip' needs its pool effect, or pool = \\[\\] for none"):
+        equipment_from(missing)
+    weapon = [{"amount": 1, "pools": "weapon", "when": "always"}]
+    with pytest.raises(ValueError, match="can't apply to 'weapon'"):
+        equipment_from(with_quality(raw, "protective", "Rugged", pool=weapon))
+    nothing = [{"amount": 0, "pools": "pool:dodge", "when": "always"}]
+    with pytest.raises(ValueError, match="an amount other than 0"):
+        equipment_from(with_quality(raw, "protective", "Rugged", pool=nothing))
+    wordless = [{"amount": 1, "pools": "pool:dodge"}]
+    with pytest.raises(ValueError, match="needs its when"):
+        equipment_from(with_quality(raw, "protective", "Rugged", pool=wordless))

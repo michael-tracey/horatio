@@ -93,8 +93,10 @@ class PrintedSheet(BaseModel):
     # The test pools worked out from the sheet, and the player's modifiers that are on.
     pools: list[reference.TestPool]
     modifiers: list[ModifierOut]
-    # What it holds (horatio.equipment), with no staff note.
+    # What it holds (horatio.equipment), with no staff note, and the items equipped
+    # now, whose modifiers count as the player's own do.
     equipment: list[EquipmentItemOut] = []
+    equipped: list[uuid.UUID] = []
 
 
 @router.get("/print")
@@ -217,5 +219,6 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         ).pools,
         modifiers=modifiers_out(db, character, only_on=True),
         equipment=[reader.item(item, character) for item in equipment.items_of(db, character)],
+        equipped=[uuid.UUID(key) for key, _ in limits.equipped],
         picture=pictures.picture_url(character.id, character.picture_id),
     )
