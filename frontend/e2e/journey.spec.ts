@@ -6892,6 +6892,113 @@ test("a player reads their character's equipment and what each quality does, on 
   await expect(p.getByText("Cursed")).toHaveCount(0);
 });
 
+test("players give equipment to each other in their home troupe and discard it, with Undo on the Play View, and staff restore it", async ({ browser }) => {
+  const custodian = await person(browser, "swap-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "swap-lead");
+  const player = await person(browser, "swap-player");
+  const second = await person(browser, "swap-second");
+  const call = (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await call(page, method, url, data);
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Pawnshop ${run}`, lead_handle: lead.handle });
+  const ferry = await send(custodian.page, "POST", "/api/troupes", { name: `Ferry ${run}`, lead_handle: lead.handle });
+  const build = async (page: Page, name: string, home: string) => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    for (const [category, picks] of Object.entries({ ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] }))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([n, rating]) => ({ name: n, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: home });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  // Isaura and Corwin are at home in the Pawnshop; Halvard's home is the Ferry.
+  const isaura = await build(player.page, "Isaura", troupe.id);
+  const corwin = await build(second.page, "Corwin", troupe.id);
+  const halvard = await build(second.page, "Halvard", ferry.id);
+  const give = (item: object) => send(lead.page, "POST", `/api/troupes/${troupe.id}/equipment`, { character_id: isaura, grade: "standard", ...item });
+  await give({ name: "Silver Dagger", kind: "melee", qualities: [{ name: "Concealable" }, { name: "Silver" }] });
+  await give({ name: "Flak Vest", kind: "protective", qualities: [{ name: "Ballistic" }] });
+  const holds = async (page: Page, character: string) =>
+    ((await (await page.request.get(`/api/characters/${character}/equipment`)).json()).items as { name: string }[]).map((i) => i.name);
+
+  // Isaura's player gives Corwin the Silver Dagger from her page, picking him from the home troupe's characters.
+  const p = player.page;
+  await p.goto(`/characters/${isaura}/equipment`);
+  const card = p.getByRole("list", { name: "Equipment" }).getByRole("listitem", { name: "Silver Dagger" });
+  await card.getByRole("button", { name: "Give", exact: true }).click();
+  const form = card.getByRole("form", { name: "Give Silver Dagger" });
+  await form.getByRole("combobox", { name: "Give it to" }).click();
+  await expect(p.getByRole("listbox", { name: "Characters" }).getByRole("option")).toHaveText(["Corwinswap-secondPC"]);
+  await p.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Corwin/ }).click();
+  await p.screenshot(shots("equipment-give"));
+  await form.getByRole("button", { name: "Give to Corwin" }).click();
+  await expect(p.getByText("Gave Silver Dagger to Corwin.")).toBeVisible();
+  await expect(p.getByRole("listitem", { name: "Silver Dagger" })).toHaveCount(0);
+
+  // The API refuses giving to a character of another home troupe.
+  const vest = (await (await p.request.get(`/api/characters/${isaura}/equipment`)).json()).items[0];
+  const refused = await call(p, "POST", `/api/characters/${isaura}/equipment/${vest.id}/give`, { to_character_id: halvard });
+  expect(refused.status()).toBe(422);
+  expect((await refused.json()).detail).toContain("equipment passes only between characters of the same home troupe");
+
+  // Corwin's player sees it on both his tabs, and was told.
+  const s = second.page;
+  const told = (await (await s.request.get("/api/notifications")).json()).items.map((i: { summary: string }) => i.summary);
+  expect(told).toContain("swap-player gave Corwin Silver Dagger, from Isaura.");
+  await s.goto(`/characters/${corwin}/equipment`);
+  await expect(s.getByRole("list", { name: "Equipment" }).getByRole("listitem", { name: "Silver Dagger" })).toBeVisible();
+  await s.goto(`/play/characters/${corwin}`);
+  await s.getByRole("tab", { name: "Equipment" }).click();
+  const weapons = s.getByRole("region", { name: "Weapons" });
+  await expect(weapons.getByRole("listitem", { name: "Silver Dagger" })).toBeVisible();
+
+  // On the Play View he gives it back, and undoes it.
+  await weapons.getByRole("listitem", { name: "Silver Dagger" }).getByRole("button", { name: "Give", exact: true }).click();
+  await s.getByRole("combobox", { name: "Give it to" }).fill("isa");
+  await s.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Isaura/ }).click();
+  await s.getByRole("button", { name: "Give to Isaura" }).click();
+  await expect(s.getByRole("listitem", { name: "Silver Dagger" })).toHaveCount(0);
+  const thisGame = s.getByRole("region", { name: "Given or discarded this game" });
+  await expect(thisGame).toContainText("Gave Silver Dagger to Isaura");
+  await expect.poll(() => holds(p, isaura)).toContain("Silver Dagger");
+  await thisGame.getByRole("button", { name: "Undo Gave Silver Dagger to Isaura" }).click();
+  await expect.poll(() => holds(s, corwin)).toEqual(["Silver Dagger"]);
+  await expect(weapons.getByRole("listitem", { name: "Silver Dagger" })).toBeVisible();
+
+  // Then he discards it, with a note.
+  await weapons.getByRole("listitem", { name: "Silver Dagger" }).getByRole("button", { name: "Discard" }).click();
+  await s.getByLabel("Where it went (optional)").fill("Lost in the river");
+  await s.getByRole("button", { name: "Discard Silver Dagger" }).click();
+  await expect(thisGame).toContainText("Discarded Silver Dagger");
+  await expect(s.getByText("No equipment yet. Your storytellers give equipment.")).toBeVisible();
+  await s.screenshot(shots("play-equipment-discarded"));
+  await expect.poll(() => holds(s, corwin)).toEqual([]);
+
+  // The lead finds it under Discarded on the troupe's Equipment tab, with the note and its history, and restores it.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Equipment", exact: true }).click();
+  const kept = l.getByRole("list", { name: "Equipment discarded" }).getByRole("listitem", { name: "Silver Dagger, held by Corwin" });
+  await expect(kept.getByText(/^Discarded by swap-second, .*: Lost in the river$/)).toBeVisible();
+  await kept.getByRole("button", { name: "History" }).click();
+  const history = kept.getByRole("list", { name: "Silver Dagger's history" });
+  await expect(history).toContainText("Given by Isaura to Corwin");
+  await expect(history).toContainText("Back from Isaura to Corwin (undone in the Play View)");
+  await expect(history).toContainText("Discarded by Corwin (Lost in the river)");
+  await l.screenshot(shots("troupe-equipment-discarded"));
+  await kept.getByRole("button", { name: "Restore to Corwin" }).click();
+  await expect(l.getByRole("list", { name: "Equipment held" }).getByRole("listitem", { name: "Silver Dagger, held by Corwin" })).toBeVisible();
+  await expect(l.getByRole("list", { name: "Equipment discarded" })).toHaveCount(0);
+  expect(await holds(s, corwin)).toEqual(["Silver Dagger"]);
+});
+
 test("a skill's specialisations sit in its own list item, in the sheet's two columns and on a phone", async ({ browser }) => {
   const { page: p } = await person(browser, "stay-together");
   const id = await builtVampire(p, "Marguerite", "Toreador", {

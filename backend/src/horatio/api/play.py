@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from horatio import (
     audit,
     domitors,
+    equipment,
     house_traits,
     influence_log,
     play,
@@ -111,6 +112,17 @@ class TemporaryDerangementIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     # Where it came from: "Voice of Madness", a quest's consequence.
     source: str = Field(default="", max_length=120)
+
+
+class ItemTapIn(BaseModel):
+    """Giving or discarding an item ("item:<id>", −1; horatio.equipment)."""
+
+    # The character it goes to; None discards it.
+    to_character_id: uuid.UUID | None = None
+    # As the device's log names them until the server has the tap; the server
+    # names them from its own records.
+    item_name: str = Field(default="", max_length=200)
+    to_name: str = Field(default="", max_length=200)
 
 
 class ExpendableOut(BaseModel):
@@ -327,12 +339,16 @@ class TapIn(BaseModel):
     # Adding a temporary derangement ("derangement:<id>", +1) for the first time:
     # its name and where it came from.
     derangement: TemporaryDerangementIn | None = None
+    # Giving or discarding an item ("item:<id>", −1).
+    equipment: ItemTapIn | None = None
 
     @model_validator(mode="after")
     def complete(self) -> Self:
         if self.kind == "change":
             if not play.known_tracker(self.tracker) or self.amount == 0:
                 raise ValueError("A change names what changed and by how much.")
+            if self.tracker.startswith(equipment.ITEM) and self.amount != -1:
+                raise ValueError("An item is given or discarded once.")
             if self.tracker == "health" and self.damage is None:
                 raise ValueError("Health changes say whether the damage is normal or aggravated.")
         if self.kind == "note" and not self.note.strip():
@@ -830,6 +846,7 @@ def record_taps(character_id: uuid.UUID, body: Taps, db: DbSession, user: Curren
                 undoes=t.undoes,
                 influence=t.influence.details() if t.influence else None,
                 derangement=(t.derangement.name, t.derangement.source) if t.derangement else None,
+                given_to=t.equipment.to_character_id if t.equipment else None,
             )
             for t in body.taps
         ],

@@ -405,6 +405,10 @@ MESSAGES: dict[str, str] = {
     "equipment.given": "{actor} gave {character} {item} ({what}).",
     "equipment.changed": "{actor} changed {character}'s {item}: {changes}{because}.",
     "equipment.taken_back": "{actor} took {item} back from {character}: {reason}",
+    "equipment.passed": "{actor} gave {character}'s {item} to {to}{because}.",
+    "equipment.received": "{actor} gave {character} {item}, from {source}{because}.",
+    "equipment.discarded": "{actor} discarded {character}'s {item}{because}.",
+    "equipment.restored": "{actor} gave {character} {item} back{because}.",
     "equipment.template_saved": "{actor} saved {item} ({what}) as one of the troupe's templates.",
     "equipment.template_deleted": "{actor} deleted the troupe's template {item}.",
 }

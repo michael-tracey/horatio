@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
-import type { CharacterOut, EquipmentItemOut } from "../../api/types";
+import type { CharacterOut, EquipmentItemOut, EquipmentReceiverOut } from "../../api/types";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, Empty, ErrorText, Loading } from "../../components/ui";
+import { Badge, Empty, ErrorText, Loading, Notice } from "../../components/ui";
 import { useDates } from "../../dates";
+import { useAction } from "../../hooks";
+import { ItemActions } from "./ItemActions";
 import {
   combatFirst,
   factsText,
@@ -32,30 +34,96 @@ export function useCharacterEquipment(characterId: string) {
 /**
  * The character page's Equipment tab, for its player and staff who see the sheet:
  * each item with its qualities and what they do, its facts, its special effects,
- * and where it came from. Weapons first, then armour, as on the Play View.
+ * and where it came from. Weapons first, then armour, as on the Play View. Its
+ * player and its home troupe's staff give each item to another character, or
+ * discard it (#282).
  */
 export function EquipmentTab({ character }: { character: CharacterOut }) {
   const held = useCharacterEquipment(character.id);
+  const [done, setDone] = useState("");
   if (held.isPending) return <Loading />;
   if (held.error) return <ErrorText error={held.error} />;
-  const { items, can_give } = held.data;
+  const { items, can_give, can_pass, receivers } = held.data;
+  const notice = done && <Notice>{done}</Notice>;
   if (items.length === 0)
     return (
-      <Empty>
-        {can_give && character.status === "active"
-          ? "No equipment yet. Give it with Give equipment, above."
-          : NO_EQUIPMENT}
-      </Empty>
+      <div className="flex flex-col gap-3">
+        {notice}
+        <Empty>
+          {can_give && character.status === "active"
+            ? "No equipment yet. Give it with Give equipment, above."
+            : NO_EQUIPMENT}
+        </Empty>
+      </div>
     );
   return (
-    <ul
-      aria-label="Equipment"
-      className="grid items-start gap-3 md:grid-cols-2"
-    >
-      {combatFirst(items).map((item) => (
-        <EquipmentCard key={item.id} item={item} />
-      ))}
-    </ul>
+    <div className="flex flex-col gap-3">
+      {notice}
+      <ul
+        aria-label="Equipment"
+        className="grid items-start gap-3 md:grid-cols-2"
+      >
+        {combatFirst(items).map((item) => (
+          <EquipmentCard
+            key={item.id}
+            item={item}
+            actions={
+              can_pass && (
+                <PassActions
+                  characterId={character.id}
+                  item={item}
+                  receivers={receivers}
+                  onDone={setDone}
+                />
+              )
+            }
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Give and Discard, made at once with the API. */
+function PassActions({
+  characterId,
+  item,
+  receivers,
+  onDone,
+}: {
+  characterId: string;
+  item: EquipmentItemOut;
+  receivers: EquipmentReceiverOut[];
+  onDone: (said: string) => void;
+}) {
+  const path = { character_id: characterId, item_id: item.id };
+  const give = useAction(
+    async ({ to, note }: { to: EquipmentReceiverOut; note: string }) => {
+      await unwrap(
+        api.POST("/api/characters/{character_id}/equipment/{item_id}/give", {
+          params: { path },
+          body: { to_character_id: to.id, note },
+        }),
+      );
+      onDone(`Gave ${item.name} to ${to.name}.`);
+    },
+  );
+  const discard = useAction(async (note: string) => {
+    await unwrap(
+      api.POST("/api/characters/{character_id}/equipment/{item_id}/discard", {
+        params: { path },
+        body: { note },
+      }),
+    );
+    onDone(`Discarded ${item.name}.`);
+  });
+  return (
+    <ItemActions
+      item={item}
+      receivers={receivers}
+      give={(to, note) => give.mutateAsync({ to, note })}
+      discard={(note) => discard.mutateAsync(note)}
+    />
   );
 }
 

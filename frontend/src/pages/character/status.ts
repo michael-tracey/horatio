@@ -54,10 +54,10 @@ export function patronLabel(choice: Pick<PatronChoiceOut, "name" | "title">): st
 }
 
 /** The patrons matching what was typed, by name or title, those starting with it first. */
-export function findPatrons(choices: PatronChoiceOut[], typed: string): PatronChoiceOut[] {
+export function findPatrons<T extends Pick<PatronChoiceOut, "name" | "title">>(choices: T[], typed: string): T[] {
   const q = typed.trim().toLocaleLowerCase();
   if (!q) return choices;
   const found = choices.filter((c) => patronLabel(c).toLocaleLowerCase().includes(q));
-  const starts = (c: PatronChoiceOut) => (c.name.toLocaleLowerCase().startsWith(q) ? 0 : 1);
+  const starts = (c: T) => (c.name.toLocaleLowerCase().startsWith(q) ? 0 : 1);
   return [...found].sort((a, b) => starts(a) - starts(b));
 }

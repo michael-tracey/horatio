@@ -2094,6 +2094,10 @@
             "title": "Can Give",
             "type": "boolean"
           },
+          "can_pass": {
+            "title": "Can Pass",
+            "type": "boolean"
+          },
           "home_troupe_id": {
             "anyOf": [
               {
@@ -2112,12 +2116,21 @@
             },
             "title": "Items",
             "type": "array"
+          },
+          "receivers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentReceiverOut"
+            },
+            "title": "Receivers",
+            "type": "array"
           }
         },
         "required": [
           "items",
           "home_troupe_id",
-          "can_give"
+          "can_give",
+          "can_pass",
+          "receivers"
         ],
         "title": "CharacterEquipmentOut",
         "type": "object"
@@ -4612,6 +4625,50 @@
         "title": "DifferenceOut",
         "type": "object"
       },
+      "DiscardIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "DiscardIn",
+        "type": "object"
+      },
+      "DiscardedOut": {
+        "description": "When a discarded item was discarded, by whom, and the note they left.",
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Name"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "by_name",
+          "note"
+        ],
+        "title": "DiscardedOut",
+        "type": "object"
+      },
       "DisciplineOut": {
         "properties": {
           "cost": {
@@ -6388,6 +6445,16 @@
             "title": "Description",
             "type": "string"
           },
+          "discarded": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscardedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "effects": {
             "items": {
               "$ref": "#/components/schemas/SpecialEffectModel"
@@ -6529,6 +6596,7 @@
           "given_by_name",
           "given_at",
           "can_change",
+          "discarded",
           "history"
         ],
         "title": "EquipmentItemDetailOut",
@@ -6560,6 +6628,16 @@
           "description": {
             "title": "Description",
             "type": "string"
+          },
+          "discarded": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscardedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "effects": {
             "items": {
@@ -6694,7 +6772,8 @@
           "troupe_name",
           "given_by_name",
           "given_at",
-          "can_change"
+          "can_change",
+          "discarded"
         ],
         "title": "EquipmentItemOut",
         "type": "object"
@@ -6987,6 +7066,48 @@
           "excludes"
         ],
         "title": "EquipmentQualityOut",
+        "type": "object"
+      },
+      "EquipmentReceiverOut": {
+        "description": "A character the holder's items can be given to.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "player_name",
+          "title"
+        ],
+        "title": "EquipmentReceiverOut",
         "type": "object"
       },
       "EquipmentTemplateIn": {
@@ -8274,6 +8395,26 @@
           "sheet"
         ],
         "title": "GiveOut",
+        "type": "object"
+      },
+      "GiveToIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "to_character_id": {
+            "format": "uuid",
+            "title": "To Character Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to_character_id"
+        ],
+        "title": "GiveToIn",
         "type": "object"
       },
       "GivenOut": {
@@ -10184,6 +10325,37 @@
           "url"
         ],
         "title": "Invite",
+        "type": "object"
+      },
+      "ItemTapIn": {
+        "description": "Giving or discarding an item (\"item:<id>\", \u22121; horatio.equipment).",
+        "properties": {
+          "item_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Item Name",
+            "type": "string"
+          },
+          "to_character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Character Id"
+          },
+          "to_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "To Name",
+            "type": "string"
+          }
+        },
+        "title": "ItemTapIn",
         "type": "object"
       },
       "KindOut": {
@@ -19277,6 +19449,16 @@
               }
             ]
           },
+          "equipment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ItemTapIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "game_id": {
             "anyOf": [
               {
@@ -24063,6 +24245,134 @@
           }
         },
         "summary": "Character Equipment",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/equipment/{item_id}/discard": {
+      "post": {
+        "description": "Discard the item, by the holder's player or its home troupe's staff. It is\nkept, with its history, for staff to restore.",
+        "operationId": "discard_api_characters__character_id__equipment__item_id__discard_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscardIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discard",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/equipment/{item_id}/give": {
+      "post": {
+        "description": "Give the item to another character of the holder's home troupe, at once: by\nthe holder's player, to the troupe's PCs and the NPCs holding a title there, or\nby its staff, to any home character. One for a character of another home troupe\nis refused.",
+        "operationId": "give_to_api_characters__character_id__equipment__item_id__give_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiveToIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give To",
         "tags": [
           "equipment"
         ]
@@ -34183,6 +34493,60 @@
           }
         },
         "summary": "Change Equipment",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/equipment/{item_id}/restore": {
+      "post": {
+        "description": "Give a discarded item back to the character that discarded it, if that was a\nmistake. Its player is told.",
+        "operationId": "restore_equipment_api_troupes__troupe_id__equipment__item_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItemDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Equipment",
         "tags": [
           "equipment"
         ]

@@ -168,7 +168,7 @@ A special property of an item of equipment, such as Accurate or Concealable, fro
 _Avoid_: Perk, tag, trait (a trait is on the sheet)
 
 **Equipment**:
-The items a character holds: weapons, protective gear and miscellaneous gear, each with its qualities. Only the character's home troupe's storytellers and assistant storytellers give it equipment, change it or take it back, and an item belongs to the character, going with it to a new home troupe. Every item keeps its history.
+The items a character holds: weapons, protective gear and miscellaneous gear, each with its qualities. Only the character's home troupe's storytellers and assistant storytellers give it equipment, change it or take it back, and an item belongs to the character, going with it to a new home troupe. Its player gives an item to another character of the same home troupe, or discards it, and staff restore a discarded item. Every item keeps its history.
 _Avoid_: Inventory, gear (for the whole), loot
 
 **Special Item**:

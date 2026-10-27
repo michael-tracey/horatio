@@ -129,7 +129,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
           onChange={accept}
         />
       )}
-      {tab === "equipment" && <EquipmentTab characterId={characterId} />}
+      {tab === "equipment" && <EquipmentTab characterId={characterId} view={shown} tap={tap} />}
       {tab === "tracker" && (
         <>
           <div className="grid gap-3 md:grid-cols-2">

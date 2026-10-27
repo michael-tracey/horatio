@@ -47,6 +47,10 @@ abiding or innate status for the game, as a use is spent, and "held:<id>" spends
 fleeting one for good, taking it off the character; its Undo gives it back. So is
 learning about another character's status: a Leadership use, which keeps what it
 learned (horatio.play_others).
+
+So is giving an item to another character, or discarding it (horatio.equipment):
+"item:<id>" −1, whose Undo brings it back if nothing has happened to it since. It
+changes no tracker.
 """
 
 import uuid
@@ -61,6 +65,7 @@ from sqlalchemy.orm import Session, aliased
 
 from horatio import (
     audit,
+    equipment,
     influence_effects,
     npcs,
     play_influence,
@@ -363,6 +368,7 @@ def known_tracker(tracker: str) -> bool:
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or temporary_id(tracker) is not None
         or play_status.is_status(tracker)
+        or equipment.tapped_item(tracker) is not None
     )
 
 
@@ -777,7 +783,12 @@ def describe(
     if event.kind == "note":
         return "Note"
     if event.kind == "undo":
-        return f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"
+        text = f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"
+        # An item that had moved on stays where it is.
+        stayed = (event.equipment or {}).get("refused")
+        return f"{text}. {stayed}" if stayed else text
+    if event.tracker.startswith(equipment.ITEM):
+        return equipment.tap_text(event.equipment or {})
     name = limits.name(event.tracker)
     if event.learned is not None:
         about = f"{event.learned['name']}'s {event.learned['status']}"
@@ -900,6 +911,8 @@ class Tap:
     derangement: tuple[str, str] | None = None
     # A Leadership use spent learning about another's status (horatio.play_others).
     learned: dict[str, Any] | None = None
+    # Giving an item ("item:<id>"): the character it goes to; None discards it.
+    given_to: uuid.UUID | None = None
 
 
 def name_temporary(db: Session, character: Character, actor: User, tap: Tap) -> None:
@@ -1000,11 +1013,17 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
             play_influence.cancel(db, actor, target)
             if target.held_status is not None:
                 play_status.give_back(db, character, actor, target.held_status)
+            if target.equipment is not None:
+                event.equipment = equipment.undo_tap(db, actor, target.equipment)
         elif event.kind == "change":
             play_influence.spend(db, character, actor, event, tap.influence)
             if event.amount < 0 and event.tracker.startswith(play_status.HELD):
                 event.held_status = play_status.spend_held(
                     db, character, actor, event.tracker, event.note
+                )
+            if event.amount < 0 and event.tracker.startswith(equipment.ITEM):
+                event.equipment = equipment.by_tap(
+                    db, character, actor, event.tracker, tap.given_to, event.note
                 )
         existing[tap.id] = (event, character.id)
         touched[game.id] = game

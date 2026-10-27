@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView } from "../../api/types";
-import { afterSending, incapacitated, latestUndoable, loadQueue, makeTap, saveQueue, tapId, withPending, type Tap } from "./tracker";
+import { afterSending, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, withPending, type Tap } from "./tracker";
 
 function view(overrides: Partial<PlayView> = {}): PlayView {
   return {
@@ -191,6 +191,24 @@ describe("withPending", () => {
     expect(shown.blood.value).toBe(10);
     expect(shown.log[1]!.undone).toBe(true);
     expect(latestUndoable(shown.log)).toBeUndefined();
+  });
+});
+
+describe("items given or discarded (#282)", () => {
+  const give = makeTap({ kind: "change", tracker: "item:i1", amount: -1, equipment: { to_character_id: "c2", item_name: "Silver Dagger", to_name: "Bram" } }, null);
+  const discard = makeTap({ kind: "change", tracker: "item:i2", amount: -1, note: "Into the river", equipment: { to_character_id: null, item_name: "Hunting rifle", to_name: "" } }, null);
+
+  it("read in the log, and change no tracker", () => {
+    const shown = withPending(view(), [give, discard]);
+    expect(shown.log.map((e) => e.text)).toEqual(["Discarded Hunting rifle", "Gave Silver Dagger to Bram"]);
+    expect(shown.blood).toEqual(view().blood);
+    expect(itemsGoing(shown.log)).toEqual(new Set(["i1", "i2"]));
+  });
+
+  it("come back to the tab when undone before they are sent", () => {
+    const shown = withPending(view(), [give, discard, makeTap({ kind: "undo", undoes: give.id }, null)]);
+    expect(shown.log[0]!.text).toBe("Undid: Gave Silver Dagger to Bram");
+    expect(itemsGoing(shown.log)).toEqual(new Set(["i2"]));
   });
 });
 

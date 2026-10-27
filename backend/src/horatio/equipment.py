@@ -9,6 +9,12 @@ troupe it visits can't change. They can make an item special: any number of
 qualities, still keeping the rules between them, and effects of the troupe's own.
 They change an item or take it back with a reason, and the holder's player is told.
 
+A character's player, or its home troupe's staff, gives its items to another
+character of the same home troupe, or discards them (issue #282). A discarded item
+is kept, with its history, and staff restore it. Whoever's character gains or loses
+an item is told, unless they did it. On the Play View a give or discard is a tap
+("item:<id>"), so it has Undo (horatio.play).
+
 An item belongs to the character, wherever its home is: the staff who see and change
 it are those of the holder's home troupe now. Each item keeps its history in
 `equipment_events`, and each change goes in the character's log too.
@@ -20,12 +26,14 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, notifications
 from horatio.models import (
     Character,
+    CharacterTitle,
     EquipmentEvent,
     EquipmentItem,
     EquipmentTemplate,
@@ -480,6 +488,358 @@ def take_back(
     return item
 
 
+# --- given between characters, and discarded (issue #282) ---------------------------------
+
+
+@dataclass(frozen=True)
+class Receiver:
+    """A character the holder's items can be given to."""
+
+    character: Character
+    # The titles it holds in the home troupe: "Prince, Harpy"; empty for none.
+    title: str
+
+
+def is_player(user: User, character: Character) -> bool:
+    return character.kind == "pc" and character.player_id == user.id
+
+
+def can_pass(db: Session, user: User, character: Character) -> bool:
+    """Who gives or discards the character's items: its player, and its home troupe's
+    staff. Nobody takes an item from another character: theft is played out, and
+    staff move the item."""
+    home = home_of(character)
+    if home is None:
+        return False
+    return is_player(user, character) or can_manage(db, user, db.get_one(Troupe, home))
+
+
+def receivers(db: Session, character: Character, *, staff: bool) -> list[Receiver]:
+    """Who the character's items can go to: its home troupe's active PCs, and its
+    NPCs holding a title there, as the patron list of status has them (#252); for
+    staff, every home character. Never the character itself."""
+    home = home_of(character)
+    if home is None:
+        return []
+    titles: dict[uuid.UUID, list[str]] = {}
+    for who, name in db.execute(
+        select(CharacterTitle.character_id, CharacterTitle.name)
+        .where(CharacterTitle.troupe_id == home)
+        .order_by(CharacterTitle.name)
+    ):
+        titles.setdefault(who, []).append(name)
+    return [
+        Receiver(c, ", ".join(titles.get(c.id, [])))
+        for c in home_characters(db, home)
+        if c.id != character.id and (staff or c.kind == "pc" or c.id in titles)
+    ]
+
+
+def acting_for(db: Session, user: User, character: Character) -> Troupe:
+    """The character's home troupe, if `user` may give or discard its items; else 403,
+    or 409 for a troupe since archived."""
+    if not can_pass(db, user, character):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"Only {character.name}'s player, or its home troupe's staff, give or discard"
+            " its equipment.",
+        )
+    troupe = db.get_one(Troupe, home_of(character))
+    if troupe.archived_at is not None and not user.is_custodian:
+        raise conflict(f"{troupe.name} is archived.")
+    return troupe
+
+
+def by_staff(user: User, character: Character, troupe: Troupe) -> Troupe | None:
+    """The troupe whose staff did it, for the item's history; None for a player's own
+    doing."""
+    return None if is_player(user, character) else troupe
+
+
+def held_by(db: Session, item: EquipmentItem) -> Character:
+    character = db.get_one(Character, item.character_id)
+    if item.status != "held":
+        raise conflict(f"{item.name} isn't held by {character.name} now.")
+    return character
+
+
+def told(
+    db: Session, actor: User, character: Character, troupe: Troupe, kind: str, text: str
+) -> None:
+    """The character's player, unless they did it themselves."""
+    if not is_player(actor, character):
+        tell(db, character, troupe, kind, text)
+
+
+def move(
+    db: Session,
+    actor: User,
+    item: EquipmentItem,
+    source: Character,
+    to: Character,
+    troupe: Troupe,
+    *,
+    reason: str = "",
+    undoes: EquipmentEvent | None = None,
+) -> EquipmentEvent:
+    """Move the item from `source` to `to`, both of `troupe`'s home characters; both
+    characters' logs say so, and both players are told unless they did it."""
+    item.character_id = to.id
+    event = record(
+        db,
+        item,
+        "passed",
+        actor,
+        by_staff(actor, source, troupe),
+        before=source,
+        after=to,
+        reason=reason,
+        changes={"undoes": str(undoes.id)} if undoes else None,
+    )
+    # The troupe's log has the give once, under the giver; the receiver's own log
+    # has it too.
+    audit.record(
+        db,
+        actor,
+        "equipment.passed",
+        troupe_id=troupe.id,
+        character_id=source.id,
+        item=item.name,
+        to=to.name,
+        reason=reason,
+    )
+    audit.record(
+        db,
+        actor,
+        "equipment.received",
+        character_id=to.id,
+        item=item.name,
+        source=source.name,
+        reason=reason,
+    )
+    because = f" ({reason})" if reason else ""
+    told(
+        db,
+        actor,
+        to,
+        troupe,
+        "equipment.passed",
+        f"{actor.display_name} gave {to.name} {item.name}, from {source.name}{because}.",
+    )
+    told(
+        db,
+        actor,
+        source,
+        troupe,
+        "equipment.passed",
+        f"{actor.display_name} gave {source.name}'s {item.name} to {to.name}{because}.",
+    )
+    db.flush()
+    return event
+
+
+def give_to(
+    db: Session, actor: User, item: EquipmentItem, to_id: uuid.UUID, note: str = ""
+) -> EquipmentEvent:
+    """Give a held item to another character of its holder's home troupe, at once:
+    there is no acceptance step, as in the game. A player gives only to the troupe's
+    PCs and the NPCs holding a title there; staff to any home character."""
+    source = held_by(db, item)
+    troupe = acting_for(db, actor, source)
+    if source.status != "active":
+        raise conflict(f"{source.name} is retired.")
+    to = db.get(Character, to_id)
+    if to is None or home_of(to) != troupe.id or to.status != "active":
+        raise unprocessable(
+            f"That character isn't one of {troupe.name}'s: equipment passes only between"
+            " characters of the same home troupe."
+        )
+    if to.id == source.id:
+        raise unprocessable(f"{source.name} holds {item.name} already.")
+    staff = can_manage(db, actor, troupe)
+    if not staff and all(r.character.id != to.id for r in receivers(db, source, staff=False)):
+        raise unprocessable(
+            f"A player gives equipment to {troupe.name}'s PCs, and to the NPCs holding a"
+            " title there."
+        )
+    return move(db, actor, item, source, to, troupe, reason=note.strip())
+
+
+def discard(db: Session, actor: User, item: EquipmentItem, note: str = "") -> EquipmentEvent:
+    """Take a held item off its holder, with a note if they like ("lost in the
+    river"). It is kept, with its history, for the home troupe's staff to restore."""
+    character = held_by(db, item)
+    troupe = acting_for(db, actor, character)
+    note = note.strip()
+    item.status = "discarded"
+    event = record(
+        db,
+        item,
+        "discarded",
+        actor,
+        by_staff(actor, character, troupe),
+        before=character,
+        reason=note,
+    )
+    audit.record(
+        db,
+        actor,
+        "equipment.discarded",
+        troupe_id=troupe.id,
+        character_id=character.id,
+        item=item.name,
+        reason=note,
+    )
+    because = f": {note}" if note else "."
+    told(
+        db,
+        actor,
+        character,
+        troupe,
+        "equipment.discarded",
+        f"{actor.display_name} discarded {character.name}'s {item.name}{because}",
+    )
+    db.flush()
+    return event
+
+
+def restore(
+    db: Session,
+    actor: User,
+    troupe: Troupe,
+    item: EquipmentItem,
+    *,
+    reason: str = "",
+    undoes: EquipmentEvent | None = None,
+) -> EquipmentEvent:
+    """Give a discarded item back to the character that discarded it."""
+    character = db.get_one(Character, item.character_id)
+    require_home(troupe, character)
+    if item.status != "discarded":
+        raise conflict(f"{item.name} isn't discarded.")
+    if character.status != "active":
+        raise conflict(f"{character.name} is retired.")
+    item.status = "held"
+    event = record(
+        db,
+        item,
+        "restored",
+        actor,
+        by_staff(actor, character, troupe),
+        after=character,
+        reason=reason,
+        changes={"undoes": str(undoes.id)} if undoes else None,
+    )
+    audit.record(
+        db,
+        actor,
+        "equipment.restored",
+        troupe_id=troupe.id,
+        character_id=character.id,
+        item=item.name,
+        reason=reason,
+    )
+    told(
+        db,
+        actor,
+        character,
+        troupe,
+        "equipment.restored",
+        f"{actor.display_name} gave {character.name} {item.name} back.",
+    )
+    db.flush()
+    return event
+
+
+# --- from the Play View, with Undo ---------------------------------------------------------
+
+# A tap giving or discarding an item: "item:<id>", −1 (horatio.play).
+ITEM = "item:"
+UNDONE = "undone in the Play View"
+
+
+def item_key(item_id: uuid.UUID) -> str:
+    return f"{ITEM}{item_id}"
+
+
+def tapped_item(tracker: str) -> uuid.UUID | None:
+    """The item a tap names, or None for another tracker."""
+    if not tracker.startswith(ITEM):
+        return None
+    try:
+        return uuid.UUID(tracker.removeprefix(ITEM))
+    except ValueError:
+        return None
+
+
+def by_tap(
+    db: Session,
+    character: Character,
+    actor: User,
+    tracker: str,
+    to_id: uuid.UUID | None,
+    note: str,
+) -> dict[str, Any]:
+    """Give (to `to_id`) or discard an item from a Play View tap, which may arrive
+    late. What the tap keeps, for its log line and its Undo: the item's name, who it
+    went to, and the history's event; or why it was refused, and then the tap changes
+    nothing."""
+    item = db.get(EquipmentItem, tapped_item(tracker))
+    kept: dict[str, Any] = {"name": item.name if item else "an item", "to_name": None}
+    if to_id is not None:
+        to = db.get(Character, to_id)
+        kept["to_name"] = to.name if to else "another character"
+    try:
+        if item is None or item.character_id != character.id:
+            raise conflict(f"{character.name} doesn't hold it now.")
+        event = (
+            give_to(db, actor, item, to_id, note)
+            if to_id is not None
+            else discard(db, actor, item, note)
+        )
+    except HTTPException as refused:
+        return {**kept, "refused": str(refused.detail)}
+    return {**kept, "event_id": str(event.id)}
+
+
+def undo_tap(db: Session, actor: User, kept: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Undo a give or discard made by a tap: the item goes back, if nothing has
+    happened to it since. None if it did; else why it stays where it is."""
+    if "event_id" not in kept:
+        return None
+    event = db.get(EquipmentEvent, uuid.UUID(kept["event_id"]))
+    item = db.get(EquipmentItem, event.item_id) if event else None
+    if event is None or item is None:
+        return {"refused": "It's gone."}
+    if history(db, item)[-1].id != event.id:
+        return {"refused": f"{item.name} has moved on since, so it stays where it is."}
+    source = db.get(Character, event.from_character_id) if event.from_character_id else None
+    try:
+        if source is None:
+            raise conflict(f"{event.from_name} is gone.")
+        if event.action == "discarded":
+            troupe = acting_for(db, actor, source)
+            restore(db, actor, troupe, item, reason=UNDONE, undoes=event)
+        else:
+            to = held_by(db, item)
+            troupe = acting_for(db, actor, source)
+            if home_of(source) != home_of(to) or source.status != "active":
+                raise conflict(f"{source.name} can't hold it now.")
+            move(db, actor, item, to, source, troupe, reason=UNDONE, undoes=event)
+    except HTTPException as refused:
+        return {"refused": str(refused.detail)}
+    return None
+
+
+def tap_text(kept: Mapping[str, Any]) -> str:
+    """The tap as the log reads it: "Gave Silver Dagger to Bram"."""
+    name, to = kept.get("name", "an item"), kept.get("to_name")
+    if "refused" in kept:
+        did = f"give {name} to {to}" if to else f"discard {name}"
+        return f"Couldn't {did}: {kept['refused']}"
+    return f"Gave {name} to {to}" if to else f"Discarded {name}"
+
+
 def event_summary(rules: EquipmentRules, event: EquipmentEvent, troupe: str | None) -> str:
     """A line of an item's history, for staff: "Given to Agnes by Lords of the
     Night, from the template Silver Dagger"."""
@@ -491,11 +851,14 @@ def event_summary(rules: EquipmentRules, event: EquipmentEvent, troupe: str | No
         return f"Changed: {changes_text(rules, event.changes, staff=True)}"
     if event.action == "taken_back":
         return f"Taken back from {event.from_name}"
+    undone = bool(event.changes.get("undoes"))
     if event.action == "passed":
+        if undone:
+            return f"Back from {event.from_name} to {event.to_name}"
         return f"Given by {event.from_name} to {event.to_name}"
     if event.action == "discarded":
         return f"Discarded by {event.from_name}"
-    return f"Restored to {event.to_name}"
+    return f"Back with {event.to_name}" if undone else f"Restored to {event.to_name}"
 
 
 def home_characters(db: Session, troupe_id: uuid.UUID) -> list[Character]:

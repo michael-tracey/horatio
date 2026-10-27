@@ -146,7 +146,10 @@ its own. **`play_games.status`** (JSONB): the character's status choices for tha
 game (`horatio/play_status.py`): its `source` of abiding status, a title's status
 `chosen`, the titles whose holders are `absent`, and the `titles` it held as the game
 began. **`play_events.held_status`** (JSONB): a fleeting status the tap spent for
-good, as the record was, so Undo gives it back.
+good, as the record was, so Undo gives it back. **`play_events.equipment`** (JSONB,
+#282): an item a tap (`item:<id>`, −1) gave away or discarded: its `name`, `to_name`,
+and the `equipment_events` row (`event_id`), so Undo brings it back while nothing
+has happened to it since; or why it was `refused`. On an undo, why the item stayed.
 
 **`long_texts`**: `character_id`, `kind` (for example `background`,
 `history`), `body`; unique on (`character_id`, `kind`).
@@ -308,10 +311,15 @@ whichever troupe gave it. Every give and change is checked with
 `actor_id`, `troupe_id` (whose staff did it; null for a player's own doing),
 `from_character_id` and `to_character_id` with `from_name` and `to_name` (kept for
 a character since deleted), `reason`, and `changes` (JSONB: for a change, each
-field's `{from, to}`; for a give from a template, `{template}`). Each give, change
+field's `{from, to}`; for a give from a template, `{template}`; for an Undo from
+the Play View, `{undoes}`, the event it undid). Each give, change
 and take-back also goes in the audit log (`equipment.given`, `equipment.changed`,
 `equipment.taken_back`), so in the character's log, and the holder's player is
-notified; a change to the staff note alone is kept here only.
+notified; a change to the staff note alone is kept here only. A give between
+characters is `equipment.passed` under the giver (in the troupe's log) and
+`equipment.received` under the receiver (with no troupe, so the troupe's log has it
+once); a discard and a restore are `equipment.discarded` and `equipment.restored`.
+Whoever's character gains or loses an item is notified, unless they did it.
 
 **`allowance_rules`**: how traits change a character's action allowance.
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),
