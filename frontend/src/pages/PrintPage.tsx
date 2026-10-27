@@ -14,6 +14,7 @@ import { NO_WILLPOWER, poolLine } from "./play/retainerPools";
 import { changing, damageShort, total } from "./play/pools";
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
+import { factsText, kindText, playText } from "./troupe/equipment";
 
 type Trait = PrintedSheet["traits"][number];
 
@@ -258,6 +259,25 @@ function PrintedRetainer({ retainer: r }: { retainer: PrintedSheet["retainers"][
   );
 }
 
+/** One item of equipment: what it is, its facts, and what each quality and special effect does at the table. */
+function PrintedItem({ item }: { item: PrintedSheet["equipment"][number] }) {
+  const facts = factsText(item.facts);
+  return (
+    <li className="break-inside-avoid border-b border-dotted border-neutral-400 py-0.5">
+      <p className="text-[11px]">
+        <strong>{item.name}</strong> · {kindText(undefined, item)}
+        {facts && ` · ${facts}`}
+      </p>
+      {item.qualities.length > 0 && <p>{item.qualities.map(playText).join("; ")}</p>}
+      {item.effects.map((e) => (
+        <p key={e.name}>
+          ★ {e.name}: {e.effect}
+        </p>
+      ))}
+    </li>
+  );
+}
+
 const SHOWN_ELSEWHERE = new Set([
   "clan", "archetype", "sect", "faction", "attributes",
   "focus_physicals", "focus_mentals", "focus_socials", "skills", "backgrounds",
@@ -472,6 +492,16 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
             </Section>
           ))}
         </div>
+      )}
+
+      {sheet.equipment.length > 0 && (
+        <Section title="Equipment">
+          <ul className="grid grid-cols-2 gap-x-4 text-[10px] leading-4" aria-label="Equipment">
+            {sheet.equipment.map((item) => (
+              <PrintedItem key={item.id} item={item} />
+            ))}
+          </ul>
+        </Section>
       )}
 
       {sheet.retainers.length > 0 && (

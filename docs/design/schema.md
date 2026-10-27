@@ -265,7 +265,8 @@ ghoul rule sets name as their `equipment_file`, and read by
   with its `max_qualities`: `cheap` 1, `standard` (standard or expensive) 2, and
   `special` (Horatio's own, for storytellers' exceptional items) no limit.
 - **`equipment_qualities`**: `rule_set_id`, `kind`, `name`, `effect` (one line, in
-  our own words), `page`, `properties` (JSONB), `position` (the book's order),
+  our own words), `play` (what it does at the table, in a few words, for the Play
+  View: "+3 initiative"; migration 0100), `page`, `properties` (JSONB), `position` (the book's order),
   `retired`. Unique on (`rule_set_id`, `kind`, `name`): a quality is per kind, as
   the same name can mean different things (a ranged Deadly weapon needs two hands, a
   melee one doesn't). Loading adds and updates them, and retires one the file no

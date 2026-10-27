@@ -7232,6 +7232,8 @@ export interface components {
             id: string;
             /** Kind */
             kind: string;
+            /** Kind Name */
+            kind_name: string;
             /** Name */
             name: string;
             /** Player Name */
@@ -7293,6 +7295,8 @@ export interface components {
             id: string;
             /** Kind */
             kind: string;
+            /** Kind Name */
+            kind_name: string;
             /** Name */
             name: string;
             /** Player Name */
@@ -7338,6 +7342,8 @@ export interface components {
             name: string;
             /** Page */
             page: string | null;
+            /** Play */
+            play: string | null;
         };
         /** EquipmentKindOut */
         EquipmentKindOut: {
@@ -7393,6 +7399,8 @@ export interface components {
             no_slot_when_crafted: boolean;
             /** Page */
             page: string | null;
+            /** Play */
+            play: string;
             /** Repeatable */
             repeatable: boolean;
             /** Two Handed */
@@ -10350,6 +10358,11 @@ export interface components {
             diablerie: string[];
             /** Domitor */
             domitor?: string | null;
+            /**
+             * Equipment
+             * @default []
+             */
+            equipment: components["schemas"]["EquipmentItemOut"][];
             /** Home */
             home: boolean;
             /**

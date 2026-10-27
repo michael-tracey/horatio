@@ -296,6 +296,8 @@ class EquipmentQuality(Record):
     name: Mapped[str]
     # What it does, in a line of our own words.
     effect: Mapped[str]
+    # What it does at the table, in a few words, for the Play View.
+    play: Mapped[str] = mapped_column(default="", server_default="")
     page: Mapped[str | None]
     # What it does to an item (two_handed, excludes, shots...), as in the file.
     properties: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")

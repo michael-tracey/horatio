@@ -6434,6 +6434,10 @@
             "title": "Kind",
             "type": "string"
           },
+          "kind_name": {
+            "title": "Kind Name",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -6509,6 +6513,7 @@
           "player_name",
           "name",
           "kind",
+          "kind_name",
           "grade",
           "special",
           "special_troupe_name",
@@ -6595,6 +6600,10 @@
             "title": "Kind",
             "type": "string"
           },
+          "kind_name": {
+            "title": "Kind Name",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -6670,6 +6679,7 @@
           "player_name",
           "name",
           "kind",
+          "kind_name",
           "grade",
           "special",
           "special_troupe_name",
@@ -6738,12 +6748,24 @@
               }
             ],
             "title": "Page"
+          },
+          "play": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Play"
           }
         },
         "required": [
           "name",
           "detail",
           "effect",
+          "play",
           "page"
         ],
         "title": "EquipmentItemQualityOut",
@@ -6936,6 +6958,10 @@
             ],
             "title": "Page"
           },
+          "play": {
+            "title": "Play",
+            "type": "string"
+          },
           "repeatable": {
             "title": "Repeatable",
             "type": "boolean"
@@ -6949,6 +6975,7 @@
           "kind",
           "name",
           "effect",
+          "play",
           "page",
           "two_handed",
           "needs_one_hand",
@@ -14451,6 +14478,14 @@
               }
             ],
             "title": "Domitor"
+          },
+          "equipment": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemOut"
+            },
+            "title": "Equipment",
+            "type": "array"
           },
           "home": {
             "title": "Home",

@@ -113,10 +113,15 @@ def test_every_quality_has_its_effect_and_page() -> None:
     for quality in RULES.qualities.values():
         assert quality.effect.endswith("."), quality
         assert quality.page, quality
+        # A few words for the Play View, which opens to the effect.
+        assert quality.play and not quality.play.endswith("."), quality
+        assert len(quality.play) <= 70, quality
     # The errata supersede p. 519.
     for name in ("Ballistic", "Hardened"):
         assert "Vol. II Issue 1, p. 23" in (RULES.qualities[("protective", name)].page or "")
     assert "firearms" in RULES.qualities[("protective", "Ballistic")].effect
+    assert RULES.qualities[("melee", "Accurate")].play == "+2 wild card bonus"
+    assert RULES.qualities[("melee", "Fast")].play == "+3 initiative"
 
 
 def test_the_kinds_their_defaults_and_the_grades() -> None:

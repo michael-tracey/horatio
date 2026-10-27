@@ -236,6 +236,7 @@ def test_an_assistant_makes_a_special_item_and_a_player_is_refused(
         "name": "Masterwork",
         "detail": "cuts through chains",
         "effect": blade["qualities"][3]["effect"],
+        "play": "One of a kind; triggers the Toreador weakness",
         "page": "517",
     }
     assert blade["effects"] == LEGEND["effects"]

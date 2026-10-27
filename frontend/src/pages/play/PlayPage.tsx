@@ -10,6 +10,7 @@ import { offered, reachNote, TYPE_NAMES } from "../../influence";
 import { choiceName } from "../character/creation/logic";
 import { ChoiceInfo } from "../character/Info";
 import { Derangements, showsDerangements } from "./Derangements";
+import { EquipmentTab } from "./Equipment";
 import { Feed, FeedButton } from "./Feed";
 import { Frenzy } from "./Frenzy";
 import { KindBadge } from "../character/NpcKindBadge";
@@ -20,6 +21,7 @@ import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
 import { DRANK, incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Play, type Sync } from "./usePlay";
+import { useEquipment } from "./useEquipment";
 import { useReference } from "./useReference";
 import { StockPlay } from "./StockPlay";
 import { VitaeTracker } from "./Vitae";
@@ -40,6 +42,7 @@ const TABS = [
   { key: "pools", label: "Pools" },
   // Only for a character with sect status.
   { key: "status", label: "Status" },
+  { key: "equipment", label: "Equipment" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
@@ -50,9 +53,10 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
  * A living sheet for a game, laid out for a phone in one hand, in three tabs:
  * the Sheet to look things up in; the Tracker, with blood, Willpower, health,
  * Morality and Beast traits as big boxes to tap, the character's limited uses
- * and the game's log with Undo; and Pools, its test pools and powers. Taps are
- * kept on the phone when there is no signal and sent when it returns. The
- * Sheet and Pools load once, when the page opens, so the tabs switch at once.
+ * and the game's log with Undo; and Pools, its test pools and powers; with
+ * Status for a character with sect status, and Equipment. Taps are kept on the
+ * phone when there is no signal and sent when it returns. The Sheet, Pools and
+ * Equipment load when the page opens, so the tabs switch at once.
  * The person's settings choose the tab it opens on, whether quick notes start
  * on, and whether the screen stays awake while it is open.
  */
@@ -70,6 +74,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? prefs.play_tab;
   const { view, shown, tap, sync, accept } = play;
   const { reference, error: referenceError } = useReference(characterId);
+  // Asked now, so the Equipment tab opens at once and is kept on the phone for a game with no signal.
+  useEquipment(characterId);
   // Quick notes start as the settings say; the switch changes them for this visit.
   const [quickNotes, setQuickNotes] = useState(prefs.quick_notes);
   const awake = useWakeLock(prefs.keep_awake);
@@ -123,6 +129,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
           onChange={accept}
         />
       )}
+      {tab === "equipment" && <EquipmentTab characterId={characterId} />}
       {tab === "tracker" && (
         <>
           <div className="grid gap-3 md:grid-cols-2">
@@ -257,11 +264,11 @@ function PlayShell({
   );
 }
 
-/** Sheet, Tracker, Pools and (for a character with sect status) Status: big tabs across the top, for a thumb. */
+/** Sheet, Tracker, Pools, (for a character with sect status) Status and Equipment: big tabs across the top, for a thumb. */
 function TabBar({ tab, onChange, status }: { tab: Tab; onChange: (tab: Tab) => void; status: boolean }) {
   const tabs = TABS.filter((t) => t.key !== "status" || status);
   return (
-    <nav className={cx("mx-auto grid max-w-3xl px-2", tabs.length === 4 ? "grid-cols-4" : "grid-cols-3")} role="tablist" aria-label="Play View">
+    <nav className={cx("mx-auto grid max-w-3xl px-1 sm:px-2", tabs.length === 5 ? "grid-cols-5" : "grid-cols-4")} role="tablist" aria-label="Play View">
       {tabs.map((t) => (
         <button
           key={t.key}
@@ -270,7 +277,7 @@ function TabBar({ tab, onChange, status }: { tab: Tab; onChange: (tab: Tab) => v
           aria-selected={tab === t.key}
           onClick={() => onChange(t.key)}
           className={cx(
-            "min-h-11 border-b-2 text-sm font-medium tracking-wide",
+            "min-h-11 border-b-2 text-[13px] font-medium sm:text-sm sm:tracking-wide",
             tab === t.key ? "border-gold text-gold" : "border-transparent text-mist hover:text-parchment",
           )}
         >

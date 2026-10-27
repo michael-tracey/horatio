@@ -86,6 +86,8 @@ class QualityData:
     # What it does, in a line of our own words.
     effect: str
     page: str | None = None
+    # What it does at the table, in a few words, for the Play View: "+3 initiative".
+    play: str = ""
     two_handed: bool = False
     needs_one_hand: bool = False
     no_slot_when_crafted: bool = False
@@ -325,14 +327,20 @@ def equipment_from(raw: Mapping[str, Any], *, source: str = "") -> EquipmentRule
             raise ValueError(f"{where}{kind} quality {name!r} is written twice")
         if not q.get("effect"):
             raise ValueError(f"{where}{kind} quality {name!r} needs its effect")
-        properties = {k: v for k, v in q.items() if k not in ("kind", "name", "effect", "page")}
+        if not q.get("play"):
+            raise ValueError(f"{where}{kind} quality {name!r} needs its play line")
+        properties = {
+            k: v for k, v in q.items() if k not in ("kind", "name", "effect", "play", "page")
+        }
         try:
             quality = quality_from_dict(kind, name, properties)
         except ValueError as error:
             raise ValueError(f"{where}{error}") from error
         if quality.needs_detail and not quality.detail_prompt:
             raise ValueError(f"{where}{kind} quality {name!r} needs a detail_prompt")
-        qualities[(kind, name)] = replace(quality, effect=q["effect"], page=q.get("page"))
+        qualities[(kind, name)] = replace(
+            quality, effect=q["effect"], play=q["play"], page=q.get("page")
+        )
     for (kind, name), quality in qualities.items():
         for other in quality.excludes:
             if (kind, other) not in qualities:

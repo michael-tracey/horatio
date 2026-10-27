@@ -92,10 +92,31 @@ export function factsText(facts: EquipmentFactsOut): string {
   return parts.join(" · ");
 }
 
-/** Kind, grade and crafting in a few words: "Special melee weapon", "Cheap protective gear". */
-export function kindText(rules: EquipmentOut | undefined, item: { kind: string; grade: string; crafted: boolean }): string {
-  const kind = rules?.kinds.find((k) => k.key === item.kind)?.name ?? item.kind;
+/** Kind, grade and crafting in a few words: "Special melee weapon", "Cheap protective gear".
+ * An item held names its kind itself (`kind_name`); a template's comes from the rules. */
+export function kindText(rules: EquipmentOut | undefined, item: { kind: string; kind_name?: string; grade: string; crafted: boolean }): string {
+  const kind = item.kind_name ?? rules?.kinds.find((k) => k.key === item.kind)?.name ?? item.kind;
   const grade = item.grade === "standard" ? "" : `${item.grade} `;
   const text = `${item.crafted ? "crafted " : ""}${grade}${kind.toLowerCase()}`;
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** The kinds in the order a game needs them: weapons, then armour, then the rest. */
+const AT_THE_TABLE: Kind[] = ["melee", "ranged", "protective", "miscellaneous"];
+
+/** Items with combat items first (weapons, then armour), each kind by name as given. */
+export function combatFirst<T extends { kind: string }>(items: T[]): T[] {
+  const place = (kind: string) => {
+    const i = AT_THE_TABLE.indexOf(kind as Kind);
+    return i < 0 ? AT_THE_TABLE.length : i;
+  };
+  return [...items].sort((a, b) => place(a.kind) - place(b.kind));
+}
+
+/** What a quality does at the table: "Accurate: +2 wild card bonus", "Customized (hacking): +2 in its
+ * circumstance"; its effect, or only its name, for a quality the holder's rules no longer have. */
+export function playText(q: EquipmentItemOut["qualities"][number]): string {
+  const named = q.detail ? `${q.name} (${q.detail})` : q.name;
+  const does = q.play ?? q.effect;
+  return does ? `${named}: ${does}` : named;
 }

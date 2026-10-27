@@ -9,6 +9,7 @@ import { CreationWizard } from "./creation/Wizard";
 import { choiceName } from "./creation/logic";
 import { abilities } from "../troupe/roles";
 import { DowntimeTab } from "./DowntimeTab";
+import { EquipmentTab } from "./EquipmentTab";
 import { GiveEquipment } from "./GiveEquipment";
 import { InfluenceTab } from "./InfluenceTab";
 import { CharacterLogTab } from "./LogTab";
@@ -87,6 +88,7 @@ export function CharacterPage() {
             ...(!c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
             { to: base, label: "Build", end: true },
             { to: `${base}/sheet`, label: "Sheet" },
+            { to: `${base}/equipment`, label: "Equipment" },
             { to: `${base}/influence`, label: "Influence" },
             { to: `${base}/log`, label: "Log" },
           ]}
@@ -94,6 +96,7 @@ export function CharacterPage() {
         <Routes>
           <Route index element={<NpcBuilder character={c} />} />
           <Route path="sheet" element={<SheetTab character={c} mine={false} badge />} />
+          <Route path="equipment" element={<EquipmentTab character={c} />} />
           <Route path="influence" element={<InfluenceTab character={c} mine={false} />} />
           <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
           {!c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
@@ -136,6 +139,7 @@ export function CharacterPage() {
         tabs={[
           ...(mine && !c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
           { to: base, label: "Sheet", end: true },
+          { to: `${base}/equipment`, label: "Equipment" },
           { to: `${base}/xp`, label: "Experience" },
           ...(mine
             ? [
@@ -162,6 +166,7 @@ export function CharacterPage() {
             />
           }
         />
+        <Route path="equipment" element={<EquipmentTab character={c} />} />
         <Route path="xp" element={<XpTab characterId={c.id} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}

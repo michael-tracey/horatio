@@ -8,6 +8,7 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from horatio import equipment
 from horatio.api.downtimes import staff_troupe
@@ -42,6 +43,8 @@ class EquipmentItemQualityOut(BaseModel):
     # What it does and where, from the holder's rules; None for a quality they no
     # longer have.
     effect: str | None
+    # What it does at the table, in a few words: "+3 initiative".
+    play: str | None
     page: str | None
 
 
@@ -55,6 +58,8 @@ class EquipmentItemOut(BaseModel):
     player_name: str | None
     name: str
     kind: str
+    # The kind as the holder's rules name it: "Melee weapon".
+    kind_name: str
     grade: str
     # Made special by a troupe's staff: any number of qualities, and effects of its own.
     special: bool
@@ -198,9 +203,10 @@ def refusal(error: EquipmentRefused) -> HTTPException:
 
 class Reader:
     """What the reader may see and do, asked once per troupe and rules once per
-    splat, for a list."""
+    splat, for a list. With no reader (a printed sheet), no staff note and no
+    changes."""
 
-    def __init__(self, db: DbSession, user: User) -> None:
+    def __init__(self, db: Session, user: User | None) -> None:
         self.db = db
         self.user = user
         self.troupes: dict[uuid.UUID, Troupe] = {}
@@ -214,6 +220,8 @@ class Reader:
         return self.troupes[troupe_id]
 
     def manages(self, character: Character) -> bool:
+        if self.user is None:
+            return False
         home = equipment.home_of(character)
         if home is None:
             return self.user.is_custodian
@@ -251,6 +259,7 @@ class Reader:
             player_name=self.player_name(character),
             name=item.name,
             kind=item.kind,
+            kind_name=kind.name if (kind := rules.kinds.get(item.kind)) else item.kind,
             grade=item.grade,
             special=item.grade == "special",
             special_troupe_name=(
@@ -261,6 +270,7 @@ class Reader:
                     name=q.name,
                     detail=q.detail,
                     effect=quality.effect if quality else None,
+                    play=quality.play if quality else None,
                     page=quality.page if quality else None,
                 )
                 for q in qualities
