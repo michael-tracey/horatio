@@ -274,6 +274,7 @@ MESSAGES: dict[str, str] = {
     "title.added": "{actor} added the title {title} to the troupe.",
     "title.changed": "{actor} changed the title {title}: now {what}.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
+    "title.court_order": "{actor} set the court order of the troupe's own titles: {order}.",
     "status.added": "{actor} gave {character} the {type} status {status}, from {patron}"
     "{at_game}{because}.",
     "status.removed": "{actor} removed {character}'s {status} (from {patron}){because}.",
@@ -292,6 +293,8 @@ MESSAGES: dict[str, str] = {
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
     "troupe.status_by": "{actor} set Status on sheets: {setting}.",
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
+    "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
+    "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
     "scene.created": "{actor} made the scene {name}.",
     "scene.renamed": "{actor} renamed the scene {old} to {name}.",
     "scene.removed": "{actor} removed the scene {name}.",

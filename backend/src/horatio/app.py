@@ -26,6 +26,7 @@ from horatio.api import (
     discord,
     downtimes,
     embrace,
+    equipment,
     feeding,
     house_rules,
     house_traits,
@@ -60,6 +61,7 @@ from horatio.api import (
     troupes,
     unsubscribe,
     waiting,
+    whos_who,
     xp_awards,
     xp_range,
 )
@@ -117,6 +119,7 @@ for module in (
     membership,
     approvals,
     rules,
+    equipment,
     downtimes,
     feeding,
     responses,
@@ -153,6 +156,7 @@ for module in (
     character_moves,
     scenes,
     waiting,
+    whos_who,
 ):
     api.include_router(module.router)
 

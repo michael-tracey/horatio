@@ -1633,6 +1633,106 @@ test("at a game, a Camarilla character with Leadership 2 learns about two of a r
   await s.screenshot(shots("play-others-sabbat"));
 });
 
+test("the Who's Who: a player sees the court in rank order, their clan and Other, finds a character by its player, and prints it; others are refused", async ({ browser }) => {
+  const custodian = await person(browser, "whoswho-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "whoswho-lead");
+  const ana = await person(browser, "whoswho-ana");
+  const bea = await person(browser, "whoswho-bea");
+  const cy = await person(browser, "whoswho-cy");
+  const outsider = await person(browser, "whoswho-outsider");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Hall of Names ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // A Camarilla character of `clan`, built through the API and accepted home.
+  const build = async (page: Page, name: string, clan: string, inClan: [string, number][]): Promise<string> => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: clan, rating: null });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: inClan,
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+  const brujah: [string, number][] = [["Celerity", 2], ["Potence", 1], ["Presence", 1]];
+  // Varga is the Prince and the Ventrue Primogen, Roth the Brujah Primogen, and the
+  // Gangrel, with no Primogen, have no seat: Wren is under Other.
+  const varga = await build(ana.page, "Varga", "Ventrue", [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]]);
+  const roth = await build(bea.page, "Roth", "Brujah", brujah);
+  await build(cy.page, "Wren", "Gangrel", [["Animalism", 2], ["Fortitude", 1], ["Protean", 1]]);
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${roth}/titles`, { titles: ["Primogen"] });
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${varga}/titles`, { titles: ["Primogen", "Prince"] });
+
+  // Ana opens it from the troupe's page.
+  const p = ana.page;
+  await p.goto(`/troupes/${troupeId}`);
+  await p.getByRole("link", { name: "Who's Who" }).click();
+  const section = (name: string) => p.getByRole("region", { name, exact: true });
+  const named = (name: string) => section(name).getByRole("article").evaluateAll((cards) => cards.map((c) => c.getAttribute("aria-label")));
+  await expect(section("Court").getByRole("article")).toHaveCount(2);
+  // The court in rank order, the Prince first with both titles.
+  expect(await named("Court")).toEqual(["Varga", "Roth"]);
+  await expect(section("Court").getByRole("article", { name: "Varga" }).getByText("Prince")).toBeVisible();
+  expect(await named("Ventrue")).toEqual(["Varga"]);
+  expect(await named("Brujah")).toEqual(["Roth"]);
+  const wren = section("Other").getByRole("article", { name: "Wren" });
+  await expect(wren.getByText("Represented by: nobody yet")).toBeVisible();
+  await expect(wren.getByRole("link", { name: "whoswho-cy" })).toBeVisible();
+  // The Camarilla bans a non-pillar clan's status, which others see.
+  await expect(wren.getByText(/Lesser status ban: Not Embraced into a pillar clan/)).toBeVisible();
+  await p.screenshot(shots("whos-who"));
+
+  // Searching by a player's name finds their character, in each section it is in.
+  await p.getByLabel("Search the Who's Who").fill("whoswho-bea");
+  await expect(section("Brujah").getByRole("article", { name: "Roth" })).toBeVisible();
+  await expect(p.getByRole("article", { name: "Varga" })).toHaveCount(0);
+  await expect(p.getByRole("article", { name: "Wren" })).toHaveCount(0);
+  await p.getByLabel("Search the Who's Who").fill("");
+  await p.getByLabel("Clan", { exact: true }).selectOption("Gangrel");
+  expect(await named("Other")).toEqual(["Wren"]);
+  await expect(section("Court")).toHaveCount(0);
+
+  // The print view prints every section.
+  const printed = await p.context().newPage();
+  await printed.goto(`/print/troupes/${troupeId}/whos-who`);
+  for (const name of ["Court", "Brujah", "Ventrue", "Other"]) await expect(printed.getByRole("region", { name, exact: true })).toBeVisible();
+  await expect(printed.getByRole("region", { name: "Other" }).getByText("Nobody yet")).toBeVisible();
+  await printed.screenshot(shots("whos-who-print"));
+
+  // From the Play View, another at the game links to their entry.
+  await p.goto(`/play/characters/${varga}?tab=status`);
+  const others = p.locator("section").filter({ has: p.getByRole("heading", { name: "Others at this game" }) });
+  await others.getByRole("button", { name: /Roth/ }).click();
+  await others.getByRole("link", { name: "Roth on the Who’s Who" }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/whos-who#c-${roth}$`));
+  await expect(section("Brujah").getByRole("article", { name: "Roth" })).toBeInViewport();
+
+  // Someone with no character in the troupe sees no Who's Who, and the API refuses them.
+  const o = outsider.page;
+  await o.goto(`/troupes/${troupeId}`);
+  await expect(o.getByRole("link", { name: "Profile", exact: true })).toBeVisible();
+  await expect(o.getByRole("link", { name: "Who's Who" })).toHaveCount(0);
+  const refused = await o.request.get(`/api/troupes/${troupeId}/whos-who`, { headers });
+  expect(refused.status()).toBe(403);
+});
+
 test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own, and a house title gives status", async ({ browser }) => {
   const custodian = await person(browser, "sects-custodian");
   makeCustodian(custodian.email);

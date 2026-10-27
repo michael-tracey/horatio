@@ -46,6 +46,8 @@ class Preferences(BaseModel):
     email_pictures: bool = False
     # Each email as it happens, or everything gathered into one a day.
     email_digest: Literal["at_once", "daily"] = "at_once"
+    # Troupes' Who's Who names the player by their handle, not their name (#264).
+    whos_who_handle: bool = False
 
     @field_validator("time_zone")
     @classmethod
