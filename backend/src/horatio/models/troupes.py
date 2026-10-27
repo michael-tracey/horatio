@@ -188,13 +188,17 @@ class TroupeSpecialization(Record):
 
 
 class TroupeTitle(Record):
-    """A title a troupe added to the rule set's list."""
+    """A title a troupe added to the rule set's list: its sect, if it has one, and
+    the abiding status it gives (horatio.rules.status)."""
 
     __tablename__ = "troupe_titles"
     __table_args__ = (UniqueConstraint("troupe_id", "name"),)
 
     troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     name: Mapped[str]
+    # None: it can go to a character of any sect.
+    sect: Mapped[str | None]
+    status: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class CharacterTitle(Record):

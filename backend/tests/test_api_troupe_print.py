@@ -35,14 +35,14 @@ def test_print_every_character_in_the_troupe(troupe: Troupe) -> None:
     member(troupe, "Mara")
     agnes = member(troupe, "Agnes")
     troupe.assistant.client.put(
-        f"/troupes/{troupe.id}/characters/{agnes}/titles", json={"titles": ["Harpy"]}
+        f"/troupes/{troupe.id}/characters/{agnes}/titles", json={"titles": ["Soldier"]}
     )
 
     sheets = troupe.lead.client.get(f"/troupes/{troupe.id}/print").json()
 
     assert [s["character_name"] for s in sheets] == ["Agnes", "Mara"]
     assert {s["troupe_name"] for s in sheets} == {"Lords of the Night"}
-    assert sheets[0]["titles"] == ["Harpy"]
+    assert sheets[0]["titles"] == ["Soldier"]
     assert sheets[0]["traits"]
 
 
