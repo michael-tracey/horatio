@@ -25,6 +25,7 @@ import { SpecializationsTab } from "./SpecializationsTab";
 import { StaffTab } from "./StaffTab";
 import { TablesTab } from "./TablesTab";
 import { TitlesTab } from "./TitlesTab";
+import { WhosWhoTab } from "./WhosWhoTab";
 import { XpAwardsTab } from "./XpAwardsTab";
 
 export function TroupePage() {
@@ -75,6 +76,7 @@ export function TroupePage() {
             tabs: [
               { to: base, label: "About", end: true },
               { to: `${base}/profile`, label: "Profile" },
+              ...(t.whos_who ? [{ to: `${base}/whos-who`, label: "Who's Who" }] : []),
               ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
               ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
             ],
@@ -119,6 +121,7 @@ export function TroupePage() {
         <Route index element={<OverviewTab troupe={t} can={can} />} />
         <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
+        {t.whos_who && <Route path="whos-who" element={<WhosWhoTab troupeId={t.id} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}

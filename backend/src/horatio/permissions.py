@@ -205,6 +205,26 @@ def _running_staff_of(db: Session, user: User, character: Character) -> bool:
     return False
 
 
+def can_see_whos_who(db: Session, user: User, troupe: Troupe) -> bool:
+    """A troupe's Who's Who is for its staff, and for every player with an active
+    character in it, home or visiting (horatio.whos_who). It is never public."""
+    if user.is_custodian:
+        return True
+    if troupe.archived_at is not None:
+        return False
+    if troupe_role(db, user, troupe) is not None:
+        return True
+    playing = exists().where(
+        TroupeMembership.troupe_id == troupe.id,
+        TroupeMembership.left_at.is_(None),
+        TroupeMembership.character_id == Character.id,
+        Character.kind == "pc",
+        Character.player_id == user.id,
+        Character.status == "active",
+    )
+    return bool(db.scalar(select(playing)))
+
+
 def can_edit_character(db: Session, user: User, character: Character) -> bool:
     """A PC is edited only by its player; staff approve, they do not edit. An NPC is
     edited by the running staff of the troupe it belongs to (CONTEXT.md: NPC)."""

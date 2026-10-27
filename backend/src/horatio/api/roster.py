@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Select, select
 
-from horatio import character_filter, pictures, social_age, titles
+from horatio import character_filter, pictures, social_age, suspensions, titles
 from horatio.api.downtimes import staff_troupe
 from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
@@ -28,6 +28,9 @@ class RosterEntry(BaseModel):
     # None for an NPC, whose player_name is "NPC".
     player_id: uuid.UUID | None
     player_handle: str | None
+    # The player's account is suspended (horatio.suspensions): the character takes
+    # no new actions until it is lifted.
+    player_suspended: bool = False
     kind: str  # pc | npc
     # The player has retired the character.
     retired: bool
@@ -79,6 +82,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         )
     )
     standing = social_age.standings(db, [c.id for _, c, _ in rows])
+    suspended = suspensions.suspended_ids(db, [c.player_id for _, c, _ in rows if c.kind == "pc"])
     sects = titles.character_sects(db, [c.id for _, c, _ in rows])
     known = titles.title_data(db, troupe_id)
     held = {c.id: titles.held(db, troupe_id, c.id) for _, c, _ in rows}
@@ -96,6 +100,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_name=player.display_name if c.kind == "pc" else "NPC",
             player_id=player.id if c.kind == "pc" else None,
             player_handle=player.handle if c.kind == "pc" else None,
+            player_suspended=c.kind == "pc" and player.id in suspended,
             kind=c.kind,
             retired=c.status == "retired",
             titles=held[c.id],
@@ -236,7 +241,14 @@ MESSAGES: dict[str, str] = {
     "staff.removed": "{actor} removed {member} from the staff.",
     "troupe.lead_appointed": "{actor} appointed {member} lead storyteller.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
-    "troupe.archived": "{actor} archived the troupe.",
+    "troupe.archived": "{actor} archived the troupe{because}.",
+    "troupe.settled.home": "{character} left {troupe} as it was archived, and has no home troupe"
+    " now{because}.",
+    "troupe.settled.visit": "{character}'s visit to {troupe} ended as it was archived{because}.",
+    "troupe.settled_later": "{actor} settled what the archived troupe still held{because}.",
+    "troupe.reopened": "{actor} reopened the troupe{because}.",
+    "downtime.cycle_ended": "{actor} ended the downtime cycle {name} unanswered, as the troupe"
+    " was archived.",
     "troupe.profile_changed": "{actor} changed the troupe's profile.",
     "troupe.public": "{actor} made the troupe's profile {state}.",
     "troupe.game_added": "{actor} added a game to the troupe's schedule.",
@@ -274,6 +286,7 @@ MESSAGES: dict[str, str] = {
     "title.added": "{actor} added the title {title} to the troupe.",
     "title.changed": "{actor} changed the title {title}: now {what}.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
+    "title.court_order": "{actor} set the court order of the troupe's own titles: {order}.",
     "status.added": "{actor} gave {character} the {type} status {status}, from {patron}"
     "{at_game}{because}.",
     "status.removed": "{actor} removed {character}'s {status} (from {patron}){because}.",
@@ -292,6 +305,8 @@ MESSAGES: dict[str, str] = {
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
     "troupe.status_by": "{actor} set Status on sheets: {setting}.",
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
+    "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
+    "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
     "scene.created": "{actor} made the scene {name}.",
     "scene.renamed": "{actor} renamed the scene {old} to {name}.",
     "scene.removed": "{actor} removed the scene {name}.",
@@ -340,8 +355,16 @@ MESSAGES: dict[str, str] = {
     "no account uses it.",
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
+    "account.suspended": "{actor} suspended {member}{because}.",
+    "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
+    "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
+    "account.suspension_lifted.ended": "{member}'s suspension ended.",
+    "account.suspension_email_failed": "Horatio could not email {member} about their "
+    "suspension: {error}",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
+    "character.moved": "The custodian, {actor}, moved {character} from @{from_handle} to"
+    " @{to_handle}: {reason}",
     "character.domitor": "{actor} made {domitor} {character}'s domitor, of {clan}; discipline"
     " dots {disciplines}.",
     "embrace.step": "{actor} Embraced {character}, {step}: {summary} ({xp} XP).",
@@ -367,6 +390,7 @@ MESSAGES: dict[str, str] = {
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
+    "audit.exported": "{actor} exported {count} events from the audit log.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
     "play.status_chosen": "{actor} chose {character}'s status for game {game}: {choice}.",
     "play.troupe_reset": "{actor} reset {count} characters for the next game.",

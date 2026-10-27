@@ -1,17 +1,26 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, handles, pictures, sect_status, xp_range
+from horatio import audit, closing, handles, pictures, sect_status, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import RuleSet, TraitCategory, TraitDefinition, Troupe, TroupeStaff, User
+from horatio.models import (
+    Character,
+    RuleSet,
+    TraitCategory,
+    TraitDefinition,
+    Troupe,
+    TroupeStaff,
+    User,
+)
 from horatio.permissions import (
     Role,
     TroupeAction,
+    can_see_whos_who,
     require_custodian,
     require_troupe_action,
     troupe_role,
@@ -58,6 +67,11 @@ class TroupeOut(BaseModel):
     # the status carried into a game here: "all", "negative" only, or "none".
     badge_titles: bool
     badge_status: str
+    # Its Who's Who (horatio.whos_who) shows the negative status each character
+    # carries into a game here.
+    whos_who_negative: bool
+    # The caller may see its Who's Who: its staff, and the players of its characters.
+    whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
     portrait: str | None
     # Its banner, across the top of its page (add "/1500.webp" or "/750.webp"), or None.
@@ -86,6 +100,7 @@ class TroupeChanges(BaseModel):
     status_by: Literal["players", "staff"] | None = None
     badge_titles: bool | None = None
     badge_status: Literal["all", "negative", "none"] | None = None
+    whos_who_negative: bool | None = None
 
 
 class NewLead(BaseModel):
@@ -102,6 +117,88 @@ class StaffMember(BaseModel):
 class StaffAssignment(BaseModel):
     handle: str
     role: Role
+
+
+class Reason(BaseModel):
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class ClosingCharacter(BaseModel):
+    character_id: uuid.UUID
+    name: str
+    # "NPC" for an NPC.
+    player_name: str
+
+
+class ClosingOut(BaseModel):
+    """What archiving the troupe settles, or settled (horatio.closing)."""
+
+    # Player characters it is home to, which are left with no home troupe.
+    home: list[ClosingCharacter]
+    # Player characters visiting it, whose visits end.
+    visiting: list[ClosingCharacter]
+    # Its NPCs, which stay with it.
+    npcs: list[ClosingCharacter]
+    # Its open downtime cycle, ended without being answered.
+    cycle: str | None
+    # Its own characters with a Play View game under way, which ends.
+    games: list[ClosingCharacter]
+
+
+class ArchivedCharacter(BaseModel):
+    character_id: uuid.UUID
+    name: str
+    kind: str  # pc | npc
+    player_id: uuid.UUID | None
+    # "NPC" for an NPC.
+    player_name: str
+    # Its home troupe (or, for an NPC, its own troupe) was this one.
+    home: bool
+    # The troupe has let it go; otherwise it is still in it, waiting to be settled.
+    left: bool
+
+
+class ArchivedTroupeOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    archived_at: datetime
+    # Who archived it, and why, from the audit log; None from before it said.
+    archived_by_id: uuid.UUID | None
+    archived_by_name: str | None
+    reason: str | None
+    lead_name: str
+    # Its characters when it was archived.
+    characters: list[ArchivedCharacter]
+    # Something is still to settle: it was archived before archiving settled it.
+    unsettled: bool
+
+
+def given_reason(body: Reason) -> str:
+    reason = body.reason.strip()
+    if not reason:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Give a reason.")
+    return reason
+
+
+def closing_out(db: DbSession, found: closing.Affected) -> ClosingOut:
+    players = {
+        u.id: u.display_name
+        for u in db.scalars(
+            select(User).where(User.id.in_([c.player_id for c in [*found.home, *found.visiting]]))
+        )
+    }
+
+    def one(c: Character) -> ClosingCharacter:
+        player = players[c.player_id] if c.kind == "pc" else "NPC"
+        return ClosingCharacter(character_id=c.id, name=c.name, player_name=player)
+
+    return ClosingOut(
+        home=[one(c) for c in found.home],
+        visiting=[one(c) for c in found.visiting],
+        npcs=[one(c) for c in found.npcs],
+        cycle=found.cycles[0].name if found.cycles else None,
+        games=[one(c) for c in found.games],
+    )
 
 
 def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
@@ -125,6 +222,8 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         status_by=troupe.status_by,
         badge_titles=troupe.badge_titles,
         badge_status=troupe.badge_status,
+        whos_who_negative=troupe.whos_who_negative,
+        whos_who=can_see_whos_who(db, user, troupe),
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
         public=troupe.public,
@@ -158,6 +257,54 @@ def list_troupes(db: DbSession, user: CurrentUser) -> list[TroupeOut]:
     """Every troupe still running. Players need to see them to ask to join."""
     troupes = db.scalars(select(Troupe).where(Troupe.archived_at.is_(None)).order_by(Troupe.name))
     return [troupe_out(db, user, t) for t in troupes]
+
+
+@router.get("/archived")
+def list_archived(db: DbSession, user: CurrentUser) -> list[ArchivedTroupeOut]:
+    """The custodian's list of archived troupes, latest first, with what each had."""
+    require_custodian(user)
+    troupes = list(
+        db.scalars(
+            select(Troupe)
+            .where(Troupe.archived_at.is_not(None))
+            .order_by(Troupe.archived_at.desc())
+        )
+    )
+    events = closing.archived_by(db, [t.id for t in troupes])
+    found: list[ArchivedTroupeOut] = []
+    for troupe in troupes:
+        assert troupe.archived_at is not None
+        event = events.get(troupe.id)
+        actor = db.get(User, event.actor_id) if event and event.actor_id else None
+        left = closing.affected(db, troupe)
+        characters = []
+        for character, home, gone in closing.at_archiving(db, troupe):
+            player = db.get_one(User, character.player_id) if character.kind == "pc" else None
+            characters.append(
+                ArchivedCharacter(
+                    character_id=character.id,
+                    name=character.name,
+                    kind=character.kind,
+                    player_id=player.id if player else None,
+                    player_name=player.display_name if player else "NPC",
+                    home=home,
+                    left=gone,
+                )
+            )
+        found.append(
+            ArchivedTroupeOut(
+                id=troupe.id,
+                name=troupe.name,
+                archived_at=troupe.archived_at,
+                archived_by_id=actor.id if actor else None,
+                archived_by_name=actor.display_name if actor else None,
+                reason=event.data.get("reason") if event else None,
+                lead_name=db.get_one(User, troupe.lead_user_id).display_name,
+                characters=characters,
+                unsettled=bool(left.characters or left.cycles or left.games),
+            )
+        )
+    return found
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -271,6 +418,17 @@ def change_troupe(
             titles="titles" if troupe.badge_titles else "no titles",
             status=BADGE_STATUS_TEXT[troupe.badge_status],
         )
+    if body.whos_who_negative is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.whos_who_negative != troupe.whos_who_negative:
+            troupe.whos_who_negative = body.whos_who_negative
+            audit.record(
+                db,
+                user,
+                "troupe.whos_who",
+                troupe_id=troupe.id,
+                status="negative status" if body.whos_who_negative else "no sect status",
+            )
     if body.starting_xp is not None:
         # The floor and ceiling both start from it, so both move with it.
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
@@ -282,14 +440,54 @@ def change_troupe(
     return troupe_out(db, user, troupe)
 
 
-@router.delete("/{troupe_id}", status_code=status.HTTP_204_NO_CONTENT)
-def archive_troupe(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
-    """Deleting a troupe archives it: closed to use, history kept."""
+@router.get("/{troupe_id}/closing")
+def preview_closing(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ClosingOut:
+    """What archiving the troupe would settle; for an archived one, what is left to."""
     troupe = get_troupe(db, troupe_id)
     require_troupe_action(db, user, troupe, TroupeAction.ARCHIVE)
-    troupe.archived_at = datetime.now(UTC)
-    audit.record(db, user, "troupe.archived", troupe_id=troupe.id)
+    return closing_out(db, closing.affected(db, troupe))
+
+
+@router.post("/{troupe_id}/archive")
+def archive_troupe(
+    troupe_id: uuid.UUID, body: Reason, db: DbSession, user: CurrentUser
+) -> ClosingOut:
+    """Deleting a troupe archives it: closed to use, history kept. What it held is
+    settled first (horatio.closing), and everyone affected is told."""
+    troupe = get_troupe(db, troupe_id)
+    require_troupe_action(db, user, troupe, TroupeAction.ARCHIVE)
+    reason = given_reason(body)
+    found = closing.archive(db, user, troupe, reason)
+    out = closing_out(db, found)
     db.commit()
+    return out
+
+
+@router.post("/{troupe_id}/settle")
+def settle_archived(
+    troupe_id: uuid.UUID, body: Reason, db: DbSession, user: CurrentUser
+) -> ClosingOut:
+    """The custodian settles a troupe archived before archiving settled anything."""
+    require_custodian(user)
+    troupe = get_troupe(db, troupe_id)
+    reason = given_reason(body)
+    found = closing.settle_archived(db, user, troupe, reason)
+    out = closing_out(db, found)
+    db.commit()
+    return out
+
+
+@router.post("/{troupe_id}/reopen")
+def reopen_troupe(
+    troupe_id: uuid.UUID, body: Reason, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """The custodian reopens an archived troupe. Its characters do not come back."""
+    require_custodian(user)
+    troupe = get_troupe(db, troupe_id)
+    reason = given_reason(body)
+    closing.reopen(db, user, troupe, reason)
+    db.commit()
+    return troupe_out(db, user, troupe)
 
 
 @router.put("/{troupe_id}/lead")

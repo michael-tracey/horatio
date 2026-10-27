@@ -93,3 +93,31 @@ class PasswordReset(Record):
     token_hash: Mapped[str] = mapped_column(unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class Suspension(Record):
+    """The custodian suspending someone's account (horatio.suspensions): signed out
+    and kept out until it is lifted, by hand or when `ends_at` passes. Kept once
+    lifted, so every suspension stays on record."""
+
+    __tablename__ = "suspensions"
+    __table_args__ = (
+        # At most one not yet lifted for each person.
+        Index(
+            "uq_suspensions_live_user_id",
+            "user_id",
+            unique=True,
+            postgresql_where=text("lifted_at is null"),
+        ),
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    # Why, for the custodian only: never shown to the person.
+    reason: Mapped[str] = mapped_column(Text)
+    # When it ends by itself; None until it is lifted by hand.
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    suspended_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # When it was lifted: by hand (with who and why), or at `ends_at` with neither.
+    lifted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    lifted_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    lift_reason: Mapped[str | None] = mapped_column(Text)

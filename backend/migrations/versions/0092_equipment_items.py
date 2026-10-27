@@ -2,7 +2,7 @@
 and the rest of an item on a troupe's own templates
 
 Revision ID: 0092
-Revises: 0086
+Revises: 0091
 Create Date: 2026-10-27 22:00:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0092"
-down_revision: str | None = "0086"
+down_revision: str | None = "0091"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

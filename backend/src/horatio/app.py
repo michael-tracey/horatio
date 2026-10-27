@@ -12,11 +12,13 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from horatio import delivery
 from horatio.api import (
     approvals,
+    audit,
     auth,
     backups,
     badges,
     cart,
     character_log,
+    character_moves,
     characters,
     clan_logos,
     connectors,
@@ -52,6 +54,7 @@ from horatio.api import (
     shared_backgrounds,
     sheets,
     specializations,
+    suspensions,
     system,
     titles,
     trait_exceptions,
@@ -61,6 +64,7 @@ from horatio.api import (
     troupes,
     unsubscribe,
     waiting,
+    whos_who,
     xp_awards,
     xp_range,
 )
@@ -125,6 +129,7 @@ for module in (
     responses,
     roster,
     character_log,
+    audit,
     printing,
     pictures,
     npcs,
@@ -143,6 +148,7 @@ for module in (
     connectors,
     discord,
     players,
+    suspensions,
     backups,
     badges,
     troupe_requests,
@@ -153,8 +159,10 @@ for module in (
     system,
     play,
     play_others,
+    character_moves,
     scenes,
     waiting,
+    whos_who,
 ):
     api.include_router(module.router)
 
