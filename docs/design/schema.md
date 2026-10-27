@@ -139,6 +139,14 @@ saying a sect's status ban applies to a character (`applies` true) or that it is
 exempt (false), by `sect` and `ban` (who it applies to, as the rules word it), with
 a `reason` and `marked_by`. **`troupes.status_by`**: Status on sheets, `players`
 (the default: each keeps their own, naming the patron) or `staff`.
+**`status_suppressions`** (issue #253): staff stripping a character's fleeting
+status unspent for a while (`kind`: `game`, the rest of the game; `commander`, 2
+games or a month), with `reason`, `given_on`, `game_id` and `added_by`; it ends on
+its own. **`play_games.status`** (JSONB): the character's status choices for that
+game (`horatio/play_status.py`): its `source` of abiding status, a title's status
+`chosen`, the titles whose holders are `absent`, and the `titles` it held as the game
+began. **`play_events.held_status`** (JSONB): a fleeting status the tap spent for
+good, as the record was, so Undo gives it back.
 
 **`long_texts`**: `character_id`, `kind` (for example `background`,
 `history`), `body`; unique on (`character_id`, `kind`).
@@ -597,7 +605,14 @@ Recorded here for review; each is easy to change.
 - Titles are per-troupe tags given by storytellers and assistant storytellers,
   from the rule set's list (imported from Yorick) plus titles the troupe adds.
   The rule set's titles also say their sect and the status they give (section 3,
-  sect status).
+  sect status). A title the troupe adds (`troupe_titles`) has an optional `sect`
+  and the abiding `status` it gives (JSONB, a list of names: that sect's abiding
+  status or general status); changing them changes them for everyone holding it
+  (issue #256). `horatio.titles.title_data` is every title with its sect and status.
+  A troupe that takes only some sects offers only their titles and those of no
+  sect, and a title of a sect goes only to a character of that sect (from its
+  sheet). A title held out of sect, given before this rule or kept since the
+  character changed sect, stays and is flagged for staff.
   A character can hold several. They show on the troupe's Characters tab, the
   player's sheet and the printout for that troupe, and go when the character
   leaves.

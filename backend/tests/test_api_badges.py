@@ -80,8 +80,9 @@ def test_a_badge_shows_who_the_character_is(troupe: Troupe) -> None:
         ("merits", "Personal Masquerade", None, ""),
         ("paths", "Caine", 4, ""),
     )
+    # A title of no sect: one of a sect needs the character to be of it (#256).
     titled = troupe.lead.client.put(
-        f"/troupes/{troupe.id}/characters/{agnes}/titles", json={"titles": ["Harpy"]}
+        f"/troupes/{troupe.id}/characters/{agnes}/titles", json={"titles": ["Soldier"]}
     )
     assert titled.status_code == 200, titled.text
 
@@ -90,7 +91,7 @@ def test_a_badge_shows_who_the_character_is(troupe: Troupe) -> None:
     assert badge["clan"] == "Toreador"
     # Generation 2 is an Ancilla; Machiavellian Prodigy treats her as one class higher.
     assert badge["social_age"] == "Elder"
-    assert badge["titles"] == ["Harpy"]
+    assert badge["titles"] == ["Soldier"]
     # She has no sect, so no status.
     assert (badge["status"], badge["negative"]) == ([], [])
     assert sorted(badge["visible"]) == [

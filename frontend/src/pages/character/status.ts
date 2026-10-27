@@ -1,4 +1,4 @@
-import type { DerivedOut, EndingOut, PatronChoiceOut } from "../../api/types";
+import type { DerivedOut, EndingOut, PatronChoiceOut, SuppressionOut } from "../../api/types";
 
 /** "2 more games", "1 more game". */
 function games(n: number): string {
@@ -19,6 +19,18 @@ export function endingText(ending: EndingOut, day: (d: string) => string): strin
   const then = after.length ? after.join(", and ") : "once nothing else holds it";
   if (ending.while_held) return `Lasts while ${ending.while_held} is held; then ends ${then}`;
   return after.length ? `Ends ${then}` : "Ends now";
+}
+
+/**
+ * What suppresses the fleeting status, and when it comes back: "Fleeting status
+ * suppressed for defying a Commander (Defied the Prince): back after 2 more games,
+ * and not before 26 Nov 2026."
+ */
+export function suppressedText(s: Pick<SuppressionOut, "text" | "reason" | "ending">, day: (d: string) => string): string {
+  const why = `Fleeting status suppressed ${s.text}${s.reason ? ` (${s.reason})` : ""}`;
+  if (!s.ending) return `${why}.`;
+  const back = s.ending.this_game ? "back when the game ends" : endingText(s.ending, day).replace(/^Ends /, "back ");
+  return `${why}: ${back}.`;
 }
 
 /** A source of derived status and what it gives: "Prince: Authority, Commander, Sovereign". */

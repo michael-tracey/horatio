@@ -32,6 +32,10 @@ class RosterEntry(BaseModel):
     # The player has retired the character.
     retired: bool
     titles: list[str]
+    # Those of another sect than the character's, kept for staff to look at.
+    out_of_sect_titles: list[str]
+    # From the sheet as it stands, if it has one.
+    sect: str | None
     # Where its picture is (horatio.pictures), or None.
     picture: str | None
     # From the sheet as it stands (horatio.social_age).
@@ -75,6 +79,9 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
         )
     )
     standing = social_age.standings(db, [c.id for _, c, _ in rows])
+    sects = titles.character_sects(db, [c.id for _, c, _ in rows])
+    known = titles.title_data(db, troupe_id)
+    held = {c.id: titles.held(db, troupe_id, c.id) for _, c, _ in rows}
     pending = list(
         db.execute(
             select(Approval.character_id, Approval.kind).where(
@@ -91,7 +98,11 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_handle=player.handle if c.kind == "pc" else None,
             kind=c.kind,
             retired=c.status == "retired",
-            titles=titles.held(db, troupe_id, c.id),
+            titles=held[c.id],
+            out_of_sect_titles=[
+                t for t in held[c.id] if titles.out_of_sect(known.get(t), sects.get(c.id))
+            ],
+            sect=sects.get(c.id),
             picture=pictures.picture_url(c.id, c.picture_id),
             clan=standing[c.id].clan,
             social_age=standing[c.id].age,
@@ -261,10 +272,18 @@ MESSAGES: dict[str, str] = {
     "title.given": "{actor} gave {character} the title {title}.",
     "title.taken": "{actor} took the title {title} from {character}.",
     "title.added": "{actor} added the title {title} to the troupe.",
+    "title.changed": "{actor} changed the title {title}: now {what}.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
-    "status.added": "{actor} gave {character} the {type} status {status}, from {patron}{because}.",
+    "status.added": "{actor} gave {character} the {type} status {status}, from {patron}"
+    "{at_game}{because}.",
     "status.removed": "{actor} removed {character}'s {status} (from {patron}){because}.",
     "status.spent": "{actor} spent {character}'s {status} (from {patron}){because}.",
+    "status.given_back": "{actor} undid spending {character}'s {status} (from {patron}): it is"
+    " back.",
+    "status.suppressed": "{actor} suppressed {character}'s fleeting status {why}{because}.",
+    "status.suppression_lifted": "{actor} gave {character} back its fleeting status, suppressed"
+    " {why}{because}.",
+    "status.suppression_ended": "{character}'s fleeting status, suppressed {why}, is back.",
     "status.given_up": "{actor} gave up {character}'s {status} (from {patron}) unspent, to take"
     " {instead}.",
     "status.expired": "{character}'s {status} (from {patron}) ended.",
@@ -349,6 +368,7 @@ MESSAGES: dict[str, str] = {
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
+    "play.status_chosen": "{actor} chose {character}'s status for game {game}: {choice}.",
     "play.troupe_reset": "{actor} reset {count} characters for the next game.",
     "play.counter_added": "{actor} added a counter to {character}'s Play View: {name} ({uses}).",
     "play.counter_removed": "{actor} removed the counter {name} from {character}'s Play View.",
@@ -418,6 +438,8 @@ def message(
         values["category"] = values["category"].replace("_", " ")
     # A reason given, as the end of a sentence: " (the Prince's order)".
     values["because"] = f" ({data['reason']})" if data.get("reason") else ""
+    # Given at a Play View game: " at game 3".
+    values["at_game"] = f" at game {data['game']}" if data.get("game") else ""
     if isinstance(values.get("picks"), dict):
         picks: dict[str, Any] = values["picks"]
         values["picks"] = ", ".join(f"{n} {r}" for n, r in picks.items()) or "none"

@@ -1,6 +1,38 @@
 {
   "components": {
     "schemas": {
+      "AbidingSourceOut": {
+        "description": "A source of abiding status the character can choose for the game: a title,\nits social age or its faction, and what it gives.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "title",
+              "social_age",
+              "faction"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "items": {
+              "$ref": "#/components/schemas/SourceStatus"
+            },
+            "title": "Status",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "status"
+        ],
+        "title": "AbidingSourceOut",
+        "type": "object"
+      },
       "ActionKindChoiceOut": {
         "properties": {
           "key": {
@@ -1399,6 +1431,105 @@
         "title": "BulkAwarded",
         "type": "object"
       },
+      "CarriedOut": {
+        "properties": {
+          "about": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StatusAbout"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EndingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "given_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given On"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "place": {
+            "default": "",
+            "title": "Place",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "spendable": {
+            "title": "Spendable",
+            "type": "boolean"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "boolean"
+          },
+          "spent_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spent By"
+          },
+          "story": {
+            "default": "",
+            "title": "Story",
+            "type": "string"
+          },
+          "suppressed": {
+            "default": false,
+            "title": "Suppressed",
+            "type": "boolean"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "type",
+          "source",
+          "about",
+          "spendable",
+          "spent",
+          "spent_by"
+        ],
+        "title": "CarriedOut",
+        "type": "object"
+      },
       "CartIn": {
         "properties": {
           "changes": {
@@ -2491,6 +2622,66 @@
           "removed"
         ],
         "title": "Cleared",
+        "type": "object"
+      },
+      "ConditionOut": {
+        "description": "Status the source's title gives only as chosen for the game: one of `options`\n(\"choose\", a Bishop's Blessed or Enforcer), or `options` while the holder of\n`absent_title` is away (\"absent\").",
+        "properties": {
+          "absent_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absent Title"
+          },
+          "away": {
+            "title": "Away",
+            "type": "boolean"
+          },
+          "chosen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chosen"
+          },
+          "kind": {
+            "enum": [
+              "choose",
+              "absent"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "kind",
+          "options",
+          "absent_title",
+          "chosen",
+          "away"
+        ],
+        "title": "ConditionOut",
         "type": "object"
       },
       "ConnectorChange": {
@@ -9980,6 +10171,25 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "status": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
           }
         },
         "required": [
@@ -11411,6 +11621,131 @@
         "title": "PlayReference",
         "type": "object"
       },
+      "PlayStatusOut": {
+        "description": "The character's sect status at its game (issue #253).",
+        "properties": {
+          "accepted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted"
+          },
+          "carried": {
+            "items": {
+              "$ref": "#/components/schemas/CarriedOut"
+            },
+            "title": "Carried",
+            "type": "array"
+          },
+          "choosing": {
+            "title": "Choosing",
+            "type": "boolean"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionOut"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "fleeting_cap": {
+            "title": "Fleeting Cap",
+            "type": "integer"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "source_chosen": {
+            "title": "Source Chosen",
+            "type": "boolean"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/AbidingSourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "suppressed": {
+            "items": {
+              "$ref": "#/components/schemas/SuppressionOut"
+            },
+            "title": "Suppressed",
+            "type": "array"
+          },
+          "titles": {
+            "items": {
+              "$ref": "#/components/schemas/TitleHeldOut"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "sect",
+          "accepted",
+          "troupe_id",
+          "troupe_name",
+          "sources",
+          "source",
+          "source_chosen",
+          "choosing",
+          "conditions",
+          "titles",
+          "carried",
+          "fleeting_cap",
+          "suppressed"
+        ],
+        "title": "PlayStatusOut",
+        "type": "object"
+      },
       "PlayTrait": {
         "properties": {
           "category": {
@@ -11717,6 +12052,16 @@
             "default": "vampire",
             "title": "Splat",
             "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayStatusOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "stock": {
             "anyOf": [
@@ -14536,6 +14881,13 @@
             "title": "Kind",
             "type": "string"
           },
+          "out_of_sect_titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Out Of Sect Titles",
+            "type": "array"
+          },
           "picture": {
             "anyOf": [
               {
@@ -14578,6 +14930,17 @@
             "title": "Retired",
             "type": "boolean"
           },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
           "social_age": {
             "title": "Social Age",
             "type": "string"
@@ -14603,6 +14966,8 @@
           "kind",
           "retired",
           "titles",
+          "out_of_sect_titles",
+          "sect",
           "picture",
           "clan",
           "social_age",
@@ -15904,6 +16269,24 @@
         "title": "Someone",
         "type": "object"
       },
+      "SourceStatus": {
+        "properties": {
+          "condition": {
+            "title": "Condition",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "condition"
+        ],
+        "title": "SourceStatus",
+        "type": "object"
+      },
       "Specialization": {
         "properties": {
           "name": {
@@ -16336,6 +16719,60 @@
         "title": "StatusAbout",
         "type": "object"
       },
+      "StatusChoice": {
+        "description": "Abiding status a troupe's own title can give.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sect": {
+            "title": "Sect",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "sect"
+        ],
+        "title": "StatusChoice",
+        "type": "object"
+      },
+      "StatusChoiceIn": {
+        "description": "The character's choices for its game; what is left out stays as it is.",
+        "properties": {
+          "absent": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "default": {},
+            "title": "Absent",
+            "type": "object"
+          },
+          "chosen": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Chosen",
+            "type": "object"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "title": "StatusChoiceIn",
+        "type": "object"
+      },
       "StatusIn": {
         "properties": {
           "give_up": {
@@ -16509,6 +16946,14 @@
           "staff": {
             "title": "Staff",
             "type": "boolean"
+          },
+          "suppressed": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SuppressionOut"
+            },
+            "title": "Suppressed",
+            "type": "array"
           },
           "troupe_id": {
             "anyOf": [
@@ -16779,6 +17224,82 @@
           "rating"
         ],
         "title": "StockPin",
+        "type": "object"
+      },
+      "SuppressIn": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "game",
+              "commander"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "reason"
+        ],
+        "title": "SuppressIn",
+        "type": "object"
+      },
+      "SuppressionOut": {
+        "description": "What suppresses the character's fleeting status (MET: VTM p. 314): staff, for\nthe rest of a game or for defying a Commander; or holding Vulgar (no id).",
+        "properties": {
+          "ending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EndingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "kind": {
+            "enum": [
+              "game",
+              "commander",
+              "vulgar"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "text",
+          "reason",
+          "ending"
+        ],
+        "title": "SuppressionOut",
         "type": "object"
       },
       "SwapChangeIn": {
@@ -17427,26 +17948,200 @@
         "title": "TestPool",
         "type": "object"
       },
-      "TitlesOut": {
+      "TitleChange": {
         "properties": {
-          "catalogue": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Catalogue",
-            "type": "array"
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
           },
-          "troupe": {
+          "status": {
+            "default": [],
             "items": {
               "type": "string"
             },
-            "title": "Troupe",
+            "title": "Status",
+            "type": "array"
+          }
+        },
+        "title": "TitleChange",
+        "type": "object"
+      },
+      "TitleHeldOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "next_game": {
+            "title": "Next Game",
+            "type": "boolean"
+          },
+          "status": {
+            "items": {
+              "$ref": "#/components/schemas/SourceStatus"
+            },
+            "title": "Status",
             "type": "array"
           }
         },
         "required": [
-          "catalogue",
-          "troupe"
+          "name",
+          "status",
+          "next_game"
+        ],
+        "title": "TitleHeldOut",
+        "type": "object"
+      },
+      "TitleHolderOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "out_of_sect": {
+            "title": "Out Of Sect",
+            "type": "boolean"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "sect",
+          "out_of_sect"
+        ],
+        "title": "TitleHolderOut",
+        "type": "object"
+      },
+      "TitleOut": {
+        "properties": {
+          "choose_one": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Choose One",
+            "type": "array"
+          },
+          "holders": {
+            "items": {
+              "$ref": "#/components/schemas/TitleHolderOut"
+            },
+            "title": "Holders",
+            "type": "array"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "offered": {
+            "title": "Offered",
+            "type": "boolean"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "status": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
+          },
+          "while_absent": {
+            "items": {
+              "$ref": "#/components/schemas/WhileAbsentOut"
+            },
+            "title": "While Absent",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "sect",
+          "status",
+          "choose_one",
+          "while_absent",
+          "page",
+          "house",
+          "offered",
+          "holders"
+        ],
+        "title": "TitleOut",
+        "type": "object"
+      },
+      "TitlesOut": {
+        "properties": {
+          "sects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sects",
+            "type": "array"
+          },
+          "status_choices": {
+            "items": {
+              "$ref": "#/components/schemas/StatusChoice"
+            },
+            "title": "Status Choices",
+            "type": "array"
+          },
+          "titles": {
+            "items": {
+              "$ref": "#/components/schemas/TitleOut"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sects",
+          "titles",
+          "status_choices"
         ],
         "title": "TitlesOut",
         "type": "object"
@@ -18829,6 +19524,32 @@
           "link"
         ],
         "title": "WaitingLine",
+        "type": "object"
+      },
+      "WhileAbsentOut": {
+        "properties": {
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "status": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "status",
+          "note"
+        ],
+        "title": "WhileAbsentOut",
         "type": "object"
       },
       "WindowOut": {
@@ -23528,6 +24249,114 @@
         ]
       }
     },
+    "/api/characters/{character_id}/play/status": {
+      "post": {
+        "description": "Give the character a fleeting or negative status at its game, naming its\npatron, as the game's troupe's Status on sheets setting allows. It is logged\nagainst the game.",
+        "operationId": "add_status_at_game_api_characters__character_id__play_status_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Status At Game",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/status/choice": {
+      "put": {
+        "description": "The character's choices for its game (horatio.play_status): its source of\nabiding status, a title's status, a title's holder absent. Its player makes each\nonce, and it is locked for the game; staff change them.",
+        "operationId": "choose_status_api_characters__character_id__play_status_choice_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusChoiceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choose Status",
+        "tags": [
+          "play"
+        ]
+      }
+    },
     "/api/characters/{character_id}/play/taps": {
       "post": {
         "description": "Record taps, perhaps made offline a while ago, in the order they happened.",
@@ -24551,6 +25380,124 @@
           }
         },
         "summary": "Resolve Status",
+        "tags": [
+          "status"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/status/suppress": {
+      "post": {
+        "description": "Staff suppress the character's fleeting status, unspent (MET: VTM p. 314): for\nthe rest of the game, or for 2 games or a month for defying a Commander. It comes\nback on its own.",
+        "operationId": "suppress_status_api_characters__character_id__status_suppress_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuppressIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Suppress Status",
+        "tags": [
+          "status"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/status/suppressions/{suppression_id}/lift": {
+      "post": {
+        "description": "Staff give the character its suppressed fleeting status back early.",
+        "operationId": "lift_suppression_api_characters__character_id__status_suppressions__suppression_id__lift_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "suppression_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Suppression Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRemoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lift Suppression",
         "tags": [
           "status"
         ]
@@ -33739,6 +34686,7 @@
     },
     "/api/troupes/{troupe_id}/titles": {
       "get": {
+        "description": "The titles the troupe gives, with their sect and status, and who holds them.",
         "operationId": "list_titles_api_troupes__troupe_id__titles_get",
         "parameters": [
           {
@@ -33878,6 +34826,67 @@
           }
         },
         "summary": "Remove Title",
+        "tags": [
+          "titles"
+        ]
+      },
+      "put": {
+        "description": "Change the sect and status of a title the troupe added, for all who hold it.",
+        "operationId": "change_title_api_troupes__troupe_id__titles__name__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TitleChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Title",
         "tags": [
           "titles"
         ]

@@ -1322,6 +1322,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Status At Game
+         * @description Give the character a fleeting or negative status at its game, naming its
+         *     patron, as the game's troupe's Status on sheets setting allows. It is logged
+         *     against the game.
+         */
+        post: operations["add_status_at_game_api_characters__character_id__play_status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play/status/choice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose Status
+         * @description The character's choices for its game (horatio.play_status): its source of
+         *     abiding status, a title's status, a title's holder absent. Its player makes each
+         *     once, and it is locked for the game; staff change them.
+         */
+        put: operations["choose_status_api_characters__character_id__play_status_choice_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/play/taps": {
         parameters: {
             query?: never;
@@ -1649,6 +1693,48 @@ export interface paths {
          *     nothing gives now.
          */
         post: operations["resolve_status_api_characters__character_id__status_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/status/suppress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suppress Status
+         * @description Staff suppress the character's fleeting status, unspent (MET: VTM p. 314): for
+         *     the rest of the game, or for 2 games or a month for defying a Commander. It comes
+         *     back on its own.
+         */
+        post: operations["suppress_status_api_characters__character_id__status_suppress_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/status/suppressions/{suppression_id}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lift Suppression
+         * @description Staff give the character its suppressed fleeting status back early.
+         */
+        post: operations["lift_suppression_api_characters__character_id__status_suppressions__suppression_id__lift_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4398,7 +4484,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Titles */
+        /**
+         * List Titles
+         * @description The titles the troupe gives, with their sect and status, and who holds them.
+         */
         get: operations["list_titles_api_troupes__troupe_id__titles_get"];
         put?: never;
         /** Add Title */
@@ -4417,7 +4506,11 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /**
+         * Change Title
+         * @description Change the sect and status of a title the troupe added, for all who hold it.
+         */
+        put: operations["change_title_api_troupes__troupe_id__titles__name__put"];
         post?: never;
         /** Remove Title */
         delete: operations["remove_title_api_troupes__troupe_id__titles__name__delete"];
@@ -4540,6 +4633,22 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AbidingSourceOut
+         * @description A source of abiding status the character can choose for the game: a title,
+         *     its social age or its faction, and what it gives.
+         */
+        AbidingSourceOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "title" | "social_age" | "faction";
+            /** Name */
+            name: string;
+            /** Status */
+            status: components["schemas"]["SourceStatus"][];
+        };
         /** ActionKindChoiceOut */
         ActionKindChoiceOut: {
             /** Key */
@@ -5064,6 +5173,42 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** CarriedOut */
+        CarriedOut: {
+            about: components["schemas"]["StatusAbout"] | null;
+            ending?: components["schemas"]["EndingOut"] | null;
+            /** Given On */
+            given_on?: string | null;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Place
+             * @default
+             */
+            place: string;
+            /** Source */
+            source: string;
+            /** Spendable */
+            spendable: boolean;
+            /** Spent */
+            spent: boolean;
+            /** Spent By */
+            spent_by: string | null;
+            /**
+             * Story
+             * @default
+             */
+            story: string;
+            /**
+             * Suppressed
+             * @default false
+             */
+            suppressed: boolean;
+            /** Type */
+            type: string;
+        };
         /** CartIn */
         CartIn: {
             /** Changes */
@@ -5442,6 +5587,29 @@ export interface components {
         Cleared: {
             /** Removed */
             removed: number;
+        };
+        /**
+         * ConditionOut
+         * @description Status the source's title gives only as chosen for the game: one of `options`
+         *     ("choose", a Bishop's Blessed or Enforcer), or `options` while the holder of
+         *     `absent_title` is away ("absent").
+         */
+        ConditionOut: {
+            /** Absent Title */
+            absent_title: string | null;
+            /** Away */
+            away: boolean;
+            /** Chosen */
+            chosen: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "choose" | "absent";
+            /** Options */
+            options: string[];
+            /** Title */
+            title: string;
         };
         /** ConnectorChange */
         ConnectorChange: {
@@ -8311,6 +8479,13 @@ export interface components {
         NewTitle: {
             /** Name */
             name: string;
+            /** Sect */
+            sect?: string | null;
+            /**
+             * Status
+             * @default []
+             */
+            status: string[];
         };
         /** NewTroupe */
         NewTroupe: {
@@ -8862,6 +9037,38 @@ export interface components {
             /** Traits */
             traits: components["schemas"]["PlayTrait"][];
         };
+        /**
+         * PlayStatusOut
+         * @description The character's sect status at its game (issue #253).
+         */
+        PlayStatusOut: {
+            /** Accepted */
+            accepted: string | null;
+            /** Carried */
+            carried: components["schemas"]["CarriedOut"][];
+            /** Choosing */
+            choosing: boolean;
+            /** Conditions */
+            conditions: components["schemas"]["ConditionOut"][];
+            /** Fleeting Cap */
+            fleeting_cap: number;
+            /** Sect */
+            sect: string | null;
+            /** Source */
+            source: string | null;
+            /** Source Chosen */
+            source_chosen: boolean;
+            /** Sources */
+            sources: components["schemas"]["AbidingSourceOut"][];
+            /** Suppressed */
+            suppressed: components["schemas"]["SuppressionOut"][];
+            /** Titles */
+            titles: components["schemas"]["TitleHeldOut"][];
+            /** Troupe Id */
+            troupe_id: string | null;
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
         /** PlayTrait */
         PlayTrait: {
             /** Category */
@@ -8981,6 +9188,7 @@ export interface components {
              * @default vampire
              */
             splat: string;
+            status?: components["schemas"]["PlayStatusOut"] | null;
             stock?: components["schemas"]["StockNpcOut"] | null;
             vitae?: components["schemas"]["VitaeOut"] | null;
             willpower: components["schemas"]["Tracker"];
@@ -10070,6 +10278,8 @@ export interface components {
             joined_at: string;
             /** Kind */
             kind: string;
+            /** Out Of Sect Titles */
+            out_of_sect_titles: string[];
             /** Picture */
             picture: string | null;
             /** Player Handle */
@@ -10080,6 +10290,8 @@ export interface components {
             player_name: string;
             /** Retired */
             retired: boolean;
+            /** Sect */
+            sect: string | null;
             /** Social Age */
             social_age: string;
             /** Titles */
@@ -10635,6 +10847,13 @@ export interface components {
             plays_here: boolean;
             staff_role?: components["schemas"]["Role"] | null;
         };
+        /** SourceStatus */
+        SourceStatus: {
+            /** Condition */
+            condition: string;
+            /** Name */
+            name: string;
+        };
         /** Specialization */
         Specialization: {
             /** Name */
@@ -10785,6 +11004,38 @@ export interface components {
             /** Type */
             type: string;
         };
+        /**
+         * StatusChoice
+         * @description Abiding status a troupe's own title can give.
+         */
+        StatusChoice: {
+            /** Name */
+            name: string;
+            /** Sect */
+            sect: string;
+        };
+        /**
+         * StatusChoiceIn
+         * @description The character's choices for its game; what is left out stays as it is.
+         */
+        StatusChoiceIn: {
+            /**
+             * Absent
+             * @default {}
+             */
+            absent: {
+                [key: string]: boolean;
+            };
+            /**
+             * Chosen
+             * @default {}
+             */
+            chosen: {
+                [key: string]: string;
+            };
+            /** Source */
+            source?: string | null;
+        };
         /** StatusIn */
         StatusIn: {
             /** Give Up */
@@ -10851,6 +11102,11 @@ export interface components {
             setting: string;
             /** Staff */
             staff: boolean;
+            /**
+             * Suppressed
+             * @default []
+             */
+            suppressed: components["schemas"]["SuppressionOut"][];
             /** Troupe Id */
             troupe_id: string | null;
             /** Troupe Name */
@@ -10955,6 +11211,35 @@ export interface components {
             name: string;
             /** Rating */
             rating: number;
+        };
+        /** SuppressIn */
+        SuppressIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "game" | "commander";
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * SuppressionOut
+         * @description What suppresses the character's fleeting status (MET: VTM p. 314): staff, for
+         *     the rest of a game or for defying a Commander; or holding Vulgar (no id).
+         */
+        SuppressionOut: {
+            ending: components["schemas"]["EndingOut"] | null;
+            /** Id */
+            id: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "game" | "commander" | "vulgar";
+            /** Reason */
+            reason: string;
+            /** Text */
+            text: string;
         };
         /**
          * SwapChangeIn
@@ -11219,12 +11504,68 @@ export interface components {
              */
             willpower_floor: number;
         };
+        /** TitleChange */
+        TitleChange: {
+            /** Sect */
+            sect?: string | null;
+            /**
+             * Status
+             * @default []
+             */
+            status: string[];
+        };
+        /** TitleHeldOut */
+        TitleHeldOut: {
+            /** Name */
+            name: string;
+            /** Next Game */
+            next_game: boolean;
+            /** Status */
+            status: components["schemas"]["SourceStatus"][];
+        };
+        /** TitleHolderOut */
+        TitleHolderOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Out Of Sect */
+            out_of_sect: boolean;
+            /** Sect */
+            sect: string | null;
+        };
+        /** TitleOut */
+        TitleOut: {
+            /** Choose One */
+            choose_one: string[];
+            /** Holders */
+            holders: components["schemas"]["TitleHolderOut"][];
+            /** House */
+            house: boolean;
+            /** Name */
+            name: string;
+            /** Offered */
+            offered: boolean;
+            /** Page */
+            page: string | null;
+            /** Sect */
+            sect: string | null;
+            /** Status */
+            status: string[];
+            /** While Absent */
+            while_absent: components["schemas"]["WhileAbsentOut"][];
+        };
         /** TitlesOut */
         TitlesOut: {
-            /** Catalogue */
-            catalogue: string[];
-            /** Troupe */
-            troupe: string[];
+            /** Sects */
+            sects: string[];
+            /** Status Choices */
+            status_choices: components["schemas"]["StatusChoice"][];
+            /** Titles */
+            titles: components["schemas"]["TitleOut"][];
         };
         /** Tracker */
         Tracker: {
@@ -11679,6 +12020,15 @@ export interface components {
             label: string;
             /** Link */
             link: string;
+        };
+        /** WhileAbsentOut */
+        WhileAbsentOut: {
+            /** Note */
+            note: string;
+            /** Status */
+            status: string[];
+            /** Title */
+            title: string;
         };
         /**
          * WindowOut
@@ -14613,6 +14963,76 @@ export interface operations {
             };
         };
     };
+    add_status_at_game_api_characters__character_id__play_status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    choose_status_api_characters__character_id__play_status_choice_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChoiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     record_taps_api_characters__character_id__play_taps_post: {
         parameters: {
             query?: never;
@@ -15225,6 +15645,77 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["StatusResolveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suppress_status_api_characters__character_id__status_suppress_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuppressIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lift_suppression_api_characters__character_id__status_suppressions__suppression_id__lift_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                suppression_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusRemoveIn"];
             };
         };
         responses: {
@@ -21114,6 +21605,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_title_api_troupes__troupe_id__titles__name__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TitleChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
