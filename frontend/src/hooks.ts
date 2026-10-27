@@ -40,6 +40,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   email_renames: false,
   email_pictures: false,
   email_digest: "at_once",
+  whos_who_handle: false,
 };
 
 /** The signed-in person's settings (horatio.preferences), or the defaults. */
