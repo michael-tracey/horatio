@@ -6,10 +6,11 @@ import { Dialog } from "../../components/Dialog";
 import { Button, ErrorText } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { RetireCharacter } from "./Leaving";
 
 /**
- * The character's less-used actions, behind a ⋯ button beside Play: Rename, and
- * Delete. `renameOn` is the first day a player who renamed lately can again;
+ * The character's less-used actions, behind a ⋯ button beside Play: Rename,
+ * Retire and Delete. `renameOn` is the first day a player who renamed lately can again;
  * the item says so instead of renaming.
  */
 export function CharacterMenu({
@@ -17,15 +18,18 @@ export function CharacterMenu({
   canRename,
   renameOn,
   onRename,
+  canRetire = false,
   canDelete,
 }: {
   character: CharacterOut;
   canRename: boolean;
   renameOn: string | null;
   onRename: () => void;
+  canRetire?: boolean;
   canDelete: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [retiring, setRetiring] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const dates = useDates();
   const menu = useRef<HTMLDivElement>(null);
@@ -44,7 +48,7 @@ export function CharacterMenu({
       document.removeEventListener("keydown", escape);
     };
   }, [open]);
-  if (!canRename && !renameOn && !canDelete) return null;
+  if (!canRename && !renameOn && !canRetire && !canDelete) return null;
   const item = "block w-full px-3 py-2 text-left text-sm hover:bg-ash disabled:cursor-default disabled:text-mist disabled:hover:bg-transparent";
 
   return (
@@ -74,6 +78,19 @@ export function CharacterMenu({
               </button>
             )
           )}
+          {canRetire && (
+            <button
+              type="button"
+              role="menuitem"
+              className={item}
+              onClick={() => {
+                setOpen(false);
+                setRetiring(true);
+              }}
+            >
+              Retire…
+            </button>
+          )}
           {canDelete && (
             <button
               type="button"
@@ -89,6 +106,9 @@ export function CharacterMenu({
           )}
         </div>
       )}
+      <Dialog title={`Retire ${character.name}`} open={retiring} onClose={() => setRetiring(false)}>
+        <RetireCharacter character={character} onDone={() => setRetiring(false)} />
+      </Dialog>
       <Dialog title={`Delete ${character.name}`} open={deleting} onClose={() => setDeleting(false)}>
         <DeleteCharacter character={character} onCancel={() => setDeleting(false)} />
       </Dialog>

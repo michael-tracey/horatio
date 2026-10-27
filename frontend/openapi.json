@@ -2189,6 +2189,21 @@
             "title": "Kind",
             "type": "string"
           },
+          "left_listed": {
+            "title": "Left Listed",
+            "type": "boolean"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -2291,7 +2306,9 @@
           "clan",
           "npc_kind",
           "npc_kind_name",
-          "npc_form"
+          "npc_form",
+          "left_reason",
+          "left_listed"
         ],
         "title": "CharacterOut",
         "type": "object"
@@ -9022,6 +9039,36 @@
         "title": "LearnIn",
         "type": "object"
       },
+      "Leaving": {
+        "description": "Why a character left, and whether its troupes' Who's Who lists it.",
+        "properties": {
+          "listed": {
+            "title": "Listed",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "final_death",
+              "off_field",
+              "inactive"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "listed"
+        ],
+        "title": "Leaving",
+        "type": "object"
+      },
       "LimitOut": {
         "description": "Points held in a category with a limit: merits held, or flaws paying XP.",
         "properties": {
@@ -10596,6 +10643,21 @@
             "title": "Kind",
             "type": "string"
           },
+          "left_listed": {
+            "title": "Left Listed",
+            "type": "boolean"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -10714,6 +10776,8 @@
           "npc_kind",
           "npc_kind_name",
           "npc_form",
+          "left_reason",
+          "left_listed",
           "stock_rating",
           "on_whos_who"
         ],
@@ -23724,6 +23788,60 @@
         ]
       }
     },
+    "/api/characters/{character_id}/leaving": {
+      "put": {
+        "description": "Change why a retired character left, or whether its troupes' Who's Who lists\nit: its player, or its home troupe's running staff.",
+        "operationId": "change_leaving_api_characters__character_id__leaving_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Leaving"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Leaving",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
     "/api/characters/{character_id}/log": {
       "get": {
         "description": "Everything that happened to the character, newest first. Its player sees it\nall; a troupe's staff see the sheet's own history and what happened in their\ntroupe, not in the character's other troupes.",
@@ -25789,7 +25907,7 @@
     },
     "/api/characters/{character_id}/retire": {
       "post": {
-        "description": "Characters are never deleted, only retired.",
+        "description": "Characters are never deleted, only retired: for a reason, which goes in the log\nwith the note, and listed on its troupes' Who's Who if the player chooses. With\nno reason it is not listed.",
         "operationId": "retire_character_api_characters__character_id__retire_post",
         "parameters": [
           {
@@ -25803,6 +25921,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Leaving"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

@@ -68,7 +68,7 @@ class WhosWhoOut(BaseModel):
     clans: list[ClanSection]
     # Characters of clans with no seat at court.
     other: list[uuid.UUID]
-    # Retired characters the troupe lists.
+    # Retired characters that were in the troupe and are listed, with why they left.
     departed: list[uuid.UUID]
     # The clans with a seat at court: those someone holds Primogen for here. None
     # seats every clan, as when no one holds Primogen.

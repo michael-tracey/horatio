@@ -232,6 +232,15 @@ def can_edit_character(db: Session, user: User, character: Character) -> bool:
     )
 
 
+def can_change_leaving(db: Session, user: User, character: Character) -> bool:
+    """Why a retired character left, and whether the Who's Who lists it, are its
+    player's to say, and its home troupe's running staff's (horatio.leaving)."""
+    if user.is_custodian or can_edit_character(db, user, character):
+        return True
+    home = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
+    return home is not None and allows(troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES)
+
+
 def visible_character(db: Session, user: User, character_id: uuid.UUID) -> Character:
     """The character, or 404 if it does not exist or `user` may not see it, so
     that the API does not reveal which characters exist."""

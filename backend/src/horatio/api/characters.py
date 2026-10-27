@@ -8,13 +8,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import deletion, domitors, pictures, renames, social_age
+from horatio import deletion, domitors, leaving, pictures, renames, social_age
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
 from horatio.models import Character, RuleSet, Troupe, User
 from horatio.permissions import (
     TroupeAction,
     allows,
+    can_change_leaving,
     can_edit_character,
     troupe_role,
     visible_character,
@@ -56,6 +57,11 @@ class CharacterOut(BaseModel):
     npc_kind: str | None
     npc_kind_name: str | None
     npc_form: str | None
+    # Why a retired character left (horatio.leaving): final_death, off_field or
+    # inactive; None while it is active, or if it was retired without one.
+    left_reason: str | None
+    # Its troupes' Who's Who lists it under "No longer with us".
+    left_listed: bool
 
 
 class PlacedDots(BaseModel):
@@ -120,6 +126,15 @@ class CharacterChanges(BaseModel):
     name: str = Field(min_length=1, max_length=200)
 
 
+class Leaving(BaseModel):
+    """Why a character left, and whether its troupes' Who's Who lists it."""
+
+    reason: leaving.Reason
+    # For its log.
+    note: str = Field(default="", max_length=2000)
+    listed: bool
+
+
 def character_out(db: Session, character: Character) -> CharacterOut:
     return characters_out(db, [character])[0]
 
@@ -145,6 +160,8 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
             npc_kind=character.npc_kind,
             npc_kind_name=kind_name(character.npc_kind, character.npc_custom_kind),
             npc_form=character.npc_form,
+            left_reason=character.left_reason,
+            left_listed=character.left_listed,
         )
         for character in found
     ]
@@ -351,9 +368,35 @@ def delete_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) 
 
 
 @router.post("/{character_id}/retire")
-def retire_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CharacterOut:
-    """Characters are never deleted, only retired."""
+def retire_character(
+    character_id: uuid.UUID, db: DbSession, user: CurrentUser, body: Leaving | None = None
+) -> CharacterOut:
+    """Characters are never deleted, only retired: for a reason, which goes in the log
+    with the note, and listed on its troupes' Who's Who if the player chooses. With
+    no reason it is not listed."""
     character = editable_character(db, user, character_id)
-    character.status = "retired"
+    if body is None:
+        leaving.retire(db, user, character, None, "", listed=False)
+    else:
+        leaving.retire(db, user, character, body.reason, body.note, body.listed)
+    db.commit()
+    return character_out(db, character)
+
+
+@router.put("/{character_id}/leaving")
+def change_leaving(
+    character_id: uuid.UUID, body: Leaving, db: DbSession, user: CurrentUser
+) -> CharacterOut:
+    """Change why a retired character left, or whether its troupes' Who's Who lists
+    it: its player, or its home troupe's running staff."""
+    character = visible_character(db, user, character_id)
+    if not can_change_leaving(db, user, character):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only the character's player or its home troupe's staff can change why it left.",
+        )
+    if character.status != "retired":
+        raise HTTPException(status.HTTP_409_CONFLICT, "This character is not retired.")
+    leaving.change(db, user, character, body.reason, body.note, body.listed)
     db.commit()
     return character_out(db, character)

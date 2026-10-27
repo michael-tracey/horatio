@@ -1633,6 +1633,89 @@ test("at a game, a Camarilla character with Leadership 2 learns about two of a r
   await s.screenshot(shots("play-others-sabbat"));
 });
 
+test("why a character left: a player retires one Off-field and it is no longer with us; one unlisted is nowhere on the Who's Who", async ({ browser }) => {
+  const custodian = await person(browser, "departed-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "departed-lead");
+  const ana = await person(browser, "departed-ana");
+  const bea = await person(browser, "departed-bea");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Empty Chairs ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // A Camarilla Toreador, built through the API and accepted home.
+  const build = async (page: Page, name: string): Promise<string> => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Toreador", rating: null });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+  // Celeste is the Harpy; Hortense is Ana's too, and Bastien is Bea's.
+  const celeste = await build(ana.page, "Celeste");
+  const hortense = await build(ana.page, "Hortense");
+  await build(bea.page, "Bastien");
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${celeste}/titles`, { titles: ["Harpy"] });
+
+  // Ana retires Celeste, Off-field, from the ⋯ menu. Listed is the default.
+  const p = ana.page;
+  const retire = async (id: string, name: string, reason: RegExp, listed: boolean, note = "") => {
+    await p.goto(`/characters/${id}`);
+    await p.getByRole("button", { name: `More for ${name}` }).click();
+    await p.getByRole("menuitem", { name: "Retire…" }).click();
+    const dialog = p.getByRole("dialog", { name: `Retire ${name}` });
+    await dialog.getByRole("radio", { name: reason }).check();
+    if (note) await dialog.getByLabel("Note (optional)").fill(note);
+    const listing = dialog.getByRole("checkbox", { name: /under “No longer with us”/ });
+    if (listed) await expect(listing).toBeChecked();
+    else await expect(listing).not.toBeChecked();
+    return dialog;
+  };
+  const dialog = await retire(celeste, "Celeste", /^Off-field/, true, "Gone to Chicago.");
+  await p.screenshot(shots("retire"));
+  await dialog.getByRole("button", { name: "Retire Celeste" }).click();
+  await expect(p.getByText("Why Celeste left: Off-field.")).toBeVisible();
+  await expect(p.getByText("Listed under “No longer with us” on the Who's Who.")).toBeVisible();
+  await p.getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText("retired Celeste: Off-field, listed under No longer with us. Gone to Chicago.")).toBeVisible();
+  // Hortense is Inactive, unlisted by default, and Ana leaves it so.
+  await (await retire(hortense, "Hortense", /^Inactive/, false)).getByRole("button", { name: "Retire Hortense" }).click();
+  await expect(p.getByText("Why Hortense left: Inactive.")).toBeVisible();
+  await expect(p.getByText("Not on the Who's Who.")).toBeVisible();
+
+  // On Bea's Who's Who, Celeste is no longer with us, with why, and in no other view.
+  const b = bea.page;
+  await b.goto(`/troupes/${troupeId}/whos-who`);
+  const section = (name: string) => b.getByRole("region", { name, exact: true });
+  const gone = section("No longer with us").getByRole("article", { name: "Celeste" });
+  await expect(gone.getByText("Off-field")).toBeVisible();
+  await expect(gone.getByRole("link", { name: "departed-ana" })).toBeVisible();
+  await expect(b.getByRole("article", { name: "Celeste" })).toHaveCount(1);
+  await expect(section("Court")).toHaveCount(0);
+  await expect(section("Toreador").getByRole("article", { name: "Bastien" })).toBeVisible();
+  // Hortense, unlisted, is nowhere.
+  await expect(b.getByRole("article", { name: "Hortense" })).toHaveCount(0);
+  await b.screenshot(shots("whos-who-departed"));
+});
+
 test("the Who's Who: a player sees the court in rank order, their clan and Other, finds a character by its player, and prints it; others are refused", async ({ browser }) => {
   const custodian = await person(browser, "whoswho-cust");
   makeCustodian(custodian.email);

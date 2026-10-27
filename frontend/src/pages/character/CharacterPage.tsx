@@ -14,6 +14,7 @@ import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
 import { KindBadge } from "./NpcKindBadge";
 import { CharacterMenu } from "./Actions";
+import { LeavingCard } from "./Leaving";
 import { RenameCharacter } from "./Rename";
 import { CharacterPicture } from "./Picture";
 import { ResultsTab } from "./ResultsTab";
@@ -72,7 +73,14 @@ export function CharacterPage() {
                 <Badge tone="gold">NPC</Badge>
                 <KindBadge kind={c.npc_kind} name={c.npc_kind_name} />
                 {play}
-                <CharacterMenu character={c} canRename={!renaming} renameOn={null} onRename={() => setRenaming(true)} canDelete />
+                <CharacterMenu
+                  character={c}
+                  canRename={!renaming}
+                  renameOn={null}
+                  onRename={() => setRenaming(true)}
+                  canRetire={c.status === "active"}
+                  canDelete
+                />
               </div>
             }
           >
@@ -80,6 +88,7 @@ export function CharacterPage() {
           </PageTitle>
         </Header>
         {rename}
+        {c.status === "retired" && <LeavingCard character={c} canChange />}
         <Tabs
           tabs={[
             ...(!c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
@@ -120,6 +129,7 @@ export function CharacterPage() {
                 canRename={canRename && !renaming && !renameOn}
                 renameOn={renameOn}
                 onRename={() => setRenaming(true)}
+                canRetire={mine && c.status === "active"}
                 canDelete={mine || custodian}
               />
             </div>
@@ -129,6 +139,7 @@ export function CharacterPage() {
         </PageTitle>
       </Header>
       {rename}
+      {c.status === "retired" && <LeavingCard character={c} canChange={mine || custodian || (!!home.data && abilities(home.data.my_role, custodian).running)} />}
       <Tabs
         tabs={[
           ...(mine && !c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),

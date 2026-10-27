@@ -345,6 +345,8 @@ MESSAGES: dict[str, str] = {
     "account.password_reset": "{actor} set a new password with a reset link.",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
+    "character.retired": "{actor} retired {character}: {why}, {listing}. {note}",
+    "character.leaving": "{actor} changed why {character} left: {why}, {listing}. {note}",
     "character.domitor": "{actor} made {domitor} {character}'s domitor, of {clan}; discipline"
     " dots {disciplines}.",
     "embrace.step": "{actor} Embraced {character}, {step}: {summary} ({xp} XP).",
