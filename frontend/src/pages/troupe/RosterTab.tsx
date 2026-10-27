@@ -9,6 +9,7 @@ import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { FilterBuilder } from "./FilterBuilder";
+import { titleGroups, titleStatus } from "./titleGroups";
 import { columnLabel, columnOf, columns, decode, encode, ready, sentence, type Group, type Names } from "./filters";
 
 /**
@@ -192,7 +193,7 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
 }
 
 function titleList(titles: TitlesOut | undefined): string[] {
-  return [...new Set([...(titles?.catalogue ?? []), ...(titles?.troupe ?? [])])].sort();
+  return (titles?.titles ?? []).map((t) => t.name);
 }
 
 /** One line per character: who it is, its clan and social age, how it stands
@@ -341,8 +342,17 @@ function Titles({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
   return (
     <>
       {entry.titles.map((t) => (
-        <span key={t} className="inline-flex h-6 items-center gap-1 rounded-full border border-gold/50 bg-gold/10 pr-1 pl-2.5 text-xs text-gold">
+        <span
+          key={t}
+          className={
+            entry.out_of_sect_titles.includes(t)
+              ? "inline-flex h-6 items-center gap-1 rounded-full border border-blood bg-blood/15 pr-1 pl-2.5 text-xs text-blood-bright"
+              : "inline-flex h-6 items-center gap-1 rounded-full border border-gold/50 bg-gold/10 pr-1 pl-2.5 text-xs text-gold"
+          }
+          title={entry.out_of_sect_titles.includes(t) ? `Out of sect: ${entry.character_name} is ${entry.sect ?? "of no sect"}. Kept until taken.` : undefined}
+        >
           {t}
+          {entry.out_of_sect_titles.includes(t) && <span className="sr-only"> (out of sect)</span>}
           <button
             type="button"
             aria-label={`Take the title ${t} from ${entry.character_name}`}
@@ -377,7 +387,8 @@ function Titles({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
   );
 }
 
-/** Pick one of the troupe's or the book's titles, or type a new one. */
+/** Pick one of the troupe's or the book's titles that the character can hold (of
+ * its sect, or of any sect), grouped by sect, or type a new one. */
 function GiveTitle({ troupeId, entry, onGive }: { troupeId: string; entry: RosterEntry; onGive: (title: string) => void }) {
   const [typed, setTyped] = useState("");
   const titles = useQuery({
@@ -386,7 +397,9 @@ function GiveTitle({ troupeId, entry, onGive }: { troupeId: string; entry: Roste
     staleTime: 60_000,
   });
   const q = typed.trim().toLowerCase();
-  const choices = titleList(titles.data).filter((t) => !entry.titles.includes(t) && t.toLowerCase().includes(q));
+  const open = (titles.data?.titles ?? []).filter((t) => t.offered && !entry.titles.includes(t.name) && (t.sect === null || t.sect === entry.sect));
+  const matching = open.filter((t) => t.name.toLowerCase().includes(q));
+  const choices = matching.map((t) => t.name);
   const exact = choices.some((t) => t.toLowerCase() === q);
   return (
     <form
@@ -397,20 +410,33 @@ function GiveTitle({ troupeId, entry, onGive }: { troupeId: string; entry: Roste
       }}
     >
       <Input autoFocus aria-label="Title" placeholder="Search or type a new title…" value={typed} onChange={(e) => setTyped(e.target.value)} />
-      <ul className="flex max-h-64 flex-wrap gap-1.5 overflow-y-auto">
-        {choices.map((t) => (
-          <li key={t}>
-            <button
-              type="button"
-              className="rounded-full border border-ash px-2.5 py-1 text-xs hover:border-gold hover:text-gold"
-              onClick={() => onGive(t)}
-            >
-              {t}
-            </button>
-          </li>
+      <p className="text-xs text-mist">
+        {entry.sect
+          ? `${entry.character_name} is ${entry.sect}: ${entry.sect} titles and those of any sect.`
+          : `${entry.character_name} has no sect: only titles of any sect.`}
+      </p>
+      <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
+        {titleGroups(entry.sect ? [entry.sect] : [], matching).map(([sect, list]) => (
+          <section key={sect ?? ""}>
+            <h3 className="mb-1 text-xs text-mist">{sect ?? "Any sect"}</h3>
+            <ul className="flex flex-wrap gap-1.5">
+              {list.map((t) => (
+                <li key={t.name}>
+                  <button
+                    type="button"
+                    className="rounded-full border border-ash px-2.5 py-1 text-xs hover:border-gold hover:text-gold"
+                    title={titleStatus(t) ? `Gives ${titleStatus(t)}` : undefined}
+                    onClick={() => onGive(t.name)}
+                  >
+                    {t.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-        {titles.isPending && <li className="text-sm text-mist">Loading…</li>}
-      </ul>
+        {titles.isPending && <p className="text-sm text-mist">Loading…</p>}
+      </div>
       {q && !exact && (
         <Button type="submit" variant="secondary">
           Give the new title “{typed.trim()}”

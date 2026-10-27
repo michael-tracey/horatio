@@ -73,6 +73,7 @@ def test_a_badge_shows_who_the_character_is(troupe: Troupe) -> None:
         agnes,
         ("backgrounds", "Generation", 2, ""),
         ("merits", "Machiavellian Prodigy", None, ""),
+        ("sect", "Camarilla", None, ""),
         ("status_traits", "Acknowledged", 1, ""),
         ("status_traits", "Loyal", 1, ""),
         ("flaws", "Eerie Presence", None, "cold breeze"),
@@ -235,7 +236,7 @@ def test_an_npcs_badge_reads_like_a_player_characters(troupe: Troupe) -> None:
     assert troupe.storyteller.client.put(
         f"/characters/{lucien}/npc/ratings", json=rating
     ).is_success
-    give(troupe, lucien, ("status_traits", "Acknowledged", 1, ""))
+    give(troupe, lucien, ("sect", "Camarilla", None, ""), ("status_traits", "Acknowledged", 1, ""))
     titled = troupe.lead.client.put(
         f"/troupes/{troupe.id}/characters/{lucien}/titles", json={"titles": ["Prince"]}
     )

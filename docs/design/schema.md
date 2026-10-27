@@ -597,7 +597,14 @@ Recorded here for review; each is easy to change.
 - Titles are per-troupe tags given by storytellers and assistant storytellers,
   from the rule set's list (imported from Yorick) plus titles the troupe adds.
   The rule set's titles also say their sect and the status they give (section 3,
-  sect status).
+  sect status). A title the troupe adds (`troupe_titles`) has an optional `sect`
+  and the abiding `status` it gives (JSONB, a list of names: that sect's abiding
+  status or general status); changing them changes them for everyone holding it
+  (issue #256). `horatio.titles.title_data` is every title with its sect and status.
+  A troupe that takes only some sects offers only their titles and those of no
+  sect, and a title of a sect goes only to a character of that sect (from its
+  sheet). A title held out of sect, given before this rule or kept since the
+  character changed sect, stays and is flagged for staff.
   A character can hold several. They show on the troupe's Characters tab, the
   player's sheet and the printout for that troupe, and go when the character
   leaves.

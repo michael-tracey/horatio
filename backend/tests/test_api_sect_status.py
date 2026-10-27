@@ -16,6 +16,7 @@ from horatio import sect_status
 from horatio.models import (
     AuditEvent,
     Character,
+    CharacterTitle,
     CharacterTrait,
     HeldStatus,
     PlayGame,
@@ -307,7 +308,11 @@ def test_a_princes_status_comes_from_the_title_and_an_elders_from_social_age(
 
 def test_a_title_of_another_sect_gives_no_status(troupe: Troupe) -> None:
     baron = member(troupe, "Rook", sect="Sabbat", clan="Lasombra")
-    entitle(troupe, baron, "Prince")
+    # Held from before titles had sects: one can no longer be given (#256).
+    troupe.session.add(
+        CharacterTitle(troupe_id=uuid.UUID(troupe.id), character_id=uuid.UUID(baron), name="Prince")
+    )
+    troupe.session.commit()
 
     assert status(troupe.player, baron)["derived"] == []
 
