@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut, TraitRefOut } from "../../../api/types";
@@ -18,8 +18,8 @@ import { detailNeed, fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
 import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, spent, traitOf, type Allowed, type Picks } from "./logic";
 import { FromMerits } from "./FromMerits";
-import { EXTRA_IN_CLAN, IN_CLAN_MERITS, inClanChoices } from "./inClan";
-import { InClanPicker } from "./InClanPicker";
+import { EXTRA_IN_CLAN, IN_CLAN_MERITS, inClanChoices, inClanOpen, makesInClanChoice } from "./inClan";
+import { InClanPicker, MoveStartingDots } from "./InClanPicker";
 import { DISCIPLINES_FROM_MERITS, INEPT, disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
 import { brokenChecks, listed, overBudget, stepFor, stepNotices, strayPicks, type NoticeSource, type StepNotice, type StepRef } from "./notices";
 import { useHasDomitor } from "../splats";
@@ -256,6 +256,48 @@ function StepView({
     save.mutate(undefined, { onSuccess: (left) => (forward && left.length ? undefined : to?.()) });
   };
 
+  // Taking a merit that makes an in-clan choice (Vestiges of Greatness) saves the step at
+  // once, so the choice is offered under it rather than only on Concept (#216).
+  const inClanTaken =
+    step.key === "merits" && !ghoul
+      ? Object.keys(picks.merits ?? {})
+          .map(traitOf)
+          .filter((name) => !(name in (before.merits ?? {})) && catalogue.traits.some((t) => t.category === "merits" && t.name === name && makesInClanChoice(t)))
+          .join("|")
+      : "";
+  const triedSaving = useRef("");
+  useEffect(() => {
+    if (!inClanTaken || inClanTaken === triedSaving.current || save.isPending || twice) return;
+    triedSaving.current = inClanTaken;
+    save.mutate(undefined);
+  }, [inClanTaken, save, twice]);
+  const heldMerit = (name: string) => sheet.traits.some((t) => t.category === "merits" && t.name === name && (t.rating ?? 0) > 0);
+  const inClanUnder =
+    step.key === "merits" && !ghoul
+      ? (name: string) => {
+          const trait = catalogue.traits.find((t) => t.category === "merits" && t.name === name);
+          if (!trait || !makesInClanChoice(trait)) return null;
+          return (
+            <div className="mt-1 mb-2 ml-6 flex flex-col gap-2">
+              {heldMerit(name) ? (
+                <>
+                  <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />
+                  <MoveStartingDots character={character} creation={creation} picks={before.disciplines ?? {}} />
+                </>
+              ) : (
+                <p className="text-xs text-mist">{save.isPending ? "Saving, to offer its in-clan choice…" : "Save to choose its in-clan discipline."}</p>
+              )}
+            </div>
+          );
+        }
+      : undefined;
+  // On Disciplines, the in-clan choice while it is open, and once open, kept in view for
+  // the swap's starting dots to be moved (#216).
+  const inClanHere = useRef(false);
+  if (step.key === "disciplines" && !ghoul && inClanOpen(sheet)) inClanHere.current = true;
+  // The steps that offer the in-clan choice themselves say so, rather than sending the player to Concept.
+  const choosesHere = (step.key === "merits" && !!inClanUnder) || inClanHere.current;
+
   const ghoulDots = ghoul && step.key === "disciplines" ? dotBudget(creation, "disciplines") : undefined;
   // The Disciplines step's budget is the pools', which Thin Blooded and Inept change.
   // Its dots left unplaced, as tapped so far: saved for later.
@@ -279,9 +321,17 @@ function StepView({
   return (
     <Card title={step.title} className="min-w-0">
       {intro && <p className="mb-4 text-sm text-mist">{intro}</p>}
-      {step.key !== "review" && <StepNotices character={character} notices={here} step={step} steps={steps} />}
+      {step.key !== "review" && <StepNotices character={character} notices={here} step={step} steps={steps} choosesHere={choosesHere} />}
       {step.key === "concept" && <ConceptStep character={character} creation={creation} sheet={sheet} catalogue={catalogue} ghoul={ghoul} />}
-      {step.key === "review" && <ReviewStep character={character} creation={creation} catalogue={catalogue} steps={steps} notices={notices} ghoul={ghoul} />}
+      {step.key === "review" && (
+        <ReviewStep character={character} creation={creation} sheet={sheet} catalogue={catalogue} steps={steps} notices={notices} ghoul={ghoul} />
+      )}
+      {step.key === "disciplines" && !ghoul && (
+        <div className="mb-6 flex flex-col gap-2 empty:hidden">
+          {inClanHere.current && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
+          <MoveStartingDots character={character} creation={creation} picks={picks.disciplines ?? {}} />
+        </div>
+      )}
       {FROM_MERITS[step.key] && step.key !== "concept" && (
         <div className="mb-6">
           <FromMerits
@@ -326,6 +376,7 @@ function StepView({
                 onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
                 steps={steps}
                 step={step}
+                under={category === "merits" ? inClanUnder : undefined}
               />
             );
           }
@@ -518,6 +569,7 @@ function clanOf(sheet: SheetOut): string | undefined {
 function ReviewStep({
   character,
   creation,
+  sheet,
   catalogue,
   steps,
   notices,
@@ -525,6 +577,7 @@ function ReviewStep({
 }: {
   character: CharacterOut;
   creation: CreationOut;
+  sheet: SheetOut;
   catalogue: CatalogueOut;
   steps: Step[];
   notices: StepNotice[];
@@ -532,6 +585,8 @@ function ReviewStep({
 }) {
   const navigate = useNavigate();
   const domitor = useDomitor(character, !!ghoul);
+  // An in-clan choice still to make (Vestiges of Greatness) is made here, not only on Concept (#216).
+  const [choosing, setChoosing] = useState(false);
   // A ghoul's discipline dots left unplaced: saved for later.
   const ghoulDots = ghoul && dotBudget(creation, "disciplines");
   const savedNote = ghoulDots && savedDots(ghoulDots.allowed - ghoulDots.used);
@@ -576,6 +631,14 @@ function ReviewStep({
                         </Link>
                       </>
                     )}
+                    {n.inClan && !choosing && !ghoul && (
+                      <>
+                        {" "}
+                        <Button variant="secondary" className="ml-1 px-2 py-0.5 text-xs" onClick={() => setChoosing(true)}>
+                          Choose here
+                        </Button>
+                      </>
+                    )}
                   </span>
                 </li>
               );
@@ -583,6 +646,12 @@ function ReviewStep({
           </ul>
         </section>
       )}
+      {choosing && !ghoul && (
+        <section aria-label="In-clan choice" className="flex flex-col gap-2">
+          <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />
+        </section>
+      )}
+      {!ghoul && <MoveStartingDots character={character} creation={creation} picks={saved(creation).picks.disciplines ?? {}} />}
       {creation.path_starts.length > 0 && (
         <section aria-label="Morality" className="flex flex-col gap-1">
           <h3 className="text-sm text-gold">Morality</h3>
@@ -666,15 +735,30 @@ function ReviewStep({
 }
 
 /** This step's cross-step notices, each linking to where it is put right. */
-function StepNotices({ character, notices, step, steps }: { character: CharacterOut; notices: StepNotice[]; step: Step; steps: Step[] }) {
+function StepNotices({
+  character,
+  notices,
+  step,
+  steps,
+  choosesHere,
+}: {
+  character: CharacterOut;
+  notices: StepNotice[];
+  step: Step;
+  steps: Step[];
+  /** This step offers the in-clan choice itself (Merits, under the merit; Disciplines, at the top). */
+  choosesHere?: boolean;
+}) {
   if (!notices.length) return null;
   return (
     <div aria-label="Changed by other steps" role="group" className="mb-6 flex flex-col gap-2">
       {notices.map((n) => {
-        const at = n.fix !== step.key ? steps.find((s) => s.key === n.fix) : undefined;
+        const here = choosesHere && n.inClan;
+        const at = n.fix !== step.key && !here ? steps.find((s) => s.key === n.fix) : undefined;
         return (
           <Notice key={n.key}>
             {n.message}
+            {here && ` Choose it ${step.key === "merits" ? "under the merit, below" : "below"}.`}
             {at && (
               <>
                 {" "}

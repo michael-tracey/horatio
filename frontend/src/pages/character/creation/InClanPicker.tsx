@@ -1,10 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../../api/client";
-import type { CatalogueOut, CharacterOut, SheetOut } from "../../../api/types";
+import type { CatalogueOut, CharacterOut, CreationOut, SheetOut } from "../../../api/types";
 import { Button, ErrorText } from "../../../components/ui";
 import { useAction, useUnavailable } from "../../../hooks";
-import { EXTRA_IN_CLAN, inClanChoice, inClanOptions, whenTapped } from "./inClan";
+import { EXTRA_IN_CLAN, inClanChoice, inClanOptions, sheetKey, whenTapped } from "./inClan";
+import { movePick, strayMoves } from "./disciplines";
+import { traitOf, type Picks } from "./logic";
+import { rulesTroupe } from "../rules";
 
 const swap = (from: string, to: string) => [
   { kind: "set" as const, category: EXTRA_IN_CLAN, name: from, detail: "", rating: 0, teacher: "" },
@@ -16,12 +19,17 @@ const swap = (from: string, to: string) => [
  * one a merit adds (pp. 242, 248). The server says which it may choose from. Ones
  * other traits give show as held. Tapping one the rules refuse as things stand
  * never just greys out: it offers the swaps that would make room (rule 3 of #192).
+ * The one picker is shown on Concept, under the merit on Merits, on Disciplines
+ * while a choice is open, and from Review (#216).
  */
 export function InClanPicker({ character, sheet, catalogue }: { character: CharacterOut; sheet: SheetOut; catalogue: CatalogueOut }) {
   const choice = inClanChoice(sheet);
-  // What nothing chosen here could allow is not offered at all.
-  const barring = useUnavailable(character.id, EXTRA_IN_CLAN, true, { asIf: "empty" });
-  const refusing = useUnavailable(character.id, EXTRA_IN_CLAN);
+  // What nothing chosen here could allow is not offered at all. Both are asked for the
+  // sheet as it is now: an answer from before a merit was taken (Vestiges of
+  // Greatness, which opens the uncommon ones) is never offered as now's.
+  const now = `${sheetKey(sheet)}/${rulesTroupe(character) ?? ""}`;
+  const barring = useUnavailable(character.id, EXTRA_IN_CLAN, true, { asIf: "empty" }, now);
+  const refusing = useUnavailable(character.id, EXTRA_IN_CLAN, true, undefined, now);
   const barred = barring.data;
   const refusals = refusing.data;
   const refused = refusals ?? {};
@@ -39,7 +47,7 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   const given = new Map(choice.given.map((t) => [t.name, t.granted_by]));
   // For the one tapped: which of those chosen it could take the place of, tried on the server.
   const swaps = useQuery({
-    queryKey: ["in-clan-swaps", character.id, wanted, chosen],
+    queryKey: ["in-clan-swaps", character.id, wanted, chosen, now],
     enabled: !!wanted && chosen.length > 0,
     queryFn: async () => {
       const tried = await Promise.all(
@@ -61,13 +69,15 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   // be sent as a plain choice, and fail, instead of offering the swaps. Meanwhile, and
   // if asking fails, the picker still shows, so a merit's notice never points at nothing.
   const loaded = !!barred && !!refusals;
+  // Loaded, but the answer is the one from before the sheet changed: shown, held, and said so.
+  const checking = !loaded || barring.isPlaceholderData || refusing.isPlaceholderData;
   const names = catalogue.traits.filter((t) => t.category === EXTRA_IN_CLAN).map((t) => t.name);
   const options = loaded ? inClanOptions(names, choice, barred) : [];
   if (loaded && !options.length && !choice.chooses) return null;
   if (!loaded && !choice.chooses) return null;
   // Held, too, while the refusals are asked again after a change (taking the merit that
   // adds a choice): a tap on the answer from before would offer swaps it doesn't need.
-  const busy = toggle.isPending || swapIn.isPending || barring.isFetching || refusing.isFetching;
+  const busy = toggle.isPending || swapIn.isPending || checking || barring.isFetching || refusing.isFetching;
   return (
     <fieldset className="flex flex-col gap-2 rounded-md border border-ash p-3">
       <legend className="px-1 text-sm text-parchment">
@@ -78,7 +88,7 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
           {line}
         </p>
       ))}
-      {!loaded &&
+      {checking &&
         (barring.error || refusing.error ? (
           <ErrorText error={barring.error ?? refusing.error} />
         ) : (
@@ -137,5 +147,42 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
       )}
       <ErrorText error={toggle.error ?? swapIn.error} />
     </fieldset>
+  );
+}
+
+/**
+ * After a swap on the picker, the starting dots on the discipline swapped out are
+ * kept, not dropped (rule 4 of #192): offered here to move to the new in-clan one at
+ * a tap, at the same rating. `picks` are the Disciplines step's, as tapped so far.
+ */
+export function MoveStartingDots({ character, creation, picks }: { character: CharacterOut; creation: CreationOut; picks: Picks }) {
+  const move = useAction((next: Picks) =>
+    unwrap(
+      api.PUT("/api/characters/{character_id}/creation/categories/{category}", {
+        params: { path: { character_id: character.id, category: "disciplines" } },
+        body: { picks: Object.entries(next).map(([key, rating]) => ({ name: traitOf(key), rating, detail: "" })) },
+      }),
+    ),
+  );
+  const moves = strayMoves(creation).filter((m) => m.from in picks && m.to.length);
+  if (!moves.length) return null;
+  return (
+    <div role="group" aria-label="Starting dots to move" className="flex flex-col gap-2 rounded-md border border-gold/40 bg-gold/10 p-3 text-sm">
+      {moves.map((m) => (
+        <div key={m.from} className="flex flex-col gap-1">
+          <p>
+            Your starting {m.rating === 1 ? "dot" : "dots"} in {m.from} can move to {m.to.length === 1 ? m.to[0] : "another in-clan discipline"}, at {m.rating}.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {m.to.map((to) => (
+              <Button key={to} variant="secondary" disabled={move.isPending} onClick={() => move.mutate(movePick(picks, m.from, to))}>
+                Move the {m.rating === 1 ? "dot" : "dots"} from {m.from} to {to}
+              </Button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <ErrorText error={move.error} />
+    </div>
   );
 }

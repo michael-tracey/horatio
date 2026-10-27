@@ -1730,6 +1730,108 @@ test("a Caitiff chooses three common disciplines on Concept, takes Vestiges of G
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 });
 
+// #216, as the player built it: every step in order, Vestiges of Greatness taken on
+// Merits, and its choice made there, with no reload and no going back to Concept.
+for (const forTroupe of [false, true]) {
+  test(`a Caitiff builds step by step, takes Vestiges of Greatness on Merits, chooses Protean under it and finishes${forTroupe ? ", built for a troupe" : ""}`, async ({ browser }) => {
+    test.slow();
+    const { page: p } = await person(browser, forTroupe ? "vg-player" : "vg-forward");
+    const troupeName = `Court of Remnants ${run}`;
+    if (forTroupe) {
+      const custodian = await person(browser, "vg-custodian");
+      makeCustodian(custodian.email);
+      const lead = await person(browser, "vg-lead");
+      const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+      expect(made.status(), await made.text()).toBe(201);
+      await p.reload();
+    }
+    await p.getByLabel("Name").fill("Hand-Me-Down");
+    if (forTroupe) await p.getByLabel("Build for").selectOption({ label: troupeName });
+    await p.getByRole("button", { name: "Create" }).click();
+    await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+    await p.getByLabel("Clan").selectOption("Caitiff");
+    for (const name of ["Celerity", "Fortitude", "Obfuscate"]) {
+      await p.getByRole("checkbox", { name }).click();
+      await expect(p.getByRole("checkbox", { name })).toBeChecked();
+    }
+    const next = async (heading: string) => {
+      await p.getByRole("button", { name: "Save and continue" }).click();
+      await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
+    };
+    const tap = async (...dots: string[]) => {
+      for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
+    };
+    await next("Attributes");
+    await tap("Mental 7", "Physical 5", "Social 3");
+    await next("Focuses");
+    await tap("Perception 1", "Dexterity 1", "Charisma 1");
+    await next("Skills");
+    await tap("Drive 4", "Dodge 3", "Firearms 3", "Brawl 2", "Melee 2", "Survival 2", "Animal Ken 1", "Athletics 1", "Security 1", "Stealth 1");
+    await next("Backgrounds");
+    await tap("Contacts 3", "Fame 2", "Generation 1");
+    await next("Disciplines");
+    await tap("Celerity 2", "Fortitude 1", "Obfuscate 1");
+    await next("Merits & flaws");
+
+    // Taking the merit offers its choice under it at once: the uncommon ones, with swaps.
+    await p.getByLabel("Search Merits").fill("Vestiges");
+    await p.getByRole("checkbox", { name: /^Vestiges of Greatness/ }).check();
+    await expect(p.getByText("Two from the common ones and one from the uncommon ones (Vestiges of Greatness).")).toBeVisible({ timeout: 15_000 });
+    await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText("Vestiges of Greatness: choose one of your in-clan disciplines from Dementation");
+    await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText("Choose it under the merit, below.");
+    await expect(p.getByRole("group", { name: "Changed by other steps" }).getByRole("link", { name: "Go to Concept" })).toHaveCount(0);
+    await p.getByRole("checkbox", { name: "Protean", exact: true }).click();
+    const room = p.getByRole("group", { name: "Make room for Protean" });
+    await expect(room.getByRole("button", { name: /^Swap / })).toHaveCount(3);
+    await room.getByRole("button", { name: "Swap Obfuscate for Protean" }).click();
+    await expect(p.getByRole("checkbox", { name: "Protean", exact: true })).toBeChecked();
+    await expect(p.getByText("Vestiges of Greatness: choose one")).toHaveCount(0);
+
+    // The starting dot on Obfuscate moves to Protean at a tap, from here too.
+    await p.getByRole("group", { name: "Starting dots to move" }).getByRole("button", { name: "Move the dot from Obfuscate to Protean" }).click();
+    // Moving saves Disciplines, and asks again for everything on Merits: as slow as a step's save.
+    await expect(p.getByRole("group", { name: "Starting dots to move" })).toHaveCount(0, { timeout: 15_000 });
+    await expect(p.getByText("Your starting dot in Obfuscate needs moving")).toHaveCount(0);
+    await p.screenshot(shots(`vestiges-on-merits${forTroupe ? "-troupe" : ""}`));
+    await next("Review");
+    await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+    await expect(p.getByRole("listitem").filter({ hasText: "Disciplines at 1" })).toContainText("Protean");
+    await p.getByRole("button", { name: "Finish creation" }).click();
+    await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  });
+}
+
+test("a Caitiff with Vestiges of Greatness is shown its choice on Disciplines, makes it from Review, moves the dots there and finishes", async ({ browser }) => {
+  const { page: p } = await person(browser, "vg-review");
+  const id = await creatingVampire(p, "Jumble", "Caitiff", ["Celerity", "Fortitude", "Obfuscate"], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Fortitude", 1], ["Obfuscate", 1]],
+    merits: [["Vestiges of Greatness", 3]],
+  });
+
+  // Disciplines shows the choice while it is open, at the top.
+  await p.goto(`/characters/${id}/create/disciplines`);
+  await expect(p.getByText("Two from the common ones and one from the uncommon ones (Vestiges of Greatness).")).toBeVisible();
+  await expect(p.getByRole("checkbox", { name: "Protean" })).toBeVisible();
+
+  // Review's notice opens it in place.
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
+  const settle = p.getByRole("region", { name: "Still to settle" });
+  await expect(settle).toContainText("Vestiges of Greatness: choose one of your in-clan disciplines from Dementation");
+  await settle.getByRole("button", { name: "Choose here" }).click();
+  await p.getByRole("region", { name: "In-clan choice" }).getByRole("checkbox", { name: "Dementation" }).click();
+  await p.getByRole("group", { name: "Make room for Dementation" }).getByRole("button", { name: "Swap Celerity for Dementation" }).click();
+  await expect(p.getByRole("checkbox", { name: "Dementation" })).toBeChecked();
+
+  // The two dots on Celerity move to Dementation from Review too, and it finishes.
+  await p.getByRole("button", { name: "Move the dots from Celerity to Dementation" }).click();
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0, { timeout: 15_000 });
+  await expect(p.getByRole("listitem").filter({ hasText: "Disciplines at 2" })).toContainText("Dementation");
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+});
+
 test("a Brujah takes Additional Uncommon Discipline on Merits, is held back until choosing it on Concept, and finishes", async ({ browser }) => {
   const { page: p } = await person(browser, "aud-finish");
   const id = await creatingVampire(p, "Second Skin", "Brujah", [], {

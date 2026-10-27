@@ -66,3 +66,31 @@ export function ineptChoices(creation: CreationOut, held?: string): string[] {
   const options = creation.pools.find((p) => p.category === "disciplines" && p.restriction === "in_clan")?.options ?? [];
   return [...new Set([...options, ...(held ? [held] : [])])].sort();
 }
+
+/** A starting pick on a discipline no longer in-clan (swapped out on the in-clan picker), and the in-clan ones with no pick it can move to. */
+export type StrayMove = { from: string; rating: number; to: string[] };
+
+/**
+ * Where the starting dots on a swapped-out discipline can go (#216): a Caitiff who
+ * swaps Obfuscate for Protean has their dot in Obfuscate kept, and it can move to
+ * Protean, or any other in-clan discipline without a pick, at the same rating. One
+ * that a merit or flaw leaves without a free dot (Inept) is not this: it stays to place by hand.
+ */
+export function strayMoves(creation: CreationOut): StrayMove[] {
+  const pools = creation.pools.filter((p) => p.category === "disciplines" && p.kind === "picks");
+  const options = pools.find((p) => p.restriction === "in_clan")?.options ?? [];
+  const withoutDot = new Set(pools.flatMap((p) => p.without_dot.map((w) => w.name)));
+  const picked = new Set(pools.flatMap((p) => p.traits.map((t) => t.name)));
+  const to = options.filter((name) => !picked.has(name) && !withoutDot.has(name));
+  return pools.flatMap((pool) =>
+    pool.restriction === "in_clan" ? pool.traits.filter((t) => !t.fits && !t.because.length).map((t) => ({ from: t.name, rating: pool.rating, to })) : [],
+  );
+}
+
+/** The picks with the one on `from` moved to `to`, at its rating. */
+export function movePick(picks: Record<string, number>, from: string, to: string): Record<string, number> {
+  if (!(from in picks) || to in picks) return picks;
+  const next = { ...picks, [to]: picks[from]! };
+  delete next[from];
+  return next;
+}

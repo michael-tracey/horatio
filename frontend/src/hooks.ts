@@ -90,9 +90,12 @@ export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>)
     mutationFn: fn,
     onSuccess: async () => {
       // A query still on its first load is not restarted by invalidation alone: it
-      // keeps the request it started before this change, and shows stale data.
-      await client.cancelQueries();
-      await client.invalidateQueries();
+      // keeps the request it started before this change, and shows stale data. One
+      // keyed by the sheet it is for (`of` in useUnavailable) is asked afresh under a
+      // new key once the sheet changes: asking again under the old one is wasted.
+      const changes = { predicate: (q: { meta?: Record<string, unknown> }) => !q.meta?.bySheet };
+      await client.cancelQueries(changes);
+      await client.invalidateQueries(changes);
     },
   });
 }
@@ -112,13 +115,20 @@ export function useNotifications(enabled: boolean) {
   });
 }
 
-/** Traits in a category the character cannot take, and why (the rule set's checks). */
-export function useUnavailable(characterId: string, category: string, enabled = true, as?: UnavailableAs) {
+/**
+ * Traits in a category the character cannot take, and why (the rule set's checks).
+ * `of` keys the answer to the sheet it is for (inClan's `sheetKey`, and the rules it
+ * is built by): once either changes, the answer from before is only a placeholder
+ * (`isPlaceholderData`) until the new one comes, never shown as now's from the cache.
+ * A change made in the app (useAction) leaves it be: the new key asks again.
+ */
+export function useUnavailable(characterId: string, category: string, enabled = true, as?: UnavailableAs, of?: string) {
   const query = { category, as_if: as?.asIf, picks: as?.picks };
   return useQuery({
-    queryKey: ["unavailable", characterId, category, as?.asIf ?? "sheet", as?.picks ?? []],
+    queryKey: ["unavailable", characterId, category, as?.asIf ?? "sheet", as?.picks ?? [], ...(of ? [of] : [])],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/unavailable", { params: { path: { character_id: characterId }, query } })),
     enabled: enabled && !!category,
+    meta: of ? { bySheet: true } : undefined,
     // Keep showing the last answer while ticks change, rather than flashing everything open.
     placeholderData: (previous) => previous,
   });
