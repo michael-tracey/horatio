@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import aliased
 
-from horatio import handles
+from horatio import handles, suspensions
 from horatio.api.auth import Me, me
 from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
@@ -76,6 +76,8 @@ class PlayerSummary(BaseModel):
     member_since: datetime
     # When their live reset link expires, if they have one.
     reset_expires_at: datetime | None
+    # Their account is suspended now (horatio.suspensions).
+    suspended: bool = False
 
 
 class ProfileIn(BaseModel):
@@ -248,6 +250,7 @@ def find_players(
             )
         )
     }
+    suspended = suspensions.suspended_ids(db, [u.id for u in found])
     return [
         PlayerSummary(
             id=u.id,
@@ -256,6 +259,7 @@ def find_players(
             email=u.email,
             member_since=u.created_at,
             reset_expires_at=expiries.get(u.id),
+            suspended=u.id in suspended,
         )
         for u in found
     ]

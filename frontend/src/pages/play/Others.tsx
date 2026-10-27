@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { OtherOut, SeenOut } from "../../api/types";
 import { Badge, Button, ErrorText, Input } from "../../components/ui";
@@ -117,6 +118,11 @@ function OtherStatus({ view, otherId, undo, online, onBack }: { view: Shown; oth
       {other && (
         <>
           <h3 className="text-lg text-parchment">{other.name}</h3>
+          {data.troupe_id && (
+            <Link to={`/troupes/${data.troupe_id}/whos-who#c-${other.character_id}`} className="self-start text-sm text-mist underline hover:text-gold">
+              {other.name} on the Who’s Who
+            </Link>
+          )}
           {data.status === null ? (
             <p className="text-sm">
               {other.sect ?? "No sect"}
