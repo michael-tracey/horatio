@@ -291,6 +291,7 @@ MESSAGES: dict[str, str] = {
     "status.resolved": "{actor} took {status} off {character}: nothing gives it now{because}.",
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
     "troupe.status_by": "{actor} set Status on sheets: {setting}.",
+    "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
     "scene.created": "{actor} made the scene {name}.",
     "scene.renamed": "{actor} renamed the scene {old} to {name}.",
     "scene.removed": "{actor} removed the scene {name}.",

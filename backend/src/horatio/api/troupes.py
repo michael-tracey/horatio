@@ -21,6 +21,8 @@ from horatio.rules.splats import SPLATS, splat_order
 router = APIRouter(prefix="/troupes", tags=["troupes"])
 
 STAFF_ROLES = (Role.STORYTELLER, Role.ASSISTANT_STORYTELLER, Role.NARRATOR)
+# How the log says what status a troupe's badges print.
+BADGE_STATUS_TEXT = {"all": "all status", "negative": "negative status only", "none": "no status"}
 
 
 class TroupeOut(BaseModel):
@@ -52,6 +54,10 @@ class TroupeOut(BaseModel):
     # Status on sheets (horatio.sect_status): "players" keep their own fleeting and
     # negative status, naming the patron, or only "staff" add and remove it.
     status_by: str
+    # What its game badges print (horatio.badges): the titles held here or not, and
+    # the status carried into a game here: "all", "negative" only, or "none".
+    badge_titles: bool
+    badge_status: str
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
     portrait: str | None
     # Its banner, across the top of its page (add "/1500.webp" or "/750.webp"), or None.
@@ -78,6 +84,8 @@ class TroupeChanges(BaseModel):
     downtime_xp: int | None = Field(default=None, ge=0, le=100)
     starting_xp: int | None = Field(default=None, ge=0, le=10000)
     status_by: Literal["players", "staff"] | None = None
+    badge_titles: bool | None = None
+    badge_status: Literal["all", "negative", "none"] | None = None
 
 
 class NewLead(BaseModel):
@@ -115,6 +123,8 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         influence_lookback_days=troupe.influence_lookback_days,
         diablerie_flaws=troupe.diablerie_flaws,
         status_by=troupe.status_by,
+        badge_titles=troupe.badge_titles,
+        badge_status=troupe.badge_status,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
         public=troupe.public,
@@ -246,6 +256,20 @@ def change_troupe(
             "troupe.status_by",
             troupe_id=troupe.id,
             setting=sect_status.SETTING_TEXT[body.status_by],
+        )
+    if body.badge_titles is not None or body.badge_status is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.badge_titles is not None:
+            troupe.badge_titles = body.badge_titles
+        if body.badge_status is not None:
+            troupe.badge_status = body.badge_status
+        audit.record(
+            db,
+            user,
+            "troupe.badges",
+            troupe_id=troupe.id,
+            titles="titles" if troupe.badge_titles else "no titles",
+            status=BADGE_STATUS_TEXT[troupe.badge_status],
         )
     if body.starting_xp is not None:
         # The floor and ceiling both start from it, so both move with it.

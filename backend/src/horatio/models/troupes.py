@@ -27,6 +27,7 @@ class Troupe(Imported, Record):
             "diablerie_flaws in ('leave', 'remove', 'keep_xp')", name="diablerie_flaws"
         ),
         CheckConstraint("status_by in ('players', 'staff')", name="status_by"),
+        CheckConstraint("badge_status in ('all', 'negative', 'none')", name="badge_status"),
     )
 
     name: Mapped[str]
@@ -64,6 +65,11 @@ class Troupe(Imported, Record):
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.
     status_by: Mapped[str] = mapped_column(default="players", server_default="players")
+    # What its game badges print (horatio.badges): the titles held here, or not; and
+    # the status carried into a game here, "all" of it, "negative" status only, or
+    # "none", leaving the space for stickers.
+    badge_titles: Mapped[bool] = mapped_column(default=True, server_default="true")
+    badge_status: Mapped[str] = mapped_column(default="all", server_default="all")
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a
