@@ -2,6 +2,8 @@
 never reviewed, except discipline dots bought once the character has a home troupe.
 Characters in no troupe can be deleted, and troupes keep a log for their storytellers."""
 
+import inspect
+import re
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -10,7 +12,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from horatio import deletion, models
 from tests.api_helpers import Person, Troupe, new_character
+from tests.test_api_diablerie import accepted_neonate
+from tests.test_api_play import add_derangement, send, tap
 
 # Balances here are about settlements and purchases, not banking creation XP.
 pytestmark = pytest.mark.usefixtures("without_bank")
@@ -325,6 +330,55 @@ def test_a_character_never_in_a_troupe_is_deleted_quietly(troupe: Troupe) -> Non
 
     assert troupe.player.client.delete(f"/characters/{character_id}").status_code == 204
     assert log(troupe.lead, troupe.id)[0] != "Agnes was deleted by its player."
+
+
+def test_a_character_played_at_a_game_is_deleted_with_its_game(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    play = f"/characters/{character_id}/play"
+    # Taps at a game, one undone, a counter of the player's own, a pool modifier
+    # and a temporary derangement.
+    first, second = tap("blood", -1), tap("willpower", -1, at=1)
+    undo = tap(at=2, kind="undo", tracker="", amount=0, undoes=first["id"])
+    send(troupe.player, character_id, first, second, undo, add_derangement("Paranoia", at=3))
+    counter = {"name": "Fetish charges", "uses": 3}
+    assert troupe.player.client.post(f"{play}/counters", json=counter).status_code == 200
+    modifier = {"label": "Blessed blade", "amount": 2, "pools": "attack"}
+    assert troupe.player.client.post(f"{play}/modifiers", json=modifier).status_code == 200
+
+    assert troupe.player.client.delete(f"/characters/{character_id}").status_code == 204
+    assert troupe.player.client.get(f"/characters/{character_id}").status_code == 404
+
+
+def test_a_diablerist_is_deleted_with_its_diableries(troupe: Troupe) -> None:
+    character_id = accepted_neonate(troupe)
+    done = troupe.storyteller.client.post(
+        f"/characters/{character_id}/diablerie",
+        json={"committed_on": "2026-10-24", "victim": "Prince Marcus", "humanity_lowered": 1},
+    )
+    assert done.status_code == 200, done.text
+    left = troupe.player.client.delete(f"/characters/{character_id}/troupes/{troupe.id}")
+    assert left.status_code < 300, left.text
+
+    assert troupe.player.client.delete(f"/characters/{character_id}").status_code == 204
+
+
+def test_deleting_clears_every_table_that_points_at_a_character() -> None:
+    """A new table with a character in it must go with the character, by its own
+    ON DELETE or in horatio.deletion; otherwise deleting one fails."""
+    cleared = {
+        getattr(models, name).__tablename__
+        for name in re.findall(r"(?:delete|update)\(([A-Z]\w+)\)", inspect.getsource(deletion))
+    }
+    gone = {"characters", *cleared}
+
+    left = sorted(
+        f"{table.name}.{fk.parent.name}"
+        for table in models.Base.metadata.sorted_tables
+        for fk in table.foreign_keys
+        if fk.column.table.name in gone and fk.ondelete is None and table.name not in cleared
+    )
+
+    assert left == []
 
 
 # --- the log -------------------------------------------------------------------------------------
