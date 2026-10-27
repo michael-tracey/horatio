@@ -6026,7 +6026,7 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   // The lead finds it among the exceptions, with the rule broken and the reason, and approves it.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/approvals`);
-  await l.getByLabel("Kind").selectOption({ label: "Exceptions" });
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Exceptions" });
   const card = l.locator("section").filter({ hasText: "Wren" });
   await expect(card.getByText("exception, free")).toBeVisible();
   await expect(card).toContainText("Celerity: Zephyr 0 → 1, asked for free");
@@ -6124,7 +6124,7 @@ test("a player says they committed diablerie, staff approve it, and then record 
 
   // The lead sees what approving does, changes the Beast traits, and approves.
   await l.goto(`/troupes/${troupeId}/approvals`);
-  await l.getByLabel("Kind").selectOption({ label: "Diablerie" });
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Diablerie" });
   const card = l.locator("section").filter({ hasText: "Sable" });
   await expect(card).toContainText("committed diablerie on 24 Oct 2026");
   await expect(card).toContainText("Generation 1 → 2, as a free dot. Earlier buys keep what they cost.");
@@ -6656,6 +6656,159 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   await dots.getByRole("button", { name: "Log dots" }).click();
   await expect(l.getByText("2 of 5 dots")).toBeVisible();
   await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
+});
+
+test("a troupe gives equipment: a dagger from a template, a rifle by hand, refused when it breaks the rules, and a special blade from the character's page", async ({ browser }) => {
+  const custodian = await person(browser, "equip-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "equip-lead");
+  const assistant = await person(browser, "equip-assistant");
+  const player = await person(browser, "equip-player");
+  const headers = { "X-Horatio": "1" };
+  const call = (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => page.request.fetch(url, { method, headers, data });
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await call(page, method, url, data);
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Armoury ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: assistant.handle, role: "assistant_storyteller" });
+
+  // Agnes is at home in the troupe; Vera only visits it.
+  const build = async (name: string, home: boolean) => {
+    const { id } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(player.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(player.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(player.page, "POST", `/api/characters/${id}/creation/complete`);
+    if (home) {
+      const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+      await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    } else {
+      await send(player.page, "POST", `/api/characters/${id}/troupes`, { troupe_id: troupe.id });
+    }
+    return id as string;
+  };
+  const agnes = await build("Agnes", true);
+  const vera = await build("Vera", false);
+  // An NPC of the troupe's, holding a stake.
+  const bram = await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Bram" });
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/equipment`, {
+    character_id: bram.id,
+    name: "Wooden Stake",
+    kind: "melee",
+    grade: "standard",
+    qualities: [{ name: "Concealable" }, { name: "Staking" }],
+  });
+
+  // The lead gives Agnes the book's Silver Dagger from the troupe's Equipment tab.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Equipment", exact: true }).click();
+  await l.getByRole("button", { name: "Give equipment" }).click();
+  let form = l.getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Character").selectOption({ label: "Agnes (equip-player)" });
+  await form.getByLabel("Start from").selectOption({ label: "Silver Dagger" });
+  await expect(form.getByLabel("Name", { exact: true })).toHaveValue("Silver Dagger");
+  await expect(form.getByRole("list", { name: "Qualities chosen" })).toContainText("Concealable");
+  await expect(form.getByLabel("What it is")).toHaveText("1 hand · 1 damage · range 2 steps");
+  await form.getByRole("button", { name: "Give to Agnes" }).click();
+  await expect(l.getByText("Given Silver Dagger.")).toBeVisible();
+
+  // And a hunting rifle by hand. Quick Draw breaks the rules, and is refused.
+  await l.getByRole("button", { name: "Give equipment" }).click();
+  form = l.getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Character").selectOption({ label: "Agnes (equip-player)" });
+  await form.getByLabel("Name", { exact: true }).fill("Hunting rifle");
+  await form.getByLabel("Kind").selectOption({ label: "Ranged weapon" });
+  for (const quality of ["Accurate", "Long Range", "Quick Draw"]) await form.getByLabel("Add a quality").selectOption({ label: quality });
+  await expect(form.getByRole("list", { name: "Rules it breaks" })).toContainText("Long Range needs two hands, so it can't be Quick Draw.");
+  await form.getByRole("button", { name: "Give to Agnes" }).click();
+  await expect(form.getByRole("alert")).toContainText("Long Range needs two hands, so it can't be Quick Draw.");
+  await form.getByRole("button", { name: "Remove Quick Draw" }).click();
+  await expect(form.getByRole("list", { name: "Rules it breaks" })).toHaveCount(0);
+  await expect(form.getByLabel("What it is")).toHaveText("2 hands · 2 damage · 12 shots · range half a mile");
+  await form.getByRole("button", { name: "Give to Agnes" }).click();
+  await expect(l.getByText("Given Hunting rifle.")).toBeVisible();
+
+  // The API refuses giving to the visiting Vera, and lets no player give or change.
+  const visiting = await call(l, "POST", `/api/troupes/${troupe.id}/equipment`, { character_id: vera, name: "Knife", kind: "melee", grade: "cheap", qualities: [] });
+  expect(visiting.status()).toBe(422);
+  expect((await visiting.json()).detail).toContain("not Vera's home troupe");
+
+  // The assistant makes a special blade from Agnes's page: four qualities and an effect of the troupe's.
+  const a = assistant.page;
+  await a.goto(`/characters/${agnes}`);
+  await a.getByRole("button", { name: "Give equipment" }).click();
+  form = a.getByRole("dialog").getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Name", { exact: true }).fill("Blade of Saulot");
+  await form.getByLabel("Grade").selectOption({ label: "Special (any number)" });
+  for (const quality of ["Accurate", "Concealable", "Silver", "Masterwork"]) await form.getByLabel("Add a quality").selectOption({ label: quality });
+  await form.getByLabel("Masterwork detail (optional)").fill("cuts through chains");
+  await form.getByRole("button", { name: "Add a special effect" }).click();
+  await form.getByLabel("Effect 1", { exact: true }).fill("Drinks the Blood");
+  await form.getByLabel("What effect 1 does").fill("Once a game, heal 1 normal damage when it draws blood.");
+  await expect(form.getByRole("list", { name: "Rules it breaks" })).toHaveCount(0);
+  await form.getByRole("button", { name: "Give to Agnes" }).click();
+  await expect(a.getByText("Gave Agnes Blade of Saulot.")).toBeVisible();
+
+  const p = player.page;
+  const blade = (await (await p.request.get(`/api/characters/${agnes}/equipment`)).json()).items.find((i: { name: string }) => i.name === "Blade of Saulot");
+  expect(blade.special).toBe(true);
+  expect(blade.staff_note).toBeNull();
+  const made = await call(p, "POST", `/api/troupes/${troupe.id}/equipment`, { character_id: agnes, name: "Mine", kind: "melee", grade: "special", qualities: [] });
+  expect(made.status()).toBe(403);
+  const changed = await call(p, "PUT", `/api/troupes/${troupe.id}/equipment/${blade.id}`, { name: "Mine", kind: "melee", grade: "special", qualities: [], reason: "Mine" });
+  expect(changed.status()).toBe(403);
+  const told = (await (await p.request.get("/api/notifications")).json()).items.map((i: { summary: string }) => i.summary);
+  expect(told).toContain("equip-lead gave Agnes Silver Dagger (melee weapon: Concealable, Silver).");
+
+  // The troupe's tab lists them all; filtering by holder and kind finds the dagger.
+  await l.reload();
+  const held = l.getByRole("list", { name: "Equipment held" });
+  for (const name of ["Silver Dagger", "Hunting rifle", "Blade of Saulot"]) await expect(held.getByRole("listitem", { name: `${name}, held by Agnes` })).toBeVisible();
+  await expect(held.getByRole("listitem", { name: "Wooden Stake, held by Bram" })).toBeVisible();
+  const special = held.getByRole("listitem", { name: "Blade of Saulot, held by Agnes" });
+  await expect(special.getByText("Special, by Armoury")).toBeVisible();
+  await expect(special.getByRole("list", { name: "Blade of Saulot's special effects" })).toContainText("Drinks the Blood: Once a game");
+  await l.getByLabel("Held by", { exact: true }).selectOption({ label: "Agnes" });
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Melee weapons" });
+  await expect(held.getByRole("listitem", { name: /, held by / })).toHaveCount(2);
+  await expect(held.getByRole("listitem", { name: "Silver Dagger, held by Agnes" })).toBeVisible();
+  await expect(held.getByRole("listitem", { name: "Wooden Stake, held by Bram" })).toHaveCount(0);
+  await l.screenshot(shots("troupe-equipment"));
+
+  // The lead changes the dagger with a reason, and takes the rifle back.
+  const dagger = held.getByRole("listitem", { name: "Silver Dagger, held by Agnes" });
+  await dagger.getByRole("button", { name: "Change" }).click();
+  const change = dagger.getByRole("form", { name: "Change Silver Dagger" });
+  await change.getByLabel("Name", { exact: true }).fill("Grandmother's dagger");
+  await change.getByLabel("Why it changes").fill("An heirloom");
+  await change.getByRole("button", { name: "Save changes" }).click();
+  const heirloom = held.getByRole("listitem", { name: "Grandmother's dagger, held by Agnes" });
+  await heirloom.getByRole("button", { name: "History" }).click();
+  await expect(heirloom.getByRole("list", { name: "Grandmother's dagger's history" })).toContainText("Changed: renamed from Silver Dagger (An heirloom)");
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Every kind" });
+  const rifle = held.getByRole("listitem", { name: "Hunting rifle, held by Agnes" });
+  await rifle.getByRole("button", { name: "Take back" }).click();
+  await rifle.getByLabel("Why it is taken back").fill("Lost in the river");
+  await rifle.getByRole("button", { name: "Take back Hunting rifle" }).click();
+  await expect(held.getByRole("listitem", { name: "Hunting rifle, held by Agnes" })).toHaveCount(0);
+
+  await p.goto(`/characters/${agnes}/log`);
+  await expect(p.getByText("equip-lead took Hunting rifle back from Agnes (equip-player): Lost in the river")).toBeVisible();
+  await expect(p.getByText("equip-lead changed Agnes (equip-player)'s Silver Dagger: renamed from Silver Dagger (An heirloom).")).toBeVisible();
 });
 
 test("a skill's specialisations sit in its own list item, in the sheet's two columns and on a phone", async ({ browser }) => {

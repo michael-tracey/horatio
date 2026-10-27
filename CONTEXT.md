@@ -167,6 +167,14 @@ _Avoid_: Validation, restriction, prerequisite (one kind of check)
 A special property of an item of equipment, such as Accurate or Concealable, from the book's list for its kind: melee weapon, ranged weapon, protective gear or miscellaneous gear. A cheap item has one, a standard or expensive item up to two, and a special item, made by storytellers, any number.
 _Avoid_: Perk, tag, trait (a trait is on the sheet)
 
+**Equipment**:
+The items a character holds: weapons, protective gear and miscellaneous gear, each with its qualities. Only the character's home troupe's storytellers and assistant storytellers give it equipment, change it or take it back, and an item belongs to the character, going with it to a new home troupe. Every item keeps its history.
+_Avoid_: Inventory, gear (for the whole), loot
+
+**Special Item**:
+An item a troupe's storytellers or assistant storytellers make exceptional, such as a blade of Kindred legend: any number of qualities, still keeping the rules between them, and special effects of the troupe's own, marked as made by that troupe.
+_Avoid_: Magic item, artefact, unique item
+
 **House Merit**:
 A merit or flaw a troupe makes itself, marked ★ as that troupe's wherever it shows. Only the troupe's own characters hold one: those whose home troupe it is, those being built for it, and its NPCs; never one only visiting. Each is either given by staff only, or available when building for the troupe.
 _Avoid_: Custom merit, homebrew merit

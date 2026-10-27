@@ -9,6 +9,7 @@ import { CreationWizard } from "./creation/Wizard";
 import { choiceName } from "./creation/logic";
 import { abilities } from "../troupe/roles";
 import { DowntimeTab } from "./DowntimeTab";
+import { GiveEquipment } from "./GiveEquipment";
 import { InfluenceTab } from "./InfluenceTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
@@ -72,6 +73,7 @@ export function CharacterPage() {
                 <Badge tone="gold">NPC</Badge>
                 <KindBadge kind={c.npc_kind} name={c.npc_kind_name} />
                 {play}
+                <GiveEquipment character={c} />
                 <CharacterMenu character={c} canRename={!renaming} renameOn={null} onRename={() => setRenaming(true)} canDelete />
               </div>
             }
@@ -115,6 +117,7 @@ export function CharacterPage() {
             <div className="flex flex-wrap items-center gap-3">
               {c.status === "retired" && <Badge>retired</Badge>}
               {play}
+              {c.status === "active" && <GiveEquipment character={c} />}
               <CharacterMenu
                 character={c}
                 canRename={canRename && !renaming && !renameOn}

@@ -402,6 +402,11 @@ MESSAGES: dict[str, str] = {
     "shared_background.unlogged.withdrawal": "{actor} took {character} taking {dots} out of"
     " {shared} off its log.",
     "shared_background.unlogged.use": "{actor} took {character}'s use of {shared} off its log.",
+    "equipment.given": "{actor} gave {character} {item} ({what}).",
+    "equipment.changed": "{actor} changed {character}'s {item}: {changes}{because}.",
+    "equipment.taken_back": "{actor} took {item} back from {character}: {reason}",
+    "equipment.template_saved": "{actor} saved {item} ({what}) as one of the troupe's templates.",
+    "equipment.template_deleted": "{actor} deleted the troupe's template {item}.",
 }
 
 

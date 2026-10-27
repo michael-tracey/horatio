@@ -60,6 +60,7 @@ class TroupeAction(StrEnum):
     MANAGE_SHARED_BACKGROUNDS = "manage_shared_backgrounds"
     RUN_SCENES = "run_scenes"
     CHANGE_ANY_SCENE = "change_any_scene"
+    MANAGE_EQUIPMENT = "manage_equipment"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -105,6 +106,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.RUN_SCENES: frozenset(_RUNNING),
     # Renaming or removing a scene someone else made, and clearing old ones.
     TroupeAction.CHANGE_ANY_SCENE: frozenset(_LEAD),
+    # Giving the troupe's home characters equipment, making it special, changing it
+    # and taking it back, and keeping the troupe's own templates (horatio.equipment).
+    TroupeAction.MANAGE_EQUIPMENT: frozenset(_RUNNING),
 }
 
 

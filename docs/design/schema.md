@@ -286,6 +286,31 @@ ghoul rule sets name as their `equipment_file`, and read by
   two-handed item that is Concealable or Quick Draw, and each exclusion; and works
   out the item's hands, damage, shots and range. Loading refuses a template that
   breaks these rules.
+- A troupe's own templates (#280) are `equipment_templates` rows with `troupe_id`
+  set, under the rule set that checked them, and keep the rest of an item:
+  `crafted`, `effects` (JSONB, each `{name, effect}`) and `description`.
+
+**`equipment_items`**: what a character holds (issue #280, `horatio.equipment`).
+`character_id` (its holder; once taken back or discarded, its last holder),
+`troupe_id` (the troupe that gave it), `given_by`, `given_at`, `name`, `kind`,
+`grade`, `qualities` (JSONB, each `{name, detail?}`), `crafted`, `effects` (a
+special item's own, each `{name, effect}`), `description`, `staff_note` (only staff
+see it), `special_troupe_id` (the troupe that made it special; set exactly when the
+grade is `special`), `status` (`held` | `taken_back` | `discarded`, the last from
+#282). An item belongs to the character: the staff who see and change it are those
+of its holder's home troupe now (`home_troupe_id`, or an NPC's `owner_troupe_id`),
+whichever troupe gave it. Every give and change is checked with
+`horatio.equipment.check`, by the holder's troupe rules.
+
+**`equipment_events`**: each item's history. `item_id`, `action` (`given`,
+`changed`, `taken_back`; and for #282 `passed`, `discarded`, `restored`),
+`actor_id`, `troupe_id` (whose staff did it; null for a player's own doing),
+`from_character_id` and `to_character_id` with `from_name` and `to_name` (kept for
+a character since deleted), `reason`, and `changes` (JSONB: for a change, each
+field's `{from, to}`; for a give from a template, `{template}`). Each give, change
+and take-back also goes in the audit log (`equipment.given`, `equipment.changed`,
+`equipment.taken_back`), so in the character's log, and the holder's player is
+notified; a change to the staff note alone is kept here only.
 
 **`allowance_rules`**: how traits change a character's action allowance.
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),

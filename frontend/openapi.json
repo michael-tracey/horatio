@@ -1824,6 +1824,80 @@
         "title": "CategoryPicks",
         "type": "object"
       },
+      "ChangeEquipmentIn": {
+        "properties": {
+          "crafted": {
+            "default": false,
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialEffectModel"
+            },
+            "maxItems": 20,
+            "title": "Effects",
+            "type": "array"
+          },
+          "grade": {
+            "enum": [
+              "cheap",
+              "standard",
+              "special"
+            ],
+            "title": "Grade",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "melee",
+              "ranged",
+              "protective",
+              "miscellaneous"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQuality"
+            },
+            "maxItems": 30,
+            "title": "Qualities",
+            "type": "array"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "staff_note": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Staff Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "grade"
+        ],
+        "title": "ChangeEquipmentIn",
+        "type": "object"
+      },
       "ChangeOut": {
         "properties": {
           "cost": {
@@ -2012,6 +2086,40 @@
           "text"
         ],
         "title": "CharacterEffectOut",
+        "type": "object"
+      },
+      "CharacterEquipmentOut": {
+        "properties": {
+          "can_give": {
+            "title": "Can Give",
+            "type": "boolean"
+          },
+          "home_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home Troupe Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "home_troupe_id",
+          "can_give"
+        ],
+        "title": "CharacterEquipmentOut",
         "type": "object"
       },
       "CharacterFeedingOut": {
@@ -5999,6 +6107,107 @@
         "title": "EquipmentCheckOut",
         "type": "object"
       },
+      "EquipmentEventOut": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "changes": {
+            "additionalProperties": true,
+            "title": "Changes",
+            "type": "object"
+          },
+          "from_character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Character Id"
+          },
+          "from_name": {
+            "title": "From Name",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "to_character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Character Id"
+          },
+          "to_name": {
+            "title": "To Name",
+            "type": "string"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "at",
+          "actor_name",
+          "troupe_name",
+          "from_character_id",
+          "from_name",
+          "to_character_id",
+          "to_name",
+          "reason",
+          "summary",
+          "changes"
+        ],
+        "title": "EquipmentEventOut",
+        "type": "object"
+      },
       "EquipmentFactsOut": {
         "properties": {
           "aggravated_against": {
@@ -6110,6 +6319,376 @@
         "title": "EquipmentGradeOut",
         "type": "object"
       },
+      "EquipmentHolderOut": {
+        "description": "A home character of the troupe, which it can give equipment to.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "player_name",
+          "splat"
+        ],
+        "title": "EquipmentHolderOut",
+        "type": "object"
+      },
+      "EquipmentItemDetailOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_kind": {
+            "title": "Character Kind",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "crafted": {
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialEffectModel"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/EquipmentFactsOut"
+          },
+          "given_at": {
+            "format": "date-time",
+            "title": "Given At",
+            "type": "string"
+          },
+          "given_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given By Name"
+          },
+          "grade": {
+            "title": "Grade",
+            "type": "string"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentEventOut"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "special": {
+            "title": "Special",
+            "type": "boolean"
+          },
+          "special_troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Troupe Name"
+          },
+          "staff_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Note"
+          },
+          "status": {
+            "enum": [
+              "held",
+              "taken_back",
+              "discarded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "character_id",
+          "character_name",
+          "character_kind",
+          "player_name",
+          "name",
+          "kind",
+          "grade",
+          "special",
+          "special_troupe_name",
+          "qualities",
+          "crafted",
+          "effects",
+          "description",
+          "staff_note",
+          "facts",
+          "status",
+          "troupe_id",
+          "troupe_name",
+          "given_by_name",
+          "given_at",
+          "can_change",
+          "history"
+        ],
+        "title": "EquipmentItemDetailOut",
+        "type": "object"
+      },
+      "EquipmentItemOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_kind": {
+            "title": "Character Kind",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "crafted": {
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialEffectModel"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/EquipmentFactsOut"
+          },
+          "given_at": {
+            "format": "date-time",
+            "title": "Given At",
+            "type": "string"
+          },
+          "given_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given By Name"
+          },
+          "grade": {
+            "title": "Grade",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "special": {
+            "title": "Special",
+            "type": "boolean"
+          },
+          "special_troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special Troupe Name"
+          },
+          "staff_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Note"
+          },
+          "status": {
+            "enum": [
+              "held",
+              "taken_back",
+              "discarded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "character_id",
+          "character_name",
+          "character_kind",
+          "player_name",
+          "name",
+          "kind",
+          "grade",
+          "special",
+          "special_troupe_name",
+          "qualities",
+          "crafted",
+          "effects",
+          "description",
+          "staff_note",
+          "facts",
+          "status",
+          "troupe_id",
+          "troupe_name",
+          "given_by_name",
+          "given_at",
+          "can_change"
+        ],
+        "title": "EquipmentItemOut",
+        "type": "object"
+      },
       "EquipmentItemQuality": {
         "properties": {
           "detail": {
@@ -6126,6 +6705,48 @@
           "name"
         ],
         "title": "EquipmentItemQuality",
+        "type": "object"
+      },
+      "EquipmentItemQualityOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effect"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "effect",
+          "page"
+        ],
+        "title": "EquipmentItemQualityOut",
         "type": "object"
       },
       "EquipmentKindOut": {
@@ -6339,6 +6960,73 @@
           "excludes"
         ],
         "title": "EquipmentQualityOut",
+        "type": "object"
+      },
+      "EquipmentTemplateIn": {
+        "properties": {
+          "crafted": {
+            "default": false,
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialEffectModel"
+            },
+            "maxItems": 20,
+            "title": "Effects",
+            "type": "array"
+          },
+          "grade": {
+            "enum": [
+              "cheap",
+              "standard",
+              "special"
+            ],
+            "title": "Grade",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "melee",
+              "ranged",
+              "protective",
+              "miscellaneous"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQuality"
+            },
+            "maxItems": 30,
+            "title": "Qualities",
+            "type": "array"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "grade"
+        ],
+        "title": "EquipmentTemplateIn",
         "type": "object"
       },
       "EquipmentTemplateOut": {
@@ -7379,6 +8067,92 @@
           "amount"
         ],
         "title": "GiftIn",
+        "type": "object"
+      },
+      "GiveEquipmentIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "crafted": {
+            "default": false,
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialEffectModel"
+            },
+            "maxItems": 20,
+            "title": "Effects",
+            "type": "array"
+          },
+          "grade": {
+            "enum": [
+              "cheap",
+              "standard",
+              "special"
+            ],
+            "title": "Grade",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "melee",
+              "ranged",
+              "protective",
+              "miscellaneous"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQuality"
+            },
+            "maxItems": 30,
+            "title": "Qualities",
+            "type": "array"
+          },
+          "staff_note": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Staff Note",
+            "type": "string"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "grade",
+          "character_id"
+        ],
+        "title": "GiveEquipmentIn",
         "type": "object"
       },
       "GiveIn": {
@@ -17005,6 +17779,26 @@
         "title": "SourceStatus",
         "type": "object"
       },
+      "SpecialEffectModel": {
+        "properties": {
+          "effect": {
+            "maxLength": 1000,
+            "title": "Effect",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "effect"
+        ],
+        "title": "SpecialEffectModel",
+        "type": "object"
+      },
       "Specialization": {
         "properties": {
           "name": {
@@ -18284,6 +19078,20 @@
         "title": "TableOut",
         "type": "object"
       },
+      "TakeBackEquipmentIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "TakeBackEquipmentIn",
+        "type": "object"
+      },
       "Tally": {
         "properties": {
           "lines": {
@@ -19274,6 +20082,30 @@
         "title": "TroupeChoice",
         "type": "object"
       },
+      "TroupeEquipmentOut": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentHolderOut"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "characters"
+        ],
+        "title": "TroupeEquipmentOut",
+        "type": "object"
+      },
       "TroupeKindOut": {
         "properties": {
           "catalogue": {
@@ -19919,6 +20751,61 @@
           "reset"
         ],
         "title": "TroupeReset",
+        "type": "object"
+      },
+      "TroupeTemplateOut": {
+        "properties": {
+          "crafted": {
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialEffectModel"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "grade": {
+            "title": "Grade",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQuality"
+            },
+            "title": "Qualities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "grade",
+          "qualities",
+          "crafted",
+          "effects",
+          "description"
+        ],
+        "title": "TroupeTemplateOut",
         "type": "object"
       },
       "UnavailableIn": {
@@ -23099,6 +23986,50 @@
         "summary": "Sire Choices",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/equipment": {
+      "get": {
+        "description": "What the character holds, for whoever sees its sheet; the staff note only for\nits home troupe's staff.",
+        "operationId": "character_equipment_api_characters__character_id__equipment_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterEquipmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Equipment",
+        "tags": [
+          "equipment"
         ]
       }
     },
@@ -32798,6 +33729,491 @@
         "summary": "Discord Invite",
         "tags": [
           "connectors"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/equipment": {
+      "get": {
+        "description": "Every item the troupe's home characters hold, whichever troupe gave it, by\nholder: of one character, or one kind, if asked. `status` asks for those taken\nback (or discarded) as well or instead.",
+        "operationId": "troupe_equipment_api_troupes__troupe_id__equipment_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "melee",
+                    "ranged",
+                    "protective",
+                    "miscellaneous"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "held",
+                      "taken_back",
+                      "discarded"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeEquipmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Equipment",
+        "tags": [
+          "equipment"
+        ]
+      },
+      "post": {
+        "description": "Give one of the troupe's home characters an item. One for a character whose\nhome is elsewhere, or that breaks the rules between qualities, is refused with\nthe reason.",
+        "operationId": "give_equipment_api_troupes__troupe_id__equipment_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiveEquipmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Equipment",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/equipment/templates": {
+      "get": {
+        "description": "The troupe's own templates. The book's are with the rules (GET\n/rules/{splat}/equipment).",
+        "operationId": "troupe_templates_api_troupes__troupe_id__equipment_templates_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TroupeTemplateOut"
+                  },
+                  "title": "Response Troupe Templates Api Troupes  Troupe Id  Equipment Templates Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Templates",
+        "tags": [
+          "equipment"
+        ]
+      },
+      "post": {
+        "description": "Keep an item as one of the troupe's templates, checked as any item is.",
+        "operationId": "save_template_api_troupes__troupe_id__equipment_templates_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentTemplateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeTemplateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Template",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/equipment/templates/{template_id}": {
+      "delete": {
+        "operationId": "delete_template_api_troupes__troupe_id__equipment_templates__template_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Template Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Template",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/equipment/{item_id}": {
+      "get": {
+        "description": "An item, with its history: where it came from and every change since.",
+        "operationId": "equipment_item_api_troupes__troupe_id__equipment__item_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItemDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Equipment Item",
+        "tags": [
+          "equipment"
+        ]
+      },
+      "put": {
+        "description": "Change an item, with a reason its holder's player is told.",
+        "operationId": "change_equipment_api_troupes__troupe_id__equipment__item_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEquipmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItemDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Equipment",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/equipment/{item_id}/take-back": {
+      "post": {
+        "description": "Take an item away from its holder, with a reason its player is told.",
+        "operationId": "take_back_api_troupes__troupe_id__equipment__item_id__take_back_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TakeBackEquipmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItemDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Take Back",
+        "tags": [
+          "equipment"
         ]
       }
     },

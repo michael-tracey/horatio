@@ -305,8 +305,8 @@ class EquipmentQuality(Record):
 
 
 class EquipmentTemplate(Record):
-    """An item to start one from: the book's sample items (troupe null), and later
-    a troupe's own (#280)."""
+    """An item to start one from: the book's sample items (troupe null), and a
+    troupe's own (horatio.equipment), saved under the rule set it was checked by."""
 
     __tablename__ = "equipment_templates"
     __table_args__ = (
@@ -326,3 +326,8 @@ class EquipmentTemplate(Record):
     )
     page: Mapped[str | None]
     position: Mapped[int] = mapped_column(default=0, server_default="0")
+    # A troupe's own template keeps the rest of the item it was saved from.
+    crafted: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # A special item's own effects: each {name, effect}.
+    effects: Mapped[list[dict[str, str]]] = mapped_column(JSONB, default=list, server_default="[]")
+    description: Mapped[str] = mapped_column(default="", server_default="")
