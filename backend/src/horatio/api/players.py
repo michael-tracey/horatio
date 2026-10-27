@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import aliased
 
-from horatio import handles
+from horatio import handles, suspensions
 from horatio.api.auth import Me, me
 from horatio.api.email_changes import PendingEmail, pending
 from horatio.api.roster import LogEntry, log_entries
@@ -81,6 +81,8 @@ class PlayerSummary(BaseModel):
     reset_expires_at: datetime | None
     # The address a change of email waiting would change it to.
     email_change_to: str | None = None
+    # Their account is suspended now (horatio.suspensions).
+    suspended: bool = False
 
 
 class ProfileIn(BaseModel):
@@ -263,6 +265,7 @@ def find_players(
             )
         )
     }
+    suspended = suspensions.suspended_ids(db, [u.id for u in found])
     return [
         PlayerSummary(
             id=u.id,
@@ -272,6 +275,7 @@ def find_players(
             member_since=u.created_at,
             reset_expires_at=expiries.get(u.id),
             email_change_to=changing.get(u.id),
+            suspended=u.id in suspended,
         )
         for u in found
     ]

@@ -15,6 +15,8 @@ from horatio.models import (
     CheckOverride,
     CostRule,
     CreationRule,
+    EquipmentQuality,
+    EquipmentTemplate,
     HouseTrait,
     RuleSet,
     StartingTrait,
@@ -23,6 +25,16 @@ from horatio.models import (
     Troupe,
 )
 from horatio.rules.checks import check_from_dict, check_to_dict
+from horatio.rules.equipment import (
+    EquipmentRules,
+    GradeData,
+    KindData,
+    TemplateData,
+    equipment_to_dict,
+    item_qualities,
+    item_qualities_to_list,
+    quality_from_dict,
+)
 from horatio.rules.files import (
     check_allowance_rule,
     check_cost_rule,
@@ -93,6 +105,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
     rule_set.grants = [grant_to_dict(g) for g in data.grants]
     rule_set.feeding_modifiers = [feeding_modifier_to_dict(m) for m in data.feeding_modifiers]
     rule_set.creation_only = [dict(c) for c in data.creation_only]
+    rule_set.equipment = equipment_to_dict(data.equipment)
     session.flush()
 
     categories = {
@@ -216,7 +229,86 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
             )
         )
     session.flush()
+    sync_equipment(session, rule_set, data.equipment)
     return rule_set
+
+
+def sync_equipment(session: Session, rule_set: RuleSet, data: EquipmentRules) -> None:
+    """Equipment qualities are added or updated, and retired rather than deleted,
+    as trait definitions are: items will refer to them. The book's templates are
+    replaced; a troupe's own are left alone."""
+    rows = {
+        (q.kind, q.name): q
+        for q in session.scalars(
+            select(EquipmentQuality).where(EquipmentQuality.rule_set_id == rule_set.id)
+        )
+    }
+    for position, ((kind, name), quality) in enumerate(data.qualities.items()):
+        row = rows.get((kind, name))
+        if row is None:
+            row = EquipmentQuality(rule_set_id=rule_set.id, kind=kind, name=name)
+            session.add(row)
+        row.effect = quality.effect
+        row.page = quality.page
+        row.properties = quality.properties
+        row.position = position
+        row.retired = False
+    for key, row in rows.items():
+        if key not in data.qualities:
+            row.retired = True
+    session.execute(
+        delete(EquipmentTemplate).where(
+            EquipmentTemplate.rule_set_id == rule_set.id, EquipmentTemplate.troupe_id.is_(None)
+        )
+    )
+    for position, template in enumerate(data.templates):
+        session.add(
+            EquipmentTemplate(
+                rule_set_id=rule_set.id,
+                troupe_id=None,
+                name=template.name,
+                kind=template.kind,
+                grade=template.grade,
+                qualities=item_qualities_to_list(template.qualities),
+                page=template.page,
+                position=position,
+            )
+        )
+    session.flush()
+
+
+def load_equipment(session: Session, rule_set: RuleSet) -> EquipmentRules:
+    """The rule set's equipment rules, as `sync_equipment` wrote them."""
+    qualities = session.scalars(
+        select(EquipmentQuality)
+        .where(EquipmentQuality.rule_set_id == rule_set.id, EquipmentQuality.retired.is_(False))
+        .order_by(EquipmentQuality.position)
+    )
+    templates = session.scalars(
+        select(EquipmentTemplate)
+        .where(EquipmentTemplate.rule_set_id == rule_set.id, EquipmentTemplate.troupe_id.is_(None))
+        .order_by(EquipmentTemplate.position)
+    )
+    return EquipmentRules(
+        kinds={k["key"]: KindData(**k) for k in rule_set.equipment.get("kinds", [])},
+        grades={g["key"]: GradeData(**g) for g in rule_set.equipment.get("grades", [])},
+        qualities={
+            (q.kind, q.name): replace(
+                quality_from_dict(q.kind, q.name, q.properties), effect=q.effect, page=q.page
+            )
+            for q in qualities
+        },
+        templates=tuple(
+            TemplateData(
+                name=t.name,
+                kind=t.kind,
+                grade=t.grade,
+                qualities=item_qualities(t.qualities),
+                page=t.page,
+            )
+            for t in templates
+        ),
+    )
 
 
 def creation_row(
@@ -675,6 +767,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         feeding_modifiers=tuple(feeding_modifier_from_dict(m) for m in rule_set.feeding_modifiers),
         creation_only=creation_only,
         banked_xp=rule_set.banked_xp,
+        equipment=load_equipment(session, rule_set),
         categories={
             c.key: CategoryData(
                 key=c.key,

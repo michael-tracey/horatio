@@ -29,6 +29,7 @@ const TroupeBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ d
 const StaffBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.StaffBadgesPage })));
 const CharacterBadgePage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.CharacterBadgePage })));
 const TroupePrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.TroupePrintPage })));
+const WhosWhoPrintPage = lazy(() => import("./pages/WhosWhoPrintPage").then((m) => ({ default: m.WhosWhoPrintPage })));
 
 function ToScenes() {
   const { troupeId = "" } = useParams();
@@ -57,6 +58,7 @@ export function App() {
         <Route path="/print/troupes/:troupeId" element={<TroupePrintPage />} />
         <Route path="/print/troupes/:troupeId/badges" element={<TroupeBadgesPage />} />
         <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
+        <Route path="/print/troupes/:troupeId/whos-who" element={<WhosWhoPrintPage />} />
         <Route path="/print/characters/:characterId/badge" element={<CharacterBadgePage />} />
         <Route path="/play/characters/:characterId" element={<PlayPage />} />
         <Route path="/play/troupes/:troupeId/scenes" element={<ScenesPage />} />

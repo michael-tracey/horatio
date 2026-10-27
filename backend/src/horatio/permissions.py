@@ -60,6 +60,7 @@ class TroupeAction(StrEnum):
     MANAGE_SHARED_BACKGROUNDS = "manage_shared_backgrounds"
     RUN_SCENES = "run_scenes"
     CHANGE_ANY_SCENE = "change_any_scene"
+    MANAGE_EQUIPMENT = "manage_equipment"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -105,6 +106,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.RUN_SCENES: frozenset(_RUNNING),
     # Renaming or removing a scene someone else made, and clearing old ones.
     TroupeAction.CHANGE_ANY_SCENE: frozenset(_LEAD),
+    # Giving the troupe's home characters equipment, making it special, changing it
+    # and taking it back, and keeping the troupe's own templates (horatio.equipment).
+    TroupeAction.MANAGE_EQUIPMENT: frozenset(_RUNNING),
 }
 
 
@@ -199,6 +203,26 @@ def _running_staff_of(db: Session, user: User, character: Character) -> bool:
         ):
             return True
     return False
+
+
+def can_see_whos_who(db: Session, user: User, troupe: Troupe) -> bool:
+    """A troupe's Who's Who is for its staff, and for every player with an active
+    character in it, home or visiting (horatio.whos_who). It is never public."""
+    if user.is_custodian:
+        return True
+    if troupe.archived_at is not None:
+        return False
+    if troupe_role(db, user, troupe) is not None:
+        return True
+    playing = exists().where(
+        TroupeMembership.troupe_id == troupe.id,
+        TroupeMembership.left_at.is_(None),
+        TroupeMembership.character_id == Character.id,
+        Character.kind == "pc",
+        Character.player_id == user.id,
+        Character.status == "active",
+    )
+    return bool(db.scalar(select(playing)))
 
 
 def can_edit_character(db: Session, user: User, character: Character) -> bool:

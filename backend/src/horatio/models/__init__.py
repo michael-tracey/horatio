@@ -33,12 +33,20 @@ from horatio.models.downtimes import (
     TroupeConnector,
 )
 from horatio.models.email_changes import EmailChange
+from horatio.models.equipment import EquipmentEvent, EquipmentItem
 from horatio.models.influence import InfluenceEntry
 from horatio.models.influence_blocks import InfluenceBlock
 from horatio.models.influence_effects import InfluenceEffect
 from horatio.models.notifications import EmailNotice, Notification
 from horatio.models.npcs import StockNpc
-from horatio.models.people import AuthIdentity, FormerHandle, PasswordReset, Session, User
+from horatio.models.people import (
+    AuthIdentity,
+    FormerHandle,
+    PasswordReset,
+    Session,
+    Suspension,
+    User,
+)
 from horatio.models.play import (
     PlayCounter,
     PlayDerangement,
@@ -54,6 +62,8 @@ from horatio.models.rules import (
     ClanLogo,
     CostRule,
     CreationRule,
+    EquipmentQuality,
+    EquipmentTemplate,
     HouseTrait,
     RuleSet,
     StartingTrait,
@@ -121,6 +131,10 @@ __all__ = [
     "ClanLogo",
     "CostRule",
     "CreationRule",
+    "EquipmentEvent",
+    "EquipmentItem",
+    "EquipmentQuality",
+    "EquipmentTemplate",
     "FormerHandle",
     "HomeTroupeChange",
     "ReconciliationItem",
@@ -129,6 +143,7 @@ __all__ = [
     "Scene",
     "SceneCharacter",
     "Session",
+    "Suspension",
     "Retainer",
     "AlternateIdentity",
     "SharedBackground",

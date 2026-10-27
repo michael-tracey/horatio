@@ -67,6 +67,13 @@ custodian), `new_email`, `token_hash` (unique), `expires_at` (7 days on),
 `reason` (the custodian's; null when the person changes their own). Confirmed,
 cancelled or replaced, the row is deleted; the audit log keeps every step.
 
+**`suspensions`**: the custodian suspending someone's account.
+`user_id`, `reason` (for the custodian only), `ends_at` (nullable: until lifted),
+`suspended_by_id`, then `lifted_at`, `lifted_by_id` and `lift_reason` once
+lifted (by hand, or at `ends_at` with no one and no reason). At most one not yet
+lifted per user (a partial unique index); rows are kept once lifted. Suspending
+deletes the user's sessions.
+
 **`troupes`**
 `name`, `description`, `lead_user_id` (**not null**), `archived_at` (nullable),
 `allowed_sects` (JSON list of sect names; empty means any).
@@ -166,7 +173,7 @@ key).
 **`rule_sets`**: the generic rules for one splat.
 `splat`, `name` (for example "BNS MET Vampire"), `version`, `titles` (the names of
 the titles a troupe can give), `status_rules` (JSONB: sect status beyond the status
-traits, below).
+traits, below), `equipment` (JSONB: equipment's kinds and grades, below).
 
 **`trait_categories`**: `rule_set_id`, `key` (for example `skills`,
 `merits`, `disciplines`), `name`, `group_name`, `position`, `rated`,
@@ -258,6 +265,65 @@ chapters) and read by `horatio/rules/status.py`; the ghoul's rule set includes i
   general. `RuleSetData.statuses`, `titles` and `status_rules` are the typed view.
 - The catalogue's misspelt Architech and Annointed are Architect and Anointed;
   migration 0080 renamed their definitions in place, so sheets keep them.
+
+**Equipment (issue #279).** Written by hand in
+`rules/data/bns_met_vampire_equipment.toml` (MET: VTM pp. 515-524, with the Ballistic
+and Hardened errata in the Vol. II Issue 1 update, p. 23), which the vampire and
+ghoul rule sets name as their `equipment_file`, and read by
+`horatio/rules/equipment.py`.
+
+- `rule_sets.equipment` (JSONB) holds the four `kinds` (`melee`, `ranged`,
+  `protective`, `miscellaneous`), each with what an item of it is with no qualities
+  (`hands`, `damage`, `shots`, `range`) and a `note`; and the three `grades`, each
+  with its `max_qualities`: `cheap` 1, `standard` (standard or expensive) 2, and
+  `special` (Horatio's own, for storytellers' exceptional items) no limit.
+- **`equipment_qualities`**: `rule_set_id`, `kind`, `name`, `effect` (one line, in
+  our own words), `page`, `properties` (JSONB), `position` (the book's order),
+  `retired`. Unique on (`rule_set_id`, `kind`, `name`): a quality is per kind, as
+  the same name can mean different things (a ranged Deadly weapon needs two hands, a
+  melee one doesn't). Loading adds and updates them, and retires one the file no
+  longer has, as it does trait definitions. `properties`: `two_handed`,
+  `needs_one_hand` (Concealable, Quick Draw), `no_slot_when_crafted` (Artisan,
+  Masterwork), `repeatable` (Superior), `needs_detail` with `detail_prompt` (a
+  prompt alone is an optional detail: Masterwork's story effect), `ammo` (swappable
+  ammunition), `excludes` (written on both qualities), `shots` (Ammo Capacity),
+  `max_shots` (Spread 6, ranged Staking 1), `range` (Reach, Long Range) and
+  `aggravated_against`.
+- **`equipment_templates`**: `rule_set_id`, `troupe_id` (null for the book's sample
+  items; set for a troupe's own, #280), `name`, `kind`, `grade`, `qualities` (JSONB,
+  each `{name, detail?}`), `page`, `position`. Loading replaces the book's and leaves
+  troupes' alone.
+- `horatio.equipment.check(rules, kind, qualities, grade, crafted=)` refuses too many
+  qualities for the grade (a crafted Artisan or Masterwork doesn't count), a quality
+  of another kind, a repeat of one that isn't repeatable, a missing detail, a
+  two-handed item that is Concealable or Quick Draw, and each exclusion; and works
+  out the item's hands, damage, shots and range. Loading refuses a template that
+  breaks these rules.
+- A troupe's own templates (#280) are `equipment_templates` rows with `troupe_id`
+  set, under the rule set that checked them, and keep the rest of an item:
+  `crafted`, `effects` (JSONB, each `{name, effect}`) and `description`.
+
+**`equipment_items`**: what a character holds (issue #280, `horatio.equipment`).
+`character_id` (its holder; once taken back or discarded, its last holder),
+`troupe_id` (the troupe that gave it), `given_by`, `given_at`, `name`, `kind`,
+`grade`, `qualities` (JSONB, each `{name, detail?}`), `crafted`, `effects` (a
+special item's own, each `{name, effect}`), `description`, `staff_note` (only staff
+see it), `special_troupe_id` (the troupe that made it special; set exactly when the
+grade is `special`), `status` (`held` | `taken_back` | `discarded`, the last from
+#282). An item belongs to the character: the staff who see and change it are those
+of its holder's home troupe now (`home_troupe_id`, or an NPC's `owner_troupe_id`),
+whichever troupe gave it. Every give and change is checked with
+`horatio.equipment.check`, by the holder's troupe rules.
+
+**`equipment_events`**: each item's history. `item_id`, `action` (`given`,
+`changed`, `taken_back`; and for #282 `passed`, `discarded`, `restored`),
+`actor_id`, `troupe_id` (whose staff did it; null for a player's own doing),
+`from_character_id` and `to_character_id` with `from_name` and `to_name` (kept for
+a character since deleted), `reason`, and `changes` (JSONB: for a change, each
+field's `{from, to}`; for a give from a template, `{template}`). Each give, change
+and take-back also goes in the audit log (`equipment.given`, `equipment.changed`,
+`equipment.taken_back`), so in the character's log, and the holder's player is
+notified; a change to the staff note alone is kept here only.
 
 **`allowance_rules`**: how traits change a character's action allowance.
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),

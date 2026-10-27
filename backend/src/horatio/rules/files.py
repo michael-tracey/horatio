@@ -7,6 +7,7 @@ from typing import Any, cast
 
 from horatio.rules.checks import REQUIREMENT_KEY, CheckData, check_from_dict, validate_condition
 from horatio.rules.conditions import validate
+from horatio.rules.equipment import NO_EQUIPMENT, equipment_from
 from horatio.rules.grants import GrantData, grant_from_dict, validate_grant
 from horatio.rules.model import (
     DEFAULT_MAX_RATING,
@@ -443,6 +444,10 @@ def load_rule_set(path: Path) -> RuleSetData:
         check_status_rules(traits, status_rules, title_data)
     except ValueError as error:
         raise ValueError(f"{path.name}: {error}") from error
+    equipment = NO_EQUIPMENT
+    if "equipment_file" in raw:
+        with (path.parent / raw["equipment_file"]).open("rb") as f:
+            equipment = equipment_from(tomllib.load(f), source=raw["equipment_file"])
     rule_set = RuleSetData(
         key=raw["key"],
         splat=raw["splat"],
@@ -476,6 +481,7 @@ def load_rule_set(path: Path) -> RuleSetData:
         grants=grants,
         creation_only=tuple(creation_only),
         banked_xp=raw.get("banked_xp"),
+        equipment=equipment,
     )
     for allowance_rule in allowance_rules:
         check_allowance_rule(allowance_rule, rule_set)
@@ -522,14 +528,16 @@ def check_named_actions(source: str, kind: ActionKindData) -> None:
 
 
 def all_rule_set_files() -> Iterable[Path]:
-    """Rule set files; `*_traits.toml`, `*_status.toml`, `*_checks.toml` and
-    `*_grants.toml` are parts they include, `*_powers.toml` is horatio.reference's
-    quick notes, and `*_npc_kinds.toml` is horatio.rules.npc_kinds' NPC kinds."""
+    """Rule set files; `*_traits.toml`, `*_status.toml`, `*_checks.toml`,
+    `*_grants.toml` and `*_equipment.toml` are parts they include, `*_powers.toml` is
+    horatio.reference's quick notes, and `*_npc_kinds.toml` is
+    horatio.rules.npc_kinds' NPC kinds."""
     parts = (
         "_traits.toml",
         "_status.toml",
         "_checks.toml",
         "_grants.toml",
+        "_equipment.toml",
         "_powers.toml",
         "_npc_kinds.toml",
     )

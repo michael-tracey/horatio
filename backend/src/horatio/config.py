@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # Paradox's Dark Pack resources, imported by `python -m horatio.dark_pack`
     # (horatio.dark_pack). Never shipped with Horatio; unset, there are none.
     dark_pack_dir: str | None = None
+    # How someone whose account is suspended can reach the custodian, such as an
+    # email address or a web page (horatio.suspensions). Unset, they are told only
+    # to contact the custodian.
+    custodian_contact: str | None = None
     # How often the API sends deliveries waiting on connectors, in seconds; 0 stops it.
     delivery_interval: float = 15
 
