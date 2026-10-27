@@ -541,6 +541,138 @@
         "title": "ArchiveIn",
         "type": "object"
       },
+      "ArchivedCharacter": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "home": {
+            "title": "Home",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "left": {
+            "title": "Left",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "player_id",
+          "player_name",
+          "home",
+          "left"
+        ],
+        "title": "ArchivedCharacter",
+        "type": "object"
+      },
+      "ArchivedTroupeOut": {
+        "properties": {
+          "archived_at": {
+            "format": "date-time",
+            "title": "Archived At",
+            "type": "string"
+          },
+          "archived_by_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived By Id"
+          },
+          "archived_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived By Name"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/ArchivedCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lead_name": {
+            "title": "Lead Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "unsettled": {
+            "title": "Unsettled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived_at",
+          "archived_by_id",
+          "archived_by_name",
+          "reason",
+          "lead_name",
+          "characters",
+          "unsettled"
+        ],
+        "title": "ArchivedTroupeOut",
+        "type": "object"
+      },
       "Assignment": {
         "properties": {
           "any_narrator": {
@@ -603,6 +735,309 @@
           "attribute"
         ],
         "title": "AttributeChange",
+        "type": "object"
+      },
+      "AuditCharacter": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "player_name",
+          "troupe_name",
+          "retired"
+        ],
+        "title": "AuditCharacter",
+        "type": "object"
+      },
+      "AuditEntry": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "action",
+          "message",
+          "actor_id",
+          "actor_name",
+          "character_id",
+          "character_name",
+          "player_id",
+          "player_name",
+          "data",
+          "troupe_id",
+          "troupe_name"
+        ],
+        "title": "AuditEntry",
+        "type": "object"
+      },
+      "AuditFilters": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/AuditGroupOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "troupes": {
+            "items": {
+              "$ref": "#/components/schemas/AuditTroupe"
+            },
+            "title": "Troupes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups",
+          "troupes"
+        ],
+        "title": "AuditFilters",
+        "type": "object"
+      },
+      "AuditGroup": {
+        "enum": [
+          "approvals",
+          "xp",
+          "sheets",
+          "creation",
+          "status",
+          "titles",
+          "downtimes",
+          "influence",
+          "play",
+          "npcs",
+          "staff",
+          "house_rules",
+          "troupes",
+          "accounts",
+          "system"
+        ],
+        "title": "AuditGroup",
+        "type": "string"
+      },
+      "AuditGroupOut": {
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/AuditGroup"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "AuditGroupOut",
+        "type": "object"
+      },
+      "AuditPage": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          }
+        },
+        "required": [
+          "entries",
+          "next"
+        ],
+        "title": "AuditPage",
+        "type": "object"
+      },
+      "AuditTroupe": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived"
+        ],
+        "title": "AuditTroupe",
         "type": "object"
       },
       "AwardableCharacter": {
@@ -762,6 +1197,17 @@
             ],
             "title": "Picture"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "social_age": {
             "title": "Social Age",
             "type": "string"
@@ -791,6 +1237,7 @@
         "required": [
           "character_id",
           "name",
+          "pronouns",
           "clan",
           "social_age",
           "titles",
@@ -812,6 +1259,10 @@
             },
             "title": "Badges",
             "type": "array"
+          },
+          "print_pronouns": {
+            "title": "Print Pronouns",
+            "type": "boolean"
           },
           "print_status": {
             "title": "Print Status",
@@ -837,6 +1288,7 @@
           "troupe_name",
           "print_titles",
           "print_status",
+          "print_pronouns",
           "badges"
         ],
         "title": "BadgesOut",
@@ -2310,6 +2762,21 @@
             "title": "Kind",
             "type": "string"
           },
+          "left_listed": {
+            "title": "Left Listed",
+            "type": "boolean"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -2387,6 +2854,17 @@
             "title": "Player Id",
             "type": "string"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "splat": {
             "title": "Splat",
             "type": "string"
@@ -2401,6 +2879,7 @@
           "player_id",
           "splat",
           "name",
+          "pronouns",
           "status",
           "home_troupe_id",
           "building_troupe_id",
@@ -2412,7 +2891,9 @@
           "clan",
           "npc_kind",
           "npc_kind_name",
-          "npc_form"
+          "npc_form",
+          "left_reason",
+          "left_listed"
         ],
         "title": "CharacterOut",
         "type": "object"
@@ -2732,6 +3213,35 @@
         "title": "ClanLogosOut",
         "type": "object"
       },
+      "ClanSection": {
+        "properties": {
+          "character_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Character Ids",
+            "type": "array"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          }
+        },
+        "required": [
+          "clan",
+          "character_ids"
+        ],
+        "title": "ClanSection",
+        "type": "object"
+      },
       "Cleared": {
         "properties": {
           "removed": {
@@ -2743,6 +3253,83 @@
           "removed"
         ],
         "title": "Cleared",
+        "type": "object"
+      },
+      "ClosingCharacter": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "player_name"
+        ],
+        "title": "ClosingCharacter",
+        "type": "object"
+      },
+      "ClosingOut": {
+        "description": "What archiving the troupe settles, or settled (horatio.closing).",
+        "properties": {
+          "cycle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingCharacter"
+            },
+            "title": "Games",
+            "type": "array"
+          },
+          "home": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingCharacter"
+            },
+            "title": "Home",
+            "type": "array"
+          },
+          "npcs": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingCharacter"
+            },
+            "title": "Npcs",
+            "type": "array"
+          },
+          "visiting": {
+            "items": {
+              "$ref": "#/components/schemas/ClosingCharacter"
+            },
+            "title": "Visiting",
+            "type": "array"
+          }
+        },
+        "required": [
+          "home",
+          "visiting",
+          "npcs",
+          "cycle",
+          "games"
+        ],
+        "title": "ClosingOut",
         "type": "object"
       },
       "ConditionOut": {
@@ -2803,6 +3390,42 @@
           "away"
         ],
         "title": "ConditionOut",
+        "type": "object"
+      },
+      "ConfirmFor": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "new_email": {
+            "title": "New Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name",
+          "handle",
+          "new_email"
+        ],
+        "title": "ConfirmFor",
+        "type": "object"
+      },
+      "Confirmed": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "Confirmed",
         "type": "object"
       },
       "ConnectorChange": {
@@ -3298,6 +3921,22 @@
           "uses"
         ],
         "title": "CounterIn",
+        "type": "object"
+      },
+      "CourtOrder": {
+        "properties": {
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "titles"
+        ],
+        "title": "CourtOrder",
         "type": "object"
       },
       "CreationOut": {
@@ -5273,6 +5912,128 @@
         "title": "EffectRef",
         "type": "object"
       },
+      "EmailChangeIn": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "EmailChangeIn",
+        "type": "object"
+      },
+      "EmailChangeOut": {
+        "properties": {
+          "asked_themselves": {
+            "title": "Asked Themselves",
+            "type": "boolean"
+          },
+          "email_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Error"
+          },
+          "emailed_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emailed To"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "new_email": {
+            "title": "New Email",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "new_email",
+          "expires_at",
+          "made_by",
+          "asked_themselves"
+        ],
+        "title": "EmailChangeOut",
+        "type": "object"
+      },
+      "EmailChanges": {
+        "properties": {
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "pending": {
+            "items": {
+              "$ref": "#/components/schemas/PendingEmailFor"
+            },
+            "title": "Pending",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pending",
+          "log"
+        ],
+        "title": "EmailChanges",
+        "type": "object"
+      },
       "EmailHelp": {
         "properties": {
           "available": {
@@ -5284,6 +6045,23 @@
           "available"
         ],
         "title": "EmailHelp",
+        "type": "object"
+      },
+      "Emailed": {
+        "properties": {
+          "email_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Error"
+          }
+        },
+        "title": "Emailed",
         "type": "object"
       },
       "EmbraceChoicesIn": {
@@ -8196,6 +8974,32 @@
         "title": "GameOut",
         "type": "object"
       },
+      "GatheredOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "shared_by": {
+            "items": {
+              "$ref": "#/components/schemas/Owner"
+            },
+            "title": "Shared By",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "count",
+          "shared_by"
+        ],
+        "title": "GatheredOut",
+        "type": "object"
+      },
       "GiftIn": {
         "properties": {
           "amount": {
@@ -10441,6 +11245,70 @@
         "title": "LearnIn",
         "type": "object"
       },
+      "Leaving": {
+        "description": "Why a character left, and whether its troupes' Who's Who lists it.",
+        "properties": {
+          "listed": {
+            "title": "Listed",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "final_death",
+              "off_field",
+              "inactive"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "listed"
+        ],
+        "title": "Leaving",
+        "type": "object"
+      },
+      "LedTroupe": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "LedTroupe",
+        "type": "object"
+      },
+      "LiftIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "LiftIn",
+        "type": "object"
+      },
       "LimitOut": {
         "description": "Points held in a category with a limit: merits held, or flaws paying XP.",
         "properties": {
@@ -10470,6 +11338,62 @@
         "title": "LimitOut",
         "type": "object"
       },
+      "LinesVeils": {
+        "properties": {
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "shared": {
+            "title": "Shared",
+            "type": "boolean"
+          },
+          "veils": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Veils",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines",
+          "veils",
+          "shared"
+        ],
+        "title": "LinesVeils",
+        "type": "object"
+      },
+      "LinesVeilsIn": {
+        "properties": {
+          "lines": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "shared": {
+            "default": false,
+            "title": "Shared",
+            "type": "boolean"
+          },
+          "veils": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Veils",
+            "type": "array"
+          }
+        },
+        "title": "LinesVeilsIn",
+        "type": "object"
+      },
       "Link": {
         "properties": {
           "label": {
@@ -10486,6 +11410,19 @@
           "url"
         ],
         "title": "Link",
+        "type": "object"
+      },
+      "Listed": {
+        "properties": {
+          "listed": {
+            "title": "Listed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "listed"
+        ],
+        "title": "Listed",
         "type": "object"
       },
       "LiveReset": {
@@ -11049,23 +11986,144 @@
         "title": "MembershipOut",
         "type": "object"
       },
-      "MergeIn": {
+      "MergeCharacter": {
         "properties": {
-          "entry_ids": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "troupes": {
             "items": {
-              "format": "uuid",
-              "type": "string"
+              "$ref": "#/components/schemas/MoveTroupe"
             },
-            "maxItems": 100,
-            "minItems": 1,
-            "title": "Entry Ids",
+            "title": "Troupes",
             "type": "array"
           }
         },
         "required": [
-          "entry_ids"
+          "id",
+          "name",
+          "retired",
+          "troupes"
         ],
-        "title": "MergeIn",
+        "title": "MergeCharacter",
+        "type": "object"
+      },
+      "MergePreview": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/MergeCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "handles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Handles",
+            "type": "array"
+          },
+          "keep": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "merge": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "others": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Others",
+            "type": "array"
+          },
+          "refusals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Refusals",
+            "type": "array"
+          },
+          "settings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Settings",
+            "type": "array"
+          },
+          "sign_in": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sign In",
+            "type": "array"
+          },
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/MergeStaff"
+            },
+            "title": "Staff",
+            "type": "array"
+          }
+        },
+        "required": [
+          "keep",
+          "merge",
+          "characters",
+          "staff",
+          "sign_in",
+          "settings",
+          "handles",
+          "others",
+          "refusals"
+        ],
+        "title": "MergePreview",
+        "type": "object"
+      },
+      "MergeStaff": {
+        "properties": {
+          "had": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keeps": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "troupe": {
+            "$ref": "#/components/schemas/MoveTroupe"
+          }
+        },
+        "required": [
+          "troupe",
+          "role",
+          "had",
+          "keeps",
+          "summary"
+        ],
+        "title": "MergeStaff",
         "type": "object"
       },
       "ModifierChange": {
@@ -11235,6 +12293,122 @@
           "rating"
         ],
         "title": "Morality",
+        "type": "object"
+      },
+      "MoveIn": {
+        "properties": {
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "handle",
+          "reason"
+        ],
+        "title": "MoveIn",
+        "type": "object"
+      },
+      "MovePreview": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "from_player": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "home_troupe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoveTroupe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open_requests": {
+            "items": {
+              "$ref": "#/components/schemas/OpenRequest"
+            },
+            "title": "Open Requests",
+            "type": "array"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "staff_roles": {
+            "items": {
+              "$ref": "#/components/schemas/StaffRole"
+            },
+            "title": "Staff Roles",
+            "type": "array"
+          },
+          "to_player": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "visiting": {
+            "items": {
+              "$ref": "#/components/schemas/MoveTroupe"
+            },
+            "title": "Visiting",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "retired",
+          "from_player",
+          "to_player",
+          "home_troupe",
+          "visiting",
+          "open_requests",
+          "staff_roles",
+          "refusal"
+        ],
+        "title": "MovePreview",
+        "type": "object"
+      },
+      "MoveTroupe": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "MoveTroupe",
         "type": "object"
       },
       "MyDowntime": {
@@ -12002,6 +13176,21 @@
             "title": "Kind",
             "type": "string"
           },
+          "left_listed": {
+            "title": "Left Listed",
+            "type": "boolean"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -12051,6 +13240,10 @@
             ],
             "title": "Npc Kind Name"
           },
+          "on_whos_who": {
+            "title": "On Whos Who",
+            "type": "boolean"
+          },
           "owner_troupe_id": {
             "anyOf": [
               {
@@ -12079,6 +13272,17 @@
             "title": "Player Id",
             "type": "string"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "splat": {
             "title": "Splat",
             "type": "string"
@@ -12104,6 +13308,7 @@
           "player_id",
           "splat",
           "name",
+          "pronouns",
           "status",
           "home_troupe_id",
           "building_troupe_id",
@@ -12116,7 +13321,10 @@
           "npc_kind",
           "npc_kind_name",
           "npc_form",
-          "stock_rating"
+          "left_reason",
+          "left_listed",
+          "stock_rating",
+          "on_whos_who"
         ],
         "title": "NpcOut",
         "type": "object"
@@ -12207,6 +13415,23 @@
         "title": "OfferOut",
         "type": "object"
       },
+      "OpenRequest": {
+        "properties": {
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "troupe": {
+            "$ref": "#/components/schemas/MoveTroupe"
+          }
+        },
+        "required": [
+          "summary",
+          "troupe"
+        ],
+        "title": "OpenRequest",
+        "type": "object"
+      },
       "OptionList": {
         "properties": {
           "names": {
@@ -12251,6 +13476,17 @@
             "title": "Name",
             "type": "string"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "same_sect": {
             "title": "Same Sect",
             "type": "boolean"
@@ -12277,6 +13513,7 @@
         "required": [
           "character_id",
           "name",
+          "pronouns",
           "kind",
           "sect",
           "same_sect",
@@ -12335,11 +13572,24 @@
               }
             ],
             "title": "Status"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
           }
         },
         "required": [
           "other",
-          "status"
+          "status",
+          "troupe_id"
         ],
         "title": "OtherStatusOut",
         "type": "object"
@@ -12414,6 +13664,30 @@
           "purpose"
         ],
         "title": "OwnEntryOut",
+        "type": "object"
+      },
+      "Owner": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "handle"
+        ],
+        "title": "Owner",
         "type": "object"
       },
       "PanelsOut": {
@@ -12771,6 +14045,81 @@
           "cost"
         ],
         "title": "PendingDisciplineOut",
+        "type": "object"
+      },
+      "PendingEmail": {
+        "description": "A change of email waiting to be confirmed at the new address.",
+        "properties": {
+          "asked_themselves": {
+            "title": "Asked Themselves",
+            "type": "boolean"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "new_email": {
+            "title": "New Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_email",
+          "expires_at",
+          "made_by",
+          "asked_themselves"
+        ],
+        "title": "PendingEmail",
+        "type": "object"
+      },
+      "PendingEmailFor": {
+        "properties": {
+          "asked_themselves": {
+            "title": "Asked Themselves",
+            "type": "boolean"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "new_email": {
+            "title": "New Email",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_email",
+          "expires_at",
+          "made_by",
+          "asked_themselves",
+          "user_id",
+          "display_name",
+          "email"
+        ],
+        "title": "PendingEmailFor",
         "type": "object"
       },
       "People": {
@@ -13146,6 +14495,16 @@
             },
             "title": "Identities",
             "type": "array"
+          },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "notes": {
             "items": {
@@ -13765,6 +15124,16 @@
             ],
             "title": "Email"
           },
+          "email_change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingEmail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "handle": {
             "title": "Handle",
             "type": "string"
@@ -13778,6 +15147,16 @@
             "title": "Is Custodian",
             "type": "boolean"
           },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "links": {
             "items": {
               "$ref": "#/components/schemas/Link"
@@ -13789,6 +15168,17 @@
             "format": "date-time",
             "title": "Member Since",
             "type": "string"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
           },
           "reset_expires_at": {
             "anyOf": [
@@ -13808,12 +15198,14 @@
           "display_name",
           "handle",
           "member_since",
+          "pronouns",
           "bio",
           "links",
           "discord_handle",
           "is_custodian",
           "email",
           "characters",
+          "lines_veils",
           "reset_expires_at"
         ],
         "title": "PlayerOut",
@@ -13829,6 +15221,17 @@
             "title": "Email",
             "type": "string"
           },
+          "email_change_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Change To"
+          },
           "handle": {
             "title": "Handle",
             "type": "string"
@@ -13837,6 +15240,11 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "is_custodian": {
+            "default": false,
+            "title": "Is Custodian",
+            "type": "boolean"
           },
           "member_since": {
             "format": "date-time",
@@ -13854,6 +15262,11 @@
               }
             ],
             "title": "Reset Expires At"
+          },
+          "suspended": {
+            "default": false,
+            "title": "Suspended",
+            "type": "boolean"
           }
         },
         "required": [
@@ -14398,6 +15811,11 @@
               }
             ],
             "title": "Time Zone"
+          },
+          "whos_who_handle": {
+            "default": false,
+            "title": "Whos Who Handle",
+            "type": "boolean"
           }
         },
         "title": "Preferences",
@@ -14951,6 +16369,17 @@
             },
             "title": "Links",
             "type": "array"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
           }
         },
         "required": [
@@ -15104,6 +16533,24 @@
           "by_action_kind"
         ],
         "title": "Progress",
+        "type": "object"
+      },
+      "PronounsIn": {
+        "properties": {
+          "pronouns": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          }
+        },
+        "title": "PronounsIn",
         "type": "object"
       },
       "PublicIn": {
@@ -15558,6 +17005,21 @@
         "title": "ReadIds",
         "type": "object"
       },
+      "Reason": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "Reason",
+        "type": "object"
+      },
       "ReceivedOut": {
         "properties": {
           "amount": {
@@ -15766,6 +17228,26 @@
           "note"
         ],
         "title": "RemovedOut",
+        "type": "object"
+      },
+      "RepresentedBy": {
+        "properties": {
+          "represented_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Represented By"
+          }
+        },
+        "required": [
+          "represented_by"
+        ],
+        "title": "RepresentedBy",
         "type": "object"
       },
       "RepricedOut": {
@@ -16463,6 +17945,16 @@
             "title": "Kind",
             "type": "string"
           },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "out_of_sect_titles": {
             "items": {
               "type": "string"
@@ -16508,8 +18000,50 @@
             "title": "Player Name",
             "type": "string"
           },
+          "player_pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Pronouns"
+          },
+          "player_suspended": {
+            "default": false,
+            "title": "Player Suspended",
+            "type": "boolean"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
+          "represented_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Represented By"
+          },
           "retired": {
             "title": "Retired",
+            "type": "boolean"
+          },
+          "seated": {
+            "title": "Seated",
             "type": "boolean"
           },
           "sect": {
@@ -16545,6 +18079,8 @@
           "player_name",
           "player_id",
           "player_handle",
+          "pronouns",
+          "player_pronouns",
           "kind",
           "retired",
           "titles",
@@ -16554,9 +18090,12 @@
           "clan",
           "social_age",
           "home",
+          "seated",
+          "represented_by",
           "waiting",
           "disciplines_waiting",
-          "joined_at"
+          "joined_at",
+          "lines_veils"
         ],
         "title": "RosterEntry",
         "type": "object"
@@ -16775,6 +18314,73 @@
           "ends_at"
         ],
         "title": "ScheduledGameOut",
+        "type": "object"
+      },
+      "Seats": {
+        "properties": {
+          "clans": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clans"
+          }
+        },
+        "required": [
+          "clans"
+        ],
+        "title": "Seats",
+        "type": "object"
+      },
+      "SeatsOut": {
+        "properties": {
+          "chosen": {
+            "title": "Chosen",
+            "type": "boolean"
+          },
+          "clans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "primogen": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Primogen",
+            "type": "array"
+          },
+          "seated": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seated"
+          }
+        },
+        "required": [
+          "clans",
+          "seated",
+          "chosen",
+          "primogen"
+        ],
+        "title": "SeatsOut",
         "type": "object"
       },
       "SeenOut": {
@@ -18137,6 +19743,22 @@
         "title": "StaffMember",
         "type": "object"
       },
+      "StaffRole": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "troupe": {
+            "$ref": "#/components/schemas/MoveTroupe"
+          }
+        },
+        "required": [
+          "troupe",
+          "role"
+        ],
+        "title": "StaffRole",
+        "type": "object"
+      },
       "StartingBlood": {
         "properties": {
           "blood": {
@@ -19021,6 +20643,118 @@
         "title": "SuppressionOut",
         "type": "object"
       },
+      "SuspendIn": {
+        "properties": {
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SuspendIn",
+        "type": "object"
+      },
+      "Suspended": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "leads": {
+            "items": {
+              "$ref": "#/components/schemas/LedTroupe"
+            },
+            "title": "Leads",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          },
+          "suspended_by": {
+            "title": "Suspended By",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "display_name",
+          "handle",
+          "reason",
+          "since",
+          "ends_at",
+          "suspended_by",
+          "leads"
+        ],
+        "title": "Suspended",
+        "type": "object"
+      },
+      "Suspensions": {
+        "properties": {
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "suspended": {
+            "items": {
+              "$ref": "#/components/schemas/Suspended"
+            },
+            "title": "Suspended",
+            "type": "array"
+          }
+        },
+        "required": [
+          "suspended",
+          "log"
+        ],
+        "title": "Suspensions",
+        "type": "object"
+      },
       "SwapChangeIn": {
         "description": "Swap a focus (or another swappable choice), as `POST /traits/change`.",
         "properties": {
@@ -19859,6 +21593,13 @@
       },
       "TitlesOut": {
         "properties": {
+          "court_order": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Court Order",
+            "type": "array"
+          },
           "sects": {
             "items": {
               "type": "string"
@@ -19884,7 +21625,8 @@
         "required": [
           "sects",
           "titles",
-          "status_choices"
+          "status_choices",
+          "court_order"
         ],
         "title": "TitlesOut",
         "type": "object"
@@ -20176,6 +21918,17 @@
             ],
             "title": "Allowed Splats"
           },
+          "badge_pronouns": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Badge Pronouns"
+          },
           "badge_status": {
             "anyOf": [
               {
@@ -20280,6 +22033,17 @@
               }
             ],
             "title": "Status By"
+          },
+          "whos_who_negative": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whos Who Negative"
           }
         },
         "title": "TroupeChanges",
@@ -20374,6 +22138,38 @@
         "title": "TroupeKindOut",
         "type": "object"
       },
+      "TroupeLinesVeils": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/GatheredOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/Owner"
+            },
+            "title": "Players",
+            "type": "array"
+          },
+          "veils": {
+            "items": {
+              "$ref": "#/components/schemas/GatheredOut"
+            },
+            "title": "Veils",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines",
+          "veils",
+          "players"
+        ],
+        "title": "TroupeLinesVeils",
+        "type": "object"
+      },
       "TroupeOut": {
         "properties": {
           "allowed_sects": {
@@ -20392,6 +22188,10 @@
           },
           "archived": {
             "title": "Archived",
+            "type": "boolean"
+          },
+          "badge_pronouns": {
+            "title": "Badge Pronouns",
             "type": "boolean"
           },
           "badge_status": {
@@ -20491,6 +22291,14 @@
             "title": "Status By",
             "type": "string"
           },
+          "whos_who": {
+            "title": "Whos Who",
+            "type": "boolean"
+          },
+          "whos_who_negative": {
+            "title": "Whos Who Negative",
+            "type": "boolean"
+          },
           "xp_ceiling": {
             "title": "Xp Ceiling",
             "type": "integer"
@@ -20519,6 +22327,9 @@
           "status_by",
           "badge_titles",
           "badge_status",
+          "badge_pronouns",
+          "whos_who_negative",
+          "whos_who",
           "portrait",
           "banner",
           "public",
@@ -21264,6 +23075,86 @@
         "title": "VenueOut",
         "type": "object"
       },
+      "ViewAsIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ViewAsIn",
+        "type": "object"
+      },
+      "ViewedAs": {
+        "description": "A time the custodian viewed Horatio as the person.",
+        "properties": {
+          "custodian": {
+            "title": "Custodian",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "custodian",
+          "reason",
+          "started_at",
+          "until"
+        ],
+        "title": "ViewedAs",
+        "type": "object"
+      },
+      "ViewingNow": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "handle",
+          "display_name",
+          "reason",
+          "ends_at"
+        ],
+        "title": "ViewingNow",
+        "type": "object"
+      },
       "VisibleNote": {
         "properties": {
           "note": {
@@ -21372,6 +23263,295 @@
           "note"
         ],
         "title": "WhileAbsentOut",
+        "type": "object"
+      },
+      "WhosWhoEntry": {
+        "properties": {
+          "bans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Bans",
+            "type": "array"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negative": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Negative",
+            "type": "array"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "player_pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Pronouns"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
+          "represented_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Represented By"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "social_age": {
+            "title": "Social Age",
+            "type": "string"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
+          "visible": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Visible",
+            "type": "array"
+          },
+          "visiting": {
+            "title": "Visiting",
+            "type": "boolean"
+          },
+          "visiting_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visiting From"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "picture",
+          "clan",
+          "social_age",
+          "sect",
+          "player_id",
+          "player_name",
+          "titles",
+          "visible",
+          "bans",
+          "negative",
+          "visiting",
+          "visiting_from",
+          "pronouns",
+          "player_pronouns",
+          "represented_by",
+          "left_reason",
+          "lines_veils"
+        ],
+        "title": "WhosWhoEntry",
+        "type": "object"
+      },
+      "WhosWhoOut": {
+        "properties": {
+          "can_represent": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Can Represent",
+            "type": "array"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanSection"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "court": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Court",
+            "type": "array"
+          },
+          "departed": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Departed",
+            "type": "array"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/WhosWhoEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "other": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Other",
+            "type": "array"
+          },
+          "seated": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seated"
+          },
+          "shows_negative": {
+            "title": "Shows Negative",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "entries",
+          "court",
+          "clans",
+          "other",
+          "departed",
+          "seated",
+          "can_represent",
+          "shows_negative"
+        ],
+        "title": "WhosWhoOut",
         "type": "object"
       },
       "WindowOut": {
@@ -22070,6 +24250,29 @@
         "title": "XpSummary",
         "type": "object"
       },
+      "horatio__api__account_merges__MergeIn": {
+        "properties": {
+          "keep": {
+            "title": "Keep",
+            "type": "string"
+          },
+          "merge": {
+            "title": "Merge",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "keep",
+          "merge",
+          "reason"
+        ],
+        "title": "MergeIn",
+        "type": "object"
+      },
       "horatio__api__influence_effects__BlockIn": {
         "properties": {
           "activity": {
@@ -22117,6 +24320,25 @@
           "starts_at"
         ],
         "title": "BlockIn",
+        "type": "object"
+      },
+      "horatio__api__influence_log__MergeIn": {
+        "properties": {
+          "entry_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Entry Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entry_ids"
+        ],
+        "title": "MergeIn",
         "type": "object"
       },
       "horatio__api__influence_lookups__BlockIn": {
@@ -22170,6 +24392,117 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/account/viewed-as": {
+      "get": {
+        "description": "The times the custodian viewed Horatio as the signed-in person, newest first.",
+        "operationId": "viewed_as_api_account_viewed_as_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ViewedAs"
+                  },
+                  "title": "Response Viewed As Api Account Viewed As Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Viewed As",
+        "tags": [
+          "viewing"
+        ]
+      }
+    },
+    "/api/accounts/merge": {
+      "get": {
+        "description": "What merging whoever has the handle `merge` into whoever has `keep` would do,\nfor the custodian to confirm.",
+        "operationId": "preview_merge_api_accounts_merge_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "keep",
+            "required": true,
+            "schema": {
+              "title": "Keep",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "merge",
+            "required": true,
+            "schema": {
+              "title": "Merge",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Merge",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "post": {
+        "description": "Merge one account into the other and close it. Only the custodian can, and only\nwith a reason. It can't be undone.",
+        "operationId": "merge_accounts_api_accounts_merge_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__account_merges__MergeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Merge Accounts",
+        "tags": [
+          "custodian"
+        ]
+      }
+    },
     "/api/approvals/{approval_id}/approve": {
       "post": {
         "operationId": "approve_api_approvals__approval_id__approve_post",
@@ -22273,6 +24606,505 @@
         "summary": "Decline",
         "tags": [
           "approvals"
+        ]
+      }
+    },
+    "/api/audit": {
+      "get": {
+        "description": "For the custodian: every event in the log, in every troupe and outside them,\nthat the filters find, newest first, a page at a time. `q` is words that must all\nbe in the event as it reads.",
+        "operationId": "search_log_api_audit_get",
+        "parameters": [
+          {
+            "description": "Who did it: their handle.",
+            "in": "query",
+            "name": "person",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Who did it: their handle.",
+              "title": "Person"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditGroup"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Group"
+            }
+          },
+          {
+            "description": "From this moment on.",
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "From this moment on.",
+              "title": "Since"
+            }
+          },
+          {
+            "description": "Before this moment.",
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Before this moment.",
+              "title": "Until"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Log",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/audit/characters": {
+      "get": {
+        "description": "For the custodian: characters to search the log by, whosever and wherever they\nare, retired ones too: up to 20 with `q` in their name, or just `character_id`.",
+        "operationId": "characters_api_audit_characters_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditCharacter"
+                  },
+                  "title": "Response Characters Api Audit Characters Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Characters",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/audit/export": {
+      "get": {
+        "description": "For the custodian: everything the same filters find, newest first, as a CSV.\nThe export itself goes in the log.",
+        "operationId": "export_log_api_audit_export_get",
+        "parameters": [
+          {
+            "description": "Who did it: their handle.",
+            "in": "query",
+            "name": "person",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Who did it: their handle.",
+              "title": "Person"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditGroup"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Group"
+            }
+          },
+          {
+            "description": "From this moment on.",
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "From this moment on.",
+              "title": "Since"
+            }
+          },
+          {
+            "description": "Before this moment.",
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Before this moment.",
+              "title": "Until"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Log",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/audit/filters": {
+      "get": {
+        "description": "For the custodian: the groups of actions and the troupes to search by.",
+        "operationId": "filters_api_audit_filters_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditFilters"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Filters",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/auth/email-change/{token}": {
+      "get": {
+        "description": "Whose email a link changes, and to what, so the page can ask first.",
+        "operationId": "email_change_for_api_auth_email_change__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmFor"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Email Change For",
+        "tags": [
+          "players"
+        ]
+      },
+      "post": {
+        "description": "Confirm a change from the link sent to the new address: the email changes,\nand the old address is told.",
+        "operationId": "confirm_email_change_api_auth_email_change__token__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Confirmed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Email Change",
+        "tags": [
+          "players"
         ]
       }
     },
@@ -25112,6 +27944,60 @@
         ]
       }
     },
+    "/api/characters/{character_id}/leaving": {
+      "put": {
+        "description": "Change why a retired character left, or whether its troupes' Who's Who lists\nit: its player, or its home troupe's running staff.",
+        "operationId": "change_leaving_api_characters__character_id__leaving_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Leaving"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Leaving",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
     "/api/characters/{character_id}/log": {
       "get": {
         "description": "Everything that happened to the character, newest first. Its player sees it\nall; a troupe's staff see the sheet's own history and what happened in their\ntroupe, not in the character's other troupes.",
@@ -25184,6 +28070,104 @@
         "summary": "Character Log",
         "tags": [
           "log"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/move": {
+      "get": {
+        "description": "What moving the character to whoever has `handle` would do, for the custodian\nto confirm.",
+        "operationId": "preview_move_api_characters__character_id__move_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "title": "Handle",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Move",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "post": {
+        "description": "Give the character to whoever has the handle. Only the custodian can, and\nonly with a reason.",
+        "operationId": "move_character_api_characters__character_id__move_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Move Character",
+        "tags": [
+          "custodian"
         ]
       }
     },
@@ -26917,6 +29901,60 @@
         ]
       }
     },
+    "/api/characters/{character_id}/pronouns": {
+      "put": {
+        "description": "Set the character's pronouns: its player, or for an NPC its troupe's staff.",
+        "operationId": "set_pronouns_api_characters__character_id__pronouns_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PronounsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Pronouns",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
     "/api/characters/{character_id}/quote": {
       "post": {
         "description": "What a change would cost, without making it.",
@@ -27177,7 +30215,7 @@
     },
     "/api/characters/{character_id}/retire": {
       "post": {
-        "description": "Characters are never deleted, only retired.",
+        "description": "Characters are never deleted, only retired: for a reason, which goes in the log\nwith the note, and listed on its troupes' Who's Who if the player chooses. With\nno reason it is not listed.",
         "operationId": "retire_character_api_characters__character_id__retire_post",
         "parameters": [
           {
@@ -27191,6 +30229,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Leaving"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -30099,6 +33154,50 @@
         ]
       }
     },
+    "/api/email-changes": {
+      "get": {
+        "description": "For the custodian: the changes waiting to be confirmed, and every step of\nchanges made, with both addresses.",
+        "operationId": "list_email_changes_api_email_changes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChanges"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Email Changes",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/api/handle": {
       "put": {
         "description": "Change the signed-in person's handle: at most once in 30 days, and to one no\none has or has held in the last 90.",
@@ -30435,7 +33534,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MergeIn"
+                "$ref": "#/components/schemas/horatio__api__influence_log__MergeIn"
               }
             }
           },
@@ -30761,7 +33860,7 @@
     },
     "/api/players": {
       "get": {
-        "description": "Every account whose name, handle or email has `q` in it, for the custodian. With\n`troupe_id`, only those with an active PC whose home troupe is that troupe.",
+        "description": "Every account whose name, handle or email has `q` in it, or who holds it as a\nformer handle, for the custodian. With `troupe_id`, only those with an active PC\nwhose home troupe is that troupe. Never a merged account.",
         "operationId": "find_players_api_players_get",
         "parameters": [
           {
@@ -30826,7 +33925,7 @@
     },
     "/api/players/{user_id}": {
       "get": {
-        "description": "A player's profile. Anyone signed in may see it; it never shows their email\nto anyone but themself and the custodian.",
+        "description": "A player's profile. Anyone signed in may see it; it never shows their email\nto anyone but themself and the custodian. A merged account's is the profile of\nthe account it was merged into.",
         "operationId": "view_player_api_players__user_id__get",
         "parameters": [
           {
@@ -30863,6 +33962,139 @@
           }
         },
         "summary": "View Player",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/players/{user_id}/email-change": {
+      "delete": {
+        "description": "Cancel the change waiting: the email stays as it is, and the link stops working.",
+        "operationId": "cancel_email_change_api_players__user_id__email_change_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Email Change",
+        "tags": [
+          "players"
+        ]
+      },
+      "post": {
+        "description": "Start changing someone's email: it changes when the link sent to the new\naddress is opened. The custodian gives a reason; someone changing their own\ngives their password, and needs Horatio to be able to email.",
+        "operationId": "change_email_api_players__user_id__email_change_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChangeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Email",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/players/{user_id}/email-change/resend": {
+      "post": {
+        "description": "A new link for the change waiting, good for another 7 days; the old one stops\nworking.",
+        "operationId": "resend_email_change_api_players__user_id__email_change_resend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChangeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resend Email Change",
         "tags": [
           "players"
         ]
@@ -30961,6 +34193,168 @@
         "summary": "Reset Password",
         "tags": [
           "players"
+        ]
+      }
+    },
+    "/api/players/{user_id}/suspension": {
+      "post": {
+        "description": "Suspend someone: signed out everywhere at once, and kept out until the\ncustodian lifts it or `ends_at` passes. They are emailed, without the reason.",
+        "operationId": "suspend_api_players__user_id__suspension_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Emailed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Suspend",
+        "tags": [
+          "suspensions"
+        ]
+      }
+    },
+    "/api/players/{user_id}/suspension/lift": {
+      "post": {
+        "description": "Lift someone's suspension, so they can sign in again. They are emailed.",
+        "operationId": "lift_api_players__user_id__suspension_lift_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiftIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Emailed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Lift",
+        "tags": [
+          "suspensions"
+        ]
+      }
+    },
+    "/api/players/{user_id}/view-as": {
+      "post": {
+        "description": "Start viewing Horatio as someone, read-only, for 30 minutes. Never another\ncustodian. The reason goes in the audit log, and the person is told.",
+        "operationId": "view_as_api_players__user_id__view_as_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewAsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewingNow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "View As",
+        "tags": [
+          "viewing"
         ]
       }
     },
@@ -31088,6 +34482,48 @@
         "summary": "Edit Profile",
         "tags": [
           "players"
+        ]
+      }
+    },
+    "/api/profile/lines-veils": {
+      "put": {
+        "description": "The signed-in player's own lines and veils, and whether they share them with\nother players. Not logged: they are the player's private settings.",
+        "operationId": "set_lines_veils_api_profile_lines_veils_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinesVeilsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinesVeils"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Lines Veils",
+        "tags": [
+          "lines-veils"
         ]
       }
     },
@@ -32005,6 +35441,50 @@
         ]
       }
     },
+    "/api/suspensions": {
+      "get": {
+        "description": "For the custodian: who is suspended now, and the log of suspensions.",
+        "operationId": "list_suspensions_api_suspensions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suspensions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Suspensions",
+        "tags": [
+          "suspensions"
+        ]
+      }
+    },
     "/api/system": {
       "get": {
         "operationId": "system_api_system_get",
@@ -32316,42 +35796,33 @@
         ]
       }
     },
-    "/api/troupes/{troupe_id}": {
-      "delete": {
-        "description": "Deleting a troupe archives it: closed to use, history kept.",
-        "operationId": "archive_troupe_api_troupes__troupe_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "troupe_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Troupe Id",
-              "type": "string"
-            }
-          }
-        ],
+    "/api/troupes/archived": {
+      "get": {
+        "description": "The custodian's list of archived troupes, latest first, with what each had.",
+        "operationId": "list_archived_api_troupes_archived_get",
         "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "items": {
+                    "$ref": "#/components/schemas/ArchivedTroupeOut"
+                  },
+                  "title": "Response List Archived Api Troupes Archived Get",
+                  "type": "array"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Successful Response"
           }
         },
-        "summary": "Archive Troupe",
+        "summary": "List Archived",
         "tags": [
           "troupes"
         ]
-      },
+      }
+    },
+    "/api/troupes/{troupe_id}": {
       "get": {
         "operationId": "read_troupe_api_troupes__troupe_id__get",
         "parameters": [
@@ -32774,6 +36245,60 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/archive": {
+      "post": {
+        "description": "Deleting a troupe archives it: closed to use, history kept. What it held is\nsettled first (horatio.closing), and everyone affected is told.",
+        "operationId": "archive_troupe_api_troupes__troupe_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reason"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Troupe",
+        "tags": [
+          "troupes"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/badges": {
       "get": {
         "description": "Badges for the characters named, in that order, or every character in the\ntroupe now, in the roster's order.",
@@ -33087,6 +36612,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/characters/{character_id}/represented-by": {
+      "put": {
+        "description": "Say who speaks at court for a character of a clan without a seat. Its player\nsets it, and staff who give titles can change it.",
+        "operationId": "set_represented_by_api_troupes__troupe_id__characters__character_id__represented_by_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepresentedBy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepresentedBy"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Represented By",
+        "tags": [
+          "whos-who"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/characters/{character_id}/titles": {
       "put": {
         "description": "Give a character in this troupe exactly these titles.",
@@ -33257,6 +36846,50 @@
         "summary": "Change Check",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/closing": {
+      "get": {
+        "description": "What archiving the troupe would settle; for an archived one, what is left to.",
+        "operationId": "preview_closing_api_troupes__troupe_id__closing_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Closing",
+        "tags": [
+          "troupes"
         ]
       }
     },
@@ -33609,6 +37242,60 @@
         "summary": "Change Cost",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/court-order": {
+      "put": {
+        "description": "Put the troupe's own titles in order at court, after the rule sets' titles.",
+        "operationId": "set_court_order_api_troupes__troupe_id__court_order_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourtOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Court Order",
+        "tags": [
+          "whos-who"
         ]
       }
     },
@@ -35765,6 +39452,50 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/lines-veils": {
+      "get": {
+        "description": "Every line and veil across the troupe's players, for its staff to plan games.\nWhose each one is shows only for players who share theirs.",
+        "operationId": "troupe_lines_veils_api_troupes__troupe_id__lines_veils_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeLinesVeils"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Lines Veils",
+        "tags": [
+          "lines-veils"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/log": {
       "get": {
         "description": "What has happened in the troupe, newest first.",
@@ -35935,6 +39666,70 @@
         "summary": "Create Npc",
         "tags": [
           "npcs"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/npcs/{character_id}/whos-who": {
+      "put": {
+        "description": "List an NPC on the troupe's Who's Who though it holds no title, or stop.",
+        "operationId": "list_npc_api_troupes__troupe_id__npcs__character_id__whos_who_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Listed"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Listed"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Npc",
+        "tags": [
+          "whos-who"
         ]
       }
     },
@@ -36596,6 +40391,60 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/reopen": {
+      "post": {
+        "description": "The custodian reopens an archived troupe. Its characters do not come back.",
+        "operationId": "reopen_troupe_api_troupes__troupe_id__reopen_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reason"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reopen Troupe",
+        "tags": [
+          "troupes"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/scenes": {
       "delete": {
         "description": "Remove every scene in the troupe not used since `unused_since`.",
@@ -37038,6 +40887,156 @@
         "summary": "Pin",
         "tags": [
           "scenes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/seats": {
+      "get": {
+        "description": "Which clans have a seat at the troupe's court, and which it could seat.",
+        "operationId": "read_seats_api_troupes__troupe_id__seats_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Seats",
+        "tags": [
+          "whos-who"
+        ]
+      },
+      "put": {
+        "description": "Choose the clans with a seat at court, or go back to those whose Primogen is\nheld here. Characters of the others are listed under Other on the Who's Who.",
+        "operationId": "set_seats_api_troupes__troupe_id__seats_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Seats"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Seats",
+        "tags": [
+          "whos-who"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/settle": {
+      "post": {
+        "description": "The custodian settles a troupe archived before archiving settled anything.",
+        "operationId": "settle_archived_api_troupes__troupe_id__settle_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reason"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Settle Archived",
+        "tags": [
+          "troupes"
         ]
       }
     },
@@ -37799,6 +41798,50 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/whos-who": {
+      "get": {
+        "description": "The troupe's active characters: its court, by clan, and Other. Only its staff\nand the players of active characters in it see it.",
+        "operationId": "read_whos_who_api_troupes__troupe_id__whos_who_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhosWhoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Whos Who",
+        "tags": [
+          "whos-who"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/work-cycles": {
       "get": {
         "description": "Cycles with downtimes to answer, for any staff member, narrators included.",
@@ -38119,6 +42162,51 @@
         "summary": "Unsubscribe",
         "tags": [
           "unsubscribe"
+        ]
+      }
+    },
+    "/api/view-as": {
+      "get": {
+        "description": "Whom the signed-in custodian is viewing Horatio as, if anyone.",
+        "operationId": "current_viewing_api_view_as_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ViewingNow"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Current Viewing Api View As Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Current Viewing",
+        "tags": [
+          "viewing"
+        ]
+      }
+    },
+    "/api/view-as/stop": {
+      "post": {
+        "description": "Stop viewing as someone, and be the custodian again.",
+        "operationId": "stop_viewing_api_view_as_stop_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Stop Viewing",
+        "tags": [
+          "viewing"
         ]
       }
     }

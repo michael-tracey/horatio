@@ -6,17 +6,20 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path, PurePosixPath
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from horatio import delivery
 from horatio.api import (
+    account_merges,
     approvals,
+    audit,
     auth,
     backups,
     badges,
     cart,
     character_log,
+    character_moves,
     characters,
     clan_logos,
     connectors,
@@ -24,6 +27,7 @@ from horatio.api import (
     dark_pack,
     discord,
     downtimes,
+    email_changes,
     embrace,
     equipment,
     feeding,
@@ -33,6 +37,7 @@ from horatio.api import (
     influence_history,
     influence_log,
     influence_lookups,
+    lines_veils,
     membership,
     notifications,
     npcs,
@@ -52,6 +57,7 @@ from horatio.api import (
     shared_backgrounds,
     sheets,
     specializations,
+    suspensions,
     system,
     titles,
     trait_exceptions,
@@ -60,11 +66,14 @@ from horatio.api import (
     troupe_requests,
     troupes,
     unsubscribe,
+    viewing,
     waiting,
+    whos_who,
     xp_awards,
     xp_range,
 )
 from horatio.auth.deps import DbSession
+from horatio.auth.viewing import read_only_while_viewing
 from horatio.config import get_settings
 
 
@@ -101,7 +110,8 @@ async def require_csrf_header(
     return await call_next(request)
 
 
-api = APIRouter(prefix="/api")
+# While the custodian views as someone, nothing changes (horatio.auth.viewing).
+api = APIRouter(prefix="/api", dependencies=[Depends(read_only_while_viewing)])
 for module in (
     auth,
     troupes,
@@ -125,6 +135,7 @@ for module in (
     responses,
     roster,
     character_log,
+    audit,
     printing,
     pictures,
     npcs,
@@ -143,6 +154,9 @@ for module in (
     connectors,
     discord,
     players,
+    lines_veils,
+    email_changes,
+    suspensions,
     backups,
     badges,
     troupe_requests,
@@ -153,8 +167,12 @@ for module in (
     system,
     play,
     play_others,
+    character_moves,
+    account_merges,
     scenes,
     waiting,
+    viewing,
+    whos_who,
 ):
     api.include_router(module.router)
 

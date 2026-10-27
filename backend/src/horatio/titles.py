@@ -4,6 +4,10 @@ A troupe's titles are its rule sets' list plus any it added. Its storytellers
 and assistant storytellers give them to characters in the troupe; a title
 means nothing elsewhere, and goes when the character leaves.
 
+On the troupe's Who's Who, the court is in rank order (`court_order`): the rule
+sets' titles as their data ranks them, then those that are only a name, then the
+troupe's own, in the order it sets.
+
 A title may belong to a sect and give abiding status (horatio.rules.status): the
 rule sets say so for theirs, and a troupe for its own. A troupe that takes only
 some sects offers only their titles and those of no sect, and a title of a sect
@@ -15,7 +19,7 @@ import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from horatio import audit
@@ -53,7 +57,9 @@ def house_title(title: TroupeTitle) -> TitleData:
 def house_titles(db: Session, troupe_id: uuid.UUID) -> list[TroupeTitle]:
     return list(
         db.scalars(
-            select(TroupeTitle).where(TroupeTitle.troupe_id == troupe_id).order_by(TroupeTitle.name)
+            select(TroupeTitle)
+            .where(TroupeTitle.troupe_id == troupe_id)
+            .order_by(TroupeTitle.position, TroupeTitle.name)
         )
     )
 
@@ -170,7 +176,18 @@ def add_title(
     if name in title_data(db, troupe.id):
         raise conflict(f"{name} is already a title here.")
     check_house_title(db, troupe, sect, status)
-    db.add(TroupeTitle(troupe_id=troupe.id, name=name, sect=sect, status=list(status)))
+    last = db.scalar(
+        select(func.max(TroupeTitle.position)).where(TroupeTitle.troupe_id == troupe.id)
+    )
+    db.add(
+        TroupeTitle(
+            troupe_id=troupe.id,
+            name=name,
+            sect=sect,
+            status=list(status),
+            position=(last or 0) + 1,
+        )
+    )
     db.flush()
     audit.record(
         db, staff, "title.added", troupe_id=troupe.id, title=name, what=describe(sect, status)
@@ -213,6 +230,41 @@ def remove_title(db: Session, staff: User, troupe: Troupe, name: str) -> None:
     db.delete(found)
     db.flush()
     audit.record(db, staff, "title.removed_from_troupe", troupe_id=troupe.id, title=name)
+
+
+# --- the court's order ------------------------------------------------------------------------
+
+
+def court_order(db: Session, troupe_id: uuid.UUID) -> dict[str, tuple[int, int, str]]:
+    """Each title the troupe can give, by name, with the key that puts it in its
+    place at court: the rule sets' ranked titles highest first, then those that are
+    only a name, by name, then the troupe's own in its order."""
+    found: dict[str, tuple[int, int, str]] = {
+        name: (0, title.rank, name) if title.rank is not None else (1, 0, name)
+        for name, title in rule_set_titles(db).items()
+    }
+    for title in house_titles(db, troupe_id):
+        found[title.name] = (2, title.position, title.name)
+    return found
+
+
+def court_key(order: dict[str, tuple[int, int, str]], name: str) -> tuple[int, int, str]:
+    """A title's place at court; one no longer in the rules comes last."""
+    return order.get(name, (3, 0, name))
+
+
+def set_court_order(db: Session, staff: User, troupe: Troupe, names: Sequence[str]) -> None:
+    """Put the troupe's own titles in this order at court, after the rule sets'."""
+    own = house_titles(db, troupe.id)
+    if sorted(names) != sorted(t.name for t in own):
+        raise unprocessable("Name each of the troupe's own titles once.")
+    if [t.name for t in own] == list(names):
+        return
+    by_name = {t.name: t for t in own}
+    for position, name in enumerate(names, start=1):
+        by_name[name].position = position
+    db.flush()
+    audit.record(db, staff, "title.court_order", troupe_id=troupe.id, order=", ".join(names))
 
 
 # --- who holds what --------------------------------------------------------------------------

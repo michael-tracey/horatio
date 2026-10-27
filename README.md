@@ -76,6 +76,10 @@ In production the backend serves the built frontend itself
 https://horatio.lotslarp.org, is deployed with `deploy/deploy.sh`; see
 [deploy/README.md](deploy/README.md).
 
+Someone whose account the custodian has suspended is told, when they try to sign
+in, to contact the custodian. Set `HORATIO_CUSTODIAN_CONTACT` (an email address
+or a web page) to say how.
+
 ### Delivering downtime results
 
 Results always appear in Horatio. Troupes can also switch on connectors that

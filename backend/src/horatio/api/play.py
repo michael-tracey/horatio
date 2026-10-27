@@ -28,6 +28,7 @@ from horatio import (
 )
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceStandingOut, standing_out
+from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.npcs import PanelsOut, StockNpcOut, stock_out
 from horatio.api.play_status import PlayStatusOut, StatusChoiceIn, play_status_out
 from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
@@ -45,7 +46,12 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, require_troupe_action, visible_character
+from horatio.permissions import (
+    TroupeAction,
+    can_see_lines_veils,
+    require_troupe_action,
+    visible_character,
+)
 from horatio.pool_modifiers import ModifierOut, modifiers_out
 from horatio.rules.feeding import clan_family
 from horatio.rules.npc_kinds import kind_name
@@ -710,6 +716,9 @@ class PlayReference(reference.Reference):
     identities: list[IdentityOut] = []
     # A ghoul's domitor; None for a vampire, or a ghoul not yet bound to one.
     domitor: DomitorLine | None = None
+    # A PC's player's lines and veils, for the staff running its game; None for its
+    # player, who knows their own, and for an NPC (horatio.lines_veils).
+    lines_veils: LinesVeils | None = None
 
 
 def domitor_line(db: Session, character: Character) -> DomitorLine | None:
@@ -741,7 +750,15 @@ def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
         retainers=listed(db, retainers.read(db, character), user),
         identities=identities_out(db, character),
         domitor=domitor_line(db, character),
+        lines_veils=staff_lines_veils(db, user, character),
     )
+
+
+def staff_lines_veils(db: Session, user: User, character: Character) -> LinesVeils | None:
+    if character.kind != "pc" or character.player_id == user.id:
+        return None
+    player = db.get_one(User, character.player_id)
+    return lines_veils_of(player) if can_see_lines_veils(db, user, player) else None
 
 
 @router.get("/characters/{character_id}/play/modifiers")

@@ -9,7 +9,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from horatio import play_others, sheets
+from horatio import play_others, play_status, sheets
 from horatio.api.sect_status import EndingOut, ending_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import User
@@ -23,6 +23,8 @@ class OtherOut(BaseModel):
 
     character_id: uuid.UUID
     name: str
+    # Its pronouns, whatever its sect; None for none given.
+    pronouns: str | None
     kind: str
     sect: str | None
     same_sect: bool
@@ -59,6 +61,8 @@ class OtherStatusOut(BaseModel):
     other: OtherOut
     # None for another sect's character, whose status the viewer does not know.
     status: list[SeenOut] | None
+    # The game's troupe, whose Who's Who lists the other.
+    troupe_id: uuid.UUID | None
 
 
 class LearnIn(BaseModel):
@@ -72,6 +76,7 @@ def other_out(other: play_others.Other) -> OtherOut:
     return OtherOut(
         character_id=other.character.id,
         name=other.character.name,
+        pronouns=other.character.pronouns,
         kind=other.character.kind,
         sect=other.sect,
         same_sect=other.same_sect,
@@ -101,11 +106,13 @@ def seen_out(s: play_others.Seen) -> SeenOut:
 def status_out(
     db: Session, user: User, viewer: play_others.Viewer, other: play_others.Other
 ) -> OtherStatusOut:
+    troupe = play_status.troupe_of(db, viewer.character)
     return OtherStatusOut(
         other=other_out(other),
         status=[seen_out(s) for s in play_others.seen(db, user, viewer, other)]
         if other.same_sect
         else None,
+        troupe_id=troupe.id if troupe else None,
     )
 
 

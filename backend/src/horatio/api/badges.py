@@ -29,6 +29,8 @@ ROLE_NAMES = {
 class BadgeOut(BaseModel):
     character_id: uuid.UUID
     name: str
+    # Its pronouns, if the troupe prints them; never the player's.
+    pronouns: str | None
     clan: str | None
     # Neonate, Ancilla or Elder.
     social_age: str
@@ -55,6 +57,8 @@ class BadgesOut(BaseModel):
     # "negative" status only, or "none".
     print_titles: bool
     print_status: str
+    # Whether they print the characters' pronouns.
+    print_pronouns: bool
     badges: list[BadgeOut]
 
 
@@ -80,6 +84,7 @@ def badges_out(db: DbSession, troupe: Troupe | None, characters: list[Character]
         troupe_name=troupe.name if troupe else None,
         print_titles=troupe.badge_titles if troupe else True,
         print_status=troupe.badge_status if troupe else "all",
+        print_pronouns=troupe.badge_pronouns if troupe else False,
         badges=[BadgeOut(**vars(b)) for b in found],
     )
 

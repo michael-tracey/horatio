@@ -159,6 +159,10 @@ page = "400"
 # The abiding status each title gives during its holder's tenure. Titles in the
 # catalogue's list that are not here have no sect and give no status.
 #
+# They are listed highest first within each sect, as the Who's Who ranks its court
+# (horatio.whos_who): the Camarilla's from the Inner Circle down to the Scourge
+# (pp. 371-380), then the Sabbat's (pp. 416-421) and the Anarchs' (pp. 473-474).
+#
 # A Myrmidon has an Archon's authority, but Sanctioned in place of Noble (p. 371);
 # Sanctioned is fleeting status, so the title gives none here. A Lesser Harpy, who
 # gains Guardian while the Master Harpy is away (p. 379), is not in the list.

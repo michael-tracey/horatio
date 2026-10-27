@@ -1,7 +1,7 @@
 """equipment qualities: what each does at the table, in a few words, for the Play View
 
 Revision ID: 0100
-Revises: 0092
+Revises: 0099
 Create Date: 2026-10-27 23:00:00.000000
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0100"
-down_revision: str | None = "0092"
+down_revision: str | None = "0099"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

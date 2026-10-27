@@ -1211,6 +1211,10 @@ def died(
     )
     db.add(record)
     character.status = "retired"
+    # Final Death, listed on the Who's Who until its player says otherwise
+    # (horatio.leaving).
+    character.left_reason = "final_death"
+    character.left_listed = True
     db.flush()
     audit.record(
         db,
