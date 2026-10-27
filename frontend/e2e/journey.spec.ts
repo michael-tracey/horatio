@@ -2472,7 +2472,7 @@ test("a Ventrue takes Royalty in the wizard, is sent to Backgrounds, and places 
   const id = await creatingVampire(p, "Crowned", "Ventrue", [], {
     ...ATTRIBUTES_AND_FOCUSES,
     backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
-    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    disciplines: [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]],
   });
   await p.goto(`/characters/${id}/create/merits`);
   await p.getByLabel("Search Merits").fill("Royalty");
@@ -2638,7 +2638,7 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   const build: Record<string, [string, number][]> = {
     ...ATTRIBUTES_AND_FOCUSES,
     backgrounds: [["Fame", 3], ["Contacts", 2], ["Generation", 1]],
-    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    disciplines: [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]],
   };
   for (const [category, picks] of Object.entries(build))
     await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
