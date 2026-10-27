@@ -1,6 +1,8 @@
 """A troupe's equipment (horatio.equipment): given to its home characters by its
 storytellers and assistant storytellers, changed and taken back by them, with the
-troupe's own templates; and a character's equipment, for whoever sees its sheet."""
+troupe's own templates; and a character's equipment, for whoever sees its sheet,
+which its player or staff give to another home character or discard, and staff
+restore."""
 
 import uuid
 from datetime import datetime
@@ -8,6 +10,7 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import equipment
@@ -17,6 +20,7 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.equipment import EquipmentRefused, ItemFields, ItemQuality, SpecialEffect
 from horatio.models import (
     Character,
+    EquipmentEvent,
     EquipmentItem,
     EquipmentTemplate,
     Troupe,
@@ -46,6 +50,14 @@ class EquipmentItemQualityOut(BaseModel):
     # What it does at the table, in a few words: "+3 initiative".
     play: str | None
     page: str | None
+
+
+class DiscardedOut(BaseModel):
+    """When a discarded item was discarded, by whom, and the note they left."""
+
+    at: datetime
+    by_name: str | None
+    note: str
 
 
 class EquipmentItemOut(BaseModel):
@@ -80,6 +92,8 @@ class EquipmentItemOut(BaseModel):
     given_at: datetime
     # The reader can change it or take it back: staff of the holder's home troupe.
     can_change: bool
+    # Set once it is discarded.
+    discarded: DiscardedOut | None
 
 
 class EquipmentEventOut(BaseModel):
@@ -123,12 +137,30 @@ class TroupeEquipmentOut(BaseModel):
     characters: list[EquipmentHolderOut]
 
 
+class EquipmentReceiverOut(BaseModel):
+    """A character the holder's items can be given to."""
+
+    id: uuid.UUID
+    name: str
+    kind: str  # pc | npc
+    player_name: str | None
+    # The titles it holds in the home troupe, "Prince"; empty for none.
+    title: str
+
+
 class CharacterEquipmentOut(BaseModel):
     items: list[EquipmentItemOut]
     # Its home troupe, which gives it equipment; None if it has none.
     home_troupe_id: uuid.UUID | None
     # The reader is staff of that troupe, who give it equipment.
     can_give: bool
+    # The reader gives its items to another character, or discards them: its player
+    # or its home troupe's staff.
+    can_pass: bool
+    # Who they can go to, if the reader can pass them: the home troupe's PCs and the
+    # NPCs holding a title there, or for staff every home character. Kept on the
+    # phone with the items, so a give works at a game with no signal.
+    receivers: list[EquipmentReceiverOut]
 
 
 class EquipmentFieldsIn(BaseModel):
@@ -163,6 +195,17 @@ class ChangeEquipmentIn(EquipmentItemFieldsIn):
 
 class TakeBackEquipmentIn(BaseModel):
     reason: str = Field(max_length=1000)
+
+
+class GiveToIn(BaseModel):
+    to_character_id: uuid.UUID
+    # Why, if anyone likes: "lost at cards".
+    note: str = Field(default="", max_length=300)
+
+
+class DiscardIn(BaseModel):
+    # Where it went, if anyone likes: "lost in the river", "sold".
+    note: str = Field(default="", max_length=300)
 
 
 class EquipmentTemplateIn(EquipmentFieldsIn):
@@ -287,6 +330,20 @@ class Reader:
             given_by_name=self.user_name(item.given_by),
             given_at=item.given_at,
             can_change=manages and item.status == "held",
+            discarded=self.discarded(item) if item.status == "discarded" else None,
+        )
+
+    def discarded(self, item: EquipmentItem) -> DiscardedOut | None:
+        event = self.db.scalar(
+            select(EquipmentEvent)
+            .where(EquipmentEvent.item_id == item.id, EquipmentEvent.action == "discarded")
+            .order_by(EquipmentEvent.created_at.desc(), EquipmentEvent.id.desc())
+            .limit(1)
+        )
+        if event is None:
+            return None
+        return DiscardedOut(
+            at=event.created_at, by_name=self.user_name(event.actor_id), note=event.reason
         )
 
     def detail(self, item: EquipmentItem, character: Character) -> EquipmentItemDetailOut:
@@ -458,6 +515,19 @@ def change_equipment(
     return Reader(db, user).detail(item, db.get_one(Character, item.character_id))
 
 
+@router.post("/troupes/{troupe_id}/equipment/{item_id}/restore")
+def restore_equipment(
+    troupe_id: uuid.UUID, item_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> EquipmentItemDetailOut:
+    """Give a discarded item back to the character that discarded it, if that was a
+    mistake. Its player is told."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_EQUIPMENT)
+    item = troupe_item(db, user, troupe, item_id)
+    equipment.restore(db, user, troupe, item)
+    db.commit()
+    return Reader(db, user).detail(item, db.get_one(Character, item.character_id))
+
+
 @router.post("/troupes/{troupe_id}/equipment/{item_id}/take-back")
 def take_back(
     troupe_id: uuid.UUID,
@@ -486,8 +556,65 @@ def character_equipment(
     character = visible_character(db, user, character_id)
     reader = Reader(db, user)
     home = equipment.home_of(character)
+    manages = home is not None and reader.manages(character)
+    can_pass = (
+        character.status == "active"
+        and home is not None
+        and reader.troupe(home).archived_at is None
+        and (manages or equipment.is_player(user, character))
+    )
     return CharacterEquipmentOut(
         items=[reader.item(item, character) for item in equipment.items_of(db, character)],
         home_troupe_id=home,
-        can_give=home is not None and reader.manages(character),
+        can_give=manages,
+        can_pass=can_pass,
+        receivers=[
+            EquipmentReceiverOut(
+                id=r.character.id,
+                name=r.character.name,
+                kind=r.character.kind,
+                player_name=reader.player_name(r.character),
+                title=r.title,
+            )
+            for r in equipment.receivers(db, character, staff=manages)
+        ]
+        if can_pass
+        else [],
     )
+
+
+def holder_item(
+    db: DbSession, user: User, character_id: uuid.UUID, item_id: uuid.UUID
+) -> EquipmentItem:
+    """The character's item, or 404."""
+    character = visible_character(db, user, character_id)
+    item = db.get(EquipmentItem, item_id)
+    if item is None or item.character_id != character.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such item.")
+    return item
+
+
+@router.post("/characters/{character_id}/equipment/{item_id}/give")
+def give_to(
+    character_id: uuid.UUID, item_id: uuid.UUID, body: GiveToIn, db: DbSession, user: CurrentUser
+) -> EquipmentItemOut:
+    """Give the item to another character of the holder's home troupe, at once: by
+    the holder's player, to the troupe's PCs and the NPCs holding a title there, or
+    by its staff, to any home character. One for a character of another home troupe
+    is refused."""
+    item = holder_item(db, user, character_id, item_id)
+    equipment.give_to(db, user, item, body.to_character_id, body.note)
+    db.commit()
+    return Reader(db, user).item(item, db.get_one(Character, item.character_id))
+
+
+@router.post("/characters/{character_id}/equipment/{item_id}/discard")
+def discard(
+    character_id: uuid.UUID, item_id: uuid.UUID, body: DiscardIn, db: DbSession, user: CurrentUser
+) -> EquipmentItemOut:
+    """Discard the item, by the holder's player or its home troupe's staff. It is
+    kept, with its history, for staff to restore."""
+    item = holder_item(db, user, character_id, item_id)
+    equipment.discard(db, user, item, body.note)
+    db.commit()
+    return Reader(db, user).item(item, db.get_one(Character, item.character_id))

@@ -6,6 +6,7 @@ import type { EquipmentItemOut, EquipmentOut, EquipmentHolderOut } from "../../a
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { ItemActions } from "../character/ItemActions";
 import { EquipmentEditor, useEquipmentRules, useTroupeTemplates } from "./EquipmentEditor";
 import { factsText, kindText, qualityText, type Kind } from "./equipment";
 
@@ -18,8 +19,10 @@ const KINDS: { key: Kind; name: string }[] = [
 
 /**
  * Every item the troupe's home characters hold, for its storytellers and
- * assistants: give one, change it, or take it back, with filters by holder and
- * kind. Items go with a character whose home troupe changes.
+ * assistants: give one, change it, move it to another home character, discard it
+ * or take it back, with filters by holder and kind. Discarded items are kept below,
+ * with their history, to restore. Items go with a character whose home troupe
+ * changes.
  */
 export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troupeName: string }) {
   const [holder, setHolder] = useState("");
@@ -32,6 +35,16 @@ export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troup
       unwrap(
         api.GET("/api/troupes/{troupe_id}/equipment", {
           params: { path: { troupe_id: troupeId }, query: { character_id: holder || undefined, kind: (kind as Kind) || undefined } },
+        }),
+      ),
+    placeholderData: (previous) => previous,
+  });
+  const discarded = useQuery({
+    queryKey: ["troupe-equipment", troupeId, holder, kind, "discarded"],
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/troupes/{troupe_id}/equipment", {
+          params: { path: { troupe_id: troupeId }, query: { character_id: holder || undefined, kind: (kind as Kind) || undefined, status: ["discarded"] } },
         }),
       ),
     placeholderData: (previous) => previous,
@@ -111,6 +124,16 @@ export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troup
           ))}
         </ul>
       )}
+      {!!discarded.data?.items.length && (
+        <Card title="Discarded">
+          <p className="mb-2 text-sm text-mist">Items their players or staff discarded, kept with their history. Restore one if it was a mistake: it goes back to the character that discarded it.</p>
+          <ul aria-label="Equipment discarded" className="flex flex-col gap-2">
+            {discarded.data.items.map((item) => (
+              <ItemCard key={item.id} item={item} rules={rules.data} troupeId={troupeId} troupeName={troupeName} holders={characters} />
+            ))}
+          </ul>
+        </Card>
+      )}
       <TroupeTemplates troupeId={troupeId} troupeName={troupeName} rules={rules.data} />
     </div>
   );
@@ -133,6 +156,14 @@ function ItemCard({
   const dates = useDates();
   const [doing, setDoing] = useState<"" | "change" | "take" | "history">("");
   const facts = factsText(item.facts);
+  const path = { character_id: item.character_id, item_id: item.id };
+  const give = useAction(({ to, note }: { to: string; note: string }) =>
+    unwrap(api.POST("/api/characters/{character_id}/equipment/{item_id}/give", { params: { path }, body: { to_character_id: to, note } })),
+  );
+  const discard = useAction((note: string) => unwrap(api.POST("/api/characters/{character_id}/equipment/{item_id}/discard", { params: { path }, body: { note } })));
+  const restore = useAction(() =>
+    unwrap(api.POST("/api/troupes/{troupe_id}/equipment/{item_id}/restore", { params: { path: { troupe_id: troupeId, item_id: item.id } } })),
+  );
   return (
     <li aria-label={`${item.name}, held by ${item.character_name}`} className="rounded-md border border-ash bg-dusk p-3 text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -171,6 +202,23 @@ function ItemCard({
       <p className="mt-1 text-xs text-mist">
         Given by {item.given_by_name ?? "someone"} of {item.troupe_name}, {dates.date(item.given_at)}
       </p>
+      {item.discarded && (
+        <p className="mt-1 text-sm">
+          Discarded by {item.discarded.by_name ?? "someone"}, {dates.date(item.discarded.at)}
+          {item.discarded.note ? `: ${item.discarded.note}` : "."}
+        </p>
+      )}
+      {item.status === "discarded" && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button variant="secondary" disabled={restore.isPending} onClick={() => restore.mutate(undefined)}>
+            Restore to {item.character_name}
+          </Button>
+          <Button variant="ghost" onClick={() => setDoing(doing === "history" ? "" : "history")}>
+            History
+          </Button>
+        </div>
+      )}
+      <ErrorText error={restore.error} />
       {item.can_change && (
         <div className="mt-2 flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => setDoing(doing === "change" ? "" : "change")}>
@@ -182,6 +230,16 @@ function ItemCard({
           <Button variant="ghost" onClick={() => setDoing(doing === "history" ? "" : "history")}>
             History
           </Button>
+        </div>
+      )}
+      {item.can_change && (
+        <div className="mt-2">
+          <ItemActions
+            item={item}
+            receivers={holders.filter((h) => h.id !== item.character_id).map((h) => ({ ...h, title: "" }))}
+            give={(to, note) => give.mutateAsync({ to: to.id, note })}
+            discard={(note) => discard.mutateAsync(note)}
+          />
         </div>
       )}
       {doing === "change" && (

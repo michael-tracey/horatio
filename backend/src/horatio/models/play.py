@@ -80,6 +80,10 @@ class PlayEvent(Record):
     # A Leadership use spent learning about another character's status: whose, and
     # which (horatio.play_others).
     learned: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # An item this tap gave or discarded (horatio.equipment.by_tap): its name, who it
+    # went to, and its history's event, so Undo takes it back; or why it was refused.
+    # On an undo, why the item stayed where it was, if it did.
+    equipment: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class PlayCounter(Record):

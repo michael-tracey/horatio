@@ -1,4 +1,4 @@
-import type { InfluenceDetailsIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
+import type { InfluenceDetailsIn, ItemTapIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
 import { TYPE_NAMES } from "../../influence";
 import { applySwitch, describeSwitch, healthMost, SWITCH } from "./powers";
 
@@ -53,6 +53,8 @@ export function makeTap(
     influence?: InfluenceDetailsIn | null;
     /** Adding a temporary derangement: its name and where it came from. */
     derangement?: TemporaryDerangementIn | null;
+    /** Giving an item away ("item:<id>", −1): who to, and the names for the log. */
+    equipment?: ItemTapIn | null;
   },
   gameId: string | null | undefined,
   now: Date = new Date(),
@@ -69,6 +71,7 @@ export function makeTap(
     undoes: what.undoes ?? null,
     influence: what.influence ?? null,
     derangement: what.derangement ?? null,
+    equipment: what.equipment ?? null,
   };
 }
 
@@ -95,6 +98,20 @@ export const TEMPORARY = "derangement:";
 /** A temporary derangement as the log names it: "Phobia: fire, from Voice of Madness". */
 export function temporaryLabel(t: { name: string; source: string }): string {
   return t.source ? `${t.name}, from ${t.source}` : t.name;
+}
+
+/** Giving an item to another character, or discarding it: "item:<id>", −1 (#282). It changes no tracker. */
+export const ITEM = "item:";
+
+/** A give or discard as the log reads it until the server has it: "Gave Silver Dagger to Bram". */
+export function itemText(equipment: ItemTapIn | null | undefined): string {
+  const name = equipment?.item_name || "an item";
+  return equipment?.to_character_id ? `Gave ${name} to ${equipment.to_name || "another character"}` : `Discarded ${name}`;
+}
+
+/** The items given or discarded by taps not yet sent, and not undone: gone from the Equipment tab already. */
+export function itemsGoing(log: ShownEntry[]): Set<string> {
+  return new Set(log.filter((e) => e.pending && e.kind === "change" && e.tracker.startsWith(ITEM) && !e.undone).map((e) => e.tracker.slice(ITEM.length)));
 }
 
 /** Spending an abiding or innate status for the game: "status:Authority". */
@@ -242,11 +259,12 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
 /** The change as the log reads it: "Blood 7 → 6". */
 export function describe(
   view: PlayView,
-  tap: Pick<Tap, "kind" | "tracker" | "amount" | "damage" | "influence">,
+  tap: Pick<Tap, "kind" | "tracker" | "amount" | "damage" | "influence" | "equipment">,
   change: [number, number] | null,
   said: string[] = [],
 ): string {
   if (tap.kind === "note") return "Note";
+  if (tap.tracker.startsWith(ITEM)) return itemText(tap.equipment);
   if (tap.tracker.startsWith(SWITCH)) return describeSwitch(view, tap.tracker.slice(SWITCH.length), tap.amount, said);
   const spent = tap.kind === "change" ? spendText(view, tap.tracker, tap.amount, tap.influence) : null;
   if (spent) return spent;

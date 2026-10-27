@@ -184,5 +184,7 @@ export type EquipmentItemOut = Schemas["EquipmentItemOut"];
 export type TroupeTemplateOut = Schemas["TroupeTemplateOut"];
 export type EquipmentHolderOut = Schemas["EquipmentHolderOut"];
 export type CharacterEquipmentOut = Schemas["CharacterEquipmentOut"];
+export type EquipmentReceiverOut = Schemas["EquipmentReceiverOut"];
+export type ItemTapIn = Schemas["ItemTapIn"];
 export type WhosWhoOut = Schemas["WhosWhoOut"];
 export type WhosWhoEntry = Schemas["WhosWhoEntry"];

@@ -1,14 +1,16 @@
 import { useState, type ReactNode } from "react";
 import type { EquipmentItemOut } from "../../api/types";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, ErrorText } from "../../components/ui";
+import { Badge, Button, ErrorText } from "../../components/ui";
 import { NO_EQUIPMENT } from "../character/EquipmentTab";
+import { ItemActions } from "../character/ItemActions";
 import {
   combatFirst,
   factsText,
   playText,
   qualityText,
 } from "../troupe/equipment";
+import { ITEM, itemsGoing, type makeTap, type Shown } from "./tracker";
 import { useEquipment } from "./useEquipment";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
@@ -28,13 +30,21 @@ const GROUPS: { title: string; kinds: string[] }[] = [
  * effect, its special effects and its description, which a wider screen shows at
  * once. Reference only: nothing here changes a pool. A visiting character's
  * equipment shows wherever it plays.
+ *
+ * With `view` and `tap`, its player (or staff) gives an item to another character
+ * or discards it, as a tap (#282): it leaves the tab at once, even with no signal,
+ * and the game's gives and discards are listed with Undo, as in the game's log.
  */
 export function EquipmentTab({
   characterId,
   actions,
+  view,
+  tap,
 }: {
   characterId: string;
   actions?: (item: EquipmentItemOut) => ReactNode;
+  view?: Shown;
+  tap?: (what: Parameters<typeof makeTap>[0]) => void;
 }) {
   const { equipment, error } = useEquipment(characterId);
   if (!equipment)
@@ -43,9 +53,25 @@ export function EquipmentTab({
     ) : (
       <p className="py-8 text-center text-mist">Loading…</p>
     );
-  if (equipment.items.length === 0)
-    return <p className="py-8 text-center text-mist">{NO_EQUIPMENT}</p>;
-  const items = combatFirst(equipment.items);
+  const going = view ? itemsGoing(view.log) : new Set<string>();
+  const items = combatFirst(equipment.items.filter((i) => !going.has(i.id)));
+  const passing = tap && equipment.can_pass;
+  const itemTap = (item: EquipmentItemOut, note: string, to?: { id: string; name: string }) =>
+    tap?.({
+      kind: "change",
+      tracker: `${ITEM}${item.id}`,
+      amount: -1,
+      note,
+      equipment: { to_character_id: to?.id ?? null, item_name: item.name, to_name: to?.name ?? "" },
+    });
+  const passed = view && tap ? <PassedThisGame view={view} undo={(id) => tap({ kind: "undo", undoes: id })} /> : null;
+  if (items.length === 0)
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="py-8 text-center text-mist">{NO_EQUIPMENT}</p>
+        {passed}
+      </div>
+    );
   return (
     <div className="flex flex-col gap-4">
       {GROUPS.map((g) => {
@@ -56,13 +82,56 @@ export function EquipmentTab({
             <h2 className="mb-2 text-base text-gold">{g.title}</h2>
             <ul className="grid items-start gap-3 md:grid-cols-2">
               {shown.map((item) => (
-                <ItemCard key={item.id} item={item} actions={actions?.(item)} />
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  actions={
+                    <>
+                      {actions?.(item)}
+                      {passing && (
+                        <div className="mt-2">
+                          <ItemActions
+                            item={item}
+                            receivers={equipment.receivers}
+                            give={(to, note) => itemTap(item, note, to)}
+                            discard={(note) => itemTap(item, note)}
+                          />
+                        </div>
+                      )}
+                    </>
+                  }
+                />
               ))}
             </ul>
           </section>
         );
       })}
+      {passed}
     </div>
+  );
+}
+
+/** The game's gives and discards, newest first, each with Undo while nothing else has happened to it. */
+function PassedThisGame({ view, undo }: { view: Shown; undo: (tapId: string) => void }) {
+  const done = view.log.filter((e) => e.kind === "change" && e.tracker.startsWith(ITEM) && !e.undone);
+  if (done.length === 0) return null;
+  return (
+    <section aria-label="Given or discarded this game">
+      <h2 className="mb-2 text-base text-gold">Given or discarded this game</h2>
+      <ul className="flex flex-col gap-2 text-sm">
+        {done.map((e) => (
+          <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-ash bg-dusk px-3 py-2">
+            <span>
+              {e.text}
+              {e.note && <span className="text-mist"> “{e.note}”</span>}
+            </span>
+            <Button variant="secondary" className="min-h-10" aria-label={`Undo ${e.text}`} onClick={() => undo(e.id)}>
+              Undo
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

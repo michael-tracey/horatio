@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
 import type { PlayView } from "../../api/types";
-import { afterSending, loadQueue, makeTap, saveQueue, withPending, type Tap } from "./tracker";
+import { afterSending, ITEM, loadQueue, makeTap, saveQueue, withPending, type Tap } from "./tracker";
 
 // How often to look for taps from other devices, and to retry sending.
 const REFRESH = 15_000;
@@ -80,6 +80,8 @@ export function usePlay(characterId: string) {
       setFailed(false);
       setError(null);
       await accept(data);
+      // An item given or discarded, or brought back by Undo: the Equipment tabs ask again.
+      if (batch.some((t) => t.kind === "undo" || t.tracker.startsWith(ITEM))) void client.invalidateQueries({ queryKey: ["character-equipment"] });
     } catch (e) {
       if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
         // The server will never take these; keeping them would block every later tap.
@@ -93,7 +95,7 @@ export function usePlay(characterId: string) {
       busy.current = false;
       setSending(false);
     }
-  }, [accept, characterId]);
+  }, [accept, characterId, client]);
 
   // Send whenever there is something to send, and keep trying while it waits.
   useEffect(() => {

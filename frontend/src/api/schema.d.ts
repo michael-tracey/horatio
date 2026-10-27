@@ -910,6 +910,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/equipment/{item_id}/discard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discard
+         * @description Discard the item, by the holder's player or its home troupe's staff. It is
+         *     kept, with its history, for staff to restore.
+         */
+        post: operations["discard_api_characters__character_id__equipment__item_id__discard_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/equipment/{item_id}/give": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give To
+         * @description Give the item to another character of the holder's home troupe, at once: by
+         *     the holder's player, to the troupe's PCs and the NPCs holding a title there, or
+         *     by its staff, to any home character. One for a character of another home troupe
+         *     is refused.
+         */
+        post: operations["give_to_api_characters__character_id__equipment__item_id__give_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/free-choices": {
         parameters: {
             query?: never;
@@ -4421,6 +4465,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/equipment/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Equipment
+         * @description Give a discarded item back to the character that discarded it, if that was a
+         *     mistake. Its player is told.
+         */
+        post: operations["restore_equipment_api_troupes__troupe_id__equipment__item_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/equipment/{item_id}/take-back": {
         parameters: {
             query?: never;
@@ -6502,10 +6567,14 @@ export interface components {
         CharacterEquipmentOut: {
             /** Can Give */
             can_give: boolean;
+            /** Can Pass */
+            can_pass: boolean;
             /** Home Troupe Id */
             home_troupe_id: string | null;
             /** Items */
             items: components["schemas"]["EquipmentItemOut"][];
+            /** Receivers */
+            receivers: components["schemas"]["EquipmentReceiverOut"][];
         };
         /** CharacterFeedingOut */
         CharacterFeedingOut: {
@@ -7442,6 +7511,29 @@ export interface components {
             /** Rating */
             rating: number;
         };
+        /** DiscardIn */
+        DiscardIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /**
+         * DiscardedOut
+         * @description When a discarded item was discarded, by whom, and the note they left.
+         */
+        DiscardedOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** By Name */
+            by_name: string | null;
+            /** Note */
+            note: string;
+        };
         /** DisciplineOut */
         DisciplineOut: {
             /** Cost */
@@ -8120,6 +8212,7 @@ export interface components {
             crafted: boolean;
             /** Description */
             description: string;
+            discarded: components["schemas"]["DiscardedOut"] | null;
             /** Effects */
             effects: components["schemas"]["SpecialEffectModel"][];
             facts: components["schemas"]["EquipmentFactsOut"];
@@ -8185,6 +8278,7 @@ export interface components {
             crafted: boolean;
             /** Description */
             description: string;
+            discarded: components["schemas"]["DiscardedOut"] | null;
             /** Effects */
             effects: components["schemas"]["SpecialEffectModel"][];
             facts: components["schemas"]["EquipmentFactsOut"];
@@ -8314,6 +8408,25 @@ export interface components {
             repeatable: boolean;
             /** Two Handed */
             two_handed: boolean;
+        };
+        /**
+         * EquipmentReceiverOut
+         * @description A character the holder's items can be given to.
+         */
+        EquipmentReceiverOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Player Name */
+            player_name: string | null;
+            /** Title */
+            title: string;
         };
         /** EquipmentTemplateIn */
         EquipmentTemplateIn: {
@@ -8884,6 +8997,19 @@ export interface components {
             /** Refused */
             refused: string | null;
             sheet: components["schemas"]["SheetOut"];
+        };
+        /** GiveToIn */
+        GiveToIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * To Character Id
+             * Format: uuid
+             */
+            to_character_id: string;
         };
         /**
          * GivenOut
@@ -9633,6 +9759,24 @@ export interface components {
         Invite: {
             /** Url */
             url: string;
+        };
+        /**
+         * ItemTapIn
+         * @description Giving or discarding an item ("item:<id>", −1; horatio.equipment).
+         */
+        ItemTapIn: {
+            /**
+             * Item Name
+             * @default
+             */
+            item_name: string;
+            /** To Character Id */
+            to_character_id?: string | null;
+            /**
+             * To Name
+             * @default
+             */
+            to_name: string;
         };
         /** KindOut */
         KindOut: {
@@ -13451,6 +13595,7 @@ export interface components {
             /** Damage */
             damage?: ("normal" | "aggravated") | null;
             derangement?: components["schemas"]["TemporaryDerangementIn"] | null;
+            equipment?: components["schemas"]["ItemTapIn"] | null;
             /** Game Id */
             game_id?: string | null;
             /**
@@ -16299,6 +16444,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterEquipmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_api_characters__character_id__equipment__item_id__discard_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscardIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_to_api_characters__character_id__equipment__item_id__give_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiveToIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItemOut"];
                 };
             };
             /** @description Validation Error */
@@ -23339,6 +23556,38 @@ export interface operations {
                 "application/json": components["schemas"]["ChangeEquipmentIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItemDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_equipment_api_troupes__troupe_id__equipment__item_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
