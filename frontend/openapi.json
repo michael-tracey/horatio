@@ -737,6 +737,309 @@
         "title": "AttributeChange",
         "type": "object"
       },
+      "AuditCharacter": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "player_name",
+          "troupe_name",
+          "retired"
+        ],
+        "title": "AuditCharacter",
+        "type": "object"
+      },
+      "AuditEntry": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "action",
+          "message",
+          "actor_id",
+          "actor_name",
+          "character_id",
+          "character_name",
+          "player_id",
+          "player_name",
+          "data",
+          "troupe_id",
+          "troupe_name"
+        ],
+        "title": "AuditEntry",
+        "type": "object"
+      },
+      "AuditFilters": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/AuditGroupOut"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "troupes": {
+            "items": {
+              "$ref": "#/components/schemas/AuditTroupe"
+            },
+            "title": "Troupes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups",
+          "troupes"
+        ],
+        "title": "AuditFilters",
+        "type": "object"
+      },
+      "AuditGroup": {
+        "enum": [
+          "approvals",
+          "xp",
+          "sheets",
+          "creation",
+          "status",
+          "titles",
+          "downtimes",
+          "influence",
+          "play",
+          "npcs",
+          "staff",
+          "house_rules",
+          "troupes",
+          "accounts",
+          "system"
+        ],
+        "title": "AuditGroup",
+        "type": "string"
+      },
+      "AuditGroupOut": {
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/AuditGroup"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "AuditGroupOut",
+        "type": "object"
+      },
+      "AuditPage": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          }
+        },
+        "required": [
+          "entries",
+          "next"
+        ],
+        "title": "AuditPage",
+        "type": "object"
+      },
+      "AuditTroupe": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived"
+        ],
+        "title": "AuditTroupe",
+        "type": "object"
+      },
       "AwardableCharacter": {
         "properties": {
           "character_id": {
@@ -22094,6 +22397,421 @@
         "summary": "Decline",
         "tags": [
           "approvals"
+        ]
+      }
+    },
+    "/api/audit": {
+      "get": {
+        "description": "For the custodian: every event in the log, in every troupe and outside them,\nthat the filters find, newest first, a page at a time. `q` is words that must all\nbe in the event as it reads.",
+        "operationId": "search_log_api_audit_get",
+        "parameters": [
+          {
+            "description": "Who did it: their handle.",
+            "in": "query",
+            "name": "person",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Who did it: their handle.",
+              "title": "Person"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditGroup"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Group"
+            }
+          },
+          {
+            "description": "From this moment on.",
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "From this moment on.",
+              "title": "Since"
+            }
+          },
+          {
+            "description": "Before this moment.",
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Before this moment.",
+              "title": "Until"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Log",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/audit/characters": {
+      "get": {
+        "description": "For the custodian: characters to search the log by, whosever and wherever they\nare, retired ones too: up to 20 with `q` in their name, or just `character_id`.",
+        "operationId": "characters_api_audit_characters_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditCharacter"
+                  },
+                  "title": "Response Characters Api Audit Characters Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Characters",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/audit/export": {
+      "get": {
+        "description": "For the custodian: everything the same filters find, newest first, as a CSV.\nThe export itself goes in the log.",
+        "operationId": "export_log_api_audit_export_get",
+        "parameters": [
+          {
+            "description": "Who did it: their handle.",
+            "in": "query",
+            "name": "person",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Who did it: their handle.",
+              "title": "Person"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Character Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditGroup"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Group"
+            }
+          },
+          {
+            "description": "From this moment on.",
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "From this moment on.",
+              "title": "Since"
+            }
+          },
+          {
+            "description": "Before this moment.",
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Before this moment.",
+              "title": "Until"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Log",
+        "tags": [
+          "audit"
+        ]
+      }
+    },
+    "/api/audit/filters": {
+      "get": {
+        "description": "For the custodian: the groups of actions and the troupes to search by.",
+        "operationId": "filters_api_audit_filters_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditFilters"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Filters",
+        "tags": [
+          "audit"
         ]
       }
     },

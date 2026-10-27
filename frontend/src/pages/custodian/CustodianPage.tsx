@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router";
 import { Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ArchivedTroupesTab } from "./ArchivedTroupesTab";
+import { AuditTab } from "./AuditTab";
 import { BackupsTab } from "./BackupsTab";
 import { ClanLogosTab } from "./ClanLogosTab";
 import { PeopleTab } from "./PeopleTab";
@@ -25,6 +26,7 @@ export function CustodianPage() {
           { to: "/custodian/archived-troupes", label: "Archived troupes" },
           { to: "/custodian/clan-logos", label: "Clan logos" },
           { to: "/custodian/backups", label: "Backups" },
+          { to: "/custodian/audit", label: "Audit" },
           { to: "/custodian/system", label: "System" },
         ]}
       />
@@ -35,6 +37,7 @@ export function CustodianPage() {
         <Route path="archived-troupes" element={<ArchivedTroupesTab />} />
         <Route path="clan-logos" element={<ClanLogosTab />} />
         <Route path="backups" element={<BackupsTab />} />
+        <Route path="audit" element={<AuditTab />} />
         <Route path="system" element={<SystemTab />} />
       </Routes>
     </>
