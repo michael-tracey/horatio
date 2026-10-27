@@ -3492,6 +3492,72 @@ test("a player fills in their profile, and the custodian resets their password",
   await c.screenshot(shots("password-resets"));
 });
 
+test("the custodian changes a player's email, and the player confirms it from the new address", async ({ browser }) => {
+  const custodian = await person(browser, "chmail-custodian");
+  makeCustodian(custodian.email);
+  const player = await person(browser, "chmail-player");
+  const newEmail = `chmail-new-${run}@example.com`;
+
+  // Email is off in this suite, so the player can't change their own: their link
+  // could only go to the new address by email.
+  const p = player.page;
+  await p.getByRole("link", { name: "chmail-player" }).click();
+  await expect(p.getByText(`You sign in with ${player.email}`)).toBeVisible();
+  await expect(p.getByText("Horatio can't send email here, so ask the custodian to change your email.")).toBeVisible();
+
+  // The custodian changes it from the People list, with a reason. An address
+  // another account uses is refused.
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(player.email);
+  const row = c
+    .locator("main li")
+    .filter({ hasText: player.email })
+    .filter({ has: c.getByRole("button", { name: "Change email for chmail-player" }) });
+  await row.getByRole("button", { name: "Change email for chmail-player" }).click();
+  await row.getByLabel("New email").fill(custodian.email);
+  await row.getByLabel("Reason").fill("Lost access to the old address");
+  await row.getByRole("button", { name: "Change email", exact: true }).click();
+  await expect(row.getByText(`uses ${custodian.email} already. If both accounts are the same person's, merge them instead.`, { exact: false })).toBeVisible();
+  await row.getByLabel("New email").fill(newEmail);
+  await row.getByRole("button", { name: "Change email", exact: true }).click();
+
+  // Nothing changes until the link is opened: the custodian sends it on.
+  await expect(row.getByText(`Waiting for chmail-player to confirm ${newEmail}`, { exact: false })).toBeVisible();
+  await expect(row.getByText("new email waiting")).toBeVisible();
+  const changes = c.locator("section", { has: c.getByRole("heading", { name: "Email changes" }) });
+  await expect(changes.getByText(`${player.email} → ${newEmail}`, { exact: false })).toBeVisible();
+  const url = await row.getByLabel("Link to confirm the new email").inputValue();
+  expect(url).toContain("/confirm-email/");
+  await expect(changes.getByText(`chmail-custodian started changing chmail-player's email from ${player.email} to ${newEmail} (Lost access to the old address).`)).toBeVisible();
+  await c.screenshot(shots("email-change"));
+
+  // The player opens it, signed out, confirms, and signs in with the new address.
+  const fresh = await (await browser.newContext()).newPage();
+  await fresh.goto(new URL(url).pathname);
+  await expect(fresh.getByText(`Change the email of chmail-player's Horatio account (@${player.handle}) to ${newEmail}?`)).toBeVisible();
+  await fresh.getByRole("button", { name: "Confirm new email" }).click();
+  await expect(fresh.getByText(`Done: your email is now ${newEmail}.`, { exact: false })).toBeVisible();
+  await fresh.screenshot(shots("email-confirmed"));
+  await fresh.getByRole("link", { name: "Sign in" }).click();
+  await fresh.getByLabel("Email or handle").fill(player.email);
+  await fresh.getByLabel("Password").fill(PASSWORD);
+  await fresh.getByRole("button", { name: "Sign in" }).click();
+  await expect(fresh.getByText("Wrong email, handle or password.")).toBeVisible();
+  await fresh.getByLabel("Email or handle").fill(newEmail);
+  await fresh.getByRole("button", { name: "Sign in" }).click();
+  await expect(fresh.getByRole("heading", { name: "Your characters" })).toBeVisible();
+
+  // The link is spent, and the custodian sees the change confirmed.
+  await fresh.goto(new URL(url).pathname);
+  await expect(fresh.getByText("This link has expired, been used or been replaced by a newer one.")).toBeVisible();
+  await c.reload();
+  await expect(changes.getByText(`chmail-player confirmed their new email, ${newEmail}, changed by chmail-custodian from ${player.email} (Lost access to the old address).`)).toBeVisible();
+  await expect(changes.getByText(`${player.email} → ${newEmail}`, { exact: false })).toHaveCount(0);
+});
+
 test("the custodian filters People by the troupe a player's active character is home in", async ({ browser }) => {
   const custodian = await person(browser, "tpf-custodian");
   makeCustodian(custodian.email);

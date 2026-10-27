@@ -122,6 +122,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/email-change/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Email Change For
+         * @description Whose email a link changes, and to what, so the page can ask first.
+         */
+        get: operations["email_change_for_api_auth_email_change__token__get"];
+        put?: never;
+        /**
+         * Confirm Email Change
+         * @description Confirm a change from the link sent to the new address: the email changes,
+         *     and the old address is told.
+         */
+        post: operations["confirm_email_change_api_auth_email_change__token__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/forgot": {
         parameters: {
             query?: never;
@@ -2714,6 +2739,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/email-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Email Changes
+         * @description For the custodian: the changes waiting to be confirmed, and every step of
+         *     changes made, with both addresses.
+         */
+        get: operations["list_email_changes_api_email_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/handle": {
         parameters: {
             query?: never;
@@ -2989,6 +3035,53 @@ export interface paths {
         get: operations["view_player_api_players__user_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{user_id}/email-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Email
+         * @description Start changing someone's email: it changes when the link sent to the new
+         *     address is opened. The custodian gives a reason; someone changing their own
+         *     gives their password, and needs Horatio to be able to email.
+         */
+        post: operations["change_email_api_players__user_id__email_change_post"];
+        /**
+         * Cancel Email Change
+         * @description Cancel the change waiting: the email stays as it is, and the link stops working.
+         */
+        delete: operations["cancel_email_change_api_players__user_id__email_change_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{user_id}/email-change/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend Email Change
+         * @description A new link for the change waiting, good for another 7 days; the old one stops
+         *     working.
+         */
+        post: operations["resend_email_change_api_players__user_id__email_change_resend_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6420,6 +6513,20 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** ConfirmFor */
+        ConfirmFor: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /** New Email */
+            new_email: string;
+        };
+        /** Confirmed */
+        Confirmed: {
+            /** Email */
+            email: string;
+        };
         /** ConnectorChange */
         ConnectorChange: {
             /** Enabled */
@@ -7317,6 +7424,45 @@ export interface components {
             id: string;
             /** Text */
             text: string;
+        };
+        /** EmailChangeIn */
+        EmailChangeIn: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** EmailChangeOut */
+        EmailChangeOut: {
+            /** Asked Themselves */
+            asked_themselves: boolean;
+            /** Email Error */
+            email_error?: string | null;
+            /** Emailed To */
+            emailed_to?: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Made By */
+            made_by: string;
+            /** New Email */
+            new_email: string;
+            /** Url */
+            url?: string | null;
+        };
+        /** EmailChanges */
+        EmailChanges: {
+            /** Log */
+            log: components["schemas"]["LogEntry"][];
+            /** Pending */
+            pending: components["schemas"]["PendingEmailFor"][];
         };
         /** EmailHelp */
         EmailHelp: {
@@ -10191,6 +10337,46 @@ export interface components {
             /** To Rating */
             to_rating: number;
         };
+        /**
+         * PendingEmail
+         * @description A change of email waiting to be confirmed at the new address.
+         */
+        PendingEmail: {
+            /** Asked Themselves */
+            asked_themselves: boolean;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Made By */
+            made_by: string;
+            /** New Email */
+            new_email: string;
+        };
+        /** PendingEmailFor */
+        PendingEmailFor: {
+            /** Asked Themselves */
+            asked_themselves: boolean;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Made By */
+            made_by: string;
+            /** New Email */
+            new_email: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** People */
         People: {
             /** Next Offset */
@@ -10549,6 +10735,7 @@ export interface components {
             display_name: string;
             /** Email */
             email: string | null;
+            email_change?: components["schemas"]["PendingEmail"] | null;
             /** Handle */
             handle: string;
             /**
@@ -10574,6 +10761,8 @@ export interface components {
             display_name: string;
             /** Email */
             email: string;
+            /** Email Change To */
+            email_change_to?: string | null;
             /** Handle */
             handle: string;
             /**
@@ -14119,6 +14308,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditFilters"];
+                };
+            };
+        };
+    };
+    email_change_for_api_auth_email_change__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmFor"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_email_change_api_auth_email_change__token__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Confirmed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -19202,6 +19453,37 @@ export interface operations {
             };
         };
     };
+    list_email_changes_api_email_changes_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailChanges"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     change_handle_api_handle_put: {
         parameters: {
             query?: never;
@@ -19673,6 +19955,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_email_api_players__user_id__email_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailChangeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailChangeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_email_change_api_players__user_id__email_change_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resend_email_change_api_players__user_id__email_change_resend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailChangeOut"];
                 };
             };
             /** @description Validation Error */

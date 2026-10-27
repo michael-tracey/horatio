@@ -32,6 +32,7 @@ from horatio.models.downtimes import (
     Submission,
     TroupeConnector,
 )
+from horatio.models.email_changes import EmailChange
 from horatio.models.equipment import EquipmentEvent, EquipmentItem
 from horatio.models.influence import InfluenceEntry
 from horatio.models.influence_blocks import InfluenceBlock
@@ -102,6 +103,7 @@ __all__ = [
     "DowntimeCycle",
     "EmailNotice",
     "FeedingAdjustment",
+    "EmailChange",
     "InfluenceBlock",
     "InfluenceEntry",
     "InfluenceEffect",
