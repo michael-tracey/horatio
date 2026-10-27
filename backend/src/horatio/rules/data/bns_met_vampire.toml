@@ -29,8 +29,9 @@ starting_xp = 30
 # the rest is lost (p. 107).
 banked_xp = 5
 
-# Further [[traits]] tables, loaded as part of this rule set.
-trait_files = ["bns_met_vampire_traits.toml"]
+# Further [[traits]] tables, loaded as part of this rule set; the status file also
+# has the sects' status rules and what each title gives (horatio.rules.status).
+trait_files = ["bns_met_vampire_traits.toml", "bns_met_vampire_status.toml"]
 
 # What a sheet may hold, beyond what it costs (horatio.rules.checks).
 check_files = ["bns_met_vampire_checks.toml"]

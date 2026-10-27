@@ -1,0 +1,1187 @@
+# Sect status, written by hand (horatio.rules.status): every status trait with its
+# sect and what it does, each sect's name for Accepted and its status bans, the
+# status each title and social age gives, and the status caps.
+#
+# From MET: Vampire The Masquerade (2013): Chapter Seven, pp. 310-317, for the
+# general status; Chapter Nine (the Camarilla), Ten (the Sabbat) and Eleven (the
+# Anarch Movement) for each sect's own. Page numbers are the book's printed ones.
+# The effects are one-line summaries in our own words: the book has the full text.
+#
+# The Independent Alliance's status has no rulebook source yet: each has its sect
+# (from Yorick's catalogue) and nothing more.
+
+# What a character carries into a game (p. 313): the status of one abiding source,
+# all innate and negative status, and up to 5 fleeting, or fewer under a status
+# ban: 3 under a lesser ban, 1 under a greater (abiding status is unaffected).
+[status_caps]
+abiding_sources = 1
+fleeting = 5
+lesser_ban = 3
+greater_ban = 1
+page = "313"
+
+# --- sects: Accepted and status bans ---------------------------------------------------------
+#
+# A ban says who it applies to; `when` is the condition (horatio.rules.checks) where
+# the sheet can tell, and the rest are for the troupe's staff to judge. A ban only
+# ever applies to a member of its sect.
+
+[[sects]]
+name = "Camarilla"
+accepted = "Acknowledged"
+page = "400"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "Not Embraced into a pillar clan (Assamite, Brujah, Malkavian, Nosferatu, Toreador, Tremere, Ventrue); the Gangrel are not one again yet."
+when = { not = { clan_family = ["Assamite", "Brujah", "Malkavian", "Nosferatu", "Toreador", "Tremere", "Ventrue"] } }
+page = "403"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "On a Path of Enlightenment."
+when = { on_path = true }
+page = "403"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "No boons registered with the Harpy."
+page = "403"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "A member of the Sabbat within the past 10 years."
+page = "403"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "A known Caitiff."
+when = { clan = ["Caitiff"] }
+page = "403"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "Has committed diablerie."
+page = "403"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "Joined the Camarilla within the last year."
+page = "403"
+
+[[sects]]
+name = "Sabbat"
+accepted = "Initiated"
+page = "446"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "On Humanity rather than a Path of Enlightenment."
+when = { on_path = false }
+page = "449"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "Assamite or Toreador antitribu."
+when = { clan_family = ["Assamite", "Toreador"] }
+page = "449"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "Not in a pack."
+page = "449"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "No Vinculum above 2, or fewer than two Vinculums."
+page = "449"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "Tremere antitribu."
+when = { clan_family = ["Tremere"] }
+page = "449"
+
+[[sects]]
+name = "Anarch"
+accepted = "Committed"
+page = "481"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "Has ever committed diablerie."
+page = "484"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "Known to blood bond others, ghouls included: while the bond lasts and three months after, and for good the second time."
+page = "484"
+
+[[sects.bans]]
+level = "lesser"
+applies_to = "A member of the Camarilla or the Sabbat within the past 10 years."
+page = "484"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "On a Path of Enlightenment."
+when = { on_path = true }
+page = "484"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "Refused a local Call to Arms within the past five years."
+page = "484"
+
+[[sects.bans]]
+level = "greater"
+applies_to = "Responsible for a large breach of the Masquerade, not yet repaired."
+page = "484"
+
+# --- social age ------------------------------------------------------------------------------
+#
+# In the Camarilla, social age is a source of abiding status like a title (p. 400).
+
+[[social_ages]]
+sect = "Camarilla"
+age = "Ancilla"
+status = ["Confirmed"]
+page = "400"
+
+[[social_ages]]
+sect = "Camarilla"
+age = "Elder"
+status = ["Confirmed", "Established", "Privileged"]
+page = "400"
+
+# --- titles ----------------------------------------------------------------------------------
+#
+# The abiding status each title gives during its holder's tenure. Titles in the
+# catalogue's list that are not here have no sect and give no status.
+#
+# A Myrmidon has an Archon's authority, but Sanctioned in place of Noble (p. 371);
+# Sanctioned is fleeting status, so the title gives none here. A Lesser Harpy, who
+# gains Guardian while the Master Harpy is away (p. 379), is not in the list.
+
+[[titles]]
+name = "Inner Circle"
+sect = "Camarilla"
+status = ["Ascendant", "Authority", "Commander", "Ominous"]
+page = "371"
+
+[[titles]]
+name = "Imperator"
+sect = "Camarilla"
+status = ["Ascendant", "Authority", "Commander"]
+page = "371"
+
+[[titles]]
+name = "Justicar"
+sect = "Camarilla"
+status = ["Ascendant", "Authority", "Commander"]
+page = "373"
+
+[[titles]]
+name = "Archon"
+sect = "Camarilla"
+status = ["Commander", "Noble"]
+page = "373"
+
+[[titles]]
+name = "Alastor"
+sect = "Camarilla"
+status = ["Commander"]
+page = "374"
+
+[[titles]]
+name = "Prince"
+sect = "Camarilla"
+status = ["Authority", "Commander", "Sovereign"]
+page = "375"
+
+[[titles]]
+name = "Petty Prince"
+sect = "Camarilla"
+status = ["Authority", "Sovereign"]
+page = "375"
+
+[[titles]]
+name = "Seneschal"
+sect = "Camarilla"
+status = ["Noble"]
+page = "376"
+
+[[titles.while_absent]]
+title = "Prince"
+status = ["Authority"]
+
+[[titles]]
+name = "Primogen"
+sect = "Camarilla"
+status = ["Noble"]
+page = "376"
+
+[[titles]]
+name = "Whip"
+sect = "Camarilla"
+page = "377"
+
+[[titles.while_absent]]
+title = "Primogen"
+status = ["Noble"]
+
+[[titles]]
+name = "Harpy"
+sect = "Camarilla"
+status = ["Prominent", "Noble", "Guardian"]
+page = "379"
+
+[[titles]]
+name = "Keeper of Elysium"
+sect = "Camarilla"
+status = ["Enforcer", "Guardian"]
+page = "379"
+
+[[titles]]
+name = "Sheriff"
+sect = "Camarilla"
+status = ["Enforcer", "Privileged"]
+page = "380"
+
+[[titles]]
+name = "Scourge"
+sect = "Camarilla"
+status = ["Enforcer"]
+page = "380"
+
+[[titles]]
+name = "Regent"
+sect = "Sabbat"
+status = ["Authority", "Commander", "Ominous", "Sacrosanct"]
+page = "416"
+
+[[titles]]
+name = "Cardinal"
+sect = "Sabbat"
+status = ["Authority", "Glorious", "Sacrosanct"]
+page = "417"
+
+[[titles]]
+name = "Archbishop"
+sect = "Sabbat"
+status = ["Authority", "Glorious", "Ordained"]
+page = "419"
+
+# Blessed or Enforcer, chosen at the start of each night.
+[[titles]]
+name = "Bishop"
+sect = "Sabbat"
+choose_one = ["Blessed", "Enforcer"]
+page = "419"
+
+[[titles.while_absent]]
+title = "Archbishop"
+status = ["Ordained"]
+note = "Only for a Bishop given a Blood Bath on taking office."
+
+[[titles]]
+name = "Templar"
+sect = "Sabbat"
+status = ["Enforcer"]
+page = "420"
+
+[[titles]]
+name = "Priscus"
+sect = "Sabbat"
+status = ["Infamous", "Prominent", "Sacrosanct"]
+page = "420"
+
+[[titles]]
+name = "Ductus"
+sect = "Sabbat"
+status = ["Blessed"]
+page = "421"
+
+[[titles]]
+name = "Priest"
+sect = "Sabbat"
+status = ["Ordained"]
+page = "421"
+
+[[titles]]
+name = "Abbot"
+sect = "Sabbat"
+page = "421"
+
+[[titles]]
+name = "Baron"
+sect = "Anarch"
+status = ["Authority", "Mandate"]
+page = "473"
+
+[[titles]]
+name = "Constable"
+sect = "Anarch"
+status = ["Enforcer", "Warrant"]
+page = "473"
+
+[[titles]]
+name = "Architect"
+sect = "Anarch"
+status = ["Enforcer"]
+page = "473"
+
+[[titles]]
+name = "Ambassador"
+sect = "Anarch"
+status = ["Established"]
+page = "474"
+
+# The rest of the catalogue's titles of a sect, as Yorick's catalogue has them. They
+# give no status. Clan titles (a Giovanni Capo, a Lasombra Blood Duke) have no sect.
+
+[[titles]]
+name = "Ancilla"
+sect = "Camarilla"
+
+[[titles]]
+name = "Elder"
+sect = "Camarilla"
+
+[[titles]]
+name = "Josian Archon"
+sect = "Camarilla"
+
+[[titles]]
+name = "Lord"
+sect = "Camarilla"
+
+[[titles]]
+name = "Myrmidon"
+sect = "Camarilla"
+
+[[titles]]
+name = "Pontifex"
+sect = "Camarilla"
+
+[[titles]]
+name = "Agent"
+sect = "Sabbat"
+
+[[titles]]
+name = "Dominion"
+sect = "Sabbat"
+
+[[titles]]
+name = "Grand Inquisitor"
+sect = "Sabbat"
+
+[[titles]]
+name = "Judge Inquisitor"
+sect = "Sabbat"
+
+[[titles]]
+name = "Knight Inquisitor"
+sect = "Sabbat"
+
+[[titles]]
+name = "Seraph"
+sect = "Sabbat"
+
+[[titles]]
+name = "Watcher"
+sect = "Sabbat"
+
+[[titles]]
+name = "Advocate"
+sect = "Anarch"
+
+[[titles]]
+name = "Actuary"
+sect = "Independent Alliance"
+
+[[titles]]
+name = "Emissary"
+sect = "Independent Alliance"
+
+[[titles]]
+name = "Executioner"
+sect = "Independent Alliance"
+
+[[titles]]
+name = "Malak"
+sect = "Independent Alliance"
+
+[[titles]]
+name = "Trustee"
+sect = "Independent Alliance"
+
+# --- general status (pp. 313-317) ------------------------------------------------------------
+#
+# Status is used on characters in the user's jurisdiction: within the last 30 days in
+# her domain, salon or martial action (p. 314).
+
+[[traits]]
+category = "status_traits"
+name = "Authority"
+page_reference = "314"
+[traits.properties]
+type = "Abiding"
+sect = "General"
+passive = "Give Courageous, Defender, Honorable or Loyal without spending it; each person holds one at a time from you."
+spent = "Punish or pardon: give or remove Warned or Forsaken."
+source = "A ruler's title: Prince, Archbishop, Baron and the sect's highest offices."
+
+[[traits]]
+category = "status_traits"
+name = "Commander"
+page_reference = "314"
+[traits.properties]
+type = "Abiding"
+sect = "General"
+passive = "Give orders to any sect member without Authority; whoever defies you loses their fleeting status, unspent, for 2 games or a month, and gains none meanwhile. Deputise up to three as Enforcer for a night."
+spent = "Give up to three characters Courageous or Loyal each."
+source = "The sect's commanders: Justicar, Archon, Alastor, Prince, Regent."
+
+[[traits]]
+category = "status_traits"
+name = "Enforcer"
+page_reference = "314"
+[traits.properties]
+type = "Abiding"
+sect = "General"
+passive = "Go armed to any gathering, even where weapons are barred. Deputise up to two sect members as Defender for a night."
+spent = "Give Warned to someone you believe broke the law of your sect or domain."
+source = "Sheriff, Scourge, Keeper of Elysium, Templar, Constable, Architect; a Bishop's choice; deputised by a Commander or Sovereign."
+
+[[traits]]
+category = "status_traits"
+name = "Established"
+page_reference = "314"
+[traits.properties]
+type = "Abiding"
+sect = "General"
+passive = "Whoever openly insults, threatens or attacks you gains Warned, unless they hold Authority, Commander or Triumphant."
+spent = "Give Favored."
+source = "Camarilla elders; an Anarch Ambassador."
+
+[[traits]]
+category = "status_traits"
+name = "Prominent"
+page_reference = "314"
+[traits.properties]
+type = "Abiding"
+sect = "General"
+passive = "Give Honorable or Courteous without spending it; each person holds one at a time from you."
+spent = "Send someone out of a scene for 10 minutes, or they gain Disgraced. Not in combat."
+source = "Harpy, Priscus."
+
+[[traits]]
+category = "status_traits"
+name = "Ominous"
+page_reference = "371"
+[traits.properties]
+type = "Abiding"
+sect = "General"
+passive = "NPCs only: the highest command, under which nearly anything allowable falls."
+spent = "Shows that a command comes from the very top; the Regent spends it to lift or lessen a status ban (p. 449)."
+source = "The Camarilla's Inner Circle and the Sabbat's Regent (p. 416)."
+
+[[traits]]
+category = "status_traits"
+name = "Courteous"
+page_reference = "315"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "No one can use Subterfuge to shift the blame for a supernatural power onto you."
+spent = "Undo a political or etiquette error of the last five minutes: the offended must accept your apology."
+source = "Given with Prominent or Sovereign, or by a patron."
+
+[[traits]]
+category = "status_traits"
+name = "Courageous"
+page_reference = "315"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "Once a game, a combat maneuver without spending Willpower, while following the orders of someone with Authority or Commander."
+spent = "Let one character (you or another) use a combat maneuver without spending Willpower, unless you are breaking sect law."
+source = "Given with Authority or Commander."
+
+[[traits]]
+category = "status_traits"
+name = "Defender"
+page_reference = "315"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "Go armed to any gathering, even where weapons are barred."
+spent = "Gain one fewer Beast trait for an action (one Defender for each sin)."
+source = "Given with Authority; deputised by an Enforcer for a night."
+
+[[traits]]
+category = "status_traits"
+name = "Favored"
+page_reference = "315"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "A known patron backs you: whoever openly attacks you gains Warned, unless they hold Authority, Commander or Triumphant."
+spent = "Cancel negative status as someone gives it to you; they cannot try again that night."
+source = "Given with Established, Infamous or Sacrosanct."
+
+[[traits]]
+category = "status_traits"
+name = "Honorable"
+page_reference = "315"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "Anyone openly accusing you of lying must spend a positive status to do it."
+spent = "Stay in, or join, a scene you would be forced to leave, safe from Prominent's spend for the scene."
+source = "Given with Authority or Prominent."
+
+[[traits]]
+category = "status_traits"
+name = "Loyal"
+page_reference = "315"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "If you are given Warned, you lose Loyal, unspent, instead."
+spent = "Get one piece of ordinary equipment or general information from the sect's minions within five minutes."
+source = "Given with Authority, Commander, Noble, Sovereign or Blessed; innate from the Prestigious Sire merit."
+
+[[traits]]
+category = "status_traits"
+name = "Praised"
+page_reference = "316"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "None."
+spent = "Claim a trivial boon's worth of help from any Accepted member of your sect not already in your debt."
+source = "Publicly insulting someone Disgraced (or a Marked Anarch); hurting or beating someone Cowardly."
+
+[[traits]]
+category = "status_traits"
+name = "Triumphant"
+page_reference = "316"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "Privileges at the sect's gatherings, the right to feed in any of its domains, and one fewer downtime action to feed."
+spent = "Ignore the censure of all negative status, yours or another's, for an hour."
+source = "Given only by NPCs: for publicly defeating a great enemy of the sect, or a service risking your life; killing a Forsaken vampire."
+
+[[traits]]
+category = "status_traits"
+name = "Victorious"
+page_reference = "316"
+[traits.properties]
+type = "Fleeting"
+sect = "General"
+passive = "On the night you gain it, others can give you positive status without spending theirs."
+spent = "Spend it with another status to get that status back at once; or remove Warned from yourself or another where you won it."
+source = "Winning a symbel (p. 317)."
+
+[[traits]]
+category = "status_traits"
+name = "Warned"
+page_reference = "316"
+[traits.properties]
+type = "Negative"
+sect = "General"
+censure = "Don't speak to an officer of your sect in public unless spoken to first, nor contradict one; an apology and a minor boon put a slip right. An officer can set another fitting restriction instead."
+punishment = "Gain Disgraced, keeping Warned."
+source = "Spent Authority, Enforcer, Glorious, Mandate and others; insulting or attacking someone with Established, Favored or Infamous."
+[traits.properties.duration]
+games = 2
+months = 1
+stacks = true
+text = "2 games or 1 month, whichever is longer; each further Warned adds the same again."
+
+[[traits]]
+category = "status_traits"
+name = "Disgraced"
+page_reference = "316"
+[traits.properties]
+type = "Negative"
+sect = "General"
+censure = "No weapons or powers before a sect officer without leave, no feeding in the sect's territory, and no spending or gaining status; boons owed to you need not be repaid. An apology and a major boon put a slip right. Whoever publicly insults you gains Praised, once a game each."
+punishment = "Gain Forsaken, keeping Warned and Disgraced."
+source = "Breaking Warned's censure; spent Prominent, Ascendant or Guardian, among others."
+[traits.properties.duration]
+games = 2
+months = 1
+while_held = "Warned"
+text = "While you hold any Warned; with none, 2 games or 1 month, whichever is longer."
+
+[[traits]]
+category = "status_traits"
+name = "Forsaken"
+page_reference = "317"
+[traits.properties]
+type = "Negative"
+sect = "General"
+censure = "No longer Accepted: no status or position, and you can be destroyed without breaking sect law. Someone with Authority can still let you stay in her domain."
+punishment = "None beyond the censure; a sect member who kills you gains Triumphant."
+source = "Breaking Disgraced's censure; spent Authority; a blood hunt."
+[traits.properties.duration]
+text = "Until someone spends Authority to forgive you."
+
+# --- Camarilla (pp. 400-403) -----------------------------------------------------------------
+
+[[traits]]
+category = "status_traits"
+name = "Acknowledged"
+page_reference = "400"
+[traits.properties]
+type = "Accepted"
+sect = "Camarilla"
+passive = "A full member of the Camarilla, under a Prince and the Traditions. Your status counts in a city only once its Prince Acknowledges you (global officers excepted)."
+source = "Speaking with your Primogen and being introduced by the Prince (p. 310)."
+
+[[traits]]
+category = "status_traits"
+name = "Ascendant"
+page_reference = "401"
+[traits.properties]
+type = "Abiding"
+sect = "Camarilla"
+passive = "Immune to the powers of, and free to contradict the orders of, anyone without Ascendant."
+spent = "Give Disgraced, or call a global blood hunt (three from different sources Red List the target, who is Forsaken everywhere in the Camarilla); or issue a doctrinal edict."
+source = "Inner Circle, Imperator, Justicar."
+
+[[traits]]
+category = "status_traits"
+name = "Confirmed"
+page_reference = "401"
+[traits.properties]
+type = "Abiding"
+sect = "Camarilla"
+passive = "Approach any officer of the sect without a formal introduction."
+spent = "Order a mortal beholden to the sect (a ghoul, a revenant) to obey you, short of their master's orders; refusing, they may be killed. Not in combat."
+source = "Social age: Camarilla ancillae and elders (p. 400)."
+
+[[traits]]
+category = "status_traits"
+name = "Guardian"
+page_reference = "401"
+[traits.properties]
+type = "Abiding"
+sect = "Camarilla"
+passive = "Give Warned to anyone behaving badly in your jurisdiction, or defying your proclamations."
+spent = "Give Disgraced: a Keeper brands a defiler of Elysium Profane, a Harpy a proven Boonbreaker."
+source = "Harpy, Keeper of Elysium."
+
+[[traits]]
+category = "status_traits"
+name = "Noble"
+page_reference = "401"
+[traits.properties]
+type = "Abiding"
+sect = "Camarilla"
+passive = "Give Acclaimed or Loyal without spending it; each person holds one at a time from you."
+spent = "Give Vulgar to someone who has given real offence."
+source = "Primogen, Seneschal, Archon, Harpy; a Whip while the Primogen is absent."
+
+[[traits]]
+category = "status_traits"
+name = "Privileged"
+page_reference = "401"
+[traits.properties]
+type = "Abiding"
+sect = "Camarilla"
+passive = "No one can openly accuse you of lying unless they hold Privileged, Commander, Triumphant or Authority."
+spent = "Give Vulgar."
+source = "Sheriff; Camarilla elders (p. 400)."
+
+[[traits]]
+category = "status_traits"
+name = "Sovereign"
+page_reference = "401"
+[traits.properties]
+type = "Abiding"
+sect = "Camarilla"
+passive = "You hold praxis: give Courteous, Enforcer or Loyal without spending it, each person holding one at a time from you, and no one without Privileged or Authority can openly contradict you in your domain."
+spent = "Give Sanctioned, or call a blood hunt: the target is Forsaken in your city while you hold praxis."
+source = "Prince, petty Prince."
+
+[[traits]]
+category = "status_traits"
+name = "Architect"
+page_reference = "402"
+[traits.properties]
+type = "Innate"
+sect = "Camarilla"
+passive = "Attend and witness any Judicial Conclave (speaking only by leave), and approach and petition any Justicar or the hosting Prince at a conclave."
+spent = "Put an item on a conclave's agenda, without your name if you like."
+source = "The Architect of the Tower merit (p. 404)."
+
+[[traits]]
+category = "status_traits"
+name = "Primus Inter Pares"
+page_reference = "402"
+[traits.properties]
+type = "Innate"
+sect = "Camarilla"
+passive = "Your Authority outranks others': what cannot target Ascendant cannot target you, and their Authority cannot undo your uses of status."
+spent = "Spend another's Authority, Established or Privileged without effect, or undo a use of them in your domain."
+source = "The Prince hosting a conclave, while it lasts."
+
+[[traits]]
+category = "status_traits"
+name = "Acclaimed"
+page_reference = "402"
+[traits.properties]
+type = "Fleeting"
+sect = "Camarilla"
+passive = "Once a night, lend the passive effect of an unspent status you hold to one person within 10 feet, for an hour."
+spent = "Have an officer of the sect give her views or advice on a matter of the domain, publicly or privately."
+source = "Given with Noble; publicly protecting the Masquerade or upholding the Traditions."
+
+[[traits]]
+category = "status_traits"
+name = "Gallant"
+page_reference = "402"
+[traits.properties]
+type = "Fleeting"
+sect = "Camarilla"
+passive = "None."
+spent = "Undo a political or etiquette error of the last five minutes: the offended must accept your apology."
+source = "Repaying a great boon to someone of standing; the Social Nobility merit (p. 405)."
+
+[[traits]]
+category = "status_traits"
+name = "Sanctioned"
+page_reference = "402"
+[traits.properties]
+type = "Fleeting"
+sect = "Camarilla"
+passive = "None."
+spent = "Break the one sect law it was given for, without punishment."
+source = "Given with Sovereign."
+
+[[traits]]
+category = "status_traits"
+name = "Vulgar"
+page_reference = "403"
+[traits.properties]
+type = "Negative"
+sect = "Camarilla"
+censure = "Your fleeting status is spent without effect, coming back at the end of the game, and you gain no more meanwhile."
+punishment = "A second Vulgar becomes Warned."
+source = "Spent Noble or Privileged."
+[traits.properties.duration]
+this_game = true
+text = "Only the game it is given at."
+
+# --- Sabbat (pp. 446-449) --------------------------------------------------------------------
+
+[[traits]]
+category = "status_traits"
+name = "Initiated"
+page_reference = "446"
+[traits.properties]
+type = "Accepted"
+sect = "Sabbat"
+passive = "A full member, True Sabbat: you take part in the Auctoritas, Ignoblis and Faction Ritae, under the protection of the Code of Milan."
+source = "A year and a day as False Sabbat, then the Creation Rites (pp. 427, 429)."
+
+[[traits]]
+category = "status_traits"
+name = "Blessed"
+page_reference = "446"
+[traits.properties]
+type = "Abiding"
+sect = "Sabbat"
+passive = "Give Battle-scarred or Loyal without spending it; each person holds one at a time from you."
+spent = "Give Cowardly to someone behaving badly in your jurisdiction."
+source = "Ductus; a Bishop's choice."
+
+[[traits]]
+category = "status_traits"
+name = "Glorious"
+page_reference = "446"
+[traits.properties]
+type = "Abiding"
+sect = "Sabbat"
+passive = "Give Consecrated or Devout without spending it. Give orders to any sect member without Authority or Sacrosanct; whoever defies you loses their fleeting status, unspent, for 2 games or a month, and gains none meanwhile."
+spent = "Order a Rite of Contrition, or give Cowardly or Warned."
+source = "Cardinal, Archbishop."
+
+[[traits]]
+category = "status_traits"
+name = "Infamous"
+page_reference = "447"
+[traits.properties]
+type = "Abiding"
+sect = "Sabbat"
+passive = "Whoever openly insults, threatens or attacks you gains Warned, unless they hold Sacrosanct or Triumphant. Give Favored without spending it."
+spent = "Give Consecrated or Anointed, or give Ignorant."
+source = "Priscus."
+
+[[traits]]
+category = "status_traits"
+name = "Loyalist"
+page_reference = "447"
+[traits.properties]
+type = "Abiding"
+sect = "Sabbat"
+passive = "Immune to the passive and spent effects of Glorious."
+spent = "Cannot be spent."
+source = "The Loyalist faction, while you hold no clergy post (p. 439)."
+
+[[traits]]
+category = "status_traits"
+name = "Ordained"
+page_reference = "447"
+[traits.properties]
+type = "Abiding"
+sect = "Sabbat"
+passive = "Perform the Ignoblis Ritae, and give Devout, without spending it; each person holds one Devout at a time from you."
+spent = "Lead any Auctoritas Ritae but the Blood Bath, Blood Feast and Wild Hunt; give Anointed or Battle-scarred; give Ignorant; or order a Rite of Contrition."
+source = "Archbishop, Priest; a Bishop while the Archbishop is absent."
+
+[[traits]]
+category = "status_traits"
+name = "Sacrosanct"
+page_reference = "447"
+[traits.properties]
+type = "Abiding"
+sect = "Sabbat"
+passive = "Immune to the powers and orders of anyone without Sacrosanct. Start any Ignoblis, and the Auctoritas Ritae but the Blood Feast and Wild Hunt, and give Favored or Resolute, without spending it."
+spent = "Order a Rite of Contrition, hold the Blood Feast, call the Wild Hunt, or issue letters patent for your jurisdiction."
+source = "Regent, Cardinal, Priscus."
+
+[[traits]]
+category = "status_traits"
+name = "Branded"
+page_reference = "447"
+[traits.properties]
+type = "Innate"
+sect = "Sabbat"
+passive = "A Sabbat who attacks you, or uses a power on you against your will, gains Warned (powers that only watch over you excepted)."
+spent = "Command a Sabbat to spend a status for you, hand over equipment, or use her powers as you say, within the Code of Milan; refusing earns Disgraced."
+source = "The Black Hand Membership merit (p. 452)."
+
+[[traits]]
+category = "status_traits"
+name = "Purified"
+page_reference = "447"
+[traits.properties]
+type = "Innate"
+sect = "Sabbat"
+passive = "Name someone a heretic (p. 426), giving them Disgraced."
+spent = "Clear someone proven innocent of heresy, with an ad cautelum lasting 6 games or 3 months, whichever is longer."
+source = "The Inquisition Membership merit (p. 453)."
+
+[[traits]]
+category = "status_traits"
+name = "Anointed"
+page_reference = "448"
+[traits.properties]
+type = "Fleeting"
+sect = "Sabbat"
+passive = "None."
+spent = "Lead one named ritus your patron could, with the Rituals you already know."
+source = "Given with Infamous or Ordained; innate from the Keeper of a Sacred Text merit (p. 453)."
+
+[[traits]]
+category = "status_traits"
+name = "Battle-scarred"
+page_reference = "448"
+[traits.properties]
+type = "Fleeting"
+sect = "Sabbat"
+passive = "The first time each night you reach Incapacitated, heal 2 health levels."
+spent = "Use the assist attacker or assist defender mass combat tactic without spending its action, unless you are breaking sect law."
+source = "Given with Blessed or Ordained."
+
+[[traits]]
+category = "status_traits"
+name = "Consecrated"
+page_reference = "448"
+[traits.properties]
+type = "Fleeting"
+sect = "Sabbat"
+passive = "Win the static challenge to wake during the day without testing (the other costs still apply, p. 293)."
+spent = "Spare another character the Beast traits for an action your Path would not punish."
+source = "Given with Glorious or Infamous."
+
+[[traits]]
+category = "status_traits"
+name = "Devout"
+page_reference = "448"
+[traits.properties]
+type = "Fleeting"
+sect = "Sabbat"
+passive = "Once a game for each Devout, spend a Blood and five minutes in prayer or study to heal 1 aggravated damage."
+spent = "Give yourself or another vampire a retest on a ritus about to fail; several can go on one ritus."
+source = "Given with Glorious or Ordained."
+
+[[traits]]
+category = "status_traits"
+name = "Resolute"
+page_reference = "448"
+[traits.properties]
+type = "Fleeting"
+sect = "Sabbat"
+passive = "+3 wild card bonus to resist fear frenzy."
+spent = "A free Willpower retest against an effect that would force you out of combat; one against each opponent in a combat."
+source = "Given with Sacrosanct."
+
+[[traits]]
+category = "status_traits"
+name = "Scholar"
+page_reference = "448"
+[traits.properties]
+type = "Fleeting"
+sect = "Sabbat"
+passive = "One fewer Beast trait for each violation of your Path, to a minimum of 0."
+spent = "Cannot be spent."
+source = "Your Priest, spending Ordained, when someone you taught converts to your Path."
+[traits.properties.duration]
+games = 4
+months = 2
+text = "4 games or 2 months, whichever is longer."
+
+[[traits]]
+category = "status_traits"
+name = "Cowardly"
+page_reference = "448"
+[traits.properties]
+type = "Negative"
+sect = "Sabbat"
+censure = "None of its own: its punishment applies while you hold it. Whoever hurts you (short of death), or beats you in a symbel or Monomacy, gains Praised."
+punishment = "Your Willpower is 1 lower until Cowardly goes."
+source = "Spent Blessed or Glorious."
+[traits.properties.duration]
+games = 4
+months = 2
+text = "4 games or 2 months, whichever is longer."
+
+[[traits]]
+category = "status_traits"
+name = "Ignorant"
+page_reference = "449"
+[traits.properties]
+type = "Negative"
+sect = "Sabbat"
+censure = "Don't preach at a Sermon of Caine, proselytise, or quote the Book of Nod in public; listen to every sermon, and don't contradict anyone quoting doctrine."
+punishment = "Rituals cannot help you, though their harm still can."
+source = "Spent Infamous or Ordained; a ritual failing because of you."
+[traits.properties.duration]
+text = "The book gives none: until someone removes it."
+
+# --- Anarch (pp. 481-483) --------------------------------------------------------------------
+
+[[traits]]
+category = "status_traits"
+name = "Committed"
+page_reference = "481"
+[traits.properties]
+type = "Accepted"
+sect = "Anarch"
+passive = "Hazed in, a full member of the Movement: use your status on any Committed Anarch you have been with in the last 30 days."
+source = "Proving your loyalty in combat beside the sect (p. 310); a Baron can offer it (p. 473)."
+
+[[traits]]
+category = "status_traits"
+name = "Mandate"
+page_reference = "481"
+[traits.properties]
+type = "Abiding"
+sect = "Anarch"
+passive = "Exile an Anarch from your territory, or a place in it; if they enter, they gain Loser."
+spent = "Give Connected or Preacher; give or remove Loser, Marked or Warned; give Cherry; or call a Call to Arms against someone."
+source = "Baron."
+
+[[traits]]
+category = "status_traits"
+name = "Moniker"
+page_reference = "482"
+[traits.properties]
+type = "Abiding"
+sect = "Anarch"
+passive = "+1 to defence pools against Intimidation and Leadership (and powers using them), and +1 more for each other holder of your gang's Moniker within 10 steps, up to +5."
+spent = "Cannot be spent."
+source = "The Moniker merit (p. 486)."
+
+[[traits]]
+category = "status_traits"
+name = "Warrant"
+page_reference = "482"
+[traits.properties]
+type = "Abiding"
+sect = "Anarch"
+passive = "Give orders in combat to any Anarch in your territory, the Baron included; whoever disobeys gains Loser."
+spent = "Give Thug or Veteran; give Cherry; or order an Anarch's punishment under your territory's law (refusing earns Disgraced and Loser)."
+source = "Constable."
+
+[[traits]]
+category = "status_traits"
+name = "Connected"
+page_reference = "482"
+[traits.properties]
+type = "Fleeting"
+sect = "Anarch"
+passive = "Once a game, call on Allies, Contacts, Herd or Resources without spending the background."
+spent = "+2 levels to an influence you have, for one use."
+source = "Given with Mandate; popular acclaim (p. 481)."
+
+[[traits]]
+category = "status_traits"
+name = "Hardcore"
+page_reference = "482"
+[traits.properties]
+type = "Fleeting"
+sect = "Anarch"
+passive = "+1 to your pool when comparing for an exceptional success (only once, however many you hold)."
+spent = "A combat maneuver without spending Willpower (not with one bought with Willpower on the same action)."
+source = "Popular acclaim, for risking Final Death on a vital mission or for another Anarch (p. 481)."
+
+[[traits]]
+category = "status_traits"
+name = "Preacher"
+page_reference = "482"
+[traits.properties]
+type = "Fleeting"
+sect = "Anarch"
+passive = "Your words cannot break the Masquerade to an ordinary mortal who overhears them."
+spent = "Inspiring someone about the cause, they resist active emotion powers and blood bonds for five minutes."
+source = "Given with Mandate; popular acclaim (p. 481)."
+
+[[traits]]
+category = "status_traits"
+name = "Thug"
+page_reference = "482"
+[traits.properties]
+type = "Fleeting"
+sect = "Anarch"
+passive = "Your Intimidation works on Stock NPCs rated up to 3, not 2."
+spent = "Sneak a one-handed weapon past any detection, even supernatural."
+source = "Given with Warrant; popular acclaim (p. 481)."
+
+[[traits]]
+category = "status_traits"
+name = "Veteran"
+page_reference = "483"
+[traits.properties]
+type = "Fleeting"
+sect = "Anarch"
+passive = "Stock NPCs following you gain an extra simple action a turn (from one Veteran a turn)."
+spent = "One extra downtime action between games."
+source = "Given with Warrant; popular acclaim, for fighting well in a major conflict for the Movement (p. 481)."
+
+[[traits]]
+category = "status_traits"
+name = "Cherry"
+page_reference = "483"
+[traits.properties]
+type = "Negative"
+sect = "Anarch"
+censure = "The bottom rung: don't speak at gang or territory meetings unless spoken to, and get no vote. You also suffer the lesser status ban."
+punishment = "Gain Warned, and Cherry's 6 games or 3 months start again."
+source = "Spent Mandate or Warrant."
+[traits.properties.duration]
+games = 6
+months = 3
+text = "6 games or 3 months, whichever is longer; other status cannot remove it."
+
+[[traits]]
+category = "status_traits"
+name = "Loser"
+page_reference = "483"
+[traits.properties]
+type = "Negative"
+sect = "Anarch"
+censure = "Barely a member: you suffer the greater status ban, and always wear a visible sign of failure chosen by whoever gave you Loser."
+punishment = "-3 to defence pools against any Committed Anarch for the rest of the night, and gain Disgraced."
+source = "Spent Mandate; defying a Mandate's exile or a Warrant's orders in combat."
+[traits.properties.duration]
+games = 2
+months = 1
+text = "2 games or 1 month, whichever is longer."
+
+[[traits]]
+category = "status_traits"
+name = "Marked"
+page_reference = "483"
+[traits.properties]
+type = "Negative"
+sect = "Anarch"
+censure = "Unwelcome in Anarch lands: harassed, taunted, even attacked, and whoever publicly insults you gains Praised, once a game each. It can be given to someone Committed in the last year and a day."
+punishment = "In Anarch territory, no backgrounds or influences; your haven there is found within two nights, and Retainers you bring are destroyed once they leave your side."
+source = "Spent Mandate."
+[traits.properties.duration]
+text = "Until the Anarchs of the territory where it was given vote unanimously to lift it."
+
+# --- Independent Alliance --------------------------------------------------------------------
+#
+# No rulebook describes these yet: each has its sect and type, from Yorick's catalogue.
+
+[[traits]]
+category = "status_traits"
+name = "Chairman"
+[traits.properties]
+type = "Abiding"
+sect = "Independent Alliance"
+
+[[traits]]
+category = "status_traits"
+name = "Cold"
+[traits.properties]
+type = "Abiding"
+sect = "Independent Alliance"
+
+[[traits]]
+category = "status_traits"
+name = "Executor"
+[traits.properties]
+type = "Abiding"
+sect = "Independent Alliance"
+
+[[traits]]
+category = "status_traits"
+name = "Licensed"
+[traits.properties]
+type = "Abiding"
+sect = "Independent Alliance"
+
+[[traits]]
+category = "status_traits"
+name = "Muscle"
+[traits.properties]
+type = "Abiding"
+sect = "Independent Alliance"
+
+[[traits]]
+category = "status_traits"
+name = "Trusted"
+[traits.properties]
+type = "Abiding"
+sect = "Independent Alliance"
+
+[[traits]]
+category = "status_traits"
+name = "Black-Balled"
+[traits.properties]
+type = "Negative"
+sect = "Independent Alliance"
+
+[[traits]]
+category = "status_traits"
+name = "Bounty"
+[traits.properties]
+type = "Negative"
+sect = "Independent Alliance"
+
+[[traits]]
+category = "status_traits"
+name = "Controller"
+[traits.properties]
+type = "Negative"
+sect = "Independent Alliance"

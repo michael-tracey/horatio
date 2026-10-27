@@ -11,6 +11,14 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, get_args
 
+from horatio.rules.status import (
+    NO_STATUS_RULES,
+    StatusData,
+    StatusRulesData,
+    TitleData,
+    statuses_of,
+)
+
 if TYPE_CHECKING:
     from horatio.rules.checks import CheckData
     from horatio.rules.grants import GrantData
@@ -242,8 +250,12 @@ class RuleSetData:
     feeding_modifiers: Sequence[FeedingModifierData] = ()
     creation_rules: Sequence[CreationRuleData] = ()
     starting_traits: Sequence[StartingTraitData] = ()
-    # Titles a troupe can give (CONTEXT.md: Title); troupes can add their own.
-    titles: Sequence[str] = ()
+    # Titles a troupe can give (CONTEXT.md: Title), each with its sect and the status
+    # it gives (horatio.rules.status); troupes can add their own.
+    titles: Sequence[TitleData] = ()
+    # Each sect's Accepted and status bans, the status of social age, and the status
+    # caps (horatio.rules.status). The statuses themselves are traits.
+    status_rules: StatusRulesData = NO_STATUS_RULES
     # What a sheet may hold (horatio.rules.checks).
     checks: Sequence["CheckData"] = ()
     # Traits that give other traits (horatio.rules.grants).
@@ -285,6 +297,15 @@ class RuleSetData:
             for k, t in self.traits.items()
             if "tags" in t.properties
         }
+
+    @cached_property
+    def statuses(self) -> Mapping[str, StatusData]:
+        """Each status trait, by name, with what it does (horatio.rules.status)."""
+        return statuses_of(self.traits)
+
+    @cached_property
+    def titles_by_name(self) -> Mapping[str, TitleData]:
+        return {t.name: t for t in self.titles}
 
     def trait_properties(self, category: str, name: str) -> Mapping[str, Any]:
         trait = self.traits.get((category, name))

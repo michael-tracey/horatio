@@ -132,7 +132,9 @@ key).
 ## 3. Rules
 
 **`rule_sets`**: the generic rules for one splat.
-`splat`, `name` (for example "BNS MET Vampire"), `version`.
+`splat`, `name` (for example "BNS MET Vampire"), `version`, `titles` (the names of
+the titles a troupe can give), `status_rules` (JSONB: sect status beyond the status
+traits, below).
 
 **`trait_categories`**: `rule_set_id`, `key` (for example `skills`,
 `merits`, `disciplines`), `name`, `group_name`, `position`, `rated`,
@@ -187,6 +189,43 @@ are loaded with `uv run python -m horatio.rules`. Loading replaces a rule set's
 generic cost rules and leaves house rules alone. The Vampire file is checked
 against 13,952 prices produced by Yorick's own cost code
 (`tools/yorick_oracle/`).
+
+**Sect status (issue #251).** Written by hand in
+`rules/data/bns_met_vampire_status.toml` (MET: VTM pp. 310-317 and the sect
+chapters) and read by `horatio/rules/status.py`; the ghoul's rule set includes it too.
+
+- Each status is a `status_traits` trait. Its `trait_definitions.properties` say its
+  `type` (Abiding, Innate, Fleeting, Negative, or Accepted, which is not status and
+  never counts), its `sect` (`General` for the status every sect has), `passive`,
+  `spent` and `source` (one line each, in our own words), and for a negative status
+  its `censure`, `punishment` and `duration`; its page is `page_reference`. A
+  duration is `games` or `months`, whichever is longer, perhaps `stacks` (each
+  further Warned adds the same again), `this_game` (Vulgar), `while_held` another
+  status (Disgraced, while Warned), or none of these, until removed; `text` says it
+  in words. The Independent Alliance's status has its sect and type only: no book
+  describes it.
+- A troupe that takes only some sects sees only their status and the general status
+  in the catalogue, as it does the Sabbat's Rituals.
+- `rule_sets.status_rules` holds:
+  - `caps` (p. 313): one abiding source (titles and social age are each one), all
+    innate and negative status, and `fleeting` (5), `lesser_ban` (3) and
+    `greater_ban` (1) fleeting;
+  - `sects`: each sect's `accepted` (Acknowledged, Initiated, Committed) and its
+    `bans`, each a `level` (`lesser` | `greater`), whom it `applies_to` in words,
+    and `when` it applies as a check condition, where the sheet can tell (a clan,
+    a Path);
+  - `social_ages`: the abiding status a sect gives a social age (a Camarilla
+    ancilla's Confirmed; an elder's Confirmed, Established and Privileged);
+  - `titles`: the titles that are more than a name, each with its `sect`, the
+    abiding `status` it gives, `choose_one` (a Bishop's Blessed or Enforcer, chosen
+    each night), `while_absent` (status while another title's holder is away: the
+    Seneschal's Authority without the Prince) and its `page`. Other titles have no
+    sect and give no status.
+- Loading refuses a status of an unknown type or sect, and a title or social age
+  giving an unknown status, or one that is not abiding status of its sect or
+  general. `RuleSetData.statuses`, `titles` and `status_rules` are the typed view.
+- The catalogue's misspelt Architech and Annointed are Architect and Anointed;
+  migration 0080 renamed their definitions in place, so sheets keep them.
 
 **`allowance_rules`**: how traits change a character's action allowance.
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),
@@ -539,6 +578,8 @@ Recorded here for review; each is easy to change.
   troupe.
 - Titles are per-troupe tags given by storytellers and assistant storytellers,
   from the rule set's list (imported from Yorick) plus titles the troupe adds.
+  The rule set's titles also say their sect and the status they give (section 3,
+  sect status).
   A character can hold several. They show on the troupe's Characters tab, the
   player's sheet and the printout for that troupe, and go when the character
   leaves.
