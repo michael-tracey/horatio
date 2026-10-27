@@ -6507,6 +6507,56 @@ test("the sheet points to the techniques and elder powers a character can take",
   await expect(p.getByText("A Pretender Elder can learn only one elder power.", { exact: false }).first()).toBeVisible();
 });
 
+test("a Neonate Crusader with Hard as Steel buys one Fortitude elder power through the cart, for 20 XP", async ({ browser }) => {
+  const { page: p } = await person(browser, "steel-crusader");
+  // A Neonate (Generation 1), whose blood is too thin for elder powers but for the one Hard as Steel opens.
+  const id = await builtVampire(
+    p,
+    "Godfrey",
+    "Ventrue: Crusader",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Fortitude", 2], ["Auspex", 1], ["Dominate", 1]] },
+    [
+      ["disciplines", "Fortitude", 5],
+      ["merits", "Hard as Steel", 3],
+    ],
+  );
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const disciplines = part("Disciplines");
+  const chips = p.getByRole("navigation", { name: "Categories" });
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+
+  // The picker offers Fortitude's elder powers at the merit's price, and no others.
+  await disciplines.getByRole("button", { name: "Add" }).click();
+  await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
+  const armor = p.getByRole("button", { name: /^Fortitude: Personal Armor/ });
+  await expect(armor).toBeEnabled();
+  await expect(armor).toContainText("Hard as Steel: 20 XP");
+  await expect(p.getByRole("button", { name: /^Celerity: / })).toHaveCount(0);
+  await armor.click();
+  await p.getByRole("button", { name: "Price it" }).click();
+  await expect(p.getByText("Hard as Steel: 20 XP.", { exact: true })).toBeVisible();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  const line = cart.getByRole("listitem").filter({ hasText: "Add Fortitude: Personal Armor" });
+  await expect(line).toContainText("20 XP");
+  await expect(line).toContainText("Hard as Steel: 20 XP");
+
+  // One only: with it in the cart, a second is refused, with the reason.
+  await disciplines.getByRole("button", { name: "Add" }).click();
+  await chips.getByRole("button", { name: /^Elder Disciplines/ }).click();
+  await p.getByLabel("Show").selectOption({ label: "Everything" });
+  await p.getByLabel("Search Elder Disciplines").fill("Resilient Mind");
+  await expect(p.getByRole("button", { name: /^Fortitude: Resilient Mind/ })).toBeDisabled();
+  await expect(p.getByText("A Neonate's or Ancilla's blood is too thin for elder powers.", { exact: false })).toBeVisible();
+  await p.screenshot(shots("opened-power"));
+
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Spent 20 XP.")).toBeVisible();
+  // The sheet says which power the merit opened.
+  await expect(disciplines.getByText("through Hard as Steel")).toBeVisible();
+  await expect(part("Merits and Flaws").getByText("opened Fortitude: Personal Armor")).toBeVisible();
+});
+
 test("only a character with a ritual discipline sees rituals, up to its path's level", async ({ browser }) => {
   const { page: p } = await person(browser, "finder-ritualist");
   const id = await builtVampire(p, "Odile", "Tremere", {

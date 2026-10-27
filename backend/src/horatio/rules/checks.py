@@ -446,6 +446,15 @@ def clashing(
     )
 
 
+def breaks(
+    check: CheckData, sheet: Sequence[SheetTrait], trait: SheetTrait, context: Context = NO_CONTEXT
+) -> bool:
+    """Whether `trait`, one the check is about, breaks it on this sheet."""
+    return (check.requires is not None and not matches(check.requires, sheet, trait, context)) or (
+        check.forbids is not None and matches(check.forbids, sheet, trait, context)
+    )
+
+
 def violations(
     checks: Sequence[CheckData], sheet: Sequence[SheetTrait], context: Context = NO_CONTEXT
 ) -> list[Violation]:
@@ -467,10 +476,7 @@ def violations(
         for trait in about:
             if not check.about(trait) or (trait.granted and check.key.endswith(REQUIREMENT_KEY)):
                 continue
-            broken = (
-                check.requires is not None and not matches(check.requires, sheet, trait, context)
-            ) or (check.forbids is not None and matches(check.forbids, sheet, trait, context))
-            if broken:
+            if breaks(check, sheet, trait, context):
                 test = (check.forbids or {}).get("same_value")
                 other = clashing(test, sheet, trait, context) if test else None
                 found.append(Violation(check, trait, other.name if other else ""))

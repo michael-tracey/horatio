@@ -405,12 +405,15 @@ class TroupeRules:
 class FreeChoice:
     """One of the free traits a player chose for a merit that gives them
     (horatio.rules.grants, kind free_choices): which grant it answers, the trait's
-    name and detail, and for dots the amount placed on it."""
+    name and detail, and for dots the amount placed on it. A merit that opens a
+    power past a check (kind open_barred) keeps the power the same way, with its
+    category and the price it was opened at as the amount."""
 
     grant: str
     name: str
     detail: str = ""
     amount: int = 0
+    category: str = ""
 
 
 @dataclass(frozen=True)

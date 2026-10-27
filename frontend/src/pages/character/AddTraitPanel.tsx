@@ -64,7 +64,7 @@ export function AddTraitPanel({
   const [name, setName] = useState("");
   const [detail, setDetail] = useState("");
   const [rating, setRating] = useState(1);
-  const [quote, setQuote] = useState<number | null>(null);
+  const [quote, setQuote] = useState<{ cost: number; because?: string | null } | null>(null);
   const [teacher, setTeacher] = useState("");
   const [picks, setPicks] = useState<FreePick[]>([]);
   // A trait the rules refuse, asked of staff as an exception.
@@ -118,7 +118,7 @@ export function AddTraitPanel({
   };
   const price = useAction(async () => {
     const result = await unwrap(api.POST("/api/characters/{character_id}/quote", { params: { path: { character_id: character.id } }, body }));
-    setQuote(result.cost);
+    setQuote(result);
   });
   const add = () => {
     onAdd({
@@ -167,6 +167,7 @@ export function AddTraitPanel({
             trait={t}
             chosen={t.name === name}
             refused={unavailable[t.name]}
+            opened={current?.opened?.[t.name]}
             onChoose={() => choose(t)}
             onAsk={
               character.home_troupe_id
@@ -269,7 +270,8 @@ export function AddTraitPanel({
               </p>
             </>
           )}
-          {quote !== null && <p className="text-sm">Costs {quote} XP.</p>}
+          {/* A power a merit opens says so: "Hard as Steel: 20 XP." */}
+          {quote !== null && <p className="text-sm">{quote.because ? `${quote.because}.` : `Costs ${quote.cost} XP.`}</p>}
           <ErrorText error={price.error} />
           <div className="flex gap-2">
             {cat?.rated && (
@@ -295,12 +297,15 @@ function TraitChoice({
   trait,
   chosen,
   refused,
+  opened,
   onChoose,
   onAsk,
 }: {
   trait: TraitOut;
   chosen: boolean;
   refused?: string;
+  /** Opened past the character's Generation by a merit: "Hard as Steel: 20 XP". */
+  opened?: string;
   onChoose: () => void;
   onAsk?: () => void;
 }) {
@@ -320,6 +325,7 @@ function TraitChoice({
         </span>
         <HouseSummary summary={trait.house?.summary} />
         {refused && <span className="text-xs text-blood-bright">{refused}</span>}
+        {!refused && opened && <span className="text-xs text-gold">{opened}</span>}
       </button>
       {refused && onAsk && (
         <button type="button" className="ml-2 text-xs text-gold underline" onClick={onAsk}>

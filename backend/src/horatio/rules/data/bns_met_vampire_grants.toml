@@ -687,6 +687,45 @@ target = { category = "merits", names = ["Path of Honorable Accord", "Path of Ch
 amount = 0
 page = "Vol. 2 Issue 1, p. 45"
 
+# --- powers past the Generation (p. 101) ---------------------------------------------
+# One power of a discipline the character's Generation bars: an elder power for a
+# Neonate or Ancilla, a second for a Pretender Elder, a technique for a Master or
+# Luminary Elder; never the luminary power. It costs 20 XP an elder power, 12 a
+# technique, and the other prerequisites still apply. The checks set aside are the
+# three Generation checks of bns_met_vampire_checks.toml (p. 101): a Pretender
+# Elder's one elder power, a Neonate's or Ancilla's none, a Master's or Luminary's
+# no techniques.
+
+[[grants]]
+source = { category = "merits", name = "Hard as Steel" }
+kind = "open_barred"
+target = { discipline = "Fortitude", opens = [
+  { category = "elder_disciplines", price = 20 },
+  { category = "techniques", price = 12 },
+], sets_aside = ["elder_disciplines/*/2", "elder_disciplines/*/3", "techniques/*/1"] }
+amount = 1
+page = "Vol. 2 Issue 1, p. 45"
+
+[[grants]]
+source = { category = "merits", name = "Trials of the Blood" }
+kind = "open_barred"
+target = { discipline = "Auspex", opens = [
+  { category = "elder_disciplines", price = 20 },
+  { category = "techniques", price = 12 },
+], sets_aside = ["elder_disciplines/*/2", "elder_disciplines/*/3", "techniques/*/1"] }
+amount = 1
+page = "Vol. 2 Issue 1, p. 27"
+
+[[grants]]
+source = { category = "merits", name = "Shrinking Violet" }
+kind = "open_barred"
+target = { discipline = "Obfuscate", opens = [
+  { category = "elder_disciplines", price = 20 },
+  { category = "techniques", price = 12 },
+], sets_aside = ["elder_disciplines/*/2", "elder_disciplines/*/3", "techniques/*/1"] }
+amount = 1
+page = "Vol. 2, p. 49"
+
 # --- Paths of Enlightenment (pp. 253-259, 305) ----------------------------------
 # Taking a Path merit converts the character's Morality from Humanity to that
 # Path, keeping its dots; without the merit it turns back. Infernal Heritage

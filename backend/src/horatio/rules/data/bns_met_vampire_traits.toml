@@ -3422,7 +3422,7 @@ properties = { rating = 2, type = "Clan", requirement = "Toreador" }
 category = "merits"
 name = "Hard as Steel"
 description = "Buy one Fortitude elder power or technique your generation would otherwise bar (not the luminary power): elder powers at 20 XP, techniques at 12 XP, prerequisites still apply."
-page_reference = "45-46"
+page_reference = "Vol. 2 Issue 1, p. 45"
 properties = { rating = 3, type = "Clan", requirement = "Ventrue: Crusader" }
 
 [[traits]]
@@ -4300,6 +4300,7 @@ properties = { rating = 2, type = "Clan", requirement = "Followers of Set", uses
 category = "merits"
 name = "Shrinking Violet"
 description = "Buy one Obfuscate elder power or technique your generation would otherwise bar (not the luminary power): elder powers at 20 XP, techniques at 12 XP, prerequisites still apply."
+page_reference = "Vol. 2, p. 49"
 properties = { rating = 3, type = "Clan", requirement = "Nosferatu: Creeps" }
 
 [[traits]]
@@ -4570,9 +4571,9 @@ properties = { rating = 2, type = "Clan", requirement = "Salubri: Healer" }
 
 [[traits]]
 category = "merits"
-name = "Trials of Blood"
+name = "Trials of the Blood"
 description = "Buy one Auspex elder power or technique your generation would otherwise bar (not the luminary power): elder powers at 20 XP, techniques at 12 XP, prerequisites still apply."
-page_reference = "24"
+page_reference = "Vol. 2 Issue 1, p. 27"
 properties = { rating = 3, type = "Clan", requirement = "Assamite: Vizier" }
 
 [[traits]]

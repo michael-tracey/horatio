@@ -2030,6 +2030,17 @@
       },
       "CartLineOut": {
         "properties": {
+          "because": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Because"
+          },
           "breaks": {
             "default": [],
             "items": {
@@ -17007,6 +17018,17 @@
             ],
             "title": "Basis"
           },
+          "because": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Because"
+          },
           "cost": {
             "title": "Cost",
             "type": "integer"
@@ -19370,6 +19392,31 @@
           "note": {
             "title": "Note",
             "type": "string"
+          },
+          "opened": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened"
+          },
+          "opened_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened By"
           },
           "pending_from": {
             "anyOf": [
@@ -28517,6 +28564,67 @@
         "summary": "Tally",
         "tags": [
           "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/opened": {
+      "post": {
+        "description": "For each category, the traits a merit opens past a check for the character,\nand why they cost what they do (\"Hard as Steel: 20 XP\"), with the sheet as the\ncart's changes would leave it. Nothing is saved.",
+        "operationId": "opened_after_api_characters__character_id__opened_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnavailableIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response Opened After Api Characters  Character Id  Opened Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Opened After",
+        "tags": [
+          "sheets"
         ]
       }
     },

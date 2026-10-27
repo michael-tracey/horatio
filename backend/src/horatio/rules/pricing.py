@@ -11,13 +11,17 @@ tie. So a troupe re-pricing all merits leaves a generic price for one merit
 alone, and a troupe replaces a generic rule by giving the same trait and
 condition its own price. Two rules left tied is a mistake in the rules, and
 is refused rather than guessed at.
+
+A power a merit opens past its Generation (horatio.rules.grants, open_barred) costs
+the merit's price instead, whatever the cost rules say: Hard as Steel's Fortitude
+elder power, 20 XP, for a Neonate the rules would not sell one to.
 """
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from horatio.rules.conditions import clause_count, holds
-from horatio.rules.grants import matching, priced
+from horatio.rules.grants import Opening, matching, opening, priced
 from horatio.rules.model import CostRuleData, SheetTrait, TroupeRules
 from horatio.rules.splats import SPLATS
 
@@ -52,6 +56,8 @@ class Quote:
 
     cost: int
     rule: CostRuleData
+    # The merit that opened the trait and set its price, where one did.
+    opening: Opening | None = None
 
 
 def choose_rule(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> CostRuleData:
@@ -142,6 +148,11 @@ def trait_cost(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrai
     rule = choose_rule(rules, sheet, trait)
     if trait.rating == trait.free_rating:
         return Quote(cost=0, rule=rule)
+    opened = opening(rules, sheet, trait)
+    if opened is not None:
+        rule = opened.rule(trait)
+        cost = price(rule, trait.rating) - price(rule, trait.free_rating)
+        return Quote(cost=cost, rule=rule, opening=opened)
     cost = price(rule, trait.rating) - price(rule, trait.free_rating)
     percent = priced(rules.rule_set, sheet).cost_percent
     key = matching(percent, trait)
@@ -168,7 +179,9 @@ def purchase_cost(
             detail=trait.detail,
         ),
     )
-    return Quote(cost=after.cost - before.cost, rule=after.rule)
+    return Quote(
+        cost=after.cost - before.cost, rule=after.rule, opening=after.opening or before.opening
+    )
 
 
 def describe(rule: CostRuleData, unit: str = "dot") -> str:
