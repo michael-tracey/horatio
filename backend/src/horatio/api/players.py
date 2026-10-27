@@ -79,6 +79,8 @@ class PlayerSummary(BaseModel):
     member_since: datetime
     # When their live reset link expires, if they have one.
     reset_expires_at: datetime | None
+    # A custodian, whom no one views as (horatio.auth.viewing).
+    is_custodian: bool = False
     # The address a change of email waiting would change it to.
     email_change_to: str | None = None
     # Their account is suspended now (horatio.suspensions).
@@ -274,6 +276,7 @@ def find_players(
             email=u.email,
             member_since=u.created_at,
             reset_expires_at=expiries.get(u.id),
+            is_custodian=u.is_custodian,
             email_change_to=changing.get(u.id),
             suspended=u.id in suspended,
         )

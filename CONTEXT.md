@@ -39,6 +39,10 @@ _Avoid_: Deleted troupe, closed troupe
 The site administrator, above all troupes, who appoints lead storytellers, manages the system itself, and can do anything in any troupe.
 _Avoid_: Admin, superuser, site owner
 
+**View As**:
+The custodian seeing Horatio exactly as one person does, with their permissions, to help them with a question: read-only, for at most 30 minutes, with a reason they are told. Never as another custodian.
+_Avoid_: Impersonate, log in as, masquerade
+
 **Staff**:
 The people who run a troupe: its lead storyteller, storytellers, assistant storytellers and narrators.
 _Avoid_: Admins, ST team

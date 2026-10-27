@@ -84,6 +84,7 @@ from horatio.models.troupes import (
     TroupeTitle,
     XpRangeEntry,
 )
+from horatio.models.viewing import Viewing
 
 __all__ = [
     "ActionKind",
@@ -161,6 +162,7 @@ __all__ = [
     "TroupeStaff",
     "TroupeTitle",
     "User",
+    "Viewing",
     "XpEntry",
     "XpRangeEntry",
 ]

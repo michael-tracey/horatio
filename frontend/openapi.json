@@ -14665,6 +14665,11 @@
             "title": "Id",
             "type": "string"
           },
+          "is_custodian": {
+            "default": false,
+            "title": "Is Custodian",
+            "type": "boolean"
+          },
           "member_since": {
             "format": "date-time",
             "title": "Member Since",
@@ -22260,6 +22265,86 @@
         "title": "VenueOut",
         "type": "object"
       },
+      "ViewAsIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ViewAsIn",
+        "type": "object"
+      },
+      "ViewedAs": {
+        "description": "A time the custodian viewed Horatio as the person.",
+        "properties": {
+          "custodian": {
+            "title": "Custodian",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "custodian",
+          "reason",
+          "started_at",
+          "until"
+        ],
+        "title": "ViewedAs",
+        "type": "object"
+      },
+      "ViewingNow": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "handle",
+          "display_name",
+          "reason",
+          "ends_at"
+        ],
+        "title": "ViewingNow",
+        "type": "object"
+      },
       "VisibleNote": {
         "properties": {
           "note": {
@@ -23435,6 +23520,32 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/account/viewed-as": {
+      "get": {
+        "description": "The times the custodian viewed Horatio as the signed-in person, newest first.",
+        "operationId": "viewed_as_api_account_viewed_as_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ViewedAs"
+                  },
+                  "title": "Response Viewed As Api Account Viewed As Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Viewed As",
+        "tags": [
+          "viewing"
+        ]
+      }
+    },
     "/api/approvals/{approval_id}/approve": {
       "post": {
         "operationId": "approve_api_approvals__approval_id__approve_post",
@@ -32983,6 +33094,60 @@
         ]
       }
     },
+    "/api/players/{user_id}/view-as": {
+      "post": {
+        "description": "Start viewing Horatio as someone, read-only, for 30 minutes. Never another\ncustodian. The reason goes in the audit log, and the person is told.",
+        "operationId": "view_as_api_players__user_id__view_as_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewAsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewingNow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "View As",
+        "tags": [
+          "viewing"
+        ]
+      }
+    },
     "/api/preferences": {
       "get": {
         "operationId": "read_preferences_api_preferences_get",
@@ -40487,6 +40652,51 @@
         "summary": "Unsubscribe",
         "tags": [
           "unsubscribe"
+        ]
+      }
+    },
+    "/api/view-as": {
+      "get": {
+        "description": "Whom the signed-in custodian is viewing Horatio as, if anyone.",
+        "operationId": "current_viewing_api_view_as_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ViewingNow"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Current Viewing Api View As Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Current Viewing",
+        "tags": [
+          "viewing"
+        ]
+      }
+    },
+    "/api/view-as/stop": {
+      "post": {
+        "description": "Stop viewing as someone, and be the custodian again.",
+        "operationId": "stop_viewing_api_view_as_stop_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Stop Viewing",
+        "tags": [
+          "viewing"
         ]
       }
     }

@@ -362,6 +362,12 @@ MESSAGES: dict[str, str] = {
     "account.suspension_email_failed": "Horatio could not email {member} about their "
     "suspension: {error}",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
+    "account.view_as": "{actor} viewed Horatio as {member}, read-only{because}.",
+    "account.view_as_ended": "{actor} stopped viewing as {member}.",
+    "account.view_as_ended.signed_out": "{actor} signed out, which ended viewing as {member}.",
+    "account.view_as_ended.timed_out": "{actor}'s viewing as {member} ended after 30 minutes.",
+    "account.view_as_ended.not_custodian": "{actor}'s viewing as {member} ended: they are"
+    " no longer custodian.",
     "account.email_change_started": "{actor} started changing {member}'s email from "
     "{from_email} to {to_email}{because}.",
     "account.email_change_started.self": "{actor} asked to change their email from "

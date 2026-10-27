@@ -7,6 +7,7 @@ import { Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Tabs
 import { useAction, useMe } from "../hooks";
 import { AccountEmail } from "./AccountEmail";
 import { SettingsPage } from "./settings/SettingsPage";
+import { ViewedAs } from "./ViewedAs";
 
 const MAX_LINKS = 6;
 
@@ -48,6 +49,7 @@ export function AccountPage() {
             <>
               <ProfileForm key={player.data.id} player={player.data} />
               <AccountEmail player={player.data} />
+              <ViewedAs />
             </>
           }
         />

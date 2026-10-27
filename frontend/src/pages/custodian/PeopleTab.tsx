@@ -11,6 +11,7 @@ import { ChangeEmail, EmailChanges } from "./ChangeEmail";
 import { PersonCharacters } from "./MoveCharacter";
 import { ResetPassword, useCancelReset } from "./ResetPassword";
 import { SuspendedPeople, SuspendPerson } from "./Suspension";
+import { ViewAs } from "./ViewAs";
 
 /** Every account, for the custodian: find someone by name, handle or email, or by the troupe an active character
  * of theirs is home in, open their
@@ -80,6 +81,7 @@ function Person({ person }: { person: PlayerSummary }) {
           {person.suspended && <Badge tone="blood">suspended</Badge>}
           {person.reset_expires_at && <Badge tone="gold">reset link out</Badge>}
           {person.email_change_to && <Badge tone="gold">new email waiting</Badge>}
+          <ViewAs person={person} />
           <Button
             type="button"
             variant="ghost"

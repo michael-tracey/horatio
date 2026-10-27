@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/account/viewed-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Viewed As
+         * @description The times the custodian viewed Horatio as the signed-in person, newest first.
+         */
+        get: operations["viewed_as_api_account_viewed_as_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/approvals/{approval_id}/approve": {
         parameters: {
             query?: never;
@@ -3155,6 +3175,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/players/{user_id}/view-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * View As
+         * @description Start viewing Horatio as someone, read-only, for 30 minutes. Never another
+         *     custodian. The reason goes in the audit log, and the person is told.
+         */
+        post: operations["view_as_api_players__user_id__view_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/preferences": {
         parameters: {
             query?: never;
@@ -5303,6 +5344,46 @@ export interface paths {
          * @description Stop the emails the link is about. The bell still shows them.
          */
         post: operations["unsubscribe_api_unsubscribe__token__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/view-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current Viewing
+         * @description Whom the signed-in custodian is viewing Horatio as, if anyone.
+         */
+        get: operations["current_viewing_api_view_as_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/view-as/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop Viewing
+         * @description Stop viewing as someone, and be the custodian again.
+         */
+        post: operations["stop_viewing_api_view_as_stop_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10771,6 +10852,11 @@ export interface components {
              */
             id: string;
             /**
+             * Is Custodian
+             * @default false
+             */
+            is_custodian: boolean;
+            /**
              * Member Since
              * Format: date-time
              */
@@ -13651,6 +13737,50 @@ export interface components {
             /** Region */
             region: string;
         };
+        /** ViewAsIn */
+        ViewAsIn: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * ViewedAs
+         * @description A time the custodian viewed Horatio as the person.
+         */
+        ViewedAs: {
+            /** Custodian */
+            custodian: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Until
+             * Format: date-time
+             */
+            until: string;
+        };
+        /** ViewingNow */
+        ViewingNow: {
+            /** Display Name */
+            display_name: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Handle */
+            handle: string;
+            /** Reason */
+            reason: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** VisibleNote */
         VisibleNote: {
             /** Note */
@@ -14108,6 +14238,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    viewed_as_api_account_viewed_as_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewedAs"][];
+                };
+            };
+        };
+    };
     approve_api_approvals__approval_id__approve_post: {
         parameters: {
             query?: never;
@@ -20197,6 +20347,41 @@ export interface operations {
             };
         };
     };
+    view_as_api_players__user_id__view_as_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewAsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewingNow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_preferences_api_preferences_get: {
         parameters: {
             query?: never;
@@ -24894,6 +25079,44 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    current_viewing_api_view_as_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewingNow"] | null;
+                };
+            };
+        };
+    };
+    stop_viewing_api_view_as_stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
