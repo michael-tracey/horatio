@@ -39,6 +39,10 @@ check_files = ["bns_met_vampire_checks.toml"]
 # Traits that give other traits (horatio.rules.grants).
 grant_files = ["bns_met_vampire_grants.toml"]
 
+# Equipment: its kinds, grades and qualities, and the book's sample items
+# (horatio.rules.equipment).
+equipment_file = "bns_met_vampire_equipment.toml"
+
 # ---------------------------------------------------------------------------
 # Categories, in sheet order. max_rating is the highest rating a trait can
 # reach; unrated categories hold one choice (such as a clan) rather than dots.

@@ -340,7 +340,8 @@ def test_the_banner_is_cut_wide(troupe: Troupe, kept: Path) -> None:
 
 def test_an_archived_troupe_profile_is_gone(troupe: Troupe, visitor: TestClient) -> None:
     save(troupe, public=True)
-    assert troupe.lead.client.delete(f"/troupes/{troupe.id}").status_code == 204
+    archived = troupe.lead.client.post(f"/troupes/{troupe.id}/archive", json={"reason": "Done"})
+    assert archived.status_code == 200
     assert visitor.get(f"/troupes/{troupe.id}/profile").status_code == 404
     assert troupe.player.client.get(f"/troupes/{troupe.id}/profile").status_code == 404
     assert troupe.custodian.client.get(f"/troupes/{troupe.id}/profile").status_code == 200

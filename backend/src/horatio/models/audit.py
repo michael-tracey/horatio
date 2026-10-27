@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,6 +13,8 @@ class AuditEvent(Record):
     Written in the same transaction as the change it records."""
 
     __tablename__ = "audit_events"
+    # Newest first, a page at a time, across every troupe (the custodian's search).
+    __table_args__ = (Index("ix_audit_events_created_at_id", "created_at", "id"),)
 
     actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
     troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)

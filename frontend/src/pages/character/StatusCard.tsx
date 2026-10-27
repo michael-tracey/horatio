@@ -5,7 +5,7 @@ import type { BanOut, CharacterOut, HeldOut, StatusAbout, StatusIn, StatusOut, S
 import { InfoButton } from "../../components/InfoButton";
 import { PatronPicker } from "../../components/PatronPicker";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, Button, Card, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { bySource, endingText, suppressedText } from "./status";
@@ -387,7 +387,7 @@ function Unresolved({ character, status, name }: { character: CharacterOut; stat
  * The character's sect status (MET: VTM pp. 310-317): what its titles, social age
  * and merits give, the fleeting and negative status it holds with each one's
  * patron, and its bans. Who adds and removes held status is the home troupe's
- * Status on sheets setting.
+ * Status on sheets setting. It is the character page's own Status tab.
  */
 export function StatusCard({ character }: { character: CharacterOut }) {
   const status = useStatus(character.id);
@@ -396,7 +396,7 @@ export function StatusCard({ character }: { character: CharacterOut }) {
   if (!status.data) return status.error ? <ErrorText error={status.error} /> : null;
   const s = status.data;
   const nothing = !s.accepted && !s.derived.length && !s.held.length && !s.unresolved.length;
-  if (nothing) return null;
+  if (nothing) return <Empty>{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</Empty>;
   const fleeting = s.held.filter((h) => h.type === "Fleeting");
   const negative = s.held.filter((h) => h.type === "Negative");
   const bans = s.bans.filter((b) => b.applies || s.staff);

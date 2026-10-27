@@ -9,6 +9,7 @@ import { CreationWizard } from "./creation/Wizard";
 import { choiceName } from "./creation/logic";
 import { abilities } from "../troupe/roles";
 import { DowntimeTab } from "./DowntimeTab";
+import { GiveEquipment } from "./GiveEquipment";
 import { InfluenceTab } from "./InfluenceTab";
 import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
@@ -22,6 +23,7 @@ import { ResultsTab } from "./ResultsTab";
 import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
 import { SheetTab, useCatalogue } from "./SheetTab";
+import { StatusCard } from "./StatusCard";
 import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
 
@@ -82,6 +84,7 @@ export function CharacterPage() {
                 <Badge tone="gold">NPC</Badge>
                 <KindBadge kind={c.npc_kind} name={c.npc_kind_name} />
                 {play}
+                <GiveEquipment character={c} />
                 <CharacterMenu
                   character={c}
                   canRename={!renaming}
@@ -103,6 +106,7 @@ export function CharacterPage() {
             ...(!c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
             { to: base, label: "Build", end: true },
             { to: `${base}/sheet`, label: "Sheet" },
+            { to: `${base}/status`, label: "Status" },
             { to: `${base}/influence`, label: "Influence" },
             { to: `${base}/log`, label: "Log" },
           ]}
@@ -110,6 +114,7 @@ export function CharacterPage() {
         <Routes>
           <Route index element={<NpcBuilder character={c} />} />
           <Route path="sheet" element={<SheetTab character={c} mine={false} badge />} />
+          <Route path="status" element={<StatusCard character={c} />} />
           <Route path="influence" element={<InfluenceTab character={c} mine={false} />} />
           <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
           {!c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
@@ -133,6 +138,7 @@ export function CharacterPage() {
             <div className="flex flex-wrap items-center gap-3">
               {c.status === "retired" && <Badge>retired</Badge>}
               {play}
+              {c.status === "active" && <GiveEquipment character={c} />}
               <CharacterMenu
                 character={c}
                 canRename={canRename && !renaming && !renameOn}
@@ -140,6 +146,7 @@ export function CharacterPage() {
                 onRename={() => setRenaming(true)}
                 onPronouns={mine && c.status === "active" && !saying ? () => setSaying(true) : undefined}
                 canDelete={mine || custodian}
+                canMove={custodian}
               />
             </div>
           }
@@ -153,6 +160,7 @@ export function CharacterPage() {
         tabs={[
           ...(mine && !c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
           { to: base, label: "Sheet", end: true },
+          { to: `${base}/status`, label: "Status" },
           { to: `${base}/xp`, label: "Experience" },
           ...(mine
             ? [
@@ -179,6 +187,7 @@ export function CharacterPage() {
             />
           }
         />
+        <Route path="status" element={<StatusCard character={c} />} />
         <Route path="xp" element={<XpTab characterId={c.id} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}

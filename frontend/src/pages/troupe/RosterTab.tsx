@@ -233,6 +233,7 @@ function RosterRow({
         {entry.clan ?? "No clan yet"} · {entry.social_age}
       </span>
       {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
+      {entry.player_suspended && <Badge tone="blood">player suspended</Badge>}
       {entry.waiting && <Badge tone="blood">asking to make this home</Badge>}
       {entry.disciplines_waiting > 0 && (
         <Badge tone="blood">

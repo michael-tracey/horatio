@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut, TroupeProfileOut } from "../../api/types";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { ArchiveTroupe } from "./ArchiveTroupe";
 import { hasProfile, publicPath } from "./profile";
 import { ProfileEditor } from "./ProfileEditor";
 import type { abilities } from "./roles";
@@ -45,7 +45,7 @@ export function ProfileTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType
           <TroupeProfileView profile={p} signedIn />
         </section>
       )}
-      {leading && <Archive troupe={troupe} />}
+      {leading && <ArchiveTroupe troupe={troupe} />}
     </div>
   );
 }
@@ -134,29 +134,6 @@ function NameAndDescription({ troupe }: { troupe: TroupeOut }) {
           </Button>
         </div>
       </form>
-    </Card>
-  );
-}
-
-function Archive({ troupe }: { troupe: TroupeOut }) {
-  const navigate = useNavigate();
-  const archive = useAction(async () => {
-    await unwrap(api.DELETE("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } } }));
-    navigate("/troupes");
-  });
-  return (
-    <Card title="Archive the troupe">
-      <p className="mb-3 text-sm text-mist">Archiving closes the troupe to everyone, its staff and players included. Its history is kept.</p>
-      <ErrorText error={archive.error} />
-      <Button
-        variant="danger"
-        disabled={archive.isPending}
-        onClick={() => {
-          if (window.confirm(`Archive ${troupe.name}? It closes to everyone; its history is kept.`)) archive.mutate(undefined);
-        }}
-      >
-        Archive troupe
-      </Button>
     </Card>
   );
 }
