@@ -4288,7 +4288,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Titles */
+        /**
+         * List Titles
+         * @description The titles the troupe gives, with their sect and status, and who holds them.
+         */
         get: operations["list_titles_api_troupes__troupe_id__titles_get"];
         put?: never;
         /** Add Title */
@@ -4307,7 +4310,11 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /**
+         * Change Title
+         * @description Change the sect and status of a title the troupe added, for all who hold it.
+         */
+        put: operations["change_title_api_troupes__troupe_id__titles__name__put"];
         post?: never;
         /** Remove Title */
         delete: operations["remove_title_api_troupes__troupe_id__titles__name__delete"];
@@ -8108,6 +8115,13 @@ export interface components {
         NewTitle: {
             /** Name */
             name: string;
+            /** Sect */
+            sect?: string | null;
+            /**
+             * Status
+             * @default []
+             */
+            status: string[];
         };
         /** NewTroupe */
         NewTroupe: {
@@ -9835,6 +9849,8 @@ export interface components {
             joined_at: string;
             /** Kind */
             kind: string;
+            /** Out Of Sect Titles */
+            out_of_sect_titles: string[];
             /** Picture */
             picture: string | null;
             /** Player Handle */
@@ -9845,6 +9861,8 @@ export interface components {
             player_name: string;
             /** Retired */
             retired: boolean;
+            /** Sect */
+            sect: string | null;
             /** Social Age */
             social_age: string;
             /** Titles */
@@ -10526,6 +10544,16 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /**
+         * StatusChoice
+         * @description Abiding status a troupe's own title can give.
+         */
+        StatusChoice: {
+            /** Name */
+            name: string;
+            /** Sect */
+            sect: string;
+        };
         /** StepNeed */
         StepNeed: {
             /** Message */
@@ -10869,12 +10897,59 @@ export interface components {
              */
             willpower_floor: number;
         };
+        /** TitleChange */
+        TitleChange: {
+            /** Sect */
+            sect?: string | null;
+            /**
+             * Status
+             * @default []
+             */
+            status: string[];
+        };
+        /** TitleHolderOut */
+        TitleHolderOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Out Of Sect */
+            out_of_sect: boolean;
+            /** Sect */
+            sect: string | null;
+        };
+        /** TitleOut */
+        TitleOut: {
+            /** Choose One */
+            choose_one: string[];
+            /** Holders */
+            holders: components["schemas"]["TitleHolderOut"][];
+            /** House */
+            house: boolean;
+            /** Name */
+            name: string;
+            /** Offered */
+            offered: boolean;
+            /** Page */
+            page: string | null;
+            /** Sect */
+            sect: string | null;
+            /** Status */
+            status: string[];
+            /** While Absent */
+            while_absent: components["schemas"]["WhileAbsentOut"][];
+        };
         /** TitlesOut */
         TitlesOut: {
-            /** Catalogue */
-            catalogue: string[];
-            /** Troupe */
-            troupe: string[];
+            /** Sects */
+            sects: string[];
+            /** Status Choices */
+            status_choices: components["schemas"]["StatusChoice"][];
+            /** Titles */
+            titles: components["schemas"]["TitleOut"][];
         };
         /** Tracker */
         Tracker: {
@@ -11317,6 +11392,15 @@ export interface components {
             label: string;
             /** Link */
             link: string;
+        };
+        /** WhileAbsentOut */
+        WhileAbsentOut: {
+            /** Note */
+            note: string;
+            /** Status */
+            status: string[];
+            /** Title */
+            title: string;
         };
         /**
          * WindowOut
@@ -20549,6 +20633,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_title_api_troupes__troupe_id__titles__name__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TitleChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
