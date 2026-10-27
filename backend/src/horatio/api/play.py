@@ -19,15 +19,19 @@ from horatio import (
     influence_log,
     play,
     play_influence,
+    play_status,
     reference,
     retainers,
+    sect_status,
     sheets,
 )
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.npcs import PanelsOut, StockNpcOut, stock_out
+from horatio.api.play_status import PlayStatusOut, StatusChoiceIn, play_status_out
 from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
 from horatio.api.roster import roster
+from horatio.api.sect_status import StatusIn
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.influence import InfluenceType
 from horatio.models import (
@@ -279,6 +283,9 @@ class PlayView(BaseModel):
     # What the character can do with each type of influence it has, for the
     # details of a spend. Empty when there is no troupe to log spends in.
     influence: list[InfluenceStandingOut] = []
+    # Its sect status at the game (horatio.play_status); None for a character with
+    # none, as its sect has no status rules or it has no sect.
+    status: PlayStatusOut | None = None
     # The game now; None before the character's first tap.
     game: GameOut | None
     # The game's log, newest first.
@@ -657,6 +664,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         ],
         powers=[PowerOut(**s.model_dump(), on=s.key in state["on"]) for s in limits.switches],
         influence=[standing_out(s) for s in play_influence.standings(db, character)],
+        status=play_status_out(db, character, game, events),
         game=game_out(db, game, events) if game else None,
         log=log_out(db, character, limits, events),
     )
@@ -825,6 +833,63 @@ def record_taps(character_id: uuid.UUID, body: Taps, db: DbSession, user: Curren
             )
             for t in body.taps
         ],
+    )
+    db.commit()
+    return play_view(db, character)
+
+
+@router.put("/characters/{character_id}/play/status/choice")
+def choose_status(
+    character_id: uuid.UUID, body: StatusChoiceIn, db: DbSession, user: CurrentUser
+) -> PlayView:
+    """The character's choices for its game (horatio.play_status): its source of
+    abiding status, a title's status, a title's holder absent. Its player makes each
+    once, and it is locked for the game; staff change them."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    staff = sect_status.staff_in(db, user, character, play_status.troupe_of(db, character))
+    if not (staff or sect_status.is_player(user, character)):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Only its player, or staff, choose a character's status."
+        )
+    play_status.choose(
+        db,
+        user,
+        character,
+        play.start_game(db, character),
+        staff=staff,
+        source=body.source,
+        chosen=body.chosen,
+        absent=body.absent,
+    )
+    db.commit()
+    return play_view(db, character)
+
+
+@router.post("/characters/{character_id}/play/status")
+def add_status_at_game(
+    character_id: uuid.UUID, body: StatusIn, db: DbSession, user: CurrentUser
+) -> PlayView:
+    """Give the character a fleeting or negative status at its game, naming its
+    patron, as the game's troupe's Status on sheets setting allows. It is logged
+    against the game."""
+    character = sheets.lock_character(db, visible_character(db, user, character_id).id)
+    game = play.start_game(db, character)
+    play_status.begin(db, character, game)
+    sect_status.add(
+        db,
+        user,
+        character,
+        play_status.troupe_of(db, character),
+        name=body.name,
+        patron_id=body.patron_id,
+        patron_text=body.patron_text,
+        place=body.place,
+        given_on=body.given_on,
+        story=body.story,
+        reason=body.reason,
+        give_up=body.give_up,
+        override=body.override,
+        game_id=game.id,
     )
     db.commit()
     return play_view(db, character)

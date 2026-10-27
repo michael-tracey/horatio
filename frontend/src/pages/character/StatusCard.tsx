@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
-import type { BanOut, CharacterOut, HeldOut, StatusAbout, StatusOut } from "../../api/types";
+import type { BanOut, CharacterOut, HeldOut, StatusAbout, StatusIn, StatusOut, SuppressionOut } from "../../api/types";
 import { InfoButton } from "../../components/InfoButton";
 import { PatronPicker } from "../../components/PatronPicker";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, Card, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { bySource, endingText } from "./status";
+import { bySource, endingText, suppressedText } from "./status";
 
 export function useStatus(characterId: string) {
   return useQuery({
@@ -18,7 +18,7 @@ export function useStatus(characterId: string) {
 }
 
 /** What a status does, as a line under its name. */
-function About({ about }: { about: StatusAbout | undefined }) {
+export function About({ about }: { about: StatusAbout | undefined }) {
   if (!about) return null;
   const page = pageLabel(about.page);
   return (
@@ -128,7 +128,24 @@ function today(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function AddStatus({ character, status, onDone }: { character: CharacterOut; status: StatusOut; onDone: () => void }) {
+/**
+ * Adding a fleeting or negative status, naming its patron. On the sheet it goes to the
+ * character's status; at a game (`submit`, `atGame`) to the Play View, which keeps it
+ * against the game and leaves out where and when: there, and today.
+ */
+export function AddStatus({
+  character,
+  status,
+  onDone,
+  submit,
+  atGame = false,
+}: {
+  character: Pick<CharacterOut, "id" | "name" | "kind">;
+  status: StatusOut;
+  onDone: () => void;
+  submit?: (body: StatusIn) => Promise<unknown>;
+  atGame?: boolean;
+}) {
   const [name, setName] = useState("");
   const [patronId, setPatronId] = useState<string | null>(null);
   const [patronText, setPatronText] = useState("");
@@ -142,23 +159,21 @@ function AddStatus({ character, status, onDone }: { character: CharacterOut; sta
   const fleeting = chosen?.type === "Fleeting";
   const full = fleeting && status.fleeting >= status.fleeting_cap;
   const asStaff = status.acting === "staff" && character.kind === "pc";
+  const suppressed = fleeting && status.suppressed.length > 0;
   const add = useAction(async () => {
-    await unwrap(
-      api.POST("/api/characters/{character_id}/status", {
-        params: { path: { character_id: character.id } },
-        body: {
-          name,
-          patron_id: patronId,
-          patron_text: patronText,
-          place,
-          given_on: givenOn || null,
-          story,
-          reason,
-          give_up: full ? giveUp || null : null,
-          override: fleeting && status.disgraced && override,
-        },
-      }),
-    );
+    const body: StatusIn = {
+      name,
+      patron_id: patronId,
+      patron_text: patronText,
+      place: atGame ? "" : place,
+      given_on: atGame ? null : givenOn || null,
+      story,
+      reason,
+      give_up: full ? giveUp || null : null,
+      override: fleeting && (status.disgraced || suppressed) && override,
+    };
+    if (submit) await submit(body);
+    else await unwrap(api.POST("/api/characters/{character_id}/status", { params: { path: { character_id: character.id } }, body }));
     onDone();
   });
   const ready = !!name && (!!patronId || !!patronText.trim()) && (!asStaff || !!reason.trim()) && (!full || !!giveUp);
@@ -189,9 +204,11 @@ function AddStatus({ character, status, onDone }: { character: CharacterOut; sta
       </Field>
       {chosen && <About about={chosen} />}
       {chosen?.duration && <p className="text-xs text-gold">Lasts: {chosen.duration}</p>}
-      {fleeting && status.disgraced && (
+      {fleeting && (status.disgraced || suppressed) && (
         <p className="text-sm text-blood-bright">
-          {character.name} holds Disgraced, and gains no status while it does.
+          {status.disgraced
+            ? `${character.name} holds Disgraced, and gains no status while it does.`
+            : `${character.name}'s fleeting status is suppressed ${status.suppressed[0]!.text}, and it gains none meanwhile.`}
           {status.acting === "staff" && (
             <label className="mt-1 flex items-center gap-2 text-parchment">
               <input type="checkbox" checked={override} onChange={(e) => setOverride(e.target.checked)} />
@@ -227,14 +244,16 @@ function AddStatus({ character, status, onDone }: { character: CharacterOut; sta
           setPatronText(text);
         }}
       />
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Field label="Where">
-          <Input value={place} placeholder={status.troupe_name ?? "The troupe or domain"} onChange={(e) => setPlace(e.target.value)} />
-        </Field>
-        <Field label="When">
-          <Input type="date" value={givenOn} onChange={(e) => setGivenOn(e.target.value)} />
-        </Field>
-      </div>
+      {!atGame && (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Field label="Where">
+            <Input value={place} placeholder={status.troupe_name ?? "The troupe or domain"} onChange={(e) => setPlace(e.target.value)} />
+          </Field>
+          <Field label="When">
+            <Input type="date" value={givenOn} onChange={(e) => setGivenOn(e.target.value)} />
+          </Field>
+        </div>
+      )}
       <Field label="The story (optional)">
         <Textarea rows={2} value={story} placeholder="For defending Elysium" onChange={(e) => setStory(e.target.value)} />
       </Field>
@@ -252,6 +271,65 @@ function AddStatus({ character, status, onDone }: { character: CharacterOut; sta
         </Button>
       </div>
       <ErrorText error={add.error} />
+    </form>
+  );
+}
+
+function SuppressedRow({ character, suppressed, staff }: { character: CharacterOut; suppressed: SuppressionOut; staff: boolean }) {
+  const dates = useDates();
+  const lift = useAction((reason: string) =>
+    unwrap(
+      api.POST("/api/characters/{character_id}/status/suppressions/{suppression_id}/lift", {
+        params: { path: { character_id: character.id, suppression_id: suppressed.id! } },
+        body: { reason },
+      }),
+    ),
+  );
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 text-xs text-blood-bright">
+      <span>{suppressedText(suppressed, dates.day)}</span>
+      {suppressed.id && staff && <WithReason label="Give it back" needed={false} pending={lift.isPending} onConfirm={(reason) => lift.mutate(reason)} />}
+      <ErrorText error={lift.error} />
+    </li>
+  );
+}
+
+/** Staff strip the fleeting status unspent (MET: VTM p. 314), for the rest of the game or for defying a Commander. */
+function Suppress({ character, onDone }: { character: CharacterOut; onDone: () => void }) {
+  const [kind, setKind] = useState<"game" | "commander">("commander");
+  const [reason, setReason] = useState("");
+  const suppress = useAction(async () => {
+    await unwrap(api.POST("/api/characters/{character_id}/status/suppress", { params: { path: { character_id: character.id } }, body: { kind, reason } }));
+    onDone();
+  });
+  return (
+    <form
+      aria-label="Suppress fleeting status"
+      className="mt-2 flex flex-col gap-2 rounded-md border border-ash p-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        suppress.mutate(undefined);
+      }}
+    >
+      <p className="text-xs text-mist">Its fleeting status is neither carried into a game nor gained meanwhile, and comes back on its own (MET: VTM p. 314).</p>
+      <Field label="For how long">
+        <Select value={kind} onChange={(e) => setKind(e.target.value as "game" | "commander")}>
+          <option value="commander">2 games or a month: defied a Commander</option>
+          <option value="game">The rest of the game</option>
+        </Select>
+      </Field>
+      <Field label="Why, for the character's log">
+        <Input value={reason} onChange={(e) => setReason(e.target.value)} />
+      </Field>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={!reason.trim() || suppress.isPending}>
+          Suppress
+        </Button>
+        <Button type="button" variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+      <ErrorText error={suppress.error} />
     </form>
   );
 }
@@ -314,6 +392,7 @@ function Unresolved({ character, status, name }: { character: CharacterOut; stat
 export function StatusCard({ character }: { character: CharacterOut }) {
   const status = useStatus(character.id);
   const [adding, setAdding] = useState(false);
+  const [suppressing, setSuppressing] = useState(false);
   if (!status.data) return status.error ? <ErrorText error={status.error} /> : null;
   const s = status.data;
   const nothing = !s.accepted && !s.derived.length && !s.held.length && !s.unresolved.length;
@@ -397,6 +476,21 @@ export function StatusCard({ character }: { character: CharacterOut }) {
             {fleeting.length > s.fleeting_cap && (
               <p className="mt-1 text-xs text-blood-bright">Over the cap: only {s.fleeting_cap} count at a game. Give some up.</p>
             )}
+            {s.suppressed.length > 0 && (
+              <ul className="mt-1 flex flex-col gap-1">
+                {s.suppressed.map((x) => (
+                  <SuppressedRow key={x.id ?? x.kind} character={character} suppressed={x} staff={s.staff} />
+                ))}
+              </ul>
+            )}
+            {s.staff &&
+              (suppressing ? (
+                <Suppress character={character} onDone={() => setSuppressing(false)} />
+              ) : (
+                <Button variant="ghost" className="mt-1 min-h-8 px-2 text-xs" onClick={() => setSuppressing(true)}>
+                  Suppress fleeting status…
+                </Button>
+              ))}
           </section>
         )}
         {negative.length > 0 && (

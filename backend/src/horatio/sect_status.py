@@ -36,6 +36,11 @@ at, and `months` calendar months, whichever is later. A stacking status (Warned)
 adds the same again for each one held, and they all end together. `expire` drops
 what is over, and logs it.
 
+**Suppressed** fleeting status (p. 314) is held but neither carried nor gained for a
+while, and comes back on its own: while the character holds Vulgar (p. 403), or for
+as long as staff say (StatusSuppression): the rest of a game, or 2 games or a month
+for defying a Commander.
+
 **Carried into a game** (`carried`): the abiding status of one source (a title, or
 social age), all innate and negative status, and fleeting status up to the cap.
 """
@@ -58,6 +63,7 @@ from horatio.models import (
     PlayEvent,
     PlayGame,
     StatusBanMark,
+    StatusSuppression,
     Troupe,
     User,
 )
@@ -68,6 +74,7 @@ from horatio.rules.model import RuleSetData, SheetTrait
 from horatio.rules.status import (
     GENERAL,
     STATUS_CATEGORY,
+    DurationData,
     SectData,
     StatusCapsData,
     StatusData,
@@ -99,6 +106,15 @@ HELD_TYPES = ("Fleeting", "Negative")
 BEFORE_HORATIO = "(before Horatio)"
 # The status that stops a character gaining status (p. 316).
 DISGRACED = "Disgraced"
+# The status that suppresses its holder's fleeting status while it lasts (p. 403).
+VULGAR = "Vulgar"
+# How long staff suppress fleeting status for (p. 314).
+Suppression = Literal["game", "commander"]
+SUPPRESSIONS: dict[str, DurationData] = {
+    "game": DurationData(text="For the rest of the game", this_game=True),
+    "commander": DurationData(text="2 games or 1 month, whichever is longer", games=2, months=1),
+}
+SUPPRESSION_TEXT = {"game": "for the rest of the game", "commander": "for defying a Commander"}
 
 
 # --- what a character has ----------------------------------------------------------------------
@@ -172,6 +188,21 @@ class Derived:
 
 
 @dataclass(frozen=True)
+class Suppressed:
+    """The character's fleeting status suppressed: by staff (`id`), or while it holds
+    Vulgar (`kind` "vulgar", no id)."""
+
+    id: uuid.UUID | None
+    kind: Literal["game", "commander", "vulgar"]
+    reason: str
+    ending: Ending | None
+
+    @property
+    def text(self) -> str:
+        return "while it holds Vulgar" if self.kind == "vulgar" else SUPPRESSION_TEXT[self.kind]
+
+
+@dataclass(frozen=True)
 class Ban:
     """One of the sect's status bans, and whether it applies to the character: as the
     sheet shows (None where it cannot tell), or as staff marked it."""
@@ -202,6 +233,8 @@ class Standing:
     unresolved: list[str] = field(default_factory=list[str])
     bans: list[Ban] = field(default_factory=list[Ban])
     fleeting_cap: int = 0
+    # What suppresses its fleeting status now.
+    suppressed: list[Suppressed] = field(default_factory=list[Suppressed])
 
     @property
     def accepted(self) -> str | None:
@@ -219,6 +252,11 @@ class Standing:
     @property
     def disgraced(self) -> bool:
         return any(h.name == DISGRACED for h in self.held)
+
+    @property
+    def suppressing(self) -> list[Suppressed]:
+        """What suppresses its fleeting status now: not yet over."""
+        return [s for s in self.suppressed if not (s.ending and s.ending.over)]
 
     def own(self, status: StatusData) -> bool:
         """Whether the status is the character's sect's or the general status."""
@@ -297,7 +335,7 @@ def caps_of(rules: RuleSetData) -> StatusCapsData:
     return rules.status_rules.caps or StatusCapsData()
 
 
-def games_ended_since(db: Session, row: HeldStatus) -> int:
+def games_ended_since(db: Session, row: HeldStatus | StatusSuppression) -> int:
     """The character's Play View games ended since the status was added, but for the
     game it was given at."""
     query = select(func.count()).where(
@@ -333,22 +371,7 @@ def endings(
             if duration.while_held is not None:
                 waiting.append((first, status))
                 continue
-            if duration.this_game:
-                if first.game_id is not None:
-                    ended = db.scalar(
-                        select(PlayGame.ended_at.is_not(None)).where(PlayGame.id == first.game_id)
-                    )
-                    played = 0 if ended else 1
-                else:
-                    played = max(0, 1 - games_ended_since(db, first))
-                ending = Ending(duration.text, None, played, None, True, played == 0)
-            else:
-                not_before = (
-                    add_months(first.given_on, duration.months * times) if duration.months else None
-                )
-                left = max(0, (duration.games or 0) * times - games_ended_since(db, first))
-                over = left == 0 and (not_before is None or today >= not_before)
-                ending = Ending(duration.text, not_before, left, None, False, over)
+            ending = lasting(db, first, duration, today, times)
             for row in group:
                 found[row.id] = ending
     for row, status in waiting:
@@ -364,6 +387,30 @@ def endings(
         over = not other and left == 0 and (not_before is None or today >= not_before)
         found[row.id] = Ending(duration.text, not_before, left, duration.while_held, False, over)
     return found
+
+
+def lasting(
+    db: Session,
+    first: HeldStatus | StatusSuppression,
+    duration: DurationData,
+    today: date,
+    times: int = 1,
+) -> Ending:
+    """When something given at `first` ends that lasts `duration`, `times` over: with
+    the game it was given at, or after its games and months."""
+    if duration.this_game:
+        if first.game_id is not None:
+            ended = db.scalar(
+                select(PlayGame.ended_at.is_not(None)).where(PlayGame.id == first.game_id)
+            )
+            played = 0 if ended else 1
+        else:
+            played = max(0, 1 - games_ended_since(db, first))
+        return Ending(duration.text, None, played, None, True, played == 0)
+    not_before = add_months(first.given_on, duration.months * times) if duration.months else None
+    left = max(0, (duration.games or 0) * times - games_ended_since(db, first))
+    over = left == 0 and (not_before is None or today >= not_before)
+    return Ending(duration.text, not_before, left, None, False, over)
 
 
 def held_rows(db: Session, character: Character) -> list[HeldStatus]:
@@ -412,6 +459,32 @@ def held(db: Session, character: Character, rules: RuleSetData | None = None) ->
                 ending=ends.get(row.id),
             )
         )
+    return found
+
+
+def suppression_rows(db: Session, character: Character) -> list[StatusSuppression]:
+    return list(
+        db.scalars(
+            select(StatusSuppression)
+            .where(StatusSuppression.character_id == character.id)
+            .order_by(StatusSuppression.created_at, StatusSuppression.id)
+        )
+    )
+
+
+def suppressions(db: Session, character: Character, held: Sequence[Held]) -> list[Suppressed]:
+    """What suppresses the character's fleeting status (p. 314), with when each ends:
+    staff's, and Vulgar while it is held (p. 403). Those over are left in, to expire."""
+    today = datetime.now(UTC).date()
+    found = [
+        Suppressed(r.id, r.kind, r.reason, lasting(db, r, SUPPRESSIONS[r.kind], today))  # pyright: ignore[reportArgumentType]
+        for r in suppression_rows(db, character)
+    ]
+    found += [
+        Suppressed(None, "vulgar", "", h.ending)
+        for h in held
+        if h.name == VULGAR and not (h.ending and h.ending.over)
+    ]
     return found
 
 
@@ -495,6 +568,7 @@ def standing(db: Session, character: Character) -> Standing:
         if (row.trait.rating or 0) > row.trait.granted_rating:
             found.unresolved.append(name)
     found.held = held(db, character, rules)
+    found.suppressed = suppressions(db, character, found.held)
     found.bans = bans_of(db, character, sect_data, sheet)
     found.fleeting_cap = fleeting_cap(rules, found.bans)
     return found
@@ -525,13 +599,17 @@ class AbidingSource:
     status: tuple[Derived, ...]
 
 
-def abiding_sources(found: Standing, troupe_id: uuid.UUID) -> list[AbidingSource]:
+def abiding_sources(
+    found: Standing, troupe_id: uuid.UUID, begun_with: Collection[str] | None = None
+) -> list[AbidingSource]:
     """The character's sources of abiding status at a game in `troupe_id`, in order:
     its titles there by name, then its social age, then its faction. Its titles in
-    other troupes give nothing here."""
+    other troupes give nothing here; nor, with `begun_with` (the titles it held there
+    as the game began), does a title given since, until the next game (p. 311)."""
     sources: dict[str, list[Derived]] = {}
     for d in found.derived:
-        if d.kind == "title" and d.troupe_id == troupe_id or d.kind in ("social_age", "faction"):
+        here = d.troupe_id == troupe_id and (begun_with is None or d.source in begun_with)
+        if d.kind == "title" and here or d.kind in ("social_age", "faction"):
             sources.setdefault(d.source, []).append(d)
     order = {"title": 0, "social_age": 1, "faction": 2}
     named = sorted(sources, key=lambda n: (order[sources[n][0].kind], n))
@@ -549,23 +627,29 @@ def carried(
     abiding_source: str | None = None,
     chosen: Mapping[str, str] | None = None,
     absent: Collection[str] = (),
+    begun_with: Collection[str] | None = None,
+    or_first: bool = True,
+    found: Standing | None = None,
 ) -> list[Carried]:
     """The status the character carries into a game in `troupe_id` (p. 312): the
     abiding status of one source (`abiding_source`, a title or social age by name,
-    or the first of `abiding_sources`), all its innate and negative status, and its
-    fleeting status up to the cap, oldest first. Of a title's conditional status it
-    carries the one `chosen` for that title (a Bishop's Blessed or Enforcer), and
-    what it gives while the holder of a title in `absent` is away. Only status of
-    its sect and the general status count; Accepted is not status."""
-    found = standing(db, character)
+    or else, `or_first`, the first of `abiding_sources`), all its innate and negative
+    status, and its fleeting status up to the cap, oldest first, unless it is
+    suppressed. Of a title's conditional status it carries the one `chosen` for that
+    title (a Bishop's Blessed or Enforcer), and what it gives while the holder of a
+    title in `absent` is away. A title given since the game began (not in
+    `begun_with`) gives nothing. Only status of its sect and the general status
+    count; Accepted is not status. `found` is its standing, if already worked out."""
+    found = found or standing(db, character)
     if found.sect_data is None:
         return []
     chosen = chosen or {}
     out: list[Carried] = []
     statuses = found.rules.statuses
 
-    sources = abiding_sources(found, troupe_id)
-    source = next((s for s in sources if s.name == abiding_source), next(iter(sources), None))
+    sources = abiding_sources(found, troupe_id, begun_with)
+    first = next(iter(sources), None) if or_first else None
+    source = next((s for s in sources if s.name == abiding_source), first)
     if source is not None:
         title = titles.title_data(db, troupe_id).get(source.name)
         if source.kind != "title":
@@ -592,8 +676,9 @@ def carried(
     for h in live:
         if h.type == "Negative":
             out.append(Carried(h.name, "Negative", h.patron.words, h.status, h))
-    for h in [h for h in live if h.type == "Fleeting"][: found.fleeting_cap]:
-        out.append(Carried(h.name, "Fleeting", h.patron.words, h.status, h))
+    if not found.suppressing:
+        for h in [h for h in live if h.type == "Fleeting"][: found.fleeting_cap]:
+            out.append(Carried(h.name, "Fleeting", h.patron.words, h.status, h))
     return out
 
 
@@ -778,6 +863,13 @@ def add(
             f"{character.name} holds Disgraced, and gains no status while it does{page}."
         )
 
+    if status.type == "Fleeting" and found.suppressing and not (acting == "staff" and override):
+        why = found.suppressing[0].text
+        raise conflict(
+            f"{character.name}'s fleeting status is suppressed {why}, and it gains none"
+            " meanwhile (p. 314)."
+        )
+
     giving_up: HeldStatus | None = None
     if give_up is not None:
         giving_up = db.get(HeldStatus, give_up)
@@ -816,6 +908,7 @@ def add(
     db.add(row)
     db.flush()
     patron = Patron(patron_id, patron_name, patron_title, patron_text).words
+    at_game = db.get(PlayGame, row.game_id) if row.game_id else None
     troupe_id = home.id if home else None
     if giving_up is not None:
         audit.record(
@@ -836,8 +929,11 @@ def add(
         character_id=character.id,
         **log_data(row, patron),
         type=status.type.lower(),
-        override=override and found.disgraced and status.type == "Fleeting",
+        override=override
+        and (found.disgraced or bool(found.suppressing))
+        and status.type == "Fleeting",
         reason=reason,
+        **({"game": at_game.number} if at_game else {}),
     )
     db.flush()
     apply_grants(db, user, character)
@@ -875,7 +971,9 @@ def remove(
         acting = require_change(db, user, character, troupe)
         if acting == "player" and status is not None and status.type == "Negative":
             raise conflict(f"Only the one who gave {row.name}, or staff, remove it before it ends.")
-    reason = reason_needed(user, character, acting, reason) if not gave_it else reason.strip()
+    # Spending is a move in the game, not a change to the sheet: it needs no reason.
+    spending = how == "spent" or gave_it
+    reason = reason.strip() if spending else reason_needed(user, character, acting, reason)
     home = troupe or home_troupe(db, character)
     audit.record(
         db,
@@ -893,11 +991,28 @@ def remove(
 
 def expire(db: Session, character: Character, user: User) -> list[str]:
     """Drop the character's held status that is over, logging each as ended by
-    itself. Says which. `user` is whoever's request found it over."""
-    over = [h for h in held(db, character) if h.ending and h.ending.over]
+    itself, and staff's suppressions of its fleeting status that are over. Says which
+    status ended. `user` is whoever's request found it over."""
+    found = held(db, character)
+    over = [h for h in found if h.ending and h.ending.over]
+    lifted = [s for s in suppressions(db, character, found) if s.id and s.ending and s.ending.over]
+    home = home_troupe(db, character)
+    for s in lifted:
+        audit.record(
+            db,
+            None,
+            "status.suppression_ended",
+            troupe_id=home.id if home else None,
+            character_id=character.id,
+            why=s.text,
+        )
+    if lifted:
+        db.execute(
+            delete(StatusSuppression).where(StatusSuppression.id.in_([s.id for s in lifted]))
+        )
+        db.flush()
     if not over:
         return []
-    home = home_troupe(db, character)
     for h in over:
         audit.record(
             db,
@@ -1010,4 +1125,61 @@ def mark_ban(
         mark={True: "applies", False: "exempt", None: "as the sheet shows"}[applies],
         reason=reason,
     )
+    db.flush()
+
+
+def suppress(
+    db: Session, user: User, character: Character, kind: Suppression, reason: str
+) -> StatusSuppression:
+    """Staff strip the character's fleeting status without its being spent (p. 314):
+    it carries none into a game and gains none, for the rest of the game, or for 2
+    games or a month for defying a Commander. Then it has it back on its own."""
+    troupe = home_troupe(db, character)
+    if not staff_in(db, user, character, troupe):
+        raise conflict("Only staff suppress status.")
+    reason = reason.strip()
+    if not reason:
+        raise unprocessable("Give a reason: it goes in the character's log.")
+    row = StatusSuppression(
+        character_id=character.id,
+        kind=kind,
+        reason=reason,
+        given_on=datetime.now(UTC).date(),
+        game_id=game_in_progress(db, character),
+        added_by=user.id,
+    )
+    db.add(row)
+    audit.record(
+        db,
+        user,
+        "status.suppressed",
+        troupe_id=troupe.id if troupe else None,
+        character_id=character.id,
+        why=SUPPRESSION_TEXT[kind],
+        reason=reason,
+    )
+    db.flush()
+    return row
+
+
+def lift(
+    db: Session, user: User, character: Character, suppression_id: uuid.UUID, reason: str
+) -> None:
+    """Staff give the character back its suppressed fleeting status early."""
+    troupe = home_troupe(db, character)
+    if not staff_in(db, user, character, troupe):
+        raise conflict("Only staff lift a suppression.")
+    row = db.get(StatusSuppression, suppression_id)
+    if row is None or row.character_id != character.id:
+        raise unprocessable("The character's status is not suppressed so.")
+    audit.record(
+        db,
+        user,
+        "status.suppression_lifted",
+        troupe_id=troupe.id if troupe else None,
+        character_id=character.id,
+        why=SUPPRESSION_TEXT[row.kind],
+        reason=reason.strip(),
+    )
+    db.delete(row)
     db.flush()

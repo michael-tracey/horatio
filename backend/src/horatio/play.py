@@ -41,6 +41,10 @@ do, and each game starts the rest of the pool as human Blood, as spent vitae
 comes back as human Blood at 1 a day. A splat without the Beast has no Beast
 traits to tap, and a ghoul's clan weakness is roleplay only, so a Malkavian
 domitor's ghoul has no Derangement trait from it.
+
+Spending sect status is a tap too (horatio.play_status): "status:<name>" spends an
+abiding or innate status for the game, as a use is spent, and "held:<id>" spends a
+fleeting one for good, taking it off the character; its Undo gives it back.
 """
 
 import uuid
@@ -58,6 +62,7 @@ from horatio import (
     influence_effects,
     npcs,
     play_influence,
+    play_status,
     reference,
     retainers,
     sect_status,
@@ -231,6 +236,9 @@ class Limits:
         sheet does not have."""
         if tracker.startswith(SWITCH):
             return 1 if self.switch(tracker.removeprefix(SWITCH)) else None
+        if play_status.is_status(tracker):
+            # Each status is spent once a game; what it carries is play_status's.
+            return 1
         fixed = {
             "blood": self.blood_most(on),
             "willpower": self.willpower,
@@ -289,6 +297,10 @@ class Limits:
             return found
         if tracker in self.removed:
             return self.removed[tracker]
+        if tracker.startswith(play_status.STATUS):
+            return tracker.removeprefix(play_status.STATUS)
+        if tracker.startswith(play_status.HELD):
+            return "A fleeting status"
         if tracker.startswith(SWITCH):
             switch = self.switch(tracker.removeprefix(SWITCH))
             return switch.name if switch else tracker.removeprefix(SWITCH)
@@ -348,6 +360,7 @@ def known_tracker(tracker: str) -> bool:
         or tracker.startswith(("trait:", "counter:", RETAINER))
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
         or temporary_id(tracker) is not None
+        or play_status.is_status(tracker)
     )
 
 
@@ -764,6 +777,14 @@ def describe(
     if event.kind == "undo":
         return f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"
     name = limits.name(event.tracker)
+    if play_status.is_status(event.tracker):
+        if event.held_status is not None:
+            name = event.held_status["name"]
+        elif event.tracker.startswith(play_status.HELD):
+            return "Spent a fleeting status already gone"
+        if event.amount > 0:
+            return f"{name} back"
+        return f"Spent {name} for good" if event.held_status else f"Spent {name}"
     if event.tracker.startswith(SWITCH):
         found = limits.switch(event.tracker.removeprefix(SWITCH))
         if found is not None and found.form:
@@ -965,13 +986,21 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         db.flush()
         if target is not None:
             play_influence.cancel(db, actor, target)
+            if target.held_status is not None:
+                play_status.give_back(db, character, actor, target.held_status)
         elif event.kind == "change":
             play_influence.spend(db, character, actor, event, tap.influence)
+            if event.amount < 0 and event.tracker.startswith(play_status.HELD):
+                event.held_status = play_status.spend_held(
+                    db, character, actor, event.tracker, event.note
+                )
         existing[tap.id] = (event, character.id)
         touched[game.id] = game
         if carries((target or event).tracker, vitae):
             carried = game.number if carried is None else min(carried, game.number)
     for game in touched.values():
+        # A game's first tap begins it: the titles held then are kept with it.
+        play_status.begin(db, character, game)
         refresh(db, game, limits(db, character, game))
     # Derangement traits and a ghoul's vitae carry from game to game, so a late tap
     # in a game already over moves where each game after it started them.

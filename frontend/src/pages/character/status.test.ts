@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DerivedOut, EndingOut, PatronChoiceOut } from "../../api/types";
-import { bySource, endingText, findPatrons, patronLabel } from "./status";
+import { bySource, endingText, findPatrons, patronLabel, suppressedText } from "./status";
 
 const day = (d: string) => `day ${d}`;
 const ending = (over: Partial<EndingOut>): EndingOut => ({
@@ -28,6 +28,17 @@ describe("endingText", () => {
 
   it("ends with the game it was given at", () => {
     expect(endingText(ending({ this_game: true, games_left: 1 }), day)).toBe("Ends with the game it was given at");
+  });
+});
+
+describe("suppressedText", () => {
+  it("says why, and when the fleeting status comes back", () => {
+    expect(
+      suppressedText({ text: "for defying a Commander", reason: "Defied the Prince", ending: ending({ games_left: 2, not_before: "2026-11-26" }) }, day),
+    ).toBe("Fleeting status suppressed for defying a Commander (Defied the Prince): back after 2 more games, and not before day 2026-11-26.");
+    expect(suppressedText({ text: "while it holds Vulgar", reason: "", ending: ending({ this_game: true, games_left: 1 }) }, day)).toBe(
+      "Fleeting status suppressed while it holds Vulgar: back when the game ends.",
+    );
   });
 });
 
