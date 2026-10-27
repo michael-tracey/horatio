@@ -3,6 +3,7 @@ import { Fragment, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { ExpendableOut, GameOut, InfluenceDetailsIn, InfluenceStandingOut, PlayView } from "../../api/types";
+import { LinesVeilsNote } from "../../components/LinesVeils";
 import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
@@ -350,6 +351,8 @@ function Identity({ view }: { view: PlayView }) {
           ))}
         </p>
         {reference?.domitor?.weakness && <p className="text-xs text-mist">Weakness: {reference.domitor.weakness}</p>}
+        {/* The player's lines and veils, for the staff running the game. */}
+        <LinesVeilsNote value={reference?.lines_veils} who={view.player_name} className="mt-1 text-xs" />
       </div>
       <p className="text-right text-xs text-mist">
         {view.kind === "npc" ? "NPC" : view.player_name}

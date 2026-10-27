@@ -345,6 +345,11 @@ function CharacterBadge({
       <h2 className="text-center font-display leading-tight tracking-wide uppercase" style={{ marginTop: inch(0.1), fontSize: name(badge.name) }}>
         {badge.name}
       </h2>
+      {badge.pronouns && (
+        <p className="text-center leading-tight" style={{ fontSize: pt(11) }}>
+          {badge.pronouns}
+        </p>
+      )}
       <p className={`text-center ${l.accent}`} style={{ fontSize: pt(12.5) }}>
         {standing(badge.clan, badge.social_age)}
       </p>

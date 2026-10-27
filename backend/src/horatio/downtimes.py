@@ -21,7 +21,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, feeding, influence, responses
+from horatio import audit, feeding, influence, responses, suspensions
 from horatio.models import (
     AllowanceAdjustment,
     Answer,
@@ -614,6 +614,7 @@ def save_answers(
     """Replace the character's answers, and its Feeding section when given one.
     Blank answers are dropped. Feeding actions come out of the general actions."""
     ensure_can_submit(cycle, participant)
+    suspensions.refuse_character(db, character)
     allowance_now = effective_allowance(db, participant)
     shown = {q.id: q for q in visible_questions(db, cycle, character, allowance_now)}
 
@@ -731,6 +732,7 @@ def submit(
     participant: CycleParticipant,
 ) -> Submission:
     ensure_can_submit(cycle, participant)
+    suspensions.refuse_character(db, character)
     submission = submission_for(db, participant)
     answered = {a.question_id for a in answers_for(db, submission)} if submission else set()
     allowance_now = effective_allowance(db, participant)

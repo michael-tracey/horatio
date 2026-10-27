@@ -21,6 +21,9 @@ class Character(Imported, Record):
             "(kind = 'npc') = (npc_kind is not null and npc_form is not null)", name="npc_has_kind"
         ),
         CheckConstraint("npc_form in ('sheeted', 'stock')", name="npc_form"),
+        CheckConstraint(
+            "left_reason in ('final_death', 'off_field', 'inactive')", name="left_reason"
+        ),
     )
 
     # For a PC, its player. For an NPC, the staff member who made it; the NPC
@@ -79,6 +82,17 @@ class Character(Imported, Record):
     # A custom kind as staff set it up for this NPC: {"name", "nature", "resource":
     # {"name", "size", "per_turn", "regains"}}. Null for every other kind.
     npc_custom_kind: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # Staff list this NPC on its troupe's Who's Who though it holds no title there
+    # (horatio.whos_who). Titled NPCs are listed anyway.
+    on_whos_who: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Why a retired character left (horatio.leaving): final_death, off_field or
+    # inactive; null while it is active, and for one retired before reasons were kept.
+    left_reason: Mapped[str | None]
+    # Its troupes' Who's Who lists it under "No longer with us".
+    left_listed: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Its pronouns, as its player (or an NPC's staff) wrote them: "she/her", "any".
+    # None for none given (horatio.pronouns).
+    pronouns: Mapped[str | None]
 
 
 class CharacterTrait(Record):

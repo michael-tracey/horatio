@@ -70,6 +70,14 @@ class Troupe(Imported, Record):
     # "none", leaving the space for stickers.
     badge_titles: Mapped[bool] = mapped_column(default=True, server_default="true")
     badge_status: Mapped[str] = mapped_column(default="all", server_default="all")
+    # Its badges print each character's pronouns; never the player's.
+    badge_pronouns: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Its Who's Who (horatio.whos_who) adds the negative status each character carries
+    # into a game here, which is public in the sect anyway (MET: VTM p. 312).
+    whos_who_negative: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The clans with a seat at its court, by clan without the bloodline; None until
+    # staff choose, for the clans whose Primogen is held there (horatio.whos_who).
+    seated_clans: Mapped[list[str] | None] = mapped_column(JSONB)
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a
@@ -183,6 +191,10 @@ class TroupeMembership(Record):
     approved_version_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("sheet_versions.id", use_alter=True)
     )
+    # Who speaks at this troupe's court for a character of a clan without a seat
+    # there: a seated clan, or the player's own words ("Anarch"). Kept only while
+    # the character is in the troupe (horatio.whos_who).
+    represented_by: Mapped[str | None]
 
 
 class TroupeSpecialization(Record):
@@ -210,6 +222,9 @@ class TroupeTitle(Record):
     # None: it can go to a character of any sect.
     sect: Mapped[str | None]
     status: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Where it comes on the troupe's Who's Who, after the rule sets' titles
+    # (horatio.whos_who): the troupe sets the order of its own.
+    position: Mapped[int] = mapped_column(default=0, server_default="0")
 
 
 class CharacterTitle(Record):

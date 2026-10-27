@@ -16,12 +16,16 @@ import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
 import { KindBadge } from "./NpcKindBadge";
 import { CharacterMenu } from "./Actions";
+import { LeavingCard } from "./Leaving";
 import { RenameCharacter } from "./Rename";
+import { CharacterPronouns } from "./Pronouns";
+import { Pronouns } from "../../components/PronounsInput";
 import { CharacterPicture } from "./Picture";
 import { ResultsTab } from "./ResultsTab";
 import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
 import { SheetTab, useCatalogue } from "./SheetTab";
+import { StatusCard } from "./StatusCard";
 import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
 
@@ -33,6 +37,7 @@ export function CharacterPage() {
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}", { params: { path: { character_id: characterId } } })),
   });
   const [renaming, setRenaming] = useState(false);
+  const [saying, setSaying] = useState(false);
   // The Shared backgrounds tab shows once the character has put dots in one.
   const shared = useQuery({
     queryKey: ["character-shared", characterId],
@@ -61,6 +66,13 @@ export function CharacterPage() {
     </Link>
   );
   const rename = renaming && <RenameCharacter key={c.id} character={c} asCustodian={custodian} onDone={() => setRenaming(false)} />;
+  const pronouns = saying && <CharacterPronouns key={c.id} character={c} onDone={() => setSaying(false)} />;
+  const name = (
+    <>
+      {c.name}
+      <Pronouns pronouns={c.pronouns} className="text-base text-mist" />
+    </>
+  );
 
   if (c.kind === "npc") {
     // Only the troupe's running staff can see an NPC at all, and they can all edit it.
@@ -75,19 +87,30 @@ export function CharacterPage() {
                 <KindBadge kind={c.npc_kind} name={c.npc_kind_name} />
                 {play}
                 <GiveEquipment character={c} />
-                <CharacterMenu character={c} canRename={!renaming} renameOn={null} onRename={() => setRenaming(true)} canDelete />
+                <CharacterMenu
+                  character={c}
+                  canRename={!renaming}
+                  renameOn={null}
+                  onRename={() => setRenaming(true)}
+                  canRetire={c.status === "active"}
+                  onPronouns={saying ? undefined : () => setSaying(true)}
+                  canDelete
+                />
               </div>
             }
           >
-            {c.name}
+            {name}
           </PageTitle>
         </Header>
         {rename}
+        {c.status === "retired" && <LeavingCard character={c} canChange />}
+        {pronouns}
         <Tabs
           tabs={[
             ...(!c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
             { to: base, label: "Build", end: true },
             { to: `${base}/sheet`, label: "Sheet" },
+            { to: `${base}/status`, label: "Status" },
             { to: `${base}/equipment`, label: "Equipment" },
             { to: `${base}/influence`, label: "Influence" },
             { to: `${base}/log`, label: "Log" },
@@ -96,6 +119,7 @@ export function CharacterPage() {
         <Routes>
           <Route index element={<NpcBuilder character={c} />} />
           <Route path="sheet" element={<SheetTab character={c} mine={false} badge />} />
+          <Route path="status" element={<StatusCard character={c} />} />
           <Route path="equipment" element={<EquipmentTab character={c} />} />
           <Route path="influence" element={<InfluenceTab character={c} mine={false} />} />
           <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
@@ -126,19 +150,25 @@ export function CharacterPage() {
                 canRename={canRename && !renaming && !renameOn}
                 renameOn={renameOn}
                 onRename={() => setRenaming(true)}
+                canRetire={mine && c.status === "active"}
+                onPronouns={mine && c.status === "active" && !saying ? () => setSaying(true) : undefined}
                 canDelete={mine || custodian}
+                canMove={custodian}
               />
             </div>
           }
         >
-          {c.name}
+          {name}
         </PageTitle>
       </Header>
       {rename}
+      {c.status === "retired" && <LeavingCard character={c} canChange={mine || custodian || (!!home.data && abilities(home.data.my_role, custodian).running)} />}
+      {pronouns}
       <Tabs
         tabs={[
           ...(mine && !c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
           { to: base, label: "Sheet", end: true },
+          { to: `${base}/status`, label: "Status" },
           { to: `${base}/equipment`, label: "Equipment" },
           { to: `${base}/xp`, label: "Experience" },
           ...(mine
@@ -166,6 +196,7 @@ export function CharacterPage() {
             />
           }
         />
+        <Route path="status" element={<StatusCard character={c} />} />
         <Route path="equipment" element={<EquipmentTab character={c} />} />
         <Route path="xp" element={<XpTab characterId={c.id} selfEntering={mine && !c.home_troupe_id && c.status === "active"} />} />
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
