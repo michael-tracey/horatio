@@ -33,8 +33,14 @@ def rate(person: Person, npc_id: str, category: str, name: str, rating: int | No
     )
 
 
-def member(troupe: Troupe, name: str = "Agnes") -> str:
+def member(troupe: Troupe, name: str = "Agnes", sect: str | None = "Camarilla") -> str:
     character_id = new_character(troupe, troupe.player, name)
+    if sect is not None:
+        chosen = troupe.player.client.put(
+            f"/characters/{character_id}/traits",
+            json={"category": "sect", "name": sect, "rating": None},
+        )
+        assert chosen.status_code == 200, chosen.text
     troupe.player.client.post(f"/characters/{character_id}/troupes", json={"troupe_id": troupe.id})
     return character_id
 
@@ -233,13 +239,14 @@ def test_a_troupes_titles_are_the_catalogues_plus_its_own(troupe: Troupe) -> Non
 
     added = troupe.assistant.client.post(path, json={"name": "Keeper of the Gate"})
     assert added.status_code == 201
-    assert "Prince" in added.json()["catalogue"]
-    assert added.json()["troupe"] == ["Keeper of the Gate"]
+    listed = {t["name"]: t for t in added.json()["titles"]}
+    assert not listed["Prince"]["house"]
+    assert listed["Keeper of the Gate"]["house"]
     assert troupe.assistant.client.post(path, json={"name": "Prince"}).status_code == 409
     assert troupe.narrator.client.get(path).status_code == 403
 
     removed = troupe.assistant.client.delete(f"{path}/Keeper of the Gate")
-    assert removed.json()["troupe"] == []
+    assert not [t for t in removed.json()["titles"] if t["house"]]
 
 
 def test_titles_are_given_in_one_troupe_and_mean_nothing_elsewhere(troupe: Troupe) -> None:

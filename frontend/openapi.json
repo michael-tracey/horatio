@@ -10153,6 +10153,25 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "status": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
           }
         },
         "required": [
@@ -14844,6 +14863,13 @@
             "title": "Kind",
             "type": "string"
           },
+          "out_of_sect_titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Out Of Sect Titles",
+            "type": "array"
+          },
           "picture": {
             "anyOf": [
               {
@@ -14886,6 +14912,17 @@
             "title": "Retired",
             "type": "boolean"
           },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
           "social_age": {
             "title": "Social Age",
             "type": "string"
@@ -14911,6 +14948,8 @@
           "kind",
           "retired",
           "titles",
+          "out_of_sect_titles",
+          "sect",
           "picture",
           "clan",
           "social_age",
@@ -16662,6 +16701,25 @@
         "title": "StatusAbout",
         "type": "object"
       },
+      "StatusChoice": {
+        "description": "Abiding status a troupe's own title can give.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sect": {
+            "title": "Sect",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "sect"
+        ],
+        "title": "StatusChoice",
+        "type": "object"
+      },
       "StatusChoiceIn": {
         "description": "The character's choices for its game; what is left out stays as it is.",
         "properties": {
@@ -17872,6 +17930,31 @@
         "title": "TestPool",
         "type": "object"
       },
+      "TitleChange": {
+        "properties": {
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "status": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
+          }
+        },
+        "title": "TitleChange",
+        "type": "object"
+      },
       "TitleHeldOut": {
         "properties": {
           "name": {
@@ -17898,26 +17981,149 @@
         "title": "TitleHeldOut",
         "type": "object"
       },
-      "TitlesOut": {
+      "TitleHolderOut": {
         "properties": {
-          "catalogue": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "out_of_sect": {
+            "title": "Out Of Sect",
+            "type": "boolean"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "sect",
+          "out_of_sect"
+        ],
+        "title": "TitleHolderOut",
+        "type": "object"
+      },
+      "TitleOut": {
+        "properties": {
+          "choose_one": {
             "items": {
               "type": "string"
             },
-            "title": "Catalogue",
+            "title": "Choose One",
             "type": "array"
           },
-          "troupe": {
+          "holders": {
+            "items": {
+              "$ref": "#/components/schemas/TitleHolderOut"
+            },
+            "title": "Holders",
+            "type": "array"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "offered": {
+            "title": "Offered",
+            "type": "boolean"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "status": {
             "items": {
               "type": "string"
             },
-            "title": "Troupe",
+            "title": "Status",
+            "type": "array"
+          },
+          "while_absent": {
+            "items": {
+              "$ref": "#/components/schemas/WhileAbsentOut"
+            },
+            "title": "While Absent",
             "type": "array"
           }
         },
         "required": [
-          "catalogue",
-          "troupe"
+          "name",
+          "sect",
+          "status",
+          "choose_one",
+          "while_absent",
+          "page",
+          "house",
+          "offered",
+          "holders"
+        ],
+        "title": "TitleOut",
+        "type": "object"
+      },
+      "TitlesOut": {
+        "properties": {
+          "sects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sects",
+            "type": "array"
+          },
+          "status_choices": {
+            "items": {
+              "$ref": "#/components/schemas/StatusChoice"
+            },
+            "title": "Status Choices",
+            "type": "array"
+          },
+          "titles": {
+            "items": {
+              "$ref": "#/components/schemas/TitleOut"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sects",
+          "titles",
+          "status_choices"
         ],
         "title": "TitlesOut",
         "type": "object"
@@ -19263,6 +19469,32 @@
           "link"
         ],
         "title": "WaitingLine",
+        "type": "object"
+      },
+      "WhileAbsentOut": {
+        "properties": {
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "status": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "status",
+          "note"
+        ],
+        "title": "WhileAbsentOut",
         "type": "object"
       },
       "WindowOut": {
@@ -34399,6 +34631,7 @@
     },
     "/api/troupes/{troupe_id}/titles": {
       "get": {
+        "description": "The titles the troupe gives, with their sect and status, and who holds them.",
         "operationId": "list_titles_api_troupes__troupe_id__titles_get",
         "parameters": [
           {
@@ -34538,6 +34771,67 @@
           }
         },
         "summary": "Remove Title",
+        "tags": [
+          "titles"
+        ]
+      },
+      "put": {
+        "description": "Change the sect and status of a title the troupe added, for all who hold it.",
+        "operationId": "change_title_api_troupes__troupe_id__titles__name__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TitleChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Title",
         "tags": [
           "titles"
         ]
