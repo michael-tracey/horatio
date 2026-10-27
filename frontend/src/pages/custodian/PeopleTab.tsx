@@ -3,10 +3,12 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { LiveReset, PlayerSummary } from "../../api/types";
+import { Dialog } from "../../components/Dialog";
 import { LogList } from "../../components/LogList";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { memberSince } from "../players";
+import { MergeAccounts } from "./MergeAccounts";
 import { PersonCharacters } from "./MoveCharacter";
 import { ResetPassword, useCancelReset } from "./ResetPassword";
 
@@ -61,6 +63,7 @@ export function PeopleTab() {
 function Person({ person }: { person: PlayerSummary }) {
   const [open, setOpen] = useState(false);
   const [characters, setCharacters] = useState(false);
+  const [merging, setMerging] = useState(false);
   const dates = useDates();
   return (
     <li className="py-2">
@@ -93,6 +96,15 @@ function Person({ person }: { person: PlayerSummary }) {
           >
             Reset password
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-8 px-2 text-xs"
+            aria-label={`Merge ${person.display_name} with another account`}
+            onClick={() => setMerging(true)}
+          >
+            Merge…
+          </Button>
         </span>
       </div>
       {open && (
@@ -105,6 +117,9 @@ function Person({ person }: { person: PlayerSummary }) {
           <PersonCharacters playerId={person.id} />
         </div>
       )}
+      <Dialog title={`Merge ${person.display_name} with another account`} open={merging} onClose={() => setMerging(false)}>
+        {merging && <MergeAccounts person={person} onDone={() => setMerging(false)} />}
+      </Dialog>
     </li>
   );
 }

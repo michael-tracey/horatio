@@ -342,6 +342,10 @@ MESSAGES: dict[str, str] = {
     "account.password_reset": "{actor} set a new password with a reset link.",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
+    "account.merged": "The custodian, {actor}, merged @{merged_handle} into @{kept_handle},"
+    " the same person, moving {moved}: {reason}",
+    "account.merge_email_failed": "Horatio could not email @{kept_handle} at {to} about"
+    " their merged accounts: {error}",
     "character.moved": "The custodian, {actor}, moved {character} from @{from_handle} to"
     " @{to_handle}: {reason}",
     "character.domitor": "{actor} made {domitor} {character}'s domitor, of {clan}; discipline"

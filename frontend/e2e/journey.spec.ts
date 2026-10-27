@@ -3546,6 +3546,82 @@ test("the custodian moves a character to another player, not while its game is u
   await expect(b.getByRole("heading", { name: "Ottilie Marsh", level: 1 })).toBeVisible();
 });
 
+test("the custodian merges two accounts of one person: the characters and staff role move, and the other account is closed", async ({ browser }) => {
+  const custodian = await person(browser, "mga-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mga-lead");
+  const real = await person(browser, "mga-real");
+  const twice = await person(browser, "mga-twice");
+  const troupeName = `Court of Two Faces ${run}`;
+  const send = async (p: Page, method: "POST" | "PUT", url: string, data?: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  // The person signed up twice: the second account has a character at home in the
+  // troupe, and is one of its narrators.
+  const id = await builtVampire(twice.page, "Hester Vane", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });
+  const approval = await send(twice.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${approval.id}/approve`, {});
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: twice.handle, role: "narrator" });
+
+  // The custodian finds the second account on People and merges it into the first.
+  const c = custodian.page;
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(twice.email);
+  const row = c.locator("main li").filter({ hasText: twice.email }).first();
+  await row.getByRole("button", { name: "Merge mga-twice with another account" }).click();
+  const dialog = c.getByRole("dialog", { name: "Merge mga-twice with another account" });
+  await dialog.getByLabel("The same person's other account").fill(real.handle);
+  await dialog.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${real.handle}` }).click();
+  await dialog.getByRole("radio", { name: `@${real.handle}` }).check();
+  await dialog.getByLabel("Reason").fill("Signed up with Google and with email");
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(dialog.getByText(`Merge mga-twice @${twice.handle} into mga-real @${real.handle}? This can't be undone.`)).toBeVisible();
+  await expect(dialog.getByRole("listitem").filter({ hasText: "Hester Vane" })).toContainText(troupeName);
+  await expect(dialog.getByText(`${troupeName}: its narrator role`)).toBeVisible();
+  await expect(dialog.getByText(`@${twice.handle} will find @${real.handle}, for good`)).toBeVisible();
+  await c.screenshot(shots("merge-accounts-confirm"));
+  await dialog.getByRole("button", { name: `Merge into @${real.handle}` }).click();
+  await expect(dialog).toBeHidden();
+  // The closed account is no longer listed; searching its handle finds the other.
+  await c.getByLabel("Search people").fill(twice.handle);
+  await expect(c.locator("main li").filter({ hasText: real.email })).toBeVisible();
+  await expect(c.locator("main li").filter({ hasText: twice.email })).toHaveCount(0);
+
+  // The closed account is signed out, and can't sign in again.
+  const t = twice.page;
+  await t.goto("/characters");
+  await expect(t.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await t.getByLabel("Email or handle").fill(twice.email);
+  await t.getByLabel("Password").fill(PASSWORD);
+  await t.getByRole("button", { name: "Sign in" }).click();
+  await expect(t.getByText("Wrong email, handle or password.")).toBeVisible();
+
+  // The staying account has the character, and is told.
+  const r = real.page;
+  await r.reload();
+  // Its bell has the closed account's messages too.
+  await r.getByRole("button", { name: /^Notifications, \d+ waiting$/ }).click();
+  await expect(r.getByText(`The custodian merged your account @${twice.handle} into this one, @${real.handle}: Signed up with Google and with email`)).toBeVisible();
+  await r.keyboard.press("Escape");
+  await r.locator("main").getByRole("link", { name: /Hester Vane/ }).click();
+  await r.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  // Its history keeps who did it, saying whom they were merged into.
+  await expect(r.getByText(`mga-twice (merged into @${real.handle})`, { exact: false }).first()).toBeVisible();
+  await r.screenshot(shots("merge-accounts-log"));
+
+  // The lead is told, and the staying account is now on the troupe's staff.
+  await lead.page.reload();
+  await lead.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(
+    lead.page.getByText(`The custodian merged @${twice.handle} into @${real.handle}, the same person, moving Hester Vane, its narrator role: Signed up with Google and with email`),
+  ).toBeVisible();
+});
+
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {
   const custodian = await person(browser, "filter-custodian");
   makeCustodian(custodian.email);

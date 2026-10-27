@@ -18,7 +18,11 @@ def main(argv: list[str]) -> int:
         return 2
     email = argv[0]
     with get_sessionmaker()() as db, db.begin():
-        user = db.scalar(select(User).where(func.lower(User.email) == email.lower()))
+        user = db.scalar(
+            select(User).where(
+                func.lower(User.email) == email.lower(), User.merged_into_id.is_(None)
+            )
+        )
         if user is None:
             print(f"No account with email {email}. Sign up first.", file=sys.stderr)
             return 1

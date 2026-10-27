@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import aliased
 
-from horatio import handles
+from horatio import account_merges, handles
 from horatio.api.auth import Me, me
 from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
@@ -148,8 +148,9 @@ ACCOUNT_ACTIONS = (
 
 
 def player(db: DbSession, user_id: uuid.UUID) -> User:
+    """An account still open: a merged one is no one now."""
     found = db.get(User, user_id)
-    if found is None:
+    if found is None or found.merged_into_id is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such player.")
     return found
 
@@ -218,14 +219,25 @@ def clean_handle(handle: str | None) -> str | None:
 def find_players(
     db: DbSession, user: CurrentUser, q: str = "", troupe_id: uuid.UUID | None = None
 ) -> list[PlayerSummary]:
-    """Every account whose name, handle or email has `q` in it, for the custodian. With
-    `troupe_id`, only those with an active PC whose home troupe is that troupe."""
+    """Every account whose name, handle or email has `q` in it, or who holds it as a
+    former handle, for the custodian. With `troupe_id`, only those with an active PC
+    whose home troupe is that troupe. Never a merged account."""
     require_custodian(user)
-    query = select(User).order_by(func.lower(User.display_name)).limit(50)
+    query = (
+        select(User)
+        .where(User.merged_into_id.is_(None))
+        .order_by(func.lower(User.display_name))
+        .limit(50)
+    )
     if q.strip():
         like = f"%{q.strip().removeprefix('@')}%"
         query = query.where(
-            or_(User.display_name.ilike(like), User.handle.ilike(like), User.email.ilike(like))
+            or_(
+                User.display_name.ilike(like),
+                User.handle.ilike(like),
+                User.email.ilike(like),
+                handles.held(q),
+            )
         )
     if troupe_id is not None:
         query = query.where(
@@ -310,8 +322,12 @@ def change_handle(body: HandleIn, db: DbSession, user: CurrentUser) -> Me:
 @router.get("/players/{user_id}")
 def view_player(user_id: uuid.UUID, db: DbSession, user: CurrentUser) -> PlayerOut:
     """A player's profile. Anyone signed in may see it; it never shows their email
-    to anyone but themself and the custodian."""
-    return profile(db, user, player(db, user_id))
+    to anyone but themself and the custodian. A merged account's is the profile of
+    the account it was merged into."""
+    found = db.get(User, user_id)
+    if found is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such player.")
+    return profile(db, user, account_merges.staying(db, found))
 
 
 @router.put("/profile")
