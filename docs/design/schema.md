@@ -122,6 +122,24 @@ reconciliation changes what a purchase effectively cost, it adds a
 `settlement` entry pointing at the reconciliation item, so the original price
 and the correction both stay visible.
 
+**`held_statuses`** (issue #252): the fleeting and negative status a character
+holds (`horatio/sect_status.py`). `character_id`, `name` (the status trait),
+the patron as `patron_id` (a character of the holder's home troupe, set null if it
+is deleted), `patron_name` and `patron_title` (its name and the title it held
+then, kept as text) and `patron_text` (words of the giver's own; at least one of
+the pick and the words), `troupe_id` and `place` (where), `given_on`, `story`,
+`added_by`, and `game_id` (the Play View game it was given at, which does not count
+toward its end). It lives on the character, not a troupe: it counts in every game
+of the sect, and changing sect clears it. Abiding status comes from titles, social
+age and a faction, and innate status from grants, so neither is held: a
+`status_traits` row on a sheet is now only a grant's, or one from before that
+nothing gives, left for staff to resolve. Migration 0082 moved the sheets' fleeting
+and negative status here, from "(before Horatio)". **`status_ban_marks`**: staff
+saying a sect's status ban applies to a character (`applies` true) or that it is
+exempt (false), by `sect` and `ban` (who it applies to, as the rules word it), with
+a `reason` and `marked_by`. **`troupes.status_by`**: Status on sheets, `players`
+(the default: each keeps their own, naming the patron) or `staff`.
+
 **`long_texts`**: `character_id`, `kind` (for example `background`,
 `history`), `body`; unique on (`character_id`, `kind`).
 

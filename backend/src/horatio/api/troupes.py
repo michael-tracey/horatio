@@ -1,11 +1,12 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, handles, pictures, xp_range
+from horatio import audit, handles, pictures, sect_status, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import RuleSet, TraitCategory, TraitDefinition, Troupe, TroupeStaff, User
 from horatio.permissions import (
@@ -48,6 +49,9 @@ class TroupeOut(BaseModel):
     # House rule: what a diablerie does to a Lesser Generation or Thin Blooded flaw:
     # leave | remove | keep_xp (horatio.diablerie).
     diablerie_flaws: str
+    # Status on sheets (horatio.sect_status): "players" keep their own fleeting and
+    # negative status, naming the patron, or only "staff" add and remove it.
+    status_by: str
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
     portrait: str | None
     # Its banner, across the top of its page (add "/1500.webp" or "/750.webp"), or None.
@@ -73,6 +77,7 @@ class TroupeChanges(BaseModel):
     session_xp: int | None = Field(default=None, ge=0, le=100)
     downtime_xp: int | None = Field(default=None, ge=0, le=100)
     starting_xp: int | None = Field(default=None, ge=0, le=10000)
+    status_by: Literal["players", "staff"] | None = None
 
 
 class NewLead(BaseModel):
@@ -109,6 +114,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         starting_blood=troupe.starting_blood,
         influence_lookback_days=troupe.influence_lookback_days,
         diablerie_flaws=troupe.diablerie_flaws,
+        status_by=troupe.status_by,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
         public=troupe.public,
@@ -230,6 +236,16 @@ def change_troupe(
             troupe_id=troupe.id,
             session_xp=troupe.session_xp,
             downtime_xp=troupe.downtime_xp,
+        )
+    if body.status_by is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        troupe.status_by = body.status_by
+        audit.record(
+            db,
+            user,
+            "troupe.status_by",
+            troupe_id=troupe.id,
+            setting=sect_status.SETTING_TEXT[body.status_by],
         )
     if body.starting_xp is not None:
         # The floor and ceiling both start from it, so both move with it.

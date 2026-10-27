@@ -1,0 +1,68 @@
+import { describe, expect, it } from "vitest";
+import type { DerivedOut, EndingOut, PatronChoiceOut } from "../../api/types";
+import { bySource, endingText, findPatrons, patronLabel } from "./status";
+
+const day = (d: string) => `day ${d}`;
+const ending = (over: Partial<EndingOut>): EndingOut => ({
+  text: "",
+  not_before: null,
+  games_left: 0,
+  while_held: null,
+  this_game: false,
+  ...over,
+});
+
+describe("endingText", () => {
+  it("says the games and the day, whichever is later", () => {
+    expect(endingText(ending({ games_left: 2, not_before: "2026-11-26" }), day)).toBe(
+      "Ends after 2 more games, and not before day 2026-11-26",
+    );
+    expect(endingText(ending({ games_left: 1 }), day)).toBe("Ends after 1 more game");
+  });
+
+  it("says what a status lasting while another is held waits on", () => {
+    expect(endingText(ending({ while_held: "Warned", games_left: 2 }), day)).toBe(
+      "Lasts while Warned is held; then ends after 2 more games",
+    );
+  });
+
+  it("ends with the game it was given at", () => {
+    expect(endingText(ending({ this_game: true, games_left: 1 }), day)).toBe("Ends with the game it was given at");
+  });
+});
+
+const derived = (name: string, source: string, kind: DerivedOut["kind"] = "title"): DerivedOut => ({
+  name,
+  type: "Abiding",
+  source,
+  kind,
+  troupe_id: kind === "title" ? "t1" : null,
+  troupe_name: kind === "title" ? "Court" : null,
+  condition: "",
+});
+
+describe("bySource", () => {
+  it("groups derived status by title, age and merit", () => {
+    const groups = bySource([derived("Authority", "Prince"), derived("Commander", "Prince"), derived("Confirmed", "Elder", "social_age")]);
+    expect(groups.map((g) => [g.source, g.status.map((s) => s.name)])).toEqual([
+      ["Prince", ["Authority", "Commander"]],
+      ["Elder", ["Confirmed"]],
+    ]);
+  });
+});
+
+const patron = (name: string, title = ""): PatronChoiceOut => ({ id: name, name, kind: "pc", title });
+
+describe("patrons", () => {
+  it("shows the title held", () => {
+    expect(patronLabel(patron("Elena Varga", "Prince"))).toBe("Elena Varga (Prince)");
+    expect(patronLabel(patron("Tomas Reyes"))).toBe("Tomas Reyes");
+  });
+
+  it("finds by name or title, names starting with it first", () => {
+    const all = [patron("Ava Prince"), patron("Elena Varga", "Prince"), patron("Tomas Reyes")];
+    expect(findPatrons(all, "prince").map((p) => p.name)).toEqual(["Ava Prince", "Elena Varga"]);
+    expect(findPatrons(all, "tom").map((p) => p.name)).toEqual(["Tomas Reyes"]);
+    expect(findPatrons(all, "")).toHaveLength(3);
+  });
+});

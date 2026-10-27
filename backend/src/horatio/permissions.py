@@ -54,6 +54,7 @@ class TroupeAction(StrEnum):
     VIEW_LOG = "view_log"
     MANAGE_NPCS = "manage_npcs"
     MANAGE_TITLES = "manage_titles"
+    CHANGE_STATUS = "change_status"
     RESET_GAMES = "reset_games"
     MANAGE_INFLUENCE_LOG = "manage_influence_log"
     MANAGE_SHARED_BACKGROUNDS = "manage_shared_backgrounds"
@@ -88,6 +89,10 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.VIEW_LOG: frozenset(_RUNNING),
     TroupeAction.MANAGE_NPCS: frozenset(_RUNNING),
     TroupeAction.MANAGE_TITLES: frozenset(_RUNNING),
+    # Adding and removing a character's fleeting and negative status, and marking
+    # its status bans, whatever the troupe's Status on sheets setting says
+    # (horatio.sect_status).
+    TroupeAction.CHANGE_STATUS: frozenset(_RUNNING),
     # Resetting every character's Play View after a game.
     TroupeAction.RESET_GAMES: frozenset(_RUNNING),
     # Reading and keeping the troupe's influence log. Players never see it.

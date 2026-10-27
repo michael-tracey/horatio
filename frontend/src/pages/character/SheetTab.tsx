@@ -53,6 +53,7 @@ import { PowerChoices } from "./PowerChoices";
 import { InfluenceEffects } from "./InfluenceEffects";
 import { DomitorCard } from "./Domitor";
 import { EmbraceCard } from "./Embrace";
+import { StatusCard } from "./StatusCard";
 import { useHasDomitor } from "./splats";
 
 function useSheet(characterId: string) {
@@ -242,7 +243,7 @@ export function SheetTab({
   const lastRetainers = s.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1)?.id;
   // Identity (clan, sect...) is shown with the name, in the page title.
   // Specialisations show under their skill or background, not as traits of their own,
-  // and health levels as boxes in a part of their own.
+  // health levels as boxes in a part of their own, and sect status in its own card.
   const specCategories = new Set(
     catalogue.data?.categories.filter((c) => c.specializes).map((c) => c.key),
   );
@@ -251,7 +252,8 @@ export function SheetTab({
       (t) =>
         t.rating !== null &&
         !specCategories.has(t.category) &&
-        t.category !== "health_levels",
+        t.category !== "health_levels" &&
+        t.category !== "status_traits",
     ),
     catalogue.data,
   );
@@ -363,6 +365,7 @@ export function SheetTab({
         )}
         <ExceptionsCard exceptions={s.exceptions} />
         <DiablerieCard character={character} mine={mine} />
+        <StatusCard character={character} />
         {parts.length === 0 && (
           <Empty>
             The sheet is empty{mine ? "" : " until the player builds it"}.

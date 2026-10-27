@@ -427,7 +427,16 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
           </ul>
         </Section>
         <Section title="Status">
-          <TraitList traits={by(t, "status_traits")} empty={3} />
+          <ul className="text-[11px] leading-5">
+            {sheet.status.map((name, i) => (
+              <li key={`${name}/${i}`} className="border-b border-dotted border-neutral-400">
+                {name}
+              </li>
+            ))}
+            {Array.from({ length: Math.max(0, 3 - sheet.status.length) }, (_, i) => (
+              <li key={`blank${i}`} className="h-5 border-b border-dotted border-neutral-400" />
+            ))}
+          </ul>
         </Section>
         <Section title="Test Pools">
           <p className="text-[12px]">

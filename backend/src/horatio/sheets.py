@@ -36,6 +36,7 @@ from horatio.models import (
     Character,
     CharacterTrait,
     DisciplinePurchase,
+    HeldStatus,
     Retainer,
     RuleSet,
     SheetVersion,
@@ -61,6 +62,7 @@ from horatio.rules.pricing import (
     trait_cost,
 )
 from horatio.rules.splats import SPLATS
+from horatio.rules.status import STATUS_CATEGORY
 from horatio.rules.store import read_troupe_rules
 
 if TYPE_CHECKING:
@@ -866,10 +868,36 @@ def not_for_sale(
 
 
 def sheet_effects(db: Session, character: Character) -> Effects:
-    """What the sheet's grants do."""
+    """What the sheet's grants do. A grant's condition sees the status the character
+    holds (horatio.sect_status) as if on the sheet: Prestigious Sire gives nothing
+    while it holds Disgraced."""
     rule_set = rules_for(db, character).rule_set
     sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
-    return effects(rule_set.grants, sheet, rule_set)
+    return effects(rule_set.grants, sheet + held_status(db, character, rule_set, sheet), rule_set)
+
+
+def held_status(
+    db: Session, character: Character, rule_set: RuleSetData, sheet: Sequence[SheetTrait]
+) -> list[SheetTrait]:
+    """The held status the rule set's grant conditions name, as sheet traits."""
+    named = {
+        name
+        for g in rule_set.grants
+        for category, name in traits_in(g.when)
+        if category == STATUS_CATEGORY and name
+    }
+    on_sheet = {t.name for t in sheet if t.category == STATUS_CATEGORY and t.rating}
+    wanted = named - on_sheet
+    if not wanted:
+        return []
+    return [
+        SheetTrait(category=STATUS_CATEGORY, name=name, rating=1)
+        for name in db.scalars(
+            select(HeldStatus.name)
+            .where(HeldStatus.character_id == character.id, HeldStatus.name.in_(wanted))
+            .distinct()
+        )
+    ]
 
 
 def convert(
@@ -1386,6 +1414,12 @@ def checked(
 CUSTOM_ARCHETYPE = ("archetype", "Other…")
 
 
+def chosen(db: Session, character: Character, category: str) -> str | None:
+    """The character's choice in an unrated category, such as its sect."""
+    rows = sheet_rows(db, character)
+    return next((r.definition.name for r in rows if r.category.key == category), None)
+
+
 def replace_choice(
     db: Session,
     character: Character,
@@ -1482,6 +1516,11 @@ def quote_change(
         if rating is not None:
             raise unprocessable(f"{category.name} has no rating.")
         return None, None
+    if category.key == STATUS_CATEGORY:
+        raise unprocessable(
+            "Status is not bought: titles, social age and merits give it, and the"
+            " sheet's Status section keeps fleeting and negative status."
+        )
     if category.derived:
         raise unprocessable(
             f"{category.name} come from the rest of the sheet; "
@@ -1654,10 +1693,15 @@ def set_trait(
         quote_change(db, character, category_key, name, detail, rating)  # validates
         if (category.key, name) == CUSTOM_ARCHETYPE and not detail.strip():
             raise unprocessable("Name the archetype.")
+        sect = chosen(db, character, "sect")
         trait = replace_choice(db, character, definition, category, detail)
         if note is not None:
             trait.note = note
         db.flush()
+        if category.key == "sect" and name != sect:
+            from horatio import sect_status  # imports this module
+
+            sect_status.clear(db, player, character, name)
         audit.record(
             db, player, "sheet.choose", character_id=character.id, category=category.key, name=name
         )

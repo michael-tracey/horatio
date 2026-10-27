@@ -258,6 +258,9 @@ specializes = { category = "backgrounds", name = "Influences: The Underworld" }
 key = "status_traits"
 name = "Sect Status"
 group = "Backgrounds"
+# Never bought: titles, social age and merits give status, and the sheet's Status
+# section keeps fleeting and negative status (horatio.sect_status).
+derived = true
 
 [[categories]]
 key = "merits"

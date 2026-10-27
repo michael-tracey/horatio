@@ -24,15 +24,19 @@ from horatio.models import (
     Answer,
     Approval,
     Character,
+    CharacterTrait,
     CycleParticipant,
     DowntimeCycle,
     InfluenceEntry,
     Response,
     Submission,
+    TraitCategory,
+    TraitDefinition,
     Troupe,
     User,
 )
 from horatio.permissions import TroupeAction, allows, require_troupe_action, troupe_role
+from horatio.rules.status import STATUS_CATEGORY
 
 router = APIRouter(tags=["troupes"])
 
@@ -242,6 +246,35 @@ def shortfalls(db: Session, _user: User, troupe: Troupe) -> list[WaitingLine]:
     return lines
 
 
+def status_to_resolve(db: Session, _user: User, troupe: Troupe) -> list[WaitingLine]:
+    """The troupe's characters holding status traits from before status was derived
+    that nothing gives now (horatio.sect_status.resolve). The link opens the first."""
+    found = list(
+        db.scalars(
+            select(Character.id)
+            .join(CharacterTrait, CharacterTrait.character_id == Character.id)
+            .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
+            .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+            .where(
+                (Character.home_troupe_id == troupe.id) | (Character.owner_troupe_id == troupe.id),
+                Character.status == "active",
+                TraitCategory.key == STATUS_CATEGORY,
+                func.coalesce(CharacterTrait.rating, 0) > CharacterTrait.granted_rating,
+            )
+            .distinct()
+            .order_by(Character.id)
+        )
+    )
+    return [
+        WaitingLine(
+            kind="status_to_resolve",
+            label="Characters with old status to resolve",
+            count=len(found),
+            link=f"/characters/{found[0]}" if found else "",
+        )
+    ]
+
+
 # Each kind of work, with what a staff member must be allowed to do to see it.
 LINES: list[tuple[TroupeAction, Gather]] = [
     (TroupeAction.APPROVE_CHANGES, approvals),
@@ -251,6 +284,7 @@ LINES: list[tuple[TroupeAction, Gather]] = [
     (TroupeAction.MANAGE_INFLUENCE_LOG, influence_details),
     (TroupeAction.MANAGE_INFLUENCE_LOG, effects_ending),
     (TroupeAction.ADJUST_ALLOWANCES, shortfalls),
+    (TroupeAction.CHANGE_STATUS, status_to_resolve),
 ]
 
 

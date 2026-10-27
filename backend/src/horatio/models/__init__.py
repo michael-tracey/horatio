@@ -61,6 +61,7 @@ from horatio.models.rules import (
 )
 from horatio.models.scenes import Scene, SceneCharacter
 from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
+from horatio.models.status import HeldStatus, StatusBanMark
 from horatio.models.troupes import (
     CharacterTitle,
     ScheduledGame,
@@ -77,6 +78,7 @@ __all__ = [
     "ActionKind",
     "AppliedHouseTrait",
     "HouseTrait",
+    "HeldStatus",
     "AllowanceAdjustment",
     "AllowanceRule",
     "Answer",
@@ -84,6 +86,7 @@ __all__ = [
     "Delivery",
     "Diablerie",
     "Embrace",
+    "StatusBanMark",
     "DisciplinePurchase",
     "DowntimeCycle",
     "EmailNotice",

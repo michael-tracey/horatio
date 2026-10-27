@@ -7,12 +7,14 @@ import { Card, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import type { abilities } from "./roles";
+import { StatusSetting } from "./StatusSetting";
 import { XpRangeCard } from "./XpRange";
 
 /**
  * The troupe at a glance: what it is, when it next plays, who leads it, which
- * splats and sects may join, and its XP floor and ceiling; for its staff, what is waiting
- * on them. The full profile is on the Profile tab.
+ * splats and sects may join, who keeps status on sheets, and its XP floor and
+ * ceiling; for its staff, what is waiting on them. The full profile is on the
+ * Profile tab.
  */
 export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
   const base = `/troupes/${troupe.id}`;
@@ -22,6 +24,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
       <Summary troupe={troupe} />
       <SplatsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
+      <StatusSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       <div className="md:col-span-2">
         <XpRangeCard
           troupeId={troupe.id}
