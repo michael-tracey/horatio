@@ -3814,6 +3814,113 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await expect(a.getByText("Lead Storyteller").first()).toBeVisible();
 });
 
+test("archiving a troupe lets its characters go and ends its cycle, and the custodian reopens it", async ({ browser }) => {
+  const custodian = await person(browser, "closing-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "closing-lead");
+  const player = await person(browser, "closing-player");
+  const visitor = await person(browser, "closing-visit");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const troupeName = `Court of Last Lamps ${run}`;
+  const troupeId = (await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle })).id;
+  const otherId = (await send(custodian.page, "POST", "/api/troupes", { name: `Court of Far Lamps ${run}`, lead_handle: lead.handle })).id;
+  // A Brujah built through the API and accepted home in `home`.
+  const build = async (page: Page, name: string, home: string): Promise<string> => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: home });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+
+  // Mireille is at home here, mid-game and in an open cycle; Tobias, at home in
+  // another troupe, visits.
+  const mireille = await build(player.page, "Mireille", troupeId);
+  const tobias = await build(visitor.page, "Tobias", otherId);
+  await send(visitor.page, "POST", `/api/characters/${tobias}/troupes`, { troupe_id: troupeId });
+  const tap = { id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: "blood", amount: -1 };
+  await send(player.page, "POST", `/api/characters/${mireille}/play/taps`, { taps: [tap] });
+  const day = 24 * 60 * 60 * 1000;
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupeId}/cycles`, {
+    name: "Lamplight",
+    closes_at: new Date(Date.now() + 7 * day).toISOString(),
+    grace_ends_at: new Date(Date.now() + 14 * day).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`, {});
+
+  // The lead archives it from the Profile tab, seeing first what that settles.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/profile`);
+  await l.getByRole("button", { name: "Archive troupe…" }).click();
+  const dialog = l.getByRole("dialog", { name: `Archive ${troupeName}` });
+  await expect(dialog.getByText("leave these characters with no home troupe: Mireille (closing-player)")).toBeVisible();
+  await expect(dialog.getByText("end these characters' visits: Tobias (closing-visit)")).toBeVisible();
+  await expect(dialog.getByText("end the open downtime cycle, Lamplight, without answering or delivering it")).toBeVisible();
+  await expect(dialog.getByText(/end the games under way .*: Mireille/)).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Archive troupe" })).toBeDisabled();
+  await dialog.getByLabel("Reason").fill("The chronicle has ended");
+  await l.screenshot(shots("archive-troupe"));
+  await dialog.getByRole("button", { name: "Archive troupe" }).click();
+  await expect(l).toHaveURL(/\/troupes$/);
+  await expect(l.locator("main").getByRole("link", { name: troupeName })).toHaveCount(0);
+
+  // Both players are told; Mireille has no home troupe now and Tobias still has his.
+  const p = player.page;
+  await p.reload();
+  await p.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(p.getByText(`${troupeName} is archived (The chronicle has ended): Mireille has no home troupe now`, { exact: false })).toBeVisible();
+  await p.keyboard.press("Escape");
+  const memberships = await p.request.get(`/api/characters/${mireille}/troupes`, { headers });
+  expect(await memberships.json()).toEqual([]);
+  await visitor.page.reload();
+  await visitor.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(visitor.page.getByText(`${troupeName} is archived (The chronicle has ended): Tobias no longer visits it`)).toBeVisible();
+
+  // The custodian finds it under Archived troupes, with who archived it, why, and
+  // the characters it had; its log is still there to read.
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Archived troupes" }).click();
+  const card = c.getByRole("listitem").filter({ has: c.getByRole("heading", { name: troupeName }) });
+  await expect(card.getByText("The chronicle has ended")).toBeVisible();
+  await expect(card.getByRole("link", { name: "closing-lead" })).toBeVisible();
+  await expect(card.getByRole("link", { name: "Mireille" })).toBeVisible();
+  await expect(card.getByRole("link", { name: "Tobias" })).toBeVisible();
+  await c.screenshot(shots("archived-troupes"));
+  await card.getByRole("link", { name: "Log", exact: true }).click();
+  await expect(c.getByText("closing-lead archived the troupe (The chronicle has ended).")).toBeVisible();
+  await expect(c.getByText("closing-lead ended the downtime cycle Lamplight unanswered, as the troupe was archived.")).toBeVisible();
+
+  // Reopened, it is running again, but Mireille does not come back by herself.
+  await c.goBack();
+  await card.getByRole("button", { name: "Reopen…" }).click();
+  const reopen = c.getByRole("dialog", { name: `Reopen ${troupeName}` });
+  await reopen.getByLabel("Reason").fill("A new chronicle");
+  await reopen.getByRole("button", { name: "Reopen troupe" }).click();
+  await expect(c.getByRole("heading", { name: troupeName })).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}`);
+  await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
+  expect(await (await p.request.get(`/api/characters/${mireille}/troupes`, { headers })).json()).toEqual([]);
+});
+
 test("a player renames their character once in three months, and the custodian any time", async ({ browser }) => {
   const custodian = await person(browser, "rename-custodian");
   makeCustodian(custodian.email);

@@ -3463,6 +3463,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Archived
+         * @description The custodian's list of archived troupes, latest first, with what each had.
+         */
+        get: operations["list_archived_api_troupes_archived_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}": {
         parameters: {
             query?: never;
@@ -3474,11 +3494,7 @@ export interface paths {
         get: operations["read_troupe_api_troupes__troupe_id__get"];
         put?: never;
         post?: never;
-        /**
-         * Archive Troupe
-         * @description Deleting a troupe archives it: closed to use, history kept.
-         */
-        delete: operations["archive_troupe_api_troupes__troupe_id__delete"];
+        delete?: never;
         options?: never;
         head?: never;
         /** Change Troupe */
@@ -3538,6 +3554,27 @@ export interface paths {
         get: operations["troupe_approvals_api_troupes__troupe_id__approvals_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive Troupe
+         * @description Deleting a troupe archives it: closed to use, history kept. What it held is
+         *     settled first (horatio.closing), and everyone affected is told.
+         */
+        post: operations["archive_troupe_api_troupes__troupe_id__archive_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3691,6 +3728,26 @@ export interface paths {
         get?: never;
         /** Change Check */
         put: operations["change_check_api_troupes__troupe_id__checks__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/closing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Closing
+         * @description What archiving the troupe would settle; for an archived one, what is left to.
+         */
+        get: operations["preview_closing_api_troupes__troupe_id__closing_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -4494,6 +4551,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen Troupe
+         * @description The custodian reopens an archived troupe. Its characters do not come back.
+         */
+        post: operations["reopen_troupe_api_troupes__troupe_id__reopen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/scenes": {
         parameters: {
             query?: never;
@@ -4558,6 +4635,26 @@ export interface paths {
          * @description Take a character off the scene. It stays in the troupe, as it was.
          */
         delete: operations["unpin_api_troupes__troupe_id__scenes__scene_id__characters__character_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle Archived
+         * @description The custodian settles a troupe archived before archiving settled anything.
+         */
+        post: operations["settle_archived_api_troupes__troupe_id__settle_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5143,6 +5240,53 @@ export interface components {
         ArchiveIn: {
             /** Archived */
             archived: boolean;
+        };
+        /** ArchivedCharacter */
+        ArchivedCharacter: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Home */
+            home: boolean;
+            /** Kind */
+            kind: string;
+            /** Left */
+            left: boolean;
+            /** Name */
+            name: string;
+            /** Player Id */
+            player_id: string | null;
+            /** Player Name */
+            player_name: string;
+        };
+        /** ArchivedTroupeOut */
+        ArchivedTroupeOut: {
+            /**
+             * Archived At
+             * Format: date-time
+             */
+            archived_at: string;
+            /** Archived By Id */
+            archived_by_id: string | null;
+            /** Archived By Name */
+            archived_by_name: string | null;
+            /** Characters */
+            characters: components["schemas"]["ArchivedCharacter"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lead Name */
+            lead_name: string;
+            /** Name */
+            name: string;
+            /** Reason */
+            reason: string | null;
+            /** Unsettled */
+            unsettled: boolean;
         };
         /** Assignment */
         Assignment: {
@@ -5865,6 +6009,34 @@ export interface components {
         Cleared: {
             /** Removed */
             removed: number;
+        };
+        /** ClosingCharacter */
+        ClosingCharacter: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Name */
+            name: string;
+            /** Player Name */
+            player_name: string;
+        };
+        /**
+         * ClosingOut
+         * @description What archiving the troupe settles, or settled (horatio.closing).
+         */
+        ClosingOut: {
+            /** Cycle */
+            cycle: string | null;
+            /** Games */
+            games: components["schemas"]["ClosingCharacter"][];
+            /** Home */
+            home: components["schemas"]["ClosingCharacter"][];
+            /** Npcs */
+            npcs: components["schemas"]["ClosingCharacter"][];
+            /** Visiting */
+            visiting: components["schemas"]["ClosingCharacter"][];
         };
         /**
          * ConditionOut
@@ -10468,6 +10640,11 @@ export interface components {
         ReadIds: {
             /** Ids */
             ids?: string[] | null;
+        };
+        /** Reason */
+        Reason: {
+            /** Reason */
+            reason: string;
         };
         /** ReceivedOut */
         ReceivedOut: {
@@ -19826,6 +20003,26 @@ export interface operations {
             };
         };
     };
+    list_archived_api_troupes_archived_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchivedTroupeOut"][];
+                };
+            };
+        };
+    };
     read_troupe_api_troupes__troupe_id__get: {
         parameters: {
             query?: never;
@@ -19845,35 +20042,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    archive_troupe_api_troupes__troupe_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                troupe_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -20082,6 +20250,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueuedApproval"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_troupe_api_troupes__troupe_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Reason"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosingOut"];
                 };
             };
             /** @description Validation Error */
@@ -20379,6 +20582,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_closing_api_troupes__troupe_id__closing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosingOut"];
                 };
             };
             /** @description Validation Error */
@@ -22105,6 +22339,41 @@ export interface operations {
             };
         };
     };
+    reopen_troupe_api_troupes__troupe_id__reopen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Reason"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_scenes_api_troupes__troupe_id__scenes_get: {
         parameters: {
             query?: {
@@ -22357,6 +22626,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_archived_api_troupes__troupe_id__settle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Reason"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosingOut"];
                 };
             };
             /** @description Validation Error */

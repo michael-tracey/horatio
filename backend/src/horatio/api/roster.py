@@ -241,7 +241,14 @@ MESSAGES: dict[str, str] = {
     "staff.removed": "{actor} removed {member} from the staff.",
     "troupe.lead_appointed": "{actor} appointed {member} lead storyteller.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
-    "troupe.archived": "{actor} archived the troupe.",
+    "troupe.archived": "{actor} archived the troupe{because}.",
+    "troupe.settled.home": "{character} left {troupe} as it was archived, and has no home troupe"
+    " now{because}.",
+    "troupe.settled.visit": "{character}'s visit to {troupe} ended as it was archived{because}.",
+    "troupe.settled_later": "{actor} settled what the archived troupe still held{because}.",
+    "troupe.reopened": "{actor} reopened the troupe{because}.",
+    "downtime.cycle_ended": "{actor} ended the downtime cycle {name} unanswered, as the troupe"
+    " was archived.",
     "troupe.profile_changed": "{actor} changed the troupe's profile.",
     "troupe.public": "{actor} made the troupe's profile {state}.",
     "troupe.game_added": "{actor} added a game to the troupe's schedule.",
