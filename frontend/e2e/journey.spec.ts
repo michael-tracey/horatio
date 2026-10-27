@@ -3550,6 +3550,103 @@ test("the custodian filters People by the troupe a player's active character is 
   await expect(list.filter({ hasText: visitor.email })).toBeVisible();
 });
 
+test("the custodian moves a character to another player, not while its game is under way, and back again", async ({ browser }) => {
+  const custodian = await person(browser, "mvc-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mvc-lead");
+  const before = await person(browser, "mvc-before");
+  const after = await person(browser, "mvc-after");
+  const troupeName = `Court of Second Hands ${run}`;
+  const send = async (p: Page, method: "GET" | "POST", url: string, data?: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  // The character was built on the wrong account, and is at home in the troupe.
+  const id = await builtVampire(before.page, "Ottilie Marsh", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });
+  const approval = await send(before.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${approval.id}/approve`, {});
+  // Its player is at a game with it: a tap on the Play View.
+  await send(before.page, "GET", `/api/characters/${id}/play`);
+  await send(before.page, "POST", `/api/characters/${id}/play/taps`, {
+    taps: [{ id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: "blood", amount: -1 }],
+  });
+
+  // The custodian finds the player on People, opens their characters and moves it.
+  const c = custodian.page;
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(before.email);
+  const row = c.locator("main li").filter({ hasText: before.email }).first();
+  await row.getByRole("button", { name: "Characters of mvc-before" }).click();
+  await expect(row.getByRole("link", { name: /Ottilie Marsh/ })).toContainText(troupeName);
+  await row.getByRole("button", { name: "Move Ottilie Marsh to another player" }).click();
+  const dialog = c.getByRole("dialog", { name: "Move Ottilie Marsh to another player" });
+  await expect(dialog.getByText(`Ottilie Marsh is played by mvc-before @${before.handle}.`)).toBeVisible();
+  await dialog.getByLabel("New player").fill(after.handle);
+  await dialog.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${after.handle}` }).click();
+  await dialog.getByLabel("Reason").fill("Signed up twice; this is their real account");
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(dialog.getByText(`Its home troupe is ${troupeName}.`, { exact: false })).toBeVisible();
+  await expect(dialog.getByText("Its sheet, XP, history, titles and status go with it.")).toBeVisible();
+  await expect(dialog.getByText(`@${before.handle} can no longer open it; @${after.handle} can, at once.`)).toBeVisible();
+  // Its game is under way, so the move waits until the game ends.
+  await expect(dialog.getByText("Ottilie Marsh is in a game on the Play View. End it first with Reset for next game, so the game isn't split between two people.")).toBeVisible();
+  const confirm = dialog.getByRole("button", { name: `Move Ottilie Marsh to @${after.handle}` });
+  await expect(confirm).toBeDisabled();
+  await c.screenshot(shots("move-character-refused"));
+
+  // The lead ends the troupe's games, and the move goes ahead.
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/play/reset`);
+  await dialog.getByRole("button", { name: "Back" }).click();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(confirm).toBeEnabled();
+  await c.screenshot(shots("move-character-confirm"));
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+
+  // The new player has it in their vault, with its history and the move in its log.
+  const a = after.page;
+  await a.reload();
+  await a.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(a.getByText(`The custodian moved Ottilie Marsh to you from @${before.handle}: Signed up twice; this is their real account`)).toBeVisible();
+  await a.keyboard.press("Escape");
+  await a.locator("main").getByRole("link", { name: /Ottilie Marsh/ }).click();
+  await a.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(
+    a.getByText(`The custodian, mvc-custodian, moved Ottilie Marsh (mvc-after) from @${before.handle} to @${after.handle}: Signed up twice; this is their real account`),
+  ).toBeVisible();
+  await expect(a.getByText(/^mvc-lead accepted Ottilie Marsh/)).toBeVisible();
+  await a.screenshot(shots("move-character-log"));
+
+  // The old player can no longer open it, and they and the lead are told.
+  const b = before.page;
+  await b.goto(`/characters/${id}`);
+  await expect(b.getByText("No such character.")).toBeVisible();
+  await b.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(b.getByText(`The custodian moved Ottilie Marsh to @${after.handle}: Signed up twice; this is their real account`)).toBeVisible();
+  await lead.page.reload();
+  await lead.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(lead.page.getByText(`The custodian moved Ottilie Marsh from @${before.handle} to @${after.handle}`, { exact: false })).toBeVisible();
+
+  // Undoing it is another move, back, from the character's own page.
+  await c.goto(`/characters/${id}`);
+  await c.getByRole("button", { name: "More for Ottilie Marsh" }).click();
+  await c.getByRole("menuitem", { name: "Move to another player…" }).click();
+  const back = c.getByRole("dialog", { name: "Move Ottilie Marsh to another player" });
+  await expect(back.getByText(`Ottilie Marsh is played by mvc-after @${after.handle}.`)).toBeVisible();
+  await back.getByLabel("New player").fill(before.handle);
+  await back.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${before.handle}` }).click();
+  await back.getByLabel("Reason").fill("Moved by mistake");
+  await back.getByRole("button", { name: "Continue" }).click();
+  await back.getByRole("button", { name: `Move Ottilie Marsh to @${before.handle}` }).click();
+  await expect(back).toBeHidden();
+  await b.goto(`/characters/${id}`);
+  await expect(b.getByRole("heading", { name: "Ottilie Marsh", level: 1 })).toBeVisible();
+});
+
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {
   const custodian = await person(browser, "filter-custodian");
   makeCustodian(custodian.email);

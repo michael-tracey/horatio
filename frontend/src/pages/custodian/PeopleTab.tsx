@@ -7,6 +7,7 @@ import { LogList } from "../../components/LogList";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { memberSince } from "../players";
+import { PersonCharacters } from "./MoveCharacter";
 import { ResetPassword, useCancelReset } from "./ResetPassword";
 
 /** Every account, for the custodian: find someone by name, handle or email, or by the troupe an active character
@@ -59,6 +60,7 @@ export function PeopleTab() {
 
 function Person({ person }: { person: PlayerSummary }) {
   const [open, setOpen] = useState(false);
+  const [characters, setCharacters] = useState(false);
   const dates = useDates();
   return (
     <li className="py-2">
@@ -75,6 +77,16 @@ function Person({ person }: { person: PlayerSummary }) {
             type="button"
             variant="ghost"
             className="min-h-8 px-2 text-xs"
+            aria-expanded={characters}
+            aria-label={`Characters of ${person.display_name}`}
+            onClick={() => setCharacters(!characters)}
+          >
+            Characters
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-8 px-2 text-xs"
             aria-expanded={open}
             aria-label={`Reset password for ${person.display_name}`}
             onClick={() => setOpen(!open)}
@@ -86,6 +98,11 @@ function Person({ person }: { person: PlayerSummary }) {
       {open && (
         <div className="mt-2 rounded-md border border-ash bg-night/40 p-3">
           <ResetPassword player={person} />
+        </div>
+      )}
+      {characters && (
+        <div className="mt-2 rounded-md border border-ash bg-night/40 p-3">
+          <PersonCharacters playerId={person.id} />
         </div>
       )}
     </li>
