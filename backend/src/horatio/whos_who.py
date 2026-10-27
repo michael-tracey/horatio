@@ -24,9 +24,9 @@ carries into a game here, which is public in the sect anyway (p. 312).
   someone holds Primogen for it here; a troupe where no one does seats every clan;
 - no longer with us: retired characters the troupe lists.
 
-Character and player pronouns (#265), who represents a clan without a seat (#267)
-and why a character left (#268) each have their place in an entry, empty until
-those land.
+Each entry has the character's pronouns and its player's (horatio.pronouns). Who
+represents a clan without a seat (#267) and why a character left (#268) each have
+their place in an entry, empty until those land.
 """
 
 import uuid
@@ -61,9 +61,10 @@ class Entry:
     # Its home troupe's name, for a visiting character.
     visiting_from: str | None
     visiting: bool
-    # Filled in by #265, #267 and #268.
+    # The character's pronouns and its player's, if they gave them.
     pronouns: str | None = None
     player_pronouns: str | None = None
+    # Filled in by #267 and #268.
     represented_by: str | None = None
     left_reason: str | None = None
 
@@ -177,6 +178,8 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
                 social_age=standing[c.id].age,
                 sect=sects.get(c.id),
                 player=player_name(players[c.player_id]) if c.kind == "pc" else None,
+                pronouns=c.pronouns,
+                player_pronouns=players[c.player_id].pronouns if c.kind == "pc" else None,
                 titles=held.get(c.id, []),
                 visible=visible[c.id],
                 bans=bans(db, c),

@@ -82,6 +82,9 @@ class Character(Imported, Record):
     # Staff list this NPC on its troupe's Who's Who though it holds no title there
     # (horatio.whos_who). Titled NPCs are listed anyway.
     on_whos_who: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Its pronouns, as its player (or an NPC's staff) wrote them: "she/her", "any".
+    # None for none given (horatio.pronouns).
+    pronouns: Mapped[str | None]
 
 
 class CharacterTrait(Record):

@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import aliased
 
-from horatio import handles, suspensions
+from horatio import handles, pronouns, suspensions
 from horatio.api.auth import Me, me
 from horatio.api.email_changes import PendingEmail, pending
 from horatio.api.roster import LogEntry, log_entries
@@ -57,6 +57,8 @@ class PlayerOut(BaseModel):
     handle: str
     # When they joined: the account's creation, carried over from Yorick if imported.
     member_since: datetime
+    # Such as "they/them"; None for none given.
+    pronouns: str | None
     bio: str | None
     links: list[Link]
     discord_handle: str | None
@@ -89,6 +91,8 @@ class PlayerSummary(BaseModel):
 
 class ProfileIn(BaseModel):
     display_name: str = Field(min_length=1, max_length=100)
+    # Empty for none; None leaves them as they are.
+    pronouns: str | None = None
     bio: str | None = None
     links: list[Link] = []
     discord_handle: str | None = None
@@ -175,6 +179,7 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
         display_name=user.display_name,
         handle=user.handle,
         member_since=user.created_at,
+        pronouns=user.pronouns,
         bio=user.bio,
         links=[Link(**link) for link in user.links],
         discord_handle=user.discord_handle,
@@ -343,6 +348,7 @@ def edit_profile(body: ProfileIn, db: DbSession, user: CurrentUser) -> PlayerOut
     name = body.display_name.strip()
     if not name:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Give a display name.")
+    said = user.pronouns if body.pronouns is None else pronouns.clean(body.pronouns)
     bio = (body.bio or "").strip()
     if len(bio) > MAX_BIO:
         raise HTTPException(
@@ -354,6 +360,7 @@ def edit_profile(body: ProfileIn, db: DbSession, user: CurrentUser) -> PlayerOut
             status.HTTP_422_UNPROCESSABLE_CONTENT, f"Give at most {MAX_LINKS} links."
         )
     user.display_name = name
+    user.pronouns = said
     user.bio = bio or None
     user.links = [clean_link(link).model_dump() for link in links]
     user.discord_handle = clean_handle(body.discord_handle)

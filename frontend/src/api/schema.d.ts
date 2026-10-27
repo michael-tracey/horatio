@@ -1727,6 +1727,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/pronouns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Pronouns
+         * @description Set the character's pronouns: its player, or for an NPC its troupe's staff.
+         */
+        put: operations["set_pronouns_api_characters__character_id__pronouns_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/quote": {
         parameters: {
             query?: never;
@@ -5859,6 +5879,8 @@ export interface components {
             negative: string[];
             /** Picture */
             picture: string | null;
+            /** Pronouns */
+            pronouns: string | null;
             /** Social Age */
             social_age: string;
             /** Status */
@@ -5872,6 +5894,8 @@ export interface components {
         BadgesOut: {
             /** Badges */
             badges: components["schemas"]["BadgeOut"][];
+            /** Print Pronouns */
+            print_pronouns: boolean;
             /** Print Status */
             print_status: string;
             /** Print Titles */
@@ -6420,6 +6444,8 @@ export interface components {
              * Format: uuid
              */
             player_id: string;
+            /** Pronouns */
+            pronouns: string | null;
             /** Splat */
             splat: string;
             /** Status */
@@ -10141,6 +10167,8 @@ export interface components {
              * Format: uuid
              */
             player_id: string;
+            /** Pronouns */
+            pronouns: string | null;
             /** Splat */
             splat: string;
             /** Status */
@@ -10213,6 +10241,8 @@ export interface components {
             kind: string;
             /** Name */
             name: string;
+            /** Pronouns */
+            pronouns: string | null;
             /** Same Sect */
             same_sect: boolean;
             /** Sect */
@@ -10833,6 +10863,8 @@ export interface components {
              * Format: date-time
              */
             member_since: string;
+            /** Pronouns */
+            pronouns: string | null;
             /** Reset Expires At */
             reset_expires_at: string | null;
         };
@@ -11310,6 +11342,8 @@ export interface components {
              * @default []
              */
             links: components["schemas"]["Link"][];
+            /** Pronouns */
+            pronouns?: string | null;
         };
         /**
          * ProfileLinks
@@ -11368,6 +11402,11 @@ export interface components {
             unassigned: number;
             /** Written */
             written: number;
+        };
+        /** PronounsIn */
+        PronounsIn: {
+            /** Pronouns */
+            pronouns?: string | null;
         };
         /** PublicIn */
         PublicIn: {
@@ -11908,11 +11947,15 @@ export interface components {
             player_id: string | null;
             /** Player Name */
             player_name: string;
+            /** Player Pronouns */
+            player_pronouns: string | null;
             /**
              * Player Suspended
              * @default false
              */
             player_suspended: boolean;
+            /** Pronouns */
+            pronouns: string | null;
             /** Retired */
             retired: boolean;
             /** Sect */
@@ -13359,6 +13402,8 @@ export interface components {
             allowed_sects?: string[] | null;
             /** Allowed Splats */
             allowed_splats?: string[] | null;
+            /** Badge Pronouns */
+            badge_pronouns?: boolean | null;
             /** Badge Status */
             badge_status?: ("all" | "negative" | "none") | null;
             /** Badge Titles */
@@ -13416,6 +13461,8 @@ export interface components {
             allowed_splats: string[];
             /** Archived */
             archived: boolean;
+            /** Badge Pronouns */
+            badge_pronouns: boolean;
             /** Badge Status */
             badge_status: string;
             /** Badge Titles */
@@ -17533,6 +17580,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PrintedSheet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_pronouns_api_characters__character_id__pronouns_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PronounsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOut"];
                 };
             };
             /** @description Validation Error */

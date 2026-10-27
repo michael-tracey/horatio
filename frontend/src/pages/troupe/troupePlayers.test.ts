@@ -8,6 +8,8 @@ const entry = (over: Partial<RosterEntry>): RosterEntry => ({
   player_name: "Pat",
   player_id: "p1",
   player_handle: "pat",
+  pronouns: null,
+  player_pronouns: null,
   player_suspended: false,
   kind: "pc",
   retired: false,

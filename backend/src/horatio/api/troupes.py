@@ -67,6 +67,8 @@ class TroupeOut(BaseModel):
     # the status carried into a game here: "all", "negative" only, or "none".
     badge_titles: bool
     badge_status: str
+    # Its badges print each character's pronouns (never the player's).
+    badge_pronouns: bool
     # Its Who's Who (horatio.whos_who) shows the negative status each character
     # carries into a game here.
     whos_who_negative: bool
@@ -100,6 +102,7 @@ class TroupeChanges(BaseModel):
     status_by: Literal["players", "staff"] | None = None
     badge_titles: bool | None = None
     badge_status: Literal["all", "negative", "none"] | None = None
+    badge_pronouns: bool | None = None
     whos_who_negative: bool | None = None
 
 
@@ -222,6 +225,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         status_by=troupe.status_by,
         badge_titles=troupe.badge_titles,
         badge_status=troupe.badge_status,
+        badge_pronouns=troupe.badge_pronouns,
         whos_who_negative=troupe.whos_who_negative,
         whos_who=can_see_whos_who(db, user, troupe),
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
@@ -418,6 +422,17 @@ def change_troupe(
             titles="titles" if troupe.badge_titles else "no titles",
             status=BADGE_STATUS_TEXT[troupe.badge_status],
         )
+    if body.badge_pronouns is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.badge_pronouns != troupe.badge_pronouns:
+            troupe.badge_pronouns = body.badge_pronouns
+            audit.record(
+                db,
+                user,
+                "troupe.badge_pronouns",
+                troupe_id=troupe.id,
+                pronouns="character pronouns" if body.badge_pronouns else "no pronouns",
+            )
     if body.whos_who_negative is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
         if body.whos_who_negative != troupe.whos_who_negative:
