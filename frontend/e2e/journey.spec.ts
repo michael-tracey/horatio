@@ -1633,6 +1633,106 @@ test("at a game, a Camarilla character with Leadership 2 learns about two of a r
   await s.screenshot(shots("play-others-sabbat"));
 });
 
+test("the Who's Who: a player sees the court in rank order, their clan and Other, finds a character by its player, and prints it; others are refused", async ({ browser }) => {
+  const custodian = await person(browser, "whoswho-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "whoswho-lead");
+  const ana = await person(browser, "whoswho-ana");
+  const bea = await person(browser, "whoswho-bea");
+  const cy = await person(browser, "whoswho-cy");
+  const outsider = await person(browser, "whoswho-outsider");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Hall of Names ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // A Camarilla character of `clan`, built through the API and accepted home.
+  const build = async (page: Page, name: string, clan: string, inClan: [string, number][]): Promise<string> => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: clan, rating: null });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: inClan,
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+  const brujah: [string, number][] = [["Celerity", 2], ["Potence", 1], ["Presence", 1]];
+  // Varga is the Prince and the Ventrue Primogen, Roth the Brujah Primogen, and the
+  // Gangrel, with no Primogen, have no seat: Wren is under Other.
+  const varga = await build(ana.page, "Varga", "Ventrue", [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]]);
+  const roth = await build(bea.page, "Roth", "Brujah", brujah);
+  await build(cy.page, "Wren", "Gangrel", [["Animalism", 2], ["Fortitude", 1], ["Protean", 1]]);
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${roth}/titles`, { titles: ["Primogen"] });
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${varga}/titles`, { titles: ["Primogen", "Prince"] });
+
+  // Ana opens it from the troupe's page.
+  const p = ana.page;
+  await p.goto(`/troupes/${troupeId}`);
+  await p.getByRole("link", { name: "Who's Who" }).click();
+  const section = (name: string) => p.getByRole("region", { name, exact: true });
+  const named = (name: string) => section(name).getByRole("article").evaluateAll((cards) => cards.map((c) => c.getAttribute("aria-label")));
+  await expect(section("Court").getByRole("article")).toHaveCount(2);
+  // The court in rank order, the Prince first with both titles.
+  expect(await named("Court")).toEqual(["Varga", "Roth"]);
+  await expect(section("Court").getByRole("article", { name: "Varga" }).getByText("Prince")).toBeVisible();
+  expect(await named("Ventrue")).toEqual(["Varga"]);
+  expect(await named("Brujah")).toEqual(["Roth"]);
+  const wren = section("Other").getByRole("article", { name: "Wren" });
+  await expect(wren.getByText("Represented by: nobody yet")).toBeVisible();
+  await expect(wren.getByRole("link", { name: "whoswho-cy" })).toBeVisible();
+  // The Camarilla bans a non-pillar clan's status, which others see.
+  await expect(wren.getByText(/Lesser status ban: Not Embraced into a pillar clan/)).toBeVisible();
+  await p.screenshot(shots("whos-who"));
+
+  // Searching by a player's name finds their character, in each section it is in.
+  await p.getByLabel("Search the Who's Who").fill("whoswho-bea");
+  await expect(section("Brujah").getByRole("article", { name: "Roth" })).toBeVisible();
+  await expect(p.getByRole("article", { name: "Varga" })).toHaveCount(0);
+  await expect(p.getByRole("article", { name: "Wren" })).toHaveCount(0);
+  await p.getByLabel("Search the Who's Who").fill("");
+  await p.getByLabel("Clan", { exact: true }).selectOption("Gangrel");
+  expect(await named("Other")).toEqual(["Wren"]);
+  await expect(section("Court")).toHaveCount(0);
+
+  // The print view prints every section.
+  const printed = await p.context().newPage();
+  await printed.goto(`/print/troupes/${troupeId}/whos-who`);
+  for (const name of ["Court", "Brujah", "Ventrue", "Other"]) await expect(printed.getByRole("region", { name, exact: true })).toBeVisible();
+  await expect(printed.getByRole("region", { name: "Other" }).getByText("Nobody yet")).toBeVisible();
+  await printed.screenshot(shots("whos-who-print"));
+
+  // From the Play View, another at the game links to their entry.
+  await p.goto(`/play/characters/${varga}?tab=status`);
+  const others = p.locator("section").filter({ has: p.getByRole("heading", { name: "Others at this game" }) });
+  await others.getByRole("button", { name: /Roth/ }).click();
+  await others.getByRole("link", { name: "Roth on the Who’s Who" }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/whos-who#c-${roth}$`));
+  await expect(section("Brujah").getByRole("article", { name: "Roth" })).toBeInViewport();
+
+  // Someone with no character in the troupe sees no Who's Who, and the API refuses them.
+  const o = outsider.page;
+  await o.goto(`/troupes/${troupeId}`);
+  await expect(o.getByRole("link", { name: "Profile", exact: true })).toBeVisible();
+  await expect(o.getByRole("link", { name: "Who's Who" })).toHaveCount(0);
+  const refused = await o.request.get(`/api/troupes/${troupeId}/whos-who`, { headers });
+  expect(refused.status()).toBe(403);
+});
+
 test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own, and a house title gives status", async ({ browser }) => {
   const custodian = await person(browser, "sects-custodian");
   makeCustodian(custodian.email);
@@ -3502,6 +3602,103 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await expect(suspended).toHaveCount(0);
   await l.getByRole("button", { name: "Sign in" }).click();
   await expect(l.getByRole("heading", { name: "Your characters" })).toBeVisible();
+});
+
+test("the custodian moves a character to another player, not while its game is under way, and back again", async ({ browser }) => {
+  const custodian = await person(browser, "mvc-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mvc-lead");
+  const before = await person(browser, "mvc-before");
+  const after = await person(browser, "mvc-after");
+  const troupeName = `Court of Second Hands ${run}`;
+  const send = async (p: Page, method: "GET" | "POST", url: string, data?: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  // The character was built on the wrong account, and is at home in the troupe.
+  const id = await builtVampire(before.page, "Ottilie Marsh", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });
+  const approval = await send(before.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${approval.id}/approve`, {});
+  // Its player is at a game with it: a tap on the Play View.
+  await send(before.page, "GET", `/api/characters/${id}/play`);
+  await send(before.page, "POST", `/api/characters/${id}/play/taps`, {
+    taps: [{ id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: "blood", amount: -1 }],
+  });
+
+  // The custodian finds the player on People, opens their characters and moves it.
+  const c = custodian.page;
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(before.email);
+  const row = c.locator("main li").filter({ hasText: before.email }).first();
+  await row.getByRole("button", { name: "Characters of mvc-before" }).click();
+  await expect(row.getByRole("link", { name: /Ottilie Marsh/ })).toContainText(troupeName);
+  await row.getByRole("button", { name: "Move Ottilie Marsh to another player" }).click();
+  const dialog = c.getByRole("dialog", { name: "Move Ottilie Marsh to another player" });
+  await expect(dialog.getByText(`Ottilie Marsh is played by mvc-before @${before.handle}.`)).toBeVisible();
+  await dialog.getByLabel("New player").fill(after.handle);
+  await dialog.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${after.handle}` }).click();
+  await dialog.getByLabel("Reason").fill("Signed up twice; this is their real account");
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(dialog.getByText(`Its home troupe is ${troupeName}.`, { exact: false })).toBeVisible();
+  await expect(dialog.getByText("Its sheet, XP, history, titles and status go with it.")).toBeVisible();
+  await expect(dialog.getByText(`@${before.handle} can no longer open it; @${after.handle} can, at once.`)).toBeVisible();
+  // Its game is under way, so the move waits until the game ends.
+  await expect(dialog.getByText("Ottilie Marsh is in a game on the Play View. End it first with Reset for next game, so the game isn't split between two people.")).toBeVisible();
+  const confirm = dialog.getByRole("button", { name: `Move Ottilie Marsh to @${after.handle}` });
+  await expect(confirm).toBeDisabled();
+  await c.screenshot(shots("move-character-refused"));
+
+  // The lead ends the troupe's games, and the move goes ahead.
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/play/reset`);
+  await dialog.getByRole("button", { name: "Back" }).click();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(confirm).toBeEnabled();
+  await c.screenshot(shots("move-character-confirm"));
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+
+  // The new player has it in their vault, with its history and the move in its log.
+  const a = after.page;
+  await a.reload();
+  await a.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(a.getByText(`The custodian moved Ottilie Marsh to you from @${before.handle}: Signed up twice; this is their real account`)).toBeVisible();
+  await a.keyboard.press("Escape");
+  await a.locator("main").getByRole("link", { name: /Ottilie Marsh/ }).click();
+  await a.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await expect(
+    a.getByText(`The custodian, mvc-custodian, moved Ottilie Marsh (mvc-after) from @${before.handle} to @${after.handle}: Signed up twice; this is their real account`),
+  ).toBeVisible();
+  await expect(a.getByText(/^mvc-lead accepted Ottilie Marsh/)).toBeVisible();
+  await a.screenshot(shots("move-character-log"));
+
+  // The old player can no longer open it, and they and the lead are told.
+  const b = before.page;
+  await b.goto(`/characters/${id}`);
+  await expect(b.getByText("No such character.")).toBeVisible();
+  await b.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(b.getByText(`The custodian moved Ottilie Marsh to @${after.handle}: Signed up twice; this is their real account`)).toBeVisible();
+  await lead.page.reload();
+  await lead.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await expect(lead.page.getByText(`The custodian moved Ottilie Marsh from @${before.handle} to @${after.handle}`, { exact: false })).toBeVisible();
+
+  // Undoing it is another move, back, from the character's own page.
+  await c.goto(`/characters/${id}`);
+  await c.getByRole("button", { name: "More for Ottilie Marsh" }).click();
+  await c.getByRole("menuitem", { name: "Move to another player…" }).click();
+  const back = c.getByRole("dialog", { name: "Move Ottilie Marsh to another player" });
+  await expect(back.getByText(`Ottilie Marsh is played by mvc-after @${after.handle}.`)).toBeVisible();
+  await back.getByLabel("New player").fill(before.handle);
+  await back.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${before.handle}` }).click();
+  await back.getByLabel("Reason").fill("Moved by mistake");
+  await back.getByRole("button", { name: "Continue" }).click();
+  await back.getByRole("button", { name: `Move Ottilie Marsh to @${before.handle}` }).click();
+  await expect(back).toBeHidden();
+  await b.goto(`/characters/${id}`);
+  await expect(b.getByRole("heading", { name: "Ottilie Marsh", level: 1 })).toBeVisible();
 });
 
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {

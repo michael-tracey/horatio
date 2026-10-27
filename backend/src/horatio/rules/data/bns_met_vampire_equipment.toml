@@ -1,0 +1,650 @@
+# Equipment, written by hand (horatio.rules.equipment, issue #279): the four kinds of
+# item, the grades, every quality of each kind, and the book's sample items.
+#
+# From MET: Vampire The Masquerade (2013), Chapter Thirteen, "Props, Weapons, and
+# Armor", pp. 515-524, with the Ballistic and Hardened errata in the Vol. II Issue 1
+# update, p. 23 (superseding p. 519). Page numbers are the book's printed ones. The
+# effects are one-line summaries in our own words: the book has the full text.
+# Included by the vampire and ghoul rule sets (`equipment_file`).
+#
+# [[kinds]]      key, name, description, page; what an item of the kind is with no
+#                qualities: hands, damage (points of normal damage), shots and
+#                range; and a note on the kind as a whole.
+# [[grades]]     key, name, description, page, and max_qualities (none: no limit).
+# [[qualities]]  kind, name, effect, page, and the properties horatio.rules.equipment
+#                lists at its top: two_handed, needs_one_hand, no_slot_when_crafted,
+#                repeatable, needs_detail, detail_prompt, ammo, excludes, shots,
+#                max_shots, range, aggravated_against. An exclusion is written on
+#                both qualities.
+# [[templates]]  name, kind, grade (standard if left out), page, and qualities: each
+#                a name, or { name, detail }.
+
+# --- kinds -------------------------------------------------------------------------
+
+[[kinds]]
+key = "melee"
+name = "Melee weapon"
+description = "Hand-to-hand weapons, such as swords, knives and clubs."
+hands = 1
+damage = 1
+# Reach strikes "up to four steps away, rather than two" (p. 517).
+range = "2 steps"
+note = "Carrying one openly can draw unwanted attention."
+page = "516"
+
+[[kinds]]
+key = "ranged"
+name = "Ranged weapon"
+description = "Weapons that hurt at a distance, such as pistols, rifles, flamethrowers and bows."
+hands = 1
+damage = 2
+shots = 12
+range = "50 steps"
+note = "Reloading takes a simple action and the right ammunition."
+page = "517"
+
+[[kinds]]
+key = "protective"
+name = "Protective gear"
+description = "Gear that protects from damage, such as armour or shields."
+note = "No bonus by itself. One worn at a time, noticeable unless under bulky outerwear, and three standard actions to put on or take off."
+page = "519"
+
+[[kinds]]
+key = "miscellaneous"
+name = "Miscellaneous gear"
+description = "Gear for challenges outside combat, such as lock-picks, a laptop or a vehicle."
+note = "No use in combat challenges, and the bonuses of only one piece count at a time."
+page = "520"
+
+# --- grades ------------------------------------------------------------------------
+
+[[grades]]
+key = "cheap"
+name = "Cheap"
+description = "Cheap, easily obtained or improvised gear."
+max_qualities = 1
+page = "516"
+
+[[grades]]
+key = "standard"
+name = "Standard or expensive"
+description = "Standard-grade or expensive gear."
+max_qualities = 2
+page = "516"
+
+# Horatio's own, not the book's: an item the troupe's storytellers make for a story,
+# with any number of qualities (issue #280).
+[[grades]]
+key = "special"
+name = "Special"
+description = "A magical, ancient or otherwise exceptional item, made by the storytellers, with no limit on its qualities."
+
+# --- melee weapons (pp. 516-517) -----------------------------------------------------
+
+[[qualities]]
+kind = "melee"
+name = "Accurate"
+effect = "+2 wild card bonus with this weapon, both for comparing test pools and for exceptional successes."
+page = "516"
+
+[[qualities]]
+kind = "melee"
+name = "Antique"
+effect = "Made generations ago: mortal authorities rarely take it for a weapon, so it passes as a prop in restricted places. Sells for three times the usual price."
+page = "516"
+
+[[qualities]]
+kind = "melee"
+name = "Armor Piercing"
+effect = "Ignores the bonuses and special abilities of protective gear."
+page = "516"
+
+[[qualities]]
+kind = "melee"
+name = "Artisan"
+effect = "Beautiful enough to trigger the Toreador weakness; sells for three times the usual price. Added while crafting (Crafts 3+ with an exceptional success, or Crafts 6+), it takes no slot."
+page = "516"
+no_slot_when_crafted = true
+
+[[qualities]]
+kind = "melee"
+name = "Balanced"
+effect = "Made for throwing: hurl it at a target within 10 steps, Physical + Athletics against Physical + Dodge."
+page = "516"
+
+[[qualities]]
+kind = "melee"
+name = "Brutal"
+effect = "Winning the final test with the larger test pool is an exceptional success, even after losing or tying an earlier test. Needs two hands."
+page = "516"
+two_handed = true
+
+[[qualities]]
+kind = "melee"
+name = "Cold Iron"
+effect = "Unforged iron: aggravated damage to fae and others vulnerable to cold iron."
+page = "516"
+aggravated_against = "fae and others vulnerable to cold iron"
+
+[[qualities]]
+kind = "melee"
+name = "Concealable"
+effect = "Can't be seen when hidden: only a pat-down, a supernatural power or a detector finds it. Not on a two-handed weapon."
+page = "516"
+needs_one_hand = true
+
+[[qualities]]
+kind = "melee"
+name = "Deadly"
+effect = "+5 to your test pool when comparing pools for an exceptional success."
+page = "516"
+
+[[qualities]]
+kind = "melee"
+name = "Disabling"
+effect = "Disarm costs no Willpower with this weapon (and still deals no damage that turn)."
+page = "516"
+
+[[qualities]]
+kind = "melee"
+name = "Fast"
+effect = "+3 initiative when fighting with it."
+page = "517"
+
+[[qualities]]
+kind = "melee"
+name = "Flaming"
+effect = "Lit with a simple action, it burns for 5 turns: aggravated damage to vampires, but -2 to your attack test pools while it burns."
+page = "517"
+aggravated_against = "vampires, while it burns"
+
+[[qualities]]
+kind = "melee"
+name = "Impaling"
+effect = "Pierce the Heart costs no Willpower with this weapon."
+page = "517"
+
+[[qualities]]
+kind = "melee"
+name = "Masterwork"
+effect = "One of a kind, beautiful enough to trigger the Toreador weakness, perhaps with one story (non-combat) effect; sells for five times the usual price. Added while crafting (Crafts 5+ with an exceptional success), it takes no slot."
+page = "517"
+no_slot_when_crafted = true
+detail_prompt = "its story effect, if any, such as cutting through chains"
+
+[[qualities]]
+kind = "melee"
+name = "Quick Draw"
+effect = "Drawing it takes no simple action, though you still wait for your turn. Not on a two-handed weapon."
+page = "517"
+needs_one_hand = true
+
+[[qualities]]
+kind = "melee"
+name = "Reach"
+effect = "Strikes targets up to 4 steps away, rather than 2. Needs two hands."
+page = "517"
+two_handed = true
+range = "4 steps"
+
+[[qualities]]
+kind = "melee"
+name = "Silver"
+effect = "Silver-edged, plated or made: aggravated damage to werewolves and others vulnerable to silver."
+page = "517"
+aggravated_against = "werewolves and others vulnerable to silver"
+
+[[qualities]]
+kind = "melee"
+name = "Staking"
+effect = "Wooden: with Pierce the Heart, paying its costs, it stakes a vampire with damage in her Incapacitated wound track."
+page = "517"
+
+[[qualities]]
+kind = "melee"
+name = "Strange Composition"
+effect = "Edged, plated or made with an unusual material: aggravated damage to those vulnerable to it, at the storyteller's discretion."
+page = "517"
+needs_detail = true
+detail_prompt = "the material, such as jade"
+aggravated_against = "those vulnerable to {detail}, at the storyteller's discretion"
+
+[[qualities]]
+kind = "melee"
+name = "Trip"
+effect = "Knock Down costs no Willpower with this weapon, once a fight."
+page = "517"
+
+# --- ranged weapons (pp. 517-519) -----------------------------------------------------
+
+[[qualities]]
+kind = "ranged"
+name = "Accurate"
+effect = "+2 bonus with this weapon, both for comparing test pools and for exceptional successes."
+page = "517"
+
+[[qualities]]
+kind = "ranged"
+name = "Ammo Capacity I"
+effect = "Holds 30 shots, rather than 12."
+page = "517"
+shots = 30
+excludes = ["Staking"]
+
+[[qualities]]
+kind = "ranged"
+name = "Ammo Capacity II"
+effect = "Holds 100 shots, rather than 12. Needs two hands."
+page = "517"
+two_handed = true
+shots = 100
+excludes = ["Staking"]
+
+[[qualities]]
+kind = "ranged"
+name = "Antique"
+effect = "Made generations ago: mortal authorities rarely take it for a weapon, so it passes as a prop in restricted places. Sells for three times the usual price."
+page = "517"
+
+[[qualities]]
+kind = "ranged"
+name = "Armor Piercing"
+effect = "Ignores the bonuses and special abilities of protective gear."
+page = "517"
+
+[[qualities]]
+kind = "ranged"
+name = "Artisan"
+effect = "Beautiful enough to trigger the Toreador weakness; sells for three times the usual price. Added while crafting (Crafts 3+ with an exceptional success, or Crafts 6+), it takes no slot."
+page = "518"
+no_slot_when_crafted = true
+
+[[qualities]]
+kind = "ranged"
+name = "Automatic"
+effect = "Spend 6 shots to spray up to three targets within 3 steps of each other, a challenge against each; a Willpower retest on one carries to the rest."
+page = "518"
+excludes = ["Spread"]
+
+[[qualities]]
+kind = "ranged"
+name = "Brutal"
+effect = "Winning the final test with the larger test pool is an exceptional success, even after losing or tying an earlier test. Needs two hands."
+page = "518"
+two_handed = true
+
+[[qualities]]
+kind = "ranged"
+name = "Cold Iron"
+effect = "Unforged iron ammunition: aggravated damage to fae and others vulnerable to cold iron."
+page = "518"
+ammo = true
+aggravated_against = "fae and others vulnerable to cold iron"
+
+[[qualities]]
+kind = "ranged"
+name = "Concealable"
+effect = "Can't be seen when hidden: only a pat-down, a supernatural power or a detector finds it. Not on a two-handed weapon."
+page = "518"
+needs_one_hand = true
+
+[[qualities]]
+kind = "ranged"
+name = "Deadly"
+effect = "+5 to your test pool when comparing pools for an exceptional success. Needs two hands."
+page = "518"
+two_handed = true
+
+[[qualities]]
+kind = "ranged"
+name = "Fast"
+effect = "+3 initiative when fighting with it."
+page = "518"
+
+[[qualities]]
+kind = "ranged"
+name = "Incendiary Ammunition"
+effect = "Fires incendiary rounds or a narrow gout of flame: aggravated damage to vampires."
+page = "518"
+ammo = true
+aggravated_against = "vampires"
+
+[[qualities]]
+kind = "ranged"
+name = "Knockback"
+effect = "A hit can push the target up to 2 steps away, and knocks down a target without the Stamina focus."
+page = "518"
+
+[[qualities]]
+kind = "ranged"
+name = "Long Range"
+effect = "A scope and a long reach: targets up to half a mile away. Needs two hands."
+page = "518"
+two_handed = true
+range = "half a mile"
+excludes = ["Spread"]
+
+[[qualities]]
+kind = "ranged"
+name = "Masterwork"
+effect = "One of a kind, beautiful enough to trigger the Toreador weakness, perhaps with one story (non-combat) effect; sells for five times the usual price. Added while crafting (Crafts 5+ with an exceptional success), it takes no slot."
+page = "518"
+no_slot_when_crafted = true
+detail_prompt = "its story effect, if any, such as a thunderous roar when fired"
+
+[[qualities]]
+kind = "ranged"
+name = "Quick Draw"
+effect = "Drawing it takes no simple action, though you still wait for your turn. Not on a two-handed weapon."
+page = "518"
+needs_one_hand = true
+
+[[qualities]]
+kind = "ranged"
+name = "Rapid Reload"
+effect = "Reloading takes no simple action, though you still wait for your turn."
+page = "518"
+
+[[qualities]]
+kind = "ranged"
+name = "Silver Ammunition"
+effect = "Silver ammunition: aggravated damage to werewolves and others vulnerable to silver."
+page = "518"
+ammo = true
+aggravated_against = "werewolves and others vulnerable to silver"
+
+[[qualities]]
+kind = "ranged"
+name = "Spread"
+effect = "Sprays up to three targets within a pace of each other, a challenge against each; a Willpower retest on one carries to the rest. Holds 6 shots unless it has Ammo Capacity."
+page = "519"
+max_shots = 6
+excludes = ["Automatic", "Long Range"]
+
+[[qualities]]
+kind = "ranged"
+name = "Staking"
+effect = "Fires stakes: with Pierce the Heart, paying its costs, it stakes a vampire with damage in her Incapacitated wound track. Needs two hands, and holds 1 shot."
+page = "519"
+two_handed = true
+max_shots = 1
+excludes = ["Ammo Capacity I", "Ammo Capacity II"]
+
+[[qualities]]
+kind = "ranged"
+name = "Strange Composition"
+effect = "Edged, plated or made with an unusual material: aggravated damage to those vulnerable to it, at the storyteller's discretion."
+page = "519"
+needs_detail = true
+detail_prompt = "the material, such as jade"
+aggravated_against = "those vulnerable to {detail}, at the storyteller's discretion"
+
+# --- protective gear (p. 519, and the errata) ----------------------------------------
+
+[[qualities]]
+kind = "protective"
+name = "Ballistic"
+effect = "+3 to defensive test pools against firearms, and +1 against Brawl, Melee and thrown weapons."
+page = "Vol. II Issue 1, p. 23 (errata to p. 519)"
+
+[[qualities]]
+kind = "protective"
+name = "Chest Plate"
+effect = "Metal over the chest and upper back: you can't be the target of Pierce the Heart."
+page = "519"
+
+[[qualities]]
+kind = "protective"
+name = "Concealable"
+effect = "Close-fitting, worn under ordinary clothes: only a pat-down, a supernatural power or a detector finds it."
+page = "519"
+excludes = ["Full Body"]
+
+[[qualities]]
+kind = "protective"
+name = "Full Body"
+effect = "+3 to pool comparisons against exceptional successes from Brawl, Melee and Firearms attacks, but it is plain to see and can't be covered."
+page = "519"
+excludes = ["Concealable"]
+
+[[qualities]]
+kind = "protective"
+name = "Hardened"
+effect = "+3 to defensive test pools against Brawl, Melee and thrown weapons, and +1 against firearms."
+page = "Vol. II Issue 1, p. 23 (errata to p. 519)"
+
+[[qualities]]
+kind = "protective"
+name = "HazMat"
+effect = "Protects from one hazard, such as heat or deep-water pressure, until a piercing or slashing hit stops it working until repaired."
+page = "519"
+needs_detail = true
+detail_prompt = "the hazard, such as heat"
+
+[[qualities]]
+kind = "protective"
+name = "Impact Absorption"
+effect = "You're unaffected by Knockback, Knock Out and Knock Down."
+page = "519"
+
+[[qualities]]
+kind = "protective"
+name = "Rugged"
+effect = "The first Physical hit while wearing it does 2 less damage, normal or aggravated as you choose, before Fortitude; then it needs repairing or replacing."
+page = "519"
+
+# --- miscellaneous gear (pp. 520-521) -------------------------------------------------
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Antique"
+effect = "Made generations ago: rarely taken for anything useful, so it passes as a prop in restricted places. Sells for three times the usual price."
+page = "520"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Artisan"
+effect = "Beautiful enough to trigger the Toreador weakness; sells for three times the usual price. Added while crafting (Crafts 3+ with an exceptional success, or Crafts 6+), it takes no slot."
+page = "520"
+no_slot_when_crafted = true
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Concealable"
+effect = "Can't be seen when hidden: only a pat-down, a supernatural power or a detector finds it."
+page = "520"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Customized"
+effect = "+2 in one circumstance narrower than a skill, if you have the skill. Doesn't add to Superior's bonus."
+page = "520"
+needs_detail = true
+detail_prompt = "the circumstance, such as hacking"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Flashy"
+effect = "Draws the eye: it can distract mortals from their questions, or from a breach of the Masquerade nearby."
+page = "520"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Masterwork"
+effect = "One of a kind, beautiful enough to trigger the Toreador weakness; sells for five times the usual price. Added while crafting (Crafts 5+ with an exceptional success), it takes no slot."
+page = "520"
+no_slot_when_crafted = true
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Nondescript"
+effect = "Unremarkable: when things around it are stolen or destroyed by chance, it is overlooked."
+page = "520"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Secure"
+effect = "+3 wild card bonus to resist attempts to find or get into what it protects: a lock, a hidden compartment, its computer security."
+page = "520"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Streamlined"
+effect = "For its purpose, a test that takes a standard action takes a simple one, and a downtime task half the time."
+page = "520"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Stylish"
+effect = "Expensive-looking and cutting-edge: those who value it treat you as important. At the storyteller's discretion, +1 Herd for feeding (6 at most)."
+page = "520"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Sturdy"
+effect = "Takes 5 health levels of damage before it stops working."
+page = "520"
+
+[[qualities]]
+kind = "miscellaneous"
+name = "Superior"
+effect = "+1 to your test pool when used for its purpose, if you have the skill. Can be taken more than once."
+page = "521"
+repeatable = true
+
+# --- sample equipment (pp. 521-524) -----------------------------------------------------
+
+[[templates]]
+name = "Two-Handed Axe"
+kind = "melee"
+qualities = ["Brutal", "Deadly"]
+page = "521"
+
+[[templates]]
+name = "Two-Handed Sword"
+kind = "melee"
+qualities = ["Accurate", "Brutal"]
+page = "521"
+
+[[templates]]
+name = "Katana"
+kind = "melee"
+qualities = ["Accurate", "Brutal"]
+page = "521"
+
+[[templates]]
+name = "Silver Dagger"
+kind = "melee"
+qualities = ["Concealable", "Silver"]
+page = "521"
+
+[[templates]]
+name = "Throwing Knife"
+kind = "melee"
+qualities = ["Balanced", "Accurate"]
+page = "522"
+
+[[templates]]
+name = "Spear"
+kind = "melee"
+qualities = ["Staking", "Reach"]
+page = "522"
+
+[[templates]]
+name = "Wooden Stake"
+kind = "melee"
+qualities = ["Concealable", "Staking"]
+page = "522"
+
+[[templates]]
+name = "Shotgun"
+kind = "ranged"
+qualities = ["Spread", "Accurate"]
+page = "522"
+
+[[templates]]
+name = "Elephant Gun"
+kind = "ranged"
+qualities = ["Brutal", "Deadly"]
+page = "522"
+
+[[templates]]
+name = "Pistol (Dragon's Breath)"
+kind = "ranged"
+qualities = ["Accurate", "Incendiary Ammunition"]
+page = "522"
+
+[[templates]]
+name = "High-Caliber Rifle"
+kind = "ranged"
+qualities = ["Accurate", "Brutal"]
+page = "523"
+
+[[templates]]
+name = "Sniper Rifle"
+kind = "ranged"
+qualities = ["Accurate", "Long Range"]
+page = "523"
+
+[[templates]]
+name = "Machine Gun"
+kind = "ranged"
+qualities = ["Automatic", "Ammo Capacity II"]
+page = "523"
+
+[[templates]]
+name = "Gaming Laptop"
+kind = "miscellaneous"
+qualities = ["Superior", { name = "Customized", detail = "video games" }]
+page = "523"
+
+[[templates]]
+name = "Sports Car"
+kind = "miscellaneous"
+qualities = ["Flashy", "Stylish"]
+page = "523"
+
+# The book prints "Concealed": the quality is Concealable.
+[[templates]]
+name = "Wall Safe"
+kind = "miscellaneous"
+qualities = ["Secure", "Concealable"]
+page = "523"
+
+[[templates]]
+name = "Alchemical Set"
+kind = "miscellaneous"
+qualities = ["Antique", "Streamlined"]
+page = "524"
+
+[[templates]]
+name = "Table-Leg Club (Improvised)"
+kind = "melee"
+grade = "cheap"
+qualities = ["Staking"]
+page = "524"
+
+[[templates]]
+name = "Bow"
+kind = "ranged"
+qualities = ["Accurate", "Deadly"]
+page = "524"
+
+[[templates]]
+name = "Chain Mail"
+kind = "protective"
+qualities = ["Chest Plate", "Hardened"]
+page = "524"
+
+[[templates]]
+name = "Flak Vest"
+kind = "protective"
+qualities = ["Ballistic", "Chest Plate"]
+page = "524"
+
+[[templates]]
+name = "SWAT Team Armor"
+kind = "protective"
+qualities = ["Full Body", "Rugged"]
+page = "524"

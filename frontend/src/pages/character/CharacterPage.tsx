@@ -121,6 +121,7 @@ export function CharacterPage() {
                 renameOn={renameOn}
                 onRename={() => setRenaming(true)}
                 canDelete={mine || custodian}
+                canMove={custodian}
               />
             </div>
           }

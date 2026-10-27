@@ -167,7 +167,7 @@ key).
 **`rule_sets`**: the generic rules for one splat.
 `splat`, `name` (for example "BNS MET Vampire"), `version`, `titles` (the names of
 the titles a troupe can give), `status_rules` (JSONB: sect status beyond the status
-traits, below).
+traits, below), `equipment` (JSONB: equipment's kinds and grades, below).
 
 **`trait_categories`**: `rule_set_id`, `key` (for example `skills`,
 `merits`, `disciplines`), `name`, `group_name`, `position`, `rated`,
@@ -259,6 +259,40 @@ chapters) and read by `horatio/rules/status.py`; the ghoul's rule set includes i
   general. `RuleSetData.statuses`, `titles` and `status_rules` are the typed view.
 - The catalogue's misspelt Architech and Annointed are Architect and Anointed;
   migration 0080 renamed their definitions in place, so sheets keep them.
+
+**Equipment (issue #279).** Written by hand in
+`rules/data/bns_met_vampire_equipment.toml` (MET: VTM pp. 515-524, with the Ballistic
+and Hardened errata in the Vol. II Issue 1 update, p. 23), which the vampire and
+ghoul rule sets name as their `equipment_file`, and read by
+`horatio/rules/equipment.py`.
+
+- `rule_sets.equipment` (JSONB) holds the four `kinds` (`melee`, `ranged`,
+  `protective`, `miscellaneous`), each with what an item of it is with no qualities
+  (`hands`, `damage`, `shots`, `range`) and a `note`; and the three `grades`, each
+  with its `max_qualities`: `cheap` 1, `standard` (standard or expensive) 2, and
+  `special` (Horatio's own, for storytellers' exceptional items) no limit.
+- **`equipment_qualities`**: `rule_set_id`, `kind`, `name`, `effect` (one line, in
+  our own words), `page`, `properties` (JSONB), `position` (the book's order),
+  `retired`. Unique on (`rule_set_id`, `kind`, `name`): a quality is per kind, as
+  the same name can mean different things (a ranged Deadly weapon needs two hands, a
+  melee one doesn't). Loading adds and updates them, and retires one the file no
+  longer has, as it does trait definitions. `properties`: `two_handed`,
+  `needs_one_hand` (Concealable, Quick Draw), `no_slot_when_crafted` (Artisan,
+  Masterwork), `repeatable` (Superior), `needs_detail` with `detail_prompt` (a
+  prompt alone is an optional detail: Masterwork's story effect), `ammo` (swappable
+  ammunition), `excludes` (written on both qualities), `shots` (Ammo Capacity),
+  `max_shots` (Spread 6, ranged Staking 1), `range` (Reach, Long Range) and
+  `aggravated_against`.
+- **`equipment_templates`**: `rule_set_id`, `troupe_id` (null for the book's sample
+  items; set for a troupe's own, #280), `name`, `kind`, `grade`, `qualities` (JSONB,
+  each `{name, detail?}`), `page`, `position`. Loading replaces the book's and leaves
+  troupes' alone.
+- `horatio.equipment.check(rules, kind, qualities, grade, crafted=)` refuses too many
+  qualities for the grade (a crafted Artisan or Masterwork doesn't count), a quality
+  of another kind, a repeat of one that isn't repeatable, a missing detail, a
+  two-handed item that is Concealable or Quick Draw, and each exclusion; and works
+  out the item's hands, damage, shots and range. Loading refuses a template that
+  breaks these rules.
 
 **`allowance_rules`**: how traits change a character's action allowance.
 `rule_set_id`, `troupe_id` (null = generic; set = house rule),

@@ -45,7 +45,7 @@ greater.
 """
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Literal, cast, get_args
 
 # A condition in the vocabulary of horatio.rules.checks, which imports the rule
@@ -133,6 +133,9 @@ class TitleData:
     choose_one: tuple[str, ...] = ()
     while_absent: tuple[WhileAbsentData, ...] = ()
     page: str | None = None
+    # Its place at court, highest first: the order the rules data describes the
+    # titles in (horatio.whos_who). None for a title that is only a name.
+    rank: int | None = None
 
     @property
     def gives_status(self) -> bool:
@@ -243,13 +246,15 @@ def title_from_dict(raw: Mapping[str, Any]) -> TitleData:
             for a in raw.get("while_absent", [])
         ),
         page=raw.get("page"),
+        rank=raw.get("rank"),
     )
 
 
 def titles_from(raw: Iterable[str | Mapping[str, Any]]) -> tuple[TitleData, ...]:
     """Titles from a list of names, or tables with a name and what the title is
     (sect, status). A name may come both bare and as a table; the table says what it
-    is. Sorted by name."""
+    is. A table without a rank is ranked by its place among the tables, so the rules
+    data lists them highest first. Sorted by name."""
     found: dict[str, TitleData] = {}
     described: set[str] = set()
     for entry in raw:
@@ -259,6 +264,8 @@ def titles_from(raw: Iterable[str | Mapping[str, Any]]) -> tuple[TitleData, ...]
         title = title_from_dict(entry)
         if title.name in described:
             raise ValueError(f"title {title.name!r} is described twice")
+        if title.rank is None:
+            title = replace(title, rank=len(described) + 1)
         described.add(title.name)
         found[title.name] = title
     return tuple(found[name] for name in sorted(found))
@@ -324,7 +331,9 @@ def status_rules_to_dict(rules: StatusRulesData, titles: Sequence[TitleData]) ->
     found: dict[str, Any] = {
         "sects": [plain(s) for s in rules.sects.values()],
         "social_ages": [plain(a) for a in rules.social_ages],
-        "titles": [plain(t) for t in titles if t.sect or t.gives_status or t.page],
+        "titles": [
+            plain(t) for t in titles if t.sect or t.gives_status or t.page or t.rank is not None
+        ],
     }
     if rules.caps is not None:
         found["caps"] = plain(rules.caps)
