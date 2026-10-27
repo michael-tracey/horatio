@@ -16,8 +16,8 @@ from sqlalchemy.orm import aliased
 
 from horatio import account_merges, handles, pronouns, suspensions
 from horatio.api.auth import Me, me
-from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.email_changes import PendingEmail, pending
+from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.roster import LogEntry, log_entries
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
