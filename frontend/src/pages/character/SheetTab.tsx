@@ -53,7 +53,6 @@ import { PowerChoices } from "./PowerChoices";
 import { InfluenceEffects } from "./InfluenceEffects";
 import { DomitorCard } from "./Domitor";
 import { EmbraceCard } from "./Embrace";
-import { StatusCard } from "./StatusCard";
 import { useHasDomitor } from "./splats";
 
 function useSheet(characterId: string) {
@@ -365,7 +364,6 @@ export function SheetTab({
         )}
         <ExceptionsCard exceptions={s.exceptions} />
         <DiablerieCard character={character} mine={mine} />
-        <StatusCard character={character} />
         {parts.length === 0 && (
           <Empty>
             The sheet is empty{mine ? "" : " until the player builds it"}.

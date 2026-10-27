@@ -1295,8 +1295,9 @@ test("a player keeps their own sect status, naming its patron from the home trou
     if (title) await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${npc.id}/titles`, { titles: [title] });
   }
 
-  // On the sheet, a Status card: Accepted, and no fleeting status yet.
+  // On the character's Status tab: Accepted, and no fleeting status yet.
   await p.goto(`/characters/${id}`);
+  await p.getByRole("link", { name: "Status", exact: true }).click();
   const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
   await expect(card.getByText("Acknowledged by the Camarilla.")).toBeVisible();
   await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
@@ -1336,7 +1337,7 @@ test("a player keeps their own sect status, naming its patron from the home trou
   await expect(setting.getByText("Staff only.")).toBeVisible();
 
   // Now Celestine's player cannot add status, and the API refuses them.
-  await p.goto(`/characters/${id}`);
+  await p.goto(`/characters/${id}/status`);
   await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
   await expect(card.getByRole("button", { name: "Add status" })).toHaveCount(0);
   const refused = await p.request.post(`/api/characters/${id}/status`, { headers, data: { name: "Loyal", patron_text: "The Prince" } });
@@ -1502,8 +1503,8 @@ test("at a game, a Seneschal and Primogen chooses one source of status, spends A
   await expect(fleeting.getByText("Courageous", { exact: true })).toBeVisible();
   await p.screenshot(shots("play-status-added"));
 
-  // The sheet and the log show it, given at this game.
-  await p.goto(`/characters/${id}`);
+  // The Status tab and the log show it, given at this game.
+  await p.goto(`/characters/${id}/status`);
   const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
   await expect(card.getByText("from Prince Varga (Prince at the time)")).toBeVisible();
   await p.getByRole("link", { name: "Log", exact: true }).click();
