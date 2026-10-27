@@ -8,8 +8,8 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 /**
- * The character's less-used actions, behind a ⋯ button beside Play: Rename, and
- * Delete. `renameOn` is the first day a player who renamed lately can again;
+ * The character's less-used actions, behind a ⋯ button beside Play: Rename,
+ * Pronouns, and Delete. `renameOn` is the first day a player who renamed lately can again;
  * the item says so instead of renaming.
  */
 export function CharacterMenu({
@@ -17,12 +17,15 @@ export function CharacterMenu({
   canRename,
   renameOn,
   onRename,
+  onPronouns,
   canDelete,
 }: {
   character: CharacterOut;
   canRename: boolean;
   renameOn: string | null;
   onRename: () => void;
+  /** Set the character's pronouns, for those who may. */
+  onPronouns?: () => void;
   canDelete: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -44,7 +47,7 @@ export function CharacterMenu({
       document.removeEventListener("keydown", escape);
     };
   }, [open]);
-  if (!canRename && !renameOn && !canDelete) return null;
+  if (!canRename && !renameOn && !onPronouns && !canDelete) return null;
   const item = "block w-full px-3 py-2 text-left text-sm hover:bg-ash disabled:cursor-default disabled:text-mist disabled:hover:bg-transparent";
 
   return (
@@ -73,6 +76,19 @@ export function CharacterMenu({
                 Rename…
               </button>
             )
+          )}
+          {onPronouns && (
+            <button
+              type="button"
+              role="menuitem"
+              className={item}
+              onClick={() => {
+                setOpen(false);
+                onPronouns();
+              }}
+            >
+              Pronouns…
+            </button>
           )}
           {canDelete && (
             <button

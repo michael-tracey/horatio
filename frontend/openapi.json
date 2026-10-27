@@ -762,6 +762,17 @@
             ],
             "title": "Picture"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "social_age": {
             "title": "Social Age",
             "type": "string"
@@ -791,6 +802,7 @@
         "required": [
           "character_id",
           "name",
+          "pronouns",
           "clan",
           "social_age",
           "titles",
@@ -812,6 +824,10 @@
             },
             "title": "Badges",
             "type": "array"
+          },
+          "print_pronouns": {
+            "title": "Print Pronouns",
+            "type": "boolean"
           },
           "print_status": {
             "title": "Print Status",
@@ -837,6 +853,7 @@
           "troupe_name",
           "print_titles",
           "print_status",
+          "print_pronouns",
           "badges"
         ],
         "title": "BadgesOut",
@@ -2266,6 +2283,17 @@
             "title": "Player Id",
             "type": "string"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "splat": {
             "title": "Splat",
             "type": "string"
@@ -2280,6 +2308,7 @@
           "player_id",
           "splat",
           "name",
+          "pronouns",
           "status",
           "home_troupe_id",
           "building_troupe_id",
@@ -10677,6 +10706,17 @@
             "title": "Player Id",
             "type": "string"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "splat": {
             "title": "Splat",
             "type": "string"
@@ -10702,6 +10742,7 @@
           "player_id",
           "splat",
           "name",
+          "pronouns",
           "status",
           "home_troupe_id",
           "building_troupe_id",
@@ -10850,6 +10891,17 @@
             "title": "Name",
             "type": "string"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "same_sect": {
             "title": "Same Sect",
             "type": "boolean"
@@ -10876,6 +10928,7 @@
         "required": [
           "character_id",
           "name",
+          "pronouns",
           "kind",
           "sect",
           "same_sect",
@@ -12402,6 +12455,17 @@
             "title": "Member Since",
             "type": "string"
           },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "reset_expires_at": {
             "anyOf": [
               {
@@ -12420,6 +12484,7 @@
           "display_name",
           "handle",
           "member_since",
+          "pronouns",
           "bio",
           "links",
           "discord_handle",
@@ -13560,6 +13625,17 @@
             },
             "title": "Links",
             "type": "array"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
           }
         },
         "required": [
@@ -13713,6 +13789,24 @@
           "by_action_kind"
         ],
         "title": "Progress",
+        "type": "object"
+      },
+      "PronounsIn": {
+        "properties": {
+          "pronouns": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          }
+        },
+        "title": "PronounsIn",
         "type": "object"
       },
       "PublicIn": {
@@ -15117,6 +15211,28 @@
             "title": "Player Name",
             "type": "string"
           },
+          "player_pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Pronouns"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
           "retired": {
             "title": "Retired",
             "type": "boolean"
@@ -15154,6 +15270,8 @@
           "player_name",
           "player_id",
           "player_handle",
+          "pronouns",
+          "player_pronouns",
           "kind",
           "retired",
           "titles",
@@ -18749,6 +18867,17 @@
             ],
             "title": "Allowed Splats"
           },
+          "badge_pronouns": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Badge Pronouns"
+          },
           "badge_status": {
             "anyOf": [
               {
@@ -18954,6 +19083,10 @@
             "title": "Archived",
             "type": "boolean"
           },
+          "badge_pronouns": {
+            "title": "Badge Pronouns",
+            "type": "boolean"
+          },
           "badge_status": {
             "title": "Badge Status",
             "type": "string"
@@ -19087,6 +19220,7 @@
           "status_by",
           "badge_titles",
           "badge_status",
+          "badge_pronouns",
           "whos_who_negative",
           "whos_who",
           "portrait",
@@ -25526,6 +25660,60 @@
         "summary": "Printed Sheet",
         "tags": [
           "printing"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/pronouns": {
+      "put": {
+        "description": "Set the character's pronouns: its player, or for an NPC its troupe's staff.",
+        "operationId": "set_pronouns_api_characters__character_id__pronouns_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PronounsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Pronouns",
+        "tags": [
+          "characters"
         ]
       }
     },

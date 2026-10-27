@@ -70,6 +70,8 @@ class Troupe(Imported, Record):
     # "none", leaving the space for stickers.
     badge_titles: Mapped[bool] = mapped_column(default=True, server_default="true")
     badge_status: Mapped[str] = mapped_column(default="all", server_default="all")
+    # Its badges print each character's pronouns; never the player's.
+    badge_pronouns: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Its Who's Who (horatio.whos_who) adds the negative status each character carries
     # into a game here, which is public in the sect anyway (MET: VTM p. 312).
     whos_who_negative: Mapped[bool] = mapped_column(default=False, server_default="false")

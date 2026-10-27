@@ -12,7 +12,7 @@ A person who plays one or more characters. A player sees only their own characte
 _Avoid_: User (for the person in the game), member
 
 **Profile**:
-What anyone signed in can see about a player: their display name, handle, when they joined, a bio, social media links and their Discord username. Never their email, which only they and the custodian see.
+What anyone signed in can see about a player: their display name, handle, pronouns, when they joined, a bio, social media links and their Discord username. Never their email, which only they and the custodian see.
 _Avoid_: Bio page, user page
 
 **Handle**:

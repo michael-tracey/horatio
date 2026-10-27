@@ -28,6 +28,9 @@ class RosterEntry(BaseModel):
     # None for an NPC, whose player_name is "NPC".
     player_id: uuid.UUID | None
     player_handle: str | None
+    # The character's pronouns, and its player's (None for an NPC); None for none.
+    pronouns: str | None
+    player_pronouns: str | None
     kind: str  # pc | npc
     # The player has retired the character.
     retired: bool
@@ -96,6 +99,8 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_name=player.display_name if c.kind == "pc" else "NPC",
             player_id=player.id if c.kind == "pc" else None,
             player_handle=player.handle if c.kind == "pc" else None,
+            pronouns=c.pronouns,
+            player_pronouns=player.pronouns if c.kind == "pc" else None,
             kind=c.kind,
             retired=c.status == "retired",
             titles=held[c.id],
@@ -293,6 +298,7 @@ MESSAGES: dict[str, str] = {
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
     "troupe.status_by": "{actor} set Status on sheets: {setting}.",
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
+    "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
     "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
     "scene.created": "{actor} made the scene {name}.",
@@ -368,6 +374,7 @@ MESSAGES: dict[str, str] = {
     "identity.accepted": "{actor} noted {character}'s identity {name} as Accepted by {by}.",
     "identity.unaccepted": "{actor} noted {character}'s identity {name} as Accepted by no one.",
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
+    "character.pronouns": "{actor} set {character}'s pronouns: {pronouns}.",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",

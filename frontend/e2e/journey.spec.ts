@@ -1733,6 +1733,79 @@ test("the Who's Who: a player sees the court in rank order, their clan and Other
   expect(refused.status()).toBe(403);
 });
 
+test("pronouns: a player gives their own and their character's, the Who's Who shows both, and badges print only the character's once the troupe says", async ({ browser }) => {
+  const custodian = await person(browser, "pronouns-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "pronouns-lead");
+  const player = await person(browser, "pronouns-play");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Hall of Voices ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // Ines, a Camarilla Toreador built through the API and accepted home.
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Ines" });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Toreador", rating: null });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+  };
+  for (const [category, chosen] of Object.entries(picks))
+    await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+  await send(p, "POST", `/api/characters/${id}/creation/complete`, {});
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+
+  // The player's own, on their profile: free text, with the usual ones suggested.
+  await p.goto("/account");
+  await p.getByLabel("Pronouns").fill("they/them");
+  await p.getByRole("button", { name: "Save profile" }).click();
+  await expect(p.getByText("Saved.")).toBeVisible();
+  await p.getByRole("link", { name: "See your profile" }).click();
+  await expect(p.getByRole("heading", { name: "pronouns-play (they/them)" })).toBeVisible();
+
+  // Ines's, from the ⋯ menu on her page, beside her name once saved.
+  await p.goto(`/characters/${id}`);
+  await p.getByRole("button", { name: "More for Ines" }).click();
+  await p.getByRole("menuitem", { name: "Pronouns…" }).click();
+  await p.getByLabel("Pronouns").fill("she/her");
+  await p.getByRole("button", { name: "Save pronouns" }).click();
+  await expect(p.getByRole("heading", { name: "Ines (she/her)" })).toBeVisible();
+
+  // The Who's Who shows both: hers beside her name, theirs beside theirs.
+  await p.goto(`/troupes/${troupeId}/whos-who`);
+  const ines = p.getByRole("article", { name: "Ines" }).first();
+  await expect(ines.getByText("(she/her)")).toBeVisible();
+  await expect(ines.getByText("(they/them)")).toBeVisible();
+  await p.screenshot(shots("whos-who-pronouns"));
+
+  // Badges print no pronouns until the troupe says, and then only the character's.
+  const l = lead.page;
+  await l.goto(`/print/troupes/${troupeId}/badges?characters=${id}`);
+  const badge = l.getByRole("article", { name: "Badge for Ines" });
+  await expect(badge.getByText("Neonate", { exact: false })).toBeVisible();
+  await expect(badge.getByText("she/her")).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}`);
+  const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
+  await expect(setting.getByLabel(/^Print character pronouns/)).not.toBeChecked();
+  await setting.getByLabel(/^Print character pronouns/).click();
+  await expect(setting.getByLabel(/^Print character pronouns/)).toBeChecked();
+  await l.goto(`/print/troupes/${troupeId}/badges?characters=${id}`);
+  await expect(badge.getByText("she/her", { exact: true })).toBeVisible();
+  await expect(badge.getByText(/they\/them/)).toHaveCount(0);
+});
+
 test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own, and a house title gives status", async ({ browser }) => {
   const custodian = await person(browser, "sects-custodian");
   makeCustodian(custodian.email);
