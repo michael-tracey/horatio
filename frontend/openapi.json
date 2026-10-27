@@ -792,6 +792,105 @@
         "title": "BadgesOut",
         "type": "object"
       },
+      "BanMarkIn": {
+        "properties": {
+          "ban": {
+            "title": "Ban",
+            "type": "string"
+          },
+          "mark": {
+            "anyOf": [
+              {
+                "enum": [
+                  "applies",
+                  "exempt"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mark"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ban",
+          "mark"
+        ],
+        "title": "BanMarkIn",
+        "type": "object"
+      },
+      "BanOut": {
+        "properties": {
+          "applies": {
+            "title": "Applies",
+            "type": "boolean"
+          },
+          "applies_to": {
+            "title": "Applies To",
+            "type": "string"
+          },
+          "by_sheet": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Sheet"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "marked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marked"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "applies_to",
+          "page",
+          "by_sheet",
+          "marked",
+          "reason",
+          "applies"
+        ],
+        "title": "BanOut",
+        "type": "object"
+      },
       "BlockChoicesOut": {
         "properties": {
           "entries": {
@@ -3545,6 +3644,70 @@
         "title": "Derangements",
         "type": "object"
       },
+      "DerivedOut": {
+        "properties": {
+          "condition": {
+            "title": "Condition",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "title",
+              "social_age",
+              "faction",
+              "merit"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "source",
+          "kind",
+          "troupe_id",
+          "troupe_name",
+          "condition"
+        ],
+        "title": "DerivedOut",
+        "type": "object"
+      },
       "DetailChange": {
         "properties": {
           "category": {
@@ -5477,6 +5640,54 @@
         "title": "EmbracedOut",
         "type": "object"
       },
+      "EndingOut": {
+        "properties": {
+          "games_left": {
+            "title": "Games Left",
+            "type": "integer"
+          },
+          "not_before": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Before"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "this_game": {
+            "title": "This Game",
+            "type": "boolean"
+          },
+          "while_held": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "While Held"
+          }
+        },
+        "required": [
+          "text",
+          "not_before",
+          "games_left",
+          "while_held",
+          "this_game"
+        ],
+        "title": "EndingOut",
+        "type": "object"
+      },
       "ExceptionAskOut": {
         "description": "A trait asked for by exception: the rules it breaks, why, and whether free.",
         "properties": {
@@ -6672,6 +6883,66 @@
           "boxes"
         ],
         "title": "HealthLevel",
+        "type": "object"
+      },
+      "HeldOut": {
+        "properties": {
+          "can_remove": {
+            "title": "Can Remove",
+            "type": "boolean"
+          },
+          "ending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EndingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "given_on": {
+            "format": "date",
+            "title": "Given On",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "patron": {
+            "$ref": "#/components/schemas/PatronOut"
+          },
+          "place": {
+            "title": "Place",
+            "type": "string"
+          },
+          "story": {
+            "title": "Story",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "patron",
+          "place",
+          "given_on",
+          "story",
+          "ending",
+          "can_remove"
+        ],
+        "title": "HeldOut",
         "type": "object"
       },
       "HeldTitles": {
@@ -10591,6 +10862,76 @@
         "title": "PathStart",
         "type": "object"
       },
+      "PatronChoiceOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "title"
+        ],
+        "title": "PatronChoiceOut",
+        "type": "object"
+      },
+      "PatronOut": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "words": {
+            "title": "Words",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "title",
+          "text",
+          "words"
+        ],
+        "title": "PatronOut",
+        "type": "object"
+      },
       "PendingDisciplineOut": {
         "properties": {
           "approval_id": {
@@ -12428,6 +12769,14 @@
           "splat": {
             "title": "Splat",
             "type": "string"
+          },
+          "status": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
           },
           "titles": {
             "items": {
@@ -15908,6 +16257,324 @@
         "title": "StatBlockOut",
         "type": "object"
       },
+      "StatusAbout": {
+        "description": "What a status does, as the rules say (horatio.rules.status).",
+        "properties": {
+          "censure": {
+            "title": "Censure",
+            "type": "string"
+          },
+          "duration": {
+            "title": "Duration",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "passive": {
+            "title": "Passive",
+            "type": "string"
+          },
+          "punishment": {
+            "title": "Punishment",
+            "type": "string"
+          },
+          "sect": {
+            "title": "Sect",
+            "type": "string"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "sect",
+          "passive",
+          "spent",
+          "censure",
+          "punishment",
+          "duration",
+          "page"
+        ],
+        "title": "StatusAbout",
+        "type": "object"
+      },
+      "StatusIn": {
+        "properties": {
+          "give_up": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Give Up"
+          },
+          "given_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given On"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "override": {
+            "default": false,
+            "title": "Override",
+            "type": "boolean"
+          },
+          "patron_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patron Id"
+          },
+          "patron_text": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Patron Text",
+            "type": "string"
+          },
+          "place": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Place",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "story": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Story",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "StatusIn",
+        "type": "object"
+      },
+      "StatusOut": {
+        "properties": {
+          "about": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StatusAbout"
+            },
+            "title": "About",
+            "type": "object"
+          },
+          "accepted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted"
+          },
+          "acting": {
+            "anyOf": [
+              {
+                "enum": [
+                  "player",
+                  "staff"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acting"
+          },
+          "addable": {
+            "items": {
+              "$ref": "#/components/schemas/StatusAbout"
+            },
+            "title": "Addable",
+            "type": "array"
+          },
+          "bans": {
+            "items": {
+              "$ref": "#/components/schemas/BanOut"
+            },
+            "title": "Bans",
+            "type": "array"
+          },
+          "derived": {
+            "items": {
+              "$ref": "#/components/schemas/DerivedOut"
+            },
+            "title": "Derived",
+            "type": "array"
+          },
+          "disgraced": {
+            "title": "Disgraced",
+            "type": "boolean"
+          },
+          "fleeting": {
+            "title": "Fleeting",
+            "type": "integer"
+          },
+          "fleeting_cap": {
+            "title": "Fleeting Cap",
+            "type": "integer"
+          },
+          "held": {
+            "items": {
+              "$ref": "#/components/schemas/HeldOut"
+            },
+            "title": "Held",
+            "type": "array"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "setting": {
+            "title": "Setting",
+            "type": "string"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          },
+          "unresolved": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unresolved",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sect",
+          "accepted",
+          "troupe_id",
+          "troupe_name",
+          "setting",
+          "acting",
+          "staff",
+          "derived",
+          "held",
+          "unresolved",
+          "bans",
+          "fleeting",
+          "fleeting_cap",
+          "disgraced",
+          "addable",
+          "about"
+        ],
+        "title": "StatusOut",
+        "type": "object"
+      },
+      "StatusRemoveIn": {
+        "properties": {
+          "reason": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "StatusRemoveIn",
+        "type": "object"
+      },
+      "StatusResolveIn": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "StatusResolveIn",
+        "type": "object"
+      },
       "StepNeed": {
         "properties": {
           "message": {
@@ -17115,6 +17782,21 @@
               }
             ],
             "title": "Starting Xp"
+          },
+          "status_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "players",
+                  "staff"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status By"
           }
         },
         "title": "TroupeChanges",
@@ -17290,6 +17972,10 @@
             "title": "Starting Xp",
             "type": "integer"
           },
+          "status_by": {
+            "title": "Status By",
+            "type": "string"
+          },
           "xp_ceiling": {
             "title": "Xp Ceiling",
             "type": "integer"
@@ -17315,6 +18001,7 @@
           "starting_blood",
           "influence_lookback_days",
           "diablerie_flaws",
+          "status_by",
           "portrait",
           "banner",
           "public",
@@ -23559,6 +24246,322 @@
         "summary": "Character Kinds",
         "tags": [
           "specialisations"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/status": {
+      "get": {
+        "description": "The character's sect status: derived, held with its patrons, its bans and cap,\nand what the viewer can change.",
+        "operationId": "read_status_api_characters__character_id__status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Status",
+        "tags": [
+          "status"
+        ]
+      },
+      "post": {
+        "description": "Give the character a fleeting or negative status, naming its patron. On the\nsheet, the home troupe's setting says who can.",
+        "operationId": "add_status_api_characters__character_id__status_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Status",
+        "tags": [
+          "status"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/status/bans": {
+      "put": {
+        "description": "Staff say a status ban applies to the character, or that it is exempt, with a\nreason; or go back to what the sheet shows.",
+        "operationId": "mark_ban_api_characters__character_id__status_bans_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BanMarkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Ban",
+        "tags": [
+          "status"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/status/patrons": {
+      "get": {
+        "description": "Who can be picked as the patron of status given to the character: its home\ntroupe's PCs, and its NPCs holding a title there of the character's sect.",
+        "operationId": "read_patrons_api_characters__character_id__status_patrons_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PatronChoiceOut"
+                  },
+                  "title": "Response Read Patrons Api Characters  Character Id  Status Patrons Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Patrons",
+        "tags": [
+          "status"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/status/resolve": {
+      "post": {
+        "description": "Staff take off a status trait the sheet held before status was derived, that\nnothing gives now.",
+        "operationId": "resolve_status_api_characters__character_id__status_resolve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusResolveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Status",
+        "tags": [
+          "status"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/status/{held_id}/remove": {
+      "post": {
+        "description": "Take a held status off the character. A negative status comes off early only\nby the one who gave it, or staff.",
+        "operationId": "remove_status_api_characters__character_id__status__held_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "held_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Held Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRemoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Status",
+        "tags": [
+          "status"
         ]
       }
     },

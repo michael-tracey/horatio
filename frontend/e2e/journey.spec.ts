@@ -1250,6 +1250,96 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByRole("tab", { name: "Tracker" })).toBeVisible();
 });
 
+test("a player keeps their own sect status, naming its patron from the home troupe, until the troupe gives it to staff only", async ({ browser }) => {
+  const custodian = await person(browser, "status-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "status-lead");
+  const player = await person(browser, "status-player");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Standing ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+
+  // Celestine, a Camarilla Brujah, built through the API and accepted home.
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Celestine" });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send(p, "POST", `/api/characters/${id}/creation/complete`, {});
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+
+  // The troupe's NPCs: its Prince, an untitled one, and a Sabbat Bishop.
+  for (const [name, sect, title] of [["Prince Aurelio", "Camarilla", "Prince"], ["Udo the Quiet", "Camarilla", null], ["Bishop Corvin", "Sabbat", "Bishop"]] as const) {
+    const npc = await send(lead.page, "POST", `/api/troupes/${troupeId}/npcs`, { name, wizard: false });
+    await send(lead.page, "PUT", `/api/characters/${npc.id}/npc/ratings`, { category: "sect", name: sect, rating: null, detail: "" });
+    if (title) await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${npc.id}/titles`, { titles: [title] });
+  }
+
+  // On the sheet, a Status card: Accepted, and no fleeting status yet.
+  await p.goto(`/characters/${id}`);
+  const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
+  await expect(card.getByText("Acknowledged by the Camarilla.")).toBeVisible();
+  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+
+  // Celestine is given Loyal by the Prince, picked from the home troupe's characters.
+  await card.getByRole("button", { name: "Add status" }).click();
+  const form = p.getByRole("form", { name: "Add status" });
+  await form.getByLabel("Status").selectOption("Loyal");
+  await form.getByRole("combobox", { name: "A character" }).click();
+  const patrons = p.getByRole("listbox", { name: "Patrons" });
+  await expect(patrons.getByRole("option")).toHaveText(["Prince Aurelio (Prince)NPC"]);
+  await form.getByRole("combobox", { name: "A character" }).fill("aur");
+  await patrons.getByRole("option", { name: /Prince Aurelio/ }).click();
+  await form.getByLabel("The story (optional)").fill("For keeping the Masquerade at the docks");
+  await p.screenshot(shots("status-add"));
+  await form.getByRole("button", { name: "Add status" }).click();
+  await expect(card.getByText("from Prince Aurelio (Prince at the time)")).toBeVisible();
+  await expect(card.getByText("Fleeting: 1 of 5")).toBeVisible();
+  await expect(card.getByText("For keeping the Masquerade at the docks")).toBeVisible();
+  await p.screenshot(shots("status-sheet"));
+
+  // Taken off again, and both in the character's log.
+  await card.getByRole("button", { name: "Remove Loyal" }).click();
+  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+  await p.getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText("status-player gave Celestine the fleeting status Loyal, from Prince Aurelio (Prince at the time).")).toBeVisible();
+  await expect(p.getByText("status-player removed Celestine's Loyal (from Prince Aurelio (Prince at the time)).")).toBeVisible();
+
+  // The lead gives status to staff only, on the troupe's About tab.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}`);
+  const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status on sheets" }) });
+  await expect(setting.getByText("Players keep their own.")).toBeVisible();
+  await setting.getByRole("button", { name: "Change who keeps status on sheets" }).click();
+  await setting.getByLabel(/Staff only/).check();
+  await setting.getByRole("button", { name: "Save" }).click();
+  await expect(setting.getByText("Staff only.")).toBeVisible();
+
+  // Now Celestine's player cannot add status, and the API refuses them.
+  await p.goto(`/characters/${id}`);
+  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+  await expect(card.getByRole("button", { name: "Add status" })).toHaveCount(0);
+  const refused = await p.request.post(`/api/characters/${id}/status`, { headers, data: { name: "Loyal", patron_text: "The Prince" } });
+  expect(refused.status()).toBe(409);
+});
+
 test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the list by kind and form", async ({ browser }) => {
   const custodian = await person(browser, "kinds-custodian");
   makeCustodian(custodian.email);
@@ -2382,7 +2472,7 @@ test("a Ventrue takes Royalty in the wizard, is sent to Backgrounds, and places 
   const id = await creatingVampire(p, "Crowned", "Ventrue", [], {
     ...ATTRIBUTES_AND_FOCUSES,
     backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
-    disciplines: [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
   });
   await p.goto(`/characters/${id}/create/merits`);
   await p.getByLabel("Search Merits").fill("Royalty");
@@ -2548,7 +2638,7 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   const build: Record<string, [string, number][]> = {
     ...ATTRIBUTES_AND_FOCUSES,
     backgrounds: [["Fame", 3], ["Contacts", 2], ["Generation", 1]],
-    disciplines: [["Dominate", 2], ["Fortitude", 1], ["Presence", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
   };
   for (const [category, picks] of Object.entries(build))
     await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });

@@ -17,6 +17,7 @@ from horatio import (
     play,
     reference,
     retainers,
+    sect_status,
     sheets,
     titles,
 )
@@ -80,6 +81,9 @@ class PrintedSheet(BaseModel):
     # A ghoul's domitor, by name; None for a vampire.
     domitor: str | None = None
     traits: list[PrintedTrait]
+    # Its sect status as it carries it into a game in that troupe (horatio.sect_status);
+    # with no troupe, what it holds and its merits give.
+    status: list[str] = []
     # Its Retainers, listed under the background.
     retainers: list[RetainerOut]
     # Each Alternate Identity, with what its rating means.
@@ -99,6 +103,13 @@ def printed_sheet(
     """The sheet as it stands, headed for `troupe_id` (by default the home troupe, else
     the first troupe joined), whose titles it shows."""
     return print_sheet(db, visible_character(db, user, character_id), troupe_id)
+
+
+def printed_status(db: Session, character: Character, troupe_id: uuid.UUID | None) -> list[str]:
+    if troupe_id is not None:
+        return [c.name for c in sect_status.carried(db, character, troupe_id)]
+    found = sect_status.standing(db, character)
+    return [d.name for d in found.derived if d.kind == "merit"] + [h.name for h in found.held]
 
 
 def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) -> PrintedSheet:
@@ -190,6 +201,7 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         ),
         domitor=domitor.name if domitor else None,
         traits=traits,
+        status=printed_status(db, character, troupe),
         retainers=listed(db, retainers.read(db, character), None),
         identities=identities_out(db, character),
         pools=reference.reference(

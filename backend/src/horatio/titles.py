@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.models import Character, CharacterTitle, RuleSet, Troupe, TroupeTitle, User
+from horatio.rules.status import TitleData, titles_from
 from horatio.sheets import conflict, membership, unprocessable
 
 
@@ -31,6 +32,20 @@ def troupe_titles(db: Session, troupe_id: uuid.UUID) -> list[str]:
             .order_by(TroupeTitle.name)
         )
     )
+
+
+def title_data(db: Session, troupe_id: uuid.UUID) -> dict[str, TitleData]:
+    """Every title a troupe can give, by name: its rule sets' titles and its own,
+    each with its sect and the status it gives (horatio.rules.status)."""
+    found: dict[str, TitleData] = {}
+    for names, rules in db.execute(select(RuleSet.titles, RuleSet.status_rules)):
+        for title in titles_from([*names, *rules.get("titles", [])]):
+            if title.name not in found or title.sect or title.gives_status:
+                found[title.name] = title
+    # The troupe's own give no status yet.
+    for name in troupe_titles(db, troupe_id):
+        found.setdefault(name, TitleData(name=name))
+    return found
 
 
 def available(db: Session, troupe_id: uuid.UUID) -> set[str]:

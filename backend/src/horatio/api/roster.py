@@ -262,6 +262,16 @@ MESSAGES: dict[str, str] = {
     "title.taken": "{actor} took the title {title} from {character}.",
     "title.added": "{actor} added the title {title} to the troupe.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
+    "status.added": "{actor} gave {character} the {type} status {status}, from {patron}{because}.",
+    "status.removed": "{actor} removed {character}'s {status} (from {patron}){because}.",
+    "status.spent": "{actor} spent {character}'s {status} (from {patron}){because}.",
+    "status.given_up": "{actor} gave up {character}'s {status} (from {patron}) unspent, to take"
+    " {instead}.",
+    "status.expired": "{character}'s {status} (from {patron}) ended.",
+    "status.cleared": "{actor} made {character} {sect}, so it lost the status it held: {statuses}.",
+    "status.resolved": "{actor} took {status} off {character}: nothing gives it now{because}.",
+    "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
+    "troupe.status_by": "{actor} set Status on sheets: {setting}.",
     "scene.created": "{actor} made the scene {name}.",
     "scene.renamed": "{actor} renamed the scene {old} to {name}.",
     "scene.removed": "{actor} removed the scene {name}.",
@@ -405,6 +415,8 @@ def message(
     values = {**data, "actor": actor or "Someone", "character": character or "A character"}
     if isinstance(values.get("category"), str):
         values["category"] = values["category"].replace("_", " ")
+    # A reason given, as the end of a sentence: " (the Prince's order)".
+    values["because"] = f" ({data['reason']})" if data.get("reason") else ""
     if isinstance(values.get("picks"), dict):
         picks: dict[str, Any] = values["picks"]
         values["picks"] = ", ".join(f"{n} {r}" for n, r in picks.items()) or "none"

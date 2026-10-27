@@ -26,6 +26,7 @@ class Troupe(Imported, Record):
         CheckConstraint(
             "diablerie_flaws in ('leave', 'remove', 'keep_xp')", name="diablerie_flaws"
         ),
+        CheckConstraint("status_by in ('players', 'staff')", name="status_by"),
     )
 
     name: Mapped[str]
@@ -59,6 +60,10 @@ class Troupe(Imported, Record):
     # (horatio.diablerie): "leave" it, "remove" it and the XP it gave, or "keep_xp"
     # to remove it and keep that XP.
     diablerie_flaws: Mapped[str] = mapped_column(default="leave", server_default="leave")
+    # Status on sheets (horatio.sect_status): who adds and removes fleeting and
+    # negative status on its characters' sheets: "players", each on their own, naming
+    # the patron; or "staff", its running staff only. Running staff always can.
+    status_by: Mapped[str] = mapped_column(default="players", server_default="players")
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a

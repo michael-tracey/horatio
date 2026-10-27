@@ -53,7 +53,16 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, aliased
 
-from horatio import audit, influence_effects, npcs, play_influence, reference, retainers, sheets
+from horatio import (
+    audit,
+    influence_effects,
+    npcs,
+    play_influence,
+    reference,
+    retainers,
+    sect_status,
+    sheets,
+)
 from horatio.models import (
     Character,
     PlayCounter,
@@ -837,6 +846,8 @@ def reset(db: Session, character: Character, actor: User, *, troupe_id: uuid.UUI
     audit.record(
         db, actor, "play.reset", troupe_id=troupe_id, character_id=character.id, game=game.number
     )
+    # A game ending can end negative status.
+    sect_status.expire(db, character, actor)
     return True
 
 

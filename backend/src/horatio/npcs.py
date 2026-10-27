@@ -20,7 +20,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, sect_status
 from horatio.creation import grant_starting_traits
 from horatio.models import (
     Character,
@@ -35,6 +35,7 @@ from horatio.rules.npc_kinds import NpcKind, Resource, custom_kind, npc_kinds
 from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import (
+    chosen,
     conflict,
     ensure_offered,
     find_definition,
@@ -206,8 +207,11 @@ def set_rating(
     if not category.rated:
         if rating is not None:
             raise unprocessable(f"{category.name} has no rating.")
+        sect = chosen(db, npc, "sect")
         replace_choice(db, npc, definition, category, detail)
         db.flush()
+        if category.key == "sect" and name != sect:
+            sect_status.clear(db, staff, npc, name)
         return
     if rating is None or rating < 0:
         raise unprocessable(f"{category.name} needs a rating.")

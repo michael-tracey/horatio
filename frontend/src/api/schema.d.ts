@@ -1566,6 +1566,116 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Status
+         * @description The character's sect status: derived, held with its patrons, its bans and cap,
+         *     and what the viewer can change.
+         */
+        get: operations["read_status_api_characters__character_id__status_get"];
+        put?: never;
+        /**
+         * Add Status
+         * @description Give the character a fleeting or negative status, naming its patron. On the
+         *     sheet, the home troupe's setting says who can.
+         */
+        post: operations["add_status_api_characters__character_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/status/bans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark Ban
+         * @description Staff say a status ban applies to the character, or that it is exempt, with a
+         *     reason; or go back to what the sheet shows.
+         */
+        put: operations["mark_ban_api_characters__character_id__status_bans_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/status/patrons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Patrons
+         * @description Who can be picked as the patron of status given to the character: its home
+         *     troupe's PCs, and its NPCs holding a title there of the character's sect.
+         */
+        get: operations["read_patrons_api_characters__character_id__status_patrons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/status/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Status
+         * @description Staff take off a status trait the sheet held before status was derived, that
+         *     nothing gives now.
+         */
+        post: operations["resolve_status_api_characters__character_id__status_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/status/{held_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Status
+         * @description Take a held status off the character. A negative status comes off early only
+         *     by the one who gave it, or staff.
+         */
+        post: operations["remove_status_api_characters__character_id__status__held_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/traits": {
         parameters: {
             query?: never;
@@ -4754,6 +4864,35 @@ export interface components {
             /** Troupe Name */
             troupe_name: string | null;
         };
+        /** BanMarkIn */
+        BanMarkIn: {
+            /** Ban */
+            ban: string;
+            /** Mark */
+            mark: ("applies" | "exempt") | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** BanOut */
+        BanOut: {
+            /** Applies */
+            applies: boolean;
+            /** Applies To */
+            applies_to: string;
+            /** By Sheet */
+            by_sheet: boolean | null;
+            /** Level */
+            level: string;
+            /** Marked */
+            marked: boolean | null;
+            /** Page */
+            page: string | null;
+            /** Reason */
+            reason: string;
+        };
         /** BlockChoicesOut */
         BlockChoicesOut: {
             /** Entries */
@@ -5741,6 +5880,26 @@ export interface components {
             /** Value */
             value: number;
         };
+        /** DerivedOut */
+        DerivedOut: {
+            /** Condition */
+            condition: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "title" | "social_age" | "faction" | "merit";
+            /** Name */
+            name: string;
+            /** Source */
+            source: string;
+            /** Troupe Id */
+            troupe_id: string | null;
+            /** Troupe Name */
+            troupe_name: string | null;
+            /** Type */
+            type: string;
+        };
         /** DetailChange */
         DetailChange: {
             /** Category */
@@ -6433,6 +6592,19 @@ export interface components {
             plan: components["schemas"]["EmbracePlanOut"];
             sheet: components["schemas"]["SheetOut"];
         };
+        /** EndingOut */
+        EndingOut: {
+            /** Games Left */
+            games_left: number;
+            /** Not Before */
+            not_before: string | null;
+            /** Text */
+            text: string;
+            /** This Game */
+            this_game: boolean;
+            /** While Held */
+            while_held: string | null;
+        };
         /**
          * ExceptionAskOut
          * @description A trait asked for by exception: the rules it breaks, why, and whether free.
@@ -6946,6 +7118,31 @@ export interface components {
             boxes: number;
             /** Name */
             name: string;
+        };
+        /** HeldOut */
+        HeldOut: {
+            /** Can Remove */
+            can_remove: boolean;
+            ending: components["schemas"]["EndingOut"] | null;
+            /**
+             * Given On
+             * Format: date
+             */
+            given_on: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            patron: components["schemas"]["PatronOut"];
+            /** Place */
+            place: string;
+            /** Story */
+            story: string;
+            /** Type */
+            type: string;
         };
         /** HeldTitles */
         HeldTitles: {
@@ -8438,6 +8635,33 @@ export interface components {
             /** Rating */
             rating: number;
         };
+        /** PatronChoiceOut */
+        PatronChoiceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+        };
+        /** PatronOut */
+        PatronOut: {
+            /** Id */
+            id: string | null;
+            /** Name */
+            name: string;
+            /** Text */
+            text: string;
+            /** Title */
+            title: string;
+            /** Words */
+            words: string;
+        };
         /** PendingDisciplineOut */
         PendingDisciplineOut: {
             /**
@@ -9186,6 +9410,11 @@ export interface components {
             retainers: components["schemas"]["RetainerOut"][];
             /** Splat */
             splat: string;
+            /**
+             * Status
+             * @default []
+             */
+            status: string[];
             /** Titles */
             titles: string[];
             /** Traits */
@@ -10526,6 +10755,121 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /**
+         * StatusAbout
+         * @description What a status does, as the rules say (horatio.rules.status).
+         */
+        StatusAbout: {
+            /** Censure */
+            censure: string;
+            /** Duration */
+            duration: string;
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
+            /** Passive */
+            passive: string;
+            /** Punishment */
+            punishment: string;
+            /** Sect */
+            sect: string;
+            /** Spent */
+            spent: string;
+            /** Type */
+            type: string;
+        };
+        /** StatusIn */
+        StatusIn: {
+            /** Give Up */
+            give_up?: string | null;
+            /** Given On */
+            given_on?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Override
+             * @default false
+             */
+            override: boolean;
+            /** Patron Id */
+            patron_id?: string | null;
+            /**
+             * Patron Text
+             * @default
+             */
+            patron_text: string;
+            /**
+             * Place
+             * @default
+             */
+            place: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Story
+             * @default
+             */
+            story: string;
+        };
+        /** StatusOut */
+        StatusOut: {
+            /** About */
+            about: {
+                [key: string]: components["schemas"]["StatusAbout"];
+            };
+            /** Accepted */
+            accepted: string | null;
+            /** Acting */
+            acting: ("player" | "staff") | null;
+            /** Addable */
+            addable: components["schemas"]["StatusAbout"][];
+            /** Bans */
+            bans: components["schemas"]["BanOut"][];
+            /** Derived */
+            derived: components["schemas"]["DerivedOut"][];
+            /** Disgraced */
+            disgraced: boolean;
+            /** Fleeting */
+            fleeting: number;
+            /** Fleeting Cap */
+            fleeting_cap: number;
+            /** Held */
+            held: components["schemas"]["HeldOut"][];
+            /** Sect */
+            sect: string | null;
+            /** Setting */
+            setting: string;
+            /** Staff */
+            staff: boolean;
+            /** Troupe Id */
+            troupe_id: string | null;
+            /** Troupe Name */
+            troupe_name: string | null;
+            /** Unresolved */
+            unresolved: string[];
+        };
+        /** StatusRemoveIn */
+        StatusRemoveIn: {
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** StatusResolveIn */
+        StatusResolveIn: {
+            /** Name */
+            name: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
         /** StepNeed */
         StepNeed: {
             /** Message */
@@ -10962,6 +11306,8 @@ export interface components {
             session_xp?: number | null;
             /** Starting Xp */
             starting_xp?: number | null;
+            /** Status By */
+            status_by?: ("players" | "staff") | null;
         };
         /** TroupeChoice */
         TroupeChoice: {
@@ -11027,6 +11373,8 @@ export interface components {
             starting_blood: number | null;
             /** Starting Xp */
             starting_xp: number;
+            /** Status By */
+            status_by: string;
             /** Xp Ceiling */
             xp_ceiling: number;
             /** Xp Floor */
@@ -14706,6 +15054,209 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KindOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_status_api_characters__character_id__status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_status_api_characters__character_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_ban_api_characters__character_id__status_bans_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BanMarkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_patrons_api_characters__character_id__status_patrons_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatronChoiceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_status_api_characters__character_id__status_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusResolveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_status_api_characters__character_id__status__held_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                held_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusRemoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusOut"];
                 };
             };
             /** @description Validation Error */
