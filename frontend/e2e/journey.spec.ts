@@ -3449,6 +3449,89 @@ test("the custodian filters People by the troupe a player's active character is 
   await expect(list.filter({ hasText: visitor.email })).toBeVisible();
 });
 
+test("the custodian searches the audit log across troupes by person, days and character, and exports it", async ({ browser }) => {
+  const custodian = await person(browser, "logsearch-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "logsearch-lead");
+  const player = await person(browser, "logsearch-play");
+  const inkwells = `Court of Inkwells ${run}`;
+  const seals = `Court of Seals ${run}`;
+  const character = `Wilhelmina ${run}`;
+
+  const send = async (p: Page, method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  // The lead makes the player a narrator in each of two troupes: one change in each.
+  for (const name of [inkwells, seals]) {
+    const troupe = await send(custodian.page, "POST", "/api/troupes", { name, lead_handle: lead.handle });
+    await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: player.handle, role: "narrator" });
+  }
+  // And the player's character has two changes of its own.
+  const made = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: character });
+  await send(player.page, "PUT", `/api/characters/${made.id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  await send(player.page, "PUT", `/api/characters/${made.id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+
+  // Only the custodian can search it.
+  expect((await lead.page.request.get("/api/audit")).status()).toBe(403);
+  expect((await lead.page.request.get("/api/audit/export")).status()).toBe(403);
+
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Audit", exact: true }).click();
+  const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem");
+
+  // Everything the lead did today, in both troupes.
+  const today = await c.evaluate(() => new Date().toLocaleDateString("en-CA"));
+  await c.getByLabel("Who did it").fill(lead.handle);
+  await c.getByRole("option").filter({ hasText: lead.handle }).click();
+  await c.getByLabel("From", { exact: true }).fill(today);
+  await c.getByLabel("To", { exact: true }).fill(today);
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(found).toHaveCount(2);
+  await expect(found.filter({ hasText: seals })).toContainText("logsearch-lead made logsearch-play narrator.");
+  await expect(found.filter({ hasText: inkwells })).toContainText("logsearch-lead made logsearch-play narrator.");
+  await expect(c).toHaveURL(new RegExp(`person=${lead.handle}`));
+  await c.screenshot(shots("audit-by-person"));
+
+  const exported = async () => {
+    const download = c.waitForEvent("download");
+    await c.getByRole("link", { name: "Export as CSV" }).click();
+    const chunks: Buffer[] = [];
+    for await (const chunk of await (await download).createReadStream()) chunks.push(chunk as Buffer);
+    return Buffer.concat(chunks).toString("utf8");
+  };
+  const byLead = await exported();
+  expect(byLead.split("\n").filter((line) => line.trim())).toHaveLength(3);
+  expect(byLead).toContain(inkwells);
+  expect(byLead).toContain(seals);
+
+  // The same days, nothing yesterday.
+  await c.getByLabel("To", { exact: true }).fill(await c.evaluate(() => new Date(Date.now() - 86_400_000).toLocaleDateString("en-CA")));
+  await c.getByLabel("From", { exact: true }).fill("");
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(c.getByText("Nothing in the log matches.")).toBeVisible();
+
+  // Every change to one character, whoever made it.
+  await c.getByRole("button", { name: "Clear" }).click();
+  await c.getByLabel("Character", { exact: true }).fill(character);
+  await c.getByRole("option").filter({ hasText: character }).click();
+  await c.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(found).toHaveCount(2);
+  await expect(found.first()).toContainText(`logsearch-play chose Camarilla as ${character}'s sect.`);
+  await expect(found.nth(1)).toContainText(`logsearch-play chose Brujah as ${character}'s clan.`);
+  const byCharacter = await exported();
+  expect(byCharacter).toContain(`chose Camarilla as ${character}'s sect.`);
+  expect(byCharacter).toContain(`chose Brujah as ${character}'s clan.`);
+
+  // Each change leads to its character.
+  await found.first().getByRole("link", { name: /Camarilla/ }).click();
+  await expect(c).toHaveURL(new RegExp(`/characters/${made.id}`));
+});
+
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {
   const custodian = await person(browser, "filter-custodian");
   makeCustodian(custodian.email);

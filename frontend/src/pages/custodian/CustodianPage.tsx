@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router";
 import { Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
+import { AuditTab } from "./AuditTab";
 import { BackupsTab } from "./BackupsTab";
 import { ClanLogosTab } from "./ClanLogosTab";
 import { PeopleTab } from "./PeopleTab";
@@ -23,6 +24,7 @@ export function CustodianPage() {
           { to: "/custodian/troupe-requests", label: "Troupe requests", count: requests.data?.filter((r) => r.status === "pending").length ?? 0 },
           { to: "/custodian/clan-logos", label: "Clan logos" },
           { to: "/custodian/backups", label: "Backups" },
+          { to: "/custodian/audit", label: "Audit" },
           { to: "/custodian/system", label: "System" },
         ]}
       />
@@ -32,6 +34,7 @@ export function CustodianPage() {
         <Route path="troupe-requests" element={<TroupeRequestsTab />} />
         <Route path="clan-logos" element={<ClanLogosTab />} />
         <Route path="backups" element={<BackupsTab />} />
+        <Route path="audit" element={<AuditTab />} />
         <Route path="system" element={<SystemTab />} />
       </Routes>
     </>

@@ -367,6 +367,7 @@ MESSAGES: dict[str, str] = {
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
+    "audit.exported": "{actor} exported {count} events from the audit log.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
     "play.status_chosen": "{actor} chose {character}'s status for game {game}: {choice}.",
     "play.troupe_reset": "{actor} reset {count} characters for the next game.",

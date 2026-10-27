@@ -38,6 +38,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Log
+         * @description For the custodian: every event in the log, in every troupe and outside them,
+         *     that the filters find, newest first, a page at a time. `q` is words that must all
+         *     be in the event as it reads.
+         */
+        get: operations["search_log_api_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Characters
+         * @description For the custodian: characters to search the log by, whosever and wherever they
+         *     are, retired ones too: up to 20 with `q` in their name, or just `character_id`.
+         */
+        get: operations["characters_api_audit_characters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Log
+         * @description For the custodian: everything the same filters find, newest first, as a CSV.
+         *     The export itself goes in the log.
+         */
+        get: operations["export_log_api_audit_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit/filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Filters
+         * @description For the custodian: the groups of actions and the troupes to search by.
+         */
+        get: operations["filters_api_audit_filters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/forgot": {
         parameters: {
             query?: never;
@@ -4980,6 +5064,98 @@ export interface components {
             most?: number | null;
             /** Pools */
             pools?: string | null;
+        };
+        /** AuditCharacter */
+        AuditCharacter: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Player Name */
+            player_name: string | null;
+            /** Retired */
+            retired: boolean;
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
+        /** AuditEntry */
+        AuditEntry: {
+            /** Action */
+            action: string;
+            /** Actor Id */
+            actor_id: string | null;
+            /** Actor Name */
+            actor_name: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Character Id */
+            character_id: string | null;
+            /** Character Name */
+            character_name: string | null;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Message */
+            message: string;
+            /** Player Id */
+            player_id: string | null;
+            /** Player Name */
+            player_name: string | null;
+            /** Troupe Id */
+            troupe_id: string | null;
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
+        /** AuditFilters */
+        AuditFilters: {
+            /** Groups */
+            groups: components["schemas"]["AuditGroupOut"][];
+            /** Troupes */
+            troupes: components["schemas"]["AuditTroupe"][];
+        };
+        /**
+         * AuditGroup
+         * @enum {string}
+         */
+        AuditGroup: "approvals" | "xp" | "sheets" | "creation" | "status" | "titles" | "downtimes" | "influence" | "play" | "npcs" | "staff" | "house_rules" | "troupes" | "accounts" | "system";
+        /** AuditGroupOut */
+        AuditGroupOut: {
+            key: components["schemas"]["AuditGroup"];
+            /** Label */
+            label: string;
+        };
+        /** AuditPage */
+        AuditPage: {
+            /** Entries */
+            entries: components["schemas"]["AuditEntry"][];
+            /** Next */
+            next: string | null;
+        };
+        /** AuditTroupe */
+        AuditTroupe: {
+            /** Archived */
+            archived: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** AwardableCharacter */
         AwardableCharacter: {
@@ -12594,6 +12770,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_log_api_audit_get: {
+        parameters: {
+            query?: {
+                /** @description Who did it: their handle. */
+                person?: string | null;
+                character_id?: string | null;
+                troupe_id?: string | null;
+                group?: components["schemas"]["AuditGroup"] | null;
+                /** @description From this moment on. */
+                since?: string | null;
+                /** @description Before this moment. */
+                until?: string | null;
+                q?: string;
+                before?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    characters_api_audit_characters_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                character_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditCharacter"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_log_api_audit_export_get: {
+        parameters: {
+            query?: {
+                /** @description Who did it: their handle. */
+                person?: string | null;
+                character_id?: string | null;
+                troupe_id?: string | null;
+                group?: components["schemas"]["AuditGroup"] | null;
+                /** @description From this moment on. */
+                since?: string | null;
+                /** @description Before this moment. */
+                until?: string | null;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    filters_api_audit_filters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditFilters"];
                 };
             };
         };

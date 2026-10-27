@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from horatio import delivery
 from horatio.api import (
     approvals,
+    audit,
     auth,
     backups,
     badges,
@@ -121,6 +122,7 @@ for module in (
     responses,
     roster,
     character_log,
+    audit,
     printing,
     pictures,
     npcs,
