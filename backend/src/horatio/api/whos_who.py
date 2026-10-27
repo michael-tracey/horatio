@@ -50,10 +50,11 @@ class WhosWhoEntry(BaseModel):
     # Visiting: its home troupe is elsewhere, named if it has one.
     visiting: bool
     visiting_from: str | None
-    # Character and player pronouns (#265), who speaks for its clan at court if it
-    # has no seat (#267), and why it left (#268): None until those are kept.
+    # The character's pronouns, and its player's; None for none given.
     pronouns: str | None
     player_pronouns: str | None
+    # Who speaks for its clan at court if it has no seat (#267), and why it left
+    # (#268): None until those are kept.
     represented_by: str | None
     left_reason: str | None
 

@@ -32,8 +32,8 @@ clan, or by what its player says ("Anarch"). Its player sets it, and staff can
 change it. It is kept on the character's membership of the troupe, so it goes when
 the character leaves.
 
-Character and player pronouns (#265) and why a character left (#268) each have
-their place in an entry, empty until those land.
+Each entry has the character's pronouns and its player's (horatio.pronouns). Why
+a character left (#268) has its place in an entry, empty until that lands.
 """
 
 import uuid
@@ -70,9 +70,10 @@ class Entry:
     # Its home troupe's name, for a visiting character.
     visiting_from: str | None
     visiting: bool
-    # Filled in by #265, #267 and #268.
+    # The character's pronouns and its player's, if they gave them.
     pronouns: str | None = None
     player_pronouns: str | None = None
+    # Filled in by #267 and #268.
     represented_by: str | None = None
     left_reason: str | None = None
 
@@ -278,6 +279,8 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
                 social_age=standing[c.id].age,
                 sect=sects.get(c.id),
                 player=player_name(players[c.player_id]) if c.kind == "pc" else None,
+                pronouns=c.pronouns,
+                player_pronouns=players[c.player_id].pronouns if c.kind == "pc" else None,
                 titles=held.get(c.id, []),
                 visible=visible[c.id],
                 bans=bans(db, c),

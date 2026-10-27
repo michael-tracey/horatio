@@ -16,7 +16,7 @@ router = APIRouter(prefix="/characters/{character_id}", tags=["log"])
 
 # Recorded once in each of the character's troupes, so that every troupe's log
 # has it; here, where the copies would repeat, they read once.
-IN_EVERY_TROUPE = {"character.renamed"}
+IN_EVERY_TROUPE = {"character.renamed", "character.moved"}
 
 
 @router.get("/log")

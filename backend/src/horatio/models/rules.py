@@ -39,6 +39,10 @@ class RuleSet(Record):
     creation_only: Mapped[list[dict[str, str]]] = mapped_column(
         JSONB, default=list, server_default="[]"
     )
+    # Equipment's kinds and grades (horatio.rules.equipment): {kinds, grades}, as
+    # written in the rule set's equipment file. Its qualities and sample items are
+    # in `equipment_qualities` and `equipment_templates`.
+    equipment: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class TraitCategory(Record):
@@ -271,3 +275,59 @@ class HouseTrait(Record):
     trait_definition_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("trait_definitions.id"), unique=True
     )
+
+
+EQUIPMENT_KIND_CHECK = "kind in ('melee', 'ranged', 'protective', 'miscellaneous')"
+
+
+class EquipmentQuality(Record):
+    """A quality an item of one kind can have (horatio.rules.equipment), loaded from
+    the rule set's equipment file. Never deleted, like a trait definition: one the
+    file no longer has is retired."""
+
+    __tablename__ = "equipment_qualities"
+    __table_args__ = (
+        UniqueConstraint("rule_set_id", "kind", "name"),
+        CheckConstraint(EQUIPMENT_KIND_CHECK, name="kind"),
+    )
+
+    rule_set_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rule_sets.id"), index=True)
+    kind: Mapped[str]
+    name: Mapped[str]
+    # What it does, in a line of our own words.
+    effect: Mapped[str]
+    page: Mapped[str | None]
+    # What it does to an item (two_handed, excludes, shots...), as in the file.
+    properties: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Its place in the file, to list them in the book's order.
+    position: Mapped[int]
+    retired: Mapped[bool] = mapped_column(default=False, server_default="false")
+
+
+class EquipmentTemplate(Record):
+    """An item to start one from: the book's sample items (troupe null), and a
+    troupe's own (horatio.equipment), saved under the rule set it was checked by."""
+
+    __tablename__ = "equipment_templates"
+    __table_args__ = (
+        UniqueConstraint("rule_set_id", "troupe_id", "name", postgresql_nulls_not_distinct=True),
+        CheckConstraint(EQUIPMENT_KIND_CHECK, name="kind"),
+        CheckConstraint("grade in ('cheap', 'standard', 'special')", name="grade"),
+    )
+
+    rule_set_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rule_sets.id"), index=True)
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
+    name: Mapped[str]
+    kind: Mapped[str]
+    grade: Mapped[str]
+    # Each {name, detail?}.
+    qualities: Mapped[list[dict[str, str]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
+    page: Mapped[str | None]
+    position: Mapped[int] = mapped_column(default=0, server_default="0")
+    # A troupe's own template keeps the rest of the item it was saved from.
+    crafted: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # A special item's own effects: each {name, effect}.
+    effects: Mapped[list[dict[str, str]]] = mapped_column(JSONB, default=list, server_default="[]")
+    description: Mapped[str] = mapped_column(default="", server_default="")
