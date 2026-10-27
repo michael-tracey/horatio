@@ -3450,6 +3450,58 @@ test("the custodian filters People by the troupe a player's active character is 
   await expect(list.filter({ hasText: visitor.email })).toBeVisible();
 });
 
+test("the custodian views Horatio as a player, read-only, and the player sees that they did", async ({ browser }) => {
+  const custodian = await person(browser, "viewas-custodian");
+  makeCustodian(custodian.email);
+  const player = await person(browser, "viewas-player");
+  const p = player.page;
+  const made = await p.request.post("/api/characters", { headers: { "X-Horatio": "1" }, data: { splat: "vampire", name: "Marisol" } });
+  expect(made.status(), await made.text()).toBe(201);
+
+  // The custodian starts from People, saying why.
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "People", exact: true }).click();
+  await c.getByLabel("Search people").fill(player.email);
+  const row = c.locator("main li").filter({ hasText: player.email });
+  await row.getByRole("button", { name: "View as viewas-player" }).click();
+  const dialog = c.getByRole("dialog", { name: `View as @${player.handle}` });
+  await dialog.getByLabel("Reason").fill("Can't find her character");
+  await dialog.getByRole("button", { name: "Start viewing" }).click();
+
+  // Horatio as the player sees it, with the banner.
+  const banner = c.getByRole("status").filter({ hasText: `Viewing as @${player.handle}, read-only.` });
+  await expect(banner).toBeVisible();
+  await expect(c.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  await expect(c.locator("main").getByText("Marisol")).toBeVisible();
+  await expect(c.getByRole("link", { name: "Custodian", exact: true })).toHaveCount(0);
+  await c.screenshot(shots("view-as"));
+
+  // Nothing can be changed: the API refuses, whatever the page sends.
+  await c.getByRole("link", { name: "viewas-player" }).click();
+  await c.getByLabel("Bio").fill("Not mine to write.");
+  await c.getByRole("button", { name: "Save profile" }).click();
+  await expect(c.getByText(`You are viewing Horatio as @${player.handle}, read-only. Stop viewing to make changes.`)).toBeVisible();
+  const refused = await c.request.post("/api/characters", { headers: { "X-Horatio": "1" }, data: { splat: "vampire", name: "Intruder" } });
+  expect(refused.status()).toBe(403);
+  await expect(banner).toBeVisible();
+
+  // Stopping makes them the custodian again.
+  await banner.getByRole("button", { name: "Stop" }).click();
+  await expect(c.getByRole("link", { name: "Custodian", exact: true })).toBeVisible();
+  await expect(c.getByText(`Viewing as @${player.handle}, read-only.`)).toHaveCount(0);
+
+  // The player sees when, by whom and why on their account page; their bio is as it was.
+  await p.reload();
+  await p.getByRole("link", { name: "viewas-player" }).click();
+  await expect(p.getByLabel("Bio")).toHaveValue("");
+  const visits = p.locator("section", { has: p.getByRole("heading", { name: "When the custodian viewed as you" }) });
+  await expect(visits.getByText("Can't find her character")).toBeVisible();
+  await expect(visits.getByText(/, by viewas-custodian$/)).toBeVisible();
+  await p.screenshot(shots("viewed-as"));
+});
+
 test("storytellers filter the troupe's characters and print what they find", async ({ browser }) => {
   const custodian = await person(browser, "filter-custodian");
   makeCustodian(custodian.email);

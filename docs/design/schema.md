@@ -61,6 +61,12 @@ from Parse's `createdAt`.
 users. At most one per user: a new link deletes the old, and using it deletes
 it and revokes every session the user had.
 
+**`viewings`**: the custodian viewing Horatio as someone, read-only, for support.
+`custodian_id` → users, `user_id` → users (whom they view as), `session_id` →
+sessions (the custodian's sign-in it belongs to; set null if that is deleted),
+`reason`, `ends_at` (30 minutes on), `ended_at` (nullable: stopped, signed out
+or found timed out). Kept once ended, so the person sees it on their account page.
+
 **`troupes`**
 `name`, `description`, `lead_user_id` (**not null**), `archived_at` (nullable),
 `allowed_sects` (JSON list of sect names; empty means any).

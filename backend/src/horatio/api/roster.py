@@ -341,6 +341,12 @@ MESSAGES: dict[str, str] = {
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
+    "account.view_as": "{actor} viewed Horatio as {member}, read-only{because}.",
+    "account.view_as_ended": "{actor} stopped viewing as {member}.",
+    "account.view_as_ended.signed_out": "{actor} signed out, which ended viewing as {member}.",
+    "account.view_as_ended.timed_out": "{actor}'s viewing as {member} ended after 30 minutes.",
+    "account.view_as_ended.not_custodian": "{actor}'s viewing as {member} ended: they are"
+    " no longer custodian.",
     "character.renamed": "{actor} renamed {from_name} to {character}.",
     "character.domitor": "{actor} made {domitor} {character}'s domitor, of {clan}; discipline"
     " dots {disciplines}.",

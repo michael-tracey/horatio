@@ -8,6 +8,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } 
 import { useDates } from "../../dates";
 import { memberSince } from "../players";
 import { ResetPassword, useCancelReset } from "./ResetPassword";
+import { ViewAs } from "./ViewAs";
 
 /** Every account, for the custodian: find someone by name, handle or email, or by the troupe an active character
  * of theirs is home in, open their
@@ -71,6 +72,7 @@ function Person({ person }: { person: PlayerSummary }) {
         </Link>
         <span className="flex items-center gap-2">
           {person.reset_expires_at && <Badge tone="gold">reset link out</Badge>}
+          <ViewAs person={person} />
           <Button
             type="button"
             variant="ghost"

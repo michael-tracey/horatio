@@ -76,6 +76,8 @@ class PlayerSummary(BaseModel):
     member_since: datetime
     # When their live reset link expires, if they have one.
     reset_expires_at: datetime | None
+    # A custodian, whom no one views as (horatio.auth.viewing).
+    is_custodian: bool = False
 
 
 class ProfileIn(BaseModel):
@@ -256,6 +258,7 @@ def find_players(
             email=u.email,
             member_since=u.created_at,
             reset_expires_at=expiries.get(u.id),
+            is_custodian=u.is_custodian,
         )
         for u in found
     ]

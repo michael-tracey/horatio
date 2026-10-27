@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path, PurePosixPath
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from horatio import delivery
@@ -58,11 +58,13 @@ from horatio.api import (
     troupe_requests,
     troupes,
     unsubscribe,
+    viewing,
     waiting,
     xp_awards,
     xp_range,
 )
 from horatio.auth.deps import DbSession
+from horatio.auth.viewing import read_only_while_viewing
 from horatio.config import get_settings
 
 
@@ -99,7 +101,8 @@ async def require_csrf_header(
     return await call_next(request)
 
 
-api = APIRouter(prefix="/api")
+# While the custodian views as someone, nothing changes (horatio.auth.viewing).
+api = APIRouter(prefix="/api", dependencies=[Depends(read_only_while_viewing)])
 for module in (
     auth,
     troupes,
@@ -151,6 +154,7 @@ for module in (
     play_others,
     scenes,
     waiting,
+    viewing,
 ):
     api.include_router(module.router)
 
