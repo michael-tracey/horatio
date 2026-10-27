@@ -1,7 +1,9 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { OtherOut, SeenOut } from "../../api/types";
+import { Pronouns } from "../../components/PronounsInput";
 import { Badge, Button, ErrorText, Input } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -62,7 +64,10 @@ export function Others({ view, undo, online }: { view: Shown; undo: (tapId: stri
                   onClick={() => setPicked(o.character_id)}
                   className="flex min-h-12 w-full flex-col items-start rounded-md border border-ash bg-night px-3 py-2 text-left hover:border-mist"
                 >
-                  <span className="text-parchment">{o.name}</span>
+                  <span className="text-parchment">
+                    {o.name}
+                    <Pronouns pronouns={o.pronouns} />
+                  </span>
                   <span className="text-xs text-mist">{sectLine(o)}</span>
                 </button>
               </li>
@@ -116,7 +121,15 @@ function OtherStatus({ view, otherId, undo, online, onBack }: { view: Shown; oth
       <ErrorText error={shown.error} />
       {other && (
         <>
-          <h3 className="text-lg text-parchment">{other.name}</h3>
+          <h3 className="text-lg text-parchment">
+            {other.name}
+            <Pronouns pronouns={other.pronouns} className="text-sm text-mist" />
+          </h3>
+          {data.troupe_id && (
+            <Link to={`/troupes/${data.troupe_id}/whos-who#c-${other.character_id}`} className="self-start text-sm text-mist underline hover:text-gold">
+              {other.name} on the Who’s Who
+            </Link>
+          )}
           {data.status === null ? (
             <p className="text-sm">
               {other.sect ?? "No sect"}

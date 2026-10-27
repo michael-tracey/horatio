@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from horatio import suspensions
 from horatio.config import get_settings
 from horatio.models import Session as SignInSession
 from horatio.models import User
@@ -18,7 +19,9 @@ def hash_token(token: str) -> str:
 
 
 def start_session(db: Session, user: User) -> str:
-    """Start a session for `user` and return the token for the cookie."""
+    """Start a session for `user` and return the token for the cookie. Refused,
+    saying why, while they are suspended, however they signed in."""
+    suspensions.refuse(db, user)
     token = secrets.token_urlsafe(32)
     db.add(
         SignInSession(
@@ -32,8 +35,8 @@ def start_session(db: Session, user: User) -> str:
 
 
 def user_for_token(db: Session, token: str) -> User | None:
-    """The user a live session token belongs to, or None. A merged account's
-    sessions are ended, and it is never signed in."""
+    """The user a live session token belongs to, or None. Never a merged account,
+    nor someone suspended: their sessions are ended, and this makes sure."""
     return db.scalar(
         select(User)
         .join(SignInSession, SignInSession.user_id == User.id)
@@ -42,6 +45,7 @@ def user_for_token(db: Session, token: str) -> User | None:
             SignInSession.revoked_at.is_(None),
             SignInSession.expires_at > datetime.now(UTC),
             User.merged_into_id.is_(None),
+            ~suspensions.suspended_user(),
         )
     )
 

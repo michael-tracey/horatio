@@ -247,6 +247,19 @@ export function SettingsPage() {
         </Setting>
       </Card>
 
+      <Card title="Troupes">
+        <Setting label="On a troupe's Who's Who, show me by" hint="Its players and staff see who plays each character.">
+          <Choice
+            name="whos_who_handle"
+            label="On a troupe's Who's Who, show me by"
+            choices={[
+              [false, "My name"],
+              [true, "My handle"],
+            ]}
+          />
+        </Setting>
+      </Card>
+
       <HandleCard />
 
       <EmailNotifications />

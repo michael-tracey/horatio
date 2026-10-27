@@ -14,7 +14,8 @@ server's reason for storytellers to follow up. Bounces reported later by the
 receiving server are not tracked yet.
 
 The same service sends password reset links (horatio.auth.resets), straight to
-the account's address.
+the account's address, and the links that confirm a new address
+(horatio.email_changes).
 """
 
 import contextlib

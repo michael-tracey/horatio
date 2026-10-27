@@ -52,7 +52,7 @@ describe("others at the game", () => {
   });
 
   it("finds others by any part of their name", () => {
-    const other = (name: string) => ({ character_id: name, name, kind: "pc", sect: "Camarilla", same_sect: true, accepted: "Acknowledged", titles: [] }) as OtherOut;
+    const other = (name: string) => ({ character_id: name, name, pronouns: null, kind: "pc", sect: "Camarilla", same_sect: true, accepted: "Acknowledged", titles: [] }) as OtherOut;
     const all = [other("Elena Varga"), other("Tomas Reyes")];
     expect(matching(all, " varga ").map((o) => o.name)).toEqual(["Elena Varga"]);
     expect(matching(all, "")).toHaveLength(2);

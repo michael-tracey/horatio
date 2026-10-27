@@ -2,7 +2,7 @@
 merged into, and keeps its email and handle for the record, freed from uniqueness
 
 Revision ID: 0096
-Revises: 0085
+Revises: 0095
 Create Date: 2026-10-27 20:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0096"
-down_revision: str | None = "0085"
+down_revision: str | None = "0095"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
