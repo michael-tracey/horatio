@@ -84,6 +84,18 @@ class HeldOut(BaseModel):
     can_remove: bool
 
 
+class SuppressionOut(BaseModel):
+    """What suppresses the character's fleeting status (MET: VTM p. 314): staff, for
+    the rest of a game or for defying a Commander; or holding Vulgar (no id)."""
+
+    id: uuid.UUID | None
+    kind: Literal["game", "commander", "vulgar"]
+    # "for defying a Commander", "while it holds Vulgar".
+    text: str
+    reason: str
+    ending: EndingOut | None
+
+
 class BanOut(BaseModel):
     level: str
     applies_to: str
@@ -120,6 +132,8 @@ class StatusOut(BaseModel):
     fleeting: int
     fleeting_cap: int
     disgraced: bool
+    # Its fleeting status suppressed: not carried into a game, and none gained.
+    suppressed: list[SuppressionOut] = []
     # The status that can be added: fleeting and negative status of its sect and
     # the general status.
     addable: list[StatusAbout]
@@ -157,6 +171,12 @@ class StatusRemoveIn(BaseModel):
     reason: str = Field(default="", max_length=1000)
 
 
+class SuppressIn(BaseModel):
+    # For the rest of the game, or 2 games or a month for defying a Commander.
+    kind: Literal["game", "commander"]
+    reason: str = Field(max_length=1000)
+
+
 class StatusResolveIn(BaseModel):
     name: str
     reason: str = Field(default="", max_length=1000)
@@ -181,6 +201,26 @@ def about(status: sect_status.StatusData) -> StatusAbout:
         punishment=status.punishment,
         duration=status.duration.text if status.duration else "",
         page=status.page,
+    )
+
+
+def ending_out(ending: sect_status.Ending) -> EndingOut:
+    return EndingOut(
+        text=ending.text,
+        not_before=ending.not_before,
+        games_left=ending.games_left,
+        while_held=ending.while_held,
+        this_game=ending.this_game,
+    )
+
+
+def suppression_out(s: sect_status.Suppressed) -> SuppressionOut:
+    return SuppressionOut(
+        id=s.id,
+        kind=s.kind,
+        text=s.text,
+        reason=s.reason,
+        ending=ending_out(s.ending) if s.ending else None,
     )
 
 
@@ -260,15 +300,7 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
                 place=h.place,
                 given_on=h.given_on,
                 story=h.story,
-                ending=EndingOut(
-                    text=h.ending.text,
-                    not_before=h.ending.not_before,
-                    games_left=h.ending.games_left,
-                    while_held=h.ending.while_held,
-                    this_game=h.ending.this_game,
-                )
-                if h.ending
-                else None,
+                ending=ending_out(h.ending) if h.ending else None,
                 can_remove=can_remove(db, user, character, acting, h, patrons),
             )
             for h in found.held
@@ -289,14 +321,19 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
         fleeting=len(found.fleeting),
         fleeting_cap=found.fleeting_cap,
         disgraced=found.disgraced,
+        suppressed=[suppression_out(s) for s in found.suppressing],
         addable=addable,
         about={name: about(statuses[name]) for name in sorted(shown) if name in statuses},
     )
 
 
 def up_to_date(db: DbSession, user: User, character: Character) -> None:
-    """Drop held status that has ended, before showing it."""
-    if any(h.ending and h.ending.over for h in sect_status.held(db, character)):
+    """Drop held status that has ended, and suppressions, before showing it."""
+    found = sect_status.held(db, character)
+    if any(
+        s.ending and s.ending.over
+        for s in [*found, *sect_status.suppressions(db, character, found)]
+    ):
         sheets.lock_character(db, character.id)
         sect_status.expire(db, character, user)
         db.commit()
@@ -393,5 +430,35 @@ def mark_ban(
     character = sheets.lock_character(db, character_id)
     applies = {"applies": True, "exempt": False, None: None}[body.mark]
     sect_status.mark_ban(db, user, character, body.ban, applies, body.reason)
+    db.commit()
+    return status_out(db, user, character)
+
+
+@router.post("/suppress")
+def suppress_status(
+    character_id: uuid.UUID, body: SuppressIn, db: DbSession, user: CurrentUser
+) -> StatusOut:
+    """Staff suppress the character's fleeting status, unspent (MET: VTM p. 314): for
+    the rest of the game, or for 2 games or a month for defying a Commander. It comes
+    back on its own."""
+    visible_character(db, user, character_id)
+    character = sheets.lock_character(db, character_id)
+    sect_status.suppress(db, user, character, body.kind, body.reason)
+    db.commit()
+    return status_out(db, user, character)
+
+
+@router.post("/suppressions/{suppression_id}/lift")
+def lift_suppression(
+    character_id: uuid.UUID,
+    suppression_id: uuid.UUID,
+    body: StatusRemoveIn,
+    db: DbSession,
+    user: CurrentUser,
+) -> StatusOut:
+    """Staff give the character its suppressed fleeting status back early."""
+    visible_character(db, user, character_id)
+    character = sheets.lock_character(db, character_id)
+    sect_status.lift(db, user, character, suppression_id, body.reason)
     db.commit()
     return status_out(db, user, character)

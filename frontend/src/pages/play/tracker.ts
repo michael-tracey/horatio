@@ -97,6 +97,20 @@ export function temporaryLabel(t: { name: string; source: string }): string {
   return t.source ? `${t.name}, from ${t.source}` : t.name;
 }
 
+/** Spending an abiding or innate status for the game: "status:Authority". */
+export const STATUS = "status:";
+/** Spending a fleeting status for good, by its record: "held:<id>". */
+export const HELD = "held:";
+
+export function isStatus(tracker: string): boolean {
+  return tracker.startsWith(STATUS) || tracker.startsWith(HELD);
+}
+
+/** The status a tap spends, as the Status tab lists it. */
+export function statusEntry(view: PlayView, tracker: string) {
+  return isStatus(tracker) ? view.status?.carried.find((c) => c.key === tracker) : undefined;
+}
+
 /** A Retainer's health and Blood: "retainer:Bocephus/health" (core p. 105). */
 export const RETAINER = "retainer:";
 
@@ -128,6 +142,9 @@ export function trackerName(view: PlayView, tracker: string): string {
   if (temporary) return temporaryLabel(temporary);
   const kept = retainerTracker(view, tracker);
   if (kept) return `${kept.retainer.name || "Retainer"}: ${kept.what === "blood" ? "Blood" : "health"}`;
+  const status = statusEntry(view, tracker);
+  if (status) return status.name;
+  if (tracker.startsWith(STATUS)) return tracker.slice(STATUS.length);
   const power = tracker.startsWith(SWITCH) ? view.powers.find((p) => SWITCH + p.key === tracker) : undefined;
   return power?.name ?? tracker;
 }
@@ -152,6 +169,7 @@ function most(view: PlayView, tracker: string): number | undefined {
   }
   if (tracker.startsWith(TEMPORARY)) return view.derangements.temporary.some((t) => t.key === tracker) ? 1 : undefined;
   if (tracker.startsWith(RETAINER)) return retainerTracker(view, tracker)?.track?.most;
+  if (isStatus(tracker)) return statusEntry(view, tracker) ? 1 : undefined;
   return view.expendables.find((e) => e.key === tracker)?.uses;
 }
 
@@ -201,6 +219,14 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
     temporary.held = clamp(before + amount, top) > 0;
     return [before, temporary.held ? 1 : 0];
   }
+  const status = statusEntry(view, tracker);
+  if (status) {
+    const before = status.spent ? 0 : 1;
+    const after = clamp(before + amount, top);
+    status.spent = after === 0;
+    if (!status.spent) status.spent_by = null;
+    return [before, after];
+  }
   const kept = retainerTracker(view, tracker)?.track;
   if (kept) {
     const before = kept.value;
@@ -233,6 +259,10 @@ export function describe(
     return change ? `${text} (${change[0]} → ${change[1]} marked)` : text;
   }
   const name = trackerName(view, tap.tracker);
+  if (isStatus(tap.tracker)) {
+    if (tap.amount > 0) return `${name} back`;
+    return tap.tracker.startsWith(HELD) ? `Spent ${name} for good` : `Spent ${name}`;
+  }
   if (tap.tracker.startsWith(TEMPORARY)) return `Temporary derangement ${tap.amount > 0 ? "added" : "removed"}: ${name}`;
   return change ? `${name} ${change[0]} → ${change[1]}` : `${name} ${tap.amount > 0 ? "+" : "−"}${Math.abs(tap.amount)}`;
 }
@@ -250,6 +280,7 @@ function copy(view: PlayView): Shown {
     expendables: view.expendables.map((e) => ({ ...e })),
     retainers: (view.retainers ?? []).map((r) => ({ ...r, health: { ...r.health }, blood: r.blood ? { ...r.blood } : null })),
     powers: view.powers.map((p) => ({ ...p })),
+    status: view.status ? { ...view.status, carried: view.status.carried.map((c) => ({ ...c })) } : null,
     log: view.log.map((e) => ({ ...e })),
   };
 }
@@ -284,7 +315,12 @@ export function withPending(view: PlayView, pending: Tap[]): Shown {
         shown.derangements.temporary.push({ key: tap.tracker, name: tap.derangement.name, source: tap.derangement.source ?? "", held: false });
       }
       const said: string[] = [];
-      if (tap.kind === "change" && !undone.has(tap.id)) change = applyChange(shown, tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null, said);
+      if (tap.kind === "change" && !undone.has(tap.id)) {
+        change = applyChange(shown, tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null, said);
+        // The spend Undo on the Status tab takes back.
+        const status = statusEntry(shown, tap.tracker);
+        if (status?.spent && tap.amount < 0) status.spent_by = tap.id;
+      }
       else if (tap.kind === "change") change = applyChange(copy(shown), tap.tracker, tap.amount, (tap.damage as Damage | null) ?? null, said);
       text = describe(shown, tap, change, said);
     }

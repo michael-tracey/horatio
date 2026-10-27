@@ -17,6 +17,7 @@ import { bloodPerTurn, boxes, healthMost } from "./powers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
+import { StatusTab } from "./Status";
 import { DRANK, incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Play, type Sync } from "./usePlay";
 import { useReference } from "./useReference";
@@ -37,6 +38,8 @@ const TABS = [
   { key: "sheet", label: "Sheet" },
   { key: "tracker", label: "Tracker" },
   { key: "pools", label: "Pools" },
+  // Only for a character with sect status.
+  { key: "status", label: "Status" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
@@ -84,7 +87,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       },
       { replace: true },
     );
-  const tabs = <TabBar tab={tab} onChange={choose} />;
+  const tabs = <TabBar tab={tab} onChange={choose} status={!!view.data?.status} />;
   // Opened from a Scene view's card: the way back is to that scene. A link from
   // before scenes were named gives only the troupe, whose old scene is its list.
   const scene = params.get("scene");
@@ -111,6 +114,15 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       <PowersBanner powers={shown.powers} tap={tap} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
       {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} tap={tap} />)}
+      {tab === "status" && (
+        <StatusTab
+          view={shown}
+          spend={(item) => record({ tracker: item.key, amount: -1, label: item.name })}
+          undo={(tapId) => tap({ kind: "undo", undoes: tapId })}
+          online={sync.online}
+          onChange={accept}
+        />
+      )}
       {tab === "tracker" && (
         <>
           <div className="grid gap-3 md:grid-cols-2">
@@ -245,11 +257,12 @@ function PlayShell({
   );
 }
 
-/** Sheet, Tracker and Pools: three big tabs across the top, for a thumb. */
-function TabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
+/** Sheet, Tracker, Pools and (for a character with sect status) Status: big tabs across the top, for a thumb. */
+function TabBar({ tab, onChange, status }: { tab: Tab; onChange: (tab: Tab) => void; status: boolean }) {
+  const tabs = TABS.filter((t) => t.key !== "status" || status);
   return (
-    <nav className="mx-auto grid max-w-3xl grid-cols-3 px-2" role="tablist" aria-label="Play View">
-      {TABS.map((t) => (
+    <nav className={cx("mx-auto grid max-w-3xl px-2", tabs.length === 4 ? "grid-cols-4" : "grid-cols-3")} role="tablist" aria-label="Play View">
+      {tabs.map((t) => (
         <button
           key={t.key}
           type="button"

@@ -1340,6 +1340,120 @@ test("a player keeps their own sect status, naming its patron from the home trou
   expect(refused.status()).toBe(409);
 });
 
+test("at a game, a Seneschal and Primogen chooses one source of status, spends Authority and Loyal with Undo, and adds Courageous from the Prince", async ({ browser }) => {
+  const custodian = await person(browser, "gstatus-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "gstatus-lead");
+  const player = await person(browser, "gstatus-player");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Choices ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+
+  // Isadora, a Camarilla Brujah, built through the API and accepted home.
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Isadora" });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send(p, "POST", `/api/characters/${id}/creation/complete`, {});
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+
+  // The court: an NPC Prince, and Isadora is Seneschal and Primogen. She holds Loyal.
+  const prince = await send(lead.page, "POST", `/api/troupes/${troupeId}/npcs`, { name: "Prince Varga", wizard: false });
+  await send(lead.page, "PUT", `/api/characters/${prince.id}/npc/ratings`, { category: "sect", name: "Camarilla", rating: null, detail: "" });
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${prince.id}/titles`, { titles: ["Prince"] });
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${id}/titles`, { titles: ["Seneschal", "Primogen"] });
+  await send(p, "POST", `/api/characters/${id}/status`, { name: "Loyal", patron_text: "The Keeper of Elysium" });
+
+  // The Status tab: one source of abiding status to choose for the game.
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Status" }).click();
+  await expect(p.getByText("Acknowledged by the Camarilla")).toBeVisible();
+  await expect(p.getByText("Choose your one source of abiding status for this game")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Abiding status" })).toHaveCount(0);
+  await p.screenshot(shots("play-status-choose"));
+  await p.getByRole("button", { name: "Choose Seneschal" }).click();
+  const abiding = p.locator("section").filter({ has: p.getByRole("heading", { name: "Abiding status" }) });
+  await expect(abiding.getByText("Noble", { exact: true })).toBeVisible();
+  await expect(abiding.getByText("Authority", { exact: true })).toHaveCount(0);
+  await expect(p.getByText("Your choices are locked for this game; staff can change them.")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Choose Primogen" })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Change" })).toHaveCount(0);
+
+  // The Prince is away tonight: the Seneschal holds Authority.
+  await p.getByRole("button", { name: "The Prince is absent" }).click();
+  await expect(p.getByText("The Prince is absent: Authority")).toBeVisible();
+  await expect(abiding.getByText("Authority", { exact: true })).toBeVisible();
+
+  // Spending Authority greys it out for the game; Undo gives it back.
+  await abiding.getByRole("button", { name: "Spend Authority" }).click();
+  await p.getByRole("dialog", { name: "Note for this spend" }).getByRole("button", { name: "Save" }).click();
+  await expect(abiding.getByRole("button", { name: "Undo spending Authority" })).toBeVisible();
+  await expect(abiding.getByText("Spent", { exact: true })).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await abiding.getByRole("button", { name: "Undo spending Authority" }).click();
+  await expect(abiding.getByRole("button", { name: "Spend Authority" })).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // Spending Loyal takes it off the sheet for good; Undo puts it back.
+  const fleeting = p.locator("section").filter({ has: p.getByRole("heading", { name: "Fleeting status" }) });
+  await fleeting.getByRole("button", { name: "Spend Loyal" }).click();
+  const note = p.getByRole("dialog", { name: "Note for this spend" });
+  await note.getByLabel("What was Loyal for? (optional)").fill("a car from the motor pool");
+  await note.getByRole("button", { name: "Save" }).click();
+  await expect(fleeting.getByText("Spent for good")).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  expect((await send(p, "GET", `/api/characters/${id}/status`)).held).toEqual([]);
+  await p.screenshot(shots("play-status-spent"));
+  await fleeting.getByRole("button", { name: "Undo spending Loyal" }).click();
+  await expect(fleeting.getByRole("button", { name: "Spend Loyal" })).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  expect((await send(p, "GET", `/api/characters/${id}/status`)).held.map((h: { name: string }) => h.name)).toEqual(["Loyal"]);
+
+  // Courageous, from the Prince, added at the game.
+  await p.getByRole("button", { name: "Add status" }).click();
+  const form = p.getByRole("form", { name: "Add status" });
+  await form.getByLabel("Status").selectOption("Courageous");
+  await form.getByRole("combobox", { name: "A character" }).fill("varga");
+  await p.getByRole("listbox", { name: "Patrons" }).getByRole("option", { name: /Prince Varga/ }).click();
+  await form.getByRole("button", { name: "Add status" }).click();
+  await expect(fleeting.getByText("Courageous", { exact: true })).toBeVisible();
+  await p.screenshot(shots("play-status-added"));
+
+  // The sheet and the log show it, given at this game.
+  await p.goto(`/characters/${id}`);
+  const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
+  await expect(card.getByText("from Prince Varga (Prince at the time)")).toBeVisible();
+  await p.getByRole("link", { name: "Log", exact: true }).click();
+  await expect(p.getByText("gstatus-player gave Isadora the fleeting status Courageous, from Prince Varga (Prince at the time) at game 1.")).toBeVisible();
+  await expect(p.getByText("gstatus-player spent Isadora's Loyal (from The Keeper of Elysium) (a car from the motor pool).")).toBeVisible();
+  await expect(p.getByText("gstatus-player undid spending Isadora's Loyal (from The Keeper of Elysium): it is back.")).toBeVisible();
+
+  // The lead, from the game's Play View, can change the locked choice.
+  const l = lead.page;
+  await l.goto(`/play/characters/${id}?tab=status`);
+  await l.getByRole("button", { name: "Change" }).click();
+  await l.getByRole("button", { name: "Choose Primogen" }).click();
+  await expect(l.getByText("Abiding status from Primogen, chosen for this game.")).toBeVisible();
+});
+
 test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the list by kind and form", async ({ browser }) => {
   const custodian = await person(browser, "kinds-custodian");
   makeCustodian(custodian.email);

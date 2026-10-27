@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, UniqueConstraint
+from sqlalchemy import CheckConstraint, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from horatio.models.base import Record
@@ -61,3 +61,25 @@ class StatusBanMark(Record):
     applies: Mapped[bool]
     reason: Mapped[str]
     marked_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class StatusSuppression(Record):
+    """Staff stripping a character's fleeting status without its being spent (MET: VTM
+    p. 314): it carries none into a game, and gains none, for a while, then has it
+    back on its own. For the rest of a `game`, or, for defying a Commander, 2 games
+    or a month (`commander`). Holding Vulgar does the same by itself (p. 403)."""
+
+    __tablename__ = "status_suppressions"
+    __table_args__ = (CheckConstraint("kind in ('game', 'commander')", name="kind"),)
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str]
+    reason: Mapped[str] = mapped_column(default="", server_default="")
+    given_on: Mapped[date] = mapped_column(Date)
+    # The Play View game it began at, which does not count toward its end.
+    game_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("play_games.id", ondelete="SET NULL")
+    )
+    added_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))

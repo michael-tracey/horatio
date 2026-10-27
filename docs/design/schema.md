@@ -139,6 +139,14 @@ saying a sect's status ban applies to a character (`applies` true) or that it is
 exempt (false), by `sect` and `ban` (who it applies to, as the rules word it), with
 a `reason` and `marked_by`. **`troupes.status_by`**: Status on sheets, `players`
 (the default: each keeps their own, naming the patron) or `staff`.
+**`status_suppressions`** (issue #253): staff stripping a character's fleeting
+status unspent for a while (`kind`: `game`, the rest of the game; `commander`, 2
+games or a month), with `reason`, `given_on`, `game_id` and `added_by`; it ends on
+its own. **`play_games.status`** (JSONB): the character's status choices for that
+game (`horatio/play_status.py`): its `source` of abiding status, a title's status
+`chosen`, the titles whose holders are `absent`, and the `titles` it held as the game
+began. **`play_events.held_status`** (JSONB): a fleeting status the tap spent for
+good, as the record was, so Undo gives it back.
 
 **`long_texts`**: `character_id`, `kind` (for example `background`,
 `history`), `body`; unique on (`character_id`, `kind`).

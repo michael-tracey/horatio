@@ -304,3 +304,78 @@ describe("a ghoul's vitae (MET: VtM core p. 297)", () => {
     expect(shown.blood.value).toBe(10);
   });
 });
+
+describe("spending sect status (issue #253)", () => {
+  const carried = (key: string, name: string, type: string, spent = false) => ({
+    key,
+    name,
+    type,
+    source: type === "Fleeting" ? "Prince Varga" : "Prince",
+    about: null,
+    spendable: true,
+    spent,
+    spent_by: spent ? "t0" : null,
+    suppressed: false,
+    place: "",
+    story: "",
+  });
+  const withStatus = (spent = false): PlayView =>
+    view({
+      status: {
+        sect: "Camarilla",
+        accepted: "Acknowledged",
+        troupe_id: "t1",
+        troupe_name: "Court",
+        sources: [],
+        source: "Prince",
+        source_chosen: false,
+        choosing: false,
+        conditions: [],
+        titles: [],
+        carried: [carried("status:Authority", "Authority", "Abiding", spent), carried("held:h1", "Loyal", "Fleeting")],
+        fleeting_cap: 5,
+        suppressed: [],
+      },
+    });
+
+  it("greys out a status spent for the game until its Undo", () => {
+    const spend = change("status:Authority", -1, 1);
+    const shown = withPending(withStatus(), [spend]);
+    const authority = shown.status!.carried[0]!;
+    expect([authority.spent, authority.spent_by]).toEqual([true, spend.id]);
+    expect(shown.log[0]!.text).toBe("Spent Authority");
+
+    const undone = withPending(withStatus(), [spend, makeTap({ kind: "undo", undoes: spend.id }, "g1", at(2))]);
+    expect(undone.status!.carried[0]!.spent).toBe(false);
+  });
+
+  it("spends a fleeting status for good", () => {
+    const shown = withPending(withStatus(), [change("held:h1", -1, 1)]);
+    expect(shown.status!.carried[1]!.spent).toBe(true);
+    expect(shown.log[0]!.text).toBe("Spent Loyal for good");
+  });
+
+  it("gives back a saved spend undone offline", () => {
+    const saved = withStatus(true);
+    saved.log = [
+      {
+        id: "t0",
+        kind: "change",
+        tracker: "status:Authority",
+        amount: -1,
+        damage: null,
+        before: 1,
+        after: 0,
+        text: "Spent Authority",
+        note: "",
+        happened_at: at(1).toISOString(),
+        actor_name: "Jane",
+        by_staff: false,
+        undone: false,
+        undoes: null,
+      },
+    ];
+    const shown = withPending(saved, [makeTap({ kind: "undo", undoes: "t0" }, "g1", at(2))]);
+    expect(shown.status!.carried[0]!.spent).toBe(false);
+  });
+});

@@ -37,6 +37,10 @@ class PlayGame(Record):
     half_blood: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Beast traits the game starts with: a diablerie added them (horatio.diablerie).
     beast_start: Mapped[int] = mapped_column(default=0, server_default="0")
+    # The character's sect status at this game (horatio.play_status): its source of
+    # abiding status, a title's status chosen for it, the titles whose holders are
+    # away, and the titles it held as the game began.
+    status: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class PlayEvent(Record):
@@ -70,6 +74,9 @@ class PlayEvent(Record):
     # The tracker before and after, as the log replays (for health, boxes marked).
     before: Mapped[int | None]
     after: Mapped[int | None]
+    # A fleeting status this tap spent for good: its record, so Undo gives it back
+    # (horatio.play_status).
+    held_status: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class PlayCounter(Record):
