@@ -163,6 +163,10 @@ _Avoid_: Override, custom rule, homebrew
 A rule about what a sheet may hold rather than what it costs, such as a clan-only merit or two flaws that cannot be taken together. A change that breaks one is refused, with the reason and the page.
 _Avoid_: Validation, restriction, prerequisite (one kind of check)
 
+**Equipment Quality**:
+A special property of an item of equipment, such as Accurate or Concealable, from the book's list for its kind: melee weapon, ranged weapon, protective gear or miscellaneous gear. A cheap item has one, a standard or expensive item up to two, and a special item, made by storytellers, any number.
+_Avoid_: Perk, tag, trait (a trait is on the sheet)
+
 **House Merit**:
 A merit or flaw a troupe makes itself, marked ★ as that troupe's wherever it shows. Only the troupe's own characters hold one: those whose home troupe it is, those being built for it, and its NPCs; never one only visiting. Each is either given by staff only, or available when building for the troupe.
 _Avoid_: Custom merit, homebrew merit
