@@ -8938,6 +8938,27 @@
         "title": "KindOut",
         "type": "object"
       },
+      "LearnIn": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key"
+        ],
+        "title": "LearnIn",
+        "type": "object"
+      },
       "LimitOut": {
         "description": "Points held in a category with a limit: merits held, or flaws paying XP.",
         "properties": {
@@ -10702,6 +10723,68 @@
         "title": "OptionList",
         "type": "object"
       },
+      "OtherOut": {
+        "description": "Another character at the game. Of another sect, only its name and sect.",
+        "properties": {
+          "accepted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "same_sect": {
+            "title": "Same Sect",
+            "type": "boolean"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "sect",
+          "same_sect",
+          "accepted",
+          "titles"
+        ],
+        "title": "OtherOut",
+        "type": "object"
+      },
       "OtherPower": {
         "description": "A technique, elder or luminary power: named, rated as held.",
         "properties": {
@@ -10731,6 +10814,33 @@
           "note"
         ],
         "title": "OtherPower",
+        "type": "object"
+      },
+      "OtherStatusOut": {
+        "properties": {
+          "other": {
+            "$ref": "#/components/schemas/OtherOut"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SeenOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "other",
+          "status"
+        ],
+        "title": "OtherStatusOut",
         "type": "object"
       },
       "OwedOut": {
@@ -15136,6 +15246,123 @@
           "ends_at"
         ],
         "title": "ScheduledGameOut",
+        "type": "object"
+      },
+      "SeenOut": {
+        "description": "One status the other carries into its game. Its details (patron, where, the\nstory) are there only when `known`: a negative status, or a fleeting one the\nviewer has learned about with Leadership.",
+        "properties": {
+          "ending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EndingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "held_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Held Id"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "known": {
+            "title": "Known",
+            "type": "boolean"
+          },
+          "learnable": {
+            "title": "Learnable",
+            "type": "boolean"
+          },
+          "learned_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Learned By"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "patron": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patron"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place"
+          },
+          "removable": {
+            "title": "Removable",
+            "type": "boolean"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "boolean"
+          },
+          "story": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Story"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "type",
+          "spent",
+          "learnable",
+          "known",
+          "learned_by",
+          "held_id",
+          "patron",
+          "place",
+          "story",
+          "ending",
+          "removable"
+        ],
+        "title": "SeenOut",
         "type": "object"
       },
       "SetChangeIn": {
@@ -23860,6 +24087,236 @@
           }
         },
         "summary": "Change Modifier",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/others": {
+      "get": {
+        "description": "The others at the character's game: its troupe's PCs and titled NPCs.",
+        "operationId": "list_others_api_characters__character_id__play_others_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OtherOut"
+                  },
+                  "title": "Response List Others Api Characters  Character Id  Play Others Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Others",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/others/{other_id}": {
+      "get": {
+        "description": "Another character's status, as the character knows it.",
+        "operationId": "read_other_api_characters__character_id__play_others__other_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "other_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Other Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Other",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/others/{other_id}/learn": {
+      "post": {
+        "description": "Spend a Leadership use for the game to learn a fleeting status's patron, where\nit was earned and the story (MET: VTM p. 310).",
+        "operationId": "learn_status_api_characters__character_id__play_others__other_id__learn_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "other_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Other Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LearnIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Learn Status",
+        "tags": [
+          "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play/others/{other_id}/status/{held_id}/remove": {
+      "post": {
+        "description": "Remove early a negative status the person's own character gave (p. 313).",
+        "operationId": "remove_given_status_api_characters__character_id__play_others__other_id__status__held_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "other_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Other Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "held_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Held Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Given Status",
         "tags": [
           "play"
         ]

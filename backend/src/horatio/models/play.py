@@ -77,6 +77,9 @@ class PlayEvent(Record):
     # A fleeting status this tap spent for good: its record, so Undo gives it back
     # (horatio.play_status).
     held_status: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # A Leadership use spent learning about another character's status: whose, and
+    # which (horatio.play_others).
+    learned: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class PlayCounter(Record):

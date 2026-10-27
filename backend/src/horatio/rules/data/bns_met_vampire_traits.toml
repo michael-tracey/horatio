@@ -7,7 +7,8 @@
 # `uses_per_game`, which gives it a counter on the Play View (horatio.play): a
 # number, "rating" for one use per dot, or { category, name } for one use per
 # dot of another trait. Herd and the Influences count one per dot too, as the
-# troupe's monthly game spends them.
+# troupe's monthly game spends them, and so does Leadership, for learning about
+# another character's status (p. 310).
 #
 # `tags` sort traits for checks (horatio.rules.checks, `tagged`): "vampire_only" on
 # a merit or flaw about the vampiric condition, which a ghoul cannot take
@@ -5871,7 +5872,8 @@ category = "skills"
 name = "Leadership"
 description = "Inspiring and directing others, and planning so a group works well together. Stock NPCs following your lead get +2 to what they do, and once per night for each dot you can learn the details of one of another vampire's status traits."
 page_reference = "94"
-properties = { attribute = "Social" }
+# One use a game for each dot: learning another's status (p. 310, horatio.play_others).
+properties = { attribute = "Social", uses_per_game = "rating" }
 
 [[traits]]
 category = "skills"

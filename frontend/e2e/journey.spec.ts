@@ -1454,6 +1454,120 @@ test("at a game, a Seneschal and Primogen chooses one source of status, spends A
   await expect(l.getByText("Abiding status from Primogen, chosen for this game.")).toBeVisible();
 });
 
+test("at a game, a Camarilla character with Leadership 2 learns about two of a rival's status, and a Sabbat character sees none", async ({ browser }) => {
+  const custodian = await person(browser, "rival-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "rival-lead");
+  const player = await person(browser, "rival-player");
+  const rival = await person(browser, "rival-elena");
+  const sabbat = await person(browser, "rival-sabbat");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Rivals ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // A Brujah of `sect`, built through the API and accepted home.
+  const build = async (page: Page, name: string, sect: string, leadership: number): Promise<string> => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: sect, rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 3 - leadership], ["Firearms", 2], ["Investigation", 1], ["Leadership", leadership], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([name, rating]) => ({ name, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+
+  // Marguerite has Leadership 2. Her rival Elena Moretti holds three fleeting status
+  // and a Warned, and has spent Honorable tonight. Brother Ash is of the Sabbat.
+  const marguerite = await build(player.page, "Marguerite", "Camarilla", 2);
+  const elena = await build(rival.page, "Elena Moretti", "Camarilla", 1);
+  const ash = await build(sabbat.page, "Brother Ash", "Sabbat", 1);
+  for (const [name, patron, story] of [
+    ["Loyal", "Prince Varga", "For holding the door"],
+    ["Courageous", "Keeper Ines", "For facing the Sheriff"],
+    ["Honorable", "Seneschal Roth", "For keeping her word"],
+    ["Warned", "Sheriff Hale", "For the brawl at the docks"],
+  ])
+    await send(rival.page, "POST", `/api/characters/${elena}/status`, { name, patron_text: patron, place: "Elysium", story });
+  const honorable = (await send(rival.page, "GET", `/api/characters/${elena}/status`)).held.find((h: { name: string }) => h.name === "Honorable").id;
+  const spend = { id: crypto.randomUUID(), happened_at: new Date().toISOString(), kind: "change", tracker: `held:${honorable}`, amount: -1 };
+  await send(rival.page, "POST", `/api/characters/${elena}/play/taps`, { taps: [spend] });
+
+  // Leadership's two uses are under Uses this game.
+  const p = player.page;
+  await p.goto(`/play/characters/${marguerite}?tab=tracker`);
+  const uses = p.locator("section").filter({ has: p.getByRole("heading", { name: "Uses this game" }) });
+  await expect(uses.getByText("Leadership", { exact: true })).toBeVisible();
+  await expect(uses.getByText("Skills · 2 of 2 left")).toBeVisible();
+
+  // On the Status tab, Marguerite finds Elena and knows her status, but not where it came from.
+  await p.getByRole("tab", { name: "Status" }).click();
+  const others = p.locator("section").filter({ has: p.getByRole("heading", { name: "Others at this game" }) });
+  await others.getByLabel("Find a character").fill("moretti");
+  await others.getByRole("button", { name: /Elena Moretti/ }).click();
+  await expect(others.getByText("Acknowledged by the Camarilla")).toBeVisible();
+  for (const name of ["Warned", "Loyal", "Courageous", "Honorable"]) await expect(others.getByText(name, { exact: true })).toBeVisible();
+  await expect(others.getByText("spent", { exact: true })).toBeVisible();
+  // Negative status is public, its patron and all.
+  await expect(others.getByText("From Sheriff Hale, at Elysium")).toBeVisible();
+  await expect(others.getByText("Prince Varga")).toHaveCount(0);
+  await expect(others.getByText("Leadership: 2 of 2 left this game", { exact: false })).toBeVisible();
+
+  // Learning about Loyal and Courageous uses both of her Leadership.
+  await others.getByRole("button", { name: "Learn about Loyal" }).click();
+  await expect(others.getByText("From Prince Varga, at Elysium")).toBeVisible();
+  await expect(others.getByText("For holding the door")).toBeVisible();
+  await expect(others.getByText("Leadership: 1 of 2 left this game", { exact: false })).toBeVisible();
+  await others.getByRole("button", { name: "Learn about Courageous" }).click();
+  await expect(others.getByText("For facing the Sheriff")).toBeVisible();
+  await expect(others.getByText("Leadership: 0 of 2 left this game", { exact: false })).toBeVisible();
+  await p.screenshot(shots("play-others-learned"));
+
+  // A third is refused: the button is off, and the API says no.
+  await expect(others.getByRole("button", { name: "Learn about Honorable" })).toBeDisabled();
+  const looked = await send(p, "GET", `/api/characters/${marguerite}/play/others/${elena}`);
+  const key = looked.status.find((s: { name: string }) => s.name === "Honorable").key;
+  const refused = await p.request.post(`/api/characters/${marguerite}/play/others/${elena}/learn`, { headers, data: { id: crypto.randomUUID(), key } });
+  expect(refused.status()).toBe(409);
+  await expect(others.getByText("For keeping her word")).toHaveCount(0);
+
+  // Undo gives a use back, and what it learned is forgotten.
+  await others.getByRole("button", { name: "Undo learning about Loyal" }).click();
+  await expect(others.getByText("For holding the door")).toHaveCount(0);
+  await expect(others.getByText("Leadership: 1 of 2 left this game", { exact: false })).toBeVisible();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await expect(others.getByRole("button", { name: "Learn about Loyal" })).toBeEnabled();
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await expect(uses.getByText("Skills · 1 of 2 left")).toBeVisible();
+  // The log replays without the undone tap.
+  await expect(p.getByText("Learned about Elena Moretti's Courageous: Leadership 2 → 1")).toBeVisible();
+  await expect(p.getByText("Undid: Learned about Elena Moretti's Loyal: Leadership 2 → 1")).toBeVisible();
+
+  // Brother Ash, of the Sabbat, sees Elena's name and sect, and none of her status.
+  const s = sabbat.page;
+  await s.goto(`/play/characters/${ash}?tab=status`);
+  const theirs = s.locator("section").filter({ has: s.getByRole("heading", { name: "Others at this game" }) });
+  await theirs.getByRole("button", { name: /Elena Moretti/ }).click();
+  await expect(theirs.getByText("Only the Camarilla’s own know their status.")).toBeVisible();
+  for (const name of ["Warned", "Loyal", "Courageous", "Sheriff Hale"]) await expect(theirs.getByText(name)).toHaveCount(0);
+  await s.screenshot(shots("play-others-sabbat"));
+});
+
 test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the list by kind and form", async ({ browser }) => {
   const custodian = await person(browser, "kinds-custodian");
   makeCustodian(custodian.email);
