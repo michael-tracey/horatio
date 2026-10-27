@@ -2890,6 +2890,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/players/{user_id}/suspension": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suspend
+         * @description Suspend someone: signed out everywhere at once, and kept out until the
+         *     custodian lifts it or `ends_at` passes. They are emailed, without the reason.
+         */
+        post: operations["suspend_api_players__user_id__suspension_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/players/{user_id}/suspension/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lift
+         * @description Lift someone's suspension, so they can sign in again. They are emailed.
+         */
+        post: operations["lift_api_players__user_id__suspension_lift_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/preferences": {
         parameters: {
             query?: never;
@@ -3191,6 +3232,26 @@ export interface paths {
          *     player).
          */
         post: operations["log_entry_api_shared_backgrounds__shared_id__entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/suspensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Suspensions
+         * @description For the custodian: who is suspended now, and the log of suspensions.
+         */
+        get: operations["list_suspensions_api_suspensions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6590,6 +6651,11 @@ export interface components {
             /** Available */
             available: boolean;
         };
+        /** Emailed */
+        Emailed: {
+            /** Email Error */
+            email_error?: string | null;
+        };
         /** EmbraceChoicesIn */
         EmbraceChoicesIn: {
             /** Buy Back */
@@ -8114,6 +8180,21 @@ export interface components {
             /** Key */
             key: string;
         };
+        /** LedTroupe */
+        LedTroupe: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** LiftIn */
+        LiftIn: {
+            /** Reason */
+            reason: string;
+        };
         /**
          * LimitOut
          * @description Points held in a category with a limit: merits held, or flaws paying XP.
@@ -9378,6 +9459,11 @@ export interface components {
             member_since: string;
             /** Reset Expires At */
             reset_expires_at: string | null;
+            /**
+             * Suspended
+             * @default false
+             */
+            suspended: boolean;
         };
         /**
          * PoolChange
@@ -10408,6 +10494,11 @@ export interface components {
             player_id: string | null;
             /** Player Name */
             player_name: string;
+            /**
+             * Player Suspended
+             * @default false
+             */
+            player_suspended: boolean;
             /** Retired */
             retired: boolean;
             /** Sect */
@@ -11393,6 +11484,45 @@ export interface components {
             reason: string;
             /** Text */
             text: string;
+        };
+        /** SuspendIn */
+        SuspendIn: {
+            /** Ends At */
+            ends_at?: string | null;
+            /** Reason */
+            reason: string;
+        };
+        /** Suspended */
+        Suspended: {
+            /** Display Name */
+            display_name: string;
+            /** Ends At */
+            ends_at: string | null;
+            /** Handle */
+            handle: string;
+            /** Leads */
+            leads: components["schemas"]["LedTroupe"][];
+            /** Reason */
+            reason: string;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /** Suspended By */
+            suspended_by: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** Suspensions */
+        Suspensions: {
+            /** Log */
+            log: components["schemas"]["LogEntry"][];
+            /** Suspended */
+            suspended: components["schemas"]["Suspended"][];
         };
         /**
          * SwapChangeIn
@@ -18128,6 +18258,76 @@ export interface operations {
             };
         };
     };
+    suspend_api_players__user_id__suspension_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuspendIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Emailed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lift_api_players__user_id__suspension_lift_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Emailed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_preferences_api_preferences_get: {
         parameters: {
             query?: never;
@@ -18789,6 +18989,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharedBackgroundOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suspensions_api_suspensions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Suspensions"];
                 };
             };
             /** @description Validation Error */

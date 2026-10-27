@@ -61,6 +61,13 @@ from Parse's `createdAt`.
 users. At most one per user: a new link deletes the old, and using it deletes
 it and revokes every session the user had.
 
+**`suspensions`**: the custodian suspending someone's account.
+`user_id`, `reason` (for the custodian only), `ends_at` (nullable: until lifted),
+`suspended_by_id`, then `lifted_at`, `lifted_by_id` and `lift_reason` once
+lifted (by hand, or at `ends_at` with no one and no reason). At most one not yet
+lifted per user (a partial unique index); rows are kept once lifted. Suspending
+deletes the user's sessions.
+
 **`troupes`**
 `name`, `description`, `lead_user_id` (**not null**), `archived_at` (nullable),
 `allowed_sects` (JSON list of sect names; empty means any).
