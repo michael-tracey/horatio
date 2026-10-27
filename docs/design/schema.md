@@ -463,10 +463,19 @@ herd, patrol, discipline), owned by a troupe. Placeholders such as
 - `POST /troupes/{id}/characters/search` takes a filter tree: groups that match
   `all` or `any` of their items, each a group or a condition on status, a trait's
   rating, a choice (clan and its bloodlines, sect, focus…), a title, the player,
-  experience, or how many traits a category holds. A missing trait counts as 0.
+  experience, how many traits a category holds, the character itself, or (issue
+  #284) the equipment it holds: `has` or `lacks` an item of a kind, with a quality
+  and its detail, special, or with words in its name. Only held items of the
+  troupe's home characters count. A missing trait counts as 0.
   It is evaluated on each member's sheet as it stands (`horatio/character_filter.py`)
-  and returns the matches with the numbers their conditions compared. Nothing is
-  stored; the Characters list keeps the filter in its URL.
+  and returns the matches with the numbers their conditions compared, and the items
+  an equipment condition asks about. Nothing is stored; the Characters list keeps
+  the filter in its URL.
+- `GET /troupes/{id}/equipment` searches the items of the troupe's home characters
+  (issue #284): words in an item's name, description, qualities, special effects or
+  staff note (`q`), holders, kind, quality, grade, who gave it and between when,
+  held, discarded or taken back, retired characters' too, sorted by holder, name or
+  date. Its tab keeps the search in its URL and exports what it finds as a CSV.
 - `GET /troupes/{id}/print?characters=…` returns printed sheets for the troupe's
   characters named, or for all of them.
 

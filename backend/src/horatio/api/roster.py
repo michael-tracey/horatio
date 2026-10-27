@@ -116,6 +116,21 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
     return sorted(entries, key=lambda e: (not e.home, e.character_name.lower()))
 
 
+class EquipmentMatch(BaseModel):
+    """What an equipment condition asks of an item; empty fields match anything."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str | None = None
+    quality: str | None = None
+    # Words in the quality's detail.
+    detail: str | None = None
+    # Special items only.
+    special: bool | None = None
+    # Words in its name.
+    name: str | None = None
+
+
 class FilterCondition(BaseModel):
     """One condition of a character filter; see horatio.character_filter."""
 
@@ -124,7 +139,7 @@ class FilterCondition(BaseModel):
     what: str
     which: str | None = None
     op: str
-    value: int | str | list[str] | None = None
+    value: int | str | list[str] | EquipmentMatch | None = None
 
 
 class FilterGroup(BaseModel):
@@ -140,6 +155,9 @@ class FilterMatch(BaseModel):
     character_id: uuid.UUID
     # The number each condition compared, keyed "trait:skills/Occult", "xp:earned"…
     values: dict[str, int]
+    # With an equipment condition, the items it holds that the filter asks about:
+    # those a "has" matches, or with only "lacks", all it holds.
+    equipment: list[str]
 
 
 def troupe_catalogue(db: DbSession, troupe_id: uuid.UUID) -> RuleSetData:
@@ -168,7 +186,10 @@ def search_characters(
         found = character_filter.search(db, troupe_id, characters, body.model_dump(), rules)
     except character_filter.FilterError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    return [FilterMatch(character_id=c, values=v) for c, v in found]
+    return [
+        FilterMatch(character_id=f.character_id, values=f.values, equipment=f.equipment)
+        for f in found
+    ]
 
 
 @router.get("/print")

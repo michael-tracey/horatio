@@ -8,9 +8,11 @@ import { AtHandle } from "../../components/PersonPicker";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { useEquipmentRules } from "./EquipmentEditor";
+import { holdersLink } from "./equipmentSearch";
 import { FilterBuilder } from "./FilterBuilder";
 import { titleGroups, titleStatus } from "./titleGroups";
-import { columnLabel, columnOf, columns, decode, encode, ready, sentence, type Group, type Names } from "./filters";
+import { asksEquipment, columnLabel, columnOf, columns, decode, encode, ready, sentence, type Group, type Names } from "./filters";
 
 /**
  * The troupe's characters, those whose home it is first, for its storytellers and
@@ -26,6 +28,7 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
     staleTime: 5 * 60_000,
   });
   const titles = useQuery({ queryKey: ["titles", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/titles", path)) });
+  const equipment = useEquipmentRules("vampire");
   const [params, setParams] = useSearchParams();
   const filter = decode(params.get("filter"));
   const setFilter = (group: Group) =>
@@ -51,7 +54,7 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
   if (!roster.data.length) return <Empty>No characters have joined this troupe yet.</Empty>;
 
   const everyone = roster.data;
-  const matched = sent.items.length ? new Map((search.data ?? []).map((m) => [m.character_id, m.values])) : null;
+  const matched = sent.items.length ? new Map((search.data ?? []).map((m) => [m.character_id, m])) : null;
   const q = query.trim().toLowerCase();
   const shown = everyone.filter(
     (e) => (!matched || matched.has(e.character_id)) && (!q || `${e.character_name} ${e.player_name} ${e.player_handle ?? ""}`.toLowerCase().includes(q)),
@@ -59,7 +62,18 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
   const names: Names = {
     category: (key) => catalogue.data?.categories.find((c) => c.key === key)?.name ?? key,
     player: (id) => everyone.find((e) => e.player_id === id)?.player_name ?? "someone",
+    character: (id) => everyone.find((e) => e.character_id === id)?.character_name ?? "someone",
   };
+  const characters = everyone.map((e) => ({ id: e.character_id, name: e.character_name })).sort((a, b) => a.name.localeCompare(b.name));
+  // Show their equipment: the items of the home characters shown (an NPC is always the troupe's).
+  const holding = shown.filter((e) => e.home || e.kind === "npc");
+  const allHolding = everyone.filter((e) => (e.home || e.kind === "npc") && !e.retired);
+  const sameHolders = holding.length === allHolding.length && holding.every((e) => !e.retired);
+  const equipmentLink = holdersLink(
+    troupeId,
+    sameHolders ? [] : holding.map((e) => e.character_id),
+    holding.some((e) => e.retired),
+  );
   const shownColumns = columns(sent);
   const players = [...new Map(everyone.filter((e) => e.player_id).map((e) => [e.player_id!, e.player_name])).entries()]
     .map(([id, name]) => ({ id, name }))
@@ -123,7 +137,11 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
         </div>
         {building && catalogue.data && (
           <div className="rounded-md border border-ash p-3">
-            <FilterBuilder value={filter} onChange={setFilter} choices={{ catalogue: catalogue.data, titles: titleList(titles.data), players }} />
+            <FilterBuilder
+              value={filter}
+              onChange={setFilter}
+              choices={{ catalogue: catalogue.data, titles: titleList(titles.data), players, characters, equipment: equipment.data }}
+            />
           </div>
         )}
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -131,6 +149,11 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
             {shown.length} of {everyone.length} characters
             {search.isFetching && " · searching…"}
           </span>
+          {holding.length > 0 && (
+            <Link to={equipmentLink} className="text-xs text-gold underline hover:text-parchment">
+              Show their equipment
+            </Link>
+          )}
           {filter.items.map((item, i) => (
             <span key={i} className="inline-flex items-center gap-1 rounded-full border border-ash px-2 py-0.5 text-xs">
               {sentence({ match: filter.match, items: [item] }, names)}
@@ -183,7 +206,8 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
               entry={entry}
               selected={selected.has(entry.character_id)}
               onSelect={() => toggle(entry.character_id)}
-              values={shownColumns.map((c) => [columnLabel(c, names), matched?.get(entry.character_id)?.[columnOf(c)!] ?? 0])}
+              values={shownColumns.map((c) => [columnLabel(c, names), matched?.get(entry.character_id)?.values[columnOf(c)!] ?? 0])}
+              equipment={asksEquipment(sent) ? matched?.get(entry.character_id)?.equipment : undefined}
             />
           ))}
         </ul>
@@ -204,6 +228,7 @@ function RosterRow({
   selected,
   onSelect,
   values,
+  equipment,
 }: {
   troupeId: string;
   entry: RosterEntry;
@@ -211,6 +236,8 @@ function RosterRow({
   onSelect: () => void;
   /** The numbers the filter compares, such as ["Occult", 2]. */
   values: [string, number][];
+  /** With a filter on equipment, the items it asks about that the character holds. */
+  equipment?: string[];
 }) {
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
@@ -241,6 +268,11 @@ function RosterRow({
           {label} {value}
         </span>
       ))}
+      {equipment && equipment.length > 0 && (
+        <span title="What it holds that the filter asks about" className="text-xs text-gold/90">
+          {equipment.join(" · ")}
+        </span>
+      )}
       <span className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
         <Titles troupeId={troupeId} entry={entry} />
         {entry.home && entry.kind === "pc" && <AwardXp troupeId={troupeId} entry={entry} />}

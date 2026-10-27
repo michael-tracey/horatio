@@ -1,12 +1,14 @@
-import type { CatalogueOut, CategoryOut } from "../../api/types";
+import type { CatalogueOut, CategoryOut, EquipmentOut } from "../../api/types";
 import { Button, Input, Select } from "../../components/ui";
-import { blank, COMPARE, isGroup, OP_LABELS, STATUSES, WHATS, type Condition, type Group, type Item, type Op, type What } from "./filters";
+import { blank, COMPARE, isGroup, matchOf, OP_LABELS, STATUSES, WHATS, type Condition, type EquipmentMatch, type Group, type Item, type Op, type What } from "./filters";
 
-/** What the builder offers: the troupe's rules, its titles, and the players in its list. */
+/** What the builder offers: the troupe's rules, its titles, the players and characters in its list, and equipment's kinds and qualities. */
 export type Choices = {
   catalogue: CatalogueOut;
   titles: string[];
   players: { id: string; name: string }[];
+  characters: { id: string; name: string }[];
+  equipment: EquipmentOut | undefined;
 };
 
 /**
@@ -239,6 +241,34 @@ function ConditionEditor({ condition: c, onChange, onRemove, choices }: { condit
         </Select>
       </>
     );
+  } else if (c.what === "character") {
+    const chosen = Array.isArray(c.value) ? c.value : [];
+    const nameOf = (id: string) => choices.characters.find((x) => x.id === id)?.name ?? "someone";
+    fields = (
+      <>
+        {ops(["is", "is_not"])}
+        {chosen.map((id) => (
+          <span key={id} className="inline-flex h-8 items-center gap-1 rounded-full border border-gold/50 px-2 text-xs text-gold">
+            {nameOf(id)}
+            <button type="button" aria-label={`Remove ${nameOf(id)}`} className="text-mist hover:text-parchment" onClick={() => set({ value: chosen.filter((x) => x !== id) })}>
+              ×
+            </button>
+          </span>
+        ))}
+        <Select aria-label={chosen.length ? "Or" : "Character"} value="" onChange={(e) => e.target.value && set({ value: [...chosen, e.target.value] })} className={small}>
+          <option value="">{chosen.length ? "or…" : "Choose…"}</option>
+          {choices.characters
+            .filter((x) => !chosen.includes(x.id))
+            .map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.name}
+              </option>
+            ))}
+        </Select>
+      </>
+    );
+  } else if (c.what === "equipment") {
+    fields = <EquipmentFields condition={c} onChange={onChange} rules={choices.equipment} />;
   } else if (c.what === "xp") {
     fields = (
       <>
@@ -281,5 +311,67 @@ function ConditionEditor({ condition: c, onChange, onRemove, choices }: { condit
         ×
       </button>
     </fieldset>
+  );
+}
+
+/**
+ * An equipment condition: has or lacks an item it holds of a kind, with a quality
+ * (only those of the kind chosen are offered) and its detail, special or not, with
+ * words in its name. Left empty, any item.
+ */
+function EquipmentFields({ condition: c, onChange, rules }: { condition: Condition; onChange: (c: Condition) => void; rules: EquipmentOut | undefined }) {
+  const m = matchOf(c);
+  const setMatch = (change: Partial<EquipmentMatch>) => onChange({ ...c, value: { ...m, ...change } });
+  const qualities = rules?.qualities ?? [];
+  const ofKind = (kind: string | null | undefined) => qualities.filter((q) => !kind || q.kind === kind);
+  const names = [...new Set(ofKind(m.kind).map((q) => q.name))].sort((a, b) => a.localeCompare(b));
+  const prompt = ofKind(m.kind).find((q) => q.name === m.quality)?.detail_prompt;
+  return (
+    <>
+      <Select aria-label="How" value={c.op} onChange={(e) => onChange({ ...c, op: e.target.value as Op })} className={small}>
+        <option value="has">holds</option>
+        <option value="lacks">does not hold</option>
+      </Select>
+      <Select
+        aria-label="Kind of item"
+        value={m.kind ?? ""}
+        onChange={(e) => {
+          const kind = e.target.value || null;
+          // A quality the new kind doesn't have goes.
+          const keeps = !m.quality || ofKind(kind).some((q) => q.name === m.quality);
+          setMatch({ kind, ...(keeps ? {} : { quality: null, detail: "" }) });
+        }}
+        className={small}
+      >
+        <option value="">any kind</option>
+        {rules?.kinds.map((k) => (
+          <option key={k.key} value={k.key}>
+            {k.name.toLowerCase()}
+          </option>
+        ))}
+      </Select>
+      <Select aria-label="Quality" value={m.quality ?? ""} onChange={(e) => setMatch({ quality: e.target.value || null, detail: "" })} className={small}>
+        <option value="">with any quality</option>
+        {names.map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </Select>
+      {prompt && (
+        <Input
+          aria-label={`${m.quality} detail`}
+          placeholder={`${prompt} (optional)`}
+          value={m.detail ?? ""}
+          onChange={(e) => setMatch({ detail: e.target.value })}
+          className="h-8 w-40 py-0 text-sm"
+        />
+      )}
+      <Input aria-label="Name contains" placeholder="name contains…" value={m.name ?? ""} onChange={(e) => setMatch({ name: e.target.value })} className="h-8 w-36 py-0 text-sm" />
+      <label className="flex items-center gap-1 text-sm text-mist">
+        <input type="checkbox" checked={!!m.special} onChange={(e) => setMatch({ special: e.target.checked })} />
+        special only
+      </label>
+    </>
   );
 }
