@@ -3137,6 +3137,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rules/{splat}/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Equipment
+         * @description The kinds of item, the grades, every quality of each kind and the book's
+         *     sample items, each with its facts.
+         */
+        get: operations["equipment_api_rules__splat__equipment_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rules/{splat}/equipment/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check
+         * @description An item's facts and every rule it breaks, without making it: what an editor
+         *     shows as the item is built.
+         */
+        post: operations["check_api_rules__splat__equipment_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shared-background-entries/{entry_id}": {
         parameters: {
             query?: never;
@@ -6859,6 +6901,144 @@ export interface components {
             this_game: boolean;
             /** While Held */
             while_held: string | null;
+        };
+        /** EquipmentCheckIn */
+        EquipmentCheckIn: {
+            /**
+             * Crafted
+             * @default false
+             */
+            crafted: boolean;
+            /** Grade */
+            grade: string;
+            /** Kind */
+            kind: string;
+            /** Qualities */
+            qualities?: components["schemas"]["EquipmentItemQuality"][];
+        };
+        /** EquipmentCheckOut */
+        EquipmentCheckOut: {
+            /** Aggravated Against */
+            aggravated_against: string[];
+            /** Damage */
+            damage: number | null;
+            /** Hands */
+            hands: number | null;
+            /** Problems */
+            problems: string[];
+            /** Range */
+            range: string | null;
+            /** Shots */
+            shots: number | null;
+        };
+        /** EquipmentFactsOut */
+        EquipmentFactsOut: {
+            /** Aggravated Against */
+            aggravated_against: string[];
+            /** Damage */
+            damage: number | null;
+            /** Hands */
+            hands: number | null;
+            /** Range */
+            range: string | null;
+            /** Shots */
+            shots: number | null;
+        };
+        /** EquipmentGradeOut */
+        EquipmentGradeOut: {
+            /** Description */
+            description: string;
+            /** Key */
+            key: string;
+            /** Max Qualities */
+            max_qualities: number | null;
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
+        };
+        /** EquipmentItemQuality */
+        EquipmentItemQuality: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+        };
+        /** EquipmentKindOut */
+        EquipmentKindOut: {
+            /** Damage */
+            damage: number | null;
+            /** Description */
+            description: string;
+            /** Hands */
+            hands: number | null;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
+            /** Page */
+            page: string | null;
+            /** Range */
+            range: string | null;
+            /** Shots */
+            shots: number | null;
+        };
+        /** EquipmentOut */
+        EquipmentOut: {
+            /** Grades */
+            grades: components["schemas"]["EquipmentGradeOut"][];
+            /** Kinds */
+            kinds: components["schemas"]["EquipmentKindOut"][];
+            /** Qualities */
+            qualities: components["schemas"]["EquipmentQualityOut"][];
+            /** Templates */
+            templates: components["schemas"]["EquipmentTemplateOut"][];
+        };
+        /** EquipmentQualityOut */
+        EquipmentQualityOut: {
+            /** Ammo */
+            ammo: boolean;
+            /** Detail Prompt */
+            detail_prompt: string | null;
+            /** Effect */
+            effect: string;
+            /** Excludes */
+            excludes: string[];
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Needs Detail */
+            needs_detail: boolean;
+            /** Needs One Hand */
+            needs_one_hand: boolean;
+            /** No Slot When Crafted */
+            no_slot_when_crafted: boolean;
+            /** Page */
+            page: string | null;
+            /** Repeatable */
+            repeatable: boolean;
+            /** Two Handed */
+            two_handed: boolean;
+        };
+        /** EquipmentTemplateOut */
+        EquipmentTemplateOut: {
+            facts: components["schemas"]["EquipmentFactsOut"];
+            /** Grade */
+            grade: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
+            /** Qualities */
+            qualities: components["schemas"]["EquipmentItemQuality"][];
         };
         /**
          * ExceptionAskOut
@@ -18630,6 +18810,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogueOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    equipment_api_rules__splat__equipment_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                splat: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_api_rules__splat__equipment_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                splat: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentCheckOut"];
                 };
             };
             /** @description Validation Error */
