@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from horatio import (
     diablerie,
     domitors,
+    equipment,
     house_traits,
     pictures,
     play,
@@ -22,6 +23,7 @@ from horatio import (
     titles,
 )
 from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, listed
+from horatio.api.troupe_equipment import EquipmentItemOut, Reader
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, SheetVersion, TraitCategory, TraitDefinition, Troupe, User
 from horatio.permissions import visible_character
@@ -91,6 +93,8 @@ class PrintedSheet(BaseModel):
     # The test pools worked out from the sheet, and the player's modifiers that are on.
     pools: list[reference.TestPool]
     modifiers: list[ModifierOut]
+    # What it holds (horatio.equipment), with no staff note.
+    equipment: list[EquipmentItemOut] = []
 
 
 @router.get("/print")
@@ -177,6 +181,8 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         if t["category"] in rule_set.categories
     ]
     limits = play.limits(db, character)
+    # No reader: a printed sheet shows no staff note.
+    reader = Reader(db, None)
     domitor = domitors.domitor_info(db, character) if domitors.has_domitor(character) else None
     return PrintedSheet(
         character_name=character.name,
@@ -210,5 +216,6 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
             limits.blood_per_turn,
         ).pools,
         modifiers=modifiers_out(db, character, only_on=True),
+        equipment=[reader.item(item, character) for item in equipment.items_of(db, character)],
         picture=pictures.picture_url(character.id, character.picture_id),
     )

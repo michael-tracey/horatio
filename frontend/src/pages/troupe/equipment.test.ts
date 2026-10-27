@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { EquipmentOut, EquipmentQualityOut } from "../../api/types";
-import { NEW_ITEM, body, factsText, fromTemplate, kindText, qualityChoices, qualityText } from "./equipment";
+import { NEW_ITEM, body, combatFirst, factsText, fromTemplate, kindText, playText, qualityChoices, qualityText } from "./equipment";
 
 function quality(kind: string, name: string, more: Partial<EquipmentQualityOut> = {}): EquipmentQualityOut {
   return {
     kind,
     name,
     effect: "",
+    play: "",
     page: null,
     two_handed: false,
     needs_one_hand: false,
@@ -68,5 +69,25 @@ describe("equipment", () => {
     expect(qualityText({ name: "Customized", detail: "hacking" })).toBe("Customized: hacking");
     expect(kindText(RULES, { kind: "melee", grade: "special", crafted: false })).toBe("Special melee weapon");
     expect(kindText(RULES, { kind: "melee", grade: "standard", crafted: true })).toBe("Crafted melee weapon");
+    expect(kindText(undefined, { kind: "ranged", kind_name: "Ranged weapon", grade: "cheap", crafted: false })).toBe("Cheap ranged weapon");
+  });
+
+  it("puts weapons first, then armour, then the rest, keeping each kind's order", () => {
+    const items = [
+      { name: "Laptop", kind: "miscellaneous" },
+      { name: "Vest", kind: "protective" },
+      { name: "Rifle", kind: "ranged" },
+      { name: "Dagger", kind: "melee" },
+      { name: "Axe", kind: "melee" },
+    ];
+    expect(combatFirst(items).map((i) => i.name)).toEqual(["Dagger", "Axe", "Rifle", "Vest", "Laptop"]);
+  });
+
+  it("says what a quality does at the table", () => {
+    const fast = { name: "Fast", detail: "", effect: "+3 initiative when fighting with it.", play: "+3 initiative", page: "517" };
+    expect(playText(fast)).toBe("Fast: +3 initiative");
+    expect(playText({ ...fast, name: "Customized", detail: "hacking", play: "+2 in its circumstance" })).toBe("Customized (hacking): +2 in its circumstance");
+    expect(playText({ ...fast, play: null })).toBe("Fast: +3 initiative when fighting with it.");
+    expect(playText({ ...fast, play: null, effect: null })).toBe("Fast");
   });
 });

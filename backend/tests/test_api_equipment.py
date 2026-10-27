@@ -114,6 +114,7 @@ def test_get_equipment(client: TestClient) -> None:
     assert customized["kind"] == "miscellaneous"
     assert customized["needs_detail"] is True
     assert customized["detail_prompt"] == "the circumstance, such as hacking"
+    assert customized["play"] == "+2 in its circumstance"
     shotgun = next(t for t in body["templates"] if t["name"] == "Shotgun")
     assert shotgun["qualities"] == [
         {"name": "Spread", "detail": ""},

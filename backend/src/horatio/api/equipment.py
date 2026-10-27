@@ -40,6 +40,8 @@ class EquipmentQualityOut(BaseModel):
     name: str
     # What it does, in a line of our own words.
     effect: str
+    # What it does at the table, in a few words: "+3 initiative".
+    play: str
     page: str | None
     # What it does to an item (horatio.rules.equipment).
     two_handed: bool
@@ -149,6 +151,7 @@ def equipment(splat: str, db: DbSession, user: CurrentUser) -> EquipmentOut:
                 kind=q.kind,
                 name=q.name,
                 effect=q.effect,
+                play=q.play,
                 page=q.page,
                 two_handed=q.two_handed,
                 needs_one_hand=q.needs_one_hand,

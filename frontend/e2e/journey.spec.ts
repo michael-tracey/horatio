@@ -7767,6 +7767,87 @@ test("a troupe gives equipment: a dagger from a template, a rifle by hand, refus
   await expect(p.getByText("equip-lead changed Agnes (equip-player)'s Silver Dagger: renamed from Silver Dagger (An heirloom).")).toBeVisible();
 });
 
+test("a player reads their character's equipment and what each quality does, on its page, its Play View and its printed sheet", async ({ browser }) => {
+  const custodian = await person(browser, "kit-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "kit-lead");
+  const player = await person(browser, "kit-player");
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Quartermaster ${run}`, lead_handle: lead.handle });
+  const { id: odile } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Odile" });
+  await send(player.page, "PUT", `/api/characters/${odile}/traits`, { category: "clan", name: "Brujah", rating: null });
+  for (const [category, picks] of Object.entries({ ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] }))
+    await send(player.page, "PUT", `/api/characters/${odile}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send(player.page, "POST", `/api/characters/${odile}/creation/complete`);
+  const asked = await send(player.page, "POST", `/api/characters/${odile}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+
+  // Nothing given yet: the player is told where equipment comes from, on both tabs.
+  const p = player.page;
+  await p.goto(`/characters/${odile}`);
+  await p.locator("main").getByRole("link", { name: "Equipment", exact: true }).click();
+  await expect(p.getByText("No equipment yet. Your storytellers give equipment.")).toBeVisible();
+  await p.goto(`/play/characters/${odile}`);
+  await p.getByRole("tab", { name: "Equipment" }).click();
+  await expect(p.getByText("No equipment yet. Your storytellers give equipment.")).toBeVisible();
+
+  // The lead gives her a sports car, a flak vest and the book's Silver Dagger, with a note for staff.
+  const give = (item: object) => send(lead.page, "POST", `/api/troupes/${troupe.id}/equipment`, { character_id: odile, grade: "standard", ...item });
+  await give({ name: "Sports Car", kind: "miscellaneous", qualities: [{ name: "Flashy" }, { name: "Stylish" }] });
+  await give({ name: "Flak Vest", kind: "protective", qualities: [{ name: "Ballistic" }, { name: "Chest Plate" }] });
+  await give({ name: "Silver Dagger", kind: "melee", qualities: [{ name: "Concealable" }, { name: "Silver" }], description: "Her sire's.", staff_note: "Cursed" });
+
+  // Her page's Equipment tab: weapons first, each quality with its effect and page, and where it came from.
+  await p.goto(`/characters/${odile}/equipment`);
+  const held = p.getByRole("list", { name: "Equipment" });
+  await expect(held.locator(":scope > li h3")).toHaveText(["Silver Dagger", "Flak Vest", "Sports Car"]);
+  const dagger = held.getByRole("listitem", { name: "Silver Dagger" });
+  await expect(dagger.getByText("Melee weapon", { exact: true })).toBeVisible();
+  await expect(dagger.getByText("1 hand · 1 damage · range 2 steps")).toBeVisible();
+  const qualities = dagger.getByRole("list", { name: "Silver Dagger's qualities" });
+  await expect(qualities).toContainText("Concealable: Can't be seen when hidden");
+  await expect(qualities).toContainText("Silver: Silver-edged, plated or made: aggravated damage to werewolves");
+  await expect(qualities).toContainText("MET: VTM p. 517");
+  await expect(dagger.getByText("Her sire's.")).toBeVisible();
+  await expect(dagger.getByText(/^Given by kit-lead of Quartermaster/)).toBeVisible();
+  await expect(dagger.getByText(/Staff note/)).toHaveCount(0);
+  await p.screenshot(shots("character-equipment"));
+
+  // The lead, staff of her home troupe, sees the staff note there too.
+  await lead.page.goto(`/characters/${odile}/equipment`);
+  await expect(lead.page.getByRole("listitem", { name: "Silver Dagger" }).getByText("Staff note: Cursed")).toBeVisible();
+
+  // The Play View's tab: weapons, then armour, then the rest, each quality as it plays.
+  await p.goto(`/play/characters/${odile}`);
+  await p.getByRole("tab", { name: "Equipment" }).click();
+  await expect(p.getByRole("main").getByRole("heading", { level: 2 })).toHaveText(["Weapons", "Protective gear", "Other equipment"]);
+  const card = p.getByRole("region", { name: "Weapons" }).getByRole("listitem", { name: "Silver Dagger" });
+  await expect(card.getByText("Concealable: Hidden until searched")).toBeVisible();
+  await expect(card.getByText("Silver: Aggravated damage to werewolves")).toBeVisible();
+  await expect(p.getByRole("region", { name: "Protective gear" }).getByText("Ballistic: +3 defence against firearms, +1 against the rest")).toBeVisible();
+  // The full effect: open at once on a wide screen, a tap away on a phone.
+  const full = card.getByText(/Silver-edged, plated or made/);
+  if (test.info().project.name === "phone") {
+    await expect(full).toBeHidden();
+    await card.getByRole("button", { expanded: false }).click();
+  }
+  await expect(full).toBeVisible();
+  await expect(card.getByText("Her sire's.")).toBeVisible();
+  await p.screenshot(shots("play-equipment"));
+
+  // The printed sheet lists it, with no staff note.
+  await p.goto(`/print/characters/${odile}`);
+  const printed = p.getByRole("list", { name: "Equipment" });
+  await expect(printed).toContainText("Silver Dagger · Melee weapon · 1 hand · 1 damage · range 2 steps");
+  await expect(printed).toContainText("Concealable: Hidden until searched; Silver: Aggravated damage to werewolves");
+  await expect(p.getByText("Cursed")).toHaveCount(0);
+});
+
 test("a skill's specialisations sit in its own list item, in the sheet's two columns and on a phone", async ({ browser }) => {
   const { page: p } = await person(browser, "stay-together");
   const id = await builtVampire(p, "Marguerite", "Toreador", {

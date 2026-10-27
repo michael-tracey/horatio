@@ -249,6 +249,7 @@ def sync_equipment(session: Session, rule_set: RuleSet, data: EquipmentRules) ->
             row = EquipmentQuality(rule_set_id=rule_set.id, kind=kind, name=name)
             session.add(row)
         row.effect = quality.effect
+        row.play = quality.play
         row.page = quality.page
         row.properties = quality.properties
         row.position = position
@@ -294,7 +295,10 @@ def load_equipment(session: Session, rule_set: RuleSet) -> EquipmentRules:
         grades={g["key"]: GradeData(**g) for g in rule_set.equipment.get("grades", [])},
         qualities={
             (q.kind, q.name): replace(
-                quality_from_dict(q.kind, q.name, q.properties), effect=q.effect, page=q.page
+                quality_from_dict(q.kind, q.name, q.properties),
+                effect=q.effect,
+                play=q.play,
+                page=q.page,
             )
             for q in qualities
         },
