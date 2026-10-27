@@ -818,6 +818,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Equipment
+         * @description What the character holds, for whoever sees its sheet; the staff note only for
+         *     its home troupe's staff.
+         */
+        get: operations["character_equipment_api_characters__character_id__equipment_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/free-choices": {
         parameters: {
             query?: never;
@@ -4059,6 +4080,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Equipment
+         * @description Every item the troupe's home characters hold, whichever troupe gave it, by
+         *     holder: of one character, or one kind, if asked. `status` asks for those taken
+         *     back (or discarded) as well or instead.
+         */
+        get: operations["troupe_equipment_api_troupes__troupe_id__equipment_get"];
+        put?: never;
+        /**
+         * Give Equipment
+         * @description Give one of the troupe's home characters an item. One for a character whose
+         *     home is elsewhere, or that breaks the rules between qualities, is refused with
+         *     the reason.
+         */
+        post: operations["give_equipment_api_troupes__troupe_id__equipment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/equipment/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Templates
+         * @description The troupe's own templates. The book's are with the rules (GET
+         *     /rules/{splat}/equipment).
+         */
+        get: operations["troupe_templates_api_troupes__troupe_id__equipment_templates_get"];
+        put?: never;
+        /**
+         * Save Template
+         * @description Keep an item as one of the troupe's templates, checked as any item is.
+         */
+        post: operations["save_template_api_troupes__troupe_id__equipment_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/equipment/templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Template */
+        delete: operations["delete_template_api_troupes__troupe_id__equipment_templates__template_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/equipment/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Equipment Item
+         * @description An item, with its history: where it came from and every change since.
+         */
+        get: operations["equipment_item_api_troupes__troupe_id__equipment__item_id__get"];
+        /**
+         * Change Equipment
+         * @description Change an item, with a reason its holder's player is told.
+         */
+        put: operations["change_equipment_api_troupes__troupe_id__equipment__item_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/equipment/{item_id}/take-back": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take Back
+         * @description Take an item away from its holder, with a reason its player is told.
+         */
+        post: operations["take_back_api_troupes__troupe_id__equipment__item_id__take_back_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/games": {
         parameters: {
             query?: never;
@@ -5899,6 +6034,45 @@ export interface components {
             /** Picks */
             picks: components["schemas"]["CategoryPick"][];
         };
+        /** ChangeEquipmentIn */
+        ChangeEquipmentIn: {
+            /**
+             * Crafted
+             * @default false
+             */
+            crafted: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Effects */
+            effects?: components["schemas"]["SpecialEffectModel"][];
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "cheap" | "standard" | "special";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "melee" | "ranged" | "protective" | "miscellaneous";
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities?: components["schemas"]["EquipmentItemQuality"][];
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Staff Note
+             * @default
+             */
+            staff_note: string;
+        };
         /** ChangeOut */
         ChangeOut: {
             /** Cost */
@@ -5986,6 +6160,15 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /** CharacterEquipmentOut */
+        CharacterEquipmentOut: {
+            /** Can Give */
+            can_give: boolean;
+            /** Home Troupe Id */
+            home_troupe_id: string | null;
+            /** Items */
+            items: components["schemas"]["EquipmentItemOut"][];
         };
         /** CharacterFeedingOut */
         CharacterFeedingOut: {
@@ -7444,6 +7627,41 @@ export interface components {
             /** Shots */
             shots: number | null;
         };
+        /** EquipmentEventOut */
+        EquipmentEventOut: {
+            /** Action */
+            action: string;
+            /** Actor Name */
+            actor_name: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Changes */
+            changes: {
+                [key: string]: unknown;
+            };
+            /** From Character Id */
+            from_character_id: string | null;
+            /** From Name */
+            from_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reason */
+            reason: string;
+            /** Summary */
+            summary: string;
+            /** To Character Id */
+            to_character_id: string | null;
+            /** To Name */
+            to_name: string;
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
         /** EquipmentFactsOut */
         EquipmentFactsOut: {
             /** Aggravated Against */
@@ -7470,6 +7688,149 @@ export interface components {
             /** Page */
             page: string | null;
         };
+        /**
+         * EquipmentHolderOut
+         * @description A home character of the troupe, which it can give equipment to.
+         */
+        EquipmentHolderOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Player Name */
+            player_name: string | null;
+            /** Splat */
+            splat: string;
+        };
+        /** EquipmentItemDetailOut */
+        EquipmentItemDetailOut: {
+            /** Can Change */
+            can_change: boolean;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Kind */
+            character_kind: string;
+            /** Character Name */
+            character_name: string;
+            /** Crafted */
+            crafted: boolean;
+            /** Description */
+            description: string;
+            /** Effects */
+            effects: components["schemas"]["SpecialEffectModel"][];
+            facts: components["schemas"]["EquipmentFactsOut"];
+            /**
+             * Given At
+             * Format: date-time
+             */
+            given_at: string;
+            /** Given By Name */
+            given_by_name: string | null;
+            /** Grade */
+            grade: string;
+            /** History */
+            history: components["schemas"]["EquipmentEventOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Player Name */
+            player_name: string | null;
+            /** Qualities */
+            qualities: components["schemas"]["EquipmentItemQualityOut"][];
+            /** Special */
+            special: boolean;
+            /** Special Troupe Name */
+            special_troupe_name: string | null;
+            /** Staff Note */
+            staff_note: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "held" | "taken_back" | "discarded";
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** EquipmentItemOut */
+        EquipmentItemOut: {
+            /** Can Change */
+            can_change: boolean;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Kind */
+            character_kind: string;
+            /** Character Name */
+            character_name: string;
+            /** Crafted */
+            crafted: boolean;
+            /** Description */
+            description: string;
+            /** Effects */
+            effects: components["schemas"]["SpecialEffectModel"][];
+            facts: components["schemas"]["EquipmentFactsOut"];
+            /**
+             * Given At
+             * Format: date-time
+             */
+            given_at: string;
+            /** Given By Name */
+            given_by_name: string | null;
+            /** Grade */
+            grade: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Player Name */
+            player_name: string | null;
+            /** Qualities */
+            qualities: components["schemas"]["EquipmentItemQualityOut"][];
+            /** Special */
+            special: boolean;
+            /** Special Troupe Name */
+            special_troupe_name: string | null;
+            /** Staff Note */
+            staff_note: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "held" | "taken_back" | "discarded";
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
         /** EquipmentItemQuality */
         EquipmentItemQuality: {
             /**
@@ -7479,6 +7840,17 @@ export interface components {
             detail: string;
             /** Name */
             name: string;
+        };
+        /** EquipmentItemQualityOut */
+        EquipmentItemQualityOut: {
+            /** Detail */
+            detail: string;
+            /** Effect */
+            effect: string | null;
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
         };
         /** EquipmentKindOut */
         EquipmentKindOut: {
@@ -7538,6 +7910,40 @@ export interface components {
             repeatable: boolean;
             /** Two Handed */
             two_handed: boolean;
+        };
+        /** EquipmentTemplateIn */
+        EquipmentTemplateIn: {
+            /**
+             * Crafted
+             * @default false
+             */
+            crafted: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Effects */
+            effects?: components["schemas"]["SpecialEffectModel"][];
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "cheap" | "standard" | "special";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "melee" | "ranged" | "protective" | "miscellaneous";
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities?: components["schemas"]["EquipmentItemQuality"][];
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
         };
         /** EquipmentTemplateOut */
         EquipmentTemplateOut: {
@@ -7981,6 +8387,47 @@ export interface components {
              * Format: uuid
              */
             character_id: string;
+        };
+        /** GiveEquipmentIn */
+        GiveEquipmentIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /**
+             * Crafted
+             * @default false
+             */
+            crafted: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Effects */
+            effects?: components["schemas"]["SpecialEffectModel"][];
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "cheap" | "standard" | "special";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "melee" | "ranged" | "protective" | "miscellaneous";
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities?: components["schemas"]["EquipmentItemQuality"][];
+            /**
+             * Staff Note
+             * @default
+             */
+            staff_note: string;
+            /** Template */
+            template?: string | null;
         };
         /** GiveIn */
         GiveIn: {
@@ -11790,6 +12237,13 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** SpecialEffectModel */
+        SpecialEffectModel: {
+            /** Effect */
+            effect: string;
+            /** Name */
+            name: string;
+        };
         /** Specialization */
         Specialization: {
             /** Name */
@@ -12330,6 +12784,11 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** TakeBackEquipmentIn */
+        TakeBackEquipmentIn: {
+            /** Reason */
+            reason: string;
+        };
         /** Tally */
         Tally: {
             /** Lines */
@@ -12652,6 +13111,13 @@ export interface components {
              */
             troupe_id: string;
         };
+        /** TroupeEquipmentOut */
+        TroupeEquipmentOut: {
+            /** Characters */
+            characters: components["schemas"]["EquipmentHolderOut"][];
+            /** Items */
+            items: components["schemas"]["EquipmentItemOut"][];
+        };
         /** TroupeKindOut */
         TroupeKindOut: {
             /** Catalogue */
@@ -12874,6 +13340,28 @@ export interface components {
         TroupeReset: {
             /** Reset */
             reset: number;
+        };
+        /** TroupeTemplateOut */
+        TroupeTemplateOut: {
+            /** Crafted */
+            crafted: boolean;
+            /** Description */
+            description: string;
+            /** Effects */
+            effects: components["schemas"]["SpecialEffectModel"][];
+            /** Grade */
+            grade: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities: components["schemas"]["EquipmentItemQuality"][];
         };
         /** UnavailableIn */
         UnavailableIn: {
@@ -14952,6 +15440,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SireChoiceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_equipment_api_characters__character_id__equipment_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterEquipmentOut"];
                 };
             };
             /** @description Validation Error */
@@ -21462,6 +21981,276 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Invite"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_equipment_api_troupes__troupe_id__equipment_get: {
+        parameters: {
+            query?: {
+                character_id?: string | null;
+                kind?: ("melee" | "ranged" | "protective" | "miscellaneous") | null;
+                status?: ("held" | "taken_back" | "discarded")[] | null;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeEquipmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_equipment_api_troupes__troupe_id__equipment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiveEquipmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_templates_api_troupes__troupe_id__equipment_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeTemplateOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_template_api_troupes__troupe_id__equipment_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentTemplateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeTemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_template_api_troupes__troupe_id__equipment_templates__template_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    equipment_item_api_troupes__troupe_id__equipment__item_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItemDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_equipment_api_troupes__troupe_id__equipment__item_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeEquipmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItemDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_back_api_troupes__troupe_id__equipment__item_id__take_back_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TakeBackEquipmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItemDetailOut"];
                 };
             };
             /** @description Validation Error */

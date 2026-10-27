@@ -32,6 +32,7 @@ from horatio.models.downtimes import (
     Submission,
     TroupeConnector,
 )
+from horatio.models.equipment import EquipmentEvent, EquipmentItem
 from horatio.models.influence import InfluenceEntry
 from horatio.models.influence_blocks import InfluenceBlock
 from horatio.models.influence_effects import InfluenceEffect
@@ -128,6 +129,8 @@ __all__ = [
     "ClanLogo",
     "CostRule",
     "CreationRule",
+    "EquipmentEvent",
+    "EquipmentItem",
     "EquipmentQuality",
     "EquipmentTemplate",
     "FormerHandle",
