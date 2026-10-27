@@ -9773,6 +9773,122 @@
         "title": "Morality",
         "type": "object"
       },
+      "MoveIn": {
+        "properties": {
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "handle",
+          "reason"
+        ],
+        "title": "MoveIn",
+        "type": "object"
+      },
+      "MovePreview": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "from_player": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "home_troupe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoveTroupe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open_requests": {
+            "items": {
+              "$ref": "#/components/schemas/OpenRequest"
+            },
+            "title": "Open Requests",
+            "type": "array"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "staff_roles": {
+            "items": {
+              "$ref": "#/components/schemas/StaffRole"
+            },
+            "title": "Staff Roles",
+            "type": "array"
+          },
+          "to_player": {
+            "$ref": "#/components/schemas/Someone"
+          },
+          "visiting": {
+            "items": {
+              "$ref": "#/components/schemas/MoveTroupe"
+            },
+            "title": "Visiting",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "retired",
+          "from_player",
+          "to_player",
+          "home_troupe",
+          "visiting",
+          "open_requests",
+          "staff_roles",
+          "refusal"
+        ],
+        "title": "MovePreview",
+        "type": "object"
+      },
+      "MoveTroupe": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "MoveTroupe",
+        "type": "object"
+      },
       "MyDowntime": {
         "properties": {
           "adjustments": {
@@ -10741,6 +10857,23 @@
           "held"
         ],
         "title": "OfferOut",
+        "type": "object"
+      },
+      "OpenRequest": {
+        "properties": {
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "troupe": {
+            "$ref": "#/components/schemas/MoveTroupe"
+          }
+        },
+        "required": [
+          "summary",
+          "troupe"
+        ],
+        "title": "OpenRequest",
         "type": "object"
       },
       "OptionList": {
@@ -16643,6 +16776,22 @@
           "role"
         ],
         "title": "StaffMember",
+        "type": "object"
+      },
+      "StaffRole": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "troupe": {
+            "$ref": "#/components/schemas/MoveTroupe"
+          }
+        },
+        "required": [
+          "troupe",
+          "role"
+        ],
+        "title": "StaffRole",
         "type": "object"
       },
       "StartingBlood": {
@@ -23417,6 +23566,104 @@
         "summary": "Character Log",
         "tags": [
           "log"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/move": {
+      "get": {
+        "description": "What moving the character to whoever has `handle` would do, for the custodian\nto confirm.",
+        "operationId": "preview_move_api_characters__character_id__move_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "title": "Handle",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Move",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "post": {
+        "description": "Give the character to whoever has the handle. Only the custodian can, and\nonly with a reason.",
+        "operationId": "move_character_api_characters__character_id__move_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Move Character",
+        "tags": [
+          "custodian"
         ]
       }
     },

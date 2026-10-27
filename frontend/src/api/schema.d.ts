@@ -987,6 +987,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Move
+         * @description What moving the character to whoever has `handle` would do, for the custodian
+         *     to confirm.
+         */
+        get: operations["preview_move_api_characters__character_id__move_get"];
+        put?: never;
+        /**
+         * Move Character
+         * @description Give the character to whoever has the handle. Only the custodian can, and
+         *     only with a reason.
+         */
+        post: operations["move_character_api_characters__character_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/npc/ratings": {
         parameters: {
             query?: never;
@@ -8414,6 +8440,46 @@ export interface components {
             /** Value */
             value: number;
         };
+        /** MoveIn */
+        MoveIn: {
+            /** Handle */
+            handle: string;
+            /** Reason */
+            reason: string;
+        };
+        /** MovePreview */
+        MovePreview: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            from_player: components["schemas"]["Someone"];
+            home_troupe: components["schemas"]["MoveTroupe"] | null;
+            /** Open Requests */
+            open_requests: components["schemas"]["OpenRequest"][];
+            /** Refusal */
+            refusal: string | null;
+            /** Retired */
+            retired: boolean;
+            /** Staff Roles */
+            staff_roles: components["schemas"]["StaffRole"][];
+            to_player: components["schemas"]["Someone"];
+            /** Visiting */
+            visiting: components["schemas"]["MoveTroupe"][];
+        };
+        /** MoveTroupe */
+        MoveTroupe: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** MyDowntime */
         MyDowntime: {
             /** Adjustments */
@@ -8756,6 +8822,12 @@ export interface components {
             points: number;
             /** Summary */
             summary: string;
+        };
+        /** OpenRequest */
+        OpenRequest: {
+            /** Summary */
+            summary: string;
+            troupe: components["schemas"]["MoveTroupe"];
         };
         /** OptionList */
         OptionList: {
@@ -11058,6 +11130,11 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** StaffRole */
+        StaffRole: {
+            role: components["schemas"]["Role"];
+            troupe: components["schemas"]["MoveTroupe"];
         };
         /** StartingBlood */
         StartingBlood: {
@@ -14419,6 +14496,72 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LogEntry"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_move_api_characters__character_id__move_get: {
+        parameters: {
+            query: {
+                handle: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_character_api_characters__character_id__move_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

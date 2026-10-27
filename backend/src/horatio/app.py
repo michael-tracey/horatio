@@ -17,6 +17,7 @@ from horatio.api import (
     badges,
     cart,
     character_log,
+    character_moves,
     characters,
     clan_logos,
     connectors,
@@ -149,6 +150,7 @@ for module in (
     system,
     play,
     play_others,
+    character_moves,
     scenes,
     waiting,
 ):
