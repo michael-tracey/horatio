@@ -229,6 +229,7 @@ function RosterRow({
       <span className="text-xs whitespace-nowrap text-parchment/80">
         {entry.clan ?? "No clan yet"} · {entry.social_age}
       </span>
+      {!entry.seated && <span className="text-xs text-mist">Represented by: {entry.represented_by ?? "nobody yet"}</span>}
       {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
       {entry.waiting && <Badge tone="blood">asking to make this home</Badge>}
       {entry.disciplines_waiting > 0 && (

@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { WhosWhoEntry } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { Badge, Empty, ErrorText, Input, Loading, Select } from "../../components/ui";
+import { RepresentedBy } from "./RepresentedBy";
 import { NO_FILTER, clanText, filterChoices, sections, type Section, type WhosWhoFilter } from "./whosWho";
 
 /**
@@ -83,13 +84,16 @@ export function WhosWhoTab({ troupeId }: { troupeId: string }) {
       )}
       {shown.length === 0 && <Empty>{filtered ? "No one matches." : "No one yet."}</Empty>}
       {shown.map((s) => (
-        <WhosWhoSection key={s.id} section={s} seated={data.seated} />
+        <WhosWhoSection key={s.id} section={s} seated={data.seated} represent={{ troupeId, canSet: data.can_represent }} />
       ))}
     </div>
   );
 }
 
-function WhosWhoSection({ section, seated }: { section: Section; seated: string[] | null }) {
+/** Where an entry in Other says who represents it, and whose the caller may set. */
+type Represent = { troupeId: string; canSet: string[] };
+
+function WhosWhoSection({ section, seated, represent }: { section: Section; seated: string[] | null; represent: Represent }) {
   const headingId = `${section.id}-heading`;
   return (
     <section id={section.id} aria-labelledby={headingId} className="scroll-mt-4">
@@ -99,14 +103,14 @@ function WhosWhoSection({ section, seated }: { section: Section; seated: string[
       {section.kind === "court" && <p className="mb-2 text-xs text-mist">Everyone holding a title here, highest first.</p>}
       {section.kind === "other" && (
         <p className="mb-2 text-xs text-mist">
-          Clans with no seat at court.{seated && ` Only the ${andList(seated)} have a Primogen here.`}
+          Clans with no seat at court.{seated && ` Only the ${andList(seated)} have one here.`}
         </p>
       )}
       <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {section.entries.map((e) => (
           // Every character is in one clan section or Other: the place a link to it goes.
           <li key={e.character_id} id={section.kind === "clan" || section.kind === "other" ? `c-${e.character_id}` : undefined} className="scroll-mt-4">
-            <EntryCard entry={e} kind={section.kind} />
+            <EntryCard entry={e} kind={section.kind} seated={seated ?? []} represent={represent} />
           </li>
         ))}
       </ul>
@@ -120,7 +124,7 @@ function andList(items: string[]): string {
 }
 
 /** One character: who it is, who plays it, what it holds here, and what others can see. */
-function EntryCard({ entry: e, kind }: { entry: WhosWhoEntry; kind: Section["kind"] }) {
+function EntryCard({ entry: e, kind, seated, represent }: { entry: WhosWhoEntry; kind: Section["kind"]; seated: string[]; represent: Represent }) {
   return (
     <article aria-label={e.name} className="flex h-full gap-3 rounded-lg border border-ash bg-dusk p-3">
       <Avatar name={e.name} picture={e.picture} clan={e.clan} size="md" />
@@ -155,7 +159,9 @@ function EntryCard({ entry: e, kind }: { entry: WhosWhoEntry; kind: Section["kin
             {e.visiting && <Badge>{e.visiting_from ? `Visiting from ${e.visiting_from}` : "Visiting"}</Badge>}
           </span>
         )}
-        {kind === "other" && <span className="text-mist">Represented by: {e.represented_by ?? "nobody yet"}</span>}
+        {kind === "other" && (
+          <RepresentedBy troupeId={represent.troupeId} entry={e} seated={seated} canSet={represent.canSet.includes(e.character_id)} />
+        )}
         {kind === "departed" && e.left_reason && <span className="text-mist">{e.left_reason}</span>}
         {(e.visible.length > 0 || e.bans.length > 0 || e.negative.length > 0) && (
           <ul aria-label={`What others see of ${e.name}`} className="mt-1 flex flex-col gap-0.5 border-t border-ash pt-1 text-xs">

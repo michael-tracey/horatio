@@ -14377,6 +14377,26 @@
         "title": "RemovedOut",
         "type": "object"
       },
+      "RepresentedBy": {
+        "properties": {
+          "represented_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Represented By"
+          }
+        },
+        "required": [
+          "represented_by"
+        ],
+        "title": "RepresentedBy",
+        "type": "object"
+      },
       "RepricedOut": {
         "description": "An earlier purchase a Generation change reprices.",
         "properties": {
@@ -15117,8 +15137,23 @@
             "title": "Player Name",
             "type": "string"
           },
+          "represented_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Represented By"
+          },
           "retired": {
             "title": "Retired",
+            "type": "boolean"
+          },
+          "seated": {
+            "title": "Seated",
             "type": "boolean"
           },
           "sect": {
@@ -15163,6 +15198,8 @@
           "clan",
           "social_age",
           "home",
+          "seated",
+          "represented_by",
           "waiting",
           "disciplines_waiting",
           "joined_at"
@@ -15384,6 +15421,73 @@
           "ends_at"
         ],
         "title": "ScheduledGameOut",
+        "type": "object"
+      },
+      "Seats": {
+        "properties": {
+          "clans": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clans"
+          }
+        },
+        "required": [
+          "clans"
+        ],
+        "title": "Seats",
+        "type": "object"
+      },
+      "SeatsOut": {
+        "properties": {
+          "chosen": {
+            "title": "Chosen",
+            "type": "boolean"
+          },
+          "clans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "primogen": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Primogen",
+            "type": "array"
+          },
+          "seated": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seated"
+          }
+        },
+        "required": [
+          "clans",
+          "seated",
+          "chosen",
+          "primogen"
+        ],
+        "title": "SeatsOut",
         "type": "object"
       },
       "SeenOut": {
@@ -20078,6 +20182,14 @@
       },
       "WhosWhoOut": {
         "properties": {
+          "can_represent": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Can Represent",
+            "type": "array"
+          },
           "clans": {
             "items": {
               "$ref": "#/components/schemas/ClanSection"
@@ -20153,6 +20265,7 @@
           "other",
           "departed",
           "seated",
+          "can_represent",
           "shows_negative"
         ],
         "title": "WhosWhoOut",
@@ -31603,6 +31716,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/characters/{character_id}/represented-by": {
+      "put": {
+        "description": "Say who speaks at court for a character of a clan without a seat. Its player\nsets it, and staff who give titles can change it.",
+        "operationId": "set_represented_by_api_troupes__troupe_id__characters__character_id__represented_by_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepresentedBy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepresentedBy"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Represented By",
+        "tags": [
+          "whos-who"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/characters/{character_id}/titles": {
       "put": {
         "description": "Give a character in this troupe exactly these titles.",
@@ -35133,6 +35310,102 @@
         "summary": "Pin",
         "tags": [
           "scenes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/seats": {
+      "get": {
+        "description": "Which clans have a seat at the troupe's court, and which it could seat.",
+        "operationId": "read_seats_api_troupes__troupe_id__seats_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Seats",
+        "tags": [
+          "whos-who"
+        ]
+      },
+      "put": {
+        "description": "Choose the clans with a seat at court, or go back to those whose Primogen is\nheld here. Characters of the others are listed under Other on the Who's Who.",
+        "operationId": "set_seats_api_troupes__troupe_id__seats_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Seats"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Seats",
+        "tags": [
+          "whos-who"
         ]
       }
     },

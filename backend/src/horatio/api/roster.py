@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Select, select
 
-from horatio import character_filter, pictures, social_age, titles
+from horatio import character_filter, pictures, social_age, titles, whos_who
 from horatio.api.downtimes import staff_troupe
 from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
@@ -44,6 +44,9 @@ class RosterEntry(BaseModel):
     social_age: str
     # The troupe holds the character's sheet; otherwise the character visits.
     home: bool
+    # Its clan has a seat at court here (horatio.whos_who); if not, who speaks for it.
+    seated: bool
+    represented_by: str | None
     # Waiting for this troupe to accept it as home.
     waiting: bool
     # Discipline dots waiting on this troupe.
@@ -69,7 +72,7 @@ class LogEntry(BaseModel):
 @router.get("/characters")
 def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[RosterEntry]:
     """Every character in the troupe now: those whose home it is first, then visitors."""
-    staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     rows = list(
         db.execute(
             select(TroupeMembership, Character, User)
@@ -81,6 +84,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
     standing = social_age.standings(db, [c.id for _, c, _ in rows])
     sects = titles.character_sects(db, [c.id for _, c, _ in rows])
     known = titles.title_data(db, troupe_id)
+    seated = whos_who.seated_clans(db, troupe)
     held = {c.id: titles.held(db, troupe_id, c.id) for _, c, _ in rows}
     pending = list(
         db.execute(
@@ -107,6 +111,10 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             clan=standing[c.id].clan,
             social_age=standing[c.id].age,
             home=c.home_troupe_id == troupe_id,
+            seated=whos_who.has_seat(seated, standing[c.id].clan),
+            represented_by=None
+            if whos_who.has_seat(seated, standing[c.id].clan)
+            else m.represented_by,
             waiting=(c.id, "home_troupe_change") in pending,
             disciplines_waiting=sum(1 for p in pending if p == (c.id, "discipline")),
             joined_at=m.joined_at,
@@ -275,6 +283,8 @@ MESSAGES: dict[str, str] = {
     "title.changed": "{actor} changed the title {title}: now {what}.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
     "title.court_order": "{actor} set the court order of the troupe's own titles: {order}.",
+    "troupe.seats": "{actor} gave seats at court to {clans}.",
+    "character.represented_by": "{actor} set who represents {character} at court: {by}.",
     "status.added": "{actor} gave {character} the {type} status {status}, from {patron}"
     "{at_game}{because}.",
     "status.removed": "{actor} removed {character}'s {status} (from {patron}){because}.",
