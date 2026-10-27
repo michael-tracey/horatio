@@ -20,6 +20,8 @@ export type ShownEntry = PlayLogEntry & { pending?: boolean };
 export type Shown = Omit<PlayView, "log"> & { log: ShownEntry[] };
 
 const FIXED = ["blood", "willpower", "morality", "beast", "derangements"] as const;
+/** A ghoul drinking vitae: +n adds that much to its vitae, which is `blood` (MET: VtM core p. 297). */
+export const DRANK = "drank";
 type Fixed = (typeof FIXED)[number];
 
 function isFixed(tracker: string): tracker is Fixed {
@@ -112,6 +114,7 @@ export function retainerTracker(view: PlayView, tracker: string) {
 export function trackerName(view: PlayView, tracker: string): string {
   const names: Record<string, string> = {
     blood: view.blood_name,
+    [DRANK]: "Drank vitae",
     willpower: "Willpower",
     health: "Health",
     morality: view.morality?.name ?? "Morality",
@@ -139,7 +142,9 @@ function most(view: PlayView, tracker: string): number | undefined {
     case "morality":
       return view.morality?.rating;
     case "beast":
-      return view.beast.most;
+      return view.panels.beast ? view.beast.most : undefined;
+    case DRANK:
+      return view.vitae ? view.blood.most : undefined;
     case "derangements":
       return view.derangements.most;
     case "health":
@@ -175,6 +180,13 @@ export function applyChange(view: PlayView, tracker: string, amount: number, dam
       }
     }
     return [before, marks.length];
+  }
+  // A ghoul's vitae: drunk into a full pool it takes the place of human Blood, which is never spent.
+  if (view.vitae && (tracker === "blood" || tracker === DRANK)) {
+    const before = view.blood.value;
+    view.blood.value = clamp(before + amount, top);
+    view.vitae.human = clamp(view.vitae.human, view.vitae.pool - view.blood.value);
+    return [before, view.blood.value];
   }
   if (isFixed(tracker)) {
     const t = tracker === "morality" ? view.morality! : view[tracker];
@@ -212,6 +224,10 @@ export function describe(
   if (tap.tracker.startsWith(SWITCH)) return describeSwitch(view, tap.tracker.slice(SWITCH.length), tap.amount, said);
   const spent = tap.kind === "change" ? spendText(view, tap.tracker, tap.amount, tap.influence) : null;
   if (spent) return spent;
+  if (tap.tracker === DRANK) {
+    const text = `Drank ${tap.amount} vitae`;
+    return change ? `${text}: Vitae ${change[0]} → ${change[1]}` : text;
+  }
   if (tap.tracker === "health") {
     const text = `Health: ${tap.amount > 0 ? "took" : "healed"} ${Math.abs(tap.amount)} ${tap.damage ?? "normal"}`;
     return change ? `${text} (${change[0]} → ${change[1]} marked)` : text;
@@ -227,6 +243,7 @@ function copy(view: PlayView): Shown {
     blood: { ...view.blood },
     willpower: { ...view.willpower },
     beast: { ...view.beast },
+    vitae: view.vitae ? { ...view.vitae } : null,
     derangements: { ...view.derangements, temporary: view.derangements.temporary.map((t) => ({ ...t })) },
     morality: view.morality ? { ...view.morality } : null,
     health: { ...view.health, marks: [...view.health.marks] },

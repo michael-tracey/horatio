@@ -85,6 +85,8 @@ def set_detail(
 
 @router.get("/troupes/{troupe_id}/specializations")
 def troupe_kinds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[TroupeKindOut]:
+    """The troupe's lists for each kind of specialisation. They are the troupe's, for
+    every splat: a ghoul's kinds and catalogue are the vampire's."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     rules = read_troupe_rules(db, "vampire", troupe_id)
     lists = specializations.troupe_options(db, troupe_id)

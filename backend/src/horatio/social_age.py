@@ -6,6 +6,10 @@ Social age is Neonate, Ancilla or Elder. It starts from the Generation backgroun
 ••• up), then merits and flaws with a `social_class` property move it: Machiavellian
 Prodigy is treated as one social class higher, Accused of Heresy one lower. It
 never goes above Elder or below Neonate.
+
+A splat without Generation (horatio.rules.splats) has no social age: a ghoul is
+no Neonate. Its splat's name stands in its place, "Ghoul", so the roster and
+badges say what it is beside its domitor's clan.
 """
 
 import uuid
@@ -16,7 +20,8 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio.models import CharacterTrait, TraitCategory, TraitDefinition
+from horatio.models import Character, CharacterTrait, TraitCategory, TraitDefinition
+from horatio.rules.splats import SPLATS
 
 AGES = ("Neonate", "Ancilla", "Elder")
 
@@ -58,4 +63,17 @@ def standings(db: Session, character_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID
                 generation[who] = trait.rating or 0
         else:
             shift[who] += int(definition.properties.get("social_class", 0))
-    return {c: Standing(clan.get(c), age_for(generation[c], shift[c])) for c in character_ids}
+    splats = {
+        who: splat
+        for who, splat in db.execute(
+            select(Character.id, Character.splat).where(Character.id.in_(character_ids))
+        )
+    }
+
+    def age(who: uuid.UUID) -> str:
+        splat = SPLATS.get(splats.get(who, "vampire"))
+        if splat is not None and not splat.panels.generation:
+            return splat.label
+        return age_for(generation[who], shift[who])
+
+    return {c: Standing(clan.get(c), age(c)) for c in character_ids}

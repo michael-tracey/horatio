@@ -1,6 +1,7 @@
 """A troupe's characters and log, for its storytellers and assistant storytellers."""
 
 import uuid
+from dataclasses import replace
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -12,8 +13,9 @@ from horatio import character_filter, pictures, social_age, titles
 from horatio.api.downtimes import staff_troupe
 from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Approval, AuditEvent, Character, TroupeMembership, User
+from horatio.models import Approval, AuditEvent, Character, RuleSet, TroupeMembership, User
 from horatio.permissions import TroupeAction
+from horatio.rules.model import RuleSetData
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["roster"])
@@ -129,6 +131,20 @@ class FilterMatch(BaseModel):
     values: dict[str, int]
 
 
+def troupe_catalogue(db: DbSession, troupe_id: uuid.UUID) -> RuleSetData:
+    """Every category and trait a character in the troupe can have, for a filter to
+    name: the Vampire rule set's, with those only another splat has, such as a
+    ghoul's Domitor's In-Clan Disciplines. Any splat counts, as an NPC can be a
+    ghoul whatever splats the troupe's player characters may be."""
+    rules = read_troupe_rules(db, "vampire", troupe_id).rule_set
+    categories, traits = dict(rules.categories), dict(rules.traits)
+    for splat in sorted(set(db.scalars(select(RuleSet.splat))) - {"vampire"}):
+        other = read_troupe_rules(db, splat, troupe_id).rule_set
+        categories = {**other.categories, **categories}
+        traits = {**other.traits, **traits}
+    return replace(rules, categories=categories, traits=traits)
+
+
 @router.post("/characters/search")
 def search_characters(
     troupe_id: uuid.UUID, body: FilterGroup, db: DbSession, user: CurrentUser
@@ -136,7 +152,7 @@ def search_characters(
     """The troupe's characters whose sheets match the filter, in the roster's order."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     characters = [db.get_one(Character, e.character_id) for e in roster(troupe_id, db, user)]
-    rules = read_troupe_rules(db, "vampire", troupe_id).rule_set
+    rules = troupe_catalogue(db, troupe_id)
     try:
         found = character_filter.search(db, troupe_id, characters, body.model_dump(), rules)
     except character_filter.FilterError as error:

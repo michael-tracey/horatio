@@ -258,16 +258,6 @@ function PrintedRetainer({ retainer: r }: { retainer: PrintedSheet["retainers"][
   );
 }
 
-/** Max blood and blood per turn by Generation dots, from the BNS sheet. */
-const BLOOD = [
-  [10, 1],
-  [10, 1],
-  [12, 2],
-  [15, 3],
-  [20, 4],
-  [30, 5],
-] as const;
-
 const SHOWN_ELSEWHERE = new Set([
   "clan", "archetype", "sect", "faction", "attributes",
   "focus_physicals", "focus_mentals", "focus_socials", "skills", "backgrounds",
@@ -285,8 +275,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
   const paper = usePreferences().paper;
   const dates = useDates();
   const t = sheet.traits;
-  const generation = rating(t, "backgrounds", "Generation");
-  const [maxBlood, perTurn] = BLOOD[Math.min(generation, 5)]!;
+  // The server works Blood out (by Generation, or a ghoul's vitae and human Blood).
+  const blood = sheet.blood;
   const willpower = rating(t, "willpower_sources", "Willpower");
   const path = by(t, "paths")[0];
   const physical = rating(t, "attributes", "Physical");
@@ -313,7 +303,10 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
           <dt className="font-bold">Player</dt>
           <dd className="border-b border-black">{sheet.player_name}</dd>
           <dt className="font-bold">Clan</dt>
-          <dd className="border-b border-black">{one(t, "clan")}</dd>
+          <dd className="border-b border-black">
+            {one(t, "clan")}
+            {sheet.domitor && <span className="text-[10px]"> (domitor {sheet.domitor})</span>}
+          </dd>
           <dt className="font-bold">Archetype</dt>
           <dd className="border-b border-black">{one(t, "archetype")}</dd>
           <dt className="font-bold">Sect</dt>
@@ -384,12 +377,30 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
 
       <div className="grid grid-cols-3 gap-4">
         <Section title="Blood">
-          <p className="mb-1 text-center text-[10px]">
-            {maxBlood} blood · {perTurn} per turn
-          </p>
-          <div className="flex justify-center">
-            <Boxes count={maxBlood} />
-          </div>
+          {!blood.pool ? (
+            <>
+              <p className="mb-1 text-center text-[10px]">
+                {blood.most} blood · {blood.per_turn} per turn
+              </p>
+              <div className="flex justify-center">
+                <Boxes count={blood.most} />
+              </div>
+            </>
+          ) : (
+            // A ghoul's pool (MET: VtM core p. 297): vitae to spend, the rest human Blood.
+            <>
+              <p className="mb-1 text-center text-[10px]">
+                Vitae: up to {blood.most} · {blood.per_turn} per turn
+              </p>
+              <div className="flex justify-center">
+                <Boxes count={blood.most} label={`Vitae: ${blood.most} boxes`} />
+              </div>
+              <p className="mt-1 mb-1 text-center text-[10px]">Human Blood: can't be spent</p>
+              <div className="flex justify-center">
+                <Boxes count={blood.pool - blood.most} label={`Human Blood: ${blood.pool - blood.most} boxes`} />
+              </div>
+            </>
+          )}
         </Section>
         <Section title="Willpower">
           <div className="flex justify-center">

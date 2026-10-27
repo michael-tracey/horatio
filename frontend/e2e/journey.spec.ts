@@ -5348,6 +5348,63 @@ test("a player builds a ghoul in the wizard, bound to their own vampire, and lat
   });
 });
 
+test("a ghoul at a game spends vitae but never its human Blood, drinks vitae, and has no Beast or frenzy", async ({ browser }) => {
+  const custodian = await person(browser, "vitae-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "vitae-lead");
+  const player = await person(browser, "vitae-player");
+  await custodian.page.reload();
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT" | "PATCH", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: `Vitae Court ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "PATCH", `/api/troupes/${troupeId}`, { allowed_splats: ["vampire", "ghoul"] });
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", { splat: "ghoul", name: "Mina Harker", domitor: { name: "Count Orlok", clan: "Nosferatu" } });
+  await send(p, "POST", `/api/characters/${id}/troupes`, { troupe_id: troupeId });
+
+  // Its Blood is 5 vitae, which it spends, and 5 human Blood, which it can't.
+  await p.goto(`/play/characters/${id}?tab=tracker`);
+  const blood = p.getByRole("region", { name: "Blood" });
+  await expect(blood.getByLabel("Vitae: 5 of 5")).toBeVisible();
+  await expect(blood.getByLabel("Human Blood", { exact: true }).first()).toBeVisible();
+  await expect(blood.getByRole("button", { name: "Human Blood" })).toHaveCount(0);
+  await blood.getByRole("button", { name: "Spend Vitae" }).last().click();
+  await expect(blood.getByLabel("Vitae: 4 of 5")).toBeVisible();
+  await expect(blood.getByText("5 human Blood, which can't be spent.", { exact: false })).toBeVisible();
+  await expect(p.getByText("Vitae 5 → 4")).toBeVisible();
+  // The domitor, and the clan weakness it plays for roleplay only.
+  await expect(p.getByText("Domitor: Count Orlok")).toBeVisible();
+  await expect(p.getByText(/Weakness: A milder form of the Nosferatu weakness, for roleplay only/).first()).toBeVisible();
+
+  // Drank vitae fills it again, and the monthly drink counts from now.
+  await expect(blood.getByText(/No drink of vitae recorded yet/)).toBeVisible();
+  await blood.getByRole("button", { name: "Drank vitae" }).click();
+  await blood.getByRole("button", { name: "Save" }).click();
+  await expect(blood.getByLabel("Vitae: 5 of 5")).toBeVisible();
+  await expect(p.getByText("Drank 1 vitae: Vitae 4 → 5")).toBeVisible();
+  await expect(blood.getByText("Last drank vitae today.")).toBeVisible();
+
+  // No Beast traits, frenzy or Feed: a ghoul is mortal (MET: VtM core p. 297).
+  await expect(p.getByRole("heading", { name: "Beast traits" })).toHaveCount(0);
+  await expect(p.getByText("Frenzy", { exact: true })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Feed" })).toHaveCount(0);
+
+  // Its printed sheet has boxes for both.
+  await p.goto(`/print/characters/${id}`);
+  await expect(p.getByText("Vitae: up to 5 · 1 per turn")).toBeVisible();
+  await expect(p.getByRole("img", { name: "Human Blood: 5 boxes" })).toBeVisible();
+
+  // The troupe's roster, with the ghoul on it, still loads.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/characters`);
+  await expect(l.getByRole("link", { name: "Mina Harker" })).toBeVisible();
+  await expect(l.getByText("Nosferatu · Ghoul")).toBeVisible();
+});
+
 test("a player asks staff for an elder power the rules refuse, free, and a storyteller approves it", async ({ browser }) => {
   const custodian = await person(browser, "exc-custodian");
   makeCustodian(custodian.email);

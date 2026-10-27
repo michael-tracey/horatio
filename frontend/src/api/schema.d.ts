@@ -3086,7 +3086,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Allowances */
+        /**
+         * List Allowances
+         * @description The downtime actions characters of `splat` get in this troupe.
+         */
         get: operations["list_allowances_api_troupes__troupe_id__allowances_get"];
         put?: never;
         /** Add Allowance */
@@ -3334,7 +3337,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Costs */
+        /**
+         * List Costs
+         * @description The prices characters of `splat` pay in this troupe.
+         */
         get: operations["list_costs_api_troupes__troupe_id__costs_get"];
         put?: never;
         /** Add Cost */
@@ -3370,7 +3376,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Starting */
+        /**
+         * List Starting
+         * @description What new characters of `splat` start with in this troupe.
+         */
         get: operations["list_starting_api_troupes__troupe_id__creation_get"];
         put?: never;
         post?: never;
@@ -4138,7 +4147,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Troupe Kinds */
+        /**
+         * Troupe Kinds
+         * @description The troupe's lists for each kind of specialisation. They are the troupe's, for
+         *     every splat: a ghoul's kinds and catalogue are the vampire's.
+         */
         get: operations["troupe_kinds_api_troupes__troupe_id__specializations_get"];
         put?: never;
         post?: never;
@@ -6002,6 +6015,18 @@ export interface components {
              * @default
              */
             name: string;
+        };
+        /**
+         * DomitorLine
+         * @description A ghoul's domitor, and the clan weakness it plays (MET: VtM core p. 297).
+         */
+        DomitorLine: {
+            /** Clan */
+            clan: string | null;
+            /** Name */
+            name: string;
+            /** Weakness */
+            weakness: string | null;
         };
         /** DomitorOut */
         DomitorOut: {
@@ -8523,6 +8548,7 @@ export interface components {
             blood_per_turn: number;
             /** Disciplines */
             disciplines: components["schemas"]["DisciplinePowers"][];
+            domitor?: components["schemas"]["DomitorLine"] | null;
             /**
              * Identities
              * @default []
@@ -8653,7 +8679,13 @@ export interface components {
             retainers: components["schemas"]["RetainerTrackOut"][];
             /** Sect */
             sect: string | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
             stock?: components["schemas"]["StockNpcOut"] | null;
+            vitae?: components["schemas"]["VitaeOut"] | null;
             willpower: components["schemas"]["Tracker"];
         };
         /** PlayerCharacter */
@@ -9012,16 +9044,33 @@ export interface components {
             /** Path */
             path: string | null;
         };
+        /**
+         * PrintedBlood
+         * @description The Blood boxes to print: `most` that can be spent, `per_turn` a turn. A
+         *     ghoul's are its vitae, and the rest of its `pool` is human Blood, which cannot
+         *     be spent (MET: VtM core p. 297); `pool` is None for a vampire's.
+         */
+        PrintedBlood: {
+            /** Most */
+            most: number;
+            /** Per Turn */
+            per_turn: number;
+            /** Pool */
+            pool?: number | null;
+        };
         /** PrintedSheet */
         PrintedSheet: {
             /** Accepted At */
             accepted_at: string | null;
             /** Accepted By */
             accepted_by: string | null;
+            blood: components["schemas"]["PrintedBlood"];
             /** Character Name */
             character_name: string;
             /** Diablerie */
             diablerie: string[];
+            /** Domitor */
+            domitor?: string | null;
             /** Home */
             home: boolean;
             /**
@@ -10907,6 +10956,8 @@ export interface components {
             health_marked: number;
             /** Home */
             home: boolean;
+            /** Human Blood */
+            human_blood?: number | null;
             /** Kind */
             kind: string;
             /** Last Tap At */
@@ -11142,6 +11193,25 @@ export interface components {
         VisibleNote: {
             /** Note */
             note: string;
+        };
+        /**
+         * VitaeOut
+         * @description A ghoul's Blood beside its vitae, which is `blood` (MET: VtM core p. 297): `pool`
+         *     in all, the rest human Blood, which cannot be spent. Vitae refills only by
+         *     drinking it ("drank" taps); without a drink for `days` days, the ghoul ages 10
+         *     years a day.
+         */
+        VitaeOut: {
+            /** Days */
+            days: number;
+            /** Human */
+            human: number;
+            /** Human Start */
+            human_start: number;
+            /** Last Drank At */
+            last_drank_at: string | null;
+            /** Pool */
+            pool: number;
         };
         /** WaitingLine */
         WaitingLine: {
@@ -17635,7 +17705,9 @@ export interface operations {
     };
     list_allowances_api_troupes__troupe_id__allowances_get: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -17666,7 +17738,9 @@ export interface operations {
     };
     add_allowance_api_troupes__troupe_id__allowances_post: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -17701,7 +17775,9 @@ export interface operations {
     };
     change_allowance_api_troupes__troupe_id__allowances__rule_id__put: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -17737,7 +17813,9 @@ export interface operations {
     };
     remove_allowance_api_troupes__troupe_id__allowances__rule_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -18165,7 +18243,9 @@ export interface operations {
     };
     list_costs_api_troupes__troupe_id__costs_get: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -18196,7 +18276,9 @@ export interface operations {
     };
     add_cost_api_troupes__troupe_id__costs_post: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -18231,7 +18313,9 @@ export interface operations {
     };
     change_cost_api_troupes__troupe_id__costs__cost_id__put: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -18267,7 +18351,9 @@ export interface operations {
     };
     remove_cost_api_troupes__troupe_id__costs__cost_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -18297,7 +18383,9 @@ export interface operations {
     };
     list_starting_api_troupes__troupe_id__creation_get: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -18328,7 +18416,9 @@ export interface operations {
     };
     change_starting_api_troupes__troupe_id__creation__category__put: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;
@@ -18364,7 +18454,9 @@ export interface operations {
     };
     reset_starting_api_troupes__troupe_id__creation__category__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                splat?: string;
+            };
             header?: never;
             path: {
                 troupe_id: string;

@@ -274,6 +274,9 @@ def tally(db: Session, npc: Character) -> tuple[int, list[TallyLine]]:
     rules = rules_for(db, npc)
     rows = sheet_rows(db, npc)
     sheet = [r.as_rules_trait() for r in rows]
+    # Dots no XP buys but creation gives as points (a ghoul's 5 discipline dots,
+    # MET: VtM core p. 296): free up to the points, by category.
+    points = {r.category: r.points for r in rules.creation_rules() if r.points is not None}
     lines: list[TallyLine] = []
     for row in rows:
         if not row.category.rated or not row.trait.rating:
@@ -284,7 +287,13 @@ def tally(db: Session, npc: Character) -> tuple[int, list[TallyLine]]:
         try:
             line.cost = trait_cost(rules, sheet, row.as_rules_trait()).cost
         except NotAllowed:
-            line.note = "not allowed in this troupe"
+            left = points.get(row.category.key, 0)
+            if row.trait.rating <= left:
+                points[row.category.key] = left - row.trait.rating
+                line.cost = 0
+                line.note = "starting dots"
+            else:
+                line.note = "not allowed in this troupe"
         except PricingError as error:
             line.note = str(error)
         lines.append(line)

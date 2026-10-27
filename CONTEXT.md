@@ -109,6 +109,10 @@ _Avoid_: Venue, creature type, game line
 The vampire a ghoul is bound to by its blood. A ghoul has no clan of its own: it takes its domitor's clan and bloodline, and its disciplines are its domitor's in-clan ones. The domitor is a PC or NPC in Horatio, or one known only by name.
 _Avoid_: Master, regnant (that is any blood bond's), sire
 
+**Vitae**:
+The vampiric blood in a ghoul's Blood pool: at most 5 of its 10, the only part it can spend, and refilled only by drinking from a vampire. The rest of the pool is **human Blood**, which cannot be spent.
+_Avoid_: Ghoul blood, vampire points
+
 **Trait**:
 A single rated or named entry on a character's sheet, such as a skill, merit, flaw, discipline or influence.
 _Avoid_: Stat, ability

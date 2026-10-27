@@ -17,10 +17,11 @@ import { bloodPerTurn, boxes, healthMost } from "./powers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
-import { incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
+import { DRANK, incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
 import { usePlay, type Play, type Sync } from "./usePlay";
 import { useReference } from "./useReference";
 import { StockPlay } from "./StockPlay";
+import { VitaeTracker } from "./Vitae";
 import { ShownWarning } from "./TrackerWarning";
 import { beastWarning } from "./warnings";
 import { useWakeLock } from "./wakeLock";
@@ -113,15 +114,24 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       {tab === "tracker" && (
         <>
           <div className="grid gap-3 md:grid-cols-2">
-            <BoxTracker
-              title={shown.blood_name}
-              tracker="blood"
-              value={shown.blood.value}
-              most={shown.blood.most}
-              hint={`${bloodPerTurn(shown)} a turn${shown.half_blood ? " · Half Blood: fed short last downtime" : ""}`}
-              record={record}
-              extra={shown.panels.feed ? <FeedButton onClick={() => setFeeding(true)} /> : undefined}
-            />
+            {shown.vitae ? (
+              <VitaeTracker
+                view={shown}
+                spend={() => record({ tracker: "blood", amount: -1, label: "Vitae" })}
+                restore={() => record({ tracker: "blood", amount: 1, label: "Vitae" })}
+                drink={(amount) => tap({ kind: "change", tracker: DRANK, amount })}
+              />
+            ) : (
+              <BoxTracker
+                title={shown.blood_name}
+                tracker="blood"
+                value={shown.blood.value}
+                most={shown.blood.most}
+                hint={`${bloodPerTurn(shown)} a turn${shown.half_blood ? " · Half Blood: fed short last downtime" : ""}`}
+                record={record}
+                extra={shown.panels.feed ? <FeedButton onClick={() => setFeeding(true)} /> : undefined}
+              />
+            )}
             <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} />
             <HealthTracker view={shown} record={record} />
             <div className="grid gap-3">
@@ -160,7 +170,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
           <PastGames characterId={characterId} current={shown.game?.id} />
         </>
       )}
-      <Feed view={shown} asking={feeding} onClose={() => setFeeding(false)} tap={tap} />
+      {shown.panels.feed && <Feed view={shown} asking={feeding} onClose={() => setFeeding(false)} tap={tap} />}
       {spending && (
         <InfluenceSheet
           standing={influenceStanding(shown, spending.tracker)!}
@@ -293,6 +303,12 @@ function Identity({ view }: { view: PlayView }) {
           </span>
         ))
       : [view.clan, view.sect]),
+    // A ghoul's domitor, beside the clan it takes from it.
+    reference?.domitor ? (
+      <span key="domitor" className="whitespace-nowrap" title={reference.domitor.weakness ?? undefined}>
+        Domitor: <span className="text-parchment/90">{reference.domitor.name}</span>
+      </span>
+    ) : null,
     view.panels.generation && view.generation ? `Generation ${view.generation}` : null,
     view.blood_per_turn > 0 || view.panels.feed ? `${bloodPerTurn(view)} ${view.blood_name.toLowerCase()} a turn` : null,
   ].filter(Boolean);
@@ -313,6 +329,7 @@ function Identity({ view }: { view: PlayView }) {
             </Fragment>
           ))}
         </p>
+        {reference?.domitor?.weakness && <p className="text-xs text-mist">Weakness: {reference.domitor.weakness}</p>}
       </div>
       <p className="text-right text-xs text-mist">
         {view.kind === "npc" ? "NPC" : view.player_name}
@@ -888,7 +905,10 @@ export function ResetGame({ view, sync, onReset }: { view: Shown; sync: Sync; on
       {asking ? (
         <div className="flex flex-col gap-2">
           <p className="text-sm">
-            Put every tracker back for the next game? {view.blood_name} to {view.blood.start}
+            Put every tracker back for the next game?{" "}
+            {view.vitae
+              ? `Vitae stays at ${view.blood.value}, as only drinking refills it, and the rest of the pool is human Blood again`
+              : `${view.blood_name} to ${view.blood.start}`}
             {view.willpower.most > 0 && `, Willpower to ${view.willpower.start}`}, health clear and every use back.
             {showsDerangements(view) && ` Derangement traits stay at ${view.derangements.value}.`} This game's log is kept.
           </p>

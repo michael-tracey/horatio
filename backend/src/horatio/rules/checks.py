@@ -138,6 +138,10 @@ class Context:
     # each discipline at, by full name. None with no domitor linked.
     domitor_clan: str | None = None
     domitor_powers: Mapping[str, int] | None = None
+    # The character's splat has Generation (horatio.rules.splats). A ghoul's has
+    # none: a condition on Generation never holds for it, and its attributes get no
+    # bonus above 10.
+    generation: bool = True
 
 
 NO_CONTEXT = Context()
@@ -282,7 +286,7 @@ def matches(
         elif key == "has_all":
             ok = all(holds_trait(sheet, t) for t in test)
         elif key == "generation":
-            ok = compare(generation_of(sheet), test)
+            ok = context.generation and compare(generation_of(sheet), test)
         elif key == "on_path":
             on_path = any(
                 t.category == "paths" and t.name != "Humanity" and (t.rating or 0) > 0
@@ -374,8 +378,10 @@ def matches(
                 for t in sheet
                 if t.category == test["category"]
             )
-            # Without a Generation background, a character is Generation 1 (as in pricing).
-            ok = excess > max(generation_of(sheet), 1)
+            # Without a Generation background, a vampire is Generation 1 (as in pricing);
+            # a splat without Generation has no bonus points at all.
+            bonus = max(generation_of(sheet), 1) if context.generation else 0
+            ok = excess > bonus
         elif key == "same_value":
             ok = clashing(test, sheet, subject, context) is not None
         elif key == "kind":

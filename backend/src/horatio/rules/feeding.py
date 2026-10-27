@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from horatio.rules.model import SheetTrait, TroupeRules
+from horatio.rules.splats import SPLATS
 
 # Feeding actions a clan needs when storytellers have not said otherwise.
 DEFAULT_DIFFICULTY = 1
@@ -27,7 +28,10 @@ def clan_family(name: str) -> str:
 def basis(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> dict[str, Any]:
     """What the sheet says about feeding, kept on the participant when it joins a
     cycle: its clan (None for a character with none, which does not feed), the
-    traits that change feeding, and its Herd rating."""
+    traits that change feeding, and its Herd rating. A splat that does not feed
+    on mortals (a ghoul, which drinks vitae) has none of them."""
+    if not SPLATS[rules.rule_set.splat].panels.feed:
+        return {"clan": None, "modifiers": [], "herd": 0}
     clan = next((t.name for t in sheet if t.category == "clan"), None)
     held = {(t.category, t.name) for t in sheet if t.rating is None or t.rating > 0}
     modifiers = [

@@ -33,6 +33,7 @@ function view(powers: PowerSwitch[], marks: string[] = []): PlayView {
     kind: "pc",
     blood_name: "Blood",
     panels: { beast: true, frenzy: true, morality: true, generation: true, feed: true },
+    splat: "vampire",
     clan: "Gangrel",
     sect: null,
     generation: 1,

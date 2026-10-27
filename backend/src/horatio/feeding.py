@@ -39,6 +39,7 @@ from horatio.models import (
     User,
 )
 from horatio.rules import feeding as rules
+from horatio.rules.splats import SPLATS
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import conflict, unprocessable
 
@@ -106,7 +107,10 @@ def participant_basis(
     db: Session, participant: CycleParticipant, character: Character, cycle: DowntimeCycle
 ) -> dict[str, Any]:
     """What the sheet said about feeding when the character joined the cycle, or
-    for a participant from before feeding was tracked, what it says now."""
+    for a participant from before feeding was tracked, what it says now. A
+    character of a splat that does not feed has nothing to say."""
+    if not SPLATS[character.splat].panels.feed:
+        return {"clan": None, "modifiers": [], "herd": 0}
     if participant.feeding is not None:
         return participant.feeding
     from horatio.downtimes import allowance_sheet
@@ -225,8 +229,10 @@ def answer_of(submission: Submission | None) -> FeedingAnswer:
 
 
 def recipients(db: Session, cycle: DowntimeCycle, giver: Character) -> list[tuple[uuid.UUID, str]]:
-    """Who Herd can be given to: everyone else taking part in the cycle. None are
-    left out, Salubri included: a character may be under another identity."""
+    """Who Herd can be given to: everyone else taking part in the cycle who feeds.
+    No vampire is left out, Salubri included: a character may be under another
+    identity. A ghoul drinks vitae, so it is."""
+    feeders = [s for s, splat in SPLATS.items() if splat.panels.feed]
     rows = db.execute(
         select(Character.id, Character.name)
         .join(CycleParticipant, CycleParticipant.character_id == Character.id)
@@ -234,6 +240,7 @@ def recipients(db: Session, cycle: DowntimeCycle, giver: Character) -> list[tupl
             CycleParticipant.cycle_id == cycle.id,
             CycleParticipant.removed_at.is_(None),
             Character.id != giver.id,
+            Character.splat.in_(feeders),
         )
         .order_by(Character.name)
     )

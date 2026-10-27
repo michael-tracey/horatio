@@ -116,6 +116,21 @@ def change_check(
     return next(c for c in checks_out(db, troupe_id) if c.key == key)
 
 
+def house_splat(db: DbSession, troupe_id: uuid.UUID, splat: str) -> str:
+    """The splat a house rule is for: Vampire, or another the troupe takes. Prices,
+    starting points and downtime actions are kept for each splat apart."""
+    troupe = db.get_one(Troupe, troupe_id)
+    if splat not in SPLATS or (splat != "vampire" and splat not in troupe.allowed_splats):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "This troupe has no rules for that splat.")
+    return splat
+
+
+def for_splat(text: str, splat: str) -> str:
+    """What a house rule is about, as the troupe log says it: "Merits: Iron Will",
+    or for another splat than Vampire, "Merits: Iron Will for ghouls"."""
+    return text if splat == "vampire" else f"{text} for {SPLATS[splat].label.lower()}s"
+
+
 # --- Costs -----------------------------------------------------------------
 
 
@@ -230,19 +245,19 @@ def costs_out(db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire") -> Co
     )
 
 
-def sync_values(db: DbSession, troupe_id: uuid.UUID, rule: CostRuleData) -> None:
+def sync_values(db: DbSession, troupe_id: uuid.UUID, splat: str, rule: CostRuleData) -> None:
     """A troupe's fixed price for a fixed-rating merit or flaw is its value: hold
     the troupe's characters' copies at it."""
-    rule_set = read_troupe_rules(db, "vampire", troupe_id).rule_set
+    rule_set = read_troupe_rules(db, splat, troupe_id).rule_set
     if rule.trait and rule_set.trait_properties(rule.category, rule.trait).get("rating"):
         sync_troupe_fixed_ratings(db, troupe_id)
 
 
 def log_price(
-    db: DbSession, user: User, action: str, troupe_id: uuid.UUID, rule: CostRuleData
+    db: DbSession, user: User, action: str, troupe_id: uuid.UUID, splat: str, rule: CostRuleData
 ) -> None:
     """What the troupe log says about a price."""
-    rule_set = read_troupe_rules(db, "vampire", troupe_id).rule_set
+    rule_set = read_troupe_rules(db, splat, troupe_id).rule_set
     what = rule.trait or rule_set.categories[rule.category].name
     when = conditions.describe(rule.condition, SPLATS[rule_set.splat].fact_words)
     audit.record(
@@ -250,7 +265,7 @@ def log_price(
         user,
         action,
         troupe_id=troupe_id,
-        what=f"{what} ({when})" if when else what,
+        what=for_splat(f"{what} ({when})" if when else what, splat),
         price=pricing.describe(rule, unit(rule_set, rule.category)),
     )
 
@@ -272,23 +287,29 @@ def priced(
     )
 
 
-def house_cost(troupe_id: uuid.UUID, db: DbSession, cost_id: uuid.UUID) -> CostRuleData:
-    found = dict(house_cost_rules(db, "vampire", troupe_id)).get(cost_id)
+def house_cost(troupe_id: uuid.UUID, db: DbSession, splat: str, cost_id: uuid.UUID) -> CostRuleData:
+    found = dict(house_cost_rules(db, splat, troupe_id)).get(cost_id)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such price.")
     return found
 
 
 @router.get("/costs")
-def list_costs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CostsOut:
+def list_costs(
+    troupe_id: uuid.UUID, db: DbSession, user: CurrentUser, splat: str = "vampire"
+) -> CostsOut:
+    """The prices characters of `splat` pay in this troupe."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
-    return costs_out(db, troupe_id)
+    return costs_out(db, troupe_id, house_splat(db, troupe_id, splat))
 
 
 @router.post("/costs", status_code=status.HTTP_201_CREATED)
-def add_cost(troupe_id: uuid.UUID, body: CostIn, db: DbSession, user: CurrentUser) -> CostOut:
+def add_cost(
+    troupe_id: uuid.UUID, body: CostIn, db: DbSession, user: CurrentUser, splat: str = "vampire"
+) -> CostOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    splat = house_splat(db, troupe.id, splat)
+    rule_set = read_troupe_rules(db, splat, troupe.id).rule_set
     if body.category not in rule_set.categories:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "No such category.")
     if body.trait is not None and (body.category, body.trait) not in rule_set.traits:
@@ -300,45 +321,56 @@ def add_cost(troupe_id: uuid.UUID, body: CostIn, db: DbSession, user: CurrentUse
             "A troupe price can only have the condition of a rule set price it replaces.",
         )
     try:
-        row = add_house_rule(db, troupe.id, "vampire", rule)
+        row = add_house_rule(db, troupe.id, splat, rule)
     except DuplicateHouseRule:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "The troupe already has a price for that; change it instead."
         ) from None
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    sync_values(db, troupe.id, rule)
-    log_price(db, user, "house.cost_added", troupe.id, rule)
+    sync_values(db, troupe.id, splat, rule)
+    log_price(db, user, "house.cost_added", troupe.id, splat, rule)
     db.commit()
-    return next(c for c in costs_out(db, troupe.id).costs if c.id == row.id)
+    return next(c for c in costs_out(db, troupe.id, splat).costs if c.id == row.id)
 
 
 @router.put("/costs/{cost_id}")
 def change_cost(
-    troupe_id: uuid.UUID, cost_id: uuid.UUID, body: CostChange, db: DbSession, user: CurrentUser
+    troupe_id: uuid.UUID,
+    cost_id: uuid.UUID,
+    body: CostChange,
+    db: DbSession,
+    user: CurrentUser,
+    splat: str = "vampire",
 ) -> CostOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    old = house_cost(troupe.id, db, cost_id)
+    splat = house_splat(db, troupe.id, splat)
+    old = house_cost(troupe.id, db, splat, cost_id)
     rule = priced(body, old.category, old.trait, old.condition)
     try:
-        change_house_rule(db, troupe.id, "vampire", cost_id, rule)
+        change_house_rule(db, troupe.id, splat, cost_id, rule)
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    sync_values(db, troupe.id, rule)
-    log_price(db, user, "house.cost_changed", troupe.id, rule)
+    sync_values(db, troupe.id, splat, rule)
+    log_price(db, user, "house.cost_changed", troupe.id, splat, rule)
     db.commit()
-    return next(c for c in costs_out(db, troupe.id).costs if c.id == cost_id)
+    return next(c for c in costs_out(db, troupe.id, splat).costs if c.id == cost_id)
 
 
 @router.delete("/costs/{cost_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_cost(
-    troupe_id: uuid.UUID, cost_id: uuid.UUID, db: DbSession, user: CurrentUser
+    troupe_id: uuid.UUID,
+    cost_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+    splat: str = "vampire",
 ) -> Response:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    old = house_cost(troupe.id, db, cost_id)
+    splat = house_splat(db, troupe.id, splat)
+    old = house_cost(troupe.id, db, splat, cost_id)
     remove_house_rule(db, troupe.id, cost_id)
-    sync_values(db, troupe.id, old)
-    log_price(db, user, "house.cost_removed", troupe.id, old)
+    sync_values(db, troupe.id, splat, old)
+    log_price(db, user, "house.cost_removed", troupe.id, splat, old)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -404,8 +436,10 @@ def describe_starting(rules: list[CreationRuleData]) -> str:
     return ("; " if qualified else ", ").join(parts)
 
 
-def starting_out(db: DbSession, troupe_id: uuid.UUID) -> list[StartingCategoryOut]:
-    rules = read_troupe_rules(db, "vampire", troupe_id)
+def starting_out(
+    db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire"
+) -> list[StartingCategoryOut]:
+    rules = read_troupe_rules(db, splat, troupe_id)
     played = rules.creation_rules()
     found: list[StartingCategoryOut] = []
     for category in rules.rule_set.categories.values():
@@ -428,8 +462,10 @@ def starting_out(db: DbSession, troupe_id: uuid.UUID) -> list[StartingCategoryOu
     return found
 
 
-def starting_category(db: DbSession, troupe_id: uuid.UUID, key: str) -> StartingCategoryOut:
-    found = next((c for c in starting_out(db, troupe_id) if c.key == key), None)
+def starting_category(
+    db: DbSession, troupe_id: uuid.UUID, splat: str, key: str
+) -> StartingCategoryOut:
+    found = next((c for c in starting_out(db, troupe_id, splat) if c.key == key), None)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No starting points for that category.")
     return found
@@ -437,18 +473,25 @@ def starting_category(db: DbSession, troupe_id: uuid.UUID, key: str) -> Starting
 
 @router.get("/creation")
 def list_starting(
-    troupe_id: uuid.UUID, db: DbSession, user: CurrentUser
+    troupe_id: uuid.UUID, db: DbSession, user: CurrentUser, splat: str = "vampire"
 ) -> list[StartingCategoryOut]:
+    """What new characters of `splat` start with in this troupe."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
-    return starting_out(db, troupe_id)
+    return starting_out(db, troupe_id, house_splat(db, troupe_id, splat))
 
 
 @router.put("/creation/{category}")
 def change_starting(
-    troupe_id: uuid.UUID, category: str, body: StartingChange, db: DbSession, user: CurrentUser
+    troupe_id: uuid.UUID,
+    category: str,
+    body: StartingChange,
+    db: DbSession,
+    user: CurrentUser,
+    splat: str = "vampire",
 ) -> StartingCategoryOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    current = starting_category(db, troupe.id, category)
+    splat = house_splat(db, troupe.id, splat)
+    current = starting_category(db, troupe.id, splat, category)
     if not body.rules:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -473,16 +516,16 @@ def change_starting(
         for r in body.rules
     ]
     try:
-        set_house_creation_rules(db, troupe.id, "vampire", category, rules)
+        set_house_creation_rules(db, troupe.id, splat, category, rules)
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    changed = starting_category(db, troupe.id, category)
+    changed = starting_category(db, troupe.id, splat, category)
     audit.record(
         db,
         user,
         "house.creation_set",
         troupe_id=troupe.id,
-        category=changed.name,
+        category=for_splat(changed.name, splat),
         text=changed.text,
     )
     db.commit()
@@ -491,18 +534,23 @@ def change_starting(
 
 @router.delete("/creation/{category}")
 def reset_starting(
-    troupe_id: uuid.UUID, category: str, db: DbSession, user: CurrentUser
+    troupe_id: uuid.UUID,
+    category: str,
+    db: DbSession,
+    user: CurrentUser,
+    splat: str = "vampire",
 ) -> StartingCategoryOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    starting_category(db, troupe.id, category)
-    set_house_creation_rules(db, troupe.id, "vampire", category, [])
-    changed = starting_category(db, troupe.id, category)
+    splat = house_splat(db, troupe.id, splat)
+    starting_category(db, troupe.id, splat, category)
+    set_house_creation_rules(db, troupe.id, splat, category, [])
+    changed = starting_category(db, troupe.id, splat, category)
     audit.record(
         db,
         user,
         "house.creation_reset",
         troupe_id=troupe.id,
-        category=changed.name,
+        category=for_splat(changed.name, splat),
         text=changed.text,
     )
     db.commit()
@@ -583,10 +631,10 @@ def allowance_out(
     )
 
 
-def allowances_out(db: DbSession, troupe_id: uuid.UUID) -> AllowancesOut:
-    rules = read_troupe_rules(db, "vampire", troupe_id)
+def allowances_out(db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire") -> AllowancesOut:
+    rules = read_troupe_rules(db, splat, troupe_id)
     kinds = rules.action_kinds()
-    house = house_allowance_rules(db, "vampire", troupe_id)
+    house = house_allowance_rules(db, splat, troupe_id)
     house_keys = {r.key for _, r in house}
     order = {key: n for n, key in enumerate(kinds)}
 
@@ -605,32 +653,54 @@ def allowances_out(db: DbSession, troupe_id: uuid.UUID) -> AllowancesOut:
     )
 
 
-def house_allowance(db: DbSession, troupe_id: uuid.UUID, rule_id: uuid.UUID) -> AllowanceRuleData:
-    found = dict(house_allowance_rules(db, "vampire", troupe_id)).get(rule_id)
+def house_allowance(
+    db: DbSession, troupe_id: uuid.UUID, splat: str, rule_id: uuid.UUID
+) -> AllowanceRuleData:
+    found = dict(house_allowance_rules(db, splat, troupe_id)).get(rule_id)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such rule.")
     return found
 
 
 def log_allowance(
-    db: DbSession, user: User, action: str, troupe_id: uuid.UUID, rule: AllowanceRuleData
+    db: DbSession,
+    user: User,
+    action: str,
+    troupe_id: uuid.UUID,
+    splat: str,
+    rule: AllowanceRuleData,
 ) -> None:
-    kinds = read_troupe_rules(db, "vampire", troupe_id).action_kinds()
+    kinds = read_troupe_rules(db, splat, troupe_id).action_kinds()
     shown = allowance_out(kinds, rule, None)
-    audit.record(db, user, action, troupe_id=troupe_id, who=shown.who, amount=shown.amount_text)
+    audit.record(
+        db,
+        user,
+        action,
+        troupe_id=troupe_id,
+        who=for_splat(shown.who, splat),
+        amount=shown.amount_text,
+    )
 
 
 @router.get("/allowances")
-def list_allowances(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> AllowancesOut:
+def list_allowances(
+    troupe_id: uuid.UUID, db: DbSession, user: CurrentUser, splat: str = "vampire"
+) -> AllowancesOut:
+    """The downtime actions characters of `splat` get in this troupe."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
-    return allowances_out(db, troupe_id)
+    return allowances_out(db, troupe_id, house_splat(db, troupe_id, splat))
 
 
 @router.post("/allowances", status_code=status.HTTP_201_CREATED)
 def add_allowance(
-    troupe_id: uuid.UUID, body: AllowanceIn, db: DbSession, user: CurrentUser
+    troupe_id: uuid.UUID,
+    body: AllowanceIn,
+    db: DbSession,
+    user: CurrentUser,
+    splat: str = "vampire",
 ) -> AllowanceOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    splat = house_splat(db, troupe.id, splat)
     rule = AllowanceRuleData(
         action_kind=body.action_kind,
         scheme=body.scheme,
@@ -641,16 +711,16 @@ def add_allowance(
         house=True,
     )
     try:
-        row = add_house_allowance_rule(db, troupe.id, "vampire", rule)
+        row = add_house_allowance_rule(db, troupe.id, splat, rule)
     except DuplicateHouseRule:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "The troupe already has a rule for that; change it instead."
         ) from None
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    log_allowance(db, user, "house.allowance_added", troupe.id, rule)
+    log_allowance(db, user, "house.allowance_added", troupe.id, splat, rule)
     db.commit()
-    return next(r for r in allowances_out(db, troupe.id).rules if r.id == row.id)
+    return next(r for r in allowances_out(db, troupe.id, splat).rules if r.id == row.id)
 
 
 @router.put("/allowances/{rule_id}")
@@ -660,24 +730,31 @@ def change_allowance(
     body: AllowanceChange,
     db: DbSession,
     user: CurrentUser,
+    splat: str = "vampire",
 ) -> AllowanceOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    old = house_allowance(db, troupe.id, rule_id)
+    splat = house_splat(db, troupe.id, splat)
+    old = house_allowance(db, troupe.id, splat, rule_id)
     rule = replace(old, scheme=body.scheme, amount=body.amount, min_rating=body.min_rating)
     change_house_allowance_rule(db, troupe.id, rule_id, rule)
-    log_allowance(db, user, "house.allowance_changed", troupe.id, rule)
+    log_allowance(db, user, "house.allowance_changed", troupe.id, splat, rule)
     db.commit()
-    return next(r for r in allowances_out(db, troupe.id).rules if r.id == rule_id)
+    return next(r for r in allowances_out(db, troupe.id, splat).rules if r.id == rule_id)
 
 
 @router.delete("/allowances/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_allowance(
-    troupe_id: uuid.UUID, rule_id: uuid.UUID, db: DbSession, user: CurrentUser
+    troupe_id: uuid.UUID,
+    rule_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+    splat: str = "vampire",
 ) -> Response:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    old = house_allowance(db, troupe.id, rule_id)
+    splat = house_splat(db, troupe.id, splat)
+    old = house_allowance(db, troupe.id, splat, rule_id)
     remove_house_allowance_rule(db, troupe.id, rule_id)
-    log_allowance(db, user, "house.allowance_removed", troupe.id, old)
+    log_allowance(db, user, "house.allowance_removed", troupe.id, splat, old)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

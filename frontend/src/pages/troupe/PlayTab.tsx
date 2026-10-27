@@ -61,7 +61,8 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
                 </span>
                 <span className="flex flex-wrap gap-1.5 text-xs">
                   <Badge tone={c.blood.value < c.blood.most ? "blood" : "mist"}>
-                    Blood {c.blood.value}/{c.blood.most}
+                    {c.human_blood === null || c.human_blood === undefined ? "Blood" : "Vitae"} {c.blood.value}/{c.blood.most}
+                    {c.human_blood !== null && c.human_blood !== undefined && ` · ${c.human_blood} human`}
                   </Badge>
                   <Badge tone={c.willpower.value < c.willpower.most ? "gold" : "mist"}>
                     Willpower {c.willpower.value}/{c.willpower.most}

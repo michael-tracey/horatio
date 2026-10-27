@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from horatio.rules.files import DATA_DIR
+from horatio.rules.splats import NO_VAMPIRE_PANELS, Panels
 
 KINDS_FILE = DATA_DIR / "bns_met_npc_kinds.toml"
 Nature = Literal["mortal", "partly_mortal", "supernatural"]
@@ -77,25 +78,6 @@ class BuiltInPower:
         if self.dots is None:
             return 0
         return min(rating if self.dots == "rating" else self.dots, MAX_DOTS)
-
-
-@dataclass(frozen=True)
-class Panels:
-    """Which parts of the Vampire sheet and Play View a kind has. A vampire has
-    them all; a mortal or a werewolf has no Beast, Humanity or Generation."""
-
-    # Beast traits, and the frenzy reminders that go with them.
-    beast: bool = True
-    frenzy: bool = True
-    # A Humanity or Path of Enlightenment track.
-    morality: bool = True
-    # The Generation background.
-    generation: bool = True
-    # Feeding, which is for those who spend Blood (and not a werewolf's Rage).
-    feed: bool = True
-
-
-NO_VAMPIRE_PANELS = Panels(beast=False, frenzy=False, morality=False, generation=False, feed=False)
 
 
 @dataclass(frozen=True)

@@ -1,13 +1,55 @@
 """What each splat's cost-rule conditions can test, and how those facts are worked out."""
 
 from collections.abc import Callable, Mapping, Sequence, Set
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any
 
 from horatio.rules.model import SheetTrait, TroupeRules
 
 Facts = Mapping[str, Any]
 FactsFn = Callable[[TroupeRules, Sequence[SheetTrait], SheetTrait], Facts]
+
+
+@dataclass(frozen=True)
+class Panels:
+    """Which parts of the Vampire sheet and Play View a character has, from its
+    splat and, for an NPC, its kind (horatio.rules.npc_kinds). A vampire has them
+    all; a ghoul, a mortal or a werewolf has no Beast, Humanity or Generation."""
+
+    # Beast traits, and the frenzy reminders that go with them.
+    beast: bool = True
+    frenzy: bool = True
+    # A Humanity or Path of Enlightenment track.
+    morality: bool = True
+    # The Generation background.
+    generation: bool = True
+    # Feeding, which is for those who spend Blood (and not a werewolf's Rage).
+    feed: bool = True
+
+
+NO_VAMPIRE_PANELS = Panels(beast=False, frenzy=False, morality=False, generation=False, feed=False)
+
+
+def both(first: Panels, second: Panels) -> Panels:
+    """The panels two sources both allow: an NPC's kind's and its splat's."""
+    return Panels(
+        **{f.name: getattr(first, f.name) and getattr(second, f.name) for f in fields(Panels)}
+    )
+
+
+@dataclass(frozen=True)
+class Vitae:
+    """Blood that is part vampiric vitae (a ghoul's, MET: VtM core p. 297): `pool` in
+    all, of which at most `most` is vitae, spent `per_turn` a turn on healing,
+    boosting attributes or disciplines. The rest is human Blood, which cannot be
+    spent. Vitae refills only by drinking it, up to `most` at any time; spent vitae
+    comes back as human Blood, 1 a day. Without a drink for `days`, the character
+    ages 10 years a day."""
+
+    pool: int = 10
+    most: int = 5
+    per_turn: int = 1
+    days: int = 30
 
 
 @dataclass(frozen=True)
@@ -26,6 +68,19 @@ class Splat:
     # The splat whose clans these are, where it has none of its own: a ghoul's clan
     # is its domitor's, with the vampire's clan logos.
     clans_from: str | None = None
+    # What sets a vampire apart, so another splat can leave out what it lacks. Its
+    # panels: the Beast and frenzy (MET: VtM core pp. 290, 301-303), Morality, the
+    # Generation background, which sets Blood, social age and the attribute bonus
+    # and which some merits ask for (pp. 100-102), and feeding on mortals (Feed,
+    # Herd and feeding in downtimes).
+    panels: Panels = Panels()
+    # Diablerie (p. 306).
+    diablerie: bool = True
+    # A clan weakness with rules effects (a Malkavian's Derangement trait, p. 57).
+    # A ghoul plays its domitor's for roleplay only (p. 297).
+    weakness: bool = True
+    # Blood that is part vitae and part human; None for Blood that is all vitae.
+    vitae: Vitae | None = None
 
 
 # --- Vampire ---------------------------------------------------------------
@@ -208,6 +263,12 @@ SPLATS: dict[str, Splat] = {
         label="Ghoul",
         has_domitor=True,
         clans_from="vampire",
+        # A ghoul is mortal (MET: VtM core p. 297): no Generation, no Beast, no
+        # diablerie, and it drinks vitae rather than feeding.
+        panels=NO_VAMPIRE_PANELS,
+        diablerie=False,
+        weakness=False,
+        vitae=Vitae(),
     ),
 }
 

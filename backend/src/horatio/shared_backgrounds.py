@@ -56,7 +56,8 @@ def dots_text(dots: int) -> str:
 
 def backgrounds(db: Session, troupe_id: uuid.UUID) -> list[str]:
     """The backgrounds a group in the troupe can share: the book's, as the troupe's
-    rules have them."""
+    rules have them. Every splat's backgrounds are the Vampire catalogue's (a
+    ghoul's less Generation, which no group shares)."""
     rules = read_troupe_rules(db, "vampire", troupe_id)
     have = {n for (c, n) in rules.rule_set.traits if c == "backgrounds"}
     return [b for b in SHAREABLE if b in have]
