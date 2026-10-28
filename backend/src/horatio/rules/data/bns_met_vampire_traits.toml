@@ -1378,7 +1378,7 @@ properties = { rating = 2, type = "General" }
 category = "flaws"
 name = "Bad Sight"
 description = "Suffer -2 to all Physical ranged attacks, including guns and thrown."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", pools = [{ pool = "attack:Firearms", amount = -2 }, { pool = "attack:Athletics", amount = -2 }] }
 
 [[traits]]
 category = "flaws"
@@ -1568,7 +1568,7 @@ properties = { rating = 3, type = "Clan", requirement = "Daughters of Cacophony"
 category = "flaws"
 name = "Death Sight"
 description = "All Investigation pools suffer a -2 penalty, cannot use Aura Perception to determine creature type, and cannot visually differentiate between mortal and vampire."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", pools = [{ pool = "skill:Investigation", amount = -2 }] }
 
 [[traits]]
 category = "flaws"
@@ -1725,7 +1725,7 @@ tags = ["vampire_only"]
 category = "flaws"
 name = "Hard of Hearing"
 description = "Suffer -2 to Awareness and Investigation pools based on hearing."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", pools = [{ pool = "skill:Awareness", amount = -2, when = "based on hearing" }, { pool = "skill:Investigation", amount = -2, when = "based on hearing" }] }
 
 [[traits]]
 category = "flaws"
@@ -1943,7 +1943,7 @@ properties = { rating = 2, type = "Anarch" }
 category = "flaws"
 name = "One Eye"
 description = "Suffer -5 to all Physical ranged attacks, including guns and thrown."
-properties = { rating = 3, type = "General", visible = "One eye" }
+properties = { rating = 3, type = "General", visible = "One eye", pools = [{ pool = "attack:Firearms", amount = -5 }, { pool = "attack:Athletics", amount = -5 }] }
 
 [[traits]]
 category = "flaws"
@@ -2036,7 +2036,7 @@ properties = { rating = 4, type = "General" }
 category = "flaws"
 name = "Short Fuse"
 description = "Considered as having +1 Beast trait when determining frenzy. Cannot be taken by Brujah."
-properties = { rating = 2, type = "General" }
+properties = { rating = 2, type = "General", pools = [{ pool = "frenzy", note = "counts 1 more Beast trait for whether to test for frenzy, and how hard" }] }
 tags = ["vampire_only"]
 
 [[traits]]
@@ -3326,7 +3326,7 @@ properties = { rating = 3, type = "Clan", requirement = "Ravnos" }
 category = "merits"
 name = "Executioner"
 description = "Gain +1 to pools involving Intimidation and Streetwise."
-properties = { rating = 1, type = "Sabbat" }
+properties = { rating = 1, type = "Sabbat", pools = [{ pool = "skill:Intimidation", amount = 1 }, { pool = "skill:Streetwise", amount = 1 }] }
 
 [[traits]]
 category = "merits"

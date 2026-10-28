@@ -290,6 +290,7 @@ def fill_allowance(
     participant.allowance = totals
     participant.allowance_breakdown = [
         {"action_kind": line.action_kind, "source": line.source, "amount": line.amount}
+        | ({"note": line.note} if line.note else {})
         for line in lines
     ]
 
@@ -520,8 +521,15 @@ def effective_allowance(db: Session, participant: CycleParticipant) -> dict[str,
 
 def shortfall(db: Session, participant: CycleParticipant) -> dict[str, int]:
     """Actions taken off beyond the allowance, such as more influence spent at
-    games than the character's rating allows a month (MET: VtM core, p. 510)."""
-    return {k: -v for k, v in allowance_totals(db, participant).items() if v < 0}
+    games than the character's rating allows a month (MET: VtM core, p. 510), or
+    flaws taking more than the character has (Hunted's two, from an allowance of
+    one): counted from the breakdown, before the allowance stopped at zero."""
+    totals: dict[str, int] = {}
+    for line in participant.allowance_breakdown:
+        totals[line["action_kind"]] = totals.get(line["action_kind"], 0) + line["amount"]
+    for adjustment in adjustments(db, participant):
+        totals[adjustment.action_kind] = totals.get(adjustment.action_kind, 0) + adjustment.delta
+    return {kind: -total for kind, total in totals.items() if total < 0}
 
 
 # --- submissions ------------------------------------------------------------------------

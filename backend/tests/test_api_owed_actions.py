@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from tests.api_helpers import Person, Troupe
+from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_downtimes import member_character, my_downtime, new_cycle, open_cycle
 
 pytestmark = pytest.mark.usefixtures("without_bank")
@@ -74,6 +74,88 @@ def test_hunted_characters_spend_two_actions_staying_hidden(troupe: Troupe) -> N
     open_cycle(troupe, new_cycle(troupe))
 
     assert general(troupe, agnes) == 1
+
+
+def test_hunted_says_what_its_actions_are_for_and_when_the_allowance_falls_short(
+    troupe: Troupe,
+) -> None:
+    agnes = member_character(troupe, troupe.player, "Agnes")
+    take(troupe.player, agnes, "flaws", "Hunted", 4)
+    take(troupe.player, agnes, "merits", "Acute Sense", 1)  # one action, owed
+    take(troupe.player, agnes, "merits", "Efficient Learner", 2)  # and another
+
+    open_cycle(troupe, new_cycle(troupe))
+
+    downtime = my_downtime(troupe.player, agnes).json()
+    hunted = next(b for b in downtime["breakdown"] if b["source"] == "Hunted")
+    assert hunted["amount"] == -2
+    assert "Healthy track full of aggravated damage" in hunted["note"]
+    # 3, less Hunted's 2 and the two merits': one short.
+    assert (downtime["allowance"]["general"], downtime["short"]) == (0, {"general": 1})
+
+
+def member_with(troupe: Troupe, name: str, clan: str, *traits: tuple[str, str, int]) -> str:
+    """A character of `clan` holding `traits` from creation, accepted home."""
+    character_id = new_character(troupe, troupe.player, name, clan=clan)
+    for category, trait, rating in traits:
+        taken = take(troupe.player, character_id, category, trait, rating)
+        assert taken.status_code == 200, taken.text
+    asked = troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    assert asked.status_code == 201, asked.text
+    approved = troupe.lead.client.post(f"/approvals/{asked.json()['id']}/approve", json={})
+    assert approved.status_code == 200, approved.text
+    return character_id
+
+
+def test_a_black_sheep_has_one_action_fewer_and_is_told_why(troupe: Troupe) -> None:
+    agnes = member_with(troupe, "Agnes", "Brujah", ("flaws", "Black Sheep", 2))
+
+    open_cycle(troupe, new_cycle(troupe))
+
+    downtime = my_downtime(troupe.player, agnes).json()
+    assert downtime["allowance"]["general"] == 2
+    sheep = next(b for b in downtime["breakdown"] if b["source"] == "Black Sheep")
+    assert sheep["amount"] == -1
+    assert "p. 487" in sheep["note"]
+
+
+def test_a_discipline_illiterate_caitiff_takes_two_actions_for_an_out_of_clan_dot(
+    troupe: Troupe,
+) -> None:
+    agnes = member_with(troupe, "Agnes", "Caitiff", ("flaws", "Caitiff: Discipline Illiterate", 1))
+    take(troupe.player, agnes, "disciplines", "Celerity", 1)
+    approve_all(troupe)
+
+    open_cycle(troupe, new_cycle(troupe))
+
+    downtime = my_downtime(troupe.player, agnes).json()
+    assert downtime["allowance"]["general"] == 1
+    assert [(a["delta"], a["reason"]) for a in downtime["adjustments"]] == [
+        (-2, "Learning Celerity 1 (Caitiff: Discipline Illiterate: 1 more a dot)")
+    ]
+
+
+def test_discipline_illiterate_takes_away_efficient_learners_help(troupe: Troupe) -> None:
+    agnes = member_with(
+        troupe,
+        "Agnes",
+        "Caitiff",
+        ("flaws", "Caitiff: Discipline Illiterate", 1),
+        ("merits", "Efficient Learner", 2),
+    )
+    take(troupe.player, agnes, "disciplines", "Celerity", 1)
+    approve_all(troupe)
+
+    open_cycle(troupe, new_cycle(troupe))
+
+    [learning] = my_downtime(troupe.player, agnes).json()["adjustments"]
+    assert learning["delta"] == -2
+    assert (
+        "Efficient Learner does not help, under Caitiff: Discipline Illiterate"
+        in (learning["reason"])
+    )
 
 
 def test_a_discipline_request_names_its_teacher(troupe: Troupe) -> None:

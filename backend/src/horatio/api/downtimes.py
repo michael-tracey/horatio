@@ -82,6 +82,9 @@ class AllowanceLineOut(BaseModel):
     action_kind: str
     source: str
     amount: int
+    # What the actions mean (Hunted's are owed to staying hidden, and what not
+    # spending them does).
+    note: str = ""
 
 
 class AdjustmentOut(BaseModel):
@@ -212,6 +215,9 @@ class MyDowntime(BaseModel):
     allowance: dict[str, int]
     breakdown: list[AllowanceLineOut]
     adjustments: list[AdjustmentOut]
+    # Actions of each kind the allowance cannot cover, where flaws and debts take
+    # more than it has.
+    short: dict[str, int] = {}
     questions: list[QuestionOut]
     answers: list[AnswerOut]
     status: str  # draft | submitted
@@ -576,6 +582,7 @@ def my_downtime_out(
             AdjustmentOut(action_kind=a.action_kind, delta=a.delta, reason=a.reason)
             for a in downtimes.adjustments(db, participant)
         ],
+        short=downtimes.shortfall(db, participant),
         questions=[question_out(q) for q in questions],
         answers=[
             AnswerOut(question_id=a.question_id, slot=a.slot, body=a.body, structured=a.structured)

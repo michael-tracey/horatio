@@ -162,9 +162,14 @@ key = "disciplines"
 name = "Disciplines"
 group = "Disciplines"
 # Learning a dot takes a downtime action between games (pp. 111, 113, 224);
-# Efficient Learner waives it (p. 249).
+# Efficient Learner waives it (p. 249). A Caitiff with Discipline Illiterate takes
+# one more for an out-of-clan discipline, and Efficient Learner does not help
+# (Vol. 2, p. 280).
 downtime_actions = 1
 downtime_waived_by = [{ category = "merits", name = "Efficient Learner" }]
+downtime_added_by = [
+  { category = "flaws", name = "Caitiff: Discipline Illiterate", amount = 1, when = { not = { in_clan = true } }, no_waiver = true, page = "Vol. 2, p. 280" },
+]
 
 [[categories]]
 key = "techniques"
@@ -915,6 +920,17 @@ category = "flaws"
 trait = "Hunted"
 scheme = "fixed"
 amount = -2
+note = "Owed each month to staying hidden from those hunting the character. Without them, it comes to the next game with its Healthy track full of aggravated damage (p. 263)."
+
+# Black Sheep: one action a month goes to avoiding the Camarilla and proving the
+# character to the Anarchs (p. 487).
+[[allowance_rules]]
+action_kind = "general"
+category = "flaws"
+trait = "Black Sheep"
+scheme = "fixed"
+amount = -1
+note = "Lost each month to avoiding the Camarilla and proving itself to the Anarchs (p. 487)."
 
 # ---------------------------------------------------------------------------
 # Feeding between games (horatio.feeding). A character spends one downtime

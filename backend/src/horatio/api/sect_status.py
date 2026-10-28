@@ -131,6 +131,12 @@ class StatusOut(BaseModel):
     bans: list[BanOut]
     fleeting: int
     fleeting_cap: int
+    # Why the cap is not the usual: "a lesser ban: 3", "Tainted Embrace: 1 less".
+    cap_why: list[str] = []
+    # Accepted by no sect, it holds the fleeting status of this one through a merit
+    # (Emissary to the Camarilla), named in `outsider_through`.
+    outsider_sect: str | None = None
+    outsider_through: str | None = None
     disgraced: bool
     # Its fleeting status suppressed: not carried into a game, and none gained.
     suppressed: list[SuppressionOut] = []
@@ -320,6 +326,9 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
         ],
         fleeting=len(found.fleeting),
         fleeting_cap=found.fleeting_cap,
+        cap_why=found.cap_why,
+        outsider_sect=found.outsider.sect if found.outsider else None,
+        outsider_through=found.outsider.name if found.outsider else None,
         disgraced=found.disgraced,
         suppressed=[suppression_out(s) for s in found.suppressing],
         addable=addable,

@@ -6,7 +6,8 @@ import type { CharacterOut, RetainerOut } from "../../api/types";
 import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { backText, LOST_NOTE, LOST_WORDS, retainerName, retainerSource } from "./retainers";
+import { pageLabel } from "../../components/TraitInfo";
+import { backText, givingMerits, LOST_NOTE, LOST_WORDS, retainerName, retainerSource } from "./retainers";
 
 export function useRetainers(characterId: string) {
   return useQuery({
@@ -29,9 +30,29 @@ type Draft = {
   ghoul: boolean;
   specialties: string[];
   discipline: string;
+  // Given by its merit's rules: its dots, kind and being a ghoul are the merit's.
+  given: boolean;
+  kind: string;
+  given_disciplines: string[];
 };
 
-const blank = (merit: string): Draft => ({ id: null, name: "", dots: 1, bought: false, description: "", from_merit: merit, lost: "", lost_on: "", npc_id: "", ghoul: false, specialties: [], discipline: "" });
+const blank = (merit: string): Draft => ({
+  id: null,
+  name: "",
+  dots: 1,
+  bought: false,
+  description: "",
+  from_merit: merit,
+  lost: "",
+  lost_on: "",
+  npc_id: "",
+  ghoul: false,
+  specialties: [],
+  discipline: "",
+  given: false,
+  kind: "",
+  given_disciplines: [],
+});
 
 const draftOf = (r: RetainerOut): Draft => ({
   id: r.id,
@@ -46,7 +67,13 @@ const draftOf = (r: RetainerOut): Draft => ({
   ghoul: r.ghoul,
   specialties: r.specialties,
   discipline: r.discipline,
+  given: r.given ?? false,
+  kind: r.kind ?? "",
+  given_disciplines: r.given_disciplines ?? [],
 });
+
+/** What is saved: a Retainer a merit gives is left as it is until it has a name. */
+const saved = (rows: Draft[]) => rows.filter((d) => !(d.given && !d.id && !d.name.trim()));
 
 /** A Retainer's links to its NPC's sheet and Play View, for staff who can see it. */
 export function NpcLinks({ retainer }: { retainer: RetainerOut }) {
@@ -73,7 +100,8 @@ export function RetainerLines({ retainers }: { retainers: RetainerOut[] }) {
         <li key={r.id ?? `bought/${r.name}/${i}`} className="border-b border-ash/60 py-1 last:border-0">
           <span className={r.lost ? "text-mist line-through" : r.name ? "" : "text-mist"}>{retainerName(r)}</span>
           <span className="text-gold"> · {r.dots}</span>
-          {r.ghoul && <span className="text-mist"> · ghoul</span>}
+          {r.given && r.name && r.kind && <span className="text-mist"> · {r.kind.toLowerCase()}</span>}
+          {r.ghoul && !(r.given && /ghoul/i.test(r.kind ?? "")) && <span className="text-mist"> · ghoul</span>}
           {retainerSource(r) && <span className="text-mist"> · {retainerSource(r)}</span>}
           {specialtiesOf(r) && <span className="text-mist"> · {specialtiesOf(r)}</span>}
           {r.lost && (
@@ -86,6 +114,12 @@ export function RetainerLines({ retainers }: { retainers: RetainerOut[] }) {
           <NpcLinks retainer={r} />
           {backText(r, dates.date) && <p className="text-xs text-blood-bright">{backText(r, dates.date)}</p>}
           {r.description && <p className="text-xs text-mist">{r.description}</p>}
+          {r.given && r.note && (
+            <p className="text-xs text-mist">
+              {r.note}
+              {pageLabel(r.page) && ` ${pageLabel(r.page)}.`}
+            </p>
+          )}
         </li>
       ))}
     </ul>
@@ -112,7 +146,7 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
       api.PUT("/api/characters/{character_id}/retainers", {
         params: { path: { character_id: character.id } },
         body: {
-          retainers: rows.map((d) => ({
+          retainers: saved(rows).map((d) => ({
             id: d.id,
             name: d.name.trim(),
             dots: d.dots,
@@ -134,6 +168,9 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
   if (retainers.length === 0 && !can_edit) return null;
   // One held without a name has nothing kept for it until it is named on the sheet.
   const unnamed = retainers.filter((r) => r.bought && !r.name).length;
+  // Those a merit's rules give are listed already; a Retainer is added by hand only from another.
+  const giving = givingMerits(retainers);
+  const others = merits.filter((m) => !giving.includes(m));
 
   const change = (i: number, patch: Partial<Draft>) => setDraft((d) => d!.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
@@ -171,6 +208,14 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
                     <span className="text-sm text-parchment">
                       {d.name} <span className="text-gold">· {d.dots}</span>
                     </span>
+                  ) : d.given ? (
+                    <>
+                      <Input aria-label="Retainer name" value={d.name} onChange={(e) => change(i, { name: e.target.value })} placeholder={`Name the ${d.kind.toLowerCase()}`} className="min-h-7 w-48 py-0.5 text-xs" />
+                      <span className="text-gold">· {d.dots}</span>
+                      <span className="text-mist">
+                        {d.kind.toLowerCase()} from {d.from_merit}
+                      </span>
+                    </>
                   ) : (
                     <>
                       <Input aria-label="Retainer name" value={d.name} onChange={(e) => change(i, { name: e.target.value })} placeholder="Name" className="min-h-7 w-48 py-0.5 text-xs" />
@@ -183,7 +228,7 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
                       </Select>
                       {d.from_merit || !d.id ? (
                         <Select aria-label={`Source of ${label}`} value={d.from_merit} onChange={(e) => change(i, { from_merit: e.target.value })} className="min-h-7 w-44 py-0.5 text-xs">
-                          {merits.map((m) => (
+                          {others.map((m) => (
                             <option key={m} value={m}>
                               From {m}
                             </option>
@@ -227,12 +272,12 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
             {unnamed > 0 && " Name the one without a name on the sheet to say more about it here."}
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
-            {merits.length > 0 && (
-              <Button type="button" variant="secondary" className="min-h-7 px-2 py-0.5 text-xs" onClick={() => setDraft((rows) => [...rows!, blank(merits[0]!)])}>
+            {others.length > 0 && (
+              <Button type="button" variant="secondary" className="min-h-7 px-2 py-0.5 text-xs" onClick={() => setDraft((rows) => [...rows!, blank(others[0]!)])}>
                 + Add a Retainer from a merit
               </Button>
             )}
-            <Button type="submit" className="min-h-7 px-2 py-0.5 text-xs" disabled={save.isPending || draft.some((d) => !d.name.trim())}>
+            <Button type="submit" className="min-h-7 px-2 py-0.5 text-xs" disabled={save.isPending || draft.some((d) => (!d.given || d.id) && !d.name.trim())}>
               Save Retainers
             </Button>
             <Button type="button" variant="ghost" className="min-h-7 px-2 py-0.5 text-xs" onClick={() => setDraft(null)}>
@@ -269,12 +314,21 @@ function Specialties({
   disciplines: string[];
   onChange: (patch: Partial<Draft>) => void;
 }) {
-  const taken = draft.specialties.length + (draft.ghoul && draft.discipline ? 1 : 0);
+  // A Retainer a merit gives can have the discipline specialty its merit says (Walking Dead's).
+  const choices = draft.given_disciplines.length ? draft.given_disciplines : disciplines;
+  const withDiscipline = draft.ghoul || draft.given_disciplines.length > 0;
+  const taken = draft.specialties.length + (withDiscipline && draft.discipline ? 1 : 0);
   const full = taken >= draft.dots;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <label className="flex items-center gap-1 text-mist">
-        <input type="checkbox" aria-label={`${label} is a ghoul`} checked={draft.ghoul} onChange={(e) => onChange({ ghoul: e.target.checked, discipline: e.target.checked ? draft.discipline : "" })} />
+        <input
+          type="checkbox"
+          aria-label={`${label} is a ghoul`}
+          checked={draft.ghoul}
+          disabled={draft.given}
+          onChange={(e) => onChange({ ghoul: e.target.checked, discipline: e.target.checked ? draft.discipline : "" })}
+        />
         Ghoul
       </label>
       <span className={taken > draft.dots ? "text-blood-bright" : "text-mist"}>
@@ -303,10 +357,10 @@ function Specialties({
             ))}
         </Select>
       )}
-      {draft.ghoul && (
+      {withDiscipline && (
         <Select aria-label={`Discipline for ${label}`} value={draft.discipline} onChange={(e) => onChange({ discipline: e.target.value })} className="min-h-7 w-40 py-0.5 text-xs" disabled={full && !draft.discipline}>
           <option value="">No discipline</option>
-          {disciplines.map((x) => (
+          {choices.map((x) => (
             <option key={x}>{x}</option>
           ))}
         </Select>
