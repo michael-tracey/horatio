@@ -2975,9 +2975,9 @@ test("Stolen Potential takes away the focus in the attribute it names, and the c
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 
   // The sheet holds the flaw, with its attribute, and no Mental focus.
-  await expect(p.getByText("Stolen Potential: Mental").first()).toBeVisible();
+  await expect(p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) })).toContainText("Stolen Potential: Mental");
   await expect(p.getByText("Mental Focus", { exact: true })).toHaveCount(0);
-  await expect(p.getByText("Social Focus", { exact: true })).toBeVisible();
+  await expect(p.getByText("Social Focus", { exact: true }).first()).toBeVisible();
 });
 
 test("Inept lets the player choose the discipline that loses its free dot, from the Disciplines step", async ({ browser }) => {
