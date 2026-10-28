@@ -65,3 +65,48 @@ def test_the_migration_renames_trials_of_blood_in_place(
 
     assert merit_definition(engine, "Trials of the Blood") == merit
     assert merit_definition(engine, "Trials of Blood") is None
+
+
+def test_the_spelling_migration_renames_in_place_and_folds_in_the_misspelt_twin(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Blasé keeps its definition under its new name, and what pointed at the misspelt
+    Thaumaturgical Expertise now points at Thaumaturgic Expertise, the one left."""
+    blase = merit_definition(engine, "Blasé")
+    expertise = merit_definition(engine, "Thaumaturgic Expertise")
+    assert blase is not None and expertise is not None
+
+    command.downgrade(alembic_config, "0103")
+    try:
+        assert merit_definition(engine, "Blase") == blase
+        with engine.begin() as connection:
+            twin = connection.scalar(
+                text(
+                    "insert into trait_definitions (category_id, name)"
+                    " select category_id, 'Thaumaturgical Expertise' from trait_definitions"
+                    " where id = :expertise returning id"
+                ),
+                {"expertise": expertise},
+            )
+            starting = connection.scalar(
+                text(
+                    "insert into starting_traits (rule_set_id, trait_definition_id, rating)"
+                    " select id, :twin, 1 from rule_sets limit 1 returning id"
+                ),
+                {"twin": twin},
+            )
+        command.upgrade(alembic_config, "head")
+
+        assert merit_definition(engine, "Blasé") == blase
+        assert merit_definition(engine, "Blase") is None
+        assert merit_definition(engine, "Thaumaturgical Expertise") is None
+        with engine.begin() as connection:
+            moved = connection.scalar(
+                text("select trait_definition_id from starting_traits where id = :id"),
+                {"id": starting},
+            )
+            connection.execute(text("delete from starting_traits where id = :id"), {"id": starting})
+        assert moved == expertise
+    finally:
+        command.upgrade(alembic_config, "head")
+        load_rules(engine)

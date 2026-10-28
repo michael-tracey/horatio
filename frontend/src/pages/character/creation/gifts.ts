@@ -7,6 +7,7 @@
  */
 
 import type { CatalogueOut, CreationOut } from "../../../api/types";
+import { pageText } from "../../troupe/bookPage";
 import { inOrder, listed, stepFor, type NoticeSource, type StepNotice } from "./notices";
 
 const merits = (names: string[]) => names.map((name) => ({ category: "merits", name }));
@@ -120,6 +121,6 @@ export function takenAway(creation: CreationOut, catalogue: CatalogueOut, catego
       if (!by.length) return [];
       const name = catalogue.categories.find((c) => c.key === category)?.name ?? category;
       const pages = [...new Set(by.map((b) => catalogue.traits.find((t) => t.category === b.category && t.name === b.name)?.page_reference).filter((p): p is string => !!p))];
-      return [`${listed(causes(by))}: no ${name.charAt(0)}${name.slice(1).toLowerCase()}${pages.length ? ` (p. ${pages.join(", ")})` : ""}.`];
+      return [`${listed(causes(by))}: no ${name.charAt(0)}${name.slice(1).toLowerCase()}${pages.length ? ` (${pages.map(pageText).join(", ")})` : ""}.`];
     });
 }

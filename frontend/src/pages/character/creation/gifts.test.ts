@@ -127,6 +127,13 @@ describe("takenAway", () => {
     expect(takenAway(left, catalogue, ["focus_mentals"])).toEqual(["Stolen Potential: no Mental focus (p. 265)."]);
   });
 
+  it("names the book when the page is not the core book's", () => {
+    const supplement = { ...catalogue, traits: [{ category: "flaws", name: "Stolen Potential", page_reference: "Vol. 2, p. 269" }] } as CatalogueOut;
+    const left = { ...creation([focus("focus_physicals")]), budget_changes: [{ category: "focus_mentals", because: [stolen] }] };
+
+    expect(takenAway(left, supplement, ["focus_mentals"])).toEqual(["Stolen Potential: no Mental focus (Vol. 2, p. 269)."]);
+  });
+
   it("says nothing of a category that still has its picks, or keeps one to take back", () => {
     const kept = { ...creation([focus("focus_mentals")]), budget_changes: [{ category: "focus_mentals", because: [stolen] }] };
 

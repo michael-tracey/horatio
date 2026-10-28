@@ -3135,6 +3135,21 @@ test("Extrasensory Perceptions, taken from Focuses, shows Perception as held the
   await expect(p.getByRole("group", { name: "Changed by other steps" })).toHaveCount(0);
 });
 
+test("a supplement's merit names its book, and a clan flaw says what it does (#315)", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-book-pages");
+  const id = await creatingVampire(p, "Old Tunnels", "Nosferatu: Creeps", [], ATTRIBUTES_AND_FOCUSES);
+  await p.goto(`/characters/${id}/create/focuses`);
+  const senses = p.getByRole("region", { name: "From merits" }).locator("label").filter({ hasText: "Extrasensory Perceptions" });
+  await expect(senses).toContainText("(1-point merit, Vol. 2, p. 49)");
+
+  await p.goto(`/characters/${id}/create/merits`);
+  const flaws = p.getByRole("region", { name: "Flaws" });
+  const anosmia = flaws.getByRole("checkbox", { name: /^Nosferatu: Anosmia/ });
+  await anosmia.scrollIntoViewIfNeeded();
+  await expect(anosmia).toHaveAccessibleName(/No sense of smell or taste/);
+  await expect(flaws.getByText("Clan flaw for a second caste")).toHaveCount(0);
+});
+
 test("Personal Cult frees a Herd pick, which goes elsewhere, and the character finishes with Herd 5 free", async ({ browser }) => {
   const { page: p } = await person(browser, "wf-cult");
   const id = await creatingVampire(p, "Temple Keeper", "Followers of Set", [], {

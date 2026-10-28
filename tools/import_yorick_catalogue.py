@@ -2,9 +2,10 @@
 
     python3 tools/import_yorick_catalogue.py ../yorick/data/all_greensboro_descriptions_20260816.csv
 
-Writes backend/src/horatio/rules/data/bns_met_vampire_traits.toml. Re-run it
-to refresh the catalogue; edit that file by hand only for traits Yorick never
-had.
+Wrote backend/src/horatio/rules/data/bns_met_vampire_traits.toml. That file has
+since been edited by hand (play counters, tags, the merits' and flaws' pages and
+wording checked against the books, names spelt as the books spell them), so
+running this again would undo that: it is kept as a record of the import.
 """
 
 import csv
