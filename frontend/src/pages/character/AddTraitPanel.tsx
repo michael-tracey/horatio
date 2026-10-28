@@ -14,8 +14,6 @@ import { FreeChoicesFields } from "./FreeChoices";
 import { sayable, summary, toSend, type FreePick } from "./freeChoices";
 import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
 
-const SHOWN = 40;
-
 /** A new trait for the cart. */
 export type NewTrait = {
   category: string;
@@ -161,7 +159,7 @@ export function AddTraitPanel({
         />
       </div>
       <ul className="flex max-h-72 flex-col overflow-y-auto">
-        {matching.slice(0, SHOWN).map((t) => (
+        {matching.map((t) => (
           <TraitChoice
             key={t.name}
             trait={t}
@@ -190,7 +188,6 @@ export function AddTraitPanel({
           </li>
         ))}
         {matching.length === 0 && elsewhere.length === 0 && leftOut === 0 && <li className="px-2 text-sm text-mist">Nothing matches.</li>}
-        {matching.length > SHOWN && <li className="px-2 text-xs text-mist">Search to see all {matching.length}.</li>}
         {leftOut > 0 && (
           <li className="px-2 py-1.5 text-xs text-mist">
             {matching.length > 0 ? `${leftOut} more you can't take: ` : `None you can take. ${leftOut} you can't: `}

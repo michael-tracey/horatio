@@ -91,8 +91,9 @@ export const strayPicks: NoticeSource = ({ creation, steps }) =>
 
 /**
  * More picks than the rules give now (rule 4): Thin Blooded takes away the pick at 2,
- * and Inept one pick at 1, once the starting dots are placed. The picks are kept, and
- * the step and the one that changed it say which need moving.
+ * and Inept one pick at 1, once the starting dots are placed; Stolen Potential the
+ * focus in the attribute it names. The picks are kept, and the step and the one that
+ * changed it say which need moving or taking back.
  */
 export const overBudget: NoticeSource = ({ creation, steps }) =>
   creation.pools
@@ -104,9 +105,13 @@ export const overBudget: NoticeSource = ({ creation, steps }) =>
       const who = because.length ? listed(because) : "The rules";
       const what = pool.category_name.toLowerCase();
       const picked = listed(pool.traits.map((t) => t.name));
+      // No picks left in the category at all (Stolen Potential's focus): nowhere to move them to.
+      const none = !creation.pools.some((p) => p.category === pool.category && p.kind === "picks" && p.allowed > 0);
       const message = pool.allowed
         ? `${who}: starting ${what} have ${pool.allowed} ${pool.allowed === 1 ? "pick" : "picks"} at ${pool.rating} now, and ${pool.used} are placed. Take ${-pool.remaining} back.`
-        : `${who}: starting ${what} no longer have a pick at ${pool.rating}. Your dot in ${picked} needs moving.`;
+        : none
+          ? `${who}: no starting ${what}. Take ${picked} back.`
+          : `${who}: starting ${what} no longer have a pick at ${pool.rating}. Your dot in ${picked} needs moving.`;
       return {
         key: `over/${pool.category}/${pool.rating}`,
         message,

@@ -13,7 +13,7 @@ import { quickPicks } from "../traitFilter";
 import { DotGrid, PointsList, type Held, type RatingBar } from "./DotGrid";
 import { Because } from "./Because";
 import { FreeChoicesStep, withFreeChoices } from "./FreeChoicesStep";
-import { BACKGROUND_MERITS, FOCUS_MERITS, SKILL_MERITS, freedPicks, givenIn, unchosenFree } from "./gifts";
+import { BACKGROUND_MERITS, FOCUS_MERITS, SKILL_MERITS, freedPicks, givenIn, takenAway, unchosenFree } from "./gifts";
 import { detailNeed, fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
 import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, spent, traitOf, type Allowed, type Picks } from "./logic";
@@ -317,11 +317,20 @@ function StepView({
   // Picks kept on traits they no longer fit, by category then trait: marked where they are.
   const strays: Record<string, Record<string, string>> = {};
   for (const n of here) if (n.trait && n.fix === step.key) (strays[n.trait.category] ??= {})[n.trait.name] = n.message;
+  // What a trait held leaves this step without (Stolen Potential: the focus in its attribute).
+  const away = takenAway(creation, catalogue, ORDER.find((s) => s.key === step.key)?.categories.filter((c) => !step.categories.includes(c)) ?? []);
 
   return (
     <Card title={step.title} className="min-w-0">
       {intro && <p className="mb-4 text-sm text-mist">{intro}</p>}
       {step.key !== "review" && <StepNotices character={character} notices={here} step={step} steps={steps} choosesHere={choosesHere} />}
+      {away.length > 0 && (
+        <div className="mb-6 flex flex-col gap-2">
+          {away.map((why) => (
+            <Notice key={why}>{why}</Notice>
+          ))}
+        </div>
+      )}
       {step.key === "concept" && <ConceptStep character={character} creation={creation} sheet={sheet} catalogue={catalogue} ghoul={ghoul} />}
       {step.key === "review" && (
         <ReviewStep character={character} creation={creation} sheet={sheet} catalogue={catalogue} steps={steps} notices={notices} ghoul={ghoul} />

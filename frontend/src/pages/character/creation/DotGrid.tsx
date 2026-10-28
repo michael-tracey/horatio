@@ -337,7 +337,8 @@ export function PointsList({
   const listed = filtered.concat(traits.filter((t) => t.name in picks && !filtered.includes(t)));
   const { query, setQuery, shown } = useFiltered(listed, picks);
   const used = spent(picks);
-  const visible = query.trim() ? shown : shown.filter((t) => t.name in picks).concat(shown.filter((t) => !(t.name in picks)).slice(0, 40));
+  // Every one is listed, picks first: the filter, quick picks and search narrow it (#310).
+  const visible = query.trim() ? shown : shown.filter((t) => t.name in picks).concat(shown.filter((t) => !(t.name in picks)));
 
   return (
     <section aria-label={title} className="flex flex-col gap-3">
@@ -415,9 +416,6 @@ export function PointsList({
           );
         })}
       </ul>
-      {!query.trim() && shown.length > visible.length && (
-        <p className="text-xs text-mist">Search to see all {listed.length}.</p>
-      )}
     </section>
   );
 }

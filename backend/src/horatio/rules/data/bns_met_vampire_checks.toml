@@ -488,6 +488,33 @@ strength = "complete"
 message = "Inept: choose one of your in-clan disciplines."
 page = "263"
 
+# Stolen Potential: the attribute it names, in its detail, takes no focus at creation
+# (the focus creation rules leave it out) nor after it while the flaw is held (p. 265).
+[[checks]]
+category = "flaws"
+name = "Stolen Potential"
+requires = { self = { has_detail = true } }
+message = "Stolen Potential: choose Physical, Social or Mental."
+page = "265"
+
+[[checks]]
+category = "focus_physicals"
+forbids = { has = { category = "flaws", name = "Stolen Potential", detail = "Physical" }, finished = true }
+message = "Stolen Potential: no Physical focus."
+page = "265"
+
+[[checks]]
+category = "focus_socials"
+forbids = { has = { category = "flaws", name = "Stolen Potential", detail = "Social" }, finished = true }
+message = "Stolen Potential: no Social focus."
+page = "265"
+
+[[checks]]
+category = "focus_mentals"
+forbids = { has = { category = "flaws", name = "Stolen Potential", detail = "Mental" }, finished = true }
+message = "Stolen Potential: no Mental focus."
+page = "265"
+
 [[checks]]
 category = "disciplines"
 forbids = { has = { category = "flaws", name = "Thin Blooded" }, self = { rating = { gte = 5 } } }

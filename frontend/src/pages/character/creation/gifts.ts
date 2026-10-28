@@ -6,22 +6,25 @@
  * it, and says which step it lands on.
  */
 
-import type { CreationOut } from "../../../api/types";
+import type { CatalogueOut, CreationOut } from "../../../api/types";
 import { inOrder, listed, stepFor, type NoticeSource, type StepNotice } from "./notices";
 
 const merits = (names: string[]) => names.map((name) => ({ category: "merits", name }));
 const flaws = (names: string[]) => names.map((name) => ({ category: "flaws", name }));
 
-/** Merits that add a focus to choose (Versatile, Expanded Consciousness) or give one. */
-export const FOCUS_MERITS = merits([
-  "Versatile",
-  "Expanded Consciousness",
-  "Angelic Visage",
-  "Extrasensory Perceptions",
-  "Dust in the Wind",
-  "Art Imitates Life",
-  "Beauty of the Beholder",
-]);
+/** Merits that add a focus to choose (Versatile, Expanded Consciousness) or give one, and the flaw that takes one away. */
+export const FOCUS_MERITS = [
+  ...merits([
+    "Versatile",
+    "Expanded Consciousness",
+    "Angelic Visage",
+    "Extrasensory Perceptions",
+    "Dust in the Wind",
+    "Art Imitates Life",
+    "Beauty of the Beholder",
+  ]),
+  ...flaws(["Stolen Potential"]),
+];
 
 /** Merits that make dots in a skill free (both spellings of Blood of the Tzimisce are in the data), Chosen of Cappadocius' specialisations, and the skill Skill Aptitude raises. */
 export const SKILL_MERITS = merits([
@@ -103,4 +106,20 @@ export function givenIn(creation: CreationOut, category: string): Record<string,
     found[g.name] = { rating: g.rating, text: `${by.length ? `${listed(by)} gives` : "You are given"} you ${g.name}${g.rating > 1 ? ` ${g.rating}` : ""} free.` };
   }
   return found;
+}
+
+/**
+ * A step's categories that a trait held leaves with no picks at all, so the step does not
+ * show them, and why: "Stolen Potential: no Mental focus (p. 265)." (#310).
+ */
+export function takenAway(creation: CreationOut, catalogue: CatalogueOut, categories: string[]): string[] {
+  return categories
+    .filter((category) => !creation.pools.some((p) => p.category === category))
+    .flatMap((category) => {
+      const by = creation.budget_changes.filter((c) => c.category === category).flatMap((c) => c.because);
+      if (!by.length) return [];
+      const name = catalogue.categories.find((c) => c.key === category)?.name ?? category;
+      const pages = [...new Set(by.map((b) => catalogue.traits.find((t) => t.category === b.category && t.name === b.name)?.page_reference).filter((p): p is string => !!p))];
+      return [`${listed(causes(by))}: no ${name.charAt(0)}${name.slice(1).toLowerCase()}${pages.length ? ` (p. ${pages.join(", ")})` : ""}.`];
+    });
 }

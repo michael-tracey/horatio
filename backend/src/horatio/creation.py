@@ -14,7 +14,7 @@ back while the trait still has none, so free and paid dots never get tangled.
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.models import Character, CharacterTrait, User
-from horatio.rules.checks import holds_trait, matches, traits_in
+from horatio.rules.checks import holds_trait, matches
 from horatio.rules.model import CreationRuleData, SheetTrait, TroupeRules
 from horatio.rules.splats import SPLATS
 from horatio.sheets import (
@@ -73,15 +73,26 @@ def pool_key(rule: CreationRuleData) -> tuple[str, int]:
     return (rule.category, rule.rating or 0 if rule.points is None else 0)
 
 
+def named_in(condition: Any) -> list[Mapping[str, Any]]:
+    """Every trait a condition names, as the table naming it (category, name, and its
+    detail or rating if it gives them)."""
+    if isinstance(condition, Mapping):
+        items = cast(Mapping[str, Any], condition)
+        named = isinstance(items.get("category"), str) and isinstance(items.get("name"), str)
+        return ([items] if named else []) + [t for v in items.values() for t in named_in(v)]
+    if isinstance(condition, list | tuple):
+        return [t for item in cast(Sequence[Any], condition) for t in named_in(item)]
+    return []
+
+
 def held_in(
     sheet: Sequence[SheetTrait], condition: Mapping[str, Any] | None
 ) -> list[tuple[str, str]]:
     """The traits a creation rule's condition names that the sheet holds, as (category,
-    name): what the rule is because of."""
+    name): what the rule is because of. One named with a detail counts only with it:
+    Stolen Potential naming Physical changes nothing for the Mental focus."""
     return sorted(
-        (c, n)
-        for c, n in traits_in(condition)
-        if n and holds_trait(sheet, {"category": c, "name": n})
+        {(t["category"], t["name"]) for t in named_in(condition) if holds_trait(sheet, t)}
     )
 
 
@@ -150,7 +161,9 @@ def stray_pools(
         if pick is None or id(row) in seated:
             continue
         beside = [p for p in placed.values() if p.category == category and p.kind == "picks"]
-        if not beside:
+        # A category left with no picks at all (Stolen Potential's focus) keeps them too,
+        # if its rules gave picks before.
+        if not beside and not any(r.category == category and r.picks for r in rules):
             continue
         if (category, pick) not in strays:
             lost = {
@@ -164,7 +177,7 @@ def stray_pools(
                 pick,
                 "picks",
                 0,
-                restriction=beside[0].restriction,
+                restriction=beside[0].restriction if beside else None,
                 because=sorted(lost),
             )
         strays[(category, pick)].traits.append(row)
@@ -363,7 +376,8 @@ def place_pick(
     else:
         pool = all_pools.get((category, rating))
         if pool is None:
-            raise unprocessable(f"There are no {trait_category.name} picks at {rating}.")
+            rules, rows = rules_for(db, character).creation_rules(), sheet_rows(db, character)
+            raise unprocessable(no_picks(rules, rows, category, trait_category.name, rating))
         if pool.remaining < 1:
             raise conflict(f"Every {trait_category.name} pick at {rating} is already placed.")
     fits = fitting(db, character)
@@ -426,6 +440,28 @@ def remove_pick(
     )
 
 
+def no_picks(
+    rules: Sequence[CreationRuleData],
+    rows: Sequence[SheetRow],
+    category: str,
+    name: str,
+    rating: int,
+) -> str:
+    """Why there are no picks at a rating, naming the traits held that took them away:
+    "Stolen Potential: there are no Mental Focus picks at 1." """
+    sheet = [row.as_rules_trait() for row in rows]
+    by = sorted(
+        {
+            held
+            for rule in rules
+            if rule.category == category and rule.rating == rating and rule.when
+            for _, held in held_in(sheet, rule.when)
+        }
+    )
+    where = f"{name} picks at {rating}"
+    return f"{', '.join(by)}: there are no {where}." if by else f"There are no {where}."
+
+
 @dataclass
 class PickSpec:
     name: str
@@ -443,17 +479,18 @@ def set_category_picks(
     new pick cannot land on a trait that already has dots.
     """
     ensure_creating(db, character)
-    all_pools = {key: p for key, p in pools(db, character).items() if key[0] == category}
-    if not all_pools:
+    troupe_rules = rules_for(db, character)
+    rules = troupe_rules.creation_rules()
+    every_row = sheet_rows(db, character)
+    all_pools = {key: p for key, p in pools_for(rules, every_row).items() if key[0] == category}
+    # A category whose picks a trait has taken away (Stolen Potential's focus) can still
+    # have its picks taken back.
+    if not all_pools and not any(r.category == category for r in rules):
         raise unprocessable(f"There are no creation picks for {category}.")
     points = all_pools.get((category, 0))
     is_points = points is not None and points.kind == "points"
 
-    rows = {
-        (r.definition.name, r.trait.detail): r
-        for r in sheet_rows(db, character)
-        if r.category.key == category
-    }
+    rows = {(r.definition.name, r.trait.detail): r for r in every_row if r.category.key == category}
     wanted: dict[tuple[str, str], int] = {}
     definitions = {}
     for spec in picks:
@@ -486,7 +523,8 @@ def set_category_picks(
                 ]
                 if len(kept) == sum(1 for r in wanted.values() if r == rating):
                     continue
-                raise unprocessable(f"There are no {category.replace('_', ' ')} picks at {rating}.")
+                name = troupe_rules.rule_set.categories[category].name
+                raise unprocessable(no_picks(rules, every_row, category, name, rating))
             used = sum(1 for r in wanted.values() if r == rating)
             if used > pool.allowed:
                 raise conflict(f"Only {pool.allowed} at {rating}; that is {used}.")

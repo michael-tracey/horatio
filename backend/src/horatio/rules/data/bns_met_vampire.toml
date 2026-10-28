@@ -978,20 +978,24 @@ category = "attributes"
 rating = 3
 picks = 1
 
+# One focus for each attribute, but none in the attribute Stolen Potential names (p. 265).
 [[creation_rules]]
 category = "focus_physicals"
 rating = 1
 picks = 1
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Physical" } } }
 
 [[creation_rules]]
 category = "focus_mentals"
 rating = 1
 picks = 1
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Mental" } } }
 
 [[creation_rules]]
 category = "focus_socials"
 rating = 1
 picks = 1
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Social" } } }
 
 [[creation_rules]]
 category = "skills"
