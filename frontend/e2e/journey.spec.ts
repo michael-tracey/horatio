@@ -5774,7 +5774,7 @@ test("a Scene card shows an NPC's best attacks and defences, and its Pools and P
 
   // Pools lists every pool, Combat and Defence first, and stays open over a reload.
   await card.getByRole("button", { name: /^Pools/ }).click();
-  await expect(card.getByRole("region", { name: "Combat" })).toContainText("Thrown attack");
+  await expect(card.getByRole("region", { name: "Combat" })).toContainText("Thrown or bow attack");
   await expect(card.getByRole("region", { name: "Defence" })).toContainText("Resisting Social powers");
   await p.reload();
   await expect(card.getByRole("region", { name: "Combat" })).toBeVisible();
@@ -7900,6 +7900,101 @@ test("a player reads their character's equipment and what each quality does, on 
   await expect(printed).toContainText("Silver Dagger · Melee weapon · 1 hand · 1 damage · range 2 steps");
   await expect(printed).toContainText("Concealable: Hidden until searched; Silver: Aggravated damage to werewolves");
   await expect(p.getByText("Cursed")).toHaveCount(0);
+});
+
+test("a player equips a katana and a flak vest in the Pools drawer, and the pools change by the book's amounts until they are put away", async ({ browser }) => {
+  const custodian = await person(browser, "gear-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "gear-lead");
+  const player = await person(browser, "gear-player");
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Gear Locker ${run}`, lead_handle: lead.handle });
+  const { id: brunhild } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Brunhild" });
+  await send(player.page, "PUT", `/api/characters/${brunhild}/traits`, { category: "clan", name: "Brujah", rating: null });
+  for (const [category, picks] of Object.entries({ ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] }))
+    await send(player.page, "PUT", `/api/characters/${brunhild}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send(player.page, "POST", `/api/characters/${brunhild}/creation/complete`);
+  const asked = await send(player.page, "POST", `/api/characters/${brunhild}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  const give = (item: object) => send(lead.page, "POST", `/api/troupes/${troupe.id}/equipment`, { character_id: brunhild, grade: "standard", ...item });
+  await give({ name: "Katana", kind: "melee", qualities: [{ name: "Accurate" }, { name: "Brutal" }] });
+  await give({ name: "Flak Vest", kind: "protective", qualities: [{ name: "Ballistic" }, { name: "Chest Plate" }] });
+  await give({ name: "Chain Mail", kind: "protective", qualities: [{ name: "Chest Plate" }, { name: "Hardened" }] });
+  await give({ name: "Pistol", kind: "ranged", qualities: [{ name: "Fast" }, { name: "Quick Draw" }] });
+  await give({ name: "Bow", kind: "ranged", archaic: true, qualities: [{ name: "Accurate" }, { name: "Deadly" }] });
+
+  const p = player.page;
+  await p.goto(`/play/characters/${brunhild}?tab=pools`);
+  const row = (name: RegExp) => p.getByRole("main").getByRole("listitem").filter({ hasText: name }).first();
+  const totalOf = async (name: RegExp) => Number(await row(name).locator("strong").first().textContent());
+  const melee = row(/^Melee attack/);
+  const dodge = row(/^Dodge/);
+  await expect(melee).toBeVisible();
+  const [meleeBefore, dodgeBefore, initiativeBefore] = [await totalOf(/^Melee attack/), await totalOf(/^Dodge/), await totalOf(/^Initiative/)];
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await expect(switches).toHaveAccessibleDescription("Nothing in use");
+  await switches.click();
+  const equipment = p.getByRole("group", { name: "Equipment" });
+  await expect(equipment.getByText("Accurate: +2 Melee attack, attacks with it")).toBeVisible();
+  await expect(equipment.getByText("Ballistic: +3 Dodge, against firearms")).toBeVisible();
+
+  // The Katana's Accurate adds 2 to the Melee attack, named in its breakdown.
+  await p.getByLabel("Katana equipped").check();
+  await expect(melee).toContainText("Katana: Accurate 2");
+  await expect.poll(() => totalOf(/^Melee attack/)).toBe(meleeBefore + 2);
+  // The flak vest's Ballistic: +3 against firearms and +1 against the rest, each a line under Dodge.
+  await p.getByLabel("Flak Vest equipped").check();
+  const firearms = dodge.getByRole("listitem").filter({ hasText: /^Against firearms/ });
+  await expect(firearms).toContainText("(+3 Flak Vest: Ballistic)");
+  await expect(firearms.locator("strong")).toHaveText(String(dodgeBefore + 3));
+  await expect(dodge.getByRole("listitem").filter({ hasText: /^Against Brawl, Melee and thrown weapons/ }).locator("strong")).toHaveText(String(dodgeBefore + 1));
+  expect(await totalOf(/^Dodge/)).toBe(dodgeBefore);
+  await expect(switches).toHaveAccessibleDescription("In use: Katana, Flak Vest");
+  await p.screenshot(shots("play-equipped"));
+
+  // One piece of protective gear at a time: the chain mail takes the vest off, and says so.
+  await p.getByLabel("Chain Mail equipped").check();
+  await expect(equipment.getByText("Took off Flak Vest (one worn at a time).")).toBeVisible();
+  await expect(p.getByLabel("Flak Vest equipped")).not.toBeChecked();
+  await expect(dodge.getByRole("listitem").filter({ hasText: /^Against Brawl, Melee and thrown weapons/ })).toContainText("(+3 Chain Mail: Hardened)");
+  // Two hands of weapons: the two-handed Katana is put away for the pistol, whose Fast adds 3 to initiative.
+  await p.getByLabel("Pistol equipped").check();
+  await expect(equipment.getByText("Put away Katana (two hands at most).")).toBeVisible();
+  await expect(p.getByLabel("Katana equipped")).not.toBeChecked();
+  await expect(melee).not.toContainText("Katana");
+  await expect.poll(() => totalOf(/^Melee attack/)).toBe(meleeBefore);
+  await expect.poll(() => totalOf(/^Initiative/)).toBe(initiativeBefore + 3);
+  await expect(switches).toHaveAccessibleDescription("In use: Chain Mail, Pistol");
+
+  // Kept: after a reload, and on the printed sheet beside the pools they change.
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  await p.reload();
+  await expect(switches).toHaveAccessibleDescription("In use: Chain Mail, Pistol");
+  await p.goto(`/print/characters/${brunhild}`);
+  await expect(p.getByText("+3 Chain Mail: Hardened against Brawl, Melee and thrown weapons")).toBeVisible();
+  await expect(p.getByText("(+3 Pistol: Fast)")).toBeVisible();
+
+  // An archaic bow shoots with Firearms or Athletics (p. 279): its Accurate counts on both.
+  await p.goto(`/play/characters/${brunhild}?tab=pools`);
+  await switches.click();
+  await p.getByLabel("Bow equipped").check();
+  await expect(equipment.getByText("Put away Pistol (two hands at most).")).toBeVisible();
+  await expect(row(/^Firearms attack/)).toContainText("Bow: Accurate 2");
+  await expect(row(/^Thrown or bow attack/)).toContainText("Bow: Accurate 2");
+  await expect(melee).not.toContainText("Bow");
+
+  // Put away, the pools are as they were.
+  await p.getByLabel("Chain Mail equipped").uncheck();
+  await p.getByLabel("Bow equipped").uncheck();
+  await expect(switches).toHaveAccessibleDescription("Nothing in use");
+  await expect(dodge.getByRole("listitem").filter({ hasText: /^Against/ })).toHaveCount(0);
+  await expect.poll(() => totalOf(/^Initiative/)).toBe(initiativeBefore);
+  await expect.poll(() => totalOf(/^Melee attack/)).toBe(meleeBefore);
 });
 
 test("players give equipment to each other in their home troupe and discard it, with Undo on the Play View, and staff restore it", async ({ browser }) => {

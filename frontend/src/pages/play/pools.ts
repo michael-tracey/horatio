@@ -1,5 +1,13 @@
 import type { PoolModifier, SwitchedPart, TestPool } from "../../api/types";
 
+/**
+ * A modifier to the pools: the player's own (issue #188), or one an equipped item's
+ * quality makes (#306), which may count only in a situation the Pools tab can't tell
+ * ("against firearms"): that one is shown on a line of its own under the pool, not
+ * in its total.
+ */
+export type Modifier = Pick<PoolModifier, "id" | "label" | "amount" | "pools" | "when" | "on"> & { situational?: boolean };
+
 /** A Mental, Social or Physical defence pool counts current Willpower, which the
  * tracker holds (never less than a merit like Quixotic allows). */
 export function willpowerFor(pool: TestPool, current: number): number {
@@ -8,7 +16,7 @@ export function willpowerFor(pool: TestPool, current: number): number {
 
 /** Whether a modifier changes a pool: all of them, every attack or defence, the
  * pools made on an attribute, or the one pool it names ("pool:dodge"). */
-export function appliesTo(modifier: Pick<PoolModifier, "pools">, pool: TestPool): boolean {
+export function appliesTo(modifier: Pick<Modifier, "pools">, pool: TestPool): boolean {
   const which = modifier.pools;
   if (which === "all") return true;
   if (which === "attack") return pool.key.startsWith("attack:");
@@ -17,9 +25,18 @@ export function appliesTo(modifier: Pick<PoolModifier, "pools">, pool: TestPool)
   return pool.parts[0]?.label === which;
 }
 
-/** The modifiers that are switched on and change this pool. */
-export function changing(pool: TestPool, modifiers: PoolModifier[]): PoolModifier[] {
-  return modifiers.filter((m) => m.on && appliesTo(m, pool));
+/** The modifiers that are switched on and change this pool's total. */
+export function changing(pool: TestPool, modifiers: Modifier[]): Modifier[] {
+  return modifiers.filter((m) => m.on && !m.situational && appliesTo(m, pool));
+}
+
+/** Each situation an equipped item's modifier to this pool counts in ("against firearms"), with what it adds then. */
+export function situations(pool: TestPool, modifiers: Modifier[]): { when: string; parts: { label: string; value: number }[] }[] {
+  const found = new Map<string, { label: string; value: number }[]>();
+  for (const m of modifiers.filter((m) => m.on && m.situational && appliesTo(m, pool))) {
+    found.set(m.when, [...(found.get(m.when) ?? []), { label: m.label, value: m.amount }]);
+  }
+  return [...found].map(([when, parts]) => ({ when, parts }));
 }
 
 /** What the forms and powers on (issue #200) change in this pool: parts they add, and attribute changes. */
@@ -44,7 +61,7 @@ export function partsOn(pool: TestPool, on: readonly string[] = []): { label: st
   return [...parts, ...adds.map((a) => ({ label: a.label, value: a.value }))];
 }
 
-export function total(pool: TestPool, willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = []): number {
+export function total(pool: TestPool, willpower: number, modifiers: Modifier[] = [], on: readonly string[] = []): number {
   const own = partsOn(pool, on).reduce((sum, p) => sum + p.value, 0) - pool.parts.reduce((sum, p) => sum + p.value, 0);
   return pool.total + own + willpowerFor(pool, willpower) + changing(pool, modifiers).reduce((sum, m) => sum + m.amount, 0);
 }
@@ -55,7 +72,7 @@ const part = (label: string, value: number) => (value < 0 ? `− ${label} ${-val
  * "Physical 6 + Dodge 3 + Slippery Customer 3", with Willpower where it counts, then
  * what the forms and powers on add ("+ Shape of the Beast 2"), then each modifier that is on.
  */
-export function breakdown(pool: TestPool, willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = []): string {
+export function breakdown(pool: TestPool, willpower: number, modifiers: Modifier[] = [], on: readonly string[] = []): string {
   const own = partsOn(pool, on);
   const parts = own.slice(0, pool.parts.length).map((p) => part(p.label, p.value));
   if (pool.adds_willpower) parts.push(`Willpower ${willpowerFor(pool, willpower)}`);
@@ -69,13 +86,16 @@ export function describePools(which: string, pools: TestPool[]): string {
   if (which === "all") return "every pool";
   if (which === "attack") return "every attack";
   if (which === "defense") return "every defence";
+  if (which === "purpose") return "the challenges it's for";
   if (which.startsWith("pool:")) return pools.find((p) => p.key === which.slice("pool:".length))?.name ?? which.slice("pool:".length);
   return `${which} pools`;
 }
 
-/** "+2 Social pools, against mortals" */
-export function describe(m: Pick<PoolModifier, "amount" | "pools" | "when">, pools: TestPool[]): string {
+/** "+2 Social pools, against mortals"; "+1 for its purpose, with the skill" */
+export function describe(m: Pick<Modifier, "amount" | "pools" | "when">, pools: TestPool[]): string {
   const sign = m.amount < 0 ? "−" : "+";
+  // A piece of miscellaneous gear's bonus is on the challenges it's for, which its when says.
+  if (m.pools === "purpose") return `${sign}${Math.abs(m.amount)} ${m.when}`;
   return `${sign}${Math.abs(m.amount)} ${describePools(m.pools, pools)}${m.when ? `, ${m.when}` : ""}`;
 }
 
@@ -136,7 +156,7 @@ export function fightFirst(groups: [string, TestPool[]][]): [string, TestPool[]]
 const isAttack = (pool: TestPool) => pool.key.startsWith("attack:");
 
 /** The attacks with the highest totals now, best first; equal totals keep the book's order. */
-export function topAttacks(pools: TestPool[], willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = [], count = 3): TestPool[] {
+export function topAttacks(pools: TestPool[], willpower: number, modifiers: Modifier[] = [], on: readonly string[] = [], count = 3): TestPool[] {
   const now = (p: TestPool) => total(p, willpower, modifiers, on);
   return pools
     .filter(isAttack)
@@ -145,13 +165,13 @@ export function topAttacks(pools: TestPool[], willpower: number, modifiers: Pool
 }
 
 /** "Unarmed 9 (2 dmg)": an attack's total and its damage with the forms and powers on. */
-export function attackGlance(pool: TestPool, willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = []): string {
+export function attackGlance(pool: TestPool, willpower: number, modifiers: Modifier[] = [], on: readonly string[] = []): string {
   const dmg = pool.damage ? ` (${damageTotal(pool.damage, switchedDamage(pool.damage, on))} dmg)` : "";
   return `${pool.name.replace(/ attack$/, "")} ${total(pool, willpower, modifiers, on)}${dmg}`;
 }
 
 /** "Dodge 8 · vs Social 7 · vs Mental 7": Dodge, then each defence against a power. */
-export function defenceGlance(pools: TestPool[], willpower: number, modifiers: PoolModifier[] = [], on: readonly string[] = []): string[] {
+export function defenceGlance(pools: TestPool[], willpower: number, modifiers: Modifier[] = [], on: readonly string[] = []): string[] {
   const now = (p: TestPool) => total(p, willpower, modifiers, on);
   const dodge = pools.filter((p) => p.key === "dodge").map((p) => `Dodge ${now(p)}`);
   const resisting = pools.filter((p) => p.key.startsWith("defense:")).map((p) => `vs ${p.key.slice("defense:".length)} ${now(p)}`);

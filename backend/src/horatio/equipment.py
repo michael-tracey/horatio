@@ -22,7 +22,7 @@ it are those of the holder's home troupe now. Each item keeps its history in
 
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -43,6 +43,9 @@ from horatio.models import (
 )
 from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules.equipment import (
+    ATHLETICS_POOL,
+    WEAPON,
+    WEAPON_POOLS,
     Assessment,
     EquipmentRules,
     Facts,
@@ -123,6 +126,8 @@ class ItemFields:
     effects: tuple[SpecialEffect, ...] = ()
     description: str = ""
     staff_note: str = ""
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool = False
 
     @property
     def special(self) -> bool:
@@ -147,7 +152,87 @@ def fields_of(item: EquipmentItem | EquipmentTemplate) -> ItemFields:
         effects=effects_of(item.effects),
         description=item.description,
         staff_note=item.staff_note if isinstance(item, EquipmentItem) else "",
+        archaic=item.archaic,
     )
+
+
+@dataclass(frozen=True)
+class ItemModifier:
+    """What one of an item's qualities does to its holder's test pools while it is
+    equipped (issue #306): a modifier, as a player's own is (horatio.pool_modifiers),
+    named for the item and quality: "Katana: Accurate"."""
+
+    quality: str
+    label: str
+    amount: int
+    # As a player's own modifier names them, the item's own attack worked out
+    # ("pool:attack:Melee"); or "purpose", the challenges it is for.
+    pools: str
+    when: str
+    # It counts only in a situation the Pools tab can't tell (against firearms).
+    situational: bool = False
+
+
+def weapon_attacks(rules: EquipmentRules, item: EquipmentItem) -> list[str]:
+    """Every attack pool the item can make (MET: VTM p. 279): a melee weapon's
+    Melee, and Thrown (Athletics) if a quality lets it be thrown; a ranged weapon's
+    Firearms, and Athletics too if it is archaic, as a bow is. None for gear."""
+    attack = WEAPON_POOLS.get(item.kind)
+    if attack is None:
+        return []
+    thrown = any(
+        (q := rules.qualities.get((item.kind, chosen.name))) is not None and q.thrown
+        for chosen in item_qualities(item.qualities)
+    )
+    also = thrown if item.kind == "melee" else item.archaic
+    return [attack, ATHLETICS_POOL] if also else [attack]
+
+
+def item_modifiers(rules: EquipmentRules, item: EquipmentItem) -> list[ItemModifier]:
+    """The pool modifiers the item's qualities make while it is equipped, from the
+    holder's rules: a weapon's on every attack it can make. A quality taken again
+    (Superior) adds to its own modifier. A special item's own effects are words for
+    the table, not modifiers."""
+    found: dict[tuple[str, str, str, bool], ItemModifier] = {}
+    attacks = weapon_attacks(rules, item)
+    for chosen in item_qualities(item.qualities):
+        quality = rules.qualities.get((item.kind, chosen.name))
+        for effect in quality.pool if quality else ():
+            when = effect.when.replace("{detail}", chosen.detail or "its circumstance")
+            for pools in attacks if effect.pools == WEAPON else [effect.pools]:
+                key = (chosen.name, pools, when, effect.situational)
+                if key in found:
+                    found[key] = replace(found[key], amount=found[key].amount + effect.amount)
+                else:
+                    found[key] = ItemModifier(
+                        quality=chosen.name,
+                        label=f"{item.name}: {chosen.name}",
+                        amount=effect.amount,
+                        pools=pools,
+                        when=when,
+                        situational=effect.situational,
+                    )
+    return list(found.values())
+
+
+def arrived(
+    db: Session, character: Character, items: Sequence[EquipmentItem]
+) -> dict[uuid.UUID, datetime]:
+    """When each item last came to the character: given by its troupe, passed to it,
+    or restored to it."""
+    if not items:
+        return {}
+    return {
+        item_id: at
+        for item_id, at in db.execute(
+            select(EquipmentEvent.item_id, func.max(EquipmentEvent.created_at))
+            .where(
+                EquipmentEvent.item_id.in_([i.id for i in items]),
+                EquipmentEvent.to_character_id == character.id,
+            )
+            .group_by(EquipmentEvent.item_id)
+        )
+    }
 
 
 def home_of(character: Character) -> uuid.UUID | None:
@@ -164,6 +249,9 @@ def can_manage(db: Session, user: User, troupe: Troupe) -> bool:
     )
 
 
+ARCHAIC_REFUSED = "Only a ranged weapon is archaic (a bow or crossbow)."
+
+
 def refused(rules: EquipmentRules, fields: ItemFields) -> list[str]:
     """Every way the item breaks the rules, as `check` says, and its effects."""
     problems = list(
@@ -173,6 +261,8 @@ def refused(rules: EquipmentRules, fields: ItemFields) -> list[str]:
         problems.insert(0, "An item needs a name.")
     if fields.effects and not fields.special:
         problems.append("Only a special item has special effects.")
+    if fields.archaic and fields.kind != "ranged":
+        problems.append(ARCHAIC_REFUSED)
     if any(not e.name or not e.effect for e in fields.effects):
         problems.append("Each special effect needs a name and what it does.")
     return problems
@@ -189,6 +279,7 @@ def checked(rules: EquipmentRules, fields: ItemFields) -> ItemFields:
         effects=tuple(SpecialEffect(e.name.strip(), e.effect.strip()) for e in fields.effects),
         description=fields.description.strip(),
         staff_note=fields.staff_note.strip(),
+        archaic=fields.archaic,
     )
     problems = refused(rules, fields)
     if problems:
@@ -222,6 +313,8 @@ def describe(rules: EquipmentRules, fields: ItemFields) -> str:
         what = f"{fields.grade} {what}"
     if fields.crafted:
         what = f"crafted {what}"
+    if fields.archaic:
+        what = f"archaic {what}"
     qualities = ", ".join(quality_text(q) for q in fields.qualities)
     effects = ", ".join(e.name for e in fields.effects)
     shown = "; ".join(p for p in (qualities, effects) if p)
@@ -278,6 +371,7 @@ def apply(item: EquipmentItem, fields: ItemFields) -> None:
     item.grade = fields.grade
     item.qualities = item_qualities_to_list(fields.qualities)
     item.crafted = fields.crafted
+    item.archaic = fields.archaic
     item.effects = effects_to_list(fields.effects)
     item.description = fields.description
     item.staff_note = fields.staff_note
@@ -341,7 +435,7 @@ def give(
 
 # The fields a change is told for, in this order. The staff note is kept in the
 # item's history, but never told to the player.
-TOLD = ("name", "kind", "grade", "qualities", "crafted", "effects", "description")
+TOLD = ("name", "kind", "grade", "qualities", "crafted", "archaic", "effects", "description")
 
 
 def as_recorded(fields: ItemFields) -> dict[str, Any]:
@@ -351,6 +445,7 @@ def as_recorded(fields: ItemFields) -> dict[str, Any]:
         "grade": fields.grade,
         "qualities": item_qualities_to_list(fields.qualities),
         "crafted": fields.crafted,
+        "archaic": fields.archaic,
         "effects": effects_to_list(fields.effects),
         "description": fields.description,
         "staff_note": fields.staff_note,
@@ -382,6 +477,8 @@ def changes_text(rules: EquipmentRules, changes: Mapping[str, Any], *, staff: bo
             told.append(f"qualities now {listed}" if listed else "no qualities now")
         elif name == "crafted":
             told.append("now crafted" if new else "no longer crafted")
+        elif name == "archaic":
+            told.append("now archaic" if new else "no longer archaic")
         elif name == "effects":
             listed = ", ".join(e["name"] for e in new)
             told.append(f"special effects now {listed}" if listed else "no special effects now")
@@ -1054,6 +1151,7 @@ def save_template(
         grade=fields.grade,
         qualities=item_qualities_to_list(fields.qualities),
         crafted=fields.crafted,
+        archaic=fields.archaic,
         effects=effects_to_list(fields.effects),
         description=fields.description,
         page=None,

@@ -34,6 +34,8 @@ function view(overrides: Partial<PlayView> = {}): PlayView {
     beast: { value: 0, most: 5, start: 0 },
     derangements: { value: 0, most: 3, start: 0, least: 0, flaws: [], temporary: [] },
     expendables: [{ key: "trait:backgrounds/Herd/", name: "Herd", detail: "", group: "Backgrounds", uses: 2, left: 2, counter_id: null, owed: 0 }],
+    equipment: [],
+    equipped: [],
     influence: [],
     powers: [],
     game: null,
@@ -209,6 +211,28 @@ describe("items given or discarded (#282)", () => {
     const shown = withPending(view(), [give, discard, makeTap({ kind: "undo", undoes: give.id }, null)]);
     expect(shown.log[0]!.text).toBe("Undid: Gave Silver Dagger to Bram");
     expect(itemsGoing(shown.log)).toEqual(new Set(["i2"]));
+  });
+});
+
+describe("items equipped (#306)", () => {
+  const item = (id: string, name: string, kind: string, hands: number | null = null) => ({ id, name, kind, hands, modifiers: [] });
+  const items = [item("i1", "Silver Dagger", "melee", 1), item("i2", "Flak Vest", "protective"), item("i3", "Chain Mail", "protective")];
+  const equip = (id: string, amount = 1, minute = 0) => makeTap({ kind: "change", tracker: `equip:${id}`, amount }, null, at(minute));
+
+  it("show at once, with what each puts away, kept for Undo", () => {
+    const shown = withPending(view({ equipment: items, equipped: ["i2"] }), [equip("i1"), equip("i3", 1, 1)]);
+    expect(shown.equipped).toEqual(["i1", "i3"]);
+    expect(shown.log.map((e) => e.text)).toEqual(["Equipped Chain Mail: took off Flak Vest (one worn at a time)", "Equipped Silver Dagger"]);
+    const dagger = equip("i1");
+    const undone = withPending(view({ equipment: items }), [dagger, makeTap({ kind: "undo", undoes: dagger.id }, null, at(2))]);
+    expect(undone.equipped).toEqual([]);
+  });
+
+  it("go once given or discarded", () => {
+    const give = makeTap({ kind: "change", tracker: "item:i1", amount: -1, equipment: { to_character_id: "c2", item_name: "Silver Dagger", to_name: "Bram" } }, null, at(1));
+    const shown = withPending(view({ equipment: items, equipped: ["i1", "i2"] }), [give]);
+    expect(shown.equipped).toEqual(["i2"]);
+    expect(shown.equipment.map((i) => i.name)).toEqual(["Flak Vest", "Chain Mail"]);
   });
 });
 

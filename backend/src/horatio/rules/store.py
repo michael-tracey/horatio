@@ -273,6 +273,7 @@ def sync_equipment(session: Session, rule_set: RuleSet, data: EquipmentRules) ->
                 qualities=item_qualities_to_list(template.qualities),
                 page=template.page,
                 position=position,
+                archaic=template.archaic,
             )
         )
     session.flush()
@@ -309,6 +310,7 @@ def load_equipment(session: Session, rule_set: RuleSet) -> EquipmentRules:
                 grade=t.grade,
                 qualities=item_qualities(t.qualities),
                 page=t.page,
+                archaic=t.archaic,
             )
             for t in templates
         ),

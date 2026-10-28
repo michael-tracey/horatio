@@ -51,11 +51,20 @@ learned (horatio.play_others).
 So is giving an item to another character, or discarding it (horatio.equipment):
 "item:<id>" −1, whose Undo brings it back if nothing has happened to it since. It
 changes no tracker.
+
+So is equipping an item (issue #306): "equip:<id>" +1 equips it and -1 takes it off,
+and its qualities' pool effects count while it is (horatio.equipment.item_modifiers).
+Weapons in hand take two hands at most (MET: VTM p. 516), protective gear is worn one
+at a time (p. 519), and the bonus of only one piece of miscellaneous gear counts at
+a time (p. 520), so equipping one puts away what it would replace. What is equipped
+is the character's, not the game's: like Derangement traits, it carries from game to
+game. An item that leaves the character is no longer equipped, and an equip tap the
+server had before the item last came to the character no longer counts.
 """
 
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -103,6 +112,11 @@ TEMPORARY = "derangement:"
 SWITCH = "power:"
 # A Retainer's health and Blood: "retainer:Bocephus/health" (horatio.retainers).
 RETAINER = "retainer:"
+# Equipping an item: +1 equips it, -1 takes it off.
+EQUIP = "equip:"
+# Weapons in hand take at most two hands (MET: VTM p. 516).
+HANDS = 2
+WEAPONS = ("melee", "ranged")
 HEALTH_LEVELS = ("Healthy", "Injured", "Incapacitated")
 TRACKERS = ("blood", "willpower", "health", "morality", "beast", "derangements")
 # Drinking vitae, for a ghoul: +n adds that much vitae to "blood" (core p. 297).
@@ -168,6 +182,21 @@ class RetainerTrack:
 
 
 @dataclass(frozen=True)
+class HeldItem:
+    """An item the character holds, as equipping it needs it."""
+
+    id: str
+    name: str
+    kind: str
+    # Hands it takes, for a weapon.
+    hands: int | None
+    # When it last came to the character: an equip tap the server had before then
+    # was from an earlier time it held the item, and no longer counts.
+    since: datetime
+    modifiers: tuple[equipment.ItemModifier, ...] = ()
+
+
+@dataclass(frozen=True)
 class Limits:
     """What the sheet allows each tracker, and where a game starts it."""
 
@@ -207,6 +236,46 @@ class Limits:
     panels: Panels = Panels()
     # A ghoul's Blood, part vitae ("blood") and part human; None for a vampire's.
     vitae: Vitae | None = None
+    # The items the character holds, and those equipped as the game starts (where
+    # the games before left them), each [id, when the server had its equip tap].
+    items: tuple[HeldItem, ...] = ()
+    equipped: tuple[tuple[str, str], ...] = ()
+
+    def item(self, key: str) -> HeldItem | None:
+        return next((i for i in self.items if i.id == key), None)
+
+    def still_equipped(self, worn: Sequence[Sequence[str]]) -> list[list[str]]:
+        """The items equipped that the character still holds, and has held since
+        they were equipped."""
+        return [
+            [key, at]
+            for key, at in worn
+            if (item := self.item(key)) is not None and datetime.fromisoformat(at) >= item.since
+        ]
+
+    def displaced(
+        self, worn: Sequence[Sequence[str]], item: HeldItem
+    ) -> list[tuple[HeldItem, str]]:
+        """What equipping `item` puts away, oldest first, and how: weapons past two
+        hands (MET: VTM p. 516), the protective gear worn (one at a time, p. 519), the
+        miscellaneous gear equipped (one piece's bonus at a time, p. 520)."""
+        on = [i for key, _ in worn if (i := self.item(key)) is not None and i.id != item.id]
+        if item.kind == "protective":
+            return [
+                (i, f"took off {i.name} (one worn at a time)") for i in on if i.kind == item.kind
+            ]
+        if item.kind == "miscellaneous":
+            return [
+                (i, f"put away {i.name} (one piece's bonus at a time)")
+                for i in on
+                if i.kind == item.kind
+            ]
+        weapons = [i for i in on if i.kind in WEAPONS]
+        found: list[tuple[HeldItem, str]] = []
+        while weapons and sum(w.hands or 1 for w in weapons) + (item.hands or 1) > HANDS:
+            gone = weapons.pop(0)
+            found.append((gone, f"put away {gone.name} (two hands at most)"))
+        return found
 
     def retainer_trackers(self) -> dict[str, int]:
         return {k: most for r in self.retainers for k, most in r.trackers().items()}
@@ -244,6 +313,8 @@ class Limits:
         sheet does not have."""
         if tracker.startswith(SWITCH):
             return 1 if self.switch(tracker.removeprefix(SWITCH)) else None
+        if tracker.startswith(EQUIP):
+            return 1 if self.item(tracker.removeprefix(EQUIP)) else None
         if play_status.is_status(tracker):
             # Each status is spent once a game; what it carries is play_status's.
             return 1
@@ -285,6 +356,8 @@ class Limits:
             "uses": {e.key: e.uses for e in self.expendables} | self.retainer_trackers(),
             # Forms and powers switched on: none, as a game starts.
             "on": [],
+            # Items equipped: as the last game left them.
+            "equipped": [list(e) for e in self.equipped],
         }
 
     def name(self, tracker: str) -> str:
@@ -312,6 +385,9 @@ class Limits:
         if tracker.startswith(SWITCH):
             switch = self.switch(tracker.removeprefix(SWITCH))
             return switch.name if switch else tracker.removeprefix(SWITCH)
+        if tracker.startswith(EQUIP):
+            item = self.item(tracker.removeprefix(EQUIP))
+            return item.name if item else "an item"
         if tracker.startswith(RETAINER):
             key, _, what = tracker.rpartition("/")
             found = next((r.name for r in self.retainers if r.key == key), None)
@@ -344,12 +420,22 @@ def temporary_id(tracker: str) -> uuid.UUID | None:
         return None
 
 
+def equipped_id(tracker: str) -> uuid.UUID | None:
+    """The item an equip tap names, or None for another tracker."""
+    if not tracker.startswith(EQUIP):
+        return None
+    try:
+        return uuid.UUID(tracker.removeprefix(EQUIP))
+    except ValueError:
+        return None
+
+
 def carries(tracker: str, vitae: bool = False) -> bool:
-    """A tracker kept from game to game, through Reset: Derangement traits, and a
-    ghoul's vitae, which only drinking refills."""
+    """A tracker kept from game to game, through Reset: Derangement traits, the
+    items equipped, and a ghoul's vitae, which only drinking refills."""
     return (
         tracker == "derangements"
-        or tracker.startswith(TEMPORARY)
+        or tracker.startswith((TEMPORARY, EQUIP))
         or (vitae and tracker in ("blood", DRANK))
     )
 
@@ -367,6 +453,7 @@ def known_tracker(tracker: str) -> bool:
         or tracker == DRANK
         or tracker.startswith(("trait:", "counter:", RETAINER))
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
+        or equipped_id(tracker) is not None
         or temporary_id(tracker) is not None
         or play_status.is_status(tracker)
         or equipment.tapped_item(tracker) is not None
@@ -441,6 +528,58 @@ def carried_vitae(db: Session, character: Character, game: PlayGame | None, vita
     for _, amount in earlier_taps(db, character, game, ("blood", DRANK)):
         value = max(0, min(value + amount, vitae.most))
     return value
+
+
+def held_items(db: Session, character: Character) -> tuple[HeldItem, ...]:
+    """The items the character holds, with the hands each takes and the pool
+    modifiers its qualities make, by its home troupe's rules."""
+    items = equipment.items_of(db, character)
+    if not items:
+        return ()
+    rules = equipment.equipment_rules(db, character.splat, equipment.home_of(character))
+    since = equipment.arrived(db, character, items)
+    return tuple(
+        HeldItem(
+            id=str(item.id),
+            name=item.name,
+            kind=item.kind,
+            hands=equipment.assess(
+                rules,
+                item.kind,
+                equipment.item_qualities(item.qualities),
+                item.grade,
+                crafted=item.crafted,
+            ).facts.hands,
+            since=since.get(item.id, item.created_at),
+            modifiers=tuple(equipment.item_modifiers(rules, item)),
+        )
+        for item in items
+    )
+
+
+def carried_equipped(
+    db: Session, character: Character, game: PlayGame | None, limits: Limits
+) -> tuple[tuple[str, str], ...]:
+    """The items equipped as `game` starts (or the next game, for None): every
+    earlier game's equip taps not undone, in the order they happened."""
+    undo = aliased(PlayEvent)
+    query = (
+        select(PlayEvent)
+        .join(PlayGame, PlayEvent.game_id == PlayGame.id)
+        .where(
+            PlayGame.character_id == character.id,
+            PlayEvent.kind == "change",
+            PlayEvent.tracker.startswith(EQUIP),
+            ~select(undo.id).where(undo.undoes_id == PlayEvent.id).exists(),
+        )
+        .order_by(PlayGame.number, PlayEvent.happened_at, PlayEvent.id)
+    )
+    if game is not None:
+        query = query.where(PlayGame.number < game.number)
+    state: dict[str, Any] = {"equipped": []}
+    for event in db.scalars(query):
+        equip(state, limits, event)
+    return tuple((key, at) for key, at in limits.still_equipped(state["equipped"]))
 
 
 def last_drank(db: Session, character: Character) -> datetime | None:
@@ -584,7 +723,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     # for roleplay only.
     least = 1 if splat.weakness and malkavian(rows) else 0
     traits, held = carried(db, character, game, least)
-    return Limits(
+    found = Limits(
         generation=generation,
         blood=blood,
         blood_per_turn=per_turn,
@@ -616,7 +755,11 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
             for r in retainers.read(db, character)
         ),
         vitae=vitae,
+        items=held_items(db, character),
     )
+    if not found.items:
+        return found
+    return replace(found, equipped=carried_equipped(db, character, game, found))
 
 
 def stock_limits(db: Session, character: Character) -> Limits:
@@ -678,6 +821,29 @@ def switch(
     return before, int(key in on)
 
 
+def equip(
+    state: dict[str, Any], limits: Limits, event: PlayEvent, said: list[str] | None = None
+) -> tuple[int, int] | None:
+    """Equip an item (amount > 0) or take it off, putting away what it would
+    replace. None for an item the character doesn't hold, or has held only since
+    the server had the tap."""
+    item = limits.item(event.tracker.removeprefix(EQUIP))
+    if item is None or event.created_at < item.since:
+        return None
+    worn: list[list[str]] = limits.still_equipped(state.get("equipped", []))
+    before = int(any(key == item.id for key, _ in worn))
+    if event.amount > 0 and not before:
+        for gone, how in limits.displaced(worn, item):
+            worn = [w for w in worn if w[0] != gone.id]
+            if said is not None:
+                said.append(how)
+        worn.append([item.id, event.created_at.isoformat()])
+    elif event.amount < 0 and before:
+        worn = [w for w in worn if w[0] != item.id]
+    state["equipped"] = worn
+    return before, int(any(key == item.id for key, _ in worn))
+
+
 def apply(
     state: dict[str, Any], limits: Limits, event: PlayEvent, said: list[str] | None = None
 ) -> tuple[int, int] | None:
@@ -691,6 +857,8 @@ def apply(
         return None
     if event.tracker.startswith(SWITCH):
         return switch(state, limits, event.tracker.removeprefix(SWITCH), event.amount, said)
+    if event.tracker.startswith(EQUIP):
+        return equip(state, limits, event, said)
     if event.tracker == "health":
         marks: list[str] = state["health"]
         before = len(marks)
@@ -812,6 +980,9 @@ def describe(
             text = f"Turned into {name}" if event.amount > 0 else f"Out of {name}"
         else:
             text = f"{name} on" if event.amount > 0 else f"{name} off"
+        return f"{text}: {', '.join(said)}" if said else text
+    if event.tracker.startswith(EQUIP):
+        text = f"Equipped {name}" if event.amount > 0 else f"Unequipped {name}"
         return f"{text}: {', '.join(said)}" if said else text
     if event.tracker.startswith(TEMPORARY):
         return f"Temporary derangement {'added' if event.amount > 0 else 'removed'}: {name}"

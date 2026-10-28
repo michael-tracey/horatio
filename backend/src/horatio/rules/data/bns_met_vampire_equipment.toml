@@ -16,9 +16,23 @@
 #                horatio.rules.equipment lists at its top: two_handed,
 #                needs_one_hand, no_slot_when_crafted, repeatable, needs_detail,
 #                detail_prompt, ammo, excludes, shots, max_shots, range,
-#                aggravated_against. An exclusion is written on both qualities.
-# [[templates]]  name, kind, grade (standard if left out), page, and qualities: each
-#                a name, or { name, detail }.
+#                aggravated_against, thrown. An exclusion is written on both qualities.
+#                And pool: what the quality does to the character's test pools while
+#                its item is equipped (issue #306), a list of { amount, pools, when,
+#                situational }, or [] for a quality that changes no pool (damage,
+#                range, shots, concealment, a story effect). `pools` is as a
+#                player's own modifier names them ("pool:dodge", "attack"), or
+#                "weapon" for every attack the item can make (Melee for a melee
+#                weapon, and Thrown if it can be thrown; Firearms for a ranged one,
+#                and Athletics too if it is archaic, p. 279), or "purpose" for the
+#                challenges a piece of miscellaneous gear is for, which no pool on
+#                the Pools tab is.
+#                `when` says when it counts, "{detail}" being the quality's detail;
+#                `situational` is for one that counts only in a situation the Pools
+#                tab can't tell (against firearms), shown on a line of its own under
+#                the pool rather than in its total.
+# [[templates]]  name, kind, grade (standard if left out), page, qualities (each a
+#                name, or { name, detail }), and archaic for a bow or crossbow.
 
 # --- kinds -------------------------------------------------------------------------
 
@@ -89,6 +103,7 @@ name = "Accurate"
 effect = "+2 wild card bonus with this weapon, both for comparing test pools and for exceptional successes."
 play = "+2 wild card bonus"
 page = "516"
+pool = [{ amount = 2, pools = "weapon", when = "attacks with it" }]
 
 [[qualities]]
 kind = "melee"
@@ -96,6 +111,7 @@ name = "Antique"
 effect = "Made generations ago: mortal authorities rarely take it for a weapon, so it passes as a prop in restricted places. Sells for three times the usual price."
 play = "Passes as a prop"
 page = "516"
+pool = []
 
 [[qualities]]
 kind = "melee"
@@ -103,6 +119,7 @@ name = "Armor Piercing"
 effect = "Ignores the bonuses and special abilities of protective gear."
 play = "Ignores protective gear"
 page = "516"
+pool = []
 
 [[qualities]]
 kind = "melee"
@@ -110,6 +127,7 @@ name = "Artisan"
 effect = "Beautiful enough to trigger the Toreador weakness; sells for three times the usual price. Added while crafting (Crafts 3+ with an exceptional success, or Crafts 6+), it takes no slot."
 play = "Triggers the Toreador weakness"
 page = "516"
+pool = []
 no_slot_when_crafted = true
 
 [[qualities]]
@@ -118,6 +136,8 @@ name = "Balanced"
 effect = "Made for throwing: hurl it at a target within 10 steps, Physical + Athletics against Physical + Dodge."
 play = "Throw it up to 10 steps"
 page = "516"
+pool = []
+thrown = true
 
 [[qualities]]
 kind = "melee"
@@ -125,6 +145,7 @@ name = "Brutal"
 effect = "Winning the final test with the larger test pool is an exceptional success, even after losing or tying an earlier test. Needs two hands."
 play = "Win on the larger pool: exceptional success"
 page = "516"
+pool = []
 two_handed = true
 
 [[qualities]]
@@ -133,6 +154,7 @@ name = "Cold Iron"
 effect = "Unforged iron: aggravated damage to fae and others vulnerable to cold iron."
 play = "Aggravated damage to fae"
 page = "516"
+pool = []
 aggravated_against = "fae and others vulnerable to cold iron"
 
 [[qualities]]
@@ -141,6 +163,7 @@ name = "Concealable"
 effect = "Can't be seen when hidden: only a pat-down, a supernatural power or a detector finds it. Not on a two-handed weapon."
 play = "Hidden until searched"
 page = "516"
+pool = []
 needs_one_hand = true
 
 [[qualities]]
@@ -149,6 +172,7 @@ name = "Deadly"
 effect = "+5 to your test pool when comparing pools for an exceptional success."
 play = "+5 for exceptional successes"
 page = "516"
+pool = [{ amount = 5, pools = "weapon", when = "for an exceptional success with it", situational = true }]
 
 [[qualities]]
 kind = "melee"
@@ -156,6 +180,7 @@ name = "Disabling"
 effect = "Disarm costs no Willpower with this weapon (and still deals no damage that turn)."
 play = "Disarm costs no Willpower"
 page = "516"
+pool = []
 
 [[qualities]]
 kind = "melee"
@@ -163,6 +188,7 @@ name = "Fast"
 effect = "+3 initiative when fighting with it."
 play = "+3 initiative"
 page = "517"
+pool = [{ amount = 3, pools = "pool:initiative", when = "fighting with it" }]
 
 [[qualities]]
 kind = "melee"
@@ -170,6 +196,7 @@ name = "Flaming"
 effect = "Lit with a simple action, it burns for 5 turns: aggravated damage to vampires, but -2 to your attack test pools while it burns."
 play = "Lit: aggravated damage to vampires, -2 to attack"
 page = "517"
+pool = [{ amount = -2, pools = "attack", when = "while it burns", situational = true }]
 aggravated_against = "vampires, while it burns"
 
 [[qualities]]
@@ -178,6 +205,7 @@ name = "Impaling"
 effect = "Pierce the Heart costs no Willpower with this weapon."
 play = "Pierce the Heart costs no Willpower"
 page = "517"
+pool = []
 
 [[qualities]]
 kind = "melee"
@@ -185,6 +213,7 @@ name = "Masterwork"
 effect = "One of a kind, beautiful enough to trigger the Toreador weakness, perhaps with one story (non-combat) effect; sells for five times the usual price. Added while crafting (Crafts 5+ with an exceptional success), it takes no slot."
 play = "One of a kind; triggers the Toreador weakness"
 page = "517"
+pool = []
 no_slot_when_crafted = true
 detail_prompt = "its story effect, if any, such as cutting through chains"
 
@@ -194,6 +223,7 @@ name = "Quick Draw"
 effect = "Drawing it takes no simple action, though you still wait for your turn. Not on a two-handed weapon."
 play = "Drawn with no simple action"
 page = "517"
+pool = []
 needs_one_hand = true
 
 [[qualities]]
@@ -202,6 +232,7 @@ name = "Reach"
 effect = "Strikes targets up to 4 steps away, rather than 2. Needs two hands."
 play = "Strikes up to 4 steps away"
 page = "517"
+pool = []
 two_handed = true
 range = "4 steps"
 
@@ -211,6 +242,7 @@ name = "Silver"
 effect = "Silver-edged, plated or made: aggravated damage to werewolves and others vulnerable to silver."
 play = "Aggravated damage to werewolves"
 page = "517"
+pool = []
 aggravated_against = "werewolves and others vulnerable to silver"
 
 [[qualities]]
@@ -219,6 +251,7 @@ name = "Staking"
 effect = "Wooden: with Pierce the Heart, paying its costs, it stakes a vampire with damage in her Incapacitated wound track."
 play = "Stakes with Pierce the Heart"
 page = "517"
+pool = []
 
 [[qualities]]
 kind = "melee"
@@ -226,6 +259,7 @@ name = "Strange Composition"
 effect = "Edged, plated or made with an unusual material: aggravated damage to those vulnerable to it, at the storyteller's discretion."
 play = "Aggravated damage to those vulnerable to it"
 page = "517"
+pool = []
 needs_detail = true
 detail_prompt = "the material, such as jade"
 aggravated_against = "those vulnerable to {detail}, at the storyteller's discretion"
@@ -236,6 +270,7 @@ name = "Trip"
 effect = "Knock Down costs no Willpower with this weapon, once a fight."
 play = "Knock Down costs no Willpower, once a fight"
 page = "517"
+pool = []
 
 # --- ranged weapons (pp. 517-519) -----------------------------------------------------
 
@@ -245,6 +280,7 @@ name = "Accurate"
 effect = "+2 bonus with this weapon, both for comparing test pools and for exceptional successes."
 play = "+2 bonus"
 page = "517"
+pool = [{ amount = 2, pools = "weapon", when = "attacks with it" }]
 
 [[qualities]]
 kind = "ranged"
@@ -252,6 +288,7 @@ name = "Ammo Capacity I"
 effect = "Holds 30 shots, rather than 12."
 play = "30 shots"
 page = "517"
+pool = []
 shots = 30
 excludes = ["Staking"]
 
@@ -261,6 +298,7 @@ name = "Ammo Capacity II"
 effect = "Holds 100 shots, rather than 12. Needs two hands."
 play = "100 shots"
 page = "517"
+pool = []
 two_handed = true
 shots = 100
 excludes = ["Staking"]
@@ -271,6 +309,7 @@ name = "Antique"
 effect = "Made generations ago: mortal authorities rarely take it for a weapon, so it passes as a prop in restricted places. Sells for three times the usual price."
 play = "Passes as a prop"
 page = "517"
+pool = []
 
 [[qualities]]
 kind = "ranged"
@@ -278,6 +317,7 @@ name = "Armor Piercing"
 effect = "Ignores the bonuses and special abilities of protective gear."
 play = "Ignores protective gear"
 page = "517"
+pool = []
 
 [[qualities]]
 kind = "ranged"
@@ -285,6 +325,7 @@ name = "Artisan"
 effect = "Beautiful enough to trigger the Toreador weakness; sells for three times the usual price. Added while crafting (Crafts 3+ with an exceptional success, or Crafts 6+), it takes no slot."
 play = "Triggers the Toreador weakness"
 page = "518"
+pool = []
 no_slot_when_crafted = true
 
 [[qualities]]
@@ -293,6 +334,7 @@ name = "Automatic"
 effect = "Spend 6 shots to spray up to three targets within 3 steps of each other, a challenge against each; a Willpower retest on one carries to the rest."
 play = "6 shots: up to three targets"
 page = "518"
+pool = []
 excludes = ["Spread"]
 
 [[qualities]]
@@ -301,6 +343,7 @@ name = "Brutal"
 effect = "Winning the final test with the larger test pool is an exceptional success, even after losing or tying an earlier test. Needs two hands."
 play = "Win on the larger pool: exceptional success"
 page = "518"
+pool = []
 two_handed = true
 
 [[qualities]]
@@ -309,6 +352,7 @@ name = "Cold Iron"
 effect = "Unforged iron ammunition: aggravated damage to fae and others vulnerable to cold iron."
 play = "Aggravated damage to fae"
 page = "518"
+pool = []
 ammo = true
 aggravated_against = "fae and others vulnerable to cold iron"
 
@@ -318,6 +362,7 @@ name = "Concealable"
 effect = "Can't be seen when hidden: only a pat-down, a supernatural power or a detector finds it. Not on a two-handed weapon."
 play = "Hidden until searched"
 page = "518"
+pool = []
 needs_one_hand = true
 
 [[qualities]]
@@ -326,6 +371,7 @@ name = "Deadly"
 effect = "+5 to your test pool when comparing pools for an exceptional success. Needs two hands."
 play = "+5 for exceptional successes"
 page = "518"
+pool = [{ amount = 5, pools = "weapon", when = "for an exceptional success with it", situational = true }]
 two_handed = true
 
 [[qualities]]
@@ -334,6 +380,7 @@ name = "Fast"
 effect = "+3 initiative when fighting with it."
 play = "+3 initiative"
 page = "518"
+pool = [{ amount = 3, pools = "pool:initiative", when = "fighting with it" }]
 
 [[qualities]]
 kind = "ranged"
@@ -341,6 +388,7 @@ name = "Incendiary Ammunition"
 effect = "Fires incendiary rounds or a narrow gout of flame: aggravated damage to vampires."
 play = "Aggravated damage to vampires"
 page = "518"
+pool = []
 ammo = true
 aggravated_against = "vampires"
 
@@ -350,6 +398,7 @@ name = "Knockback"
 effect = "A hit can push the target up to 2 steps away, and knocks down a target without the Stamina focus."
 play = "Pushes 2 steps and knocks down"
 page = "518"
+pool = []
 
 [[qualities]]
 kind = "ranged"
@@ -357,6 +406,7 @@ name = "Long Range"
 effect = "A scope and a long reach: targets up to half a mile away. Needs two hands."
 play = "Up to half a mile"
 page = "518"
+pool = []
 two_handed = true
 range = "half a mile"
 excludes = ["Spread"]
@@ -367,6 +417,7 @@ name = "Masterwork"
 effect = "One of a kind, beautiful enough to trigger the Toreador weakness, perhaps with one story (non-combat) effect; sells for five times the usual price. Added while crafting (Crafts 5+ with an exceptional success), it takes no slot."
 play = "One of a kind; triggers the Toreador weakness"
 page = "518"
+pool = []
 no_slot_when_crafted = true
 detail_prompt = "its story effect, if any, such as a thunderous roar when fired"
 
@@ -376,6 +427,7 @@ name = "Quick Draw"
 effect = "Drawing it takes no simple action, though you still wait for your turn. Not on a two-handed weapon."
 play = "Drawn with no simple action"
 page = "518"
+pool = []
 needs_one_hand = true
 
 [[qualities]]
@@ -384,6 +436,7 @@ name = "Rapid Reload"
 effect = "Reloading takes no simple action, though you still wait for your turn."
 play = "Reloaded with no simple action"
 page = "518"
+pool = []
 
 [[qualities]]
 kind = "ranged"
@@ -391,6 +444,7 @@ name = "Silver Ammunition"
 effect = "Silver ammunition: aggravated damage to werewolves and others vulnerable to silver."
 play = "Aggravated damage to werewolves"
 page = "518"
+pool = []
 ammo = true
 aggravated_against = "werewolves and others vulnerable to silver"
 
@@ -400,6 +454,7 @@ name = "Spread"
 effect = "Sprays up to three targets within a pace of each other, a challenge against each; a Willpower retest on one carries to the rest. Holds 6 shots unless it has Ammo Capacity."
 play = "Up to three targets a pace apart"
 page = "519"
+pool = []
 max_shots = 6
 excludes = ["Automatic", "Long Range"]
 
@@ -409,6 +464,7 @@ name = "Staking"
 effect = "Fires stakes: with Pierce the Heart, paying its costs, it stakes a vampire with damage in her Incapacitated wound track. Needs two hands, and holds 1 shot."
 play = "Stakes with Pierce the Heart"
 page = "519"
+pool = []
 two_handed = true
 max_shots = 1
 excludes = ["Ammo Capacity I", "Ammo Capacity II"]
@@ -419,6 +475,7 @@ name = "Strange Composition"
 effect = "Edged, plated or made with an unusual material: aggravated damage to those vulnerable to it, at the storyteller's discretion."
 play = "Aggravated damage to those vulnerable to it"
 page = "519"
+pool = []
 needs_detail = true
 detail_prompt = "the material, such as jade"
 aggravated_against = "those vulnerable to {detail}, at the storyteller's discretion"
@@ -431,6 +488,10 @@ name = "Ballistic"
 effect = "+3 to defensive test pools against firearms, and +1 against Brawl, Melee and thrown weapons."
 play = "+3 defence against firearms, +1 against the rest"
 page = "Vol. II Issue 1, p. 23 (errata to p. 519)"
+pool = [
+  { amount = 3, pools = "pool:dodge", when = "against firearms", situational = true },
+  { amount = 1, pools = "pool:dodge", when = "against Brawl, Melee and thrown weapons", situational = true },
+]
 
 [[qualities]]
 kind = "protective"
@@ -438,6 +499,7 @@ name = "Chest Plate"
 effect = "Metal over the chest and upper back: you can't be the target of Pierce the Heart."
 play = "Can't be the target of Pierce the Heart"
 page = "519"
+pool = []
 
 [[qualities]]
 kind = "protective"
@@ -445,6 +507,7 @@ name = "Concealable"
 effect = "Close-fitting, worn under ordinary clothes: only a pat-down, a supernatural power or a detector finds it."
 play = "Worn hidden under clothes"
 page = "519"
+pool = []
 excludes = ["Full Body"]
 
 [[qualities]]
@@ -453,6 +516,7 @@ name = "Full Body"
 effect = "+3 to pool comparisons against exceptional successes from Brawl, Melee and Firearms attacks, but it is plain to see and can't be covered."
 play = "+3 against exceptional successes; can't be hidden"
 page = "519"
+pool = [{ amount = 3, pools = "pool:dodge", when = "against an exceptional success from Brawl, Melee or Firearms", situational = true }]
 excludes = ["Concealable"]
 
 [[qualities]]
@@ -461,6 +525,10 @@ name = "Hardened"
 effect = "+3 to defensive test pools against Brawl, Melee and thrown weapons, and +1 against firearms."
 play = "+3 defence against Brawl, Melee and thrown, +1 against firearms"
 page = "Vol. II Issue 1, p. 23 (errata to p. 519)"
+pool = [
+  { amount = 3, pools = "pool:dodge", when = "against Brawl, Melee and thrown weapons", situational = true },
+  { amount = 1, pools = "pool:dodge", when = "against firearms", situational = true },
+]
 
 [[qualities]]
 kind = "protective"
@@ -468,6 +536,7 @@ name = "HazMat"
 effect = "Protects from one hazard, such as heat or deep-water pressure, until a piercing or slashing hit stops it working until repaired."
 play = "Protects from its hazard"
 page = "519"
+pool = []
 needs_detail = true
 detail_prompt = "the hazard, such as heat"
 
@@ -477,6 +546,7 @@ name = "Impact Absorption"
 effect = "You're unaffected by Knockback, Knock Out and Knock Down."
 play = "Unaffected by Knockback, Knock Out and Knock Down"
 page = "519"
+pool = []
 
 [[qualities]]
 kind = "protective"
@@ -484,6 +554,7 @@ name = "Rugged"
 effect = "The first Physical hit while wearing it does 2 less damage, normal or aggravated as you choose, before Fortitude; then it needs repairing or replacing."
 play = "The first Physical hit does 2 less damage"
 page = "519"
+pool = []
 
 # --- miscellaneous gear (pp. 520-521) -------------------------------------------------
 
@@ -493,6 +564,7 @@ name = "Antique"
 effect = "Made generations ago: rarely taken for anything useful, so it passes as a prop in restricted places. Sells for three times the usual price."
 play = "Passes as a prop"
 page = "520"
+pool = []
 
 [[qualities]]
 kind = "miscellaneous"
@@ -500,6 +572,7 @@ name = "Artisan"
 effect = "Beautiful enough to trigger the Toreador weakness; sells for three times the usual price. Added while crafting (Crafts 3+ with an exceptional success, or Crafts 6+), it takes no slot."
 play = "Triggers the Toreador weakness"
 page = "520"
+pool = []
 no_slot_when_crafted = true
 
 [[qualities]]
@@ -508,6 +581,7 @@ name = "Concealable"
 effect = "Can't be seen when hidden: only a pat-down, a supernatural power or a detector finds it."
 play = "Hidden until searched"
 page = "520"
+pool = []
 
 [[qualities]]
 kind = "miscellaneous"
@@ -515,6 +589,7 @@ name = "Customized"
 effect = "+2 in one circumstance narrower than a skill, if you have the skill. Doesn't add to Superior's bonus."
 play = "+2 in its circumstance"
 page = "520"
+pool = [{ amount = 2, pools = "purpose", when = "for {detail}, with the skill" }]
 needs_detail = true
 detail_prompt = "the circumstance, such as hacking"
 
@@ -524,6 +599,7 @@ name = "Flashy"
 effect = "Draws the eye: it can distract mortals from their questions, or from a breach of the Masquerade nearby."
 play = "Distracts mortals"
 page = "520"
+pool = []
 
 [[qualities]]
 kind = "miscellaneous"
@@ -531,6 +607,7 @@ name = "Masterwork"
 effect = "One of a kind, beautiful enough to trigger the Toreador weakness; sells for five times the usual price. Added while crafting (Crafts 5+ with an exceptional success), it takes no slot."
 play = "One of a kind; triggers the Toreador weakness"
 page = "520"
+pool = []
 no_slot_when_crafted = true
 
 [[qualities]]
@@ -539,6 +616,7 @@ name = "Nondescript"
 effect = "Unremarkable: when things around it are stolen or destroyed by chance, it is overlooked."
 play = "Overlooked when things are lost by chance"
 page = "520"
+pool = []
 
 [[qualities]]
 kind = "miscellaneous"
@@ -546,6 +624,7 @@ name = "Secure"
 effect = "+3 wild card bonus to resist attempts to find or get into what it protects: a lock, a hidden compartment, its computer security."
 play = "+3 wild card bonus against getting in"
 page = "520"
+pool = [{ amount = 3, pools = "purpose", when = "to resist finding or getting into what it protects" }]
 
 [[qualities]]
 kind = "miscellaneous"
@@ -553,6 +632,7 @@ name = "Streamlined"
 effect = "For its purpose, a test that takes a standard action takes a simple one, and a downtime task half the time."
 play = "A standard action takes a simple one"
 page = "520"
+pool = []
 
 [[qualities]]
 kind = "miscellaneous"
@@ -560,6 +640,7 @@ name = "Stylish"
 effect = "Expensive-looking and cutting-edge: those who value it treat you as important. At the storyteller's discretion, +1 Herd for feeding (6 at most)."
 play = "Treated as important"
 page = "520"
+pool = []
 
 [[qualities]]
 kind = "miscellaneous"
@@ -567,6 +648,7 @@ name = "Sturdy"
 effect = "Takes 5 health levels of damage before it stops working."
 play = "Takes 5 health levels of damage"
 page = "520"
+pool = []
 
 [[qualities]]
 kind = "miscellaneous"
@@ -574,6 +656,7 @@ name = "Superior"
 effect = "+1 to your test pool when used for its purpose, if you have the skill. Can be taken more than once."
 play = "+1 to the test pool for its purpose"
 page = "521"
+pool = [{ amount = 1, pools = "purpose", when = "for its purpose, with the skill" }]
 repeatable = true
 
 # --- sample equipment (pp. 521-524) -----------------------------------------------------
@@ -688,10 +771,12 @@ grade = "cheap"
 qualities = ["Staking"]
 page = "524"
 
+# An archaic weapon: it may shoot with Athletics instead of Firearms (p. 279).
 [[templates]]
 name = "Bow"
 kind = "ranged"
 qualities = ["Accurate", "Deadly"]
+archaic = true
 page = "524"
 
 [[templates]]

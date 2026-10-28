@@ -12,12 +12,14 @@ export type Draft = {
   grade: Grade;
   qualities: DraftQuality[];
   crafted: boolean;
+  /** A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279). Ranged only. */
+  archaic: boolean;
   effects: DraftEffect[];
   description: string;
   staff_note: string;
 };
 
-export const NEW_ITEM: Draft = { name: "", kind: "melee", grade: "standard", qualities: [], crafted: false, effects: [], description: "", staff_note: "" };
+export const NEW_ITEM: Draft = { name: "", kind: "melee", grade: "standard", qualities: [], crafted: false, archaic: false, effects: [], description: "", staff_note: "" };
 
 export const GRADE_NAMES: Record<Grade, string> = {
   cheap: "Cheap (1 quality)",
@@ -35,6 +37,7 @@ export function fromTemplate(template: EquipmentTemplateOut | TroupeTemplateOut)
     grade: template.grade as Grade,
     qualities: template.qualities.map((q) => ({ name: q.name, detail: q.detail ?? "" })),
     crafted: own?.crafted ?? false,
+    archaic: template.archaic ?? false,
     effects: own?.effects.map((e) => ({ ...e })) ?? [],
     description: own?.description ?? "",
   };
@@ -48,6 +51,7 @@ export function fromItem(item: EquipmentItemOut): Draft {
     grade: item.grade as Grade,
     qualities: item.qualities.map((q) => ({ name: q.name, detail: q.detail })),
     crafted: item.crafted,
+    archaic: item.archaic,
     effects: item.effects.map((e) => ({ ...e })),
     description: item.description,
     staff_note: item.staff_note ?? "",
@@ -62,6 +66,7 @@ export function body(draft: Draft) {
     grade: draft.grade,
     qualities: draft.qualities.map((q) => ({ name: q.name, detail: q.detail.trim() })),
     crafted: draft.crafted,
+    archaic: draft.kind === "ranged" && draft.archaic,
     effects: draft.grade === "special" ? draft.effects : [],
     description: draft.description,
     staff_note: draft.staff_note,
@@ -94,10 +99,10 @@ export function factsText(facts: EquipmentFactsOut): string {
 
 /** Kind, grade and crafting in a few words: "Special melee weapon", "Cheap protective gear".
  * An item held names its kind itself (`kind_name`); a template's comes from the rules. */
-export function kindText(rules: EquipmentOut | undefined, item: { kind: string; kind_name?: string; grade: string; crafted: boolean }): string {
+export function kindText(rules: EquipmentOut | undefined, item: { kind: string; kind_name?: string; grade: string; crafted: boolean; archaic?: boolean }): string {
   const kind = item.kind_name ?? rules?.kinds.find((k) => k.key === item.kind)?.name ?? item.kind;
   const grade = item.grade === "standard" ? "" : `${item.grade} `;
-  const text = `${item.crafted ? "crafted " : ""}${grade}${kind.toLowerCase()}`;
+  const text = `${item.archaic ? "archaic " : ""}${item.crafted ? "crafted " : ""}${grade}${kind.toLowerCase()}`;
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 

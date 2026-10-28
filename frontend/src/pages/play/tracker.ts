@@ -1,5 +1,6 @@
 import type { InfluenceDetailsIn, ItemTapIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
 import { TYPE_NAMES } from "../../influence";
+import { applyEquip, describeEquip, EQUIP } from "./equipped";
 import { applySwitch, describeSwitch, healthMost, SWITCH } from "./powers";
 
 /**
@@ -199,6 +200,14 @@ const clamp = (value: number, top: number, least = 0) => Math.max(least, Math.mi
  */
 export function applyChange(view: PlayView, tracker: string, amount: number, damage: Damage | null = null, said: string[] = []): [number, number] | null {
   if (tracker.startsWith(SWITCH)) return applySwitch(view, tracker.slice(SWITCH.length), amount, said);
+  if (tracker.startsWith(EQUIP)) return applyEquip(view, tracker.slice(EQUIP.length), amount, said);
+  // An item given or discarded is no longer held, so no longer equipped.
+  if (tracker.startsWith(ITEM) && amount < 0) {
+    const id = tracker.slice(ITEM.length);
+    view.equipped = view.equipped.filter((i) => i !== id);
+    view.equipment = view.equipment.filter((i) => i.id !== id);
+    return null;
+  }
   const top = most(view, tracker);
   if (top === undefined) return null;
   if (tracker === "health") {
@@ -266,6 +275,7 @@ export function describe(
   if (tap.kind === "note") return "Note";
   if (tap.tracker.startsWith(ITEM)) return itemText(tap.equipment);
   if (tap.tracker.startsWith(SWITCH)) return describeSwitch(view, tap.tracker.slice(SWITCH.length), tap.amount, said);
+  if (tap.tracker.startsWith(EQUIP)) return describeEquip(view, tap.tracker.slice(EQUIP.length), tap.amount, said);
   const spent = tap.kind === "change" ? spendText(view, tap.tracker, tap.amount, tap.influence) : null;
   if (spent) return spent;
   if (tap.tracker === DRANK) {
@@ -298,6 +308,8 @@ function copy(view: PlayView): Shown {
     expendables: view.expendables.map((e) => ({ ...e })),
     retainers: (view.retainers ?? []).map((r) => ({ ...r, health: { ...r.health }, blood: r.blood ? { ...r.blood } : null })),
     powers: view.powers.map((p) => ({ ...p })),
+    equipment: [...view.equipment],
+    equipped: [...view.equipped],
     status: view.status ? { ...view.status, carried: view.status.carried.map((c) => ({ ...c })) } : null,
     log: view.log.map((e) => ({ ...e })),
   };

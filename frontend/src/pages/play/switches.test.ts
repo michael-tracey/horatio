@@ -16,4 +16,9 @@ describe("inUse", () => {
     const modifiers = [modifier("Ambush", 2, true), modifier("Fame", 2, false), modifier("Wounded", -1, true)];
     expect(inUse(powers, modifiers)).toBe("In use: Shape of the Beast: fight form, Feral Claws, +2 Ambush, −1 Wounded");
   });
+
+  it("lists the items equipped last", () => {
+    expect(inUse([power("Celerity", true)], [modifier("Fame", 2, true)], ["Katana", "Flak Vest"])).toBe("In use: Celerity, +2 Fame, Katana, Flak Vest");
+    expect(inUse([], [], ["Katana"])).toBe("In use: Katana");
+  });
 });

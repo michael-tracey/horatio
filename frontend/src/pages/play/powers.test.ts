@@ -57,6 +57,8 @@ function view(powers: PowerSwitch[], marks: string[] = []): PlayView {
     beast: { value: 0, most: 5, start: 0 },
     derangements: { value: 0, most: 3, start: 0, least: 0, flaws: [], temporary: [] },
     expendables: [],
+    equipment: [],
+    equipped: [],
     influence: [],
     powers: powers.map((p) => ({ ...p })),
     game: null,
