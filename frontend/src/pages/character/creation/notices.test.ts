@@ -92,6 +92,26 @@ describe("overBudget", () => {
     );
   });
 
+  it("says to take a pick back where the category has none left (Stolen Potential's focus)", () => {
+    const stolen = [{ category: "flaws", name: "Stolen Potential" }];
+    const wits = { name: "Wits", detail: "", pick: 1, fits: true, because: [], freed_by: [] };
+    const pools = [
+      pool({ category: "focus_mentals", category_name: "Mental Focus", allowed: 0, used: 1, remaining: -1, because: stolen, traits: [wits] }),
+      pool({ category: "focus_socials", category_name: "Social Focus", allowed: 1, used: 1, remaining: 0 }),
+    ];
+    const steps = [...STEPS.slice(0, 1), { key: "focuses", title: "Focuses", categories: ["focus_mentals", "focus_socials"] }, ...STEPS.slice(1)];
+
+    expect(overBudget({ creation: creation(pools), sheet: sheet([]), steps })).toEqual([
+      {
+        key: "over/focus_mentals/1",
+        message: "Stolen Potential: no starting mental focus. Take Wits back.",
+        on: ["focuses", "merits"],
+        fix: "focuses",
+        trait: { category: "focus_mentals", name: "Wits" },
+      },
+    ]);
+  });
+
   it("says nothing while every pick fits", () => {
     expect(overBudget({ creation: creation([pool({ remaining: 0 })]), sheet: sheet([]), steps: STEPS })).toEqual([]);
   });

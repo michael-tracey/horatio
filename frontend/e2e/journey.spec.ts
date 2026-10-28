@@ -2911,6 +2911,75 @@ test("Thin Blooded taken after the Disciplines step shows the new budget there, 
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 });
 
+test("Merits & flaws lists every flaw the character can take, without searching (#310)", async ({ browser }) => {
+  const { page: p } = await person(browser, "every-flaw");
+  const id = await creatingVampire(p, "Long List", "Caitiff", CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES);
+  await p.goto(`/characters/${id}/create/merits`);
+  const flaws = p.getByRole("region", { name: "Flaws" });
+  // What this character can take, more than 40, those late in the alphabet too.
+  await expect(p.getByLabel("Show Flaws")).toHaveValue("can");
+  expect(await flaws.getByRole("checkbox").count()).toBeGreaterThan(40);
+  for (const name of ["Stolen Potential", "Thin Blooded"]) {
+    const box = flaws.getByRole("checkbox", { name: new RegExp(`^${name}`) });
+    await box.scrollIntoViewIfNeeded();
+    await expect(box).toBeVisible();
+  }
+  await expect(p.getByText(/Search to see all/)).toHaveCount(0);
+  // Everything: as many rows as the search says there are.
+  await p.getByLabel("Show Flaws").selectOption("Everything");
+  const count = Number((await p.getByLabel("Search Flaws").getAttribute("placeholder"))!.match(/\d+/)![0]);
+  await expect(flaws.getByRole("checkbox")).toHaveCount(count);
+});
+
+test("Stolen Potential takes away the focus in the attribute it names, and the character finishes without one (#310)", async ({ browser }) => {
+  const { page: p } = await person(browser, "stolen-potential");
+  // Wits was chosen on Focuses before the flaw is taken.
+  const id = await creatingVampire(p, "Hollow Promise", "Brujah", [], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}/create/merits`);
+  const flaw = p.getByRole("checkbox", { name: /^Stolen Potential/ });
+  await flaw.scrollIntoViewIfNeeded();
+  await flaw.check();
+  // It asks which attribute.
+  const which = p.getByLabel("Stolen Potential: which?");
+  await expect(which.getByRole("option")).toHaveText(["Which?", "Physical", "Social", "Mental"]);
+  await which.selectOption("Mental");
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  // Review says the Mental focus already chosen must go, and where.
+  const settle = p.getByRole("region", { name: "Still to settle" });
+  await expect(settle).toContainText("Stolen Potential: no starting mental focus. Take Wits back.");
+  await settle.getByRole("link", { name: "Go to Focuses" }).click();
+  await expect(p.getByRole("heading", { name: "Focuses", exact: true })).toBeVisible();
+  await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText("Stolen Potential: no starting mental focus. Take Wits back.");
+  await expect(p.getByRole("button", { name: "Wits 1" })).toHaveAttribute("aria-pressed", "true");
+  await tapMid(p, "Clear Wits");
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  // Focuses offers no Mental focus now, and says why; the others are as they were.
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Focuses/ }).click();
+  await expect(p.getByText("Stolen Potential: no Mental focus (p. 265).")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Wits 1" })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Charisma 1" })).toHaveAttribute("aria-pressed", "true");
+  // The flaw is offered here too, taken.
+  await expect(p.getByRole("region", { name: "From merits and flaws" }).getByRole("switch", { name: /^Stolen Potential/ })).toBeChecked();
+
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+
+  // The sheet holds the flaw, with its attribute, and no Mental focus.
+  await expect(p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) })).toContainText("Stolen Potential: Mental");
+  await expect(p.getByText("Mental Focus", { exact: true })).toHaveCount(0);
+  await expect(p.getByText("Social Focus", { exact: true }).first()).toBeVisible();
+});
+
 test("Inept lets the player choose the discipline that loses its free dot, from the Disciplines step", async ({ browser }) => {
   const { page: p } = await person(browser, "inept-brujah");
   const id = await creatingVampire(p, "Clumsy Blood", "Brujah", [], {

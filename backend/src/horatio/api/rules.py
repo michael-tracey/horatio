@@ -70,7 +70,8 @@ class TraitOut(BaseModel):
     # For a skill: the attribute it generally goes with (Physical, Social or Mental).
     attribute: str | None
     # For a trait that grants something the player picks (Personal Cult: which
-    # background): the picks, to put in its detail.
+    # background), or names one of a few in its detail (Stolen Potential: which
+    # attribute): the picks, to put in its detail.
     choices: list[str] | None = None
     # For a merit or flaw: its kind (General, Clan, Morality, ...) and who it is
     # for (a clan, bloodline or generation), for filtering lists.
@@ -175,7 +176,7 @@ def catalogue(
                 house_rule=house_text.get((t.category, t.name)),
                 in_clan=t.properties.get("in_clan"),
                 attribute=t.properties.get("attribute"),
-                choices=chooses.get((t.category, t.name)),
+                choices=chooses.get((t.category, t.name)) or t.properties.get("choices"),
                 kind=t.properties.get("type"),
                 requirement=t.properties.get("requirement")
                 if t.properties.get("requirement") != "requires_specialization"

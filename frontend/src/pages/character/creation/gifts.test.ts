@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CreationOut, PoolOut, SheetOut, SheetTraitOut } from "../../../api/types";
-import { freedPicks, givenIn, unchosenFree } from "./gifts";
+import type { CatalogueOut, CreationOut, PoolOut, SheetOut, SheetTraitOut } from "../../../api/types";
+import { freedPicks, givenIn, takenAway, unchosenFree } from "./gifts";
 import { brokenChecks, type StepRef } from "./notices";
 
 const STEPS: StepRef[] = [
@@ -110,5 +110,27 @@ describe("brokenChecks keeping a need's own words", () => {
     const held = sheet([trait("skills", "Computer")], [vestiges]);
 
     expect(brokenChecks({ creation: creation([]), sheet: held, steps: STEPS })[0]?.message).toBe("Vestiges of Greatness: choose one.");
+  });
+});
+
+describe("takenAway", () => {
+  const stolen = { category: "flaws", name: "Stolen Potential" };
+  const catalogue = {
+    categories: [{ key: "focus_mentals", name: "Mental Focus" }],
+    traits: [{ category: "flaws", name: "Stolen Potential", page_reference: "265" }],
+  } as CatalogueOut;
+  const focus = (category: string) => pool({ category, rating: 1, used: 0, remaining: 1 });
+
+  it("says why a category left with no picks is not on its step", () => {
+    const left = { ...creation([focus("focus_physicals"), focus("focus_socials")]), budget_changes: [{ category: "focus_mentals", because: [stolen] }] };
+
+    expect(takenAway(left, catalogue, ["focus_mentals"])).toEqual(["Stolen Potential: no Mental focus (p. 265)."]);
+  });
+
+  it("says nothing of a category that still has its picks, or keeps one to take back", () => {
+    const kept = { ...creation([focus("focus_mentals")]), budget_changes: [{ category: "focus_mentals", because: [stolen] }] };
+
+    expect(takenAway(kept, catalogue, ["focus_mentals"])).toEqual([]);
+    expect(takenAway(creation([]), catalogue, ["focus_mentals"])).toEqual([]);
   });
 });

@@ -2061,7 +2061,8 @@ properties = { rating = 3, type = "Sabbat" }
 category = "flaws"
 name = "Stolen Potential"
 description = "Do not receive a focus in one chosen Attribute. Must be purchased at creation."
-properties = { rating = 3, type = "General" }
+page_reference = "265"
+properties = { rating = 3, type = "General", choices = ["Physical", "Social", "Mental"] }
 
 [[traits]]
 category = "flaws"

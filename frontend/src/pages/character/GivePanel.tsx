@@ -6,8 +6,6 @@ import { Button, ErrorText, Field, Input, Notice, Select } from "../../component
 import { useAction } from "../../hooks";
 import { detailNeed } from "./fields";
 
-const SHOWN = 40;
-
 /**
  * Staff give a player's character a trait, or raise one, by exception: free,
  * despite the rules, or both, always with a reason. Check says what it would
@@ -100,7 +98,7 @@ export function GivePanel({
         />
       </div>
       <ul className="flex max-h-60 flex-col overflow-y-auto">
-        {matching.slice(0, SHOWN).map((t) => {
+        {matching.map((t) => {
           const has = held.find((h) => h.category === category && h.name === t.name);
           return (
             <li key={t.name}>
@@ -119,7 +117,6 @@ export function GivePanel({
           );
         })}
         {matching.length === 0 && <li className="px-2 text-sm text-mist">Nothing matches.</li>}
-        {matching.length > SHOWN && <li className="px-2 text-xs text-mist">Search to see all {matching.length}.</li>}
       </ul>
       {trait && (
         <form
