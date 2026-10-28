@@ -557,6 +557,8 @@ scheme = "free"
 
 # Clans and their in-clan disciplines, from Yorick's data/bnsmetv1_clan_rule.csv.
 # An entry such as "Thaumaturgy: Path of Blood" makes only that path in-clan.
+# A clan with `choices` has one more in-clan discipline, the one of those its
+# player chooses, kept as the clan's detail (horatio.rules.splats.clan_choice).
 
 [[traits]]
 category = "clan"
@@ -578,10 +580,12 @@ category = "clan"
 name = "Baali"
 properties = { in_clan = ["Daimoinon", "Obfuscate", "Presence"] }
 
+# The third in-clan discipline is the player's choice of these (pp. 72, 246).
 [[traits]]
 category = "clan"
 name = "Baali: Angelis Ater"
-properties = { in_clan = ["Daimoinon", "Dominate"] }
+page_reference = "72"
+properties = { in_clan = ["Daimoinon", "Dominate"], choices = ["Potence", "Presence", "Obfuscate"] }
 
 [[traits]]
 category = "clan"
@@ -741,7 +745,7 @@ properties = { in_clan = ["Animalism", "Auspex", "Chimerstry"] }
 [[traits]]
 category = "clan"
 name = "Salubri"
-properties = { in_clan = ["Auspex", "Fortitude", "Valeran"] }
+properties = { in_clan = ["Auspex", "Fortitude", "Valeren"] }
 
 [[traits]]
 category = "clan"

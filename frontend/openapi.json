@@ -3100,6 +3100,52 @@
         "title": "ChoiceOut",
         "type": "object"
       },
+      "ClanChoiceOut": {
+        "description": "An in-clan discipline the clan leaves to its player (Angelis Ater: Potence,\nPresence or Obfuscate), kept as the clan's detail.",
+        "properties": {
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "chosen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chosen"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "clan",
+          "choices",
+          "chosen",
+          "page"
+        ],
+        "title": "ClanChoiceOut",
+        "type": "object"
+      },
       "ClanFeedingIn": {
         "properties": {
           "amount": {
@@ -3966,6 +4012,16 @@
             "title": "Budget Changes",
             "type": "array"
           },
+          "clan_choice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClanChoiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "complete": {
             "title": "Complete",
             "type": "boolean"
@@ -3998,6 +4054,14 @@
               "$ref": "#/components/schemas/PoolOut"
             },
             "title": "Pools",
+            "type": "array"
+          },
+          "shortfalls": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ShortfallOut"
+            },
+            "title": "Shortfalls",
             "type": "array"
           }
         },
@@ -19676,6 +19740,43 @@
           "left_out"
         ],
         "title": "SheetedOut",
+        "type": "object"
+      },
+      "ShortfallOut": {
+        "description": "Restricted picks with fewer traits to go on than there are picks, and why: \"Only\n2 in-clan disciplines for 3 starting picks: \u2026\".",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "picks": {
+            "title": "Picks",
+            "type": "integer"
+          },
+          "restriction": {
+            "title": "Restriction",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "restriction",
+          "picks",
+          "options",
+          "message"
+        ],
+        "title": "ShortfallOut",
         "type": "object"
       },
       "SignIn": {

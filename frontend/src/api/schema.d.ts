@@ -6758,6 +6758,21 @@ export interface components {
             /** Value */
             value: string;
         };
+        /**
+         * ClanChoiceOut
+         * @description An in-clan discipline the clan leaves to its player (Angelis Ater: Potence,
+         *     Presence or Obfuscate), kept as the clan's detail.
+         */
+        ClanChoiceOut: {
+            /** Choices */
+            choices: string[];
+            /** Chosen */
+            chosen: string | null;
+            /** Clan */
+            clan: string;
+            /** Page */
+            page: string | null;
+        };
         /** ClanFeedingIn */
         ClanFeedingIn: {
             /** Amount */
@@ -7049,6 +7064,7 @@ export interface components {
              * @default []
              */
             budget_changes: components["schemas"]["BudgetChange"][];
+            clan_choice?: components["schemas"]["ClanChoiceOut"] | null;
             /** Complete */
             complete: boolean;
             /**
@@ -7065,6 +7081,11 @@ export interface components {
             path_starts: components["schemas"]["PathStart"][];
             /** Pools */
             pools: components["schemas"]["PoolOut"][];
+            /**
+             * Shortfalls
+             * @default []
+             */
+            shortfalls: components["schemas"]["ShortfallOut"][];
         };
         /**
          * CropIn
@@ -13050,6 +13071,23 @@ export interface components {
             character: components["schemas"]["CharacterOut"];
             /** Left Out */
             left_out: string[];
+        };
+        /**
+         * ShortfallOut
+         * @description Restricted picks with fewer traits to go on than there are picks, and why: "Only
+         *     2 in-clan disciplines for 3 starting picks: …".
+         */
+        ShortfallOut: {
+            /** Category */
+            category: string;
+            /** Message */
+            message: string;
+            /** Options */
+            options: string[];
+            /** Picks */
+            picks: number;
+            /** Restriction */
+            restriction: string;
         };
         /** SignIn */
         SignIn: {

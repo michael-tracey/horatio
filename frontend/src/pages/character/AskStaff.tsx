@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { TraitOut } from "../../api/types";
-import { Button, Field, Input, Select } from "../../components/ui";
+import { Button, Field, Input } from "../../components/ui";
 import type { Exception } from "./cart";
 import { detailNeed } from "./fields";
+import { ChoiceSelect } from "./ChoiceSelect";
 
 /**
  * Ask the home troupe's staff for a trait the rules refuse, as an exception:
@@ -16,6 +17,7 @@ export function AskStaff({
   name,
   refusal,
   trait,
+  fields = new Set<string>(),
   rated = false,
   maxRating,
   onAsk,
@@ -25,6 +27,8 @@ export function AskStaff({
   /** Why the rules refuse it, as they say. */
   refusal: string;
   trait?: TraitOut;
+  /** Skills bought once per field: a choice of one asks for the field too. */
+  fields?: Set<string>;
   rated?: boolean;
   maxRating?: number | null;
   onAsk: (exception: Exception, chosen: { detail: string; rating: number }) => void;
@@ -54,12 +58,7 @@ export function AskStaff({
       </div>
       {trait?.choices ? (
         <Field label="Which?" hint={`${trait.name} gives one of these.`}>
-          <Select required value={detail} onChange={(e) => setDetail(e.target.value)}>
-            <option value="">Choose…</option>
-            {trait.choices.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </Select>
+          <ChoiceSelect required choices={trait.choices} fields={fields} value={detail} onChange={setDetail} />
         </Field>
       ) : (
         need && (

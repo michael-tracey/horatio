@@ -62,6 +62,7 @@ from horatio.rules.grants import (
     raised_by,
     set_aside,
 )
+from horatio.rules.house_effects import either
 from horatio.rules.model import FreeChoice, RuleSetData, SheetTrait, TroupeRules
 from horatio.rules.pricing import (
     NotAllowed,
@@ -1763,6 +1764,11 @@ def set_trait(
         quote_change(db, character, category_key, name, detail, rating)  # validates
         if (category.key, name) == CUSTOM_ARCHETYPE and not detail.strip():
             raise unprocessable("Name the archetype.")
+        # A clan that leaves an in-clan discipline to its player keeps the one chosen
+        # as its detail (Angelis Ater, horatio.rules.splats.clan_choice).
+        offered = definition.properties.get("choices")
+        if detail and offered and detail not in offered:
+            raise unprocessable(f"{name}: choose {either(offered)}.")
         sect = chosen(db, character, "sect")
         trait = replace_choice(db, character, definition, category, detail)
         if note is not None:
