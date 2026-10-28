@@ -30,6 +30,7 @@ from horatio.permissions import (
     visible_character,
 )
 from horatio.reconciliation import unbanked_xp
+from horatio.rules import grants
 from horatio.rules.model import FreeChoice, RuleSetData
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["sheets"])
@@ -146,6 +147,10 @@ class SheetTraitOut(BaseModel):
     free_choices: list[FreeChoicesOut] | None = None
     # A troupe's own merit or flaw: whose it is.
     house: HouseMarkOut | None = None
+    # A power a merit opened past a check (Hard as Steel): the merit. And on the
+    # merit, the powers it opened. Optional, as free_choices is.
+    opened_by: str | None = None
+    opened: list[str] | None = None
 
 
 class XpSummary(BaseModel):
@@ -306,6 +311,9 @@ class QuoteOut(BaseModel):
     from_rating: int | None
     to_rating: int | None
     basis: dict[str, Any] | None
+    # A power a merit opens past a check: the merit, and what it costs through it
+    # ("Hard as Steel: 20 XP").
+    because: str | None = None
 
 
 class ChangeOut(BaseModel):
@@ -466,6 +474,14 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
     granting = sheets.sheet_effects(db, character).sources
     rows = sheets.sheet_rows(db, character)
     choosing = free_choices_out(db, character)
+    powers = grants.opened(
+        sheets.rules_for(db, character).rule_set, [r.as_rules_trait() for r in rows]
+    )
+    opened_by = {key: power.source.name for key, power in powers.items()}
+    opening_merits: dict[tuple[str, str, str], list[str]] = {}
+    for (_, name, detail), power in powers.items():
+        merit = (power.source.category, power.source.name, power.source.detail)
+        opening_merits.setdefault(merit, []).append(f"{name}: {detail}" if detail else name)
     entries = [
         (kind, amount)
         for kind, amount in db.execute(
@@ -534,6 +550,8 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 note=r.trait.note,
                 free_choices=choosing.get(r.key, []),
                 house=house.get(r.trait.id),
+                opened_by=opened_by.get(r.key),
+                opened=opening_merits.get(r.key, []),
             )
             for r in rows
         ],
@@ -633,6 +651,7 @@ def quote(character_id: uuid.UUID, body: TraitChange, db: DbSession, user: Curre
         from_rating=current,
         to_rating=body.rating,
         basis=result.rule.describe() if result else None,
+        because=result.opening.because if result and result.opening else None,
     )
 
 

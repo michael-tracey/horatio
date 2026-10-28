@@ -181,6 +181,7 @@ export function CartPanel({
                       </span>
                     </span>
                     {priced?.refused && <span className="text-xs text-blood-bright">{priced.refused}</span>}
+                    {!priced?.refused && priced?.because && <span className="text-xs text-gold">{priced.because}</span>}
                     {priced && priced.repriced.length > 0 && <Repriced lines={priced.repriced} />}
                     {exception && (
                       <span className="text-xs text-mist">

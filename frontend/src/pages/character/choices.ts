@@ -1,5 +1,5 @@
 import type { CatalogueOut, TraitOut } from "../../api/types";
-import { usePlannedUnavailable, useUnavailable } from "../../hooks";
+import { usePlannedOpened, usePlannedUnavailable, useUnavailable } from "../../hooks";
 import { toChange, type CartLine } from "./cart";
 import { byKind, takeable } from "./traitFilter";
 
@@ -11,6 +11,8 @@ export type Choices = {
   traits: TraitOut[];
   /** Refused now, with the reason: shown greyed. */
   refused: Record<string, string>;
+  /** Opened past the character's Generation by a merit, with its price: "Hard as Steel: 20 XP". */
+  opened?: Record<string, string>;
   /** Not held, and not refused now: what the chip counts. */
   canTake: TraitOut[];
   /** How many the character holds, counting the cart. */
@@ -38,7 +40,9 @@ export function useChoices(
   lines: CartLine[],
   enabled = true,
 ): Choices[] {
-  const planned = usePlannedUnavailable(characterId, categories, lines.map(toChange), enabled);
+  const changes = lines.map(toChange);
+  const planned = usePlannedUnavailable(characterId, categories, changes, enabled);
+  const opened = usePlannedOpened(characterId, categories, changes, enabled);
   return categories.map((key) => {
     // A house merit given by staff only, or archived, is not the player's to pick.
     const traits = catalogue.traits.filter((t) => t.category === key && t.house?.offered !== false);
@@ -49,6 +53,7 @@ export function useChoices(
       name: catalogue.categories.find((c) => c.key === key)?.name ?? key,
       traits,
       refused,
+      opened: opened.data?.[key] ?? {},
       canTake: takeable(traits, refused, mine),
       held: mine.length,
       ready: !!planned.data,

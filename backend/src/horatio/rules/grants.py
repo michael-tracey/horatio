@@ -52,6 +52,19 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
                  the merit limit, which is for merits bought), a specialisation
                  named free. A specialisation named "Custom" takes the player's
                  words as its detail. Removing the merit removes what it gave
+    open_barred  the character can buy `amount` powers of a discipline that a
+                 check would otherwise bar (Hard as Steel: one Fortitude elder power
+                 a Neonate's Generation bars, Vol. II Issue 1, p. 45). The target
+                 names the `discipline`, what it `opens` (categories, each with its
+                 `price` per dot) and the checks it `sets_aside` by key. A power is
+                 the discipline's if its name starts with it ("Fortitude: …") or a
+                 check about it requires it (a technique's disciplines). The merit
+                 opens a power only where one of those checks would refuse it, and
+                 keeps the one it opened on its row (CharacterTrait.choices), as
+                 free_choices does. That power costs the price (horatio.rules.
+                 pricing), and the checks are set aside for it alone, and for the
+                 rest of the sheet as far as they count it (a Pretender Elder's one
+                 elder power); every other check still applies
 
 A grant can also hold only `when` a condition holds, in the vocabulary of
 horatio.rules.checks: Fortitude gives a Stamina-focused character a health level
@@ -72,8 +85,8 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Literal
 
-from horatio.rules.checks import matches
-from horatio.rules.model import FreeChoice, RuleSetData, SheetTrait
+from horatio.rules.checks import NO_CONTEXT, CheckData, breaks, matches, traits_in
+from horatio.rules.model import CostRuleData, FreeChoice, RuleSetData, SheetTrait, TroupeRules
 
 Kind = Literal[
     "add",
@@ -86,6 +99,7 @@ Kind = Literal[
     "free_choices",
     "price_out_of_clan",
     "no_free_dot",
+    "open_barred",
 ]
 KINDS = (
     "add",
@@ -98,6 +112,7 @@ KINDS = (
     "free_choices",
     "price_out_of_clan",
     "no_free_dot",
+    "open_barred",
 )
 TraitKey = tuple[str, str, str]  # category, name, detail
 # A trait a grant looks at: its detail, or None for any detail.
@@ -125,6 +140,8 @@ class GrantData:
 
     @property
     def categories(self) -> list[str]:
+        if self.kind == "open_barred":
+            return [o["category"] for o in self.target["opens"]]
         return list(self.target.get("categories") or [self.target["category"]])
 
 
@@ -366,7 +383,7 @@ def effects(
             if grant.when is not None and not matches(grant.when, sheet, trait):
                 continue
             label = trait.full_name
-            if grant.kind == "replace_in_clan":
+            if grant.kind in ("replace_in_clan", "open_barred"):
                 continue
             if grant.kind == "free_choices":
                 given = chosen_options(grant, trait, rule_set)
@@ -590,6 +607,8 @@ def validate_grant(
         )
     if grant.kind in ("add", "free_up_to") and not (grant.target.get("name") or choose):
         raise ValueError(f"grant {grant.key} must name one trait, or let the player choose one")
+    if grant.kind == "open_barred":
+        validate_open_barred(grant, rule_set_traits)
     if grant.kind == "free_choices":
         validate_free_choices(grant)
         for name in (grant.target.get("pool") or {}).get("except", ()):
@@ -612,3 +631,229 @@ def validate_free_choices(grant: GrantData) -> None:
     }  # fmt: skip
     if unknown:
         raise ValueError(f"grant {grant.key} has unknown pool filters {sorted(unknown)}")
+
+
+def validate_open_barred(grant: GrantData, rule_set_traits: set[tuple[str, str]]) -> None:
+    target = grant.target
+    if ("disciplines", target.get("discipline")) not in rule_set_traits:
+        raise ValueError(f"grant {grant.key} must name the discipline whose powers it opens")
+    opens = target.get("opens") or []
+    if not opens or any(not isinstance(o.get("price"), int) or o["price"] < 0 for o in opens):
+        raise ValueError(f"grant {grant.key} must say what it opens, each with its price")
+    if not target.get("sets_aside"):
+        raise ValueError(f"grant {grant.key} must name the checks it sets aside")
+    if grant.amount < 1:
+        raise ValueError(f"grant {grant.key} must open at least one power")
+
+
+def validate_sets_aside(grants: Sequence[GrantData], checks: Sequence[CheckData]) -> None:
+    """The checks an open_barred grant sets aside are the rule set's."""
+    keys = {c.key for c in checks}
+    for grant in grants:
+        if grant.kind != "open_barred":
+            continue
+        unknown = [k for k in grant.target["sets_aside"] if k not in keys]
+        if unknown:
+            raise ValueError(f"grant {grant.key} sets aside unknown checks {unknown}")
+
+
+# --- open_barred: a power a merit opens past a check ------------------------------
+
+# The rating an open_barred grant sets its checks aside up to: any.
+ANY_RATING = 1_000_000
+# A violation's key: check, category, name, detail.
+ViolationKey = tuple[str, str, str, str]
+
+
+@dataclass(frozen=True)
+class Opening:
+    """A power an open_barred grant opens: the grant, the merit that holds it,
+    and what each dot costs."""
+
+    grant: GrantData
+    source: SheetTrait
+    price: int
+
+    @property
+    def because(self) -> str:
+        """Why it costs what it does: "Hard as Steel: 20 XP"."""
+        return f"{self.source.name}: {self.price} XP"
+
+    def rule(self, trait: SheetTrait) -> CostRuleData:
+        """The price as a cost rule, for the purchase to record."""
+        return CostRuleData(
+            category=trait.category,
+            scheme="per_dot",
+            trait=trait.name,
+            rate=self.price,
+            text=f"opened by {self.source.name}",
+        )
+
+
+def opening_grants(rule_set: RuleSetData) -> tuple[GrantData, ...]:
+    return rule_set.remembered(
+        ("opening_grants",),
+        lambda: tuple(g for g in rule_set.grants if g.kind == "open_barred"),
+    )
+
+
+def required_disciplines(rule_set: RuleSetData) -> Mapping[tuple[str, str], frozenset[str]]:
+    """The disciplines a check about each trait requires: a technique's."""
+
+    def work_out() -> Mapping[tuple[str, str], frozenset[str]]:
+        found: dict[tuple[str, str], set[str]] = {}
+        for check in rule_set.checks:
+            if check.name is None or check.requires is None:
+                continue
+            for category, name in traits_in(check.requires):
+                if category == "disciplines" and name is not None:
+                    found.setdefault((check.category, check.name), set()).add(name)
+        return MappingProxyType({k: frozenset(v) for k, v in found.items()})
+
+    return rule_set.remembered(("required_disciplines",), work_out)
+
+
+def price_for(grant: GrantData, rule_set: RuleSetData, trait: SheetTrait) -> int | None:
+    """What a power of the grant's discipline costs a dot through it, or None if
+    the grant does not open this trait at all."""
+    opens = grant.target["opens"]
+    price = next((o["price"] for o in opens if o["category"] == trait.category), None)
+    if price is None:
+        return None
+    discipline = grant.target["discipline"]
+    if trait.name.split(":")[0].strip() == discipline or discipline in required_disciplines(
+        rule_set
+    ).get((trait.category, trait.name), ()):
+        return price
+    return None
+
+
+def openers(
+    rule_set: RuleSetData, sheet: Sequence[SheetTrait]
+) -> list[tuple[GrantData, SheetTrait]]:
+    """The open_barred grants the sheet holds, each with the trait that holds it."""
+    found: list[tuple[GrantData, SheetTrait]] = []
+    for grant in opening_grants(rule_set):
+        for trait in sheet:
+            if holds_source(trait, grant.source) and (
+                grant.when is None or matches(grant.when, sheet, trait)
+            ):
+                found.append((grant, trait))
+    return found
+
+
+def key_of(trait: SheetTrait) -> TraitKey:
+    return (trait.category, trait.name, trait.detail)
+
+
+def opened(rule_set: RuleSetData, sheet: Sequence[SheetTrait]) -> dict[TraitKey, Opening]:
+    """The powers the sheet's open_barred grants opened, as their merits keep them,
+    where the sheet still holds them."""
+    held = {key_of(t) for t in sheet if t.rating}
+    found: dict[TraitKey, Opening] = {}
+    for grant, source in openers(rule_set, sheet):
+        for choice in source.choices:
+            key = (choice.category, choice.name, choice.detail)
+            if choice.grant == grant.key and key in held:
+                found[key] = Opening(grant, source, choice.amount)
+    return found
+
+
+def barred(
+    grant: GrantData, checks: Sequence[CheckData], sheet: Sequence[SheetTrait], trait: SheetTrait
+) -> bool:
+    """Whether a check the grant sets aside refuses `trait` on `sheet`, which holds it."""
+    keys = grant.target["sets_aside"]
+    return any(
+        check.key in keys and check.about(trait) and breaks(check, sheet, trait, NO_CONTEXT)
+        for check in checks
+    )
+
+
+def opening(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> Opening | None:
+    """The open_barred grant that opens `trait`, and at what price: the one whose merit
+    keeps it, or else one held with a power still to open, of the trait's discipline,
+    where a check it sets aside would refuse the trait on the sheet with it. A power
+    held that such a check refuses, and that no merit keeps, uses one up (a cart's
+    sheet, not yet bought)."""
+    rule_set = rules.rule_set
+    found = openers(rule_set, sheet)
+    if not found:
+        return None
+    key = key_of(trait)
+    kept = opened(rule_set, sheet)
+    if key in kept:
+        return kept[key]
+    checks = rules.checks()
+    rating = max(trait.rating or 0, 1)
+    others = [t for t in sheet if key_of(t) != key]
+    trial = [*others, replace_rating(trait, rating)]
+    for grant, source in found:
+        price = price_for(grant, rule_set, trait)
+        if price is None or not barred(grant, checks, trial, trial[-1]):
+            continue
+        used = [o for o in kept.values() if o.grant.key == grant.key and o.source == source]
+        unkept = [
+            t
+            for t in others
+            if t.rating
+            and key_of(t) not in kept
+            and price_for(grant, rule_set, t) is not None
+            and barred(grant, checks, others, t)
+        ]
+        if len(used) + len(unkept) < grant.amount:
+            return Opening(grant, source, price)
+    return None
+
+
+def replace_rating(trait: SheetTrait, rating: int) -> SheetTrait:
+    return SheetTrait(
+        category=trait.category,
+        name=trait.name,
+        rating=rating,
+        free_rating=trait.free_rating,
+        detail=trait.detail,
+        granted_rating=trait.granted_rating,
+        choices=trait.choices,
+    )
+
+
+def set_aside(
+    rules: TroupeRules, sheet: Sequence[SheetTrait], adding: SheetTrait | None = None
+) -> dict[ViolationKey, int]:
+    """The checks the sheet's open_barred grants set aside, as violation keys (check,
+    category, name, detail), each up to any rating, as horatio.sheets.excepted_checks
+    gives exceptions'. For each opened power: its own, and the rest of the sheet's
+    where only the opened power makes them break (a Pretender Elder's first elder
+    power, once a merit opens a second). `adding`, a power on the sheet that a merit
+    would open but does not keep yet, is judged as opened too: the trait a picker
+    tries."""
+    rule_set = rules.rule_set
+    if not openers(rule_set, sheet):
+        return {}
+    powers = opened(rule_set, sheet)
+    if adding is not None and key_of(adding) not in powers:
+        rest = [t for t in sheet if key_of(t) != key_of(adding)]
+        found = opening(rules, rest, adding)
+        if found is not None:
+            powers[key_of(adding)] = found
+    if not powers:
+        return {}
+    excepted: dict[ViolationKey, int] = {}
+    keys: dict[str, set[TraitKey]] = {}
+    for key, power in powers.items():
+        for check_key in power.grant.target["sets_aside"]:
+            excepted[(check_key, *key)] = ANY_RATING
+            keys.setdefault(check_key, set()).add(key)
+    for check in rules.checks():
+        if check.key not in keys:
+            continue
+        without = [t for t in sheet if key_of(t) not in keys[check.key]]
+        for trait in without:
+            if (
+                check.about(trait)
+                and breaks(check, sheet, trait, NO_CONTEXT)
+                and not breaks(check, without, trait, NO_CONTEXT)
+            ):
+                excepted[(check.key, *key_of(trait))] = ANY_RATING
+    return excepted

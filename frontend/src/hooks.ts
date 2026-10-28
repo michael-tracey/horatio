@@ -192,6 +192,26 @@ export function usePlannedUnavailable(characterId: string, categories: string[],
 }
 
 /**
+ * For each category, the powers a merit opens past the character's Generation (Hard
+ * as Steel), and what each costs through it ("Hard as Steel: 20 XP"), with the sheet
+ * as the cart's changes would leave it.
+ */
+export function usePlannedOpened(characterId: string, categories: string[], changes: components["schemas"]["CartIn"]["changes"], enabled = true) {
+  return useQuery({
+    queryKey: ["opened", characterId, "planned", categories, changes],
+    queryFn: () =>
+      unwrap(
+        api.POST("/api/characters/{character_id}/opened", {
+          params: { path: { character_id: characterId } },
+          body: { categories, changes },
+        }),
+      ),
+    enabled: enabled && categories.length > 0,
+    placeholderData: (previous, query) => (JSON.stringify(query?.queryKey[3]) === JSON.stringify(categories) ? previous : undefined),
+  });
+}
+
+/**
  * Work the list out as if the category held only `picks` (a wizard step's ticks
  * before they are saved), or nothing at all (what no choice there could allow).
  */

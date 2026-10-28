@@ -97,6 +97,8 @@ class Outcome:
     breaks: tuple[str, ...] = ()
     # Earlier purchases it repriced, in its cost.
     repriced: tuple[repricing.Repriced, ...] = ()
+    # A power a merit opened past a check: "Hard as Steel: 20 XP".
+    because: str | None = None
 
 
 def planned(sheet: Sequence[SheetTrait], changes: Sequence[Change]) -> list[SheetTrait]:
@@ -326,6 +328,9 @@ def apply_changes(
                 cost=balance - sheets.xp_balance(db, character),
                 needs_approval=waiting(db, character) > held,
                 repriced=made.repriced if made is not None else (),
+                because=made.quote.opening.because
+                if made is not None and made.quote is not None and made.quote.opening is not None
+                else None,
             )
         )
         steps.append(step(traits_before, held_traits(db, character)))

@@ -1339,6 +1339,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/opened": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Opened After
+         * @description For each category, the traits a merit opens past a check for the character,
+         *     and why they cost what they do ("Hard as Steel: 20 XP"), with the sheet as the
+         *     cart's changes would leave it. Nothing is saved.
+         */
+        post: operations["opened_after_api_characters__character_id__opened_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/picture": {
         parameters: {
             query?: never;
@@ -6352,6 +6374,8 @@ export interface components {
         };
         /** CartLineOut */
         CartLineOut: {
+            /** Because */
+            because?: string | null;
             /**
              * Breaks
              * @default []
@@ -12081,6 +12105,8 @@ export interface components {
             basis: {
                 [key: string]: unknown;
             } | null;
+            /** Because */
+            because?: string | null;
             /** Cost */
             cost: number;
             /** From Rating */
@@ -12991,6 +13017,10 @@ export interface components {
             name: string;
             /** Note */
             note: string;
+            /** Opened */
+            opened?: string[] | null;
+            /** Opened By */
+            opened_by?: string | null;
             /** Pending From */
             pending_from: number | null;
             /** Rating */
@@ -17411,6 +17441,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Tally"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    opened_after_api_characters__character_id__opened_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnavailableIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: {
+                            [key: string]: string;
+                        };
+                    };
                 };
             };
             /** @description Validation Error */

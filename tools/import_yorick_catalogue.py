@@ -220,7 +220,7 @@ CLAN_MERITS = {
 # and a Tremere merit, so a check covers it instead.
 SUPPLEMENT_CLAN_MERITS = {
     "Assamite": ["The Blade Whisper", "Bane's Blessing", "Web of Knives"],
-    "Assamite: Vizier": ["Obsessive Study", "Blood Secrets", "Trials of Blood"],
+    "Assamite: Vizier": ["Obsessive Study", "Blood Secrets", "Trials of the Blood"],
     "Assamite: Sorcerer": ["Thaumaturgically Gifted", "The Judge's Resilience", "Talismonger"],
     "Brujah": ["Breaking Point", "Iron Heart", "Fervent Iconoclast"],
     "Brujah: True Brujah": ["Timely Intervention", "Renaissance Mindset", "Borrowed Time"],
