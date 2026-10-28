@@ -28,8 +28,8 @@ const GROUPS: { title: string; kinds: string[] }[] = [
  * weapons first, then armour, then the rest. Each item says what its qualities do in
  * play ("Fast: +3 initiative"); on a phone its card opens to each quality's full
  * effect, its special effects and its description, which a wider screen shows at
- * once. Reference only: nothing here changes a pool. A visiting character's
- * equipment shows wherever it plays.
+ * once. Items are equipped in the Pools tab's drawer, where their qualities change
+ * the pools (#306). A visiting character's equipment shows wherever it plays.
  *
  * With `view` and `tap`, its player (or staff) gives an item to another character
  * or discards it, as a tap (#282): it leaves the tab at once, even with no signal,
@@ -176,6 +176,7 @@ function ItemCard({
         </span>
         <span className="text-xs text-mist">
           {item.kind_name}
+          {item.archaic && " · archaic: shoots with Firearms or Athletics"}
           {facts && ` · ${facts}`}
         </span>
         {item.qualities.length > 0 && (

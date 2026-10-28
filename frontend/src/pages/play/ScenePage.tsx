@@ -2,13 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { PoolModifier, RosterEntry, SceneOut, TestPool } from "../../api/types";
+import type { RosterEntry, SceneOut, TestPool } from "../../api/types";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
+import { EquipmentSwitches } from "./EquipmentSwitches";
+import { equipmentModifiers } from "./equipped";
 import { ModifiersPanel } from "./Modifiers";
-import { attackGlance, defenceGlance, fightFirst, grouped, topAttacks } from "./pools";
+import { attackGlance, defenceGlance, fightFirst, grouped, topAttacks, type Modifier } from "./pools";
 import { PowersList } from "./Powers";
 import { formsOn, healthMost } from "./powers";
 import { PoolRow } from "./ReferenceTabs";
@@ -337,7 +339,7 @@ const SECTIONS = [
 ] as const;
 
 /** The top three attacks and the defences, a line each, as the Pools tab works them out. */
-function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; willpower: number; modifiers: PoolModifier[]; on: string[] }) {
+function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; willpower: number; modifiers: Modifier[]; on: string[] }) {
   const attacks = topAttacks(pools, willpower, modifiers, on).map((p) => attackGlance(p, willpower, modifiers, on));
   return (
     <div className="flex flex-col gap-0.5 text-sm">
@@ -463,6 +465,8 @@ function SceneCard({ characterId, back, onRemove }: { characterId: string; back:
   const name = shown.character_name;
   const on = shown.powers.filter((p) => p.on).map((p) => p.key);
   const willpower = shown.willpower.value;
+  // The player's own modifiers, then what the items equipped make (issue #306).
+  const counting = [...modifiers.modifiers, ...equipmentModifiers(shown.equipment, shown.equipped)];
   return (
     <article className="flex flex-col gap-3 rounded-lg border border-ash bg-dusk p-3" aria-label={name}>
       <header className="flex items-start justify-between gap-2">
@@ -487,7 +491,7 @@ function SceneCard({ characterId, back, onRemove }: { characterId: string; back:
       {shown.vitae && <p className="-mt-2 text-xs text-mist">{shown.vitae.human} human Blood, which can't be spent</p>}
       <Counter title="Willpower" value={shown.willpower.value} most={shown.willpower.most} fill="border-gold/70 bg-gold/70" onChange={(n) => change("willpower", n)} />
       <HealthRow view={shown} damage={(kind, amount) => change("health", amount, kind)} />
-      {reference && <PoolsGlance pools={reference.pools} willpower={willpower} modifiers={modifiers.modifiers} on={on} />}
+      {reference && <PoolsGlance pools={reference.pools} willpower={willpower} modifiers={counting} on={on} />}
       {shown.panels.beast && <Counter title="Beast traits" value={shown.beast.value} most={shown.beast.most} fill="border-gold/70 bg-gold/70" spendIsUp onChange={(n) => change("beast", n)} />}
       <div className="flex flex-wrap items-center gap-1.5 border-t border-ash pt-2">
         <Button
@@ -517,7 +521,7 @@ function SceneCard({ characterId, back, onRemove }: { characterId: string; back:
                 <h3 className="text-xs tracking-wide text-mist uppercase">{group}</h3>
                 <ul>
                   {pools.map((p) => (
-                    <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={modifiers.modifiers} on={on} />
+                    <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} />
                   ))}
                 </ul>
               </section>
@@ -529,6 +533,7 @@ function SceneCard({ characterId, back, onRemove }: { characterId: string; back:
       {open.includes("powers") && (
         <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
           <PowersList powers={shown.powers} tap={tap} />
+          <EquipmentSwitches items={shown.equipment} equipped={shown.equipped} pools={reference?.pools ?? []} tap={tap} />
           <ModifiersPanel pools={reference?.pools ?? []} modifiers={modifiers} />
         </div>
       )}

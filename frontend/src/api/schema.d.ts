@@ -6442,6 +6442,11 @@ export interface components {
         /** ChangeEquipmentIn */
         ChangeEquipmentIn: {
             /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
              * Crafted
              * @default false
              */
@@ -8092,6 +8097,11 @@ export interface components {
         /** EquipmentCheckIn */
         EquipmentCheckIn: {
             /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
              * Crafted
              * @default false
              */
@@ -8213,6 +8223,8 @@ export interface components {
         };
         /** EquipmentItemDetailOut */
         EquipmentItemDetailOut: {
+            /** Archaic */
+            archaic: boolean;
             /** Can Change */
             can_change: boolean;
             /**
@@ -8252,6 +8264,8 @@ export interface components {
             kind: string;
             /** Kind Name */
             kind_name: string;
+            /** Modifiers */
+            modifiers: components["schemas"]["EquipmentModifierOut"][];
             /** Name */
             name: string;
             /** Player Name */
@@ -8279,6 +8293,8 @@ export interface components {
         };
         /** EquipmentItemOut */
         EquipmentItemOut: {
+            /** Archaic */
+            archaic: boolean;
             /** Can Change */
             can_change: boolean;
             /**
@@ -8316,6 +8332,8 @@ export interface components {
             kind: string;
             /** Kind Name */
             kind_name: string;
+            /** Modifiers */
+            modifiers: components["schemas"]["EquipmentModifierOut"][];
             /** Name */
             name: string;
             /** Player Name */
@@ -8401,6 +8419,25 @@ export interface components {
             /** Special */
             special?: boolean | null;
         };
+        /**
+         * EquipmentModifierOut
+         * @description What one of an item's qualities does to its holder's test pools while it is
+         *     equipped (issue #306): a modifier, as a player's own is.
+         */
+        EquipmentModifierOut: {
+            /** Amount */
+            amount: number;
+            /** Label */
+            label: string;
+            /** Pools */
+            pools: string;
+            /** Quality */
+            quality: string;
+            /** Situational */
+            situational: boolean;
+            /** When */
+            when: string;
+        };
         /** EquipmentOut */
         EquipmentOut: {
             /** Grades */
@@ -8463,6 +8500,11 @@ export interface components {
         /** EquipmentTemplateIn */
         EquipmentTemplateIn: {
             /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
              * Crafted
              * @default false
              */
@@ -8496,6 +8538,11 @@ export interface components {
         };
         /** EquipmentTemplateOut */
         EquipmentTemplateOut: {
+            /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
             facts: components["schemas"]["EquipmentFactsOut"];
             /** Grade */
             grade: string;
@@ -8950,6 +8997,11 @@ export interface components {
         };
         /** GiveEquipmentIn */
         GiveEquipmentIn: {
+            /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
             /**
              * Character Id
              * Format: uuid
@@ -11074,6 +11126,25 @@ export interface components {
             type: "elite" | "underworld";
         };
         /**
+         * PlayItemOut
+         * @description An item the character holds, to equip at a game (issue #306).
+         */
+        PlayItemOut: {
+            /** Hands */
+            hands: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Modifiers */
+            modifiers: components["schemas"]["EquipmentModifierOut"][];
+            /** Name */
+            name: string;
+        };
+        /**
          * PlayReference
          * @description The Play View's Sheet and Pools tabs: everything there is to look up at a
          *     game, which changes only between games, so the page loads it once.
@@ -11191,6 +11262,16 @@ export interface components {
             /** Clan */
             clan: string | null;
             derangements: components["schemas"]["Derangements"];
+            /**
+             * Equipment
+             * @default []
+             */
+            equipment: components["schemas"]["PlayItemOut"][];
+            /**
+             * Equipped
+             * @default []
+             */
+            equipped: string[];
             /** Expendables */
             expendables: components["schemas"]["ExpendableOut"][];
             game: components["schemas"]["GameOut"] | null;
@@ -11693,6 +11774,11 @@ export interface components {
              * @default []
              */
             equipment: components["schemas"]["EquipmentItemOut"][];
+            /**
+             * Equipped
+             * @default []
+             */
+            equipped: string[];
             /** Home */
             home: boolean;
             /**
@@ -14150,6 +14236,8 @@ export interface components {
         };
         /** TroupeTemplateOut */
         TroupeTemplateOut: {
+            /** Archaic */
+            archaic: boolean;
             /** Crafted */
             crafted: boolean;
             /** Description */

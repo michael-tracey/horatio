@@ -60,12 +60,12 @@ export function EquipmentEditor({
 
   const checked = body(draft);
   const check = useQuery({
-    queryKey: ["equipment-check", splat, checked.kind, checked.grade, checked.qualities, checked.crafted],
+    queryKey: ["equipment-check", splat, checked.kind, checked.grade, checked.qualities, checked.crafted, checked.archaic],
     queryFn: () =>
       unwrap(
         api.POST("/api/rules/{splat}/equipment/check", {
           params: { path: { splat } },
-          body: { kind: checked.kind, grade: checked.grade, qualities: checked.qualities, crafted: checked.crafted },
+          body: { kind: checked.kind, grade: checked.grade, qualities: checked.qualities, crafted: checked.crafted, archaic: checked.archaic },
         }),
       ),
     placeholderData: (previous) => previous,
@@ -237,6 +237,12 @@ export function EquipmentEditor({
           <input type="checkbox" checked={draft.crafted} onChange={(e) => set({ crafted: e.target.checked })} />
           Crafted: its Artisan or Masterwork was added while crafting, and takes no slot
         </label>
+        {draft.kind === "ranged" && (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={draft.archaic} onChange={(e) => set({ archaic: e.target.checked })} />
+            Archaic (a bow or crossbow): may shoot with Athletics instead of Firearms, p. 279
+          </label>
+        )}
       </fieldset>
 
       {draft.grade === "special" && (

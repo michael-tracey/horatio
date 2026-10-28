@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
-import type { DisciplinePowers, PlayReference, PoolModifier, PowerSwitch, TestPool } from "../../api/types";
+import type { DisciplinePowers, PlayItem, PlayReference, PowerSwitch, TestPool } from "../../api/types";
 import { HouseMark } from "../../components/HouseMark";
 import { TraitInfo } from "../../components/TraitInfo";
 import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
 import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
-import { breakdown, damageText, exceptionalText, grouped, switchedDamage, total } from "./pools";
+import { equipmentModifiers } from "./equipped";
+import { breakdown, damageText, exceptionalText, grouped, situations, switchedDamage, total, type Modifier } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
 import { useModifiers } from "./useModifiers";
@@ -130,13 +131,19 @@ function IdentityLine({ reference, detail }: { reference: PlayReference; detail:
   return identity ? <IdentityNote identity={identity} /> : null;
 }
 
-export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; willpower: number; modifiers: PoolModifier[]; on: string[] }) {
+export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; willpower: number; modifiers: Modifier[]; on: string[] }) {
   const hurt = pool.damage ? switchedDamage(pool.damage, on) : [];
+  const now = total(pool, willpower, modifiers, on);
+  const variants = [
+    ...pool.variants.map((v) => ({ when: v.when, parts: v.parts, total: v.total + (now - pool.total) })),
+    // An equipped item's bonus that counts only sometimes: "Against firearms (+3 Flak Vest: Ballistic)".
+    ...situations(pool, modifiers).map((s) => ({ when: s.when.charAt(0).toUpperCase() + s.when.slice(1), parts: s.parts, total: now + s.parts.reduce((sum, p) => sum + p.value, 0) })),
+  ];
   return (
     <li className="border-b border-ash/60 py-2 last:border-0">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-parchment">{pool.name}</span>
-        <strong className="font-display text-2xl leading-none text-parchment">{total(pool, willpower, modifiers, on)}</strong>
+        <strong className="font-display text-2xl leading-none text-parchment">{now}</strong>
       </div>
       <p className="text-xs text-mist">
         {breakdown(pool, willpower, modifiers, on)}
@@ -153,15 +160,15 @@ export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; wi
           ))}
         </p>
       )}
-      {pool.variants.length > 0 && (
+      {variants.length > 0 && (
         <ul className="mt-1 flex flex-col gap-0.5 text-sm">
-          {pool.variants.map((v) => (
+          {variants.map((v) => (
             <li key={v.when} className="flex items-baseline justify-between gap-3 pl-3">
               <span className="text-mist">
                 {v.when}
                 <span className="text-xs"> ({v.parts.map((p) => `${p.value >= 0 ? "+" : "−"}${Math.abs(p.value)} ${p.label}`).join(", ")})</span>
               </span>
-              <strong className="text-gold">{v.total + (total(pool, willpower, modifiers, on) - pool.total)}</strong>
+              <strong className="text-gold">{v.total}</strong>
             </li>
           ))}
         </ul>
@@ -201,24 +208,30 @@ function Discipline({ discipline }: { discipline: DisciplinePowers }) {
  * Test pools worked out from the sheet, with what changes them, and what each
  * power does. Defence counts current Willpower, so it follows the tracker.
  * The switches for what the sheet's powers change while active, from the rules,
- * and the player's own modifiers (issue #200), are in a drawer from a button at
- * the foot (issue #211): the pools count whatever is on.
+ * the equipment (issue #306) and the player's own modifiers (issue #200), are in a
+ * drawer from a button at the foot (issue #211): the pools count whatever is on.
  */
 export function PoolsTab({
   reference,
   willpower,
   characterId,
   powers,
+  items = [],
+  equipped = [],
   tap,
 }: {
   reference: PlayReference;
   willpower: number;
   characterId: string;
   powers: PowerSwitch[];
+  items?: PlayItem[];
+  equipped?: string[];
   tap: (what: Parameters<typeof makeTap>[0]) => void;
 }) {
   const modifiers = useModifiers(characterId);
   const on = powers.filter((p) => p.on).map((p) => p.key);
+  // The player's own, then what the items equipped make (issue #306).
+  const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped)];
   return (
     <div className="flex flex-col gap-3 pb-20">
       <div className="grid gap-3 md:grid-cols-2">
@@ -226,7 +239,7 @@ export function PoolsTab({
           <Panel key={group} title={group} aside={group === "Defence" ? <span className="text-xs text-mist">Willpower now: {willpower}</span> : undefined}>
             <ul>
               {pools.map((p) => (
-                <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={modifiers.modifiers} on={on} />
+                <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} />
               ))}
             </ul>
           </Panel>
@@ -259,7 +272,7 @@ export function PoolsTab({
           </ul>
         </Panel>
       )}
-      <SwitchesDrawer pools={reference.pools} powers={powers} modifiers={modifiers} tap={tap} />
+      <SwitchesDrawer pools={reference.pools} powers={powers} items={items} equipped={equipped} modifiers={modifiers} tap={tap} />
     </div>
   );
 }

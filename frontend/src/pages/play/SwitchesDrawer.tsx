@@ -1,34 +1,44 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { PoolModifier, PowerSwitch, TestPool } from "../../api/types";
+import type { PlayItem, PoolModifier, PowerSwitch, TestPool } from "../../api/types";
 import { Button } from "../../components/ui";
+import { EquipmentSwitches } from "./EquipmentSwitches";
 import { ModifiersPanel } from "./Modifiers";
 import { PowersList } from "./Powers";
 import type { makeTap } from "./tracker";
 import type { useModifiers } from "./useModifiers";
 
-/** What is on, in a few words: the forms and powers, then the player's own modifiers with their amounts. */
-export function inUse(powers: PowerSwitch[], modifiers: PoolModifier[]): string {
-  const names = [...powers.filter((p) => p.on).map((p) => p.name), ...modifiers.filter((m) => m.on).map((m) => `${m.amount < 0 ? "−" : "+"}${Math.abs(m.amount)} ${m.label}`)];
+/** What is on, in a few words: the forms and powers, the player's own modifiers with their amounts, then the items equipped. */
+export function inUse(powers: PowerSwitch[], modifiers: PoolModifier[], equipped: string[] = []): string {
+  const names = [
+    ...powers.filter((p) => p.on).map((p) => p.name),
+    ...modifiers.filter((m) => m.on).map((m) => `${m.amount < 0 ? "−" : "+"}${Math.abs(m.amount)} ${m.label}`),
+    ...equipped,
+  ];
   return names.length > 0 ? `In use: ${names.join(", ")}` : "Nothing in use";
 }
 
 /**
- * Forms, powers and the player's own modifiers, kept out of the page so the
- * pools come first (issue #211): a button fixed at the foot of the Pools tab
- * says what is on, and opens them in a bottom sheet. The sheet leaves the top of
- * the page showing, so the pools can be watched as the switches change.
+ * Forms, powers, equipment (issue #306) and the player's own modifiers, kept out
+ * of the page so the pools come first (issue #211): a button fixed at the foot of
+ * the Pools tab says what is on, and opens them in a bottom sheet. The sheet leaves
+ * the top of the page showing, so the pools can be watched as the switches change.
  */
 export function SwitchesDrawer({
   pools,
   powers,
+  items = [],
+  equipped = [],
   modifiers,
   tap,
 }: {
   pools: TestPool[];
   powers: PowerSwitch[];
+  items?: PlayItem[];
+  equipped?: string[];
   modifiers: ReturnType<typeof useModifiers>;
   tap: (what: Parameters<typeof makeTap>[0]) => void;
 }) {
+  const wearing = equipped.map((id) => items.find((i) => i.id === id)?.name).filter((n): n is string => !!n);
   const [open, setOpen] = useState(false);
   const id = useId();
   const summary = useId();
@@ -66,7 +76,7 @@ export function SwitchesDrawer({
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gold/50 bg-dusk/95 px-4 py-2 backdrop-blur">
         <div className="mx-auto flex min-h-12 w-full max-w-3xl items-center justify-between gap-3">
           <span id={summary} className="min-w-0 truncate text-sm text-parchment">
-            {inUse(powers, modifiers.modifiers)}
+            {inUse(powers, modifiers.modifiers, wearing)}
           </span>
           <Button
             ref={button}
@@ -99,6 +109,7 @@ export function SwitchesDrawer({
               </Button>
             </div>
             <PowersList powers={powers} tap={tap} />
+            <EquipmentSwitches items={items} equipped={equipped} pools={pools} tap={tap} />
             <ModifiersPanel pools={pools} modifiers={modifiers} />
           </div>
         </div>

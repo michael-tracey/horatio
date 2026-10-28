@@ -120,7 +120,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       <Identity view={shown} />
       <PowersBanner powers={shown.powers} tap={tap} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
-      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} tap={tap} />)}
+      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} items={shown.equipment} equipped={shown.equipped} tap={tap} />)}
       {tab === "status" && (
         <StatusTab
           view={shown}

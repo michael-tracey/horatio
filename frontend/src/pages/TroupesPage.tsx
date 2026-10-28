@@ -13,7 +13,9 @@ import { requestStatus } from "./troupeRequests";
 
 export function TroupesPage() {
   const me = useMe();
-  const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
+  // A key of its own, so the page asks afresh as it opens: the list another page
+  // asked for earlier can still be on its way, and lacks a troupe made since.
+  const troupes = useQuery({ queryKey: ["troupes", "page"], queryFn: () => unwrap(api.GET("/api/troupes")) });
   const suspended = useSuspendedIds(!!me.data?.is_custodian);
 
   return (

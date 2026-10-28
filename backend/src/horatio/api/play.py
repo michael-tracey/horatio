@@ -27,6 +27,7 @@ from horatio import (
     sheets,
 )
 from horatio.api.downtimes import staff_troupe
+from horatio.api.equipment import EquipmentModifierOut, modifier_out
 from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.npcs import PanelsOut, StockNpcOut, stock_out
@@ -203,6 +204,18 @@ class PowerOut(reference.Switch):
     on: bool
 
 
+class PlayItemOut(BaseModel):
+    """An item the character holds, to equip at a game (issue #306)."""
+
+    id: uuid.UUID
+    name: str
+    kind: str
+    # Hands it takes, for a weapon.
+    hands: int | None
+    # What its qualities do to the pools while it is equipped.
+    modifiers: list[EquipmentModifierOut]
+
+
 class GameOut(BaseModel):
     id: uuid.UUID
     number: int
@@ -298,6 +311,10 @@ class PlayView(BaseModel):
     # health tracker gains the wound levels of those on, after the sheet's own in
     # each category; `blood_per_turn` and `blood_usual` are without them.
     powers: list[PowerOut] = []
+    # The items it holds, and those equipped, in the order they were (issue #306):
+    # like what is switched on, kept from game to game.
+    equipment: list[PlayItemOut] = []
+    equipped: list[uuid.UUID] = []
     # What the character can do with each type of influence it has, for the
     # details of a spend. Empty when there is no troupe to log spends in.
     influence: list[InfluenceStandingOut] = []
@@ -685,6 +702,17 @@ def play_view(db: Session, character: Character) -> PlayView:
             for r in limits.retainers
         ],
         powers=[PowerOut(**s.model_dump(), on=s.key in state["on"]) for s in limits.switches],
+        equipment=[
+            PlayItemOut(
+                id=uuid.UUID(i.id),
+                name=i.name,
+                kind=i.kind,
+                hands=i.hands,
+                modifiers=[modifier_out(m) for m in i.modifiers],
+            )
+            for i in limits.items
+        ],
+        equipped=[uuid.UUID(key) for key, _ in limits.still_equipped(state["equipped"])],
         influence=[standing_out(s) for s in play_influence.standings(db, character)],
         status=play_status_out(db, character, game, events),
         game=game_out(db, game, events) if game else None,

@@ -16,7 +16,13 @@ from sqlalchemy.orm import Session
 
 from horatio import equipment
 from horatio.api.downtimes import staff_troupe
-from horatio.api.equipment import EquipmentFactsOut, EquipmentItemQuality, facts_out
+from horatio.api.equipment import (
+    EquipmentFactsOut,
+    EquipmentItemQuality,
+    EquipmentModifierOut,
+    facts_out,
+    modifier_out,
+)
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.equipment import EquipmentRefused, ItemFields, ItemQuality, SpecialEffect
 from horatio.models import (
@@ -82,11 +88,15 @@ class EquipmentItemOut(BaseModel):
     qualities: list[EquipmentItemQualityOut]
     # Its Artisan and Masterwork were added while crafting, and take no slot.
     crafted: bool
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool
     effects: list[SpecialEffectModel]
     description: str
     # None unless the reader is staff of the holder's home troupe.
     staff_note: str | None
     facts: EquipmentFactsOut
+    # What its qualities do to the holder's test pools while it is equipped.
+    modifiers: list[EquipmentModifierOut]
     status: Status
     # The troupe that gave it, who gave it and when.
     troupe_id: uuid.UUID
@@ -185,6 +195,8 @@ class EquipmentFieldsIn(BaseModel):
         default_factory=list[EquipmentItemQuality], max_length=30
     )
     crafted: bool = False
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool = False
     # Only a special item has them.
     effects: list[SpecialEffectModel] = Field(
         default_factory=list[SpecialEffectModel], max_length=20
@@ -234,6 +246,8 @@ class TroupeTemplateOut(BaseModel):
     grade: str
     qualities: list[EquipmentItemQuality]
     crafted: bool
+    # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
+    archaic: bool
     effects: list[SpecialEffectModel]
     description: str
 
@@ -251,6 +265,7 @@ def fields_in(body: EquipmentFieldsIn) -> ItemFields:
         effects=tuple(SpecialEffect(e.name, e.effect) for e in body.effects),
         description=body.description,
         staff_note=body.staff_note if isinstance(body, EquipmentItemFieldsIn) else "",
+        archaic=body.archaic,
     )
 
 
@@ -334,10 +349,12 @@ class Reader:
                 for quality in [rules.qualities.get((item.kind, q.name))]
             ],
             crafted=item.crafted,
+            archaic=item.archaic,
             effects=[SpecialEffectModel(**e) for e in item.effects],
             description=item.description,
             staff_note=item.staff_note if manages else None,
             facts=facts_out(found.facts),
+            modifiers=[modifier_out(m) for m in equipment.item_modifiers(rules, item)],
             status=item.status,  # type: ignore[arg-type]  # checked by the database
             troupe_id=item.troupe_id,
             troupe_name=self.troupe(item.troupe_id).name,
@@ -404,6 +421,7 @@ def template_out(t: EquipmentTemplate) -> TroupeTemplateOut:
             EquipmentItemQuality(name=q.name, detail=q.detail) for q in item_qualities(t.qualities)
         ],
         crafted=t.crafted,
+        archaic=t.archaic,
         effects=[SpecialEffectModel(**e) for e in t.effects],
         description=t.description,
     )

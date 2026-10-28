@@ -41,6 +41,9 @@ class EquipmentItem(Record):
     )
     # Its Artisan and Masterwork were added while crafting, and take no slot.
     crafted: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # An archaic ranged weapon (a bow, a crossbow) may shoot with Athletics instead
+    # of Firearms (MET: VTM p. 279).
+    archaic: Mapped[bool] = mapped_column(default=False, server_default="false")
     # A special item's own effects, which no quality covers: each {name, effect}.
     effects: Mapped[list[dict[str, str]]] = mapped_column(JSONB, default=list, server_default="[]")
     description: Mapped[str] = mapped_column(default="", server_default="")
