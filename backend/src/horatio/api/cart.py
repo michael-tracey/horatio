@@ -103,6 +103,9 @@ class CartLineOut(BaseModel):
     # Earlier purchases it reprices, each its own line in the XP history; their
     # total is in `cost`.
     repriced: list[RepricedOut] = []
+    # A power a merit opens past a check: the merit, and what it costs through it
+    # ("Hard as Steel: 20 XP").
+    because: str | None = None
 
 
 class CartOut(BaseModel):
@@ -163,6 +166,7 @@ def spend_cart(character_id: uuid.UUID, body: CartIn, db: DbSession, user: Curre
                 needs_approval=o.needs_approval,
                 breaks=list(o.breaks),
                 repriced=[RepricedOut(purchase=r.label, cost=r.cost) for r in o.repriced],
+                because=o.because,
             )
             for o in outcomes
         ],
@@ -173,6 +177,26 @@ class UnavailableIn(BaseModel):
     categories: list[str] = Field(min_length=1, max_length=20)
     # The cart's changes, as they would be spent.
     changes: list[CartChangeIn] = Field(default_factory=list[CartChangeIn], max_length=100)
+
+
+@router.post("/opened")
+def opened_after(
+    character_id: uuid.UUID, body: UnavailableIn, db: DbSession, user: CurrentUser
+) -> dict[str, dict[str, str]]:
+    """For each category, the traits a merit opens past a check for the character,
+    and why they cost what they do ("Hard as Steel: 20 XP"), with the sheet as the
+    cart's changes would leave it. Nothing is saved."""
+    character = visible_character(db, user, character_id)
+    rules = sheets.rules_for(db, character)
+    unknown = next((c for c in body.categories if c not in rules.rule_set.categories), None)
+    if unknown is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No category {unknown!r}.")
+    sheet = [r.as_rules_trait() for r in sheets.sheet_rows(db, character)]
+    planned = cart.planned(sheet, [to_change(c) for c in body.changes])
+    return {
+        category: sheets.opened_here(db, character, category, planned)
+        for category in dict.fromkeys(body.categories)
+    }
 
 
 @router.post("/unavailable")

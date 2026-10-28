@@ -50,7 +50,18 @@ from horatio.models import (
 )
 from horatio.rules.checks import Context, Violation, traits_in, violations
 from horatio.rules.conditions import describe as describe_condition
-from horatio.rules.grants import Effects, choices, effects, raised_by
+from horatio.rules.grants import (
+    Effects,
+    Opening,
+    barred,
+    choices,
+    effects,
+    opened,
+    openers,
+    opening,
+    raised_by,
+    set_aside,
+)
 from horatio.rules.model import FreeChoice, RuleSetData, SheetTrait, TroupeRules
 from horatio.rules.pricing import (
     NotAllowed,
@@ -609,18 +620,24 @@ def held_by_exception(db: Session, character: Character) -> list[tuple[SheetRow,
 
 def excepted_checks(db: Session, character: Character) -> dict[tuple[str, str, str, str], int]:
     """The checks exceptions set aside, as violation keys (check, category, name,
-    detail), each with the highest rating it is set aside up to."""
+    detail), each with the highest rating it is set aside up to; and those a merit
+    sets aside for the power it opened past them (horatio.rules.grants, open_barred),
+    at any rating."""
     found: dict[tuple[str, str, str, str], int] = {}
     for row, exception in held_by_exception(db, character):
         for check in exception.checks:
             key = (check["key"], *row.key)
             found[key] = max(found.get(key, 0), exception.rating)
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    for key, rating in set_aside(rules_for(db, character), sheet).items():
+        found[key] = max(found.get(key, 0), rating)
     return found
 
 
 def sheet_violations(db: Session, character: Character) -> list[Violation]:
     """The checks the character's sheet breaks now, but for those an exception
-    sets aside for its trait, at up to the rating it was given at."""
+    sets aside for its trait, at up to the rating it was given at, and those a
+    merit sets aside for the power it opened."""
     sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
     context = check_context(db, character, sheet)
     found = violations(rules_for(db, character).checks(), sheet, context)
@@ -765,6 +782,8 @@ def refusals(
         return tuple(dict.fromkeys(found))
 
     staff = character.kind == "npc"
+    # A merit that opens a power past a check (Hard as Steel) sets the check aside for it.
+    opens = bool(openers(rule_set, sheet))
     for category, name in rule_set.traits:
         if category != category_key or (name in held and at is None):
             continue
@@ -812,6 +831,9 @@ def refusals(
                 for v in violations(trying if same_clan else checks, trial, trial_context)
                 if blocking(v, character) and v.key not in before
             ]
+            if new and opens:
+                aside = set_aside(rules, trial, candidate)
+                new = [v for v in new if v.key not in aside]
             if not new:
                 break
             if not detail:
@@ -835,6 +857,30 @@ def refusals(
             if refused is not None:
                 reasons[name] = Refusal(refused)
     return reasons
+
+
+def opened_here(
+    db: Session,
+    character: Character,
+    category_key: str,
+    planned: Sequence[SheetTrait] | None = None,
+) -> dict[str, str]:
+    """For each trait in a category the character does not hold that a merit would
+    open past a check (horatio.rules.grants, open_barred), what it costs and why:
+    "Hard as Steel: 20 XP". `planned` is the sheet to judge in place of the saved one."""
+    rules = rules_for(db, character)
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)] if planned is None else planned
+    if not openers(rules.rule_set, sheet):
+        return {}
+    held = {t.name for t in sheet if t.category == category_key and t.rating}
+    found: dict[str, str] = {}
+    for category, name in rules.rule_set.traits:
+        if category != category_key or name in held:
+            continue
+        power = opening(rules, sheet, SheetTrait(category=category, name=name, rating=1))
+        if power is not None:
+            found[name] = power.because
+    return found
 
 
 def not_for_sale(
@@ -1556,9 +1602,33 @@ def quote_change(
     )
     try:
         quote = purchase_cost(rules_for(db, character), sheet, before, rating)
+    except NotAllowed as error:
+        why = why_not_sold(db, character, sheet, before, rating)
+        raise Unpriced(why or str(error)) from error
     except PricingError as error:
         raise Unpriced(str(error)) from error
     return quote, current_rating
+
+
+def why_not_sold(
+    db: Session, character: Character, sheet: Sequence[SheetTrait], trait: SheetTrait, rating: int
+) -> str | None:
+    """Why the troupe's costs will not sell a trait, in words: the check that refuses
+    it, where one does (a second elder power, p. 101), else what the costs say."""
+    rules = rules_for(db, character)
+    key = (trait.category, trait.name, trait.detail)
+    wanted = replace(trait, rating=rating)
+    trial = [t for t in sheet if (t.category, t.name, t.detail) != key] + [wanted]
+    aside = set_aside(rules, trial, wanted)
+    for violation in violations(rules.checks(), trial, check_context(db, character, trial)):
+        subject = violation.subject
+        if (
+            (subject.category, subject.name, subject.detail) == key
+            and violation.key not in aside
+            and blocking(violation, character)
+        ):
+            return violation.message
+    return not_for_sale(rules, sheet, trait.category, trait.name, rating)
 
 
 def chosen_during_creation(db: Session, character: Character, category: TraitCategory) -> bool:
@@ -1807,6 +1877,12 @@ def set_trait(
         else:
             raise conflict(xp_debt.short_of(balance, total, repriced=bool(repriced)))
 
+    if rating == 0 and current_rating > 0:
+        lose_opened(db, player, character, (category.key, definition.name, detail))
+    opened_by = quote.opening if quote is not None and rating > current_rating else None
+    if opened_by is not None and not because:
+        because = f"through {opened_by.source.name}"
+
     # Which one, in the XP history: "Retainers: Bocephus 0 → 3".
     labelled = f"{name}: {detail}" if detail else name
     trait = existing
@@ -1855,6 +1931,10 @@ def set_trait(
         if free is not None:
             trait.free_rating = (trait.free_rating or 0) + rating - current_rating
     db.flush()
+    if opened_by is not None:
+        keep_opened(db, character, opened_by, (category.key, definition.name, detail))
+    elif rating == 0:
+        forget_opened(db, character, (category.key, definition.name, detail))
     audit.record(
         db,
         player,
@@ -1917,6 +1997,52 @@ def set_trait(
             repriced=tuple(repriced),
         )
     return Change(quote=quote, trait=trait, repriced=tuple(repriced))
+
+
+def keep_opened(db: Session, character: Character, found: Opening, key: TraitKey) -> None:
+    """Keep the power a merit opened on the merit's row, as a merit's free choices
+    are kept (horatio.free_choices): the sheet and later changes know which it is."""
+    source = (found.source.category, found.source.name, found.source.detail)
+    row = next((r for r in sheet_rows(db, character) if r.key == source), None)
+    if row is None:
+        return
+    choice = {
+        "grant": found.grant.key,
+        "name": key[1],
+        "detail": key[2],
+        "amount": found.price,
+        "category": key[0],
+    }
+    if choice not in row.trait.choices:
+        row.trait.choices = [*row.trait.choices, choice]
+        db.flush()
+
+
+def forget_opened(db: Session, character: Character, key: TraitKey) -> None:
+    """A power a merit opened is gone: the merit can open another."""
+    for row in sheet_rows(db, character):
+        kept = [c for c in row.trait.choices if (c.get("category"), c["name"], c["detail"]) != key]
+        if len(kept) != len(row.trait.choices):
+            row.trait.choices = kept
+    db.flush()
+
+
+def lose_opened(db: Session, player: User, character: Character, merit: TraitKey) -> None:
+    """A merit that goes takes the powers it opened with it, their XP refunded, where
+    a check it set aside would refuse them without it, as a diablerie takes the
+    techniques the new Generation cannot hold. One the sheet may hold anyway (its
+    Generation has risen since) stays, judged as any other."""
+    rules = rules_for(db, character)
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    without = [t for t in sheet if (t.category, t.name, t.detail) != merit]
+    checks = rules.checks()
+    for key, found in opened(rules.rule_set, sheet).items():
+        if (found.source.category, found.source.name, found.source.detail) != merit:
+            continue
+        power = next(t for t in without if (t.category, t.name, t.detail) == key)
+        if not barred(found.grant, checks, without, power) or opening(rules, without, power):
+            continue
+        set_trait(db, player, character, *key, 0, because=f"lost with {merit[1]}")
 
 
 def change_choice(

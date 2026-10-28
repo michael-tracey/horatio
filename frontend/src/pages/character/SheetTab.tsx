@@ -652,6 +652,12 @@ function GrantedBy({ trait, points = false }: { trait: SheetTraitOut; points?: b
   );
 }
 
+/** A power a merit opened past the Generation, and the merit: which power it opened. */
+function Opened({ trait }: { trait: SheetTraitOut }) {
+  const text = trait.opened_by ? `through ${trait.opened_by}` : trait.opened?.length ? `opened ${trait.opened.join(", ")}` : null;
+  return text ? <span className="ml-2 text-xs text-mist">{text}</span> : null;
+}
+
 function TraitRow({
   trait,
   locked,
@@ -701,6 +707,7 @@ function TraitRow({
               {trait.detail && <span className="text-mist">: {trait.detail}</span>}
               {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
               <GrantedBy trait={trait} points />
+              <Opened trait={trait} />
               {exception && <ExceptionMark exception={exception} />}
               {houseLabel && <HouseMark label={houseLabel} summary={houseSummary} />}
               {trait.house?.applied && (
@@ -792,6 +799,7 @@ function TraitRow({
               </span>
             )}
             <GrantedBy trait={trait} />
+            <Opened trait={trait} />
             {exception && <ExceptionMark exception={exception} />}
           </>
         }

@@ -8,7 +8,7 @@ from typing import Any, cast
 from horatio.rules.checks import REQUIREMENT_KEY, CheckData, check_from_dict, validate_condition
 from horatio.rules.conditions import validate
 from horatio.rules.equipment import NO_EQUIPMENT, equipment_from
-from horatio.rules.grants import GrantData, grant_from_dict, validate_grant
+from horatio.rules.grants import GrantData, grant_from_dict, validate_grant, validate_sets_aside
 from horatio.rules.model import (
     DEFAULT_MAX_RATING,
     SCHEMES,
@@ -425,6 +425,10 @@ def load_rule_set(path: Path) -> RuleSetData:
         with (path.parent / grant_file).open("rb") as f:
             raw_grants += tomllib.load(f).get("grants", [])
     grants = load_grants(path.name, raw_grants, traits, categories, left_out)
+    try:
+        validate_sets_aside(grants, checks)
+    except ValueError as error:
+        raise ValueError(f"{path.name}: {error}") from error
     action_kinds = {
         k["key"]: ActionKindData(
             key=k["key"],

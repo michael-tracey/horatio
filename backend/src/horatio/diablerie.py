@@ -11,7 +11,9 @@ changes nothing. Recording one:
   holds it once a home troupe has accepted the character and past Caitiff's two
   dots (p. 69), up to the most there is;
 - takes away the techniques the new Generation cannot learn, refunding the XP each
-  cost on a line of its own (p. 101 sets who can learn them);
+  cost on a line of its own (p. 101 sets who can learn them). One a merit opened
+  past the Generation (Shrinking Violet, horatio.rules.grants) stays, as the merit
+  still opens it; an unused merit is not spent on one, and opens one later;
 - leaves earlier buys at what they cost: nothing is repriced, and later buys are
   priced at the new Generation without anything further;
 - lowers Humanity by one, free and with no XP back, or for a character on a Path
