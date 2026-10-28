@@ -9,13 +9,19 @@ accounts. The custodian picks which one stays, and merges the other into it:
   is kept; where it led a troupe, the staying account leads it now;
 - its sign-in links (Google, Discord), and its password if the staying account
   has none;
-- its notification settings, and its profile's bio, links and Discord username,
-  each only where the staying account has none of its own;
+- its notification settings, and its profile's bio, links, Discord username and
+  pronouns, each only where the staying account has none of its own; so too its
+  lines and veils with its choice to share them, and its choice to be named by
+  its handle in troupes' Who's Who;
 - its bell messages, the scenes it made, the responses assigned to it and not yet
   written, and its troupe requests still waiting;
 - its handle, and the former handles it still holds, become the staying
   account's former handles, its own held for good, so links and searches still
   find the person.
+
+A suspension it is under carries to the staying account, unless that is
+suspended already (#304). A change of email it has waiting is cancelled, and the
+custodian's viewing as it, if any, ends.
 
 Then it is closed: signed out everywhere, unable to sign in, and left out of
 every list and search. It keeps its email for the record, freed for anyone to
@@ -34,22 +40,26 @@ from email.utils import formataddr
 from sqlalchemy import ColumnElement, delete, func, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit, character_moves
+from horatio import audit, character_moves, email_changes, preferences, suspensions
+from horatio.auth import viewing
 from horatio.config import get_settings
 from horatio.connectors import SendError, email
 from horatio.models import (
     AuthIdentity,
     Character,
+    EmailChange,
     EmailNotice,
     FormerHandle,
     Notification,
     PasswordReset,
     Response,
     Scene,
+    Suspension,
     Troupe,
     TroupeRequest,
     TroupeStaff,
     User,
+    Viewing,
 )
 from horatio.models import Session as SignInSession
 from horatio.models.base import Record
@@ -70,7 +80,14 @@ ROLE_NAMES = {
 }
 NOTIFICATION_SETTINGS = {name for name in Preferences.model_fields if name.startswith("email_")}
 # The profile's own parts that move where the staying account has none, by name.
-PROFILE = (("bio", "bio"), ("links", "links"), ("discord_handle", "Discord username"))
+PROFILE = (
+    ("bio", "bio"),
+    ("links", "links"),
+    ("discord_handle", "Discord username"),
+    ("pronouns", "pronouns"),
+)
+# The Who's Who's naming them by their handle (#264), which moves on its own.
+WHOS_WHO = "choice to be named by handle in the Who's Who"
 PROVIDERS = {"discord": "Discord", "google": "Google"}
 
 
@@ -119,8 +136,19 @@ class Preview:
     handles: list[str]
     # The rest that moves, each as a phrase: "2 messages in the bell".
     others: list[str]
+    # What else the merge does, each as a sentence: to a suspension, a change of
+    # email waiting, a viewing as it.
+    also: list[str]
     # Why the merge cannot be made now, if it cannot.
     refusals: list[str]
+    # Its suspension, if it is under one; and whether that carries to the staying
+    # account, which it does unless that is suspended already.
+    suspension: Suspension | None = None
+    suspension_carries: bool = False
+    # Its change of email waiting, cancelled by the merge.
+    email_change: EmailChange | None = None
+    # The custodians' viewings as it, which the merge ends.
+    viewings: tuple[Viewing, ...] = ()
 
     def by_troupe(self) -> dict[Troupe, list[str]]:
         """What moves in each troupe it touches, as phrases."""
@@ -150,6 +178,20 @@ class Preview:
 def _takes(keep: User, other: User, field: str) -> bool:
     """Whether the staying account takes the other's `field`, having none of its own."""
     return bool(getattr(other, field)) and not getattr(keep, field)
+
+
+def _takes_lines_veils(keep: User, other: User) -> bool:
+    """Whether the staying account takes the other's lines and veils, and its choice
+    to share them: only as a whole, where it has neither lines nor veils."""
+    return bool(other.lines or other.veils) and not (keep.lines or keep.veils)
+
+
+def _takes_whos_who(keep: User, other: User) -> bool:
+    """Whether the staying account takes the other's choice to be named by handle in
+    the Who's Who: only where it has not changed that setting itself."""
+    return preferences.read(other).whos_who_handle and "whos_who_handle" not in (
+        keep.preferences or {}
+    )
 
 
 def plural(count: int, one: str, many: str) -> str:
@@ -187,7 +229,50 @@ def _count(db: Session, model: type[Record], *where: ColumnElement[bool]) -> int
     return db.scalar(select(func.count()).select_from(model).where(*where)) or 0
 
 
-def preview(db: Session, keep: User, other: User) -> Preview:
+def _also(
+    db: Session, keep: User, other: User, viewer: User
+) -> tuple[list[str], Suspension | None, bool, EmailChange | None, tuple[Viewing, ...]]:
+    """What the merge does to a suspension, a change of email waiting and viewings
+    as the merged account: as sentences, and the rows themselves. Dates are in
+    `viewer`'s time zone."""
+    also: list[str] = []
+    suspension = suspensions.current(db, other.id)
+    carries = suspension is not None and suspensions.current(db, keep.id) is None
+    if suspension is not None and carries:
+        until = (
+            f"until {suspensions.when(viewer, suspension.ends_at)}"
+            if suspension.ends_at
+            else "until the custodian lifts it"
+        )
+        also.append(
+            f"Its suspension carries to @{keep.handle}: @{keep.handle} is signed out, and"
+            f" suspended {until}."
+        )
+    elif suspension is not None:
+        also.append(f"Its suspension is lifted: @{keep.handle} is suspended already, and stays so.")
+    change = email_changes.live_change(db, other)
+    if change is not None:
+        also.append(f"Its change of email waiting, to {change.new_email}, is cancelled.")
+    viewings = tuple(
+        db.scalars(
+            select(Viewing)
+            .where(
+                Viewing.user_id == other.id,
+                Viewing.ended_at.is_(None),
+                Viewing.ends_at > func.now(),
+            )
+            .order_by(Viewing.created_at)
+        )
+    )
+    for v in viewings:
+        custodian = db.get_one(User, v.custodian_id)
+        who = "Your" if custodian.id == viewer.id else f"{custodian.display_name}'s"
+        also.append(f"{who} viewing as @{other.handle} ends.")
+    return also, suspension, carries, change, viewings
+
+
+def preview(db: Session, keep: User, other: User, viewer: User) -> Preview:
+    """What merging `other` into `keep` would do, as the custodian `viewer` sees it."""
     refusals: list[str] = []
     if keep.id == other.id:
         refusals.append("Pick two different people: that is the same account twice.")
@@ -225,6 +310,11 @@ def preview(db: Session, keep: User, other: User) -> Preview:
     ):
         settings.append("notification settings")
     settings += [name for field, name in PROFILE if _takes(keep, other, field)]
+    if _takes_lines_veils(keep, other):
+        shared = "shared with other players" if other.share_lines_veils else "not shared"
+        settings.append(f"lines and veils ({shared})")
+    if _takes_whos_who(keep, other):
+        settings.append(WHOS_WHO)
 
     held = list(
         db.scalars(
@@ -265,6 +355,7 @@ def preview(db: Session, keep: User, other: User) -> Preview:
         )
         if n
     ]
+    also, suspension, carries, change, viewings = _also(db, keep, other, viewer)
     return Preview(
         keep=keep,
         other=other,
@@ -274,7 +365,12 @@ def preview(db: Session, keep: User, other: User) -> Preview:
         settings=settings,
         handles=[other.handle, *held],
         others=others,
+        also=also,
         refusals=refusals,
+        suspension=suspension,
+        suspension_carries=carries,
+        email_change=change,
+        viewings=viewings,
     )
 
 
@@ -304,7 +400,9 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
     db.refresh(other)
     if keep.merged_into_id is not None or other.merged_into_id is not None:
         raise conflict("One of these accounts has been merged already.")
-    found = preview(db, keep, other)
+    # A suspension past its end date is recorded as ended first, so it carries nothing.
+    suspensions.end_due(db, [keep.id, other.id])
+    found = preview(db, keep, other, actor)
     if found.refusals:
         raise conflict(" ".join(found.refusals))
     name, now = other.display_name, datetime.now(UTC)
@@ -360,6 +458,27 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
     for field, _ in PROFILE:
         if _takes(keep, other, field):
             setattr(keep, field, getattr(other, field))
+    if _takes_lines_veils(keep, other):
+        keep.lines, keep.veils = other.lines, other.veils
+        keep.share_lines_veils = other.share_lines_veils
+    if WHOS_WHO in found.settings:
+        keep.preferences = {**(keep.preferences or {}), "whos_who_handle": True}
+
+    _suspension(db, actor, keep, other, found)
+    # Its change of email waiting is cancelled, so its link no longer works; the
+    # address it was to is free for the staying account to change to.
+    if found.email_change is not None:
+        audit.record(
+            db,
+            actor,
+            email_changes.CANCELLED,
+            **email_changes.about(other, found.email_change),
+            kind="merged",
+            kept_handle=keep.handle,
+        )
+    db.execute(delete(EmailChange).where(EmailChange.user_id == other.id))
+    for v in found.viewings:
+        viewing.end(db, v, "merged")
 
     db.execute(update(Notification).where(Notification.user_id == other.id).values(user_id=keep.id))
     db.execute(update(EmailNotice).where(EmailNotice.user_id == other.id).values(user_id=keep.id))
@@ -421,6 +540,7 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
         settings=found.settings,
         handles=found.handles,
         others=found.others,
+        also=found.also,
     )
     for troupe, moved in by_troupe.items():
         audit.record(
@@ -452,8 +572,55 @@ def merge(db: Session, actor: User, keep: User, other: User, reason: str) -> Pre
     return found
 
 
+def _suspension(db: Session, actor: User, keep: User, other: User, found: Preview) -> None:
+    """Carry the merged account's suspension to the staying account, signing it out
+    everywhere; or, where that is suspended already, lift it. Lifted, it never ends
+    by itself later and emails the closed account that it can sign in again."""
+    suspension = found.suspension
+    if suspension is None:
+        return
+    if found.suspension_carries:
+        suspension.user_id = keep.id
+        db.execute(delete(SignInSession).where(SignInSession.user_id == keep.id))
+        db.flush()
+        audit.record(
+            db,
+            actor,
+            suspensions.SUSPENDED,
+            member=keep.display_name,
+            user_id=keep.id,
+            kind="merged",
+            merged_handle=other.handle,
+        )
+        return
+    suspension.lifted_at = datetime.now(UTC)
+    suspension.lifted_by_id = actor.id
+    suspension.lift_reason = f"Merged into @{keep.handle}, suspended already."
+    db.flush()
+    audit.record(
+        db,
+        actor,
+        suspensions.LIFTED,
+        member=other.display_name,
+        user_id=other.id,
+        kind="merged",
+        kept_handle=keep.handle,
+    )
+
+
 def email_text(actor: User, keep: User, found: Preview, merged_email: str, reason: str) -> str:
     merged = found.handles[0]
+    suspended = ""
+    if found.suspension is not None and found.suspension_carries:
+        until = (
+            f" until {suspensions.when(keep, found.suspension.ends_at)}"
+            if found.suspension.ends_at
+            else ""
+        )
+        suspended = (
+            f"@{merged} was suspended, so @{keep.handle} is suspended in its place{until}."
+            f" To ask about it, {suspensions.contact()}.\n\n"
+        )
     return (
         f"Hello {keep.display_name},\n\n"
         f"{actor.display_name}, Horatio's custodian, has merged your account @{merged}"
@@ -462,6 +629,7 @@ def email_text(actor: User, keep: User, found: Preview, merged_email: str, reaso
         f"From now on, sign in as @{keep.handle}. @{merged} can no longer sign in, and"
         f" anyone looking for @{merged} finds @{keep.handle}.\n\n"
         f"Moved to @{keep.handle}: {found.summary()}.\n\n"
+        f"{suspended}"
         f"-- \nSent by Horatio, {get_settings().public_url.rstrip('/')}\n"
     )
 

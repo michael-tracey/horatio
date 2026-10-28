@@ -10235,6 +10235,8 @@ export interface components {
         };
         /** MergePreview */
         MergePreview: {
+            /** Also */
+            also: string[];
             /** Characters */
             characters: components["schemas"]["MergeCharacter"][];
             /** Handles */
