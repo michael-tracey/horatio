@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from horatio.models import HeldStatus
 from tests.api_helpers import Person, Troupe
 from tests.test_api_play import send, tap
-from tests.test_api_sect_status import add, entitle, held, held_id, logged, member
+from tests.test_api_sect_status import add, entitle, held, held_id, logged, member, put_trait
 
 
 @pytest.fixture
@@ -49,14 +49,21 @@ def reset(person: Person, character_id: str) -> None:
     assert response.status_code == 200, response.text
 
 
-def test_a_seneschal_and_primogen_chooses_one_source_locked_for_the_game(troupe: Troupe) -> None:
+def test_a_seneschal_elder_chooses_one_source_locked_for_the_game(troupe: Troupe) -> None:
     agnes = member(troupe)
+    # Of its titles only the active one, the Seneschal, is a source; its social age
+    # is another.
     entitle(troupe, agnes, "Seneschal", "Primogen")
+    put_trait(troupe.session, agnes, "backgrounds", "Generation", 3)
 
     state = view(troupe.player, agnes)["status"]
     assert state["accepted"] == "Acknowledged"
     assert state["choosing"]
-    assert [s["name"] for s in state["sources"]] == ["Primogen", "Seneschal"]
+    assert [s["name"] for s in state["sources"]] == ["Seneschal", "Elder"]
+    assert [(t["name"], t["active"]) for t in state["titles"]] == [
+        ("Primogen", False),
+        ("Seneschal", True),
+    ]
     # Until the choice, no abiding status.
     assert state["carried"] == []
 
@@ -82,18 +89,19 @@ def test_a_seneschal_and_primogen_chooses_one_source_locked_for_the_game(troupe:
     assert carried(away.json()) == [("Noble", "Abiding"), ("Authority", "Abiding")]
 
     # Locked for the game: the player cannot change it, and staff can.
-    refused = choose(troupe.player, agnes, source="Primogen")
+    refused = choose(troupe.player, agnes, source="Elder")
     assert refused.status_code == 409
     assert "staff can change it" in refused.json()["detail"]
     assert choose(troupe.player, agnes, absent={"Prince": False}).status_code == 409
-    assert choose(troupe.player, agnes, source="Prince").status_code == 422
-    changed = choose(troupe.storyteller, agnes, source="Primogen")
+    # A title not active is no source.
+    assert choose(troupe.storyteller, agnes, source="Primogen").status_code == 422
+    changed = choose(troupe.storyteller, agnes, source="Elder")
     assert changed.status_code == 200, changed.text
-    assert carried(changed.json()) == [("Noble", "Abiding")]
+    assert [n for n, _ in carried(changed.json())] == ["Confirmed", "Established", "Privileged"]
     assert [e["choice"] for e in logged(troupe.session, agnes, "play.status_chosen")] == [
         "Seneschal as its source of abiding status",
         "the Prince absent",
-        "Primogen as its source of abiding status",
+        "Elder as its source of abiding status",
     ]
 
     # The next game, the choice is to make again.
@@ -225,19 +233,18 @@ def test_a_player_adds_status_at_the_game_as_the_troupe_allows(troupe: Troupe) -
 
 def test_a_title_given_during_a_game_gives_nothing_until_the_next(troupe: Troupe) -> None:
     agnes = member(troupe)
-    entitle(troupe, agnes, "Primogen")
     send(troupe.player, agnes, tap("blood", -1))
 
-    entitle(troupe, agnes, "Primogen", "Sheriff")
+    entitle(troupe, agnes, "Sheriff")
     state = view(troupe.player, agnes)
     sheriff = next(t for t in state["status"]["titles"] if t["name"] == "Sheriff")
-    assert sheriff["next_game"]
-    assert [s["name"] for s in state["status"]["sources"]] == ["Primogen"]
-    assert carried(state) == [("Noble", "Abiding")]
+    assert (sheriff["next_game"], sheriff["active"]) == (True, True)
+    assert state["status"]["sources"] == []
+    assert carried(state) == []
 
     reset(troupe.player, agnes)
     state = view(troupe.player, agnes)["status"]
-    assert [s["name"] for s in state["sources"]] == ["Primogen", "Sheriff"]
+    assert [s["name"] for s in state["sources"]] == ["Sheriff"]
     assert not any(t["next_game"] for t in state["titles"])
 
 

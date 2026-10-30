@@ -3,11 +3,13 @@ the bans, the caps and the status titles give are rules, in horatio.rules.status
 
 A character's status is of two kinds:
 
-- **derived**, never typed in: abiding status from the titles it holds in a
-  troupe (horatio.titles), the abiding status its sect gives its social age
-  (horatio.social_age: a Camarilla elder's Confirmed, Established and Privileged),
-  and innate status its merits grant (horatio.rules.grants), which stays a trait
-  on the sheet as everything granted does;
+- **derived**, never typed in: abiding status from the active title it holds in
+  each troupe (horatio.titles: of several, only the active one gives status, as a
+  character carries one abiding source into a game, p. 313), the abiding status
+  its sect gives its social age (horatio.social_age: a Camarilla elder's
+  Confirmed, Established and Privileged), and innate status its merits grant
+  (horatio.rules.grants), which stays a trait on the sheet as everything granted
+  does;
 - **held**: fleeting and negative status (HeldStatus), each with its patron, where
   and when it was given, and the story: what Leadership reveals (p. 310). Held
   status lives on the character, not a troupe, so it counts in every game of its
@@ -300,15 +302,17 @@ def current_troupe_ids(db: Session, character: Character) -> list[uuid.UUID]:
     return ids
 
 
-def held_titles(db: Session, character: Character) -> dict[uuid.UUID, list[str]]:
-    found: dict[uuid.UUID, list[str]] = defaultdict(list)
-    for troupe_id, name in db.execute(
-        select(CharacterTitle.troupe_id, CharacterTitle.name)
-        .where(CharacterTitle.character_id == character.id)
-        .order_by(CharacterTitle.name)
-    ):
-        found[troupe_id].append(name)
-    return found
+def active_titles(db: Session, character: Character) -> dict[uuid.UUID, str]:
+    """The character's active title in each troupe it holds one in: of its titles
+    there, the only one that gives it status (horatio.titles)."""
+    return {
+        troupe_id: name
+        for troupe_id, name in db.execute(
+            select(CharacterTitle.troupe_id, CharacterTitle.name).where(
+                CharacterTitle.character_id == character.id, CharacterTitle.active
+            )
+        )
+    }
 
 
 def gives_status(title: TitleData | None, sect: str | None) -> bool:
@@ -598,16 +602,14 @@ def standing(db: Session, character: Character) -> Standing:
         found.outsider = outsider
         found.sect_data = rules.status_rules.sects[outsider.sect]
     if sect_data is not None:
-        holding = held_titles(db, character)
+        holding = active_titles(db, character)
         for troupe_id in current_troupe_ids(db, character):
-            names = holding.get(troupe_id, [])
-            if not names:
+            name = holding.get(troupe_id)
+            if name is None:
                 continue
-            data = titles.title_data(db, troupe_id)
-            for name in names:
-                title = data.get(name)
-                if title is not None and gives_status(title, sect):
-                    found.derived += title_status(title, troupe_id)
+            title = titles.title_data(db, troupe_id).get(name)
+            if title is not None and gives_status(title, sect):
+                found.derived += title_status(title, troupe_id)
         # Ancilla and Elder, as titles, give nothing: social age gives their status.
         age = social_age.standings(db, [character.id])[character.id].age
         found.derived += age_status(rules, sect, age)

@@ -39,6 +39,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   email_troupe_requests: false,
   email_renames: false,
   email_pictures: false,
+  email_titles: false,
   email_digest: "at_once",
   whos_who_handle: false,
 };

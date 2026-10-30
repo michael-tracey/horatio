@@ -206,6 +206,10 @@ page = "400"
 # (horatio.whos_who): the Camarilla's from the Inner Circle down to the Scourge
 # (pp. 371-380), then the Sabbat's (pp. 416-421) and the Anarchs' (pp. 473-474).
 #
+# A title marked `unique` is one a domain has only one of at a time (a Prince, a
+# Sheriff, a Baron): no player can choose it while another character holds it. The
+# rest may be held by several (a Primogen of each clan, Archons, a pack's Ductus).
+#
 # A Myrmidon has an Archon's authority, but Sanctioned in place of Noble (p. 371);
 # Sanctioned is fleeting status, so the title gives none here. A Lesser Harpy, who
 # gains Guardian while the Master Harpy is away (p. 379), is not in the list.
@@ -218,6 +222,7 @@ page = "371"
 
 [[titles]]
 name = "Imperator"
+unique = true
 sect = "Camarilla"
 status = ["Ascendant", "Authority", "Commander"]
 page = "371"
@@ -242,6 +247,7 @@ page = "374"
 
 [[titles]]
 name = "Prince"
+unique = true
 sect = "Camarilla"
 status = ["Authority", "Commander", "Sovereign"]
 page = "375"
@@ -254,6 +260,7 @@ page = "375"
 
 [[titles]]
 name = "Seneschal"
+unique = true
 sect = "Camarilla"
 status = ["Noble"]
 page = "376"
@@ -279,30 +286,35 @@ status = ["Noble"]
 
 [[titles]]
 name = "Harpy"
+unique = true
 sect = "Camarilla"
 status = ["Prominent", "Noble", "Guardian"]
 page = "379"
 
 [[titles]]
 name = "Keeper of Elysium"
+unique = true
 sect = "Camarilla"
 status = ["Enforcer", "Guardian"]
 page = "379"
 
 [[titles]]
 name = "Sheriff"
+unique = true
 sect = "Camarilla"
 status = ["Enforcer", "Privileged"]
 page = "380"
 
 [[titles]]
 name = "Scourge"
+unique = true
 sect = "Camarilla"
 status = ["Enforcer"]
 page = "380"
 
 [[titles]]
 name = "Regent"
+unique = true
 sect = "Sabbat"
 status = ["Authority", "Commander", "Ominous", "Sacrosanct"]
 page = "416"
@@ -315,6 +327,7 @@ page = "417"
 
 [[titles]]
 name = "Archbishop"
+unique = true
 sect = "Sabbat"
 status = ["Authority", "Glorious", "Ordained"]
 page = "419"
@@ -362,6 +375,7 @@ page = "421"
 
 [[titles]]
 name = "Baron"
+unique = true
 sect = "Anarch"
 status = ["Authority", "Mandate"]
 page = "473"
@@ -421,6 +435,7 @@ sect = "Sabbat"
 
 [[titles]]
 name = "Grand Inquisitor"
+unique = true
 sect = "Sabbat"
 
 [[titles]]

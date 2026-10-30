@@ -44,6 +44,7 @@ class Preferences(BaseModel):
     email_troupe_requests: bool = False
     email_renames: bool = False
     email_pictures: bool = False
+    email_titles: bool = False
     # Each email as it happens, or everything gathered into one a day.
     email_digest: Literal["at_once", "daily"] = "at_once"
     # Troupes' Who's Who names the player by their handle, not their name (#264).

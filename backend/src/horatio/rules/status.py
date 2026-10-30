@@ -36,7 +36,9 @@ one of `choose_one`, chosen at the start of each game (a Bishop's Blessed or
 Enforcer); and with `while_absent`, more status while the holder of another title
 is away from the game (a Seneschal's Authority, while the Prince is absent).
 Horatio cannot know who is at a game, so the holder says so. A title with no sect
-can go to anyone.
+can go to anyone. A `unique` title is held by only one character in a troupe at a
+time (a Prince, a Sheriff); any other may be held by several (a Primogen, an
+Archon).
 
 The caps (p. 313): a character carries into a game the status of one abiding
 source (its titles and its social age are each a source), all its innate and
@@ -141,6 +143,9 @@ class TitleData:
     # Its place at court, highest first: the order the rules data describes the
     # titles in (horatio.whos_who). None for a title that is only a name.
     rank: int | None = None
+    # Only one character in a troupe holds it at a time (a Prince): a player cannot
+    # choose it while another character holds it (horatio.titles).
+    unique: bool = False
 
     @property
     def gives_status(self) -> bool:
@@ -277,6 +282,7 @@ def title_from_dict(raw: Mapping[str, Any]) -> TitleData:
         ),
         page=raw.get("page"),
         rank=raw.get("rank"),
+        unique=raw.get("unique", False),
     )
 
 

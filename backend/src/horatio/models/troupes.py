@@ -27,7 +27,9 @@ class Troupe(Imported, Record):
             "diablerie_flaws in ('leave', 'remove', 'keep_xp')", name="diablerie_flaws"
         ),
         CheckConstraint("status_by in ('players', 'staff')", name="status_by"),
+        CheckConstraint("titles_by in ('players', 'staff')", name="titles_by"),
         CheckConstraint("badge_status in ('all', 'negative', 'none')", name="badge_status"),
+        CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
     )
 
     name: Mapped[str]
@@ -65,6 +67,9 @@ class Troupe(Imported, Record):
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.
     status_by: Mapped[str] = mapped_column(default="players", server_default="players")
+    # Titles on sheets (horatio.titles): whether "players" choose their own
+    # characters' titles from their sect's, or only its running "staff" give them.
+    titles_by: Mapped[str] = mapped_column(default="players", server_default="players")
     # What its game badges print (horatio.badges): the titles held here, or not; and
     # the status carried into a game here, "all" of it, "negative" status only, or
     # "none", leaving the space for stickers.
@@ -86,6 +91,13 @@ class Troupe(Imported, Record):
     # ("Lasombra": "rare"), over the book's rarity for the setting's sect. A character
     # built here takes the rarity merit it names (horatio.clan_merits).
     clan_rarity: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # House options for Stock Locations (horatio.rules.locations) it has switched
+    # off, by key: every other is on. And what going over a character's control
+    # limit does: "refuse" it, or "note" it for staff (horatio.locations).
+    location_options_off: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
+    location_limit: Mapped[str] = mapped_column(default="refuse", server_default="refuse")
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a
@@ -233,14 +245,28 @@ class TroupeTitle(Record):
     # Where it comes on the troupe's Who's Who, after the rule sets' titles
     # (horatio.whos_who): the troupe sets the order of its own.
     position: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Only one character in the troupe holds it at a time: players cannot choose it
+    # while someone does (horatio.titles).
+    unique: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class CharacterTitle(Record):
-    """A title a character holds in one troupe (CONTEXT.md: Title)."""
+    """A title a character holds in one troupe (CONTEXT.md: Title). Of the titles
+    it holds there, at most one is active, and only that one gives status."""
 
     __tablename__ = "character_titles"
-    __table_args__ = (UniqueConstraint("troupe_id", "character_id", "name"),)
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "character_id", "name"),
+        Index(
+            "uq_character_titles_active",
+            "troupe_id",
+            "character_id",
+            unique=True,
+            postgresql_where=text("active"),
+        ),
+    )
 
     troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
     name: Mapped[str]
+    active: Mapped[bool] = mapped_column(default=False, server_default="false")

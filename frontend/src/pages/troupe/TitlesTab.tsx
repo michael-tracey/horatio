@@ -52,7 +52,7 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
       <Card title="Add a title">
         <TitleFields
           data={titles.data}
-          initial={{ name: "", sect: null, status: [] }}
+          initial={{ name: "", sect: null, status: [], unique: false }}
           naming
           pending={add.isPending}
           save="Add"
@@ -60,14 +60,16 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
         />
         <ErrorText error={add.error} />
         <p className="mt-3 text-xs text-mist">
-          Give titles to characters on the Characters tab. A title of a sect goes only to characters of that sect, and a title means nothing outside this troupe.
+          Give titles to characters on the Characters tab; players choose their own on their character's Status & Titles tab, unless the troupe keeps titles to
+          staff. A title of a sect goes only to characters of that sect, and a title means nothing outside this troupe. Of a character's titles, only the
+          active one gives status.
         </p>
       </Card>
     </div>
   );
 }
 
-type TitleForm = { name: string; sect: string | null; status: string[] };
+type TitleForm = { name: string; sect: string | null; status: string[]; unique: boolean };
 
 /** The troupe's own titles in their order on the Who's Who, after the rule set's,
  * each moved up or down one place. */
@@ -113,7 +115,7 @@ function TitleRow({ troupeId, title, data }: { troupeId: string; title: TitleOut
   const [editing, setEditing] = useState(false);
   const target = { params: { path: { troupe_id: troupeId, name: title.name } } };
   const change = useAction((t: TitleForm) =>
-    unwrap(api.PUT("/api/troupes/{troupe_id}/titles/{name}", { ...target, body: { sect: t.sect, status: t.status } })),
+    unwrap(api.PUT("/api/troupes/{troupe_id}/titles/{name}", { ...target, body: { sect: t.sect, status: t.status, unique: t.unique } })),
   );
   const remove = useAction(() => unwrap(api.DELETE("/api/troupes/{troupe_id}/titles/{name}", target)));
   const gives = titleStatus(title);
@@ -121,6 +123,7 @@ function TitleRow({ troupeId, title, data }: { troupeId: string; title: TitleOut
     <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2" aria-label={title.name}>
       <span className="font-medium text-parchment">{title.name}</span>
       {title.house && <Badge tone="gold">ours</Badge>}
+      {title.unique && <Badge>one at a time</Badge>}
       {!title.offered && <Badge tone="blood">not a sect this troupe takes</Badge>}
       <span className="text-xs text-mist">{gives ? `Gives ${gives}` : "Gives no status"}</span>
       <span className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm">
@@ -134,6 +137,7 @@ function TitleRow({ troupeId, title, data }: { troupeId: string; title: TitleOut
             >
               {h.character_name}
               {h.out_of_sect && ` (${h.sect ?? "no sect"})`}
+              {h.active && <span className="text-xs text-mist"> · active</span>}
             </Link>
           ))
         ) : (
@@ -166,7 +170,7 @@ function TitleRow({ troupeId, title, data }: { troupeId: string; title: TitleOut
       <Dialog title={`Change ${title.name}`} open={editing} onClose={() => setEditing(false)}>
         <TitleFields
           data={data}
-          initial={{ name: title.name, sect: title.sect, status: title.status }}
+          initial={{ name: title.name, sect: title.sect, status: title.status, unique: title.unique }}
           pending={change.isPending}
           save="Save"
           onSave={(t) => change.mutate(t, { onSuccess: () => setEditing(false) })}
@@ -251,6 +255,11 @@ function TitleFields({
           <Empty>None.</Empty>
         )}
       </fieldset>
+      <label className="flex items-center gap-1.5 text-sm">
+        <input type="checkbox" checked={title.unique} onChange={(e) => setTitle({ ...title, unique: e.target.checked })} />
+        Only one character holds it at a time
+        <span className="text-xs text-mist">(players can't choose it while someone does)</span>
+      </label>
       <div>
         <Button type="submit" disabled={(naming && !title.name.trim()) || pending}>
           {save}

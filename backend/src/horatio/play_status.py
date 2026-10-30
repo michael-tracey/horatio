@@ -147,6 +147,8 @@ class TitleHeld:
     data: TitleData | None
     gives: bool
     next_game: bool
+    # The one of its titles there that gives status (horatio.titles).
+    active: bool = False
 
 
 @dataclass
@@ -181,12 +183,14 @@ def at_game(db: Session, character: Character, game: PlayGame | None) -> AtGame:
         return at
     data = titles.title_data(db, troupe.id)
     begun = choices.begun_with
+    active = titles.active_title(db, troupe.id, character.id)
     at.titles = [
         TitleHeld(
             name,
             data.get(name),
-            sect_status.gives_status(data.get(name), found.sect),
+            name == active and sect_status.gives_status(data.get(name), found.sect),
             begun is not None and name not in begun,
+            name == active,
         )
         for name in titles.held(db, troupe.id, character.id)
     ]

@@ -13,16 +13,30 @@ rule sets say so for theirs, and a troupe for its own. A troupe that takes only
 some sects offers only their titles and those of no sect, and a title of a sect
 goes only to a character of that sect. One given before that rule, or held by a
 character who has since changed sect, is kept and shown to staff as out of sect.
+
+**Players choose their characters' titles** from those their home troupe offers
+of their sect, on the character's Status & Titles tab, unless the troupe's
+"Titles on sheets" setting (Troupe.titles_by) keeps titles to its running staff.
+Staff are told of each choice (horatio.notifications). A `unique` title (a Prince)
+is one no player can choose while another character in the troupe holds it; staff
+can still give it.
+
+**One title is active.** Of the titles a character holds in a troupe, at most one
+is active, and only it gives status (horatio.sect_status): a character carries the
+status of one abiding source into a game (MET: VTM pp. 311, 313). The first title
+it holds there becomes active; another becomes active only when chosen so. When
+the active title goes, none is active until one is chosen.
 """
 
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Literal, get_args
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, notifications
 from horatio.models import (
     Character,
     CharacterTitle,
@@ -34,8 +48,19 @@ from horatio.models import (
     TroupeTitle,
     User,
 )
+from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules.status import GENERAL, STATUS_CATEGORY, TitleData, titles_from
 from horatio.sheets import conflict, membership, unprocessable
+
+# Titles on sheets: who chooses the titles of a troupe's characters.
+Setting = Literal["players", "staff"]
+SETTINGS: tuple[str, ...] = get_args(Setting)
+SETTING_TEXT = {
+    "players": "players choose their characters' titles",
+    "staff": "only staff give titles",
+}
+# Who is choosing on the character's tab: its player, or staff.
+Acting = Literal["player", "staff"]
 
 
 def rule_set_titles(db: Session) -> dict[str, TitleData]:
@@ -51,7 +76,9 @@ def rule_set_titles(db: Session) -> dict[str, TitleData]:
 
 
 def house_title(title: TroupeTitle) -> TitleData:
-    return TitleData(name=title.name, sect=title.sect, status=tuple(title.status))
+    return TitleData(
+        name=title.name, sect=title.sect, status=tuple(title.status), unique=title.unique
+    )
 
 
 def house_titles(db: Session, troupe_id: uuid.UUID) -> list[TroupeTitle]:
@@ -156,10 +183,11 @@ def check_house_title(db: Session, troupe: Troupe, sect: str | None, status: Seq
         raise unprocessable("A title gives each status once.")
 
 
-def describe(sect: str | None, status: Sequence[str]) -> str:
+def describe(sect: str | None, status: Sequence[str], unique: bool = False) -> str:
     """A troupe's title in words, for the log: "Camarilla, giving Guardian"."""
     gives = f"giving {', '.join(status)}" if status else "giving no status"
-    return f"{sect or 'any sect'}, {gives}"
+    one = ", held by one character at a time" if unique else ""
+    return f"{sect or 'any sect'}, {gives}{one}"
 
 
 def add_title(
@@ -169,6 +197,7 @@ def add_title(
     name: str,
     sect: str | None = None,
     status: Sequence[str] = (),
+    unique: bool = False,
 ) -> None:
     name = name.strip()
     if not name:
@@ -186,11 +215,17 @@ def add_title(
             sect=sect,
             status=list(status),
             position=(last or 0) + 1,
+            unique=unique,
         )
     )
     db.flush()
     audit.record(
-        db, staff, "title.added", troupe_id=troupe.id, title=name, what=describe(sect, status)
+        db,
+        staff,
+        "title.added",
+        troupe_id=troupe.id,
+        title=name,
+        what=describe(sect, status, unique),
     )
 
 
@@ -204,18 +239,29 @@ def find_house_title(db: Session, troupe: Troupe, name: str) -> TroupeTitle:
 
 
 def change_title(
-    db: Session, staff: User, troupe: Troupe, name: str, sect: str | None, status: Sequence[str]
+    db: Session,
+    staff: User,
+    troupe: Troupe,
+    name: str,
+    sect: str | None,
+    status: Sequence[str],
+    unique: bool = False,
 ) -> None:
-    """Change the sect and status of a title the troupe added. What it gives, it
-    gives everyone who holds it."""
+    """Change the sect and status of a title the troupe added, and whether only one
+    character holds it. What it gives, it gives everyone who holds it."""
     found = find_house_title(db, troupe, name)
     check_house_title(db, troupe, sect, status)
-    if (found.sect, found.status) == (sect, list(status)):
+    if (found.sect, found.status, found.unique) == (sect, list(status), unique):
         return
-    found.sect, found.status = sect, list(status)
+    found.sect, found.status, found.unique = sect, list(status), unique
     db.flush()
     audit.record(
-        db, staff, "title.changed", troupe_id=troupe.id, title=name, what=describe(sect, status)
+        db,
+        staff,
+        "title.changed",
+        troupe_id=troupe.id,
+        title=name,
+        what=describe(sect, status, unique),
     )
 
 
@@ -282,6 +328,29 @@ def held(db: Session, troupe_id: uuid.UUID, character_id: uuid.UUID) -> list[str
     )
 
 
+def active_title(db: Session, troupe_id: uuid.UUID, character_id: uuid.UUID) -> str | None:
+    """The title the character holds in the troupe that gives it status, if any."""
+    return db.scalar(
+        select(CharacterTitle.name).where(
+            CharacterTitle.troupe_id == troupe_id,
+            CharacterTitle.character_id == character_id,
+            CharacterTitle.active,
+        )
+    )
+
+
+def active_titles(db: Session, troupe_id: uuid.UUID) -> dict[uuid.UUID, str]:
+    """Each character's active title in the troupe, by character."""
+    return {
+        who: name
+        for who, name in db.execute(
+            select(CharacterTitle.character_id, CharacterTitle.name).where(
+                CharacterTitle.troupe_id == troupe_id, CharacterTitle.active
+            )
+        )
+    }
+
+
 @dataclass(frozen=True)
 class Holding:
     title: str
@@ -289,24 +358,40 @@ class Holding:
     # The character's sect, from its sheet; None if it has none.
     sect: str | None
     out_of_sect: bool
+    # The one of its titles here that gives it status.
+    active: bool = False
 
 
 def holdings(db: Session, troupe_id: uuid.UUID) -> list[Holding]:
     """Who holds which title in the troupe, by title and then character name."""
     rows = list(
         db.execute(
-            select(CharacterTitle.name, Character)
+            select(CharacterTitle.name, CharacterTitle.active, Character)
             .join(Character, CharacterTitle.character_id == Character.id)
             .where(CharacterTitle.troupe_id == troupe_id)
             .order_by(CharacterTitle.name, Character.name)
         )
     )
     known = title_data(db, troupe_id)
-    sects = character_sects(db, {c.id for _, c in rows})
+    sects = character_sects(db, {c.id for _, _, c in rows})
     return [
-        Holding(name, c, sects.get(c.id), out_of_sect(known.get(name), sects.get(c.id)))
-        for name, c in rows
+        Holding(name, c, sects.get(c.id), out_of_sect(known.get(name), sects.get(c.id)), active)
+        for name, active, c in rows
     ]
+
+
+def make_active(
+    db: Session, troupe_id: uuid.UUID, character_id: uuid.UUID, name: str | None
+) -> None:
+    """Make `name` the character's active title in the troupe; None, none."""
+    mine = (CharacterTitle.troupe_id == troupe_id, CharacterTitle.character_id == character_id)
+    db.execute(update(CharacterTitle).where(*mine, CharacterTitle.active).values(active=False))
+    db.flush()
+    if name is not None:
+        db.execute(
+            update(CharacterTitle).where(*mine, CharacterTitle.name == name).values(active=True)
+        )
+    db.flush()
 
 
 def set_titles(
@@ -314,7 +399,8 @@ def set_titles(
 ) -> list[str]:
     """Give `character` exactly these titles in `troupe`. A new one must be one the
     troupe gives, and of the character's sect if it has a sect. One it holds
-    already stays, even out of sect."""
+    already stays, even out of sect. A character that held none here makes the
+    highest of its new titles active; the active one taken leaves none active."""
     if membership(db, character, troupe.id) is None:
         raise conflict("Titles are only for characters in this troupe.")
     before = set(held(db, troupe.id, character.id))
@@ -350,7 +436,272 @@ def set_titles(
             db, staff, "title.given", troupe_id=troupe.id, character_id=character.id, title=name
         )
     db.flush()
+    if after - before and not before & after:
+        order = court_order(db, troupe.id)
+        make_active(db, troupe.id, character.id, min(after, key=lambda n: court_key(order, n)))
     return sorted(after)
+
+
+# --- choosing on the character's tab ----------------------------------------------------------
+
+
+def setting_of(troupe: Troupe | None) -> str:
+    return troupe.titles_by if troupe is not None else "players"
+
+
+def home_of(db: Session, character: Character) -> Troupe | None:
+    """The troupe whose titles the character chooses from: a PC's home troupe, or
+    the troupe an NPC belongs to."""
+    troupe_id = character.home_troupe_id or character.owner_troupe_id
+    return db.get(Troupe, troupe_id) if troupe_id else None
+
+
+def is_player(user: User, character: Character) -> bool:
+    return character.kind == "pc" and character.player_id == user.id
+
+
+def may_choose(
+    db: Session,
+    user: User,
+    character: Character,
+    troupe: Troupe | None,
+    *,
+    setting: str | None = None,
+) -> Acting | None:
+    """Whether `user` chooses the character's titles in its home troupe, and as whom:
+    its player, where players choose their own, or the troupe's running staff."""
+    if troupe is None or character.status != "active":
+        return None
+    if troupe.archived_at is not None or membership(db, character, troupe.id) is None:
+        return None
+    if is_player(user, character) and (setting or setting_of(troupe)) == "players":
+        return "player"
+    if allows(
+        troupe_role(db, user, troupe), TroupeAction.MANAGE_TITLES, is_custodian=user.is_custodian
+    ):
+        return "staff"
+    return None
+
+
+def may_switch(
+    db: Session, user: User, character: Character, troupe: Troupe | None
+) -> Acting | None:
+    """Whether `user` chooses which of the character's titles is active, and as
+    whom: its player, even where only staff give titles (which source it carries
+    into a game is the character's to choose, p. 311), or staff."""
+    return may_choose(db, user, character, troupe, setting="players")
+
+
+def require_choose(
+    db: Session, user: User, character: Character, *, switching: bool = False
+) -> tuple[Troupe, Acting]:
+    troupe = home_of(db, character)
+    if troupe is None:
+        raise conflict(f"{character.name} has no home troupe: titles are held in a troupe.")
+    acting = (may_switch if switching else may_choose)(db, user, character, troupe)
+    if acting is None:
+        if is_player(user, character) and setting_of(troupe) == "staff":
+            raise conflict(f"In {troupe.name}, only staff give titles.")
+        raise conflict(f"You cannot change {character.name}'s titles.")
+    return troupe, acting
+
+
+def holders_of(db: Session, troupe_id: uuid.UUID, name: str) -> list[Character]:
+    return list(
+        db.scalars(
+            select(Character)
+            .join(CharacterTitle, CharacterTitle.character_id == Character.id)
+            .where(CharacterTitle.troupe_id == troupe_id, CharacterTitle.name == name)
+            .order_by(Character.name)
+        )
+    )
+
+
+def named(title: TitleData | None, name: str) -> str:
+    """A title with its sect: "Harpy (Camarilla)"."""
+    return f"{name} ({title.sect})" if title is not None and title.sect else name
+
+
+def gives_words(title: TitleData | None) -> list[str]:
+    """The status a title gives, as a line names it: "Noble", "Blessed or Enforcer"."""
+    if title is None:
+        return []
+    found = list(title.status)
+    if title.choose_one:
+        found.append(" or ".join(title.choose_one))
+    for absent in title.while_absent:
+        found += [f"{s} while the {absent.title} is away" for s in absent.status]
+    return found
+
+
+def change_words(gained: TitleData | None, lost: TitleData | None) -> str:
+    """The status a switch gains and loses: "+Enforcer, −Prominent". Empty for none."""
+    new, old = gives_words(gained), gives_words(lost)
+    return ", ".join(
+        [f"+{s}" for s in new if s not in old] + [f"−{s}" for s in old if s not in new]
+    )
+
+
+def tell_staff(
+    db: Session, user: User, troupe: Troupe, character: Character, kind: str, summary: str
+) -> None:
+    """Tell the troupe's storytellers and assistant storytellers what the player did."""
+    staff = [
+        s for s in notifications.staff_for(db, troupe, TroupeAction.MANAGE_TITLES) if s != user.id
+    ]
+    notifications.notify(
+        db,
+        staff,
+        kind,
+        summary,
+        f"/characters/{character.id}/status",
+        troupe_id=troupe.id,
+        character_id=character.id,
+    )
+
+
+def choose(
+    db: Session, user: User, character: Character, name: str, *, active: bool = False
+) -> None:
+    """The character takes a title its home troupe offers of its sect, as its player
+    (where players choose their own) or staff. The first title it holds becomes
+    active; another, only if `active`. A unique title another character holds is
+    staff's to give."""
+    troupe, acting = require_choose(db, user, character)
+    title = offered(db, troupe).get(name)
+    if title is None:
+        raise unprocessable(f"{troupe.name} does not offer the title {name}.")
+    sect = character_sects(db, [character.id]).get(character.id)
+    if out_of_sect(title, sect):
+        raise conflict(
+            f"{name} is a {title.sect} title, and {character.name} "
+            + (f"is {sect}." if sect else "has no sect.")
+        )
+    before = held(db, troupe.id, character.id)
+    if name in before:
+        raise conflict(f"{character.name} holds {name} already.")
+    others = [c for c in holders_of(db, troupe.id, name) if c.id != character.id]
+    if title.unique and others and acting == "player":
+        raise conflict(
+            f"{others[0].name} holds {name}, and only one character holds it at a time:"
+            " ask your storytellers."
+        )
+    was = active_title(db, troupe.id, character.id)
+    db.add(CharacterTitle(troupe_id=troupe.id, character_id=character.id, name=name))
+    db.flush()
+    becomes = active or not before
+    if becomes:
+        make_active(db, troupe.id, character.id, name)
+    data = title_data(db, troupe.id)
+    old = data.get(was) if was and becomes else None
+    if becomes and was:
+        what = f"active, in place of {was}"
+    elif becomes:
+        what = "active"
+    elif was:
+        what = f"not active: {was} stays active"
+    else:
+        what = "not active: no title is"
+    audit.record(
+        db,
+        user,
+        "title.chosen" if acting == "player" else "title.given",
+        troupe_id=troupe.id,
+        character_id=character.id,
+        title=name,
+        what=what,
+    )
+    if acting != "player":
+        return
+    took = f"{character.name} took the title {named(title, name)}"
+    change = change_words(title, old) if becomes else ""
+    if becomes and was:
+        summary = f"{took} and made it active in place of {was}"
+    elif becomes:
+        summary = took
+    elif was:
+        summary = f"{took} beside {was}, which stays active"
+    else:
+        summary = f"{took}; no title is active"
+    if becomes:
+        summary += f": {change}" if change else ", which gives no status"
+    tell_staff(db, user, troupe, character, "title.chosen", summary)
+
+
+def switch(db: Session, user: User, character: Character, name: str) -> None:
+    """Make a title the character holds in its home troupe its active one: its status
+    in place of the old one's. Its player can, even where only staff give titles."""
+    troupe, acting = require_choose(db, user, character, switching=True)
+    if name not in held(db, troupe.id, character.id):
+        raise unprocessable(f"{character.name} does not hold {name}.")
+    was = active_title(db, troupe.id, character.id)
+    if was == name:
+        return
+    make_active(db, troupe.id, character.id, name)
+    audit.record(
+        db,
+        user,
+        "title.made_active",
+        troupe_id=troupe.id,
+        character_id=character.id,
+        title=name,
+        what=f"in place of {was}" if was else "none was active",
+    )
+    if acting != "player":
+        return
+    data = title_data(db, troupe.id)
+    change = change_words(data.get(name), data.get(was) if was else None)
+    summary = f"{character.name} made {named(data.get(name), name)} the active title"
+    summary += f", in place of {was}" if was else ""
+    summary += f": {change}" if change else ""
+    tell_staff(db, user, troupe, character, "title.made_active", summary)
+
+
+def give_up(db: Session, user: User, character: Character, name: str) -> None:
+    """The character gives up a title it holds in its home troupe, and the status it
+    gave. If it was active, none is active until one is chosen."""
+    troupe, acting = require_choose(db, user, character)
+    row = db.scalar(
+        select(CharacterTitle).where(
+            CharacterTitle.troupe_id == troupe.id,
+            CharacterTitle.character_id == character.id,
+            CharacterTitle.name == name,
+        )
+    )
+    if row is None:
+        raise unprocessable(f"{character.name} does not hold {name}.")
+    was_active = row.active
+    db.delete(row)
+    db.flush()
+    left = held(db, troupe.id, character.id)
+    if was_active:
+        what = "it was active; no title is active now" if left else "it was active"
+    else:
+        what = "it was not active"
+    if acting == "player":
+        audit.record(
+            db,
+            user,
+            "title.given_up",
+            troupe_id=troupe.id,
+            character_id=character.id,
+            title=name,
+            what=what,
+        )
+    else:
+        audit.record(
+            db, user, "title.taken", troupe_id=troupe.id, character_id=character.id, title=name
+        )
+        return
+    data = title_data(db, troupe.id)
+    summary = f"{character.name} gave up the title {named(data.get(name), name)}"
+    if was_active:
+        change = change_words(None, data.get(name))
+        summary += f": {change}" if change else ""
+        summary += "; no title is active" if left else ""
+    else:
+        summary += ", which was not active"
+    tell_staff(db, user, troupe, character, "title.given_up", summary)
 
 
 def drop_all(db: Session, troupe_id: uuid.UUID, character_id: uuid.UUID) -> None:

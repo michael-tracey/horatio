@@ -78,7 +78,12 @@ def troupes_where(db: Session, user: User, action: TroupeAction) -> list[Troupe]
 def approvers(db: Session, troupe: Troupe) -> list[uuid.UUID]:
     """Who decides the running troupe's approvals: the people `troupes_where` finds
     it for."""
-    roles = [r.value for r in TROUPE_POLICY[TroupeAction.APPROVE_CHANGES]]
+    return staff_for(db, troupe, TroupeAction.APPROVE_CHANGES)
+
+
+def staff_for(db: Session, troupe: Troupe, action: TroupeAction) -> list[uuid.UUID]:
+    """The troupe's staff whose role is allowed `action`, the lead first."""
+    roles = [r.value for r in TROUPE_POLICY[action]]
     staff = db.scalars(
         select(TroupeStaff.user_id).where(
             TroupeStaff.troupe_id == troupe.id, TroupeStaff.role.in_(roles)

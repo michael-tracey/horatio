@@ -388,9 +388,17 @@ function Titles({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
               ? "inline-flex h-6 items-center gap-1 rounded-full border border-blood bg-blood/15 pr-1 pl-2.5 text-xs text-blood-bright"
               : "inline-flex h-6 items-center gap-1 rounded-full border border-gold/50 bg-gold/10 pr-1 pl-2.5 text-xs text-gold"
           }
-          title={entry.out_of_sect_titles.includes(t) ? `Out of sect: ${entry.character_name} is ${entry.sect ?? "of no sect"}. Kept until taken.` : undefined}
+          title={
+            entry.out_of_sect_titles.includes(t)
+              ? `Out of sect: ${entry.character_name} is ${entry.sect ?? "of no sect"}. Kept until taken.`
+              : t === entry.active_title
+                ? "Active: the title that gives status"
+                : undefined
+          }
         >
+          {t === entry.active_title && <span aria-hidden="true">★</span>}
           {t}
+          {t === entry.active_title && <span className="sr-only"> (active)</span>}
           {entry.out_of_sect_titles.includes(t) && <span className="sr-only"> (out of sect)</span>}
           <button
             type="button"

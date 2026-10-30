@@ -31,6 +31,7 @@ from horatio.models import (
     EquipmentItem,
     FeedingAdjustment,
     HomeTroupeChange,
+    Location,
     PlayCounter,
     PlayDerangement,
     PlayEvent,
@@ -128,6 +129,28 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(delete(EquipmentItem).where(EquipmentItem.character_id == cid))
     db.execute(delete(CharacterTrait).where(CharacterTrait.character_id == cid))
     db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
+    # A troupe's locations it controlled, jointly or as heir, keep its name; a Haven
+    # of its is one no longer.
+    name = character.name
+    db.execute(
+        update(Location)
+        .where(Location.controller_id == cid)
+        .values(control="named", controller_id=None, controller_name=name)
+    )
+    db.execute(
+        update(Location).where(Location.joint_id == cid).values(joint_id=None, joint_name=name)
+    )
+    db.execute(update(Location).where(Location.heir_id == cid).values(heir_id=None, heir_name=name))
+    db.execute(
+        update(Location)
+        .where(Location.haven_of_id == cid, Location.kind == "haven")
+        .values(kind="standard")
+    )
+    db.execute(
+        update(Location)
+        .where(Location.haven_of_id == cid)
+        .values(haven_of_id=None, haven_advantages=[])
+    )
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))
     db.delete(character)
     db.flush()
