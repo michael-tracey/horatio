@@ -39,6 +39,7 @@ import { ExceptionMark, ExceptionsCard } from "./Exceptions";
 import { FreeChoicesRow } from "./FreeChoices";
 import { GivePanel } from "./GivePanel";
 import { HouseTraitsCard } from "./HouseTraitsCard";
+import { LocationsCard } from "./LocationsCard";
 import { rulesTroupe } from "./rules";
 import { fieldSkills } from "./fields";
 import { byKind, countOf } from "./traitFilter";
@@ -604,6 +605,7 @@ export function SheetTab({
           />
         )}
         {!mine && <HouseTraitsCard characterId={character.id} sheet={s} />}
+        {!mine && <LocationsCard characterId={character.id} />}
         {(character.creation_complete || !mine) && (
           <TroupesCard character={character} sheet={s} mine={mine} />
         )}

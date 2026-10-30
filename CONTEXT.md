@@ -382,3 +382,29 @@ _Avoid_: Integration, plugin, webhook
 **Channel**:
 The route one delivery took: `horatio` (in-app), `discord` or `email`. A troupe's connectors decide which channels a delivery goes out on.
 _Avoid_: Medium, transport
+
+### Locations
+
+**Location**:
+A Stock Location: a place that matters in a troupe's chronicle, standard, prestige or iconic, rated 1 to 5, with its qualities, who controls it, its influence area, address and feeding block. Its troupe's storytellers and assistant storytellers keep the record; narrators and players never see it, though a controller's player learns the names of their character's locations. Staff can lock one, so no quest may target it.
+_Avoid_: Property, building, venue
+
+**Location Quality**:
+One thing a location has, such as Guards or Haunt, from the catalogue as the troupe plays it: the book's standard, iconic, supernatural and Elysium qualities, those its house options add, and its own. A standard location has up to its rating in qualities, a prestige or iconic one twice that; only an iconic one has iconic qualities, and none more than one supernatural quality. Some carry a detail, such as a Laboratory's specialisation.
+_Avoid_: Feature, perk, advantage (that is a Haven's)
+
+**Negative Quality**:
+A harm done to a location, such as Damaged or Compromised, at ×1 to ×3, each level switching more of it off. Staff may keep one secret from the controller, and note who is behind it.
+_Avoid_: Flaw, damage (for the whole)
+
+**Conglomerate**:
+A location that is the parent of others, its subsidiaries, as a mall's office is of its shops (a house option). A character who controls every subsidiary has the conglomerate free, outside the control limit.
+_Avoid_: Parent company, chain
+
+**Controller**:
+Who controls a location: a character in the troupe, an NPC known only by name, or nobody; an uncontrollable location never has one. A character controls up to five locations, and one more for each dot of Retainers, not counting Havens; staff may give a location joint control, or an heir to pick it up.
+_Avoid_: Owner (in names), holder
+
+**Haven (as a location)**:
+A character's Haven background placed on the troupe's list of locations, with its address and advantages, or a location staff mark as that character's Haven. It can't be targeted as a Stock Location can, and it doesn't count toward the control limit.
+_Avoid_: Home, lair, base

@@ -9,6 +9,7 @@ import { AllowancesSection } from "./AllowancesSection";
 import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
 import { HouseTraitsSection } from "./HouseTraitsSection";
+import { LocationRulesSection } from "./LocationRulesSection";
 import { StartingSection } from "./StartingSection";
 
 type Strength = "refuse" | "complete" | "review" | "note" | "off";
@@ -80,6 +81,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/starting`, label: "Starting points" },
           { to: `${base}/actions`, label: "Downtime actions" },
           { to: `${base}/house-traits`, label: "House merits and flaws" },
+          { to: `${base}/locations`, label: "Locations" },
         ]}
       />
       <Routes>
@@ -88,6 +90,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="actions" element={<AllowancesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="house-traits" element={<HouseTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="locations" element={<LocationRulesSection troupeId={troupeId} canEdit={canEdit} />} />
       </Routes>
     </>
   );
