@@ -23,6 +23,7 @@ import { ClanChoice, InClanPicker, MoveStartingDots } from "./InClanPicker";
 import { DISCIPLINES_FROM_MERITS, INEPT, disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
 import { brokenChecks, listed, overBudget, stepFor, stepNotices, strayPicks, type NoticeSource, type StepNotice, type StepRef } from "./notices";
 import { useHasDomitor } from "../splats";
+import { pageText } from "../../troupe/bookPage";
 import { DomitorPanel, DomitorSummary, useDomitor } from "../Domitor";
 import { domitorNeeded, dotBudget, ghoulDisciplinesIntro, savedDots } from "./ghoul";
 
@@ -675,7 +676,7 @@ function ReviewStep({
             {creation.path_starts.map((s) => (
               <li key={`${s.category}/${s.name}`}>
                 {listed(s.because.map((b) => b.name!))}: your path starts at {s.rating}
-                {s.page ? ` (p. ${s.page})` : ""}.
+                {s.page ? ` (${pageText(s.page)})` : ""}.
               </li>
             ))}
           </ul>

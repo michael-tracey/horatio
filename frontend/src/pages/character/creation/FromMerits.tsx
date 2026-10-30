@@ -4,6 +4,7 @@ import type { CatalogueOut, CharacterOut, CreationOut, PoolOut, SheetOut, TraitO
 import { Badge, ErrorText } from "../../../components/ui";
 import { useAction, useRefusals } from "../../../hooks";
 import { FreeChoicesStep } from "./FreeChoicesStep";
+import { pageText } from "../../troupe/bookPage";
 import { Because } from "./Because";
 import { ChoiceSelect } from "../ChoiceSelect";
 import { fieldSkills } from "../fields";
@@ -144,7 +145,7 @@ function FromBudget({
                     <span className="text-parchment">{t.name}</span>{" "}
                     <span className="text-gold">
                       ({points}-point {kind}
-                      {t.page_reference ? `, p. ${t.page_reference}` : ""})
+                      {t.page_reference ? `, ${pageText(t.page_reference)}` : ""})
                     </span>
                     {mine?.detail && <span className="text-parchment">: {mine.detail}</span>}
                   </label>
