@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { backText, retainerName, retainerSource } from "./retainers";
+import { backText, givingMerits, retainerName, retainerSource } from "./retainers";
 
 describe("a Retainer in a list", () => {
   it("is named, or says it has no name yet", () => {
     expect(retainerName({ name: "Bocephus" })).toBe("Bocephus");
     expect(retainerName({ name: "" })).toBe("A Retainer not yet named");
+    expect(retainerName({ name: "", kind: "Ghouled animal" })).toBe("Ghouled animal, not yet named");
+  });
+  it("knows the merits whose rules give a Retainer, each once", () => {
+    const given = { given: true, from_merit: "Ardent Companion" };
+    expect(givingMerits([given, given, { given: false, from_merit: "Master of the Hounds" }])).toEqual(["Ardent Companion"]);
   });
   it("says where its dots come from when they are not bought on the sheet", () => {
     expect(retainerSource({ bought: true, from_merit: "" })).toBeNull();

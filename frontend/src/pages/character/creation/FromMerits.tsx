@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, PoolOut, SheetOut, TraitOut } from "../../../api/types";
-import { Badge, ErrorText, Select } from "../../../components/ui";
+import { Badge, ErrorText } from "../../../components/ui";
 import { useAction, useRefusals } from "../../../hooks";
 import { FreeChoicesStep } from "./FreeChoicesStep";
+import { pageText } from "../../troupe/bookPage";
 import { Because } from "./Because";
 import { comesWithClan } from "./clanMerits";
+import { ChoiceSelect } from "../ChoiceSelect";
+import { fieldSkills } from "../fields";
 import type { StepRef } from "./notices";
 
 export type FromMeritsProps = {
@@ -47,6 +50,7 @@ export function FromMerits({ character, creation, sheet, catalogue, traits, choi
           choices={choices}
           steps={steps}
           step={step}
+          fields={fieldSkills(catalogue)}
           traits={traits
             // A bloodline or rarity merit comes with the clan, and is shown on Merits & flaws.
             .filter((t) => t.category === pool.category && !(t.category === "merits" && comesWithClan(t.name, creation)))
@@ -66,6 +70,7 @@ function FromBudget({
   choices: offered,
   steps,
   step,
+  fields,
 }: {
   character: CharacterOut;
   pool: PoolOut;
@@ -74,6 +79,7 @@ function FromBudget({
   choices?: Record<string, string[]>;
   steps?: StepRef[];
   step?: StepRef;
+  fields: Set<string>;
 }) {
   const traits = catalogued.map((t) => (offered?.[t.name] ? { ...t, choices: offered[t.name] } : t));
   const barred = useRefusals(character.id, pool.category, true, { asIf: "empty" });
@@ -141,7 +147,7 @@ function FromBudget({
                     <span className="text-parchment">{t.name}</span>{" "}
                     <span className="text-gold">
                       ({points}-point {kind}
-                      {t.page_reference ? `, p. ${t.page_reference}` : ""})
+                      {t.page_reference ? `, ${pageText(t.page_reference)}` : ""})
                     </span>
                     {mine?.detail && <span className="text-parchment">: {mine.detail}</span>}
                   </label>
@@ -153,17 +159,17 @@ function FromBudget({
                 </div>
               </div>
               {!mine && !!t.choices?.length && (
-                <Select
-                  aria-label={`${t.name}: which?`}
-                  className="ml-6 h-8 w-auto py-0"
-                  value={choices[t.name] ?? ""}
-                  onChange={(e) => setChoices({ ...choices, [t.name]: e.target.value })}
-                >
-                  <option value="">Which?</option>
-                  {t.choices.map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </Select>
+                <span className="ml-6 block">
+                  <ChoiceSelect
+                    label={`${t.name}: which?`}
+                    placeholder="Which?"
+                    className="h-8 w-auto py-0"
+                    choices={t.choices}
+                    fields={fields}
+                    value={choices[t.name] ?? ""}
+                    onChange={(detail) => setChoices({ ...choices, [t.name]: detail })}
+                  />
+                </span>
               )}
               {refused && (
                 <p className="ml-6 text-xs text-blood-bright">

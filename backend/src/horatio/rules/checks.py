@@ -24,10 +24,14 @@ Condition vocabulary (every key in one table must hold):
                                     level 1 one, p. 202)
     parent = { category, rating }   the trait named before the subject's ":" (an
                                     elder power's discipline) is held at `rating`
-    self = { names?, name_prefix?, rating?, has_detail? }
+    self = { names?, name_prefix?, rating?, has_detail?, given?, detail_without_field? }
                                     the subject itself: one of these names, a name
                                     starting with `name_prefix`, its rating,
-                                    whether it has a detail
+                                    whether it has a detail, whether another trait
+                                    gives it (SheetTrait.granted), and whether its
+                                    detail names one of these skills without the
+                                    field after it ("Performance", not
+                                    "Performance: Singing")
     kind = ["Clan", "Morality"]     the subject's catalogue type is one of these
     tagged = "vampire_only"         the subject's catalogue `tags` include this one
     dots = { category, name_prefix?, gt }
@@ -324,6 +328,11 @@ def matches(
                 and ("name_prefix" not in test or subject.name.startswith(test["name_prefix"]))
                 and ("rating" not in test or compare(subject.rating or 0, test["rating"]))
                 and ("has_detail" not in test or bool(subject.detail) == test["has_detail"])
+                and ("given" not in test or subject.granted == test["given"])
+                and (
+                    "detail_without_field" not in test
+                    or without_field(subject.detail, test["detail_without_field"])
+                )
             )
         elif key == "copies":
             held = sum(
@@ -481,6 +490,13 @@ def violations(
                 other = clashing(test, sheet, trait, context) if test else None
                 found.append(Violation(check, trait, other.name if other else ""))
     return found
+
+
+def without_field(detail: str, names: Sequence[str]) -> bool:
+    """Whether a detail names one of these skills with no field after it: "Performance"
+    or "Performance:", but not "Performance: Singing"."""
+    name, _, field = detail.partition(":")
+    return name.strip() in names and not field.strip()
 
 
 def describe(condition: Condition) -> str:

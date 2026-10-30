@@ -23,8 +23,9 @@ from sqlalchemy.orm import Session
 from horatio import audit, clan_merits
 from horatio.models import Character, CharacterTrait, User
 from horatio.rules.checks import holds_trait, matches
+from horatio.rules.house_effects import either
 from horatio.rules.model import CreationRuleData, SheetTrait, TroupeRules
-from horatio.rules.splats import SPLATS
+from horatio.rules.splats import SPLATS, clan_choice
 from horatio.sheets import (
     SheetRow,
     conflict,
@@ -313,6 +314,72 @@ def without_dot(
         return {}
     found = {n: fits.without_dot(pool, n, "") for n in category_names(db, character, pool)}
     return {n: because for n, because in found.items() if because}
+
+
+@dataclass
+class Shortfall:
+    """Restricted picks with fewer traits to go on than there are picks: a clan whose
+    in-clan disciplines the catalogue lacks, or one still to choose (#312)."""
+
+    category: str
+    restriction: str
+    picks: int
+    # The traits the picks can go on now.
+    options: list[str]
+    message: str
+
+
+def in_clan_gaps(
+    rules: TroupeRules, splat: str, sheet: Sequence[SheetTrait], category: str
+) -> list[str]:
+    """Why a character has fewer in-clan traits in a category than its picks there, as
+    sentences: an in-clan name the catalogue lacks, or a clan's choice not yet made."""
+    noun = rules.rule_set.categories[category].name.lower().removesuffix("s")
+    missing = [
+        name
+        for name in dict.fromkeys(SPLATS[splat].in_clan(rules, sheet))
+        if (category, name) not in rules.rule_set.traits
+    ]
+    found = [f"{name} is not a {noun} Horatio has. Ask your storyteller." for name in missing]
+    choice = clan_choice(rules, sheet)
+    if choice is not None and choice.chosen is None:
+        page = f" (p. {choice.page})" if choice.page else ""
+        found.append(f"{choice.clan} has one more to choose, from {either(choice.choices)}{page}.")
+    return found
+
+
+def shortfalls(db: Session, character: Character) -> list[Shortfall]:
+    """Restricted creation picks that cannot all be placed as the sheet stands, and why:
+    "Only 2 in-clan disciplines for 3 starting picks: …". None before the clan is
+    chosen, as every in-clan pick waits on it."""
+    rules = rules_for(db, character)
+    rows = sheet_rows(db, character)
+    sheet = [row.as_rules_trait() for row in rows]
+    if not any(t.category == "clan" for t in sheet):
+        return []
+    fits = fitting(db, character)
+    wanted: dict[tuple[str, str], list[Pool]] = {}
+    for pool in pools_for(rules.creation_rules(), rows).values():
+        if pool.kind == "picks" and pool.restriction and pool.allowed > 0:
+            wanted.setdefault((pool.category, pool.restriction), []).append(pool)
+    found: list[Shortfall] = []
+    for (category, restriction), placed in wanted.items():
+        picks = sum(p.allowed for p in placed)
+        names = category_names(db, character, placed[0])
+        fitting_ones = [n for n in names if fits(placed[0], n, "")]
+        if len(fitting_ones) >= picks:
+            continue
+        kind = RESTRICTION_TEXT.get(restriction, restriction)
+        noun = rules.rule_set.categories[category].name.lower()
+        if len(fitting_ones) == 1:
+            noun = noun.removesuffix("s")
+        why = []
+        if restriction == "in_clan":
+            why = in_clan_gaps(rules, character.splat, sheet, category)
+        message = f"Only {len(fitting_ones)} {kind} {noun} for {picks} starting picks"
+        message += f": {' '.join(why)}" if why else "."
+        found.append(Shortfall(category, restriction, picks, fitting_ones, message))
+    return found
 
 
 def restriction_error(pool: Pool, name: str, fits: Fitting | None = None) -> HTTPException:
@@ -613,11 +680,14 @@ def complete(db: Session, player: User, character: Character) -> None:
     every = pools_with_strays(db, character)
     unplaced = [p for p in every if p.kind == "picks" and p.remaining > 0]
     if unplaced:
+        # Picks that cannot all be placed say why (a clan's in-clan choice still to make).
+        short = "".join(f" {s.message}" for s in shortfalls(db, character))
         raise conflict(
             "Place every pick first: "
             + ", ".join(
                 f"{p.remaining} {p.category.replace('_', ' ')} at {p.rating}" for p in unplaced
             )
+            + ("." + short if short else "")
         )
     # Points overspent: the clan's merits can take more than is left, when the setting
     # changes after the merits are picked (a house rule, another troupe to build for).

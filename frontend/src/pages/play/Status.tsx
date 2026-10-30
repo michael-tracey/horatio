@@ -5,7 +5,7 @@ import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, ErrorText } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { endingText, suppressedText } from "../character/status";
+import { capText, endingText, outsiderText, suppressedText } from "../character/status";
 import { AddStatus, useStatus } from "../character/StatusCard";
 import { Others } from "./Others";
 import type { Shown } from "./tracker";
@@ -89,11 +89,12 @@ export function StatusTab({
         }
       >
         <p className="text-sm">
-          {status.accepted} by the {status.sect}
+          {status.accepted ? `${status.accepted} by the ${status.sect}` : outsiderText(status)}
           {status.troupe_name && <span className="text-mist"> · at {status.troupe_name}</span>}
         </p>
         <p className="mt-1 text-xs text-mist">
-          Fleeting: {fleeting.length} of {status.fleeting_cap}. Spending is yours, whatever the troupe’s setting; abiding and innate status comes back at the next game.
+          Fleeting: {fleeting.length} of {status.fleeting_cap}
+          {capText(status.cap_why) && ` (${capText(status.cap_why)})`}. Spending is yours, whatever the troupe’s setting; abiding and innate status comes back at the next game.
         </p>
         <Suppressed status={status} />
         {adding && standing.data && (

@@ -201,6 +201,33 @@ def test_substitutes_and_replacements(troupe: Troupe) -> None:
     assert "Tech Junkie: +2 to Computers" in found["notes"]
 
 
+def test_flat_flaws_and_merits_change_the_pools_they_name(troupe: Troupe) -> None:
+    squint = created(
+        troupe,
+        "Squint",
+        ("attributes", "Physical", 5),
+        ("attributes", "Social", 3),
+        ("attributes", "Mental", 3),
+        ("skills", "Firearms", 2),
+        ("skills", "Athletics", 1),
+        ("flaws", "One Eye", None),
+        ("flaws", "Death Sight", None),
+        ("flaws", "Hard of Hearing", None),
+        ("flaws", "Short Fuse", None),
+        ("merits", "Executioner", None),
+    )
+    found = reference(troupe, squint)
+
+    firearms = pool(found, "attack:Firearms")
+    assert {"label": "One Eye", "value": -5} in firearms["parts"]
+    assert firearms["total"] == 5 + 2 - 5
+    assert pool(found, "attack:Athletics")["total"] == 5 + 1 - 5
+    assert "Death Sight: -2 to Investigation" in found["notes"]
+    assert "Hard of Hearing: -2 to Awareness based on hearing" in found["notes"]
+    assert "Executioner: +1 to Streetwise" in found["notes"]
+    assert any(n.startswith("Short Fuse: counts 1 more Beast trait") for n in found["notes"])
+
+
 def test_strangers_cannot_read_it(troupe: Troupe, swift: str) -> None:
     response = troupe.stranger.client.get(f"/characters/{swift}/play/reference")
     assert response.status_code in (403, 404)
@@ -214,7 +241,9 @@ def test_every_discipline_has_notes_for_each_dot() -> None:
     book = catalogue()
     assert set(book.disciplines) == disciplines
     for name in disciplines:
-        assert [p["level"] for p in book.powers[name]] == [1, 2, 3, 4, 5], name
+        # A path no book we use describes has none (the Graveborne, Vol. 2, p. 62).
+        levels = [] if book.disciplines[name].get("unwritten") else [1, 2, 3, 4, 5]
+        assert [p["level"] for p in book.powers.get(name, [])] == levels, name
     known = ("initiative", "dodge", "attack", "defense", "discipline", "skill", "frenzy", "all")
     entries = [e for d in book.disciplines.values() for e in d.get("pools", [])] + [
         e for ps in book.powers.values() for p in ps for e in p.get("pools", [])

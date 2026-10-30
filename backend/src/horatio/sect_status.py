@@ -27,8 +27,15 @@ player) or staff (p. 313).
 **The caps** (pp. 312-313): at most 5 fleeting status, 3 under a lesser ban and 1
 under a greater; one more asks which to give up, and that one is lost unspent. A
 ban applies where the sheet shows it (a clan, a Path) or staff say so, unless they
-make the character exempt. A character holding Disgraced gains no fleeting status
-unless staff override.
+make the character exempt. Merits and flaws move the cap, on top of any ban
+(Reputation 1 more, Tainted Embrace 1 fewer), and the standing says why the cap
+is what it is. A character holding Disgraced gains no fleeting status unless staff
+override.
+
+**An outsider** (horatio.rules.status.OutsiderData): a character no sect with
+status rules has Accepted, holding Emissary to the Camarilla, holds up to one
+fleeting Camarilla status (p. 404), and nothing else: no titles, social age or
+bans count for it.
 
 **Negative status ends** by its duration (horatio.rules.status.DurationData): after
 `games` of the character's Play View games end, not counting the game it was given
@@ -75,6 +82,7 @@ from horatio.rules.status import (
     GENERAL,
     STATUS_CATEGORY,
     DurationData,
+    OutsiderData,
     SectData,
     StatusCapsData,
     StatusData,
@@ -233,13 +241,19 @@ class Standing:
     unresolved: list[str] = field(default_factory=list[str])
     bans: list[Ban] = field(default_factory=list[Ban])
     fleeting_cap: int = 0
+    # Why the cap is not the usual 5: "a lesser ban: 3", "Tainted Embrace: 1 less".
+    cap_why: list[str] = field(default_factory=list[str])
+    # Holding a sect's fleeting status though no sect has Accepted it: sect_data is
+    # that sect's (Emissary to the Camarilla).
+    outsider: OutsiderData | None = None
     # What suppresses its fleeting status now.
     suppressed: list[Suppressed] = field(default_factory=list[Suppressed])
 
     @property
     def accepted(self) -> str | None:
-        """The sect's name for Accepted: Acknowledged, Initiated, Committed."""
-        return self.sect_data.accepted if self.sect_data else None
+        """The sect's name for Accepted: Acknowledged, Initiated, Committed. None
+        for an outsider, whom the sect has not Accepted."""
+        return self.sect_data.accepted if self.sect_data and not self.outsider else None
 
     @property
     def fleeting(self) -> list[Held]:
@@ -259,7 +273,10 @@ class Standing:
         return [s for s in self.suppressed if not (s.ending and s.ending.over)]
 
     def own(self, status: StatusData) -> bool:
-        """Whether the status is the character's sect's or the general status."""
+        """Whether the status is the character's sect's or the general status; for
+        an outsider, fleeting status of the sect it may hold."""
+        if self.outsider is not None:
+            return status.type == "Fleeting" and status.sect in (GENERAL, self.outsider.sect)
         return status.sect in (GENERAL, self.sect)
 
 
@@ -518,14 +535,52 @@ def bans_of(
     return found
 
 
-def fleeting_cap(rules: RuleSetData, bans: Sequence[Ban]) -> int:
+def less_or_more(amount: int) -> str:
+    return f"{amount} more" if amount > 0 else f"{-amount} less"
+
+
+def fleeting_cap(
+    rules: RuleSetData,
+    bans: Sequence[Ban],
+    sheet: Sequence[SheetTrait] = (),
+    outsider: OutsiderData | None = None,
+) -> tuple[int, list[str]]:
+    """The most fleeting status the character carries, and why it is not the usual:
+    its bans, then the merits and flaws on its sheet that move it. Never below 0."""
     caps = caps_of(rules)
     levels = {b.level for b in bans if b.applies}
-    if "greater" in levels:
-        return caps.greater_ban
-    if "lesser" in levels:
-        return caps.lesser_ban
-    return caps.fleeting
+    if outsider is not None:
+        cap, why = outsider.fleeting, [f"{outsider.name}: {outsider.fleeting}"]
+    elif "greater" in levels:
+        cap, why = caps.greater_ban, [f"a greater ban: {caps.greater_ban}"]
+    elif "lesser" in levels:
+        cap, why = caps.lesser_ban, [f"a lesser ban: {caps.lesser_ban}"]
+    else:
+        cap, why = caps.fleeting, []
+    held = {(t.category, t.name) for t in sheet if t.rating is None or t.rating > 0}
+    for change in rules.status_rules.cap_changes:
+        if (change.category, change.name) in held:
+            cap += change.fleeting
+            why.append(f"{change.name}: {less_or_more(change.fleeting)}")
+    return max(0, cap), why
+
+
+def outsider_of(
+    rules: RuleSetData, sect: str | None, sheet: Sequence[SheetTrait]
+) -> OutsiderData | None:
+    """What lets a character no sect with status rules has Accepted hold a sect's
+    fleeting status, if its sheet holds it."""
+    if sect is not None and sect in rules.status_rules.sects:
+        return None
+    held = {(t.category, t.name) for t in sheet if t.rating is None or t.rating > 0}
+    return next(
+        (
+            o
+            for o in rules.status_rules.outsiders
+            if (o.category, o.name) in held and o.sect in rules.status_rules.sects
+        ),
+        None,
+    )
 
 
 def standing(db: Session, character: Character) -> Standing:
@@ -537,7 +592,11 @@ def standing(db: Session, character: Character) -> Standing:
     sheet = [r.as_rules_trait() for r in rows]
     sect = next((r.definition.name for r in rows if r.category.key == "sect"), None)
     sect_data = rules.status_rules.sects.get(sect) if sect else None
+    outsider = outsider_of(rules, sect, sheet)
     found = Standing(sect=sect, sect_data=sect_data, rules=rules)
+    if outsider is not None:
+        found.outsider = outsider
+        found.sect_data = rules.status_rules.sects[outsider.sect]
     if sect_data is not None:
         holding = held_titles(db, character)
         for troupe_id in current_troupe_ids(db, character):
@@ -570,7 +629,7 @@ def standing(db: Session, character: Character) -> Standing:
     found.held = held(db, character, rules)
     found.suppressed = suppressions(db, character, found.held)
     found.bans = bans_of(db, character, sect_data, sheet)
-    found.fleeting_cap = fleeting_cap(rules, found.bans)
+    found.fleeting_cap, found.cap_why = fleeting_cap(rules, found.bans, sheet, outsider)
     return found
 
 
@@ -842,7 +901,10 @@ def add(
         raise unprocessable(f"{name} is not fleeting or negative status.")
     if not found.own(status):
         raise unprocessable(
-            f"{name} is {status.sect} status, and {character.name} is {found.sect}."
+            f"{character.name} is Accepted by no sect, and through {found.outsider.name} holds"
+            f" only fleeting {found.outsider.sect} status."
+            if found.outsider is not None
+            else f"{name} is {status.sect} status, and {character.name} is {found.sect}."
         )
     reason = reason_needed(user, character, acting, reason)
 
@@ -882,8 +944,11 @@ def add(
         if len(fleeting) >= found.fleeting_cap:
             caps = caps_of(found.rules)
             page = f" (p. {caps.page})" if caps.page else ""
+            why = f" ({', '.join(found.cap_why)})" if found.cap_why else ""
             raise conflict(
-                f"{character.name} can hold {found.fleeting_cap} fleeting status{page}:"
+                f"{character.name} can hold no fleeting status{why}."
+                if found.fleeting_cap == 0
+                else f"{character.name} can hold {found.fleeting_cap} fleeting status{page}{why}:"
                 " choose one to give up for this one."
                 if len(fleeting) == found.fleeting_cap
                 else f"{character.name} holds {len(fleeting)} fleeting status, over its"
@@ -1092,7 +1157,7 @@ def mark_ban(
     if not staff_in(db, user, character, troupe):
         raise conflict("Only staff mark a status ban.")
     found = standing(db, character)
-    if found.sect_data is None or not any(b.applies_to == ban for b in found.sect_data.bans):
+    if found.sect_data is None or not any(b.applies_to == ban for b in found.bans):
         raise unprocessable("That is not a status ban of the character's sect.")
     reason = reason.strip()
     if applies is not None and not reason:

@@ -4,6 +4,7 @@ import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
 import { detailNeed } from "../fields";
+import { ChoiceSelect } from "../ChoiceSelect";
 import { canTap, canTapDots, clear, fieldProblems, keysOf, left, traitOf, nextCopy, spent, tap, tapDots, togglePoints, type Allowed, type Picks } from "./logic";
 
 // Long lists get a search box.
@@ -297,6 +298,8 @@ function DotsLeft({ title, budget, used }: { title: string; budget: number; used
 }
 
 /** Merits or flaws: tick traits against a budget of points. */
+const NO_FIELDS = new Set<string>();
+
 export function PointsList({
   title,
   traits,
@@ -312,6 +315,7 @@ export function PointsList({
   under,
   given,
   givenPoints = 0,
+  fields = NO_FIELDS,
 }: {
   title: string;
   traits: TraitOut[];
@@ -334,6 +338,8 @@ export function PointsList({
   /** Merits held from the budget that are not picks (the clan's), shown first, and their points. */
   given?: ReactNode;
   givenPoints?: number;
+  /** Skills bought once per field: a choice of one asks for the field too (Artist's Blessing). */
+  fields?: Set<string>;
 }) {
   const filterable = traits.some((t) => t.kind || t.requirement);
   const [filter, setFilter] = useState("can");
@@ -401,17 +407,17 @@ export function PointsList({
                   {barred && <span className="mt-0.5 block text-xs text-blood-bright">{barred}</span>}
                   {barred && why?.(t.name) && <span className="mt-0.5 block text-xs text-mist">{why(t.name)}</span>}
                   {chosen && t.choices && onDetail && (
-                    <Select
-                      aria-label={`${t.name}: which?`}
-                      className="mt-1 h-8 py-0"
-                      value={details[t.name] ?? ""}
-                      onChange={(e) => onDetail(t.name, e.target.value)}
-                    >
-                      <option value="">Which?</option>
-                      {t.choices.map((c) => (
-                        <option key={c}>{c}</option>
-                      ))}
-                    </Select>
+                    <span className="mt-1 block">
+                      <ChoiceSelect
+                        label={`${t.name}: which?`}
+                        placeholder="Which?"
+                        className="h-8 py-0"
+                        choices={t.choices}
+                        fields={fields}
+                        value={details[t.name] ?? ""}
+                        onChange={(detail) => onDetail(t.name, detail)}
+                      />
+                    </span>
                   )}
                   {t.description && <span className="mt-0.5 block text-xs text-mist">{t.description}</span>}
                   <HouseSummary summary={t.house?.summary} />

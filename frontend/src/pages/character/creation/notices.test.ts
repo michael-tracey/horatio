@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CreationOut, PoolOut, SheetOut, SheetTraitOut } from "../../../api/types";
-import { inClanChoice, inClanChoices, inClanOpen, inClanOptions, makesInClanChoice, sheetKey, whenTapped } from "./inClan";
+import { clanChoiceNeeded, inClanChoice, inClanChoices, inClanOpen, inClanOptions, inClanShortfalls, makesInClanChoice, sheetKey, whenTapped } from "./inClan";
 import { disciplinesIntro, ineptChoices, movePick, strayMoves, withoutDotReasons } from "./disciplines";
 import { brokenChecks, overBudget, stepNotices, strayPicks, type StepRef } from "./notices";
 
@@ -24,7 +24,7 @@ function sheet(traits: SheetTraitOut[], problems: SheetOut["problems"] = []): Sh
   return { traits, problems } as SheetOut;
 }
 
-const creation = (pools: PoolOut[], needs: CreationOut["needs"] = []): CreationOut => ({ complete: false, pools, needs, path_starts: [], budget_changes: [], given: [], clan_merits: [], rarity_known: false });
+const creation = (pools: PoolOut[], needs: CreationOut["needs"] = []): CreationOut => ({ complete: false, pools, needs, path_starts: [], budget_changes: [], given: [], clan_merits: [], rarity_known: false, shortfalls: [] });
 
 describe("strayPicks", () => {
   it("marks a starting dot on a discipline that is no longer in-clan, on Concept and on Disciplines", () => {
@@ -434,5 +434,46 @@ describe("movePick", () => {
     const picks = { Celerity: 2, Fortitude: 1 };
     expect(movePick(picks, "Obfuscate", "Protean")).toBe(picks);
     expect(movePick(picks, "Celerity", "Fortitude")).toBe(picks);
+  });
+});
+
+describe("clanChoiceNeeded", () => {
+  const angelis = (chosen: string | null): CreationOut => ({
+    ...creation([]),
+    clan_choice: { clan: "Baali: Angelis Ater", choices: ["Potence", "Presence", "Obfuscate"], chosen, page: "72" },
+  });
+
+  it("asks for the clan's own in-clan choice on Concept and Disciplines (#312)", () => {
+    expect(clanChoiceNeeded({ creation: angelis(null), sheet: sheet([]), steps: STEPS })).toEqual([
+      {
+        key: "in-clan/clan",
+        message: "Baali: Angelis Ater: choose one more in-clan discipline, Potence, Presence or Obfuscate (p. 72).",
+        on: ["concept", "disciplines"],
+        fix: "concept",
+        inClan: true,
+      },
+    ]);
+  });
+
+  it("says nothing once chosen, for a clan without one, or for a ghoul", () => {
+    expect(clanChoiceNeeded({ creation: angelis("Presence"), sheet: sheet([]), steps: STEPS })).toEqual([]);
+    expect(clanChoiceNeeded({ creation: creation([]), sheet: sheet([]), steps: STEPS })).toEqual([]);
+    expect(clanChoiceNeeded({ creation: angelis(null), sheet: sheet([]), steps: STEPS, ghoul: { domitor: true } })).toEqual([]);
+  });
+});
+
+describe("inClanShortfalls", () => {
+  const short = { category: "disciplines", restriction: "in_clan", picks: 3, options: ["Auspex", "Fortitude"], message: "Only 2 in-clan disciplines for 3 starting picks: Valeran is not a discipline Horatio has. Ask your storyteller." };
+
+  it("says on Disciplines why its picks cannot all be placed (#312)", () => {
+    const found = inClanShortfalls({ creation: { ...creation([]), shortfalls: [short] }, sheet: sheet([trait("clan", "Salubri", { rating: null })]), steps: STEPS });
+    expect(found).toEqual([{ key: "short/disciplines/in_clan", message: short.message, on: ["disciplines"], fix: "disciplines" }]);
+  });
+
+  it("leaves it to the in-clan choice while one is open: making it fills the picks", () => {
+    const caitiff = sheet([trait("clan", "Caitiff", { rating: null })]);
+    expect(inClanShortfalls({ creation: { ...creation([]), shortfalls: [short] }, sheet: caitiff, steps: STEPS })).toEqual([]);
+    const angelis = { ...creation([]), shortfalls: [short], clan_choice: { clan: "Baali: Angelis Ater", choices: ["Potence"], chosen: null, page: null } };
+    expect(inClanShortfalls({ creation: angelis, sheet: sheet([]), steps: STEPS })).toEqual([]);
   });
 });

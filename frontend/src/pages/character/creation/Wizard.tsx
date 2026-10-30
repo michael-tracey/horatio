@@ -20,11 +20,12 @@ import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, spent, traitOf
 import { FromMerits } from "./FromMerits";
 import { ClanMerits } from "./ClanMerits";
 import { clanMeritsLine, clanPoints, comesWithClan } from "./clanMerits";
-import { EXTRA_IN_CLAN, IN_CLAN_MERITS, inClanChoices, inClanOpen, makesInClanChoice } from "./inClan";
-import { InClanPicker, MoveStartingDots } from "./InClanPicker";
+import { EXTRA_IN_CLAN, IN_CLAN_MERITS, clanChoiceNeeded, clanChoiceOpen, inClanChoices, inClanOpen, inClanShortfalls, makesInClanChoice } from "./inClan";
+import { ClanChoice, InClanPicker, MoveStartingDots } from "./InClanPicker";
 import { DISCIPLINES_FROM_MERITS, INEPT, disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
 import { brokenChecks, listed, overBudget, stepFor, stepNotices, strayPicks, type NoticeSource, type StepNotice, type StepRef } from "./notices";
 import { useHasDomitor } from "../splats";
+import { pageText } from "../../troupe/bookPage";
 import { DomitorPanel, DomitorSummary, useDomitor } from "../Domitor";
 import { domitorNeeded, dotBudget, ghoulDisciplinesIntro, savedDots } from "./ghoul";
 
@@ -32,7 +33,7 @@ import { domitorNeeded, dotBudget, ghoulDisciplinesIntro, savedDots } from "./gh
 type Step = StepRef & { intro?: string };
 
 /** Where cross-step notices come from (notices.ts): a step that needs a new kind adds its source here. */
-const NOTICE_SOURCES: NoticeSource[] = [domitorNeeded, inClanChoices, strayPicks, overBudget, freedPicks, unchosenFree, brokenChecks];
+const NOTICE_SOURCES: NoticeSource[] = [domitorNeeded, inClanChoices, clanChoiceNeeded, inClanShortfalls, strayPicks, overBudget, freedPicks, unchosenFree, brokenChecks];
 
 /** Merits and flaws that change a step, offered on it as well as on Merits & flaws (#192). */
 const FROM_MERITS: Record<string, { category: string; name: string }[]> = {
@@ -297,8 +298,11 @@ function StepView({
   // the swap's starting dots to be moved (#216).
   const inClanHere = useRef(false);
   if (step.key === "disciplines" && !ghoul && inClanOpen(sheet)) inClanHere.current = true;
+  // The clan's own choice (Angelis Ater), the same way.
+  const clanChoiceHere = useRef(false);
+  if (step.key === "disciplines" && !ghoul && clanChoiceOpen(creation)) clanChoiceHere.current = true;
   // The steps that offer the in-clan choice themselves say so, rather than sending the player to Concept.
-  const choosesHere = (step.key === "merits" && !!inClanUnder) || inClanHere.current;
+  const choosesHere = (step.key === "merits" && !!inClanUnder) || inClanHere.current || clanChoiceHere.current;
 
   const ghoulDots = ghoul && step.key === "disciplines" ? dotBudget(creation, "disciplines") : undefined;
   // The Disciplines step's budget is the pools', which Thin Blooded and Inept change.
@@ -339,6 +343,7 @@ function StepView({
       )}
       {step.key === "disciplines" && !ghoul && (
         <div className="mb-6 flex flex-col gap-2 empty:hidden">
+          {clanChoiceHere.current && <ClanChoice character={character} creation={creation} catalogue={catalogue} />}
           {inClanHere.current && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
           <MoveStartingDots character={character} creation={creation} picks={picks.disciplines ?? {}} />
         </div>
@@ -389,6 +394,7 @@ function StepView({
                 quick={quickPicks(traitsOf(category), sheet.traits)}
                 details={details[category] ?? {}}
                 onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
+                fields={fieldSkills(catalogue)}
                 steps={steps}
                 step={step}
                 under={category === "merits" ? inClanUnder : undefined}
@@ -532,6 +538,7 @@ function ConceptStep({
       )}
       {clanOf(sheet) && <InClanNow creation={creation} />}
       {clanMeritsLine(creation) && <p className="text-sm text-mist">{clanMeritsLine(creation)}</p>}
+      {clanOf(sheet) && !ghoul && <ClanChoice character={character} creation={creation} catalogue={catalogue} />}
       {clanOf(sheet) && !ghoul && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
       {clanOf(sheet) && !ghoul && <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS.concept!} />}
     </div>
@@ -664,6 +671,7 @@ function ReviewStep({
       )}
       {choosing && !ghoul && (
         <section aria-label="In-clan choice" className="flex flex-col gap-2">
+          <ClanChoice character={character} creation={creation} catalogue={catalogue} />
           <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />
         </section>
       )}
@@ -675,7 +683,7 @@ function ReviewStep({
             {creation.path_starts.map((s) => (
               <li key={`${s.category}/${s.name}`}>
                 {listed(s.because.map((b) => b.name!))}: your path starts at {s.rating}
-                {s.page ? ` (p. ${s.page})` : ""}.
+                {s.page ? ` (${pageText(s.page)})` : ""}.
               </li>
             ))}
           </ul>

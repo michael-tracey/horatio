@@ -55,7 +55,7 @@ def test_the_wording_catches_what_the_audit_found() -> None:
 
     for name in ("Extrasensory Perceptions", "Angelic Visage", "Rugged", "Web of Knives"):
         assert GIVES.search(rules.traits[("merits", name)].description or ""), name
-    for name in ("Slippery Customer", "Iron Will", "Blase"):
+    for name in ("Slippery Customer", "Iron Will", "Blasé"):
         assert not GIVES.search(rules.traits[("merits", name)].description or ""), name
 
 

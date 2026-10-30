@@ -33,6 +33,19 @@ export function suppressedText(s: Pick<SuppressionOut, "text" | "reason" | "endi
   return `${why}: ${back}.`;
 }
 
+/**
+ * Why the fleeting cap is what it is, when it is not the usual 5: "Cap: a lesser
+ * ban: 3 · Tainted Embrace: 1 less". Empty when nothing changes it.
+ */
+export function capText(why: string[] | undefined): string {
+  return why?.length ? `Cap: ${why.join(" · ")}` : "";
+}
+
+/** A character no sect has Accepted, holding a sect's fleeting status through a merit. */
+export function outsiderText(s: { outsider_sect?: string | null; outsider_through?: string | null }): string {
+  return `Accepted by no sect. As ${s.outsider_through ?? "a merit"} allows, it holds fleeting ${s.outsider_sect} status.`;
+}
+
 /** A source of derived status and what it gives: "Prince: Authority, Commander, Sovereign". */
 export type DerivedSource = { key: string; source: string; kind: DerivedOut["kind"]; troupe: string | null; status: DerivedOut[] };
 

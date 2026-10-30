@@ -8,7 +8,7 @@ import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { bySource, endingText, suppressedText } from "./status";
+import { bySource, capText, endingText, outsiderText, suppressedText } from "./status";
 
 export function useStatus(characterId: string) {
   return useQuery({
@@ -395,7 +395,7 @@ export function StatusCard({ character }: { character: CharacterOut }) {
   const [suppressing, setSuppressing] = useState(false);
   if (!status.data) return status.error ? <ErrorText error={status.error} /> : null;
   const s = status.data;
-  const nothing = !s.accepted && !s.derived.length && !s.held.length && !s.unresolved.length;
+  const nothing = !s.accepted && !s.outsider_sect && !s.derived.length && !s.held.length && !s.unresolved.length;
   if (nothing) return <Empty>{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</Empty>;
   const fleeting = s.held.filter((h) => h.type === "Fleeting");
   const negative = s.held.filter((h) => h.type === "Negative");
@@ -432,6 +432,8 @@ export function StatusCard({ character }: { character: CharacterOut }) {
             {s.accepted} by the {s.sect}
             {s.disgraced && <span className="text-blood-bright">, and Disgraced: it gains no status</span>}.
           </p>
+        ) : s.outsider_sect ? (
+          <p>{outsiderText(s)}</p>
         ) : (
           <p className="text-mist">{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</p>
         )}
@@ -459,11 +461,12 @@ export function StatusCard({ character }: { character: CharacterOut }) {
             </ul>
           </section>
         )}
-        {s.accepted && (
+        {(s.accepted || s.outsider_sect) && (
           <section aria-label="Fleeting status">
             <h3 className="text-xs tracking-wide text-mist uppercase">
               Fleeting: {fleeting.length} of {s.fleeting_cap}
             </h3>
+            {capText(s.cap_why) && <p className="text-xs text-mist">{capText(s.cap_why)}</p>}
             {fleeting.length ? (
               <ul className="mt-1 flex flex-col gap-2">
                 {fleeting.map((h) => (

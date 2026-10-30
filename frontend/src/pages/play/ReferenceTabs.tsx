@@ -6,6 +6,7 @@ import { Rating } from "../../components/ui";
 import { pipsOf } from "../../ratings";
 import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
+import { givingMerits } from "../character/retainers";
 import { equipmentModifiers } from "./equipped";
 import { breakdown, damageText, exceptionalText, grouped, situations, switchedDamage, total, type Modifier } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
@@ -87,6 +88,12 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
  * and sect are in the subheader instead.
  */
 export function SheetTab({ reference }: { reference: PlayReference }) {
+  // The Retainers listed once, under the last Retainer bought; with none bought, under
+  // the first merit that gives one.
+  const giving = givingMerits(reference.retainers);
+  const retainersUnder =
+    reference.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1) ??
+    reference.traits.find((t) => t.category === "merits" && giving.includes(t.name));
   const groups = new Map<string, Trait[]>();
   for (const t of reference.traits) {
     // The clan, archetype, sect and faction are in the subheader.
@@ -114,7 +121,7 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
                   <TraitLine trait={t} reference={reference} />
                   {t.rating !== null && <Rating value={t.rating} of={pipsOf(t.category)} className="shrink-0 font-display text-base text-gold" />}
                 </div>
-                {t.category === "backgrounds" && t.name === "Retainers" && t === traits.filter((x) => x.name === "Retainers").at(-1) && reference.retainers.length > 0 && <RetainerLines retainers={reference.retainers} />}
+                {t === retainersUnder && reference.retainers.length > 0 && <RetainerLines retainers={reference.retainers} />}
                 {t.category === "backgrounds" && t.name === "Alternate Identity" && <IdentityLine reference={reference} detail={t.detail} />}
               </li>
             ))}

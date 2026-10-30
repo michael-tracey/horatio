@@ -48,7 +48,7 @@ from horatio.models import (
     User,
     XpEntry,
 )
-from horatio.rules.checks import Context, Violation, traits_in, violations
+from horatio.rules.checks import Context, Violation, matches, traits_in, violations
 from horatio.rules.conditions import describe as describe_condition
 from horatio.rules.grants import (
     Effects,
@@ -62,6 +62,7 @@ from horatio.rules.grants import (
     raised_by,
     set_aside,
 )
+from horatio.rules.house_effects import either
 from horatio.rules.model import FreeChoice, RuleSetData, SheetTrait, TroupeRules
 from horatio.rules.pricing import (
     NotAllowed,
@@ -1701,21 +1702,63 @@ def chosen_during_creation(db: Session, character: Character, category: TraitCat
     ) and any(r.category == category.key for r in rules.rule_set.cost_rules)
 
 
+@dataclass(frozen=True)
+class Owed:
+    """The downtime actions gaining dots costs, and why it is not the usual: "Caitiff:
+    Discipline Illiterate: 1 more a dot"."""
+
+    actions: int
+    because: tuple[str, ...] = ()
+
+    def reason(self, doing: str) -> str:
+        """What the owed actions are for: "Learning Celerity 1", and why there are more."""
+        return f"{doing} ({'; '.join(self.because)})" if self.because else doing
+
+
 def owed_for(
-    db: Session, character: Character, category: TraitCategory, gained: int, fixed: bool
-) -> int:
-    """Downtime actions gaining `gained` dots in `category` costs the character: per
-    dot, or once for a trait bought whole (a merit)."""
+    db: Session,
+    character: Character,
+    category: TraitCategory,
+    gained: int,
+    fixed: bool,
+    name: str = "",
+    detail: str = "",
+) -> Owed:
+    """Downtime actions gaining `gained` dots of `name` in `category` costs the
+    character: per dot, or once for a trait bought whole (a merit). A trait on the
+    sheet can waive it (Efficient Learner), or add to it, for some traits only (an
+    out-of-clan discipline under Discipline Illiterate, which also stops the
+    waiver)."""
     if not category.downtime_actions or gained <= 0 or character.home_troupe_id is None:
-        return 0
+        return Owed(0)
     rows = sheet_rows(db, character)
-    for waiver in category.downtime_waived_by:
-        if any(
-            r.category.key == waiver["category"] and r.definition.name == waiver["name"]
+
+    def holds(entry: Mapping[str, Any]) -> bool:
+        return any(
+            r.category.key == entry["category"]
+            and r.definition.name == entry["name"]
+            and r.trait.rating != 0
             for r in rows
-        ):
-            return 0
-    return category.downtime_actions * (1 if fixed else gained)
+        )
+
+    adding = [a for a in category.downtime_added_by if holds(a)]
+    stops = [a["name"] for a in adding if a.get("no_waiver")]
+    waivers = [w["name"] for w in category.downtime_waived_by if holds(w)]
+    if waivers and not stops:
+        return Owed(0)
+    because = [f"{w} does not help, under {stops[0]}" for w in waivers]
+    per_dot = category.downtime_actions
+    if adding and name:
+        sheet = [r.as_rules_trait() for r in rows]
+        subject = SheetTrait(category=category.key, name=name, rating=gained, detail=detail)
+        context = check_context(db, character, sheet)
+        for added in adding:
+            if "when" in added and not matches(added["when"], sheet, subject, context):
+                continue
+            per_dot += added["amount"]
+            each = "" if fixed else " a dot"
+            because.append(f"{added['name']}: {added['amount']} more{each}")
+    return Owed(per_dot * (1 if fixed else gained), tuple(because))
 
 
 def owe(db: Session, user: User, character: Character, amount: int, reason: str) -> None:
@@ -1822,6 +1865,11 @@ def set_trait(
         quote_change(db, character, category_key, name, detail, rating)  # validates
         if (category.key, name) == CUSTOM_ARCHETYPE and not detail.strip():
             raise unprocessable("Name the archetype.")
+        # A clan that leaves an in-clan discipline to its player keeps the one chosen
+        # as its detail (Angelis Ater, horatio.rules.splats.clan_choice).
+        offered = definition.properties.get("choices")
+        if detail and offered and detail not in offered:
+            raise unprocessable(f"{name}: choose {either(offered)}.")
         sect = chosen(db, character, "sect")
         trait = replace_choice(db, character, definition, category, detail)
         if note is not None:
@@ -2011,9 +2059,9 @@ def set_trait(
     learning_now = by_exception is None or (by_exception == "given" and free is None)
     if not held and rating > current_rating and learning_now:
         whole = definition.properties.get("rating") is not None
-        actions = owed_for(db, character, category, rating - current_rating, whole)
+        owed = owed_for(db, character, category, rating - current_rating, whole, name, detail)
         doing = f"Gaining {name}" if whole else f"Learning {name} {rating}"
-        owe(db, player, character, actions, doing)
+        owe(db, player, character, owed.actions, owed.reason(doing))
     if held:
         assert character.home_troupe_id is not None
         approval = Approval(
@@ -2289,8 +2337,22 @@ def decide(
         ).one()
         definition = db.get_one(TraitDefinition, bought.trait_definition_id)
         category = db.get_one(TraitCategory, definition.category_id)
-        actions = owed_for(db, character, category, bought.to_rating - bought.from_rating, False)
-        owe(db, staff, character, actions, f"Learning {definition.name} {bought.to_rating}")
+        owed = owed_for(
+            db,
+            character,
+            category,
+            bought.to_rating - bought.from_rating,
+            False,
+            definition.name,
+            bought.detail,
+        )
+        owe(
+            db,
+            staff,
+            character,
+            owed.actions,
+            owed.reason(f"Learning {definition.name} {bought.to_rating}"),
+        )
     elif approve and approval.kind == "home_troupe_change":
         from horatio.reconciliation import approve_change  # imports this module
 

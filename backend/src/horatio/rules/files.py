@@ -52,6 +52,7 @@ def allowance_rule_from_dict(raw: dict[str, Any], *, house: bool = False) -> All
         trait=raw.get("trait"),
         min_rating=raw.get("min_rating", 1),
         house=house,
+        note=raw.get("note", ""),
     )
 
 
@@ -413,6 +414,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             buy_off_factor=c.get("buy_off_factor"),
             downtime_actions=c.get("downtime_actions"),
             downtime_waived_by=tuple(c.get("downtime_waived_by", [])),
+            downtime_added_by=tuple(c.get("downtime_added_by", [])),
             specializes=c.get("specializes"),
         )
         for c in raw["categories"]
@@ -423,6 +425,8 @@ def load_rule_set(path: Path) -> RuleSetData:
     titles = list(raw.get("titles", []))
     sects = list(raw.get("sects", []))
     social_ages = list(raw.get("social_ages", []))
+    cap_changes = list(raw.get("cap_changes", []))
+    outsiders = list(raw.get("outsiders", []))
     status_caps = raw.get("status_caps")
     clan_rarity = list(raw.get("clan_rarity", []))
     for trait_file in raw.get("trait_files", []):
@@ -433,6 +437,8 @@ def load_rule_set(path: Path) -> RuleSetData:
         titles += included.get("titles", [])
         sects += included.get("sects", [])
         social_ages += included.get("social_ages", [])
+        cap_changes += included.get("cap_changes", [])
+        outsiders += included.get("outsiders", [])
         status_caps = included.get("status_caps", status_caps)
     # A category can hold the traits of another, by name, even one left out: a ghoul's
     # domitor's in-clan disciplines are those a vampire's extra ones can be.
@@ -482,6 +488,15 @@ def load_rule_set(path: Path) -> RuleSetData:
         if selector.get("until", "accepted") != "accepted":
             raise ValueError(f"{path.name}: creation_only until can only be 'accepted'")
     checks = load_checks(path.name, raw_checks, traits, categories, left_out)
+    for category in categories.values():
+        for added in category.downtime_added_by:
+            where = f"{path.name}: {category.key} downtime_added_by"
+            if (added["category"], added["name"]) not in traits:
+                raise ValueError(f"{where} names unknown trait {added['name']!r}")
+            if added.get("amount", 0) < 1:
+                raise ValueError(f"{where}: {added['name']} must add at least one action")
+            if "when" in added:
+                validate_condition(added["when"], set(traits))
     raw_grants = list(raw.get("grants", []))
     for grant_file in raw.get("grant_files", []):
         with (path.parent / grant_file).open("rb") as f:
@@ -506,7 +521,7 @@ def load_rule_set(path: Path) -> RuleSetData:
     feeding_modifiers = [feeding_modifier_from_dict(r) for r in raw.get("feeding_modifiers", [])]
     try:
         title_data = titles_from(titles)
-        status_rules = status_rules_from(status_caps, sects, social_ages)
+        status_rules = status_rules_from(status_caps, sects, social_ages, cap_changes, outsiders)
         check_status_rules(traits, status_rules, title_data)
     except ValueError as error:
         raise ValueError(f"{path.name}: {error}") from error

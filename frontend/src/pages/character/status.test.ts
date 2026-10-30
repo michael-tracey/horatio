@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DerivedOut, EndingOut, PatronChoiceOut } from "../../api/types";
-import { bySource, endingText, findPatrons, patronLabel, suppressedText } from "./status";
+import { bySource, capText, endingText, findPatrons, outsiderText, patronLabel, suppressedText } from "./status";
 
 const day = (d: string) => `day ${d}`;
 const ending = (over: Partial<EndingOut>): EndingOut => ({
@@ -10,6 +10,18 @@ const ending = (over: Partial<EndingOut>): EndingOut => ({
   while_held: null,
   this_game: false,
   ...over,
+});
+
+describe("the fleeting cap", () => {
+  it("says why it is not the usual, and nothing when it is", () => {
+    expect(capText(["a lesser ban: 3", "Tainted Embrace: 1 less"])).toBe("Cap: a lesser ban: 3 · Tainted Embrace: 1 less");
+    expect(capText([])).toBe("");
+  });
+  it("says how a character no sect has Accepted holds status", () => {
+    expect(outsiderText({ outsider_sect: "Camarilla", outsider_through: "Emissary to the Camarilla" })).toBe(
+      "Accepted by no sect. As Emissary to the Camarilla allows, it holds fleeting Camarilla status.",
+    );
+  });
 });
 
 describe("endingText", () => {

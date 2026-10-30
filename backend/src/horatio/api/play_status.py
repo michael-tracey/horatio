@@ -101,6 +101,11 @@ class PlayStatusOut(BaseModel):
     # Negative first, then abiding, innate and fleeting.
     carried: list[CarriedOut]
     fleeting_cap: int
+    # Why the cap is not the usual: "Tainted Embrace: 1 less".
+    cap_why: list[str] = []
+    # Accepted by no sect, it holds this sect's fleeting status through a merit.
+    outsider_sect: str | None = None
+    outsider_through: str | None = None
     suppressed: list[SuppressionOut]
 
 
@@ -180,5 +185,8 @@ def play_status_out(
             for e in play_status.entries(at, events)
         ],
         fleeting_cap=found.fleeting_cap,
+        cap_why=found.cap_why,
+        outsider_sect=found.outsider.sect if found.outsider else None,
+        outsider_through=found.outsider.name if found.outsider else None,
         suppressed=[suppression_out(s) for s in found.suppressing],
     )

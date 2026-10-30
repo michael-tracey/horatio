@@ -11,6 +11,7 @@ from horatio.api.sheets import TraitRefOut, players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character
 from horatio.permissions import visible_character
+from horatio.rules.splats import clan_choice
 
 router = APIRouter(prefix="/characters/{character_id}/creation", tags=["creation"])
 
@@ -106,6 +107,27 @@ class ClanMeritOut(BaseModel):
     detail: str = ""
 
 
+class ShortfallOut(BaseModel):
+    """Restricted picks with fewer traits to go on than there are picks, and why: "Only
+    2 in-clan disciplines for 3 starting picks: …"."""
+
+    category: str
+    restriction: str
+    picks: int
+    options: list[str]
+    message: str
+
+
+class ClanChoiceOut(BaseModel):
+    """An in-clan discipline the clan leaves to its player (Angelis Ater: Potence,
+    Presence or Obfuscate), kept as the clan's detail."""
+
+    clan: str
+    choices: list[str]
+    chosen: str | None
+    page: str | None
+
+
 class CreationOut(BaseModel):
     complete: bool
     pools: list[PoolOut]
@@ -122,6 +144,10 @@ class CreationOut(BaseModel):
     given: list[GivenOut] = []
     # What the sheet must have before the wizard moves on from a step.
     needs: list[StepNeed]
+    # Restricted picks that cannot all be placed as things stand, and why.
+    shortfalls: list[ShortfallOut] = []
+    # The clan's in-clan choice, for a clan that leaves one to its player.
+    clan_choice: ClanChoiceOut | None = None
 
 
 class Pick(BaseModel):
@@ -202,7 +228,24 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
         )
 
     placed = creation.pools_with_strays(db, character)
+    rules = creation.rules_for(db, character)
+    choice = clan_choice(rules, [r.as_rules_trait() for r in creation.sheet_rows(db, character)])
     return CreationOut(
+        shortfalls=[
+            ShortfallOut(
+                category=s.category,
+                restriction=s.restriction,
+                picks=s.picks,
+                options=s.options,
+                message=s.message,
+            )
+            for s in creation.shortfalls(db, character)
+        ],
+        clan_choice=ClanChoiceOut(
+            clan=choice.clan, choices=list(choice.choices), chosen=choice.chosen, page=choice.page
+        )
+        if choice is not None
+        else None,
         complete=character.creation_completed_at is not None,
         needs=list({(n.step, n.message): n for n in needs}.values()),
         pools=[pool_out(p) for p in sorted(placed, key=lambda p: (p.category, -p.rating))],

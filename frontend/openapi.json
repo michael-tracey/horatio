@@ -209,6 +209,11 @@
             "title": "Amount",
             "type": "integer"
           },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
           "source": {
             "title": "Source",
             "type": "string"
@@ -3100,6 +3105,52 @@
         "title": "ChoiceOut",
         "type": "object"
       },
+      "ClanChoiceOut": {
+        "description": "An in-clan discipline the clan leaves to its player (Angelis Ater: Potence,\nPresence or Obfuscate), kept as the clan's detail.",
+        "properties": {
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "chosen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chosen"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "clan",
+          "choices",
+          "chosen",
+          "page"
+        ],
+        "title": "ClanChoiceOut",
+        "type": "object"
+      },
       "ClanFeedingIn": {
         "properties": {
           "amount": {
@@ -4097,6 +4148,16 @@
             "title": "Budget Changes",
             "type": "array"
           },
+          "clan_choice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClanChoiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "clan_merits": {
             "default": [],
             "items": {
@@ -4143,6 +4204,14 @@
             "default": false,
             "title": "Rarity Known",
             "type": "boolean"
+          },
+          "shortfalls": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ShortfallOut"
+            },
+            "title": "Shortfalls",
+            "type": "array"
           }
         },
         "required": [
@@ -12360,6 +12429,13 @@
       },
       "MergePreview": {
         "properties": {
+          "also": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Also",
+            "type": "array"
+          },
           "characters": {
             "items": {
               "$ref": "#/components/schemas/MergeCharacter"
@@ -12425,6 +12501,7 @@
           "settings",
           "handles",
           "others",
+          "also",
           "refusals"
         ],
         "title": "MergePreview",
@@ -12843,6 +12920,14 @@
             },
             "title": "Questions",
             "type": "array"
+          },
+          "short": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "default": {},
+            "title": "Short",
+            "type": "object"
           },
           "status": {
             "title": "Status",
@@ -14953,6 +15038,14 @@
             ],
             "title": "Accepted"
           },
+          "cap_why": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cap Why",
+            "type": "array"
+          },
           "carried": {
             "items": {
               "$ref": "#/components/schemas/CarriedOut"
@@ -14974,6 +15067,28 @@
           "fleeting_cap": {
             "title": "Fleeting Cap",
             "type": "integer"
+          },
+          "outsider_sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outsider Sect"
+          },
+          "outsider_through": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outsider Through"
           },
           "sect": {
             "anyOf": [
@@ -18075,6 +18190,19 @@
             "title": "Ghoul",
             "type": "boolean"
           },
+          "given": {
+            "default": false,
+            "title": "Given",
+            "type": "boolean"
+          },
+          "given_disciplines": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Given Disciplines",
+            "type": "array"
+          },
           "health": {
             "default": 0,
             "title": "Health",
@@ -18091,6 +18219,11 @@
               }
             ],
             "title": "Id"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
           },
           "lost": {
             "anyOf": [
@@ -18119,6 +18252,11 @@
             "title": "Name",
             "type": "string"
           },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
           "npc_id": {
             "anyOf": [
               {
@@ -18141,6 +18279,17 @@
               }
             ],
             "title": "Npc Name"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
           },
           "pool": {
             "default": 0,
@@ -19822,6 +19971,43 @@
         "title": "SheetedOut",
         "type": "object"
       },
+      "ShortfallOut": {
+        "description": "Restricted picks with fewer traits to go on than there are picks, and why: \"Only\n2 in-clan disciplines for 3 starting picks: \u2026\".",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "picks": {
+            "title": "Picks",
+            "type": "integer"
+          },
+          "restriction": {
+            "title": "Restriction",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "restriction",
+          "picks",
+          "options",
+          "message"
+        ],
+        "title": "ShortfallOut",
+        "type": "object"
+      },
       "SignIn": {
         "properties": {
           "login": {
@@ -20690,6 +20876,14 @@
             "title": "Bans",
             "type": "array"
           },
+          "cap_why": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cap Why",
+            "type": "array"
+          },
           "derived": {
             "items": {
               "$ref": "#/components/schemas/DerivedOut"
@@ -20715,6 +20909,28 @@
             },
             "title": "Held",
             "type": "array"
+          },
+          "outsider_sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outsider Sect"
+          },
+          "outsider_through": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outsider Through"
           },
           "sect": {
             "anyOf": [

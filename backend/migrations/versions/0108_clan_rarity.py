@@ -2,7 +2,7 @@
 character's rarity merit follows while it is built (horatio.clan_merits)
 
 Revision ID: 0108
-Revises: 0103
+Revises: 0106
 Create Date: 2026-10-30 12:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
 revision: str = "0108"
-down_revision: str | None = "0103"
+down_revision: str | None = "0106"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -20,7 +20,7 @@ function trait(category: string, name: string, over: Partial<SheetTraitOut> = {}
 }
 
 const sheet = (traits: SheetTraitOut[], problems: SheetOut["problems"] = []) => ({ traits, problems }) as SheetOut;
-const creation = (pools: PoolOut[], given: CreationOut["given"] = []): CreationOut => ({ complete: false, pools, needs: [], path_starts: [], budget_changes: [], given, clan_merits: [], rarity_known: false });
+const creation = (pools: PoolOut[], given: CreationOut["given"] = []): CreationOut => ({ complete: false, pools, needs: [], path_starts: [], budget_changes: [], given, clan_merits: [], rarity_known: false, shortfalls: [] });
 
 describe("freedPicks", () => {
   it("marks a pick a merit now makes free, where it was placed and on Merits", () => {
@@ -125,6 +125,13 @@ describe("takenAway", () => {
     const left = { ...creation([focus("focus_physicals"), focus("focus_socials")]), budget_changes: [{ category: "focus_mentals", because: [stolen] }] };
 
     expect(takenAway(left, catalogue, ["focus_mentals"])).toEqual(["Stolen Potential: no Mental focus (p. 265)."]);
+  });
+
+  it("names the book when the page is not the core book's", () => {
+    const supplement = { ...catalogue, traits: [{ category: "flaws", name: "Stolen Potential", page_reference: "Vol. 2, p. 269" }] } as CatalogueOut;
+    const left = { ...creation([focus("focus_physicals")]), budget_changes: [{ category: "focus_mentals", because: [stolen] }] };
+
+    expect(takenAway(left, supplement, ["focus_mentals"])).toEqual(["Stolen Potential: no Mental focus (Vol. 2, p. 269)."]);
   });
 
   it("says nothing of a category that still has its picks, or keeps one to take back", () => {

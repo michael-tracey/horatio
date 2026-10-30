@@ -65,6 +65,13 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
                  pricing), and the checks are set aside for it alone, and for the
                  rest of the sheet as far as they count it (a Pretender Elder's one
                  elder power); every other check still applies
+    retainer     a Retainer of the merit's own, not dots of the background: one
+                 built at `amount` dots (Ardent Companion: a ghouled animal at 7),
+                 listed with the character's Retainers (horatio.retainers). The
+                 target names the Retainers background, and says what it is
+                 (`kind`), whether it is a `ghoul`, the `disciplines` its specialty
+                 can be beside a ghoul's, and a `note`. It changes no trait, so it
+                 is read by horatio.retainers, not by `effects`
 
     lower_to     taking the source drops each trait of the target's category (or the
                  one it names) to `amount`, if it is higher (Flexible Morals: Morality
@@ -108,6 +115,7 @@ Kind = Literal[
     "no_free_dot",
     "open_barred",
     "lower_to",
+    "retainer",
 ]
 KINDS = (
     "add",
@@ -122,6 +130,7 @@ KINDS = (
     "no_free_dot",
     "open_barred",
     "lower_to",
+    "retainer",
 )
 TraitKey = tuple[str, str, str]  # category, name, detail
 # A trait a grant looks at: its detail, or None for any detail.
@@ -130,6 +139,8 @@ LooseKey = tuple[str, str, str | None]
 WHOLE_CATEGORY = "*"
 # The specialisation a player names in their own words.
 CUSTOM = "Custom"
+# The most dots a Retainer a merit gives can have (horatio.retainers).
+RETAINER_MOST = 10
 
 
 @dataclass(frozen=True)
@@ -392,7 +403,7 @@ def effects(
             if grant.when is not None and not matches(grant.when, sheet, trait):
                 continue
             label = trait.full_name
-            if grant.kind in ("replace_in_clan", "open_barred", "lower_to"):
+            if grant.kind in ("replace_in_clan", "open_barred", "lower_to", "retainer"):
                 continue
             if grant.kind == "free_choices":
                 given = chosen_options(grant, trait, rule_set)
@@ -616,6 +627,13 @@ def validate_grant(
         )
     if grant.kind in ("add", "free_up_to") and not (grant.target.get("name") or choose):
         raise ValueError(f"grant {grant.key} must name one trait, or let the player choose one")
+    if grant.kind == "retainer" and not (
+        grant.target.get("kind") and 1 <= grant.amount <= RETAINER_MOST
+    ):
+        raise ValueError(
+            f"grant {grant.key} must say what kind of Retainer it gives, at 1 to"
+            f" {RETAINER_MOST} dots"
+        )
     if grant.kind == "open_barred":
         validate_open_barred(grant, rule_set_traits)
     if grant.kind == "free_choices":

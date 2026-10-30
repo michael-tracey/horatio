@@ -5761,6 +5761,11 @@ export interface components {
             action_kind: string;
             /** Amount */
             amount: number;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
             /** Source */
             source: string;
         };
@@ -6784,6 +6789,21 @@ export interface components {
             /** Value */
             value: string;
         };
+        /**
+         * ClanChoiceOut
+         * @description An in-clan discipline the clan leaves to its player (Angelis Ater: Potence,
+         *     Presence or Obfuscate), kept as the clan's detail.
+         */
+        ClanChoiceOut: {
+            /** Choices */
+            choices: string[];
+            /** Chosen */
+            chosen: string | null;
+            /** Clan */
+            clan: string;
+            /** Page */
+            page: string | null;
+        };
         /** ClanFeedingIn */
         ClanFeedingIn: {
             /** Amount */
@@ -7121,6 +7141,7 @@ export interface components {
              * @default []
              */
             budget_changes: components["schemas"]["BudgetChange"][];
+            clan_choice?: components["schemas"]["ClanChoiceOut"] | null;
             /**
              * Clan Merits
              * @default []
@@ -7147,6 +7168,11 @@ export interface components {
              * @default false
              */
             rarity_known: boolean;
+            /**
+             * Shortfalls
+             * @default []
+             */
+            shortfalls: components["schemas"]["ShortfallOut"][];
         };
         /**
          * CropIn
@@ -10317,6 +10343,8 @@ export interface components {
         };
         /** MergePreview */
         MergePreview: {
+            /** Also */
+            also: string[];
             /** Characters */
             characters: components["schemas"]["MergeCharacter"][];
             /** Handles */
@@ -10488,6 +10516,13 @@ export interface components {
             late: boolean;
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
+            /**
+             * Short
+             * @default {}
+             */
+            short: {
+                [key: string]: number;
+            };
             /** Status */
             status: string;
         };
@@ -11285,6 +11320,11 @@ export interface components {
         PlayStatusOut: {
             /** Accepted */
             accepted: string | null;
+            /**
+             * Cap Why
+             * @default []
+             */
+            cap_why: string[];
             /** Carried */
             carried: components["schemas"]["CarriedOut"][];
             /** Choosing */
@@ -11293,6 +11333,10 @@ export interface components {
             conditions: components["schemas"]["ConditionOut"][];
             /** Fleeting Cap */
             fleeting_cap: number;
+            /** Outsider Sect */
+            outsider_sect?: string | null;
+            /** Outsider Through */
+            outsider_through?: string | null;
             /** Sect */
             sect: string | null;
             /** Source */
@@ -12462,22 +12506,44 @@ export interface components {
              */
             ghoul: boolean;
             /**
+             * Given
+             * @default false
+             */
+            given: boolean;
+            /**
+             * Given Disciplines
+             * @default []
+             */
+            given_disciplines: string[];
+            /**
              * Health
              * @default 0
              */
             health: number;
             /** Id */
             id: string | null;
+            /**
+             * Kind
+             * @default
+             */
+            kind: string;
             /** Lost */
             lost: string | null;
             /** Lost On */
             lost_on: string | null;
             /** Name */
             name: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
             /** Npc Id */
             npc_id: string | null;
             /** Npc Name */
             npc_name: string | null;
+            /** Page */
+            page?: string | null;
             /**
              * Pool
              * @default 0
@@ -13133,6 +13199,23 @@ export interface components {
             /** Left Out */
             left_out: string[];
         };
+        /**
+         * ShortfallOut
+         * @description Restricted picks with fewer traits to go on than there are picks, and why: "Only
+         *     2 in-clan disciplines for 3 starting picks: …".
+         */
+        ShortfallOut: {
+            /** Category */
+            category: string;
+            /** Message */
+            message: string;
+            /** Options */
+            options: string[];
+            /** Picks */
+            picks: number;
+            /** Restriction */
+            restriction: string;
+        };
         /** SignIn */
         SignIn: {
             /** Login */
@@ -13466,6 +13549,11 @@ export interface components {
             addable: components["schemas"]["StatusAbout"][];
             /** Bans */
             bans: components["schemas"]["BanOut"][];
+            /**
+             * Cap Why
+             * @default []
+             */
+            cap_why: string[];
             /** Derived */
             derived: components["schemas"]["DerivedOut"][];
             /** Disgraced */
@@ -13476,6 +13564,10 @@ export interface components {
             fleeting_cap: number;
             /** Held */
             held: components["schemas"]["HeldOut"][];
+            /** Outsider Sect */
+            outsider_sect?: string | null;
+            /** Outsider Through */
+            outsider_through?: string | null;
             /** Sect */
             sect: string | null;
             /** Setting */

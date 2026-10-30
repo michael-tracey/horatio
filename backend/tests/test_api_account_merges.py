@@ -11,9 +11,18 @@ from sqlalchemy.orm import Session
 
 from horatio.config import get_settings
 from horatio.connectors import email
-from horatio.models import AuditEvent, AuthIdentity, FormerHandle, User
+from horatio.models import (
+    AuditEvent,
+    AuthIdentity,
+    EmailChange,
+    FormerHandle,
+    Suspension,
+    User,
+    Viewing,
+)
 from horatio.models import Troupe as TroupeRow
 from tests.api_helpers import PASSWORD, Person, Troupe, new_character, sign_up
+from tests.test_api_email_changes import token_of
 from tests.test_api_play import send, tap
 from tests.test_api_renames import at_home, other_troupe, summaries, troupe_log, visit
 from tests.test_email_connector import FakeSMTP
@@ -244,6 +253,202 @@ def test_sign_in_links_password_and_settings_move_where_the_other_has_none(
     assert signed_in.status_code == 200, signed_in.text
     assert signed_in.json()["id"] == troupe.player.id
     assert account(troupe, twin).password_hash is None
+
+
+def test_pronouns_lines_and_veils_and_the_whos_who_choice_move_where_the_other_has_none(
+    troupe: Troupe, twin: Person
+) -> None:
+    other = account(troupe, twin)
+    other.pronouns = "they/them"
+    other.lines = ["Spiders"]
+    other.veils = ["Torture"]
+    other.share_lines_veils = True
+    other.preferences = {"whos_who_handle": True}
+    troupe.session.flush()
+
+    found = preview(troupe.custodian, troupe.player, twin).json()
+    assert found["settings"] == [
+        "pronouns",
+        "lines and veils (shared with other players)",
+        "choice to be named by handle in the Who's Who",
+    ]
+    merged(troupe, troupe.player, twin)
+
+    keep = account(troupe, troupe.player)
+    assert keep.pronouns == "they/them"
+    assert (keep.lines, keep.veils, keep.share_lines_veils) == (["Spiders"], ["Torture"], True)
+    assert keep.preferences == {"whos_who_handle": True}
+
+
+def test_the_staying_accounts_own_pronouns_lines_and_veils_and_whos_who_choice_stay(
+    troupe: Troupe, twin: Person
+) -> None:
+    keep = account(troupe, troupe.player)
+    keep.pronouns = "she/her"
+    keep.veils = ["Blood"]
+    keep.preferences = {"ratings": "pips"}
+    other = account(troupe, twin)
+    other.pronouns = "they/them"
+    other.lines = ["Spiders"]
+    other.share_lines_veils = True
+    # Its email settings move, as a group; the Who's Who choice moves on its own.
+    other.preferences = {"whos_who_handle": True, "email_downtime": True}
+    troupe.session.flush()
+
+    found = preview(troupe.custodian, troupe.player, twin).json()
+    assert found["settings"] == [
+        "notification settings",
+        "choice to be named by handle in the Who's Who",
+    ]
+    merged(troupe, troupe.player, twin)
+
+    keep = account(troupe, troupe.player)
+    assert keep.pronouns == "she/her"
+    assert (keep.lines, keep.veils, keep.share_lines_veils) == ([], ["Blood"], False)
+    assert keep.preferences == {"ratings": "pips", "whos_who_handle": True, "email_downtime": True}
+    # The setting it changed itself is its own: the other's choice doesn't override it.
+    twin_two = sign_up(troupe.client_for, "triplet")
+    account(troupe, twin_two).preferences = {"whos_who_handle": True}
+    keep.preferences = {"whos_who_handle": False}
+    troupe.session.flush()
+    assert preview(troupe.custodian, troupe.player, twin_two).json()["settings"] == []
+
+
+def suspend(troupe: Troupe, person: Person, **body: Any) -> None:
+    response = troupe.custodian.client.post(
+        f"/players/{person.id}/suspension", json={"reason": "Harassing other players", **body}
+    )
+    assert response.status_code == 201, response.text
+
+
+def test_a_suspension_on_the_merged_account_carries_to_the_one_that_stays(
+    troupe: Troupe, twin: Person, mail: FakeSMTP
+) -> None:
+    suspend(troupe, twin, ends_at="2099-03-01T12:00:00Z")
+    assert troupe.player.client.get("/auth/me").status_code == 200
+
+    found = preview(troupe.custodian, troupe.player, twin).json()
+    keep = f"@{troupe.player.handle}"
+    assert found["also"] == [
+        f"Its suspension carries to {keep}: {keep} is signed out, and suspended until"
+        " 1 Mar 2099, 12:00 (UTC)."
+    ]
+    merged(troupe, troupe.player, twin)
+
+    # The account that stays is signed out, and kept out until then.
+    assert troupe.player.client.get("/auth/me").status_code == 401
+    refused = troupe.client_for().post(
+        "/auth/login", json={"login": troupe.player.handle, "password": PASSWORD}
+    )
+    assert refused.status_code == 403
+    assert "suspended until 1 Mar 2099" in refused.json()["detail"]
+    live = troupe.session.scalars(select(Suspension)).one()
+    assert str(live.user_id) == troupe.player.id
+    assert live.reason == "Harassing other players"
+    assert live.lifted_at is None
+    logged = troupe.session.scalars(
+        select(AuditEvent).where(AuditEvent.action == "account.suspended")
+    ).all()
+    assert [e.data.get("kind") for e in logged] == ["until", "merged"]
+    assert logged[1].data["user_id"] == troupe.player.id
+    entries = troupe.custodian.client.get("/audit", params={"q": "suspended in its place"}).json()
+    assert [e["message"] for e in entries["entries"]] == [
+        f"custodian merged @{twin.handle}, which was suspended, into player, who is"
+        " suspended in its place."
+    ]
+    # The person is told, though not why.
+    merge_mail = [m for m in mail.sent if m["Subject"] == "Your Horatio accounts are now one"]
+    text = merge_mail[0].get_content()
+    assert f"{keep} is suspended in its place until 1 Mar 2099" in text
+    assert "Harassing" not in text
+
+
+def test_where_both_are_suspended_the_merged_accounts_suspension_is_lifted(
+    troupe: Troupe, twin: Person
+) -> None:
+    suspend(troupe, troupe.player)
+    suspend(troupe, twin, ends_at="2099-03-01T12:00:00Z")
+
+    found = preview(troupe.custodian, troupe.player, twin).json()
+    assert found["also"] == [
+        f"Its suspension is lifted: @{troupe.player.handle} is suspended already, and stays so."
+    ]
+    merged(troupe, troupe.player, twin)
+
+    kept, lifted = (
+        troupe.session.scalars(
+            select(Suspension).where(Suspension.user_id == uuid.UUID(person.id))
+        ).one()
+        for person in (troupe.player, twin)
+    )
+    # The staying account's stands, with no end date; the closed account's is lifted,
+    # so it never ends by itself later and tells the closed account it can sign in.
+    assert kept.lifted_at is None and kept.ends_at is None
+    assert lifted.lifted_at is not None
+    assert lifted.lift_reason == f"Merged into @{troupe.player.handle}, suspended already."
+    words = {"q": "lifted suspension merging"}
+    entries = troupe.custodian.client.get("/audit", params=words).json()
+    assert [e["message"] for e in entries["entries"]] == [
+        f"custodian lifted twin's suspension, merging the account into"
+        f" @{troupe.player.handle}, which is suspended already."
+    ]
+
+
+def test_a_change_of_email_waiting_on_the_merged_account_is_cancelled(
+    troupe: Troupe, twin: Person
+) -> None:
+    started = troupe.custodian.client.post(
+        f"/players/{twin.id}/email-change",
+        json={"email": "twin.new@example.org", "reason": "Lost the old one"},
+    )
+    assert started.status_code == 201, started.text
+
+    found = preview(troupe.custodian, troupe.player, twin).json()
+    assert found["also"] == ["Its change of email waiting, to twin.new@example.org, is cancelled."]
+    merged(troupe, troupe.player, twin)
+
+    assert troupe.session.scalars(select(EmailChange)).first() is None
+    opened = troupe.client_for().post(f"/auth/email-change/{token_of(started.json()['url'])}")
+    assert opened.status_code == 404
+    entries = troupe.custodian.client.get("/audit", params={"q": "cancelled changing"}).json()
+    assert entries["entries"][0]["message"] == (
+        "custodian cancelled changing twin's email to twin.new@example.org, merging the"
+        f" account into @{troupe.player.handle}."
+    )
+    # The closed account's email is free for the staying account to change to.
+    again = troupe.custodian.client.post(
+        f"/players/{troupe.player.id}/email-change",
+        json={"email": twin.email, "reason": "Keeps the address of the account merged"},
+    )
+    assert again.status_code == 201, again.text
+
+
+def test_viewing_as_the_merged_account_ends_and_it_cannot_be_viewed_as(
+    troupe: Troupe, twin: Person
+) -> None:
+    # Another of the custodian's sign-ins is viewing as the twin.
+    elsewhere = troupe.client_for()
+    elsewhere.post("/auth/login", json={"login": troupe.custodian.email, "password": PASSWORD})
+    started = elsewhere.post(f"/players/{twin.id}/view-as", json={"reason": "Lost a sheet"})
+    assert started.status_code == 201, started.text
+    assert elsewhere.get("/view-as").json()["handle"] == twin.handle
+
+    found = preview(troupe.custodian, troupe.player, twin).json()
+    assert found["also"] == [f"Your viewing as @{twin.handle} ends."]
+    merged(troupe, troupe.player, twin)
+
+    assert elsewhere.get("/view-as").json() is None
+    assert elsewhere.get("/auth/me").json()["id"] == troupe.custodian.id
+    viewing = troupe.session.scalars(select(Viewing)).one()
+    troupe.session.refresh(viewing)
+    assert viewing.ended_at is not None
+    entries = troupe.custodian.client.get("/audit", params={"q": "viewing ended"}).json()
+    assert [e["message"] for e in entries["entries"]] == [
+        "custodian's viewing as twin ended: the account was merged into another."
+    ]
+    # The closed account is no one now, so it can't be viewed as.
+    again = troupe.custodian.client.post(f"/players/{twin.id}/view-as", json={"reason": "Again"})
+    assert again.status_code == 404
 
 
 def test_it_is_logged_and_the_people_it_affects_are_told(
