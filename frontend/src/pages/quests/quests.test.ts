@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyDraft, guidanceText, meetsNow, optionFrom, optionsFrom, questType, requestStatus, resultText } from "./quests";
+import { emptyDraft, guidanceText, meetsNow, optionFrom, optionsFrom, questChoiceText, questType, requestStatus, resultText } from "./quests";
 
 describe("quest requirements", () => {
   it("builds a trait with a specialisation, and influence to expend", () => {
@@ -37,7 +37,13 @@ describe("quest requirements", () => {
 describe("quest words", () => {
   it("writes a quest's type as the troupe does", () => {
     expect(questType({ category: "complex", difficulty: 2 })).toBe("Complex 2");
-    expect(questType({ category: "simple", difficulty: 4, downtime_only: true })).toBe("Simple 4 (must be completed in downtime)");
+    expect(questType({ category: "simple", difficulty: 4, downtime_only: true })).toBe("Simple 4 · Downtime only");
+  });
+
+  it("offers a quest to a Quest action with where the party stands", () => {
+    const quest = { name: "The Lost Journal", category: "complex", difficulty: 2, downtime_only: true, scenario: 1, scenario_count: 2 };
+    expect(questChoiceText({ ...quest, role: "invited" })).toBe("The Lost Journal: Complex 2 · Downtime only · scenario 1 of 2 · choosing it joins the party");
+    expect(questChoiceText({ ...quest, downtime_only: false, role: "leader", scenario: null })).toBe("The Lost Journal: Complex 2");
   });
 
   it("gives the book's numbers as a guide", () => {

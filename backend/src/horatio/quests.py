@@ -901,6 +901,17 @@ def send(db: Session, staff: User, quest: Quest) -> None:
     audit.record(db, staff, "quest.sent", troupe_id=quest.troupe_id, quest=quest.name)
 
 
+def result_news(quest: Quest, scenario: QuestScenario, ended: str | None) -> tuple[str, str, str]:
+    """A scenario's result as its party is told it: the notification's summary (with
+    {character} to fill), the connectors' subject, and the whole of it."""
+    said = "passed" if scenario.result == "passed" else "failed"
+    summary = f"{{character}}'s quest {quest.name}: scenario {scenario.number} {said}" + (
+        f"; the quest is {ended}" if ended else ""
+    )
+    full_text = f"**{quest.name}**, scenario {scenario.number}: {said}\n\n{scenario.result_text}"
+    return summary, f"Quest: {quest.name}, scenario {scenario.number}", full_text.strip()
+
+
 def send_result(
     db: Session,
     staff: User,
@@ -910,11 +921,19 @@ def send_result(
     text: str | None,
     *,
     ends: bool,
+    cycle: DowntimeCycle | None = None,
 ) -> None:
-    """Send a scenario's result to the party: its success or fail text. A passed last
-    scenario completes the quest; a failed one may end it as failed, or be tried
-    again."""
+    """Record a scenario's result for the party: its success or fail text. A passed
+    last scenario completes the quest; a failed one may end it as failed, or be tried
+    again. Recorded at a game it goes out at once; recorded through a downtime
+    cycle's Quest actions (horatio.quest_actions), it waits for that cycle's delivery.
+    A Downtime Only quest's results are recorded only through a downtime."""
     ensure_active(quest)
+    if cycle is None and quest.downtime_only:
+        raise conflict(
+            "This quest is downtime only: its results are recorded from a Quest action "
+            "in a downtime cycle."
+        )
     if scenario.result == "passed":
         raise conflict(f"Scenario {scenario.number} is already passed.")
     all_scenarios = scenarios(db, quest)
@@ -929,11 +948,21 @@ def send_result(
     members_now = party(db, quest)
     scenario.result = result
     scenario.result_text = scenario.success_text if result == "passed" else scenario.fail_text
-    scenario.sent_at = now()
+    scenario.sent_at = now() if cycle is None else None
     scenario.sent_by = staff.id
+    scenario.cycle_id = cycle.id if cycle is not None else None
     if result == "passed":
         scenario.party = [str(c.id) for c in members_now]
-    log(db, quest, staff, f"sent scenario {scenario.number}: {result}")
+    if cycle is None:
+        log(db, quest, staff, f"sent scenario {scenario.number}: {result}")
+    else:
+        log(
+            db,
+            quest,
+            staff,
+            f"recorded scenario {scenario.number}: {result}, in {cycle.name}; "
+            "it goes out with that cycle's delivery",
+        )
     last = scenario.number == max(s.number for s in all_scenarios)
     ended = None
     if result == "passed" and last:
@@ -947,28 +976,38 @@ def send_result(
         quest.finished_by = [{"id": str(c.id), "name": c.name} for c in members_now]
         log(db, quest, staff, f"marked it {ended}")
     db.flush()
-    said = "passed" if result == "passed" else "failed"
-    tell(
-        db,
-        staff,
-        quest,
-        members_now,
-        "quest.result",
-        f"{{character}}'s quest {quest.name}: scenario {scenario.number} {said}"
-        + (f"; the quest is {ended}" if ended else ""),
-        subject=f"Quest: {quest.name}, scenario {scenario.number}",
-        full_text=f"**{quest.name}**, scenario {scenario.number}: {said}\n\n"
-        f"{scenario.result_text}".strip(),
-    )
+    if cycle is None:
+        summary, subject, full_text = result_news(quest, scenario, ended)
+        tell(
+            db,
+            staff,
+            quest,
+            members_now,
+            "quest.result",
+            summary,
+            subject=subject,
+            full_text=full_text,
+        )
     audit.record(
         db,
         staff,
-        "quest.result",
+        "quest.result" if cycle is None else "quest.result_recorded",
         troupe_id=quest.troupe_id,
         quest=quest.name,
         scenario=scenario.number,
         result=result,
+        cycle=cycle.name if cycle is not None else None,
     )
+
+
+def awaiting_delivery(scenario: QuestScenario) -> bool:
+    """A result recorded through a downtime cycle that has not gone out yet."""
+    return scenario.result is not None and scenario.sent_at is None
+
+
+def current_scenario(db: Session, quest: Quest) -> QuestScenario | None:
+    """The scenario the party faces next: the first not passed."""
+    return next((s for s in scenarios(db, quest) if s.result != "passed"), None)
 
 
 def close(db: Session, staff: User, quest: Quest, note: str) -> None:

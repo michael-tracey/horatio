@@ -44,12 +44,16 @@ class DowntimeCycle(Record):
 
 
 class Question(Record):
-    """One prompt on a cycle's downtime form. Each cycle owns its own questions."""
+    """One prompt on a cycle's downtime form. Each cycle owns its own questions: an
+    action question, a custom one, or the Quest action (horatio.quest_actions), which
+    names a quest and spends an action of its `action_kind`."""
 
     __tablename__ = "questions"
     __table_args__ = (
-        CheckConstraint("kind in ('action', 'custom')", name="kind"),
-        CheckConstraint("(kind = 'action') = (action_kind is not null)", name="action_has_kind"),
+        CheckConstraint("kind in ('action', 'custom', 'quest')", name="kind"),
+        CheckConstraint(
+            "(kind in ('action', 'quest')) = (action_kind is not null)", name="action_has_kind"
+        ),
         CheckConstraint(
             "answer_type in ('long_text', 'short_text', 'choice', 'number', 'yes_no')",
             name="answer_type",

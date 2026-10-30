@@ -164,10 +164,26 @@ export function questStatus(status: string): string {
 
 const CATEGORY: Record<string, string> = { simple: "Simple", complex: "Complex", epic: "Epic" };
 
-/** "Complex 2", as the troupe writes a quest's type. */
+/** "Complex 2", as the troupe writes a quest's type; "Simple 4 · Downtime only" for one run only through downtime. */
 export function questType(q: { category: string; difficulty: number; downtime_only?: boolean }): string {
   const type = `${CATEGORY[q.category] ?? q.category} ${q.difficulty}`;
-  return q.downtime_only ? `${type} (must be completed in downtime)` : type;
+  return q.downtime_only ? `${type} · Downtime only` : type;
+}
+
+/** A quest offered to a Quest action: "The Lost Journal: Complex 2 · scenario 1 of 2 · choosing it joins the party". */
+export function questChoiceText(q: {
+  name: string;
+  category: string;
+  difficulty: number;
+  downtime_only: boolean;
+  role: string;
+  scenario?: number | null;
+  scenario_count: number;
+}): string {
+  const parts = [questType(q)];
+  if (q.scenario) parts.push(`scenario ${q.scenario} of ${q.scenario_count}`);
+  if (q.role === "invited" || q.role === "offered") parts.push("choosing it joins the party");
+  return `${q.name}: ${parts.join(" · ")}`;
 }
 
 /** The book's guide for a quest of this type (pp. 99-100), never a limit. */

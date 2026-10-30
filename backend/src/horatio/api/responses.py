@@ -3,13 +3,13 @@ and players reading their results."""
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
-from horatio import influence_log, responses
+from horatio import influence_log, quest_actions, quest_requirements, quests, responses
 from horatio.api.downtimes import staff_cycle, staff_troupe
 from horatio.api.influence import InfluenceAnswerOut, answer_out
 from horatio.api.influence_effects import BlockWarningOut, block_warnings
@@ -20,6 +20,8 @@ from horatio.models import (
     Delivery,
     DowntimeCycle,
     InfluenceEntry,
+    Quest,
+    QuestScenario,
     RandomTable,
     Response,
     Submission,
@@ -40,6 +42,41 @@ class InfluenceEntryRef(BaseModel):
     times: int
 
 
+class QuestActionRequirementOut(BaseModel):
+    label: str
+    met: bool
+    met_by_name: str
+
+
+class QuestActionOut(BaseModel):
+    """The quest a Quest action names (horatio.quest_actions), as staff answer it."""
+
+    id: uuid.UUID
+    name: str
+    category: str
+    difficulty: int
+    downtime_only: bool
+    # draft | active | completed | failed | closed
+    status: str
+    # The scenario the action was for, of how many, and its texts written ahead.
+    scenario: int | None
+    scenario_count: int
+    success_text: str
+    fail_text: str
+    # Its result, once recorded; whether through this cycle, and still to go out.
+    result: str | None
+    result_text: str
+    recorded_here: bool
+    awaiting_delivery: bool
+    requirements: list[QuestActionRequirementOut]
+    # Other characters who put in a Quest action for it this cycle.
+    acted: list[str]
+    # For a Complex or Epic quest, party members who put in none this cycle, so have
+    # not spent the action its scenario needs (Nothing's Simple, Vol. II Issue 1,
+    # p. 102).
+    not_spent: list[str]
+
+
 class WorkItemOut(BaseModel):
     """What a staff member needs to write a response. No character sheet: narrators
     never see sheets, and this is what narrators are shown."""
@@ -58,10 +95,20 @@ class WorkItemOut(BaseModel):
     influence_entry: InfluenceEntryRef | None = None
     # Recorded Blocks an influence answer looks to be up against.
     influence_blocks: list[BlockWarningOut] = []
+    # A Quest action's quest.
+    quest: QuestActionOut | None = None
     status: str
     assigned_to_user_id: uuid.UUID | None
     assigned_to_any_narrator: bool
     body: str
+
+
+class QuestResultIn(BaseModel):
+    result: Literal["passed", "failed"]
+    # The success or fail text, if changed as it is recorded.
+    text: str | None = Field(default=None, max_length=8000)
+    # A failed result ends the quest as failed, rather than to be tried again.
+    ends: bool = False
 
 
 class WorkCycle(BaseModel):
@@ -126,6 +173,45 @@ def entry_ref(db: DbSession, response: Response) -> InfluenceEntryRef | None:
     return InfluenceEntryRef(id=entry.id, short_id=influence_log.short_id(entry), times=entry.times)
 
 
+def quest_action_out(db: DbSession, item: responses.WorkItem) -> QuestActionOut | None:
+    if item.question.kind != "quest":
+        return None
+    quest_id = quest_actions.quest_id_of(item.answer.structured)
+    quest = db.get(Quest, quest_id) if quest_id else None
+    if quest is None:
+        return None
+    all_scenarios = quests.scenarios(db, quest)
+    number = item.answer.structured.get("scenario")
+    scenario: QuestScenario | None = next((s for s in all_scenarios if s.number == number), None)
+    found = quest_actions.actions(db, quest, item.cycle)
+    return QuestActionOut(
+        id=quest.id,
+        name=quest.name,
+        category=quest.category,
+        difficulty=quest.difficulty,
+        downtime_only=quest.downtime_only,
+        status=quest.status,
+        scenario=scenario.number if scenario else None,
+        scenario_count=len(all_scenarios),
+        success_text=scenario.success_text if scenario else "",
+        fail_text=scenario.fail_text if scenario else "",
+        result=scenario.result if scenario else None,
+        result_text=scenario.result_text if scenario else "",
+        recorded_here=scenario is not None and scenario.cycle_id == item.cycle.id,
+        awaiting_delivery=scenario is not None and quests.awaiting_delivery(scenario),
+        requirements=[
+            QuestActionRequirementOut(
+                label=quest_requirements.requirement_label(quest_requirements.parse(r.options)),
+                met=r.met_at is not None,
+                met_by_name=r.met_by_name,
+            )
+            for r in quests.requirements(db, quest)
+        ],
+        acted=[a.character.name for a in found if a.answer.id != item.answer.id],
+        not_spent=[c.name for c in quest_actions.not_spent(db, quest, item.cycle)],
+    )
+
+
 def item_out(db: DbSession, item: responses.WorkItem) -> WorkItemOut:
     # The rules of the troupe running the cycle, where the action was taken.
     rules = read_troupe_rules(db, item.character.splat, item.cycle.troupe_id)
@@ -141,6 +227,7 @@ def item_out(db: DbSession, item: responses.WorkItem) -> WorkItemOut:
         influence=answer_out(rules, item.question.action_kind, item.answer.structured),
         influence_entry=entry_ref(db, item.response),
         influence_blocks=block_warnings(db, item),
+        quest=quest_action_out(db, item),
         status=item.response.status,
         assigned_to_user_id=item.response.assigned_to_user_id,
         assigned_to_any_narrator=item.response.assigned_to_any_narrator,
@@ -212,7 +299,7 @@ def cycle_progress(db: DbSession, cycle: DowntimeCycle) -> Progress:
             if r.assigned_to_any_narrator
             else "Unassigned"
         )
-        kind = item.question.action_kind or "custom"
+        kind = "quest" if item.question.kind == "quest" else item.question.action_kind or "custom"
         for bucket, key in ((by_assignee, assignee), (by_kind, kind)):
             counts = bucket.setdefault(key, {"written": 0, "total": 0})
             counts["total"] += 1
@@ -288,6 +375,21 @@ def write(response_id: uuid.UUID, body: Writing, db: DbSession, user: CurrentUse
     if not responses.can_write(db, user, item, troupe):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This response is not assigned to you.")
     responses.write(db, user, item, troupe, body.body)
+    db.commit()
+    return item_out(db, item)
+
+
+@router.post("/responses/{response_id}/quest-result")
+def record_quest_result(
+    response_id: uuid.UUID, body: QuestResultIn, db: DbSession, user: CurrentUser
+) -> WorkItemOut:
+    """Record the result of the scenario a Quest action was for, on its quest. It is
+    the response to every member's Quest action on that scenario in the cycle, and
+    goes out with the cycle's delivery."""
+    item, troupe = response_item(db, user, response_id)
+    if not responses.can_write(db, user, item, troupe):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This response is not assigned to you.")
+    quest_actions.record(db, user, item, body.result, body.text, ends=body.ends)
     db.commit()
     return item_out(db, item)
 

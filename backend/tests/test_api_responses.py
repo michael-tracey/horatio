@@ -106,6 +106,8 @@ def test_narrators_see_only_their_work_and_never_the_sheet(scene: Scene) -> None
         "influence",
         "influence_entry",
         "influence_blocks",
+        # A Quest action's quest: its scenario and requirements, never a sheet.
+        "quest",
         "status",
         "assigned_to_user_id",
         "assigned_to_any_narrator",

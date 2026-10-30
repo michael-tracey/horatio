@@ -212,4 +212,6 @@ export type PlayerQuestOut = Schemas["PlayerQuestOut"];
 export type PlayerRequestOut = Schemas["PlayerRequestOut"];
 export type CharacterQuestsOut = Schemas["CharacterQuestsOut"];
 export type QuestIn = Schemas["QuestIn"];
+export type QuestChoiceOut = Schemas["QuestChoiceOut"];
+export type QuestActionOut = Schemas["QuestActionOut"];
 export type RequirementIn = Schemas["RequirementIn"];

@@ -1,16 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
-import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestionOut } from "../../api/types";
+import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestChoiceOut, QuestionOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { chosenAction, offered, reachable, reachNote } from "../../influence";
 import { DISCOVERY_BLOCK, LOOKUP_LEVEL, LOOKUP_NOTE } from "../../influenceLookups";
+import { questChoiceText } from "../quests/quests";
 import { BlockTarget } from "./BlockTarget";
 import { FeedingCard } from "./FeedingCard";
 
 type Draft = Record<string, { body: string; structured?: Record<string, unknown> }[]>;
+
+/** Action questions and the Quest action each spend an action of their kind. */
+const spends = (q: QuestionOut) => q.kind === "action" || q.kind === "quest";
 
 /** "+3", "−2": an allowance line or adjustment, with a true minus. */
 function signed(n: number): string {
@@ -91,8 +95,9 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             characterId={characterId}
             question={q}
             answers={draft[q.id] ?? []}
-            remaining={q.kind === "action" ? (d.allowance[q.action_kind!] ?? 0) - used(q.action_kind!) : 0}
-            influence={d.influence?.find((s) => s.action_kind === q.action_kind)}
+            remaining={spends(q) ? (d.allowance[q.action_kind!] ?? 0) - used(q.action_kind!) : 0}
+            influence={q.kind === "action" ? d.influence?.find((s) => s.action_kind === q.action_kind) : undefined}
+            quests={d.quests ?? []}
             onChange={(answers) => setDraft({ ...draft, [q.id]: answers })}
           />
         ))}
@@ -165,6 +170,7 @@ function QuestionCard({
   answers,
   remaining,
   influence,
+  quests,
   onChange,
 }: {
   characterId: string;
@@ -172,10 +178,11 @@ function QuestionCard({
   answers: Draft[string];
   remaining: number;
   influence?: InfluenceStandingOut;
+  quests: QuestChoiceOut[];
   onChange: (answers: Draft[string]) => void;
 }) {
-  const canAdd =
-    question.kind === "action" && remaining > 0 && (question.max_answers == null || answers.length < question.max_answers);
+  const noQuests = question.kind === "quest" && quests.length === 0;
+  const canAdd = spends(question) && !noQuests && remaining > 0 && (question.max_answers == null || answers.length < question.max_answers);
   const set = (i: number, value: Draft[string][number]) => onChange(answers.map((a, j) => (j === i ? value : a)));
 
   return (
@@ -191,11 +198,12 @@ function QuestionCard({
       <div className="flex flex-col gap-3">
         {answers.map((a, i) => (
           <div key={i} className="flex flex-col gap-2">
+            {question.kind === "quest" && <QuestChoice quests={quests} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />}
             <AnswerInput question={question} value={a.body} onChange={(body) => set(i, { ...a, body })} />
             {influence && influence.actions.length > 0 && (
               <InfluenceFields characterId={characterId} standing={influence} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />
             )}
-            {question.kind === "action" && (
+            {spends(question) && (
               <Button variant="ghost" className="self-start px-0" onClick={() => onChange(answers.filter((_, j) => j !== i))}>
                 Remove this action
               </Button>
@@ -207,9 +215,42 @@ function QuestionCard({
             Add an action ({remaining} left)
           </Button>
         )}
-        {question.kind === "action" && answers.length === 0 && !canAdd && <Empty>No actions of this kind left.</Empty>}
+        {noQuests && answers.length === 0 && <Empty>No quests to choose. Quests shared with this character, or posted to the troupe, show here.</Empty>}
+        {spends(question) && !noQuests && answers.length === 0 && !canAdd && <Empty>No actions of this kind left.</Empty>}
       </div>
     </Card>
+  );
+}
+
+/** The quest a Quest action is for: one the character leads or is in, or can join by choosing it. */
+function QuestChoice({
+  quests,
+  fields,
+  onChange,
+}: {
+  quests: QuestChoiceOut[];
+  fields: Record<string, unknown> | undefined;
+  onChange: (fields: Record<string, unknown> | undefined) => void;
+}) {
+  const chosen = typeof fields?.quest_id === "string" ? fields.quest_id : "";
+  return (
+    <Field label="Which quest">
+      <Select
+        value={chosen}
+        onChange={(e) => {
+          const id = e.target.value;
+          // The scenario it was for goes with the quest it was for.
+          onChange(id === chosen ? fields : id ? { quest_id: id } : undefined);
+        }}
+      >
+        <option value="">Choose…</option>
+        {quests.map((q) => (
+          <option key={q.id} value={q.id}>
+            {questChoiceText(q)}
+          </option>
+        ))}
+      </Select>
+    </Field>
   );
 }
 

@@ -4668,6 +4668,14 @@
       },
       "CycleOut": {
         "properties": {
+          "action_kinds": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Action Kinds",
+            "type": "object"
+          },
           "closed_at": {
             "anyOf": [
               {
@@ -4721,6 +4729,11 @@
             },
             "title": "Questions",
             "type": "array"
+          },
+          "quests_enabled": {
+            "default": false,
+            "title": "Quests Enabled",
+            "type": "boolean"
           },
           "status": {
             "title": "Status",
@@ -15149,6 +15162,14 @@
             "title": "Questions",
             "type": "array"
           },
+          "quests": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/QuestChoiceOut"
+            },
+            "title": "Quests",
+            "type": "array"
+          },
           "short": {
             "additionalProperties": {
               "type": "integer"
@@ -19849,6 +19870,147 @@
         "title": "PublicIn",
         "type": "object"
       },
+      "QuestActionOut": {
+        "description": "The quest a Quest action names (horatio.quest_actions), as staff answer it.",
+        "properties": {
+          "acted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Acted",
+            "type": "array"
+          },
+          "awaiting_delivery": {
+            "title": "Awaiting Delivery",
+            "type": "boolean"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "downtime_only": {
+            "title": "Downtime Only",
+            "type": "boolean"
+          },
+          "fail_text": {
+            "title": "Fail Text",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "not_spent": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Spent",
+            "type": "array"
+          },
+          "recorded_here": {
+            "title": "Recorded Here",
+            "type": "boolean"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/QuestActionRequirementOut"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "result_text": {
+            "title": "Result Text",
+            "type": "string"
+          },
+          "scenario": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario"
+          },
+          "scenario_count": {
+            "title": "Scenario Count",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "success_text": {
+            "title": "Success Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "difficulty",
+          "downtime_only",
+          "status",
+          "scenario",
+          "scenario_count",
+          "success_text",
+          "fail_text",
+          "result",
+          "result_text",
+          "recorded_here",
+          "awaiting_delivery",
+          "requirements",
+          "acted",
+          "not_spent"
+        ],
+        "title": "QuestActionOut",
+        "type": "object"
+      },
+      "QuestActionRequirementOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "met": {
+            "title": "Met",
+            "type": "boolean"
+          },
+          "met_by_name": {
+            "title": "Met By Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "met",
+          "met_by_name"
+        ],
+        "title": "QuestActionRequirementOut",
+        "type": "object"
+      },
       "QuestCharacterChoice": {
         "properties": {
           "id": {
@@ -19897,6 +20059,63 @@
         "title": "QuestCharacterRef",
         "type": "object"
       },
+      "QuestChoiceOut": {
+        "description": "A quest the character can choose for a Quest action.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "downtime_only": {
+            "title": "Downtime Only",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "scenario": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario"
+          },
+          "scenario_count": {
+            "title": "Scenario Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "difficulty",
+          "downtime_only",
+          "role",
+          "scenario",
+          "scenario_count"
+        ],
+        "title": "QuestChoiceOut",
+        "type": "object"
+      },
       "QuestDeliveryOut": {
         "properties": {
           "channel": {
@@ -19941,6 +20160,42 @@
           "last_error"
         ],
         "title": "QuestDeliveryOut",
+        "type": "object"
+      },
+      "QuestDowntimeOut": {
+        "description": "Who put in a Quest action for the quest in the troupe's current cycle.",
+        "properties": {
+          "acted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Acted",
+            "type": "array"
+          },
+          "cycle_id": {
+            "format": "uuid",
+            "title": "Cycle Id",
+            "type": "string"
+          },
+          "cycle_name": {
+            "title": "Cycle Name",
+            "type": "string"
+          },
+          "not_spent": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Spent",
+            "type": "array"
+          }
+        },
+        "required": [
+          "cycle_id",
+          "cycle_name",
+          "acted",
+          "not_spent"
+        ],
+        "title": "QuestDowntimeOut",
         "type": "object"
       },
       "QuestIn": {
@@ -20148,6 +20403,16 @@
           "difficulty": {
             "title": "Difficulty",
             "type": "integer"
+          },
+          "downtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestDowntimeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "downtime_only": {
             "title": "Downtime Only",
@@ -20539,6 +20804,40 @@
         "title": "QuestRequestOut",
         "type": "object"
       },
+      "QuestResultIn": {
+        "properties": {
+          "ends": {
+            "default": false,
+            "title": "Ends",
+            "type": "boolean"
+          },
+          "result": {
+            "enum": [
+              "passed",
+              "failed"
+            ],
+            "title": "Result",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "QuestResultIn",
+        "type": "object"
+      },
       "QuestRowOut": {
         "properties": {
           "assigned_to_any_narrator": {
@@ -20689,7 +20988,8 @@
           "kind": {
             "enum": [
               "action",
-              "custom"
+              "custom",
+              "quest"
             ],
             "title": "Kind",
             "type": "string"
@@ -20781,7 +21081,8 @@
           "kind": {
             "enum": [
               "action",
-              "custom"
+              "custom",
+              "quest"
             ],
             "title": "Kind",
             "type": "string"
@@ -22786,6 +23087,22 @@
       },
       "ScenarioOut": {
         "properties": {
+          "awaiting_delivery": {
+            "default": false,
+            "title": "Awaiting Delivery",
+            "type": "boolean"
+          },
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
           "fail_text": {
             "title": "Fail Text",
             "type": "string"
@@ -28782,6 +29099,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/InfluenceEntryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestActionOut"
               },
               {
                 "type": "null"
@@ -42054,6 +42381,60 @@
         "summary": "Lookup",
         "tags": [
           "influence lookups"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/quest-result": {
+      "post": {
+        "description": "Record the result of the scenario a Quest action was for, on its quest. It is\nthe response to every member's Quest action on that scenario in the cycle, and\ngoes out with the cycle's delivery.",
+        "operationId": "record_quest_result_api_responses__response_id__quest_result_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestResultIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Quest Result",
+        "tags": [
+          "responses"
         ]
       }
     },

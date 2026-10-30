@@ -7,6 +7,9 @@ approved sheet and the troupe's rules; later sheet changes do not alter it.
 Storytellers and assistant storytellers can add or remove participants after
 opening, but only characters whose home troupe runs the cycle.
 
+While the troupe runs quests, each new form has the Quest action too
+(horatio.quest_actions).
+
 Players save answers as a draft and submit them, and can keep editing until
 the grace period ends. A submission after the close date is marked late;
 after the grace period only a storyteller's say-so lets one in.
@@ -43,6 +46,9 @@ from horatio.rules.store import read_troupe_rules
 from horatio.sheets import conflict, pending_disciplines, sheet_rows, unprocessable
 
 ANSWER_TYPES = ("long_text", "short_text", "choice", "number", "yes_no")
+# Questions that spend an action of their action kind: an action question, and the
+# Quest action (horatio.quest_actions).
+SPENDING = ("action", "quest")
 
 
 def now() -> datetime:
@@ -76,6 +82,17 @@ def troupe_action_kinds(db: Session, troupe: Troupe) -> dict[str, str]:
     return kinds
 
 
+def quest_question() -> QuestionSpec:
+    """The Quest action (horatio.quest_actions), spending a general action until the
+    troupe chooses another kind."""
+    return QuestionSpec(
+        kind="quest",
+        action_kind="general",
+        prompt="Quest",
+        help_text="Choose a quest your character takes part in, and say what they do towards it.",
+    )
+
+
 def default_form(db: Session, troupe: Troupe) -> list[QuestionSpec]:
     return [
         QuestionSpec(kind="action", action_kind=key, prompt=name)
@@ -84,9 +101,9 @@ def default_form(db: Session, troupe: Troupe) -> list[QuestionSpec]:
 
 
 def check_question(spec: QuestionSpec, action_kinds: dict[str, str]) -> None:
-    if spec.kind not in ("action", "custom"):
+    if spec.kind not in ("action", "custom", "quest"):
         raise unprocessable(f"Unknown question kind {spec.kind!r}.")
-    if spec.kind == "action":
+    if spec.kind in SPENDING:
         if spec.action_kind not in action_kinds:
             raise unprocessable(f"No action kind {spec.action_kind!r} in this troupe's rules.")
         if spec.max_answers is not None and spec.max_answers < 1:
@@ -210,6 +227,8 @@ def create_cycle(
             )
             for q in questions(db, previous)
         ]
+    if troupe.quests_enabled and not any(spec.kind == "quest" for spec in specs):
+        specs.append(quest_question())
     write_questions(db, staff, cycle, specs, troupe)
     audit.record(db, staff, "downtime.cycle_created", troupe_id=troupe.id, cycle_id=cycle.id)
     return cycle
@@ -555,13 +574,16 @@ def visible_questions(
     db: Session, cycle: DowntimeCycle, character: Character, allowance: dict[str, int]
 ) -> list[Question]:
     """The questions this character is asked: custom ones for its splat, and action
-    ones for kinds it has actions of."""
+    ones for kinds it has actions of; the Quest action while the troupe runs quests."""
+    troupe = db.get(Troupe, cycle.troupe_id)
     shown: list[Question] = []
     for q in questions(db, cycle):
         splats = (q.visible_to or {}).get("splats")
         if splats and character.splat not in splats:
             continue
-        if q.kind == "action" and allowance.get(q.action_kind or "", 0) == 0:
+        if q.kind in SPENDING and allowance.get(q.action_kind or "", 0) == 0:
+            continue
+        if q.kind == "quest" and (troupe is None or not troupe.quests_enabled):
             continue
         shown.append(q)
     return shown
@@ -620,7 +642,10 @@ def save_answers(
     feeding_answer: feeding.FeedingAnswer | None = None,
 ) -> Submission:
     """Replace the character's answers, and its Feeding section when given one.
-    Blank answers are dropped. Feeding actions come out of the general actions."""
+    Blank answers are dropped, but for a Quest action that names its quest. Feeding
+    actions come out of the general actions."""
+    from horatio import quest_actions
+
     ensure_can_submit(cycle, participant)
     suspensions.refuse_character(db, character)
     allowance_now = effective_allowance(db, participant)
@@ -650,7 +675,13 @@ def save_answers(
         )
     per_question: dict[uuid.UUID, int] = {}
     seen: set[tuple[uuid.UUID, int]] = set()
-    kept = [s for s in specs if s.body.strip()]
+    chosen_quests: set[uuid.UUID] = set()
+
+    def names_quest(spec: AnswerSpec) -> bool:
+        question = shown.get(spec.question_id)
+        return question is not None and question.kind == "quest" and bool(spec.structured)
+
+    kept = [s for s in specs if s.body.strip() or names_quest(s)]
     for spec in kept:
         question = shown.get(spec.question_id)
         if question is None:
@@ -661,7 +692,19 @@ def save_answers(
         check_answer(question, spec)
         if question.kind == "custom" and spec.slot != 1:
             raise unprocessable(f"{question.prompt!r} takes one answer.")
-        if question.kind == "action":
+        if question.kind == "quest":
+            spec.structured, quest = quest_actions.check_answer(
+                db,
+                character,
+                cycle,
+                question,
+                spec.structured or {},
+                existing.get((spec.question_id, spec.slot)),
+                chosen_quests,
+            )
+            # A quest chosen with nothing said is taken up as it stands.
+            spec.body = spec.body.strip() or quest.name
+        if question.kind in SPENDING:
             per_question[question.id] = per_question.get(question.id, 0) + 1
             if (
                 question.max_answers is not None
@@ -669,7 +712,7 @@ def save_answers(
             ):
                 raise unprocessable(f"{question.prompt!r} takes at most {question.max_answers}.")
             kind = question.action_kind or ""
-            influence_type = influence.type_of(kind)
+            influence_type = influence.type_of(kind) if question.kind == "action" else None
             before = existing.get((spec.question_id, spec.slot))
             changed = before is None or (spec.structured or {}) != before.structured
             if influence_type is not None and changed:
@@ -729,6 +772,8 @@ def save_answers(
     submission.feeding = feeding_answer.stored()
     db.flush()
     responses.sync_responses(db, submission)
+    if submission.status == "submitted":
+        quest_actions.join_chosen(db, player, character, submission)
     return submission
 
 
@@ -739,6 +784,9 @@ def submit(
     cycle: DowntimeCycle,
     participant: CycleParticipant,
 ) -> Submission:
+    """Submit the downtime, joining the party of each quest its Quest actions name."""
+    from horatio import quest_actions
+
     ensure_can_submit(cycle, participant)
     suspensions.refuse_character(db, character)
     submission = submission_for(db, participant)
@@ -769,6 +817,7 @@ def submit(
         late=submission.late,
     )
     award_completion_xp(db, player, character, cycle, participant)
+    quest_actions.join_chosen(db, player, character, submission)
     return submission
 
 
