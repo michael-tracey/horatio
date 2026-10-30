@@ -2,7 +2,7 @@
 action of the kind the troupe chooses; a scenario's result recorded through a
 downtime cycle waits for that cycle's delivery (horatio.quest_actions)
 
-Revision ID: 0112
+Revision ID: 0113
 Revises: 0110
 Create Date: 2026-10-30 21:00:00.000000
 """
@@ -12,7 +12,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0112"
+revision: str = "0113"
 down_revision: str | None = "0110"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
