@@ -21,6 +21,7 @@ import { RenameCharacter } from "./Rename";
 import { CharacterPronouns } from "./Pronouns";
 import { Pronouns } from "../../components/PronounsInput";
 import { CharacterPicture } from "./Picture";
+import { QuestsTab } from "./QuestsTab";
 import { ResultsTab } from "./ResultsTab";
 import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
@@ -43,6 +44,12 @@ export function CharacterPage() {
     queryKey: ["character-shared", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/shared-backgrounds", { params: { path: { character_id: characterId } } })),
     enabled: character.data?.kind === "pc",
+  });
+  // The Quests tab shows to its player while a troupe it is in runs quests.
+  const quests = useQuery({
+    queryKey: ["character-quests", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/quests", { params: { path: { character_id: characterId } } })),
+    enabled: character.data?.kind === "pc" && character.data.player_id === me.data?.id,
   });
   // A PC's influence is for its player and its home troupe's storytellers and assistants.
   const homeId = character.data?.kind === "pc" && character.data.player_id !== me.data?.id ? character.data.home_troupe_id : null;
@@ -176,6 +183,7 @@ export function CharacterPage() {
                 { to: `${base}/troupes`, label: "Troupes" },
                 { to: `${base}/downtime`, label: "Downtime" },
                 { to: `${base}/results`, label: "Results" },
+                ...(quests.data?.enabled ? [{ to: `${base}/quests`, label: "Quests" }] : []),
               ]
             : []),
           ...(influence ? [{ to: `${base}/influence`, label: "Influence" }] : []),
@@ -208,6 +216,7 @@ export function CharacterPage() {
             <Route path="troupes" element={<TroupesTab character={c} />} />
             <Route path="downtime" element={<DowntimeTab characterId={c.id} />} />
             <Route path="results" element={<ResultsTab characterId={c.id} />} />
+            {quests.data?.enabled && <Route path="quests/*" element={<QuestsTab characterId={c.id} />} />}
           </>
         )}
       </Routes>

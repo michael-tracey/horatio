@@ -319,6 +319,15 @@ MESSAGES: dict[str, str] = {
     " {reason}",
     "downtime.feeding_adjusted": "{actor} adjusted {character}'s feeding by {delta}: {reason}",
     "downtime.feeding_answered": "{actor} answered {character}'s feeding: {result}.",
+    "house.quests": "{actor} turned quests {state} ({per_cycle} requests a cycle).",
+    "quest.requested": "{actor} asked for a quest for {character}.",
+    "quest.request_withdrawn": "{actor} withdrew {character}'s quest request.",
+    "quest.request_answered": "{actor} answered {character}'s quest request: {outcome}.",
+    "quest.built": "{actor} built the quest {quest}.",
+    "quest.sent": "{actor} sent the requirements of the quest {quest}.",
+    "quest.result": "{actor} sent scenario {scenario} of the quest {quest}: {result}.",
+    "quest.closed": "{actor} closed the quest {quest}: {note}",
+    "quest.joined": "{character} joined the quest {quest}.",
     "npc.created": "{actor} made an NPC, {character}.",
     "npc.made_sheeted": "{actor} made the Stock NPC {character} a full sheet (a {npc_kind}"
     " rated {rating}; specializations: {specializations}; left off the sheet: {left_out})."

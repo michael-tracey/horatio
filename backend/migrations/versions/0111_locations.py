@@ -2,7 +2,7 @@
 qualities it adds, and its house options for them (horatio.locations)
 
 Revision ID: 0111
-Revises: 0108
+Revises: 0110
 Create Date: 2026-10-30 16:32:49.881628
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0111"
-down_revision: str | None = "0108"
+down_revision: str | None = "0110"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

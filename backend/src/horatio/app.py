@@ -49,6 +49,7 @@ from horatio.api import (
     power_choices,
     preferences,
     printing,
+    quests,
     responses,
     retainers,
     roster,
@@ -175,6 +176,7 @@ for module in (
     waiting,
     viewing,
     whos_who,
+    quests,
 ):
     api.include_router(module.router)
 

@@ -13,7 +13,9 @@ where it came from:
 - **game:** spending influence on the Play View (#133), linked to the tap;
 - **hand:** storytellers and assistant storytellers add it themselves;
 - **import:** brought in from the old spreadsheet (#132), keeping the sheet's id
-  as its `reference`, unique in the troupe, so an import can run again.
+  as its `reference`, unique in the troupe, so an import can run again;
+- **quest:** staff marking a quest's "Expend Elite 6" requirement met
+  (horatio.quests), in the cycle it applies to.
 
 Each entry has a short id, E12 or UW7: its type's letters and a number counted
 up in the troupe for that type. Storytellers and assistant storytellers keep the
@@ -55,8 +57,8 @@ from horatio.rules.model import TroupeRules
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import conflict, unprocessable
 
-Source = str  # "downtime" | "game" | "hand" | "import"
-SOURCES: tuple[Source, ...] = ("downtime", "game", "hand", "import")
+Source = str  # "downtime" | "game" | "hand" | "import" | "quest"
+SOURCES: tuple[Source, ...] = ("downtime", "game", "hand", "import", "quest")
 PREFIXES: dict[InfluenceType, str] = {"elite": "E", "underworld": "UW"}
 SHORT_ID = re.compile(r"^\s*(E|UW)\s*(\d+)\s*$", re.IGNORECASE)
 

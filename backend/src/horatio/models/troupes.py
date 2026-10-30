@@ -76,6 +76,10 @@ class Troupe(Imported, Record):
     # Its Who's Who (horatio.whos_who) adds the negative status each character carries
     # into a game here, which is public in the sect anyway (MET: VTM p. 312).
     whos_who_negative: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Quests (horatio.quests): on or off, and how many quest requests each character
+    # may make in a downtime cycle. While off, players see nothing of them.
+    quests_enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
+    quest_requests_per_cycle: Mapped[int] = mapped_column(default=1, server_default="1")
     # The clans with a seat at its court, by clan without the bloodline; None until
     # staff choose, for the clans whose Primogen is held there (horatio.whos_who).
     seated_clans: Mapped[list[str] | None] = mapped_column(JSONB)

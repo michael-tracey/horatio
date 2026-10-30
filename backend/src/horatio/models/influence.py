@@ -14,7 +14,7 @@ class InfluenceEntry(Record):
     __tablename__ = "influence_entries"
     __table_args__ = (
         CheckConstraint("type in ('elite', 'underworld')", name="type"),
-        CheckConstraint("source in ('downtime', 'game', 'hand', 'import')", name="source"),
+        CheckConstraint("source in ('downtime', 'game', 'hand', 'import', 'quest')", name="source"),
         CheckConstraint("times >= 1", name="times"),
         CheckConstraint("blocks >= 0", name="blocks"),
         CheckConstraint("number >= 1", name="number"),
@@ -49,7 +49,8 @@ class InfluenceEntry(Record):
     times: Mapped[int] = mapped_column(default=1, server_default="1")
     # Discovery blocks on it: a lookup needs more strength than this to find it.
     blocks: Mapped[int] = mapped_column(default=0, server_default="0")
-    # Where it came from: a downtime answer, a game's tap, staff by hand, an import.
+    # Where it came from: a downtime answer, a game's tap, staff by hand, an import,
+    # or meeting a quest's requirement (horatio.quests).
     source: Mapped[str]
     # The cycle a downtime answer was in, or that staff say it applies to.
     cycle_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("downtime_cycles.id"), index=True)

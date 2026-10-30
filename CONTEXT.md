@@ -408,3 +408,29 @@ _Avoid_: Owner (in names), holder
 **Haven (as a location)**:
 A character's Haven background placed on the troupe's list of locations, with its address and advantages, or a location staff mark as that character's Haven. It can't be targeted as a Stock Location can, and it doesn't count toward the control limit.
 _Avoid_: Home, lair, base
+
+### Quests
+
+**Quest**:
+A goal a character pursues between and at games (MET: VTM Vol. II Issue 1, pp. 99-110): an objective with a category (Simple, Complex or Epic) and a difficulty from 1 to 5, requirements to meet and scenarios to pass. A troupe turns quests on in its house rules. Staff build each one and send its requirements, then each scenario's result; it ends completed or failed, or staff close it with a note. Horatio tracks it; the tests happen at the table or in downtime.
+_Avoid_: Mission, job
+
+**Quest Request**:
+A player asking their character's home troupe for a quest, in their own words. It waits in the troupe's **quest request queue** for its storytellers and assistant storytellers (and a narrator it is assigned to), who answer it with a quest, as not needed, or by refusing it. A character makes as many as the troupe allows in a downtime cycle; one answered as not needed, or withdrawn, does not count.
+_Avoid_: Quest application, ticket
+
+**Quest Requirement**:
+Something a quest's party must have or give before its scenarios: a trait at a rating, a clan, bloodline or sect, something to expend (influence, background dots, a status trait, Willpower or Blood, a downtime action, lending an item), or words. It may have alternatives, any one of which meets it. Horatio checks it against the party's sheets; staff mark it met by one character, a party member or a patron, and meeting an expenditure spends it.
+_Avoid_: Prereq, prerequisite (that is a check's)
+
+**Scenario**:
+One test of a quest, numbered from 1, with its success and fail text. Staff send each one's result to the party; a failed one is tried again unless it ends the quest.
+_Avoid_: Stage, step, round
+
+**Quest Leader**:
+The character a quest is for, who leads its party: the one who asked for it, the one staff give it to, or the first to join one offered more widely. Its player shares the quest and tells its tale.
+_Avoid_: Owner, quest giver
+
+**Party**:
+The quest's leader and the characters who joined it. Characters a quest is shared with or offered to see it and may join; only the party sees its results.
+_Avoid_: Group, team, coterie (that is a story group)

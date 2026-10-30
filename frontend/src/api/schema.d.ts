@@ -1880,6 +1880,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/quest-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Quest
+         * @description Ask the home troupe's staff for a custom quest. Refused, with the reason, past
+         *     the troupe's limit for the cycle.
+         */
+        post: operations["request_quest_api_characters__character_id__quest_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/quests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Quests
+         * @description The character's quest requests and the quests it may see. Nothing while its
+         *     home troupe has quests off.
+         */
+        get: operations["character_quests_api_characters__character_id__quests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/quests/{quest_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Character Quest */
+        get: operations["character_quest_api_characters__character_id__quests__quest_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/quests/{quest_id}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join Quest
+         * @description Join a quest shared with or offered to the character.
+         */
+        post: operations["join_quest_api_characters__character_id__quests__quest_id__join_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/quests/{quest_id}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share Quest
+         * @description The leader's player shares the quest with other characters of the troupe, who
+         *     may then see it and join.
+         */
+        post: operations["share_quest_api_characters__character_id__quests__quest_id__share_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/quests/{quest_id}/share-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Share Choices
+         * @description The troupe's other characters the leader can share the quest with.
+         */
+        get: operations["share_choices_api_characters__character_id__quests__quest_id__share_choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/quests/{quest_id}/tale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Tell Tale
+         * @description The leader's player tells the tale of a quest that has ended (p. 102).
+         */
+        put: operations["tell_tale_api_characters__character_id__quests__quest_id__tale_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/quote": {
         parameters: {
             query?: never;
@@ -3453,6 +3593,357 @@ export interface paths {
          *     other players. Not logged: they are the player's private settings.
          */
         put: operations["set_lines_veils_api_profile_lines_veils_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-requests/{request_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Request
+         * @description A narrator takes a request assigned to any narrator.
+         */
+        post: operations["accept_request_api_quest_requests__request_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-requests/{request_id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Request
+         * @description Answer without a quest: not needed, which gives the slot back, or refused.
+         */
+        post: operations["answer_request_api_quest_requests__request_id__answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-requests/{request_id}/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Assign Request */
+        put: operations["assign_request_api_quest_requests__request_id__assignment_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-requests/{request_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read Request */
+        post: operations["read_request_api_quest_requests__request_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-requests/{request_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Request */
+        post: operations["withdraw_request_api_quest_requests__request_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Quest */
+        get: operations["read_quest_api_quests__quest_id__get"];
+        /** Change Quest */
+        put: operations["change_quest_api_quests__quest_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Quest */
+        post: operations["accept_quest_api_quests__quest_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Assign Quest */
+        put: operations["assign_quest_api_quests__quest_id__assignment_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close Quest
+         * @description Switch the quest off, with a note its characters see.
+         */
+        post: operations["close_quest_api_quests__quest_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Log */
+        post: operations["add_log_api_quests__quest_id__log_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Members
+         * @description Offer the quest to characters, who may join; or put them in its party.
+         */
+        post: operations["add_members_api_quests__quest_id__members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/members/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Member */
+        delete: operations["remove_member_api_quests__quest_id__members__character_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read Mark Quest */
+        post: operations["read_mark_quest_api_quests__quest_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Requirement */
+        post: operations["add_requirement_api_quests__quest_id__requirements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/requirements/{requirement_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Requirement */
+        put: operations["change_requirement_api_quests__quest_id__requirements__requirement_id__put"];
+        post?: never;
+        /** Remove Requirement */
+        delete: operations["remove_requirement_api_quests__quest_id__requirements__requirement_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/requirements/{requirement_id}/met": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meet Requirement
+         * @description Mark a requirement met by a character, a party member or a patron, spending
+         *     what its alternative expends.
+         */
+        post: operations["meet_requirement_api_quests__quest_id__requirements__requirement_id__met_post"];
+        /** Unmeet Requirement */
+        delete: operations["unmeet_requirement_api_quests__quest_id__requirements__requirement_id__met_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/scenarios/{number}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Result
+         * @description Send a scenario's result to the party. The last one passed completes the quest.
+         */
+        post: operations["send_result_api_quests__quest_id__scenarios__number__result_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Quest
+         * @description Send the requirements to the leader and party: the quest is under way.
+         */
+        post: operations["send_quest_api_quests__quest_id__send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/tale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Staff Tale
+         * @description Edit the tale, and approve it as the official account.
+         */
+        put: operations["staff_tale_api_quests__quest_id__tale_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -5305,6 +5796,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/quest-characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quest Characters
+         * @description The troupe's active characters, to lead, join or meet a quest's requirements.
+         */
+        get: operations["quest_characters_api_troupes__troupe_id__quest_characters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/quest-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quest Requests
+         * @description The troupe's quest requests, oldest first: open ones, new ones, those assigned
+         *     to the reader or to any narrator, those whose quest waits to be sent, or those
+         *     answered.
+         */
+        get: operations["quest_requests_api_troupes__troupe_id__quest_requests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/quest-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Quest Settings
+         * @description Turn quests on or off, and set how many requests a character may make a cycle.
+         */
+        put: operations["set_quest_settings_api_troupes__troupe_id__quest_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/quests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Quests
+         * @description The troupe's quests, newest first. A narrator sees those assigned to them or to
+         *     any narrator.
+         */
+        get: operations["troupe_quests_api_troupes__troupe_id__quests_get"];
+        put?: never;
+        /**
+         * Build Quest
+         * @description Build a quest, in draft: from a request, or from nothing. Running staff build
+         *     any; a narrator builds from a request assigned to them.
+         */
+        post: operations["build_quest_api_troupes__troupe_id__quests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/random-tables": {
         parameters: {
             query?: never;
@@ -5888,6 +6467,19 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** ActionSpend */
+        ActionSpend: {
+            /**
+             * Action Kind
+             * @default general
+             */
+            action_kind: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "action";
+        };
         /** AdjustmentIn */
         AdjustmentIn: {
             /** Action Kind */
@@ -6150,8 +6742,33 @@ export interface components {
             /** Unsettled */
             unsettled: boolean;
         };
+        /** AspectNeed */
+        AspectNeed: {
+            /**
+             * Aspect
+             * @enum {string}
+             */
+            aspect: "clan" | "bloodline" | "sect";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "aspect";
+            /** Name */
+            name: string;
+        };
         /** Assignment */
         Assignment: {
+            /**
+             * Any Narrator
+             * @default false
+             */
+            any_narrator: boolean;
+            /** User Id */
+            user_id?: string | null;
+        };
+        /** AssignmentIn */
+        AssignmentIn: {
             /**
              * Any Narrator
              * @default false
@@ -6287,6 +6904,18 @@ export interface components {
             characters: components["schemas"]["AwardableCharacter"][];
             /** Session Xp */
             session_xp: number;
+        };
+        /** BackgroundSpend */
+        BackgroundSpend: {
+            /** Dots */
+            dots: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "background";
+            /** Name */
+            name: string;
         };
         /** BackupOut */
         BackupOut: {
@@ -6914,6 +7543,23 @@ export interface components {
             splat: string;
             /** Status */
             status: string;
+        };
+        /** CharacterQuestsOut */
+        CharacterQuestsOut: {
+            /** Cycle Name */
+            cycle_name: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Limit */
+            limit: number;
+            /** Quests */
+            quests: components["schemas"]["PlayerQuestOut"][];
+            /** Refusal */
+            refusal: string | null;
+            /** Requests */
+            requests: components["schemas"]["PlayerRequestOut"][];
+            /** Used */
+            used: number;
         };
         /** CharacterRef */
         CharacterRef: {
@@ -9434,6 +10080,13 @@ export interface components {
             /** Rating */
             rating: number;
         };
+        /** Guidance */
+        Guidance: {
+            /** Requirements */
+            requirements: number;
+            /** Scenarios */
+            scenarios: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -9597,7 +10250,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "downtime" | "game" | "hand" | "import";
+            source: "downtime" | "game" | "hand" | "import" | "quest";
             /** Specialization */
             specialization: string;
             /** Times */
@@ -10076,7 +10729,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "downtime" | "game" | "hand" | "import";
+            source: "downtime" | "game" | "hand" | "import" | "quest";
             /** Specialization */
             specialization: string;
             target?: components["schemas"]["InfluenceTargetOut"] | null;
@@ -10122,6 +10775,26 @@ export interface components {
             entries: components["schemas"]["InfluenceEntryOut"][];
             /** Total */
             total: number;
+        };
+        /** InfluenceSpend */
+        InfluenceSpend: {
+            /**
+             * Area
+             * @default
+             */
+            area: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "influence";
+            /** Level */
+            level: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
         };
         /**
          * InfluenceSpendOut
@@ -10229,6 +10902,16 @@ export interface components {
         Invite: {
             /** Url */
             url: string;
+        };
+        /** ItemSpend */
+        ItemSpend: {
+            /** Item */
+            item: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "item";
         };
         /**
          * ItemTapIn
@@ -11085,6 +11768,23 @@ export interface components {
             /** Undone */
             undone: boolean;
         };
+        /** LogIn */
+        LogIn: {
+            /** Text */
+            text: string;
+        };
+        /** LogOut */
+        LogOut: {
+            /** Actor Name */
+            actor_name: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Text */
+            text: string;
+        };
         /**
          * LogStandingOut
          * @description What the Log influence tool needs about a character.
@@ -11177,6 +11877,30 @@ export interface components {
             next_handle_change: string | null;
             preferences: components["schemas"]["Preferences"];
         };
+        /** MemberOut */
+        MemberOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Name */
+            name: string;
+            /** Player Name */
+            player_name: string;
+            /** Status */
+            status: string;
+        };
+        /** MembersIn */
+        MembersIn: {
+            /** Character Ids */
+            character_ids: string[];
+            /**
+             * Joined
+             * @default false
+             */
+            joined: boolean;
+        };
         /** MembershipOut */
         MembershipOut: {
             /** Home */
@@ -11232,6 +11956,19 @@ export interface components {
             /** Summary */
             summary: string;
             troupe: components["schemas"]["MoveTroupe"];
+        };
+        /** MetIn */
+        MetIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /**
+             * Option
+             * @default 0
+             */
+            option: number;
         };
         /**
          * ModifierChange
@@ -11548,6 +12285,11 @@ export interface components {
              */
             note: string;
         };
+        /** NoteIn */
+        NoteIn: {
+            /** Note */
+            note: string;
+        };
         /** NotificationOut */
         NotificationOut: {
             /**
@@ -11718,6 +12460,17 @@ export interface components {
         OptionList: {
             /** Names */
             names: string[];
+        };
+        /** OptionOut */
+        OptionOut: {
+            /** Expends */
+            expends: boolean;
+            /** Label */
+            label: string;
+            /** Option */
+            option: {
+                [key: string]: unknown;
+            };
         };
         /**
          * OtherOut
@@ -12469,6 +13222,111 @@ export interface components {
             /** Reset Expires At */
             reset_expires_at: string | null;
         };
+        /**
+         * PlayerQuestOut
+         * @description A quest as one of its characters' players sees it.
+         */
+        PlayerQuestOut: {
+            /** Can Join */
+            can_join: boolean;
+            /** Can Share */
+            can_share: boolean;
+            /** Can Write Tale */
+            can_write_tale: boolean;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "simple" | "complex" | "epic";
+            /** Close Note */
+            close_note: string;
+            /** Difficulty */
+            difficulty: number;
+            /** Downtime Only */
+            downtime_only: boolean;
+            /** Ended On */
+            ended_on: string | null;
+            /** Finished By */
+            finished_by: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Leader Name */
+            leader_name: string | null;
+            /** Name */
+            name: string;
+            /** Objective */
+            objective: string;
+            /** Party */
+            party: string[];
+            /** Requirements */
+            requirements: components["schemas"]["PlayerRequirementOut"][];
+            /** Results */
+            results: components["schemas"]["PlayerScenarioOut"][];
+            /** Role */
+            role: string;
+            /** Scenario Count */
+            scenario_count: number;
+            /** Status */
+            status: string;
+            /** Tale */
+            tale: string;
+            /** Tale Approved */
+            tale_approved: boolean;
+        };
+        /** PlayerRequestOut */
+        PlayerRequestOut: {
+            /** Answered At */
+            answered_at: string | null;
+            /** Can Withdraw */
+            can_withdraw: boolean;
+            /** Companions */
+            companions: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string;
+            /** Objective */
+            objective: string;
+            /** Outcome */
+            outcome: string | null;
+            /** Quest Id */
+            quest_id: string | null;
+            /** Reason */
+            reason: string;
+            /** Status */
+            status: string;
+        };
+        /** PlayerRequirementOut */
+        PlayerRequirementOut: {
+            /** Label */
+            label: string;
+            /** Met */
+            met: boolean;
+            /** Met By Name */
+            met_by_name: string;
+        };
+        /** PlayerScenarioOut */
+        PlayerScenarioOut: {
+            /** Number */
+            number: number;
+            /** Result */
+            result: string;
+            /** Sent At */
+            sent_at: string | null;
+            /** Text */
+            text: string;
+        };
         /** PlayerSummary */
         PlayerSummary: {
             /** Display Name */
@@ -12568,6 +13426,21 @@ export interface components {
             label: string;
             /** Value */
             value: number;
+        };
+        /** PoolSpend */
+        PoolSpend: {
+            /** Amount */
+            amount: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "pool";
+            /**
+             * Pool
+             * @enum {string}
+             */
+            pool: "willpower" | "blood";
         };
         /** PoolVariant */
         PoolVariant: {
@@ -13024,6 +13897,286 @@ export interface components {
             /** Public */
             public: boolean;
         };
+        /** QuestCharacterChoice */
+        QuestCharacterChoice: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** QuestCharacterRef */
+        QuestCharacterRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** QuestDeliveryOut */
+        QuestDeliveryOut: {
+            /** Channel */
+            channel: string;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Error */
+            last_error: string | null;
+            /** Status */
+            status: string;
+            /** Subject */
+            subject: string;
+        };
+        /** QuestIn */
+        QuestIn: {
+            /**
+             * Category
+             * @default simple
+             * @enum {string}
+             */
+            category: "simple" | "complex" | "epic";
+            /**
+             * Difficulty
+             * @default 1
+             */
+            difficulty: number;
+            /**
+             * Downtime Only
+             * @default false
+             */
+            downtime_only: boolean;
+            /** Leader Id */
+            leader_id?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Objective
+             * @default
+             */
+            objective: string;
+            /**
+             * Offer
+             * @default character
+             * @enum {string}
+             */
+            offer: "character" | "chosen" | "unlocked" | "troupe";
+            /** Request Id */
+            request_id?: string | null;
+            /** Scenarios */
+            scenarios?: components["schemas"]["ScenarioIn"][] | null;
+            /**
+             * Staff Notes
+             * @default
+             */
+            staff_notes: string;
+            /** Unlock Quest Id */
+            unlock_quest_id?: string | null;
+            /** Unlock Scenario */
+            unlock_scenario?: number | null;
+        };
+        /**
+         * QuestOut
+         * @description A quest as staff see it.
+         */
+        QuestOut: {
+            /** Assigned To Any Narrator */
+            assigned_to_any_narrator: boolean;
+            /** Assigned To Name */
+            assigned_to_name: string | null;
+            /** Assigned To User Id */
+            assigned_to_user_id: string | null;
+            /** Can Assign */
+            can_assign: boolean;
+            /** Can Check */
+            can_check: boolean;
+            /** Can Edit */
+            can_edit: boolean;
+            /** Can Send */
+            can_send: boolean;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "simple" | "complex" | "epic";
+            /** Close Note */
+            close_note: string;
+            /** Closed At */
+            closed_at: string | null;
+            /** Deliveries */
+            deliveries: components["schemas"]["QuestDeliveryOut"][];
+            /** Difficulty */
+            difficulty: number;
+            /** Downtime Only */
+            downtime_only: boolean;
+            /** Ended On */
+            ended_on: string | null;
+            /** Finished By */
+            finished_by: string[];
+            guidance: components["schemas"]["Guidance"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            leader: components["schemas"]["QuestCharacterRef"] | null;
+            /** Log */
+            log: components["schemas"]["LogOut"][];
+            /** Members */
+            members: components["schemas"]["MemberOut"][];
+            /** Name */
+            name: string;
+            /** Objective */
+            objective: string;
+            /**
+             * Offer
+             * @enum {string}
+             */
+            offer: "character" | "chosen" | "unlocked" | "troupe";
+            /** Read By */
+            read_by: string[];
+            request: components["schemas"]["QuestRequestOut"] | null;
+            /** Requirements */
+            requirements: components["schemas"]["RequirementOut"][];
+            /** Scenarios */
+            scenarios: components["schemas"]["ScenarioOut"][];
+            /** Sent At */
+            sent_at: string | null;
+            /** Staff Notes */
+            staff_notes: string;
+            /** Status */
+            status: string;
+            /** Tale */
+            tale: string;
+            /** Tale Approved */
+            tale_approved: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Unlock Quest Id */
+            unlock_quest_id: string | null;
+            /** Unlock Quest Name */
+            unlock_quest_name: string | null;
+            /** Unlock Scenario */
+            unlock_scenario: number | null;
+        };
+        /** QuestRequestOut */
+        QuestRequestOut: {
+            /** Answered At */
+            answered_at: string | null;
+            /** Assigned To Any Narrator */
+            assigned_to_any_narrator: boolean;
+            /** Assigned To Name */
+            assigned_to_name: string | null;
+            /** Assigned To User Id */
+            assigned_to_user_id: string | null;
+            /** Can Assign */
+            can_assign: boolean;
+            /** Can Work */
+            can_work: boolean;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Companions */
+            companions: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Note */
+            note: string;
+            /** Objective */
+            objective: string;
+            /** Outcome */
+            outcome: string | null;
+            /** Player Name */
+            player_name: string;
+            /** Quest Id */
+            quest_id: string | null;
+            /** Quest Name */
+            quest_name: string | null;
+            /** Quest Status */
+            quest_status: string | null;
+            /** Read By */
+            read_by: string[];
+            /** Reason */
+            reason: string;
+            /** Status */
+            status: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
+        /** QuestRowOut */
+        QuestRowOut: {
+            /** Assigned To Any Narrator */
+            assigned_to_any_narrator: boolean;
+            /** Assigned To Name */
+            assigned_to_name: string | null;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "simple" | "complex" | "epic";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Difficulty */
+            difficulty: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Leader Name */
+            leader_name: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Offer
+             * @enum {string}
+             */
+            offer: "character" | "chosen" | "unlocked" | "troupe";
+            /** Status */
+            status: string;
+        };
+        /** QuestSettingsIn */
+        QuestSettingsIn: {
+            /** Enabled */
+            enabled: boolean;
+            /** Requests Per Cycle */
+            requests_per_cycle: number;
+        };
         /** QuestionIn */
         QuestionIn: {
             /** Action Kind */
@@ -13287,6 +14440,74 @@ export interface components {
             /** Purchase */
             purchase: string;
         };
+        /** RequestAnswerIn */
+        RequestAnswerIn: {
+            /** Note */
+            note: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "not_needed" | "refused";
+        };
+        /** RequestIn */
+        RequestIn: {
+            /**
+             * Companions
+             * @default
+             */
+            companions: string;
+            /** Objective */
+            objective: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** RequirementCheckOut */
+        RequirementCheckOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Meets */
+            meets: (boolean | null)[];
+            /** Name */
+            name: string;
+        };
+        /** RequirementIn */
+        RequirementIn: {
+            /** Options */
+            options: (components["schemas"]["TraitNeed"] | components["schemas"]["AspectNeed"] | components["schemas"]["InfluenceSpend"] | components["schemas"]["BackgroundSpend"] | components["schemas"]["StatusSpend"] | components["schemas"]["PoolSpend"] | components["schemas"]["ActionSpend"] | components["schemas"]["ItemSpend"] | components["schemas"]["TextNeed"])[];
+        };
+        /** RequirementOut */
+        RequirementOut: {
+            /** Checks */
+            checks: components["schemas"]["RequirementCheckOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Met */
+            met: boolean;
+            /** Met By Character Id */
+            met_by_character_id: string | null;
+            /** Met By Name */
+            met_by_name: string;
+            /** Met Label */
+            met_label: string | null;
+            /** Met Patron */
+            met_patron: boolean;
+            /** Options */
+            options: components["schemas"]["OptionOut"][];
+            /** Spent */
+            spent: string;
+        };
         /** ResetFor */
         ResetFor: {
             /** Display Name */
@@ -13343,6 +14564,21 @@ export interface components {
             regains: string;
             /** Size */
             size: number;
+        };
+        /** ResultIn */
+        ResultIn: {
+            /**
+             * Ends
+             * @default false
+             */
+            ends: boolean;
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "passed" | "failed";
+            /** Text */
+            text?: string | null;
         };
         /** ResultOut */
         ResultOut: {
@@ -13697,6 +14933,34 @@ export interface components {
             /** Web Address */
             web_address: string;
         };
+        /** ScenarioIn */
+        ScenarioIn: {
+            /**
+             * Fail Text
+             * @default
+             */
+            fail_text: string;
+            /**
+             * Success Text
+             * @default
+             */
+            success_text: string;
+        };
+        /** ScenarioOut */
+        ScenarioOut: {
+            /** Fail Text */
+            fail_text: string;
+            /** Number */
+            number: number;
+            /** Result */
+            result: string | null;
+            /** Result Text */
+            result_text: string;
+            /** Sent At */
+            sent_at: string | null;
+            /** Success Text */
+            success_text: string;
+        };
         /** SceneName */
         SceneName: {
             /** Name */
@@ -13941,6 +15205,11 @@ export interface components {
              * @enum {string}
              */
             settlement: "keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund" | "pay_for_dots" | "remove_dots" | "add_free_dots";
+        };
+        /** ShareIn */
+        ShareIn: {
+            /** Character Ids */
+            character_ids: string[];
         };
         /** SharedBackgroundChange */
         SharedBackgroundChange: {
@@ -14609,6 +15878,19 @@ export interface components {
              */
             reason: string;
         };
+        /** StatusSpend */
+        StatusSpend: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "status";
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
         /** StepNeed */
         StepNeed: {
             /** Message */
@@ -14871,6 +16153,16 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** TaleIn */
+        TaleIn: {
+            /**
+             * Approve
+             * @default false
+             */
+            approve: boolean;
+            /** Tale */
+            tale: string;
+        };
         /** Tally */
         Tally: {
             /** Lines */
@@ -15026,6 +16318,16 @@ export interface components {
              */
             willpower_floor: number;
         };
+        /** TextNeed */
+        TextNeed: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "text";
+            /** Text */
+            text: string;
+        };
         /** TitleChange */
         TitleChange: {
             /** Sect */
@@ -15120,6 +16422,31 @@ export interface components {
              * @default
              */
             teacher: string;
+        };
+        /** TraitNeed */
+        TraitNeed: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "skills" | "focus" | "backgrounds" | "merits" | "flaws" | "disciplines" | "power" | "techniques" | "rituals";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "trait";
+            /** Name */
+            name: string;
+            /**
+             * Rating
+             * @default 1
+             */
+            rating: number;
+            /**
+             * Specialization
+             * @default
+             */
+            specialization: string;
         };
         /** TraitOut */
         TraitOut: {
@@ -15274,6 +16601,10 @@ export interface components {
             portrait: string | null;
             /** Public */
             public: boolean;
+            /** Quest Requests Per Cycle */
+            quest_requests_per_cycle: number;
+            /** Quests Enabled */
+            quests_enabled: boolean;
             /** Session Xp */
             session_xp: number;
             /** Starting Blood */
@@ -19667,6 +20998,240 @@ export interface operations {
             };
         };
     };
+    request_quest_api_characters__character_id__quest_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_quests_api_characters__character_id__quests_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterQuestsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_quest_api_characters__character_id__quests__quest_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerQuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_quest_api_characters__character_id__quests__quest_id__join_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerQuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    share_quest_api_characters__character_id__quests__quest_id__share_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerQuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    share_choices_api_characters__character_id__quests__quest_id__share_choices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestCharacterChoice"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tell_tale_api_characters__character_id__quests__quest_id__tale_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerQuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     quote_api_characters__character_id__quote_post: {
         parameters: {
             query?: never;
@@ -22743,6 +24308,742 @@ export interface operations {
             };
         };
     };
+    accept_request_api_quest_requests__request_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_request_api_quest_requests__request_id__answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_request_api_quest_requests__request_id__assignment_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_request_api_quest_requests__request_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_request_api_quest_requests__request_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_quest_api_quests__quest_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_quest_api_quests__quest_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_quest_api_quests__quest_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_quest_api_quests__quest_id__assignment_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_quest_api_quests__quest_id__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_log_api_quests__quest_id__log_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_members_api_quests__quest_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembersIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_member_api_quests__quest_id__members__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_mark_quest_api_quests__quest_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_requirement_api_quests__quest_id__requirements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_requirement_api_quests__quest_id__requirements__requirement_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+                requirement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_requirement_api_quests__quest_id__requirements__requirement_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+                requirement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meet_requirement_api_quests__quest_id__requirements__requirement_id__met_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+                requirement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unmeet_requirement_api_quests__quest_id__requirements__requirement_id__met_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+                requirement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_result_api_quests__quest_id__scenarios__number__result_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_quest_api_quests__quest_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staff_tale_api_quests__quest_id__tale_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_response_api_responses__response_id__get: {
         parameters: {
             query?: never;
@@ -25633,7 +27934,7 @@ export interface operations {
                 since?: string | null;
                 until?: string | null;
                 needs_details?: boolean | null;
-                source?: ("downtime" | "game" | "hand" | "import") | null;
+                source?: ("downtime" | "game" | "hand" | "import" | "quest") | null;
                 limit?: number;
                 offset?: number;
             };
@@ -26590,6 +28891,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    quest_characters_api_troupes__troupe_id__quest_characters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestCharacterChoice"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    quest_requests_api_troupes__troupe_id__quest_requests_get: {
+        parameters: {
+            query?: {
+                show?: "open" | "new" | "mine" | "any_narrator" | "to_send" | "answered";
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestRequestOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_quest_settings_api_troupes__troupe_id__quest_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_quests_api_troupes__troupe_id__quests_get: {
+        parameters: {
+            query?: {
+                show?: "open" | "draft" | "active" | "ended" | "closed" | "all";
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestRowOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_quest_api_troupes__troupe_id__quests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
                 };
             };
             /** @description Validation Error */

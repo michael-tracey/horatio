@@ -32,6 +32,7 @@ from horatio.models import (
     DisciplinePurchase,
     HomeTroupeChange,
     Notification,
+    QuestRequest,
     TraitDefinition,
     Troupe,
     TroupeRequest,
@@ -189,7 +190,47 @@ def troupe_request_tasks(db: Session, user: User) -> list[Item]:
     ]
 
 
-TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [approval_tasks, troupe_request_tasks]
+def quest_request_tasks(db: Session, user: User) -> list[Item]:
+    """Open quest requests in troupes running quests: every one for the storytellers
+    and assistant storytellers, and a narrator's own (horatio.quests). Each goes once
+    it is answered."""
+    running = {t.id: t for t in troupes_where(db, user, TroupeAction.MANAGE_QUESTS)}
+    narrating = {
+        t.id: t
+        for t in troupes_where(db, user, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
+        if t.id not in running
+    }
+    troupes = {t_id: t for t_id, t in (running | narrating).items() if t.quests_enabled}
+    if not troupes:
+        return []
+    rows = db.execute(
+        select(QuestRequest, Character)
+        .join(Character, QuestRequest.character_id == Character.id)
+        .where(QuestRequest.troupe_id.in_(troupes), QuestRequest.status.in_(("new", "working")))
+    )
+    return [
+        Item(
+            id=f"quest_request:{request.id}",
+            kind="quest_request",
+            task=True,
+            troupe_id=request.troupe_id,
+            troupe_name=troupes[request.troupe_id].name,
+            summary=f"{about.name} asks for a quest: {request.objective[:80]}",
+            link=f"/troupes/{request.troupe_id}/quests",
+            at=request.created_at,
+            read=False,
+            picture=picture_url(about.id, about.picture_id),
+        )
+        for request, about in rows
+        if request.troupe_id in running or request.assigned_to_user_id == user.id
+    ]
+
+
+TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [
+    approval_tasks,
+    troupe_request_tasks,
+    quest_request_tasks,
+]
 
 
 def approval_waiting(db: Session, approval: Approval) -> None:

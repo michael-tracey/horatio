@@ -70,6 +70,7 @@ describe("a character's influence history", () => {
     expect(historySource({ source: "game", cycle_name: null, game_number: 3 })).toBe("At a game (game 3)");
     expect(historySource({ source: "hand", cycle_name: null, game_number: null })).toBe("Logged by staff");
     expect(historySource({ source: "hand", cycle_name: "November", game_number: null })).toBe("Logged by staff, for November");
+    expect(historySource({ source: "quest", cycle_name: "November", game_number: null })).toBe("For a quest, in November");
   });
 
   it("sums up this month's actions, where they were spent, and what is owed", () => {
