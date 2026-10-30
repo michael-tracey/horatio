@@ -8085,6 +8085,109 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
 });
 
+test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an eleventh quality, adds a secret negative, and a narrator never sees them", async ({ browser }) => {
+  const custodian = await person(browser, "loc-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "loc-lead");
+  const owner = await person(browser, "loc-owner");
+  const narrator = await person(browser, "loc-narrator");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Grove Court ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: narrator.handle, role: "narrator" });
+
+  // Agnes, at home in the troupe, will control it.
+  const { id: agnes } = await send(owner.page, "POST", "/api/characters", { splat: "vampire", name: "Agnes Grove" });
+  await send(owner.page, "PUT", `/api/characters/${agnes}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 3], ["Social", 7], ["Mental", 5]],
+    focus_physicals: [["Dexterity", 1]],
+    focus_mentals: [["Intelligence", 1]],
+    focus_socials: [["Manipulation", 1]],
+    skills: [["Leadership", 4], ["Subterfuge", 3], ["Academics", 3], ["Awareness", 2], ["Empathy", 2], ["Investigation", 2], ["Dodge", 1], ["Drive", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Resources", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(owner.page, "PUT", `/api/characters/${agnes}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(owner.page, "POST", `/api/characters/${agnes}/creation/complete`);
+  const asked = await send(owner.page, "POST", `/api/characters/${agnes}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+
+  // The lead adds the Grove Arcade: prestige 5, with ten qualities.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Locations", exact: true }).click();
+  await expect(l.getByText("No locations yet.")).toBeVisible();
+  await l.getByRole("button", { name: "Add a location" }).click();
+  const add = l.getByRole("form", { name: "Add a location" });
+  await add.getByLabel("Name", { exact: true }).fill("Grove Arcade");
+  await add.getByLabel("Type").selectOption("prestige");
+  await add.getByLabel("Rating").selectOption("5");
+  for (const quality of ["Size", "Guards", "Location", "Staff", "Profitable", "Profitable", "Historic", "Fancy", "Luxury", "Haunt"])
+    await add.getByLabel("Add a quality").selectOption(quality);
+  await expect(add.getByText("Qualities · 10 of 10")).toBeVisible();
+  await add.getByLabel("Address", { exact: true }).fill("1 Page Ave, Asheville");
+  await add.getByLabel("Feeding block").fill("The Rack");
+  await add.getByLabel("Influence", { exact: true }).selectOption("elite");
+  await add.getByLabel("Influence area").fill("Commercial Industry");
+  await add.getByLabel("Control", { exact: true }).selectOption("controlled");
+  await add.getByRole("combobox", { name: "Controller" }).fill("Agnes");
+  await add.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Agnes Grove/ }).click();
+  await add.getByRole("button", { name: "Add location" }).click();
+  await expect(l.getByRole("heading", { name: "Grove Arcade" })).toBeVisible();
+  await expect(l.getByText("Prestige 5 · 10 of 10 qualities")).toBeVisible();
+  await expect(l.getByText("Commercial Industry (Elite)")).toBeVisible();
+
+  // An eleventh quality is refused, with the reason.
+  await l.getByRole("button", { name: "Edit" }).click();
+  const edit = l.getByRole("form", { name: "Change Grove Arcade" });
+  await edit.getByLabel("Add a quality").selectOption("Isolated");
+  await edit.getByRole("button", { name: "Save changes" }).click();
+  await expect(edit.getByRole("alert")).toHaveText(/A prestige 5 location has at most 10 qualities .*p\. 121.*this one would have 11\./);
+
+  // Hunters watch it, kept secret from Agnes's player.
+  await edit.getByRole("button", { name: "Remove Isolated" }).click();
+  await edit.getByRole("button", { name: "Add a negative quality" }).click();
+  await edit.getByLabel("Negative quality").selectOption("Compromised");
+  await edit.getByLabel("Secret from the controller").check();
+  await edit.getByLabel("Who is behind Compromised").fill("hunters");
+  await edit.getByRole("button", { name: "Save changes" }).click();
+  await expect(l.getByText("Compromised ×1", { exact: true })).toBeVisible();
+  await expect(l.getByText("Secret", { exact: true })).toBeVisible();
+  await expect(l.getByText(/changed Grove Arcade: negatives \+Compromised ×1, secret \(hunters\)/)).toBeVisible();
+  await l.screenshot(shots("location"));
+
+  // Back on the list, it's found by its quality.
+  await l.getByRole("link", { name: "← All locations" }).click();
+  await l.getByLabel("Quality").selectOption("Haunt");
+  await expect(l.getByRole("list", { name: "Locations" }).getByRole("link", { name: "Grove Arcade" })).toBeVisible();
+  await l.getByLabel("Quality").selectOption("Workshop");
+  await expect(l.getByText("No locations match.")).toBeVisible();
+  const wide = await l.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(wide).toBeLessThanOrEqual(0);
+
+  // The sheet shows staff how many Agnes controls, of how many she may.
+  await l.goto(`/characters/${agnes}`);
+  await expect(l.getByText(/Controls 1 of 5 locations/)).toBeVisible();
+
+  // Neither the narrator nor Agnes's player sees the list.
+  const n = narrator.page;
+  await n.goto(`/troupes/${troupe.id}`);
+  await expect(n.getByRole("link", { name: "Locations", exact: true })).toHaveCount(0);
+  expect((await n.request.get(`/api/troupes/${troupe.id}/locations`)).status()).toBe(403);
+  expect((await owner.page.request.get(`/api/troupes/${troupe.id}/locations`)).status()).toBe(403);
+  await owner.page.goto(`/characters/${agnes}`);
+  await expect(owner.page.getByRole("heading", { name: "Agnes Grove" })).toBeVisible();
+  await expect(owner.page.getByText(/Controls 1 of 5 locations/)).toHaveCount(0);
+});
+
 test("a troupe gives equipment: a dagger from a template, a rifle by hand, refused when it breaks the rules, and a special blade from the character's page", async ({ browser }) => {
   const custodian = await person(browser, "equip-custodian");
   makeCustodian(custodian.email);

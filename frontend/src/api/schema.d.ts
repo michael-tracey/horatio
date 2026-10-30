@@ -1206,6 +1206,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Locations
+         * @description For staff: how many locations the character controls, of how many it may.
+         */
+        get: operations["character_locations_api_characters__character_id__locations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/log": {
         parameters: {
             query?: never;
@@ -3217,6 +3237,31 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/locations/{location_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Location */
+        get: operations["read_location_api_locations__location_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove Location
+         * @description Take a location off the list; its subsidiaries stay, with no conglomerate.
+         */
+        delete: operations["remove_location_api_locations__location_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Change Location
+         * @description Change a location: the fields given, the rest as they are.
+         */
+        patch: operations["change_location_api_locations__location_id__patch"];
         trace?: never;
     };
     "/api/notifications": {
@@ -5375,6 +5420,150 @@ export interface paths {
          *     Whose each one is shows only for players who share theirs.
          */
         get: operations["troupe_lines_veils_api_troupes__troupe_id__lines_veils_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/location-limit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Limit
+         * @description What going over a character's control limit does: refuse it, or note it.
+         */
+        put: operations["set_limit_api_troupes__troupe_id__location_limit_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/location-options/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Option
+         * @description Switch one of the house options for locations on or off.
+         */
+        put: operations["set_option_api_troupes__troupe_id__location_options__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/location-qualities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Quality
+         * @description Add a quality of the troupe's own to the catalogue.
+         */
+        post: operations["add_quality_api_troupes__troupe_id__location_qualities_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/location-qualities/{quality_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Quality
+         * @description Change one of the troupe's own qualities; locations that have it keep it,
+         *     renamed with it.
+         */
+        put: operations["change_quality_api_troupes__troupe_id__location_qualities__quality_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/location-qualities/{quality_id}/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Archive Quality
+         * @description Stop offering one of the troupe's qualities, or offer it again. Locations that
+         *     have it keep it.
+         */
+        put: operations["archive_quality_api_troupes__troupe_id__location_qualities__quality_id__archived_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Locations
+         * @description Every location the troupe keeps, by name.
+         */
+        get: operations["list_locations_api_troupes__troupe_id__locations_get"];
+        put?: never;
+        /** Add Location */
+        post: operations["add_location_api_troupes__troupe_id__locations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/locations/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Catalogue
+         * @description The location types, qualities, negative qualities and Haven advantages as the
+         *     troupe plays them, with its house options, and what a location can name.
+         */
+        get: operations["read_catalogue_api_troupes__troupe_id__locations_catalogue_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9908,6 +10097,17 @@ export interface components {
             /** Handle */
             handle: string;
         };
+        /** HavenAdvantageOut */
+        HavenAdvantageOut: {
+            /** Name */
+            name: string;
+            /** Needs */
+            needs: string;
+            /** Page */
+            page: string;
+            /** Text */
+            text: string;
+        };
         /** Health */
         Health: {
             /** Levels */
@@ -9923,6 +10123,58 @@ export interface components {
             boxes: number;
             /** Name */
             name: string;
+        };
+        /** HeldLocationOut */
+        HeldLocationOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Joint */
+            joint: boolean;
+            /** Name */
+            name: string;
+            /** Not Counted */
+            not_counted: string | null;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
+        /** HeldLocationQualityOut */
+        HeldLocationQualityOut: {
+            /** Counts */
+            counts: boolean;
+            /** Detail */
+            detail: string;
+            /** Free Here */
+            free_here: string;
+            /** House */
+            house: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "iconic" | "supernatural" | "elysium";
+            /** Known */
+            known: boolean;
+            /** Name */
+            name: string;
+        };
+        /** HeldNegativeQualityOut */
+        HeldNegativeQualityOut: {
+            /** By */
+            by: string;
+            /** Effect */
+            effect: string;
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+            /** Secret */
+            secret: boolean;
         };
         /** HeldOut */
         HeldOut: {
@@ -10819,6 +11071,616 @@ export interface components {
              */
             user_id: string;
         };
+        /** LocationCatalogueOut */
+        LocationCatalogueOut: {
+            /** Book */
+            book: string;
+            /** Can Change House */
+            can_change_house: boolean;
+            /** Characters */
+            characters: components["schemas"]["LocationCharacter"][];
+            /** Feeding Blocks */
+            feeding_blocks: string[];
+            /** Haven Advantages */
+            haven_advantages: components["schemas"]["HavenAdvantageOut"][];
+            /** Influence Areas */
+            influence_areas: {
+                [key: string]: string[];
+            };
+            /**
+             * Limit
+             * @enum {string}
+             */
+            limit: "refuse" | "note";
+            /** Negatives */
+            negatives: components["schemas"]["NegativeQualityOut"][];
+            /** Options */
+            options: components["schemas"]["LocationOptionOut"][];
+            /** Own */
+            own: components["schemas"]["OwnLocationQualityOut"][];
+            /** Pages */
+            pages: {
+                [key: string]: string;
+            };
+            /** Qualities */
+            qualities: components["schemas"]["LocationQualityOut"][];
+            /** Types */
+            types: components["schemas"]["LocationTypeOut"][];
+        };
+        /** LocationChange */
+        LocationChange: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Control
+             * @default none
+             * @enum {string}
+             */
+            control: "character" | "named" | "none" | "uncontrollable";
+            /** Controller Id */
+            controller_id?: string | null;
+            /**
+             * Controller Name
+             * @default
+             */
+            controller_name: string;
+            /** Elysium Since */
+            elysium_since?: number | null;
+            /**
+             * Feeding Block
+             * @default
+             */
+            feeding_block: string;
+            /**
+             * Haven Advantages
+             * @default []
+             */
+            haven_advantages: string[];
+            /** Haven Of Id */
+            haven_of_id?: string | null;
+            /** Heir Id */
+            heir_id?: string | null;
+            /**
+             * Heir Name
+             * @default
+             */
+            heir_name: string;
+            /**
+             * Influence Area
+             * @default
+             */
+            influence_area: string;
+            /** Influence Type */
+            influence_type?: ("elite" | "underworld") | null;
+            /** Joint Id */
+            joint_id?: string | null;
+            /**
+             * Joint Name
+             * @default
+             */
+            joint_name: string;
+            /**
+             * Kind
+             * @default standard
+             * @enum {string}
+             */
+            kind: "standard" | "prestige" | "iconic" | "haven";
+            /**
+             * Locked
+             * @default false
+             */
+            locked: boolean;
+            /**
+             * Map Link
+             * @default
+             */
+            map_link: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Negatives
+             * @default []
+             */
+            negatives: components["schemas"]["LocationNegativeIn"][];
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Parent Id */
+            parent_id?: string | null;
+            /**
+             * Qualities
+             * @default []
+             */
+            qualities: components["schemas"]["LocationQualityIn"][];
+            /**
+             * Rating
+             * @default 1
+             */
+            rating: number;
+            /**
+             * Web Address
+             * @default
+             */
+            web_address: string;
+        };
+        /** LocationCharacter */
+        LocationCharacter: {
+            /** Haven */
+            haven: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /** LocationControlOut */
+        LocationControlOut: {
+            /** Controls */
+            controls: number;
+            /** Elsewhere */
+            elsewhere: number;
+            /** Limit */
+            limit: number;
+            /** Locations */
+            locations: components["schemas"]["HeldLocationOut"][];
+            /** Over */
+            over: boolean;
+            /** Why */
+            why: string;
+        };
+        /** LocationDetailOut */
+        LocationDetailOut: {
+            /** Address */
+            address: string;
+            /**
+             * Control
+             * @enum {string}
+             */
+            control: "character" | "named" | "none" | "uncontrollable";
+            controller: components["schemas"]["LocationPerson"] | null;
+            /** Elysium Qualities */
+            elysium_qualities: number | null;
+            /** Elysium Since */
+            elysium_since: number | null;
+            /** Feeding Block */
+            feeding_block: string;
+            /** Haven Advantages */
+            haven_advantages: string[];
+            haven_of: components["schemas"]["LocationPerson"] | null;
+            heir: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Influence Area */
+            influence_area: string;
+            /** Influence Type */
+            influence_type: ("elite" | "underworld") | null;
+            joint: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "prestige" | "iconic" | "haven";
+            /** Locked */
+            locked: boolean;
+            /** Log */
+            log: components["schemas"]["LogEntry"][];
+            /** Map Link */
+            map_link: string;
+            /** Most Qualities */
+            most_qualities: number;
+            /** Name */
+            name: string;
+            /** Negatives */
+            negatives: components["schemas"]["HeldNegativeQualityOut"][];
+            /** Not Counted */
+            not_counted: string | null;
+            /** Notes */
+            notes: string;
+            parent: components["schemas"]["LocationRef"] | null;
+            /** Qualities */
+            qualities: components["schemas"]["HeldLocationQualityOut"][];
+            /** Quality Count */
+            quality_count: number;
+            /** Rating */
+            rating: number;
+            /** Subsidiaries */
+            subsidiaries: components["schemas"]["LocationSubsidiaryOut"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Web Address */
+            web_address: string;
+        };
+        /**
+         * LocationIn
+         * @description A location's fields; on a change, those left out stay as they are.
+         */
+        LocationIn: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Control
+             * @default none
+             * @enum {string}
+             */
+            control: "character" | "named" | "none" | "uncontrollable";
+            /** Controller Id */
+            controller_id?: string | null;
+            /**
+             * Controller Name
+             * @default
+             */
+            controller_name: string;
+            /** Elysium Since */
+            elysium_since?: number | null;
+            /**
+             * Feeding Block
+             * @default
+             */
+            feeding_block: string;
+            /**
+             * Haven Advantages
+             * @default []
+             */
+            haven_advantages: string[];
+            /** Haven Of Id */
+            haven_of_id?: string | null;
+            /** Heir Id */
+            heir_id?: string | null;
+            /**
+             * Heir Name
+             * @default
+             */
+            heir_name: string;
+            /**
+             * Influence Area
+             * @default
+             */
+            influence_area: string;
+            /** Influence Type */
+            influence_type?: ("elite" | "underworld") | null;
+            /** Joint Id */
+            joint_id?: string | null;
+            /**
+             * Joint Name
+             * @default
+             */
+            joint_name: string;
+            /**
+             * Kind
+             * @default standard
+             * @enum {string}
+             */
+            kind: "standard" | "prestige" | "iconic" | "haven";
+            /**
+             * Locked
+             * @default false
+             */
+            locked: boolean;
+            /**
+             * Map Link
+             * @default
+             */
+            map_link: string;
+            /** Name */
+            name: string;
+            /**
+             * Negatives
+             * @default []
+             */
+            negatives: components["schemas"]["LocationNegativeIn"][];
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Parent Id */
+            parent_id?: string | null;
+            /**
+             * Qualities
+             * @default []
+             */
+            qualities: components["schemas"]["LocationQualityIn"][];
+            /**
+             * Rating
+             * @default 1
+             */
+            rating: number;
+            /**
+             * Web Address
+             * @default
+             */
+            web_address: string;
+        };
+        /** LocationLimitIn */
+        LocationLimitIn: {
+            /**
+             * Strength
+             * @enum {string}
+             */
+            strength: "refuse" | "note";
+        };
+        /** LocationNegativeIn */
+        LocationNegativeIn: {
+            /**
+             * By
+             * @default
+             */
+            by: string;
+            /**
+             * Level
+             * @default 1
+             */
+            level: number;
+            /** Name */
+            name: string;
+            /**
+             * Secret
+             * @default false
+             */
+            secret: boolean;
+        };
+        /** LocationOptionIn */
+        LocationOptionIn: {
+            /** On */
+            on: boolean;
+        };
+        /** LocationOptionOut */
+        LocationOptionOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** On */
+            on: boolean;
+            /** Text */
+            text: string;
+        };
+        /** LocationOut */
+        LocationOut: {
+            /** Address */
+            address: string;
+            /**
+             * Control
+             * @enum {string}
+             */
+            control: "character" | "named" | "none" | "uncontrollable";
+            controller: components["schemas"]["LocationPerson"] | null;
+            /** Elysium Qualities */
+            elysium_qualities: number | null;
+            /** Elysium Since */
+            elysium_since: number | null;
+            /** Feeding Block */
+            feeding_block: string;
+            /** Haven Advantages */
+            haven_advantages: string[];
+            haven_of: components["schemas"]["LocationPerson"] | null;
+            heir: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Influence Area */
+            influence_area: string;
+            /** Influence Type */
+            influence_type: ("elite" | "underworld") | null;
+            joint: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "prestige" | "iconic" | "haven";
+            /** Locked */
+            locked: boolean;
+            /** Map Link */
+            map_link: string;
+            /** Most Qualities */
+            most_qualities: number;
+            /** Name */
+            name: string;
+            /** Negatives */
+            negatives: components["schemas"]["HeldNegativeQualityOut"][];
+            /** Not Counted */
+            not_counted: string | null;
+            /** Notes */
+            notes: string;
+            parent: components["schemas"]["LocationRef"] | null;
+            /** Qualities */
+            qualities: components["schemas"]["HeldLocationQualityOut"][];
+            /** Quality Count */
+            quality_count: number;
+            /** Rating */
+            rating: number;
+            /** Subsidiaries */
+            subsidiaries: components["schemas"]["LocationSubsidiaryOut"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Web Address */
+            web_address: string;
+        };
+        /** LocationPerson */
+        LocationPerson: {
+            /** Id */
+            id: string | null;
+            /** Name */
+            name: string;
+        };
+        /** LocationQualityArchivedIn */
+        LocationQualityArchivedIn: {
+            /** Archived */
+            archived: boolean;
+        };
+        /** LocationQualityIn */
+        LocationQualityIn: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+        };
+        /** LocationQualityOut */
+        LocationQualityOut: {
+            /** Counts */
+            counts: boolean;
+            /** Detail */
+            detail: string;
+            /** Excludes */
+            excludes: string[];
+            /** Haven Free */
+            haven_free: string;
+            /** House */
+            house: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "iconic" | "supernatural" | "elysium";
+            /** Min Rating */
+            min_rating: number | null;
+            /** Name */
+            name: string;
+            /** Option */
+            option: string | null;
+            /** Page */
+            page: string | null;
+            /** Per Qualities */
+            per_qualities: number | null;
+            /** Repeatable */
+            repeatable: boolean;
+            /** Suggested */
+            suggested: components["schemas"]["LocationSuggestion"][];
+            /** Text */
+            text: string;
+        };
+        /** LocationRef */
+        LocationRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** LocationSubsidiaryOut */
+        LocationSubsidiaryOut: {
+            /**
+             * Control
+             * @enum {string}
+             */
+            control: "character" | "named" | "none" | "uncontrollable";
+            controller: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** With Parent */
+            with_parent: boolean;
+        };
+        /**
+         * LocationSuggestion
+         * @description What a quest for a quality should ask for: a trait (or any one of `traits`)
+         *     at `levels` by the location's rating, lowest first, or a power, or words.
+         */
+        LocationSuggestion: {
+            /**
+             * Alternative
+             * @default
+             */
+            alternative: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Expend
+             * @default false
+             */
+            expend: boolean;
+            /**
+             * Levels
+             * @default []
+             */
+            levels: number[];
+            /**
+             * Power
+             * @default
+             */
+            power: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Trait
+             * @default
+             */
+            trait: string;
+            /**
+             * Traits
+             * @default []
+             */
+            traits: string[];
+        };
+        /** LocationTypeOut */
+        LocationTypeOut: {
+            /** Iconic */
+            iconic: boolean;
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "standard" | "prestige" | "iconic" | "haven";
+            /** Name */
+            name: string;
+            /** Per Rating */
+            per_rating: number;
+            /** Quest */
+            quest: string;
+            /** Text */
+            text: string;
+        };
         /**
          * LockedOut
          * @description A trait accepting the character fixes, such as Generation, at the rating it
@@ -11298,6 +12160,21 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** NegativeQualityOut */
+        NegativeQualityOut: {
+            /** Levels */
+            levels: string[];
+            /** Name */
+            name: string;
+            /** Names Who */
+            names_who: boolean;
+            /** Page */
+            page: string;
+            /** Raised By */
+            raised_by: string;
+            /** Removed */
+            removed: string;
+        };
         /** NewCharacter */
         NewCharacter: {
             /** Building Troupe Id */
@@ -11678,6 +12555,61 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /** OwnLocationQualityIn */
+        OwnLocationQualityIn: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Kind
+             * @default standard
+             * @enum {string}
+             */
+            kind: "standard" | "iconic" | "supernatural" | "elysium";
+            /** Name */
+            name: string;
+            /**
+             * Repeatable
+             * @default false
+             */
+            repeatable: boolean;
+            /**
+             * Suggested
+             * @default []
+             */
+            suggested: components["schemas"]["LocationSuggestion"][];
+            /** Text */
+            text: string;
+        };
+        /** OwnLocationQualityOut */
+        OwnLocationQualityOut: {
+            /** Archived */
+            archived: boolean;
+            /** Detail */
+            detail: string;
+            /** Held By */
+            held_by: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "iconic" | "supernatural" | "elysium";
+            /** Name */
+            name: string;
+            /** Repeatable */
+            repeatable: boolean;
+            /** Suggested */
+            suggested: components["schemas"]["LocationSuggestion"][];
+            /** Text */
+            text: string;
         };
         /** Owner */
         Owner: {
@@ -13927,6 +14859,79 @@ export interface components {
             kind: string;
             /** Name */
             name: string;
+        };
+        /** SavedLocationOut */
+        SavedLocationOut: {
+            /** Address */
+            address: string;
+            /**
+             * Control
+             * @enum {string}
+             */
+            control: "character" | "named" | "none" | "uncontrollable";
+            controller: components["schemas"]["LocationPerson"] | null;
+            /** Elysium Qualities */
+            elysium_qualities: number | null;
+            /** Elysium Since */
+            elysium_since: number | null;
+            /** Feeding Block */
+            feeding_block: string;
+            /** Haven Advantages */
+            haven_advantages: string[];
+            haven_of: components["schemas"]["LocationPerson"] | null;
+            heir: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Influence Area */
+            influence_area: string;
+            /** Influence Type */
+            influence_type: ("elite" | "underworld") | null;
+            joint: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "prestige" | "iconic" | "haven";
+            /** Locked */
+            locked: boolean;
+            /** Map Link */
+            map_link: string;
+            /** Most Qualities */
+            most_qualities: number;
+            /** Name */
+            name: string;
+            /** Negatives */
+            negatives: components["schemas"]["HeldNegativeQualityOut"][];
+            /** Not Counted */
+            not_counted: string | null;
+            /** Notes */
+            notes: string;
+            parent: components["schemas"]["LocationRef"] | null;
+            /** Qualities */
+            qualities: components["schemas"]["HeldLocationQualityOut"][];
+            /** Quality Count */
+            quality_count: number;
+            /** Rating */
+            rating: number;
+            /** Subsidiaries */
+            subsidiaries: components["schemas"]["LocationSubsidiaryOut"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Warnings */
+            warnings: string[];
+            /** Web Address */
+            web_address: string;
         };
         /** ScenarioIn */
         ScenarioIn: {
@@ -18696,6 +19701,37 @@ export interface operations {
             };
         };
     };
+    character_locations_api_characters__character_id__locations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationControlOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     character_log_api_characters__character_id__log_get: {
         parameters: {
             query?: {
@@ -22594,6 +23630,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InfluenceEffectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_location_api_locations__location_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_location_api_locations__location_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_location_api_locations__location_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedLocationOut"];
                 };
             };
             /** @description Validation Error */
@@ -27023,6 +28154,281 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeLinesVeils"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_limit_api_troupes__troupe_id__location_limit_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationLimitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationCatalogueOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_option_api_troupes__troupe_id__location_options__key__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationOptionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationCatalogueOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_quality_api_troupes__troupe_id__location_qualities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnLocationQualityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnLocationQualityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_quality_api_troupes__troupe_id__location_qualities__quality_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                quality_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnLocationQualityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnLocationQualityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_quality_api_troupes__troupe_id__location_qualities__quality_id__archived_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                quality_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationQualityArchivedIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnLocationQualityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_locations_api_troupes__troupe_id__locations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_location_api_troupes__troupe_id__locations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedLocationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_catalogue_api_troupes__troupe_id__locations_catalogue_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationCatalogueOut"];
                 };
             };
             /** @description Validation Error */

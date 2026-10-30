@@ -528,6 +528,17 @@ MESSAGES: dict[str, str] = {
     "equipment.restored": "{actor} gave {character} {item} back{because}.",
     "equipment.template_saved": "{actor} saved {item} ({what}) as one of the troupe's templates.",
     "equipment.template_deleted": "{actor} deleted the troupe's template {item}.",
+    "location.added": "{actor} added the location {location}.",
+    "location.changed": "{actor} changed {location}: {fields}.",
+    "location.removed": "{actor} removed the location {location}.",
+    "location.over_limit": "{actor} went over a control limit with {location}: {why}",
+    "house.location_option": "{actor} switched the location house option {option} {setting}.",
+    "house.location_limit": "{actor} set going over a character's control limit to {setting}.",
+    "house.location_quality_added": "{actor} added the location quality {name} ({kind}).",
+    "house.location_quality_changed": "{actor} changed the location quality {name}.",
+    "house.location_quality_archived": "{actor} archived the location quality {name}; locations"
+    " that have it keep it.",
+    "house.location_quality_restored": "{actor} brought back the location quality {name}.",
 }
 
 

@@ -28,6 +28,7 @@ class Troupe(Imported, Record):
         ),
         CheckConstraint("status_by in ('players', 'staff')", name="status_by"),
         CheckConstraint("badge_status in ('all', 'negative', 'none')", name="badge_status"),
+        CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
     )
 
     name: Mapped[str]
@@ -86,6 +87,13 @@ class Troupe(Imported, Record):
     # ("Lasombra": "rare"), over the book's rarity for the setting's sect. A character
     # built here takes the rarity merit it names (horatio.clan_merits).
     clan_rarity: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # House options for Stock Locations (horatio.rules.locations) it has switched
+    # off, by key: every other is on. And what going over a character's control
+    # limit does: "refuse" it, or "note" it for staff (horatio.locations).
+    location_options_off: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
+    location_limit: Mapped[str] = mapped_column(default="refuse", server_default="refuse")
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a

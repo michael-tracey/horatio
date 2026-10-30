@@ -9874,6 +9874,34 @@
         "title": "HandleIn",
         "type": "object"
       },
+      "HavenAdvantageOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs": {
+            "title": "Needs",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "page",
+          "text",
+          "needs"
+        ],
+        "title": "HavenAdvantageOut",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "levels": {
@@ -9919,6 +9947,130 @@
           "boxes"
         ],
         "title": "HealthLevel",
+        "type": "object"
+      },
+      "HeldLocationOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "joint": {
+            "title": "Joint",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "not_counted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Counted"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "joint",
+          "not_counted"
+        ],
+        "title": "HeldLocationOut",
+        "type": "object"
+      },
+      "HeldLocationQualityOut": {
+        "properties": {
+          "counts": {
+            "title": "Counts",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "free_here": {
+            "title": "Free Here",
+            "type": "string"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "iconic",
+              "supernatural",
+              "elysium"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "known": {
+            "title": "Known",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "kind",
+          "known",
+          "counts",
+          "house",
+          "free_here"
+        ],
+        "title": "HeldLocationQualityOut",
+        "type": "object"
+      },
+      "HeldNegativeQualityOut": {
+        "properties": {
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "effect": {
+            "title": "Effect",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "level",
+          "secret",
+          "by",
+          "effect"
+        ],
+        "title": "HeldNegativeQualityOut",
         "type": "object"
       },
       "HeldOut": {
@@ -12114,6 +12266,1534 @@
         "title": "LiveReset",
         "type": "object"
       },
+      "LocationCatalogueOut": {
+        "properties": {
+          "book": {
+            "title": "Book",
+            "type": "string"
+          },
+          "can_change_house": {
+            "title": "Can Change House",
+            "type": "boolean"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/LocationCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "feeding_blocks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Feeding Blocks",
+            "type": "array"
+          },
+          "haven_advantages": {
+            "items": {
+              "$ref": "#/components/schemas/HavenAdvantageOut"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "influence_areas": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Influence Areas",
+            "type": "object"
+          },
+          "limit": {
+            "enum": [
+              "refuse",
+              "note"
+            ],
+            "title": "Limit",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/NegativeQualityOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/LocationOptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "own": {
+            "items": {
+              "$ref": "#/components/schemas/OwnLocationQualityOut"
+            },
+            "title": "Own",
+            "type": "array"
+          },
+          "pages": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Pages",
+            "type": "object"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/LocationQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "types": {
+            "items": {
+              "$ref": "#/components/schemas/LocationTypeOut"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "types",
+          "options",
+          "qualities",
+          "negatives",
+          "haven_advantages",
+          "own",
+          "limit",
+          "pages",
+          "book",
+          "influence_areas",
+          "characters",
+          "feeding_blocks",
+          "can_change_house"
+        ],
+        "title": "LocationCatalogueOut",
+        "type": "object"
+      },
+      "LocationChange": {
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "default": "none",
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Controller Id"
+          },
+          "controller_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Controller Name",
+            "type": "string"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "maximum": 9999.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Of Id"
+          },
+          "heir_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heir Id"
+          },
+          "heir_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Heir Name",
+            "type": "string"
+          },
+          "influence_area": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joint Id"
+          },
+          "joint_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Joint Name",
+            "type": "string"
+          },
+          "kind": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "default": false,
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "map_link": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Map Link",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationNegativeIn"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationQualityIn"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "rating": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "web_address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "title": "LocationChange",
+        "type": "object"
+      },
+      "LocationCharacter": {
+        "properties": {
+          "haven": {
+            "title": "Haven",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "haven"
+        ],
+        "title": "LocationCharacter",
+        "type": "object"
+      },
+      "LocationControlOut": {
+        "properties": {
+          "controls": {
+            "title": "Controls",
+            "type": "integer"
+          },
+          "elsewhere": {
+            "title": "Elsewhere",
+            "type": "integer"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationOut"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "over": {
+            "title": "Over",
+            "type": "boolean"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "controls",
+          "limit",
+          "why",
+          "over",
+          "locations",
+          "elsewhere"
+        ],
+        "title": "LocationControlOut",
+        "type": "object"
+      },
+      "LocationDetailOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "elysium_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Qualities"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heir": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "influence_area": {
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "map_link": {
+            "title": "Map Link",
+            "type": "string"
+          },
+          "most_qualities": {
+            "title": "Most Qualities",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/HeldNegativeQualityOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "not_counted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Counted"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "quality_count": {
+            "title": "Quality Count",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "subsidiaries": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSubsidiaryOut"
+            },
+            "title": "Subsidiaries",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "web_address": {
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "parent",
+          "kind",
+          "rating",
+          "qualities",
+          "quality_count",
+          "most_qualities",
+          "negatives",
+          "control",
+          "controller",
+          "joint",
+          "heir",
+          "influence_type",
+          "influence_area",
+          "address",
+          "web_address",
+          "map_link",
+          "feeding_block",
+          "locked",
+          "haven_of",
+          "haven_advantages",
+          "elysium_since",
+          "elysium_qualities",
+          "notes",
+          "subsidiaries",
+          "not_counted",
+          "updated_at",
+          "log"
+        ],
+        "title": "LocationDetailOut",
+        "type": "object"
+      },
+      "LocationIn": {
+        "description": "A location's fields; on a change, those left out stay as they are.",
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "default": "none",
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Controller Id"
+          },
+          "controller_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Controller Name",
+            "type": "string"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "maximum": 9999.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Of Id"
+          },
+          "heir_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heir Id"
+          },
+          "heir_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Heir Name",
+            "type": "string"
+          },
+          "influence_area": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joint Id"
+          },
+          "joint_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Joint Name",
+            "type": "string"
+          },
+          "kind": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "default": false,
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "map_link": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Map Link",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationNegativeIn"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationQualityIn"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "rating": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "web_address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "LocationIn",
+        "type": "object"
+      },
+      "LocationLimitIn": {
+        "properties": {
+          "strength": {
+            "enum": [
+              "refuse",
+              "note"
+            ],
+            "title": "Strength",
+            "type": "string"
+          }
+        },
+        "required": [
+          "strength"
+        ],
+        "title": "LocationLimitIn",
+        "type": "object"
+      },
+      "LocationNegativeIn": {
+        "properties": {
+          "by": {
+            "default": "",
+            "maxLength": 120,
+            "title": "By",
+            "type": "string"
+          },
+          "level": {
+            "default": 1,
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "default": false,
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "LocationNegativeIn",
+        "type": "object"
+      },
+      "LocationOptionIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "LocationOptionIn",
+        "type": "object"
+      },
+      "LocationOptionOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "text",
+          "on"
+        ],
+        "title": "LocationOptionOut",
+        "type": "object"
+      },
+      "LocationOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "elysium_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Qualities"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heir": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "influence_area": {
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "map_link": {
+            "title": "Map Link",
+            "type": "string"
+          },
+          "most_qualities": {
+            "title": "Most Qualities",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/HeldNegativeQualityOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "not_counted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Counted"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "quality_count": {
+            "title": "Quality Count",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "subsidiaries": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSubsidiaryOut"
+            },
+            "title": "Subsidiaries",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "web_address": {
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "parent",
+          "kind",
+          "rating",
+          "qualities",
+          "quality_count",
+          "most_qualities",
+          "negatives",
+          "control",
+          "controller",
+          "joint",
+          "heir",
+          "influence_type",
+          "influence_area",
+          "address",
+          "web_address",
+          "map_link",
+          "feeding_block",
+          "locked",
+          "haven_of",
+          "haven_advantages",
+          "elysium_since",
+          "elysium_qualities",
+          "notes",
+          "subsidiaries",
+          "not_counted",
+          "updated_at"
+        ],
+        "title": "LocationOut",
+        "type": "object"
+      },
+      "LocationPerson": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "LocationPerson",
+        "type": "object"
+      },
+      "LocationQualityArchivedIn": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "archived"
+        ],
+        "title": "LocationQualityArchivedIn",
+        "type": "object"
+      },
+      "LocationQualityIn": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "LocationQualityIn",
+        "type": "object"
+      },
+      "LocationQualityOut": {
+        "properties": {
+          "counts": {
+            "title": "Counts",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "excludes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Excludes",
+            "type": "array"
+          },
+          "haven_free": {
+            "title": "Haven Free",
+            "type": "string"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "iconic",
+              "supernatural",
+              "elysium"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "min_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Rating"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "option": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Option"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "per_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Qualities"
+          },
+          "repeatable": {
+            "title": "Repeatable",
+            "type": "boolean"
+          },
+          "suggested": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSuggestion"
+            },
+            "title": "Suggested",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "text",
+          "page",
+          "detail",
+          "repeatable",
+          "counts",
+          "excludes",
+          "haven_free",
+          "suggested",
+          "option",
+          "house",
+          "min_rating",
+          "per_qualities"
+        ],
+        "title": "LocationQualityOut",
+        "type": "object"
+      },
+      "LocationRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "LocationRef",
+        "type": "object"
+      },
+      "LocationSubsidiaryOut": {
+        "properties": {
+          "control": {
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "with_parent": {
+            "title": "With Parent",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "control",
+          "controller",
+          "with_parent"
+        ],
+        "title": "LocationSubsidiaryOut",
+        "type": "object"
+      },
+      "LocationSuggestion": {
+        "description": "What a quest for a quality should ask for: a trait (or any one of `traits`)\nat `levels` by the location's rating, lowest first, or a power, or words.",
+        "properties": {
+          "alternative": {
+            "default": "",
+            "title": "Alternative",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "expend": {
+            "default": false,
+            "title": "Expend",
+            "type": "boolean"
+          },
+          "levels": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "power": {
+            "default": "",
+            "title": "Power",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "title": "Text",
+            "type": "string"
+          },
+          "trait": {
+            "default": "",
+            "title": "Trait",
+            "type": "string"
+          },
+          "traits": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Traits",
+            "type": "array"
+          }
+        },
+        "title": "LocationSuggestion",
+        "type": "object"
+      },
+      "LocationTypeOut": {
+        "properties": {
+          "iconic": {
+            "title": "Iconic",
+            "type": "boolean"
+          },
+          "key": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "per_rating": {
+            "title": "Per Rating",
+            "type": "integer"
+          },
+          "quest": {
+            "title": "Quest",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "per_rating",
+          "iconic",
+          "quest",
+          "text"
+        ],
+        "title": "LocationTypeOut",
+        "type": "object"
+      },
       "LockedOut": {
         "description": "A trait accepting the character fixes, such as Generation, at the rating it\nis accepted at.",
         "properties": {
@@ -13404,6 +15084,47 @@
         "title": "NeedLineOut",
         "type": "object"
       },
+      "NegativeQualityOut": {
+        "properties": {
+          "levels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "names_who": {
+            "title": "Names Who",
+            "type": "boolean"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "raised_by": {
+            "title": "Raised By",
+            "type": "string"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "page",
+          "removed",
+          "levels",
+          "raised_by",
+          "names_who"
+        ],
+        "title": "NegativeQualityOut",
+        "type": "object"
+      },
       "NewCharacter": {
         "properties": {
           "building_troupe_id": {
@@ -14487,6 +16208,121 @@
           "purpose"
         ],
         "title": "OwnEntryOut",
+        "type": "object"
+      },
+      "OwnLocationQualityIn": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "iconic",
+              "supernatural",
+              "elysium"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "repeatable": {
+            "default": false,
+            "title": "Repeatable",
+            "type": "boolean"
+          },
+          "suggested": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationSuggestion"
+            },
+            "title": "Suggested",
+            "type": "array"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "text"
+        ],
+        "title": "OwnLocationQualityIn",
+        "type": "object"
+      },
+      "OwnLocationQualityOut": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "held_by": {
+            "title": "Held By",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "iconic",
+              "supernatural",
+              "elysium"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "repeatable": {
+            "title": "Repeatable",
+            "type": "boolean"
+          },
+          "suggested": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSuggestion"
+            },
+            "title": "Suggested",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "text",
+          "detail",
+          "repeatable",
+          "suggested",
+          "archived",
+          "held_by"
+        ],
+        "title": "OwnLocationQualityOut",
         "type": "object"
       },
       "Owner": {
@@ -20468,6 +22304,256 @@
           "kind"
         ],
         "title": "SampleOut",
+        "type": "object"
+      },
+      "SavedLocationOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "elysium_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Qualities"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heir": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "influence_area": {
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "map_link": {
+            "title": "Map Link",
+            "type": "string"
+          },
+          "most_qualities": {
+            "title": "Most Qualities",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/HeldNegativeQualityOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "not_counted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Counted"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "quality_count": {
+            "title": "Quality Count",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "subsidiaries": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSubsidiaryOut"
+            },
+            "title": "Subsidiaries",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "web_address": {
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "parent",
+          "kind",
+          "rating",
+          "qualities",
+          "quality_count",
+          "most_qualities",
+          "negatives",
+          "control",
+          "controller",
+          "joint",
+          "heir",
+          "influence_type",
+          "influence_area",
+          "address",
+          "web_address",
+          "map_link",
+          "feeding_block",
+          "locked",
+          "haven_of",
+          "haven_advantages",
+          "elysium_since",
+          "elysium_qualities",
+          "notes",
+          "subsidiaries",
+          "not_counted",
+          "updated_at",
+          "warnings"
+        ],
+        "title": "SavedLocationOut",
         "type": "object"
       },
       "ScenarioIn": {
@@ -30665,6 +32751,50 @@
         ]
       }
     },
+    "/api/characters/{character_id}/locations": {
+      "get": {
+        "description": "For staff: how many locations the character controls, of how many it may.",
+        "operationId": "character_locations_api_characters__character_id__locations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationControlOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Locations",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
     "/api/characters/{character_id}/log": {
       "get": {
         "description": "Everything that happened to the character, newest first. Its player sees it\nall; a troupe's staff see the sheet's own history and what happened in their\ntroupe, not in the character's other troupes.",
@@ -36849,6 +38979,136 @@
         "summary": "Resolve",
         "tags": [
           "influence effects"
+        ]
+      }
+    },
+    "/api/locations/{location_id}": {
+      "delete": {
+        "description": "Take a location off the list; its subsidiaries stay, with no conglomerate.",
+        "operationId": "remove_location_api_locations__location_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Location",
+        "tags": [
+          "locations"
+        ]
+      },
+      "get": {
+        "operationId": "read_location_api_locations__location_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Location",
+        "tags": [
+          "locations"
+        ]
+      },
+      "patch": {
+        "description": "Change a location: the fields given, the rest as they are.",
+        "operationId": "change_location_api_locations__location_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedLocationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Location",
+        "tags": [
+          "locations"
         ]
       }
     },
@@ -43964,6 +46224,448 @@
         "summary": "Troupe Lines Veils",
         "tags": [
           "lines-veils"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-limit": {
+      "put": {
+        "description": "What going over a character's control limit does: refuse it, or note it.",
+        "operationId": "set_limit_api_troupes__troupe_id__location_limit_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationLimitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationCatalogueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Limit",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-options/{key}": {
+      "put": {
+        "description": "Switch one of the house options for locations on or off.",
+        "operationId": "set_option_api_troupes__troupe_id__location_options__key__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationOptionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationCatalogueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Option",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-qualities": {
+      "post": {
+        "description": "Add a quality of the troupe's own to the catalogue.",
+        "operationId": "add_quality_api_troupes__troupe_id__location_qualities_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnLocationQualityIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnLocationQualityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Quality",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-qualities/{quality_id}": {
+      "put": {
+        "description": "Change one of the troupe's own qualities; locations that have it keep it,\nrenamed with it.",
+        "operationId": "change_quality_api_troupes__troupe_id__location_qualities__quality_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quality_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quality Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnLocationQualityIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnLocationQualityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Quality",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-qualities/{quality_id}/archived": {
+      "put": {
+        "description": "Stop offering one of the troupe's qualities, or offer it again. Locations that\nhave it keep it.",
+        "operationId": "archive_quality_api_troupes__troupe_id__location_qualities__quality_id__archived_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quality_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quality Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationQualityArchivedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnLocationQualityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Quality",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/locations": {
+      "get": {
+        "description": "Every location the troupe keeps, by name.",
+        "operationId": "list_locations_api_troupes__troupe_id__locations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LocationOut"
+                  },
+                  "title": "Response List Locations Api Troupes  Troupe Id  Locations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Locations",
+        "tags": [
+          "locations"
+        ]
+      },
+      "post": {
+        "operationId": "add_location_api_troupes__troupe_id__locations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedLocationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Location",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/locations/catalogue": {
+      "get": {
+        "description": "The location types, qualities, negative qualities and Haven advantages as the\ntroupe plays them, with its house options, and what a location can name.",
+        "operationId": "read_catalogue_api_troupes__troupe_id__locations_catalogue_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationCatalogueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Catalogue",
+        "tags": [
+          "locations"
         ]
       }
     },

@@ -69,7 +69,7 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
         "House rules",
         ("house.", "troupe.specializations", "troupe.sects_limited", "troupe.splats_limited"),
     ),
-    AuditGroup.TROUPES: ("Troupes", ("troupe.", "troupe_request.", "connector.")),
+    AuditGroup.TROUPES: ("Troupes", ("troupe.", "troupe_request.", "connector.", "location.")),
     AuditGroup.ACCOUNTS: ("Accounts", ("account.",)),
     AuditGroup.SYSTEM: ("System", ("backup.", "clan_logo.", "audit.")),
 }
