@@ -241,7 +241,9 @@ def test_every_discipline_has_notes_for_each_dot() -> None:
     book = catalogue()
     assert set(book.disciplines) == disciplines
     for name in disciplines:
-        assert [p["level"] for p in book.powers[name]] == [1, 2, 3, 4, 5], name
+        # A path no book we use describes has none (the Graveborne, Vol. 2, p. 62).
+        levels = [] if book.disciplines[name].get("unwritten") else [1, 2, 3, 4, 5]
+        assert [p["level"] for p in book.powers.get(name, [])] == levels, name
     known = ("initiative", "dodge", "attack", "defense", "discipline", "skill", "frenzy", "all")
     entries = [e for d in book.disciplines.values() for e in d.get("pools", [])] + [
         e for ps in book.powers.values() for p in ps for e in p.get("pools", [])

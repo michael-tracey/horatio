@@ -95,8 +95,41 @@ def vampire_generation(sheet: Sequence[SheetTrait]) -> int:
     return 1
 
 
+@dataclass(frozen=True)
+class ClanChoice:
+    """An in-clan discipline the clan leaves to its player, from its `choices` (Angelis
+    Ater: Potence, Presence or Obfuscate, MET: VTM p. 72), kept as the clan's detail."""
+
+    clan: str
+    choices: tuple[str, ...]
+    # The one chosen; None until one of `choices` is.
+    chosen: str | None
+    page: str | None = None
+
+
+def clan_choice(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> ClanChoice | None:
+    """The clan's in-clan choice, or None for a clan with none, or while a merit sets
+    the in-clan disciplines in place of the clan's (Shadows of the Past)."""
+    from horatio.rules.grants import in_clan_replaced
+
+    clan = next((t for t in sheet if t.category == "clan"), None)
+    if clan is None:
+        return None
+    choices = rules.rule_set.trait_properties("clan", clan.name).get("choices")
+    if not choices or in_clan_replaced(rules.rule_set, sheet) is not None:
+        return None
+    found = rules.rule_set.traits.get(("clan", clan.name))
+    return ClanChoice(
+        clan.name,
+        tuple(choices),
+        clan.detail if clan.detail in choices else None,
+        found.page_reference if found is not None else None,
+    )
+
+
 def clan_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> list[str]:
-    """The clan's own in-clan disciplines, or the ones a merit sets in their place."""
+    """The clan's own in-clan disciplines, with the one its player chose if it leaves
+    one to them, or the ones a merit sets in their place."""
     from horatio.rules.grants import in_clan_replaced
 
     replaced = in_clan_replaced(rules.rule_set, sheet)
@@ -106,6 +139,9 @@ def clan_in_clan_disciplines(rules: TroupeRules, sheet: Sequence[SheetTrait]) ->
             disciplines.extend(
                 rules.rule_set.trait_properties("clan", trait.name).get("in_clan", [])
             )
+    choice = clan_choice(rules, sheet) if replaced is None else None
+    if choice is not None and choice.chosen is not None:
+        disciplines.append(choice.chosen)
     disciplines.extend(replaced or [])
     return disciplines
 

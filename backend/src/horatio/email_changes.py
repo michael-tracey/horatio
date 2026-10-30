@@ -61,9 +61,14 @@ def live_change(db: Session, user: User) -> EmailChange | None:
 
 
 def taken(db: Session, address: str, user: User) -> User | None:
-    """Another account that uses `address`, whatever its case."""
+    """Another open account that uses `address`, whatever its case. A merged one
+    keeps its email only for the record (horatio.account_merges)."""
     return db.scalar(
-        select(User).where(func.lower(User.email) == address.lower(), User.id != user.id)
+        select(User).where(
+            func.lower(User.email) == address.lower(),
+            User.id != user.id,
+            User.merged_into_id.is_(None),
+        )
     )
 
 

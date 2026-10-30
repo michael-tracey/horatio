@@ -3034,6 +3034,40 @@ test("Stolen Potential takes away the focus in the attribute it names, and the c
   await expect(p.getByText("Social Focus", { exact: true }).first()).toBeVisible();
 });
 
+test("an Angelis Ater chooses its third in-clan discipline on Disciplines, places its starting dots and finishes (#312)", async ({ browser }) => {
+  const { page: p } = await person(browser, "angelis-ater");
+  const id = await creatingVampire(p, "Black Angel", "Baali: Angelis Ater", [], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+  });
+  await p.goto(`/characters/${id}/create/disciplines`);
+  await expect(p.getByRole("heading", { name: "Disciplines", exact: true })).toBeVisible();
+  // Two in-clan disciplines for three picks: the step says what the third waits on, and offers it.
+  await expect(p.getByText("Baali: Angelis Ater: choose one more in-clan discipline, Potence, Presence or Obfuscate (p. 72).")).toBeVisible();
+  await expect(p.getByText("In-clan now: Daimoinon and Dominate.")).toBeVisible();
+  const choice = p.getByRole("group", { name: /In-clan choice/ });
+  await expect(choice.getByRole("radio")).toHaveCount(3);
+  await choice.getByRole("radio", { name: "Presence" }).check();
+  await expect(p.getByText("In-clan now: Daimoinon, Dominate and Presence.")).toBeVisible();
+  await expect(p.getByText("Baali: Angelis Ater: choose one more")).toHaveCount(0);
+
+  await p.getByRole("button", { name: "Daimoinon 2" }).click();
+  await p.getByRole("button", { name: "Dominate 1" }).click();
+  await p.getByRole("button", { name: "Presence 1" }).click();
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
+
+  // Concept shows the choice made.
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Concept/ }).click();
+  await expect(p.getByRole("group", { name: /In-clan choice/ }).getByRole("radio", { name: "Presence" })).toBeChecked();
+
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible();
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+});
+
 test("Inept lets the player choose the discipline that loses its free dot, from the Disciplines step", async ({ browser }) => {
   const { page: p } = await person(browser, "inept-brujah");
   const id = await creatingVampire(p, "Clumsy Blood", "Brujah", [], {
@@ -4365,6 +4399,13 @@ test("the custodian merges two accounts of one person: the characters and staff 
   const approval = await send(twice.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
   await send(lead.page, "POST", `/api/approvals/${approval.id}/approve`, {});
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: twice.handle, role: "narrator" });
+  // It has pronouns and lines and veils, which the first has not, and the custodian
+  // has started changing its email.
+  await send(twice.page, "PUT", "/api/profile", { display_name: "mga-twice", pronouns: "they/them" });
+  await send(twice.page, "PUT", "/api/profile/lines-veils", { lines: ["Spiders"], veils: [], shared: false });
+  const twiceId = (await (await twice.page.request.get("/api/auth/me")).json()).id;
+  const newEmail = `new-${twice.email}`;
+  await send(custodian.page, "POST", `/api/players/${twiceId}/email-change`, { email: newEmail, reason: "Lost the old address" });
 
   // The custodian finds the second account on People and merges it into the first.
   const c = custodian.page;
@@ -4383,13 +4424,16 @@ test("the custodian merges two accounts of one person: the characters and staff 
   await expect(dialog.getByRole("listitem").filter({ hasText: "Hester Vane" })).toContainText(troupeName);
   await expect(dialog.getByText(`${troupeName}: its narrator role`)).toBeVisible();
   await expect(dialog.getByText(`@${twice.handle} will find @${real.handle}, for good`)).toBeVisible();
+  await expect(dialog.getByText(`Its pronouns, lines and veils (not shared), as @${real.handle} has none`)).toBeVisible();
+  await expect(dialog.getByText(`Its change of email waiting, to ${newEmail}, is cancelled.`)).toBeVisible();
   await c.screenshot(shots("merge-accounts-confirm"));
   await dialog.getByRole("button", { name: `Merge into @${real.handle}` }).click();
   await expect(dialog).toBeHidden();
   // The closed account is no longer listed; searching its handle finds the other.
   await c.getByLabel("Search people").fill(twice.handle);
   await expect(c.locator("main li").filter({ hasText: real.email })).toBeVisible();
-  await expect(c.locator("main li").filter({ hasText: twice.email })).toHaveCount(0);
+  // (Its email is still in the log of recent account events below.)
+  await expect(c.getByRole("button", { name: "Merge mga-twice with another account" })).toHaveCount(0);
 
   // The closed account is signed out, and can't sign in again.
   const t = twice.page;
@@ -7026,6 +7070,42 @@ test("a player builds a ghoul in the wizard, bound to their own vampire, and lat
     Dominate: 1,
     Presence: 2,
   });
+});
+
+test("a ghoul with Stolen Potential naming Mental takes no Mental focus, and finishes (#312)", async ({ browser }) => {
+  const { page: p } = await person(browser, "thrall-stolen");
+  const send = async (method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id } = await send("POST", "/api/characters", { splat: "ghoul", name: "Hollow Thrall", domitor: { name: "Count Orlok", clan: "Nosferatu" } });
+  // Every pick but a Mental focus.
+  const build = Object.entries({ ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Resources", 2], ["Allies", 1]] }).filter(([category]) => category !== "focus_mentals");
+  for (const [category, picks] of build as [string, [string, number][]][])
+    await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+
+  await p.goto(`/characters/${id}/create/merits`);
+  const flaw = p.getByRole("checkbox", { name: /^Stolen Potential/ });
+  await flaw.scrollIntoViewIfNeeded();
+  await flaw.check();
+  await p.getByLabel("Stolen Potential: which?").selectOption("Mental");
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+  // Nothing waits on a Mental focus.
+  await expect(p.getByText(/Mental Focus at 1/)).toHaveCount(0);
+
+  // Focuses says why there is none, as a vampire's does.
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Focuses/ }).click();
+  await expect(p.getByText("Stolen Potential: no Mental focus (p. 265).")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Wits 1" })).toHaveCount(0);
+
+  await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
+  await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  await expect(p.getByText("Stolen Potential: Mental").first()).toBeVisible();
+  await expect(p.getByText("Mental Focus", { exact: true })).toHaveCount(0);
 });
 
 test("a ghoul at a game spends vitae but never its human Blood, drinks vitae, and has no Beast or frenzy", async ({ browser }) => {
