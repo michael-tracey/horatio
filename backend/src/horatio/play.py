@@ -748,9 +748,9 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         retainers=tuple(
             RetainerTrack(
                 key=retainers.tracker(r),
-                name=r.name,
+                name=r.name or (r.given.kind if r.given else ""),
                 health=r.dots,
-                blood=retainers.GHOUL_BLOOD if r.row and r.row.ghoul else 0,
+                blood=retainers.GHOUL_BLOOD if r.ghoul else 0,
             )
             for r in retainers.read(db, character)
         ),

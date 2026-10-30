@@ -1344,6 +1344,60 @@ test("a player keeps their own sect status, naming its patron from the home trou
   expect(refused.status()).toBe(409);
 });
 
+test("merits and flaws on the sheet: Tainted Embrace caps fleeting status at 4 and says why, Slow Reactions lowers initiative, and Ardent Companion lists its Retainer (#314)", async ({ browser }) => {
+  const custodian = await person(browser, "capflaw-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "capflaw-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Ill Repute ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+
+  // Hester, a Camarilla Nosferatu NPC: Physical 5, Mental 3, with Tainted Embrace,
+  // Slow Reactions and Ardent Companion.
+  const p = lead.page;
+  const npc = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Hester", wizard: false } });
+  expect(npc.status(), await npc.text()).toBe(201);
+  const id = (await npc.json()).id;
+  for (const [category, name, rating] of [
+    ["clan", "Nosferatu", null],
+    ["sect", "Camarilla", null],
+    ["backgrounds", "Generation", 1],
+    ["attributes", "Physical", 5],
+    ["attributes", "Mental", 3],
+    ["flaws", "Tainted Embrace", 2],
+    ["flaws", "Slow Reactions", 3],
+    ["merits", "Ardent Companion", 3],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${id}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+
+  // The Status tab: one fleeting status fewer, and why.
+  await p.goto(`/characters/${id}/status`);
+  const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
+  await expect(card.getByText("Acknowledged by the Camarilla.")).toBeVisible();
+  await expect(card.getByText("Fleeting: 0 of 4")).toBeVisible();
+  await expect(card.getByText("Cap: Tainted Embrace: 1 less")).toBeVisible();
+  await p.screenshot(shots("status-cap-flaw"));
+
+  // The Sheet tab: Ardent Companion's ghouled animal, at the merit's 7, waiting for a name.
+  await p.getByRole("link", { name: "Sheet", exact: true }).click();
+  const companion = p.locator('[data-trait="Ardent Companion"]');
+  await expect(companion.getByRole("list", { name: "Retainers" })).toContainText("Ghouled animal, not yet named · 7");
+
+  // The Play View: initiative 5 lower, naming the flaw, and the cap at the game.
+  await p.goto(`/play/characters/${id}`);
+  await expect(p.getByRole("heading", { name: "Hester" })).toBeVisible();
+  await p.getByRole("tab", { name: "Pools" }).click();
+  const initiative = p.getByRole("listitem").filter({ hasText: /^Initiative/ });
+  await expect(initiative).toContainText("Physical 5 − Slow Reactions 5");
+  await expect(initiative.getByText("0", { exact: true })).toBeVisible();
+  await p.screenshot(shots("pools-slow-reactions"));
+  await p.getByRole("tab", { name: "Status" }).click();
+  await expect(p.getByText("Fleeting: 0 of 4 (Cap: Tainted Embrace: 1 less)", { exact: false })).toBeVisible();
+});
+
 test("a troupe chooses whether its badges print titles and status: by default all of it, or negative status only", async ({ browser }) => {
   const custodian = await person(browser, "badgeset-cust");
   makeCustodian(custodian.email);

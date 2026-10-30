@@ -434,6 +434,21 @@ def test_merits_give_innate_status(troupe: Troupe) -> None:
     }
 
 
+def test_blood_deceit_gives_a_giovanni_alternate_identity_at_4(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, clan="Cappadocians")
+
+    taken = take(troupe.player, character_id, "merits", "Blood Deceit", 2)
+
+    assert taken.status_code == 200, taken.text
+    assert granted(troupe.player, character_id, "backgrounds")["Alternate Identity: Giovanni"] == (
+        4,
+        4,
+        ["Blood Deceit"],
+    )
+    take(troupe.player, character_id, "merits", "Blood Deceit", 0)
+    assert "Alternate Identity: Giovanni" not in granted(troupe.player, character_id, "backgrounds")
+
+
 def test_path_adherent_follows_the_path_its_detail_names(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
 

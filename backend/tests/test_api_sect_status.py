@@ -398,6 +398,71 @@ def test_a_lesser_ban_caps_fleeting_status_at_3_unless_staff_exempt_it(troupe: T
     assert troupe.storyteller.client.put(path, json=caitiff).json()["fleeting_cap"] == 1
 
 
+def test_merits_and_flaws_move_the_fleeting_cap_and_say_why(troupe: Troupe) -> None:
+    agnes = member(troupe)
+    put_trait(troupe.session, agnes, "flaws", "Tainted Embrace", 2)
+    found = status(troupe.player, agnes)
+    assert (found["fleeting_cap"], found["cap_why"]) == (4, ["Tainted Embrace: 1 less"])
+    for name in ("Loyal", "Courteous", "Defender", "Favored"):
+        assert add(troupe.player, agnes, name).status_code == 200
+    refused = add(troupe.player, agnes, "Honorable")
+    assert refused.status_code == 409
+    assert "Tainted Embrace: 1 less" in refused.json()["detail"]
+
+    # Reputation carries one more (p. 252).
+    put_trait(troupe.session, agnes, "merits", "Reputation", 2)
+    found = status(troupe.player, agnes)
+    assert (found["fleeting_cap"], found["cap_why"]) == (
+        5,
+        ["Reputation: 1 more", "Tainted Embrace: 1 less"],
+    )
+
+
+def test_a_flaws_penalty_adds_to_a_ban(troupe: Troupe) -> None:
+    # The Gangrel are no pillar clan of the Camarilla: a lesser ban, 3, and 1 less.
+    agnes = member(troupe, clan="Gangrel")
+    put_trait(troupe.session, agnes, "flaws", "Tainted Embrace", 2)
+
+    found = status(troupe.player, agnes)
+
+    assert (found["fleeting_cap"], found["cap_why"]) == (
+        2,
+        ["a lesser ban: 3", "Tainted Embrace: 1 less"],
+    )
+
+
+def test_a_neonate_accused_of_heresy_is_under_the_caitiffs_greater_ban(troupe: Troupe) -> None:
+    agnes = member(troupe)
+    put_trait(troupe.session, agnes, "flaws", "Accused of Heresy", 2)
+
+    found = status(troupe.player, agnes)
+
+    heresy = next(b for b in found["bans"] if "Accused of Heresy" in b["applies_to"])
+    assert (heresy["level"], heresy["page"], heresy["applies"]) == ("greater", "405", True)
+    assert (found["fleeting_cap"], found["cap_why"]) == (1, ["a greater ban: 1"])
+
+
+def test_an_emissary_to_the_camarilla_in_no_sect_holds_one_camarilla_fleeting_status(
+    troupe: Troupe,
+) -> None:
+    agnes = member(troupe, sect="Independent Alliance", clan="Giovanni")
+    assert add(troupe.player, agnes, "Loyal").status_code == 409
+    put_trait(troupe.session, agnes, "merits", "Emissary to the Camarilla", 1)
+
+    found = status(troupe.player, agnes)
+
+    assert (found["accepted"], found["outsider_sect"], found["outsider_through"]) == (
+        None,
+        "Camarilla",
+        "Emissary to the Camarilla",
+    )
+    assert (found["fleeting_cap"], found["cap_why"]) == (1, ["Emissary to the Camarilla: 1"])
+    assert {a["type"] for a in found["addable"]} == {"Fleeting"}
+    assert add(troupe.player, agnes, "Loyal").status_code == 200
+    assert "choose one to give up" in add(troupe.player, agnes, "Courteous").json()["detail"]
+    assert add(troupe.player, agnes, "Warned").status_code == 422
+
+
 def test_disgraced_gains_no_status_unless_staff_override(troupe: Troupe) -> None:
     agnes = member(troupe)
     assert (

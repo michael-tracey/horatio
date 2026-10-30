@@ -5735,6 +5735,11 @@ export interface components {
             action_kind: string;
             /** Amount */
             amount: number;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
             /** Source */
             source: string;
         };
@@ -10429,6 +10434,13 @@ export interface components {
             late: boolean;
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
+            /**
+             * Short
+             * @default {}
+             */
+            short: {
+                [key: string]: number;
+            };
             /** Status */
             status: string;
         };
@@ -11226,6 +11238,11 @@ export interface components {
         PlayStatusOut: {
             /** Accepted */
             accepted: string | null;
+            /**
+             * Cap Why
+             * @default []
+             */
+            cap_why: string[];
             /** Carried */
             carried: components["schemas"]["CarriedOut"][];
             /** Choosing */
@@ -11234,6 +11251,10 @@ export interface components {
             conditions: components["schemas"]["ConditionOut"][];
             /** Fleeting Cap */
             fleeting_cap: number;
+            /** Outsider Sect */
+            outsider_sect?: string | null;
+            /** Outsider Through */
+            outsider_through?: string | null;
             /** Sect */
             sect: string | null;
             /** Source */
@@ -12403,22 +12424,44 @@ export interface components {
              */
             ghoul: boolean;
             /**
+             * Given
+             * @default false
+             */
+            given: boolean;
+            /**
+             * Given Disciplines
+             * @default []
+             */
+            given_disciplines: string[];
+            /**
              * Health
              * @default 0
              */
             health: number;
             /** Id */
             id: string | null;
+            /**
+             * Kind
+             * @default
+             */
+            kind: string;
             /** Lost */
             lost: string | null;
             /** Lost On */
             lost_on: string | null;
             /** Name */
             name: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
             /** Npc Id */
             npc_id: string | null;
             /** Npc Name */
             npc_name: string | null;
+            /** Page */
+            page?: string | null;
             /**
              * Pool
              * @default 0
@@ -13424,6 +13467,11 @@ export interface components {
             addable: components["schemas"]["StatusAbout"][];
             /** Bans */
             bans: components["schemas"]["BanOut"][];
+            /**
+             * Cap Why
+             * @default []
+             */
+            cap_why: string[];
             /** Derived */
             derived: components["schemas"]["DerivedOut"][];
             /** Disgraced */
@@ -13434,6 +13482,10 @@ export interface components {
             fleeting_cap: number;
             /** Held */
             held: components["schemas"]["HeldOut"][];
+            /** Outsider Sect */
+            outsider_sect?: string | null;
+            /** Outsider Through */
+            outsider_through?: string | null;
             /** Sect */
             sect: string | null;
             /** Setting */

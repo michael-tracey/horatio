@@ -172,8 +172,13 @@ def test_opening_fixes_participants_and_their_allowances(troupe: Troupe) -> None
         "resources": 0,
     }
     assert participants[0]["breakdown"] == [
-        {"action_kind": "general", "source": "Everyone", "amount": 3},
-        {"action_kind": "influence_elite", "source": "Influences: The Elite 2", "amount": 2},
+        {"action_kind": "general", "source": "Everyone", "amount": 3, "note": ""},
+        {
+            "action_kind": "influence_elite",
+            "source": "Influences: The Elite 2",
+            "amount": 2,
+            "note": "",
+        },
     ]
     # Fixed at opening: a later sheet change does not alter it.
     troupe.player.client.put(

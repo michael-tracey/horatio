@@ -20,6 +20,42 @@ lesser_ban = 3
 greater_ban = 1
 page = "313"
 
+# Merits and flaws that change the fleeting cap: `fleeting` more, or fewer, on top
+# of any ban (each flaw says its penalty adds to a ban's).
+[[cap_changes]]
+category = "merits"
+name = "Reputation"
+fleeting = 1
+page = "252"
+
+[[cap_changes]]
+category = "flaws"
+name = "Tainted Embrace"
+fleeting = -1
+page = "405"
+
+[[cap_changes]]
+category = "flaws"
+name = "Mistrusted"
+fleeting = -1
+page = "454"
+
+[[cap_changes]]
+category = "flaws"
+name = "Dubious Loyalties"
+fleeting = -1
+page = "487"
+
+# A character no sect has Accepted holds no status, but for this: an Emissary to the
+# Camarilla can hold one fleeting Camarilla status while it is Accepted by no sect
+# (p. 404). A sect with no status rules here (the Independent Alliance) counts as none.
+[[outsiders]]
+category = "merits"
+name = "Emissary to the Camarilla"
+sect = "Camarilla"
+fleeting = 1
+page = "404"
+
 # --- sects: Accepted and status bans ---------------------------------------------------------
 #
 # A ban says who it applies to; `when` is the condition (horatio.rules.checks) where
@@ -63,6 +99,13 @@ page = "403"
 level = "greater"
 applies_to = "Has committed diablerie."
 page = "403"
+
+# Accused of Heresy also moves its holder one social class down (horatio.social_age).
+[[sects.bans]]
+level = "greater"
+applies_to = "A neonate Accused of Heresy, treated as a Caitiff."
+when = { has = { category = "flaws", name = "Accused of Heresy" }, generation = { lte = 1 } }
+page = "405"
 
 [[sects.bans]]
 level = "greater"

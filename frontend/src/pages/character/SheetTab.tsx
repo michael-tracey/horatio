@@ -48,7 +48,8 @@ import {
   useSpecializations,
 } from "./Specializations";
 import { IdentityPanel } from "./Identities";
-import { RetainersPanel } from "./Retainers";
+import { RetainersPanel, useRetainers } from "./Retainers";
+import { givingMerits } from "./retainers";
 import { PowerChoices } from "./PowerChoices";
 import { InfluenceEffects } from "./InfluenceEffects";
 import { DomitorCard } from "./Domitor";
@@ -203,6 +204,7 @@ export function SheetTab({
   const prices = useCartPrices(character.id, shopping ? cart.lines : []);
   useLeaveWarning(shopping && cart.lines.length > 0);
   const hasDomitor = useHasDomitor(character.splat);
+  const retainerList = useRetainers(character.id);
 
   if (sheet.isPending) return <Loading />;
   if (sheet.error) return <ErrorText error={sheet.error} />;
@@ -238,8 +240,11 @@ export function SheetTab({
       : [];
   });
   const inCart = (t: SheetTraitOut) => t.id.startsWith("cart/");
-  // The Retainers listed once, under the last Retainer bought.
-  const lastRetainers = s.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1)?.id;
+  // The Retainers listed once, under the last Retainer bought; with none bought, under
+  // the first merit that gives one (Ardent Companion).
+  const lastRetainers =
+    s.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1)?.id ??
+    s.traits.find((t) => t.category === "merits" && givingMerits(retainerList.data?.retainers ?? []).includes(t.name))?.id;
   // Identity (clan, sect...) is shown with the name, in the page title.
   // Specialisations show under their skill or background, not as traits of their own,
   // health levels as boxes in a part of their own, and sect status in its own card.
@@ -477,7 +482,7 @@ export function SheetTab({
                                   editable={mine && !locked && s.status !== "retired"}
                                 />
                               ),
-                              !inCart(t) && t.category === "backgrounds" && t.name === "Retainers" && t.id === lastRetainers && (
+                              !inCart(t) && t.id === lastRetainers && (
                                 <RetainersPanel
                                   key={`${t.id}/retainers`}
                                   character={character}

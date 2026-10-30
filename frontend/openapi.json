@@ -209,6 +209,11 @@
             "title": "Amount",
             "type": "integer"
           },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
           "source": {
             "title": "Source",
             "type": "string"
@@ -12772,6 +12777,14 @@
             "title": "Questions",
             "type": "array"
           },
+          "short": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "default": {},
+            "title": "Short",
+            "type": "object"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -14881,6 +14894,14 @@
             ],
             "title": "Accepted"
           },
+          "cap_why": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cap Why",
+            "type": "array"
+          },
           "carried": {
             "items": {
               "$ref": "#/components/schemas/CarriedOut"
@@ -14902,6 +14923,28 @@
           "fleeting_cap": {
             "title": "Fleeting Cap",
             "type": "integer"
+          },
+          "outsider_sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outsider Sect"
+          },
+          "outsider_through": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outsider Through"
           },
           "sect": {
             "anyOf": [
@@ -18003,6 +18046,19 @@
             "title": "Ghoul",
             "type": "boolean"
           },
+          "given": {
+            "default": false,
+            "title": "Given",
+            "type": "boolean"
+          },
+          "given_disciplines": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Given Disciplines",
+            "type": "array"
+          },
           "health": {
             "default": 0,
             "title": "Health",
@@ -18019,6 +18075,11 @@
               }
             ],
             "title": "Id"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
           },
           "lost": {
             "anyOf": [
@@ -18047,6 +18108,11 @@
             "title": "Name",
             "type": "string"
           },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
           "npc_id": {
             "anyOf": [
               {
@@ -18069,6 +18135,17 @@
               }
             ],
             "title": "Npc Name"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
           },
           "pool": {
             "default": 0,
@@ -20655,6 +20732,14 @@
             "title": "Bans",
             "type": "array"
           },
+          "cap_why": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Cap Why",
+            "type": "array"
+          },
           "derived": {
             "items": {
               "$ref": "#/components/schemas/DerivedOut"
@@ -20680,6 +20765,28 @@
             },
             "title": "Held",
             "type": "array"
+          },
+          "outsider_sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outsider Sect"
+          },
+          "outsider_through": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outsider Through"
           },
           "sect": {
             "anyOf": [

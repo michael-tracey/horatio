@@ -254,17 +254,13 @@ def test_one_listed_before_stays_until_removed(troupe: Troupe, session: Session)
     assert put(troupe.player, character_id, [MARTA, PIKE]).json()["retainers"][2:] == []
 
 
-def test_a_retainer_from_a_merit_is_not_part_of_the_background(troupe: Troupe) -> None:
-    character_id = with_both(troupe)
-    ghost = {"name": "A wraith", "dots": 5, "from_merit": "Ghostly Retainer"}
-    # Only a merit the character has.
-    assert put(troupe.player, character_id, [ghost]).status_code == 409
+def give_merit(troupe: Troupe, character_id: str, name: str, rating: int) -> None:
     gave = troupe.storyteller.client.post(
         f"/characters/{character_id}/give",
         json={
             "category": "merits",
-            "name": "Ghostly Retainer",
-            "rating": 3,
+            "name": name,
+            "rating": rating,
             "free": True,
             "despite": True,
             "reason": "test",
@@ -272,15 +268,75 @@ def test_a_retainer_from_a_merit_is_not_part_of_the_background(troupe: Troupe) -
     )
     assert gave.status_code == 200, gave.text
 
-    body = put(troupe.player, character_id, [MARTA, PIKE, ghost]).json()
+
+def test_a_retainer_from_a_merit_is_not_part_of_the_background(troupe: Troupe) -> None:
+    character_id = with_both(troupe)
+    # Master of the Hounds' second hellhound, added by hand: no rule says its dots.
+    hound = {"name": "Second hound", "dots": 3, "from_merit": "Master of the Hounds"}
+    # Only a merit the character has.
+    assert put(troupe.player, character_id, [hound]).status_code == 409
+    give_merit(troupe, character_id, "Master of the Hounds", 2)
+
+    body = put(troupe.player, character_id, [MARTA, PIKE, hound]).json()
 
     assert body["rating"] == 4
     assert [(r["name"], r["dots"], r["bought"]) for r in body["retainers"]][2:] == [
-        ("A wraith", 5, False)
+        ("Second hound", 3, False)
     ]
-    assert body["retainers"][2]["from_merit"] == "Ghostly Retainer"
+    assert body["retainers"][2]["from_merit"] == "Master of the Hounds"
+    assert not body["retainers"][2]["given"]
     # A merit's Retainer can go above 5.
-    assert put(troupe.player, character_id, [{**ghost, "dots": 7}]).status_code == 200
+    assert put(troupe.player, character_id, [{**hound, "dots": 7}]).status_code == 200
+
+
+def test_a_merit_that_gives_a_retainer_lists_it_at_once_at_its_dots(troupe: Troupe) -> None:
+    character_id = accepted(troupe)
+    give_merit(troupe, character_id, "Ardent Companion", 3)
+
+    body = troupe.player.client.get(f"/characters/{character_id}/retainers").json()
+
+    [companion] = body["retainers"]
+    assert (companion["id"], companion["name"], companion["dots"], companion["bought"]) == (
+        None,
+        "",
+        7,
+        False,
+    )
+    assert (companion["given"], companion["kind"], companion["from_merit"]) == (
+        True,
+        "Ghouled animal",
+        "Ardent Companion",
+    )
+    assert (companion["ghoul"], companion["blood"], companion["health"]) == (True, 5, 7)
+    assert companion["tracker"] == "retainer:from:Ardent Companion"
+    assert body["rating"] == 0
+    reference = troupe.player.client.get(f"/characters/{character_id}/play/reference").json()
+    assert [(r["dots"], r["kind"]) for r in reference["retainers"]] == [(7, "Ghouled animal")]
+
+    # Named, it keeps the merit's dots and stays a ghoul, whatever is sent.
+    rex = {"name": "Rex", "dots": 2, "from_merit": "Ardent Companion", "ghoul": False}
+    saved = put(troupe.player, character_id, [rex])
+    assert saved.status_code == 200, saved.text
+    [named] = saved.json()["retainers"]
+    assert (named["name"], named["dots"], named["ghoul"], named["given"]) == ("Rex", 7, True, True)
+    # The merit gives one.
+    refused = put(troupe.player, character_id, [rex, {**rex, "name": "Fido"}])
+    assert refused.status_code == 409
+
+
+def test_a_walking_dead_zombie_takes_fortitude_or_obfuscate(troupe: Troupe) -> None:
+    character_id = accepted(troupe)
+    give_merit(troupe, character_id, "Walking Dead", 2)
+    zombie = {"name": "Old Silas", "dots": 5, "from_merit": "Walking Dead"}
+
+    assert (
+        put(troupe.player, character_id, [{**zombie, "discipline": "Celerity"}]).status_code == 422
+    )
+    body = put(troupe.player, character_id, [{**zombie, "discipline": "Fortitude"}]).json()
+
+    [silas] = body["retainers"]
+    assert (silas["dots"], silas["ghoul"], silas["discipline"]) == (5, False, "Fortitude")
+    assert silas["given_disciplines"] == ["Fortitude", "Obfuscate"]
 
 
 def test_a_lost_retainer_stays_listed_with_its_date(troupe: Troupe) -> None:

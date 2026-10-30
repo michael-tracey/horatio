@@ -953,7 +953,10 @@ def other_notes(found: Sequence[Effect]) -> list[str]:
     notes: list[str] = []
     for e in found:
         if e.pool.startswith("skill:") and not e.instead_of and e.amount:
-            notes.append(f"{e.source}: {_signed(e.amount)} to {e.pool.removeprefix('skill:')}")
+            when = f" {e.when}" if e.when else ""
+            notes.append(
+                f"{e.source}: {_signed(e.amount)} to {e.pool.removeprefix('skill:')}{when}"
+            )
         elif e.pool.startswith("skill:") and e.instead_of:
             other = e.pool.removeprefix("skill:")
             notes.append(f"{e.source}: use {other} in place of {', '.join(e.instead_of)}")

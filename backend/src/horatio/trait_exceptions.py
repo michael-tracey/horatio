@@ -223,9 +223,11 @@ def approve_asked(
     db.flush()
     if not exception.free:
         whole = definition.properties.get("rating") is not None
-        actions = sheets.owed_for(db, character, category, gained, whole)
+        owed = sheets.owed_for(
+            db, character, category, gained, whole, definition.name, bought.detail
+        )
         doing = f"Gaining {definition.name}" if whole else f"Learning {definition.name}"
-        sheets.owe(db, staff, character, actions, f"{doing} {bought.to_rating}")
+        sheets.owe(db, staff, character, owed.actions, owed.reason(f"{doing} {bought.to_rating}"))
 
 
 @dataclass(frozen=True)
