@@ -16,6 +16,7 @@ import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlayersTab } from "./PlayersTab";
+import { QuestsTab } from "./QuestsTab";
 import { PlayTab } from "./PlayTab";
 import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
@@ -43,6 +44,14 @@ export function TroupePage() {
     queryFn: () =>
       unwrap(api.GET("/api/troupes/{troupe_id}/approvals", { params: { path: { troupe_id: troupeId }, query: { state: "pending" } } })),
     enabled: running,
+    refetchInterval: 60_000,
+  });
+  // New quest requests, beside the other counts.
+  const newQuests = useQuery({
+    queryKey: ["quest-requests", troupeId, "new"],
+    queryFn: () =>
+      unwrap(api.GET("/api/troupes/{troupe_id}/quest-requests", { params: { path: { troupe_id: troupeId }, query: { show: "new" } } })),
+    enabled: running && !!troupe.data?.quests_enabled,
     refetchInterval: 60_000,
   });
 
@@ -109,6 +118,7 @@ export function TroupePage() {
               ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
               ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
               ...(can.running ? [{ to: `${base}/influence`, label: "Influence log" }] : []),
+              ...(can.staff && t.quests_enabled ? [{ to: `${base}/quests`, label: "Quests", count: newQuests.data?.length ?? 0 }] : []),
             ],
           },
           {
@@ -146,6 +156,7 @@ export function TroupePage() {
         {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} canLog={can.running} />} />}
         {can.running && <Route path="influence/*" element={<InfluenceLogTab troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
+        {can.staff && t.quests_enabled && <Route path="quests/*" element={<QuestsTab troupeId={t.id} running={can.running} />} />}
       </Routes>
     </>
   );

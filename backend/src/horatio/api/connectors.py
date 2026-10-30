@@ -17,6 +17,7 @@ from horatio.models import (
     CycleParticipant,
     Delivery,
     DowntimeCycle,
+    Quest,
     Submission,
     Troupe,
     TroupeConnector,
@@ -170,7 +171,7 @@ def cycle_deliveries(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> D
             )
         )
     }
-    latest: dict[tuple[uuid.UUID, str], Delivery] = {}
+    latest: dict[tuple[uuid.UUID | None, str], Delivery] = {}
     for d in deliveries:
         latest[(d.submission_id, d.channel)] = d
     channels = ["horatio", *[c.kind for c in delivery.enabled_connectors(db, troupe.id)]]
@@ -218,10 +219,22 @@ def staff_delivery(
         .where(Delivery.id == delivery_id)
         .with_for_update(of=Delivery)
     ).first()
-    if found is None:
+    if found is not None:
+        d, cycle, character = found
+        troupe = staff_troupe(db, user, cycle.troupe_id, TroupeAction.DELIVER_RESPONSES)
+        return d, troupe, character
+    # A quest's news (horatio.quests).
+    quest_found = db.execute(
+        select(Delivery, Quest, Character)
+        .join(Quest, Delivery.quest_id == Quest.id)
+        .join(Character, Delivery.character_id == Character.id)
+        .where(Delivery.id == delivery_id)
+        .with_for_update(of=Delivery)
+    ).first()
+    if quest_found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such delivery.")
-    d, cycle, character = found
-    troupe = staff_troupe(db, user, cycle.troupe_id, TroupeAction.DELIVER_RESPONSES)
+    d, quest, character = quest_found
+    troupe = staff_troupe(db, user, quest.troupe_id, TroupeAction.MANAGE_QUESTS)
     return d, troupe, character
 
 

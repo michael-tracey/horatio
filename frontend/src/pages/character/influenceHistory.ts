@@ -47,6 +47,8 @@ export function historySource(entry: Pick<HistoryEntryOut, "source" | "cycle_nam
       return entry.game_number ? `At a game (game ${entry.game_number})` : "At a game";
     case "import":
       return "From the old influence log";
+    case "quest":
+      return entry.cycle_name ? `For a quest, in ${entry.cycle_name}` : "For a quest";
     default:
       return entry.cycle_name ? `Logged by staff, for ${entry.cycle_name}` : "Logged by staff";
   }
@@ -79,7 +81,7 @@ export function thisMonth(history: Pick<InfluenceHistoryOut, "entries" | "standi
       const count = (source: (s: HistoryEntryOut["source"]) => boolean) => mine.filter((e) => source(e.source)).reduce((n, e) => n + e.times, 0);
       const atGames = count((s) => s === "game");
       const inDowntimes = count((s) => s === "downtime");
-      const byStaff = count((s) => s === "hand" || s === "import");
+      const byStaff = count((s) => s === "hand" || s === "import" || s === "quest");
       return {
         type,
         name: TYPE_NAMES[type],

@@ -1,5 +1,6 @@
 """Delivering downtime results through a troupe's connectors (CONTEXT.md:
-Connector, Channel).
+Connector, Channel), and a quest's news: its requirements, and each scenario's
+result, to each of its characters (horatio.quests).
 
 Delivering a cycle records the in-app delivery at once and queues a `pending`
 delivery on each connector the troupe has switched on. `send_due` sends what
@@ -28,6 +29,7 @@ from horatio.models import (
     CycleParticipant,
     Delivery,
     DowntimeCycle,
+    Quest,
     Submission,
     Troupe,
     TroupeConnector,
@@ -109,6 +111,41 @@ def queue(
     return queued
 
 
+def quest_link(character_id: uuid.UUID, quest_id: uuid.UUID) -> str:
+    return f"{get_settings().public_url.rstrip('/')}/characters/{character_id}/quests/{quest_id}"
+
+
+def queue_quest(
+    db: Session,
+    staff: User,
+    troupe_id: uuid.UUID,
+    quest_id: uuid.UUID,
+    character: Character,
+    subject: str,
+    full_text: str,
+) -> int:
+    """Queue a quest's news for one of its characters (horatio.quests) on each of the
+    troupe's connectors: the whole of it, or an alert with the link. Returns how
+    many were queued."""
+    connectors = enabled_connectors(db, troupe_id)
+    for connector in connectors:
+        alert_text = f"{subject}, for {character.name}: {quest_link(character.id, quest_id)}"
+        db.add(
+            Delivery(
+                quest_id=quest_id,
+                character_id=character.id,
+                subject=subject,
+                channel=connector.kind,
+                status="pending",
+                test_mode=connector.test_mode,
+                message=full_text if connector.mode == "full" else alert_text,
+                sent_by=staff.id,
+                next_attempt_at=now(),
+            )
+        )
+    return len(connectors)
+
+
 def backoff(attempts: int) -> timedelta:
     """How long to wait after the `attempts`th failure: 1, 2, 4, 8… minutes."""
     return FIRST_WAIT * 2 ** (attempts - 1)
@@ -116,16 +153,30 @@ def backoff(attempts: int) -> timedelta:
 
 def send_one(db: Session, delivery: Delivery, at: datetime) -> None:
     """Try to send one locked, pending delivery, and record how it went."""
-    character, cycle, troupe, player = db.execute(
-        select(Character, DowntimeCycle, Troupe, User)
-        .select_from(Submission)
-        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
-        .join(Character, CycleParticipant.character_id == Character.id)
-        .join(DowntimeCycle, CycleParticipant.cycle_id == DowntimeCycle.id)
-        .join(Troupe, DowntimeCycle.troupe_id == Troupe.id)
-        .join(User, Character.player_id == User.id)
-        .where(Submission.id == delivery.submission_id)
-    ).one()
+    if delivery.quest_id is not None:
+        character, troupe, player = db.execute(
+            select(Character, Troupe, User)
+            .select_from(Quest)
+            .join(Troupe, Quest.troupe_id == Troupe.id)
+            .join(Character, Character.id == delivery.character_id)
+            .join(User, Character.player_id == User.id)
+            .where(Quest.id == delivery.quest_id)
+        ).one()
+        subject = f"{troupe.name}: {delivery.subject} ({character.name})"
+        link = quest_link(character.id, delivery.quest_id)
+    else:
+        character, cycle, troupe, player = db.execute(
+            select(Character, DowntimeCycle, Troupe, User)
+            .select_from(Submission)
+            .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+            .join(Character, CycleParticipant.character_id == Character.id)
+            .join(DowntimeCycle, CycleParticipant.cycle_id == DowntimeCycle.id)
+            .join(Troupe, DowntimeCycle.troupe_id == Troupe.id)
+            .join(User, Character.player_id == User.id)
+            .where(Submission.id == delivery.submission_id)
+        ).one()
+        subject = f"{troupe.name}: downtime results for {character.name} ({cycle.name})"
+        link = results_link(character)
     delivery.attempts += 1
     connector = CONNECTORS.get(delivery.channel)
     config = db.scalar(
@@ -147,12 +198,7 @@ def send_one(db: Session, delivery: Delivery, at: datetime) -> None:
             player_email=player.email,
         )
         target = connector.target(config.settings, recipient, delivery.test_mode)
-        message = Message(
-            troupe=troupe.name,
-            subject=f"{troupe.name}: downtime results for {character.name} ({cycle.name})",
-            text=delivery.message,
-            link=results_link(character),
-        )
+        message = Message(troupe=troupe.name, subject=subject, text=delivery.message, link=link)
         external = connector.send(config.settings, target, message)
     except SendError as error:
         delivery.last_error = error.reason

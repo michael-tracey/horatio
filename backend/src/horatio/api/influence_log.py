@@ -39,7 +39,7 @@ from horatio.rules.model import TroupeRules
 
 router = APIRouter(tags=["influence log"])
 
-Source = Literal["downtime", "game", "hand", "import"]
+Source = Literal["downtime", "game", "hand", "import", "quest"]
 # How many past games the Log influence tool offers to date an entry by.
 GAMES = 30
 
