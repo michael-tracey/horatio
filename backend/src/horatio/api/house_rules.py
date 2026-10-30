@@ -9,15 +9,17 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 
-from horatio import audit, diablerie
+from horatio import audit, clan_merits, diablerie
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import RESTRICTION_TEXT
-from horatio.models import Troupe, User
+from horatio.models import Character, Troupe, User
 from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, pricing
+from horatio.rules.files import EVERYWHERE
 from horatio.rules.model import (
     ActionKindData,
     AllowanceRuleData,
@@ -814,3 +816,103 @@ def set_diablerie_flaws(
     )
     db.commit()
     return troupe_out(db, user, troupe)
+
+
+# --- Clan rarity ------------------------------------------------------------------
+
+Rarity = Literal["common", "uncommon", "rare", "restricted"]
+
+
+class ClanRarityRow(BaseModel):
+    # A clan, without its bloodlines, which are as rare as it.
+    clan: str
+    # Its rarity in each sect's setting, as the book gives it.
+    book: dict[str, str]
+    # The troupe's own, or None to go by the book.
+    house: str | None
+
+
+class ClanRarityOut(BaseModel):
+    # The sects the book gives clan rarities for.
+    sects: list[str]
+    # The sect whose rarities apply to everyone built here: the troupe's one sect, if it
+    # takes characters of one sect only. Otherwise each character's own sect.
+    setting: str | None
+    clans: list[ClanRarityRow]
+
+
+class ClanRarityIn(BaseModel):
+    # Each clan the troupe rates itself; every other goes by the book.
+    rarities: dict[str, Rarity]
+
+
+def clan_rarity_out(db: DbSession, troupe: Troupe) -> ClanRarityOut:
+    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    clans = sorted(n for (c, n) in rule_set.traits if c == "clan" and ":" not in n)
+    book = {c: dict(rule_set.trait_properties("clan", c).get("rarity", {})) for c in clans}
+    sects = sorted({sect for found in book.values() for sect in found} - {EVERYWHERE})
+    setting = troupe.allowed_sects[0] if len(troupe.allowed_sects) == 1 else None
+    return ClanRarityOut(
+        sects=sects,
+        setting=setting,
+        clans=[
+            ClanRarityRow(
+                clan=c,
+                # An independent bloodline's own rarity holds in every setting.
+                book={
+                    sect: (book[c].get(EVERYWHERE) or book[c][sect])["rarity"]
+                    for sect in sects
+                    if EVERYWHERE in book[c] or sect in book[c]
+                },
+                house=troupe.clan_rarity.get(c),
+            )
+            for c in clans
+        ],
+    )
+
+
+@router.get("/clan-rarity")
+def read_clan_rarity(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ClanRarityOut:
+    """How rare each clan is in the troupe's setting: the book's for each sect, and
+    the troupe's own where it names one (horatio.clan_merits)."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    return clan_rarity_out(db, troupe)
+
+
+@router.put("/clan-rarity")
+def set_clan_rarity(
+    troupe_id: uuid.UUID, body: ClanRarityIn, db: DbSession, user: CurrentUser
+) -> ClanRarityOut:
+    """Name how rare clans are here. Characters being built here take the rarity merit
+    it names straight away; finished characters keep theirs."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    unknown = [c for c in body.rarities if ("clan", c) not in rule_set.traits or ":" in c]
+    if unknown:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"Not a clan: {', '.join(unknown)}. Name the clan; its bloodlines follow it.",
+        )
+    troupe.clan_rarity = dict(sorted(body.rarities.items()))
+    db.flush()
+    clan_merits.resync(
+        db,
+        db.scalars(
+            select(Character).where(
+                (Character.home_troupe_id == troupe.id)
+                | (
+                    Character.home_troupe_id.is_(None) & (Character.building_troupe_id == troupe.id)
+                ),
+                Character.creation_completed_at.is_(None),
+            )
+        ).all(),
+    )
+    audit.record(
+        db,
+        user,
+        "house.clan_rarity",
+        troupe_id=troupe.id,
+        rarities=", ".join(f"{c} {r}" for c, r in troupe.clan_rarity.items()) or "the book's",
+    )
+    db.commit()
+    return clan_rarity_out(db, troupe)

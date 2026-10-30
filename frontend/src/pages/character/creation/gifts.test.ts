@@ -20,7 +20,7 @@ function trait(category: string, name: string, over: Partial<SheetTraitOut> = {}
 }
 
 const sheet = (traits: SheetTraitOut[], problems: SheetOut["problems"] = []) => ({ traits, problems }) as SheetOut;
-const creation = (pools: PoolOut[], given: CreationOut["given"] = []): CreationOut => ({ complete: false, pools, needs: [], path_starts: [], budget_changes: [], given });
+const creation = (pools: PoolOut[], given: CreationOut["given"] = []): CreationOut => ({ complete: false, pools, needs: [], path_starts: [], budget_changes: [], given, clan_merits: [], rarity_known: false });
 
 describe("freedPicks", () => {
   it("marks a pick a merit now makes free, where it was placed and on Merits", () => {

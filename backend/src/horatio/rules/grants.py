@@ -66,6 +66,13 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
                  rest of the sheet as far as they count it (a Pretender Elder's one
                  elder power); every other check still applies
 
+    lower_to     taking the source drops each trait of the target's category (or the
+                 one it names) to `amount`, if it is higher (Flexible Morals: Morality
+                 to 3). It is done once, when the source is taken, and nothing is
+                 refunded; the trait can be raised again after. It changes no trait
+                 while held, so it is read by horatio.sheets.lower_on_taking, not by
+                 `effects`
+
 A grant can also hold only `when` a condition holds, in the vocabulary of
 horatio.rules.checks: Fortitude gives a Stamina-focused character a health level
 per track, so its grants say `when = { has = { ..., name = "Stamina" } }`.
@@ -100,6 +107,7 @@ Kind = Literal[
     "price_out_of_clan",
     "no_free_dot",
     "open_barred",
+    "lower_to",
 ]
 KINDS = (
     "add",
@@ -113,6 +121,7 @@ KINDS = (
     "price_out_of_clan",
     "no_free_dot",
     "open_barred",
+    "lower_to",
 )
 TraitKey = tuple[str, str, str]  # category, name, detail
 # A trait a grant looks at: its detail, or None for any detail.
@@ -383,7 +392,7 @@ def effects(
             if grant.when is not None and not matches(grant.when, sheet, trait):
                 continue
             label = trait.full_name
-            if grant.kind in ("replace_in_clan", "open_barred"):
+            if grant.kind in ("replace_in_clan", "open_barred", "lower_to"):
                 continue
             if grant.kind == "free_choices":
                 given = chosen_options(grant, trait, rule_set)

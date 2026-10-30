@@ -63,6 +63,67 @@ forbids = { clan = ["Brujah: True Brujah"] }
 message = "True Brujah cannot take Coldly Logical."
 page = "Vol. 2, p. 270"
 
+# Clan flaws a bloodline cannot take (Volume 2, Alternative Merits & Flaws). Of the
+# Gangrel bloodlines, the Ahrimanes lack Protean in-clan and the Coyote Animalism.
+[[checks]]
+category = "flaws"
+name = "Gangrel: Roadkill"
+forbids = { clan = ["Gangrel: Ahrimanes"] }
+message = "You may not take Roadkill as a Gangrel bloodline without Protean as an in-clan discipline."
+page = "Vol. 2, p. 271"
+
+[[checks]]
+category = "flaws"
+name = "Gangrel: Species Speech"
+forbids = { clan = ["Gangrel: Coyote"] }
+message = "You may not take Species Speech as a Gangrel bloodline without Animalism as an in-clan discipline."
+page = "Vol. 2, p. 271"
+
+[[checks]]
+category = "flaws"
+name = "Tzimisce: Scar Tissue"
+forbids = { clan = ["Tzimisce: Carpathian", "Tzimisce: Koldun"] }
+message = "Carpathians and Kolduns may not take Scar Tissue."
+page = "Vol. 2, p. 278"
+
+[[checks]]
+category = "flaws"
+name = "Tzimisce: Revenant Family Weakness"
+forbids = { clan = ["Tzimisce: Bratovitch"] }
+message = "A Tzimisce bloodline that comes from a revenant family, such as the Bratovitch, cannot take Revenant Family Weakness."
+page = "Vol. 2, p. 278"
+
+# A flaw that repeats the clan's weakness does not impact the character, so it cannot
+# be taken (p. 236): the Ventrue's (p. 68), the Brujah's (p. 45), the Lamia's (p. 76)
+# and the Baali's (p. 72).
+[[checks]]
+category = "flaws"
+name = "Prey Exclusion"
+forbids = { clan_family = ["Ventrue"] }
+message = "Prey Exclusion repeats the Ventrue weakness, so Ventrue and their bloodlines cannot take it."
+page = "236"
+
+[[checks]]
+category = "flaws"
+name = "Short Fuse"
+forbids = { clan = ["Brujah"] }
+message = "Short Fuse repeats the Brujah weakness, so a Brujah cannot take it."
+page = "236"
+
+[[checks]]
+category = "flaws"
+name = "Disease Carrier"
+forbids = { clan = ["Cappadocians: Lamia"] }
+message = "Disease Carrier repeats the Lamia weakness, so a Lamia cannot take it."
+page = "236"
+
+[[checks]]
+category = "flaws"
+name = "Repelled by Religion"
+forbids = { clan_family = ["Baali"] }
+message = "Repelled by Religion repeats the Baali weakness, so Baali and their bloodlines cannot take it."
+page = "236"
+
 # --- clan weaknesses ----------------------------------------------------------
 
 [[checks]]
@@ -287,6 +348,134 @@ forbids = { has = { category = "attributes", name = "Physical", rating = 6 } }
 message = "A Childlike character's Physical attribute cannot go above 5."
 page = "260"
 
+# The supplements' clan flaws that bar traits (Volume 2, Alternative Merits & Flaws).
+
+[[checks]]
+category = "flaws"
+name = "Gargoyle: Clay Pigeon"
+forbids = { has = { category = "focus_physicals", name = "Stamina" } }
+message = "Clay Pigeon: you cannot possess the Stamina focus."
+page = "Vol. 2, p. 285"
+
+[[checks]]
+category = "flaws"
+name = "Gargoyle: Stone Scarecrow"
+forbids = { has_any = [
+  { category = "backgrounds", name = "Allies" },
+  { category = "backgrounds", name = "Contacts" },
+] }
+message = "Stone Scarecrow: you cannot purchase the Allies or Contacts backgrounds."
+page = "Vol. 2, p. 285"
+
+[[checks]]
+category = "flaws"
+name = "Giovanni: All My Friends Are Dead"
+forbids = { has_any = [
+  { category = "backgrounds", name = "Allies", rating = 3 },
+  { category = "backgrounds", name = "Contacts", rating = 3 },
+  { category = "backgrounds", name = "Herd", rating = 3 },
+  { category = "backgrounds", name = "Influences: The Elite", rating = 3 },
+  { category = "backgrounds", name = "Influences: The Underworld", rating = 3 },
+] }
+message = "All My Friends Are Dead: no more than 2 dots in any background relating to the mortal world (Influence, Contacts, Allies or Herd)."
+page = "Vol. 2, p. 272"
+
+[[checks]]
+category = "flaws"
+name = "Lhiannan: Technophobe"
+forbids = { has_any = [
+  { category = "skills", name = "Computer" },
+  { category = "skills", name = "Drive" },
+  { category = "skills", name = "Firearms" },
+  { category = "skills", name = "Science" },
+  { category = "skills", name = "Security" },
+] }
+message = "Technophobe: you cannot possess any dots in Computer, Drive, Firearms, Science or Security."
+page = "Vol. 2, p. 56"
+
+[[checks]]
+category = "flaws"
+name = "Toreador: Artless"
+forbids = { has_any = [
+  { category = "skills", name = "Crafts" },
+  { category = "skills", name = "Performance" },
+] }
+message = "Artless: you cannot purchase the Performance or Crafts skills."
+page = "Vol. 2, p. 276"
+
+# The flaw is named as the book spells it, Cacophony; `count` names it without
+# needing it in the catalogue under that spelling yet.
+[[checks]]
+category = "skills"
+name = "Performance"
+detail = "Singing"
+forbids = { count = { category = "flaws", names = ["Daughters of Cacophony: Tone Deaf"], gte = 1 }, self = { rating = { gte = 3 } } }
+message = "Tone Deaf: you cannot purchase the Performance: Singing skill higher than 2 dots."
+page = "Vol. 2, p. 284"
+
+[[checks]]
+category = "flaws"
+name = "Nosferatu: Anosmia"
+forbids = { has_any = [
+  { category = "merits", name = "Acute Sense", detail = "Smell" },
+  { category = "merits", name = "Acute Sense", detail = "Taste" },
+] }
+message = "Anosmia: you cannot purchase the Acute Sense merit for smell or taste."
+page = "Vol. 2, p. 275"
+
+[[checks]]
+category = "flaws"
+name = "Nagaraja: Snake Charmed"
+forbids = { has = { category = "disciplines", name = "Serpentis" } }
+message = "Snake Charmed: you may never purchase the Serpentis discipline."
+page = "Vol. 2, p. 63"
+
+[[checks]]
+category = "flaws"
+name = "Nagaraja: Snake Charmed"
+forbids = { has = { category = "merits", name = "Favored of Inauhaten" } }
+message = "You may not take Snake Charmed with the Favored of Inauhaten merit."
+page = "Vol. 2, p. 63"
+
+[[checks]]
+category = "flaws"
+name = "Salubri: Unblinking Eyes"
+forbids = { has = { category = "flaws", name = "Salubri: Fusion" } }
+message = "You cannot take Unblinking Eyes and the Fusion flaw."
+page = "Vol. 2, p. 283"
+
+[[checks]]
+category = "flaws"
+name = "Sectarian"
+forbids = { any_of = [
+  { has = { category = "skills", name = "Lore", rating = 3 } },
+  { has = { category = "merits", name = "Loremaster" } },
+] }
+message = "Sectarian: you cannot possess the Lore skill above 2, nor the Loremaster merit."
+page = "405"
+
+# Infernal Power is the infernal merit open to a Salubri; the Baali's are clan merits.
+[[checks]]
+category = "merits"
+name = "Spiritual Armor"
+forbids = { any_of = [
+  { count = { category = "disciplines", name_prefix = "Daimoinon", gte = 1 } },
+  { count = { category = "elder_disciplines", name_prefix = "Daimoinon", gte = 1 } },
+  { has = { category = "merits", name = "Infernal Power" } },
+] }
+message = "Spiritual Armor: you cannot learn demonic powers, purchase infernal merits, or learn the Daimoinon discipline."
+page = "247"
+
+[[checks]]
+category = "disciplines"
+name = "Vicissitude"
+forbids = { any_of = [
+  { clan = ["Tzimisce: Carpathian"] },
+  { has = { category = "merits", name = "Bloodline: Carpathian" } },
+] }
+message = "Carpathians can never learn Vicissitude."
+page = "244"
+
 # --- prerequisites --------------------------------------------------------------
 
 [[checks]]
@@ -404,6 +593,33 @@ name = "Lesser Generation 2"
 category = "flaws"
 name = "Thin Blooded"
 
+# Each says it must be bought at character creation: the Anarch setting's (pp. 486,
+# 487), Soul of the Wyld (Volume 2, p. 56) and Web of Knives (Volume 2 Issue 1,
+# p. 26).
+[[creation_only]]
+category = "flaws"
+name = "Bastard Childe"
+
+[[creation_only]]
+category = "flaws"
+name = "Black Sheep"
+
+[[creation_only]]
+category = "merits"
+name = "Elder of the Revolution"
+
+[[creation_only]]
+category = "merits"
+name = "Old Dog"
+
+[[creation_only]]
+category = "merits"
+name = "Soul of the Wyld"
+
+[[creation_only]]
+category = "merits"
+name = "Web of Knives"
+
 # --- one clan merit of each value ------------------------------------------------
 
 # "Unless otherwise stated, you can only purchase a single merit of each price point
@@ -475,6 +691,18 @@ requires = { any_of = [
     { category = "merits", name = "Necromantic Expertise" },
     { category = "merits", name = "Necromantic Insight" },
   ] },
+  # Merits that open a discipline without a teacher, at out-of-clan cost: only those
+  # they name (Volume 2 Issue 1, pp. 27, 30, 34, 41, 44; Volume 2, p. 259; and the
+  # Volgirre's first 2 dots of Vicissitude, p. 243).
+  { has = { category = "merits", name = "Sea Witch" }, self = { names = ["Thaumaturgy: Path of Neptune's Might"] } },
+  { has = { category = "merits", name = "Dark Magics" }, self = { name_prefix = "Thaumaturgy: " } },
+  { has_any = [
+    { category = "merits", name = "Kupala's Bounty" },
+    { category = "merits", name = "Thaumaturgically Gifted" },
+  ], self = { name_prefix = "Thaumaturgy: " } },
+  { has = { category = "merits", name = "Voudoun Master" }, self = { name_prefix = "Necromancy: " } },
+  { has = { category = "merits", name = "Prodigy of the Flesh" }, self = { names = ["Vicissitude"] } },
+  { clan = ["Toreador: Volgirre"], self = { names = ["Vicissitude"], rating = { lte = 2 } } },
 ] }
 message = "Before a home troupe accepts the character, out-of-clan disciplines are the common ones only, up to 3 dots."
 page = "106"
@@ -520,6 +748,18 @@ category = "disciplines"
 forbids = { has = { category = "flaws", name = "Thin Blooded" }, self = { rating = { gte = 5 } } }
 message = "A Thin Blooded vampire can never raise a discipline above 4."
 page = "266"
+
+# An Anarch buys the 4th or 5th dot of Generation at character creation only with
+# Elder of the Revolution (p. 485). One gained by diablerie needs no merit (p. 486),
+# so the check ends once a home troupe accepts the character. It waits for Finish,
+# as the merit is taken on a later step than Generation.
+[[checks]]
+category = "backgrounds"
+name = "Generation"
+forbids = { self = { rating = { gte = 4 } }, has = { category = "sect", name = "Anarch" }, not = { has = { category = "merits", name = "Elder of the Revolution" } }, accepted = false }
+strength = "complete"
+message = "An Anarch needs the Elder of the Revolution merit to buy the 4th or 5th dot of Generation at character creation."
+page = "485"
 
 # Humanity starts at 5 and can be bought up to 6 (p. 108).
 [[checks]]
@@ -747,6 +987,17 @@ requires = { any_of = [
     { category = "merits", name = "Thaumaturgic Training" },
     { category = "merits", name = "Setite Sorcery" },
   ] },
+  # Merits that open paths at out-of-clan cost, each only the paths it names: Sea
+  # Witch the Path of Neptune's Might (Volume 2 Issue 1, p. 34), Dark Magics one path
+  # (Volume 2, p. 259), and Kupala's Bounty and Thaumaturgically Gifted two more
+  # beside the Koldun's or Sorcerer's in-clan path and the one of their choice
+  # (Volume 2 Issue 1, pp. 44, 27; pp. 238, 245).
+  { has = { category = "merits", name = "Sea Witch" }, self = { names = ["Thaumaturgy: Path of Neptune's Might"] } },
+  { has = { category = "merits", name = "Dark Magics" }, count = { category = "disciplines", name_prefix = "Thaumaturgy: ", lte = 1 } },
+  { has_any = [
+    { category = "merits", name = "Kupala's Bounty" },
+    { category = "merits", name = "Thaumaturgically Gifted" },
+  ], count = { category = "disciplines", name_prefix = "Thaumaturgy: ", lte = 4 } },
 ] }
 message = "A path of Thaumaturgy needs Thaumaturgic Training, a merit that grants the path, or a clan that has it in-clan."
 page = "112"
@@ -758,6 +1009,13 @@ requires = { any_of = [
   { in_clan = true },
   { has = { category = "merits", name = "Necromantic Training" } },
   { has = { category = "merits", name = "Bloodline: Premascine" }, self = { names = ["Necromancy: Mortis Path"] } },
+  # Voudoun Master: the Bone Path and one other, not Mortis (Volume 2 Issue 1, p. 30).
+  { has = { category = "merits", name = "Voudoun Master" }, self = { names = ["Necromancy: Bone Path"] } },
+  { has = { category = "merits", name = "Voudoun Master" }, not = { self = { names = ["Necromancy: Mortis Path"] } }, count = { category = "disciplines", names = [
+    "Necromancy: Ash Path", "Necromancy: Mortis Path", "Necromancy: Path of Grief",
+    "Necromancy: Path of Soul Bonding", "Necromancy: Sepulchre Path",
+    "Necromancy: Path of the Graveborne",
+  ], lte = 1 } },
 ] }
 message = "A path of Necromancy needs Necromantic Training, a merit that grants the path, or a clan that has it in-clan."
 page = "112"
@@ -2259,6 +2517,7 @@ forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Th
   { has = { category = "merits", name = "Ritual Master" }, clan_family = ["Tremere"] },
   { has = { category = "merits", name = "Sorcerous Dabbler" }, not = { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } } },
   { has = { category = "merits", name = "Scholomonariue" } },
+  { count = { category = "merits", names = ["No Place Like Home"], gte = 1 } },
 ] } }
 message = "A thaumaturge knows no more rituals than their dots of Thaumaturgy."
 page = "187"
@@ -2269,6 +2528,7 @@ name_prefix = "Thaumaturgy: "
 forbids = { more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " }, per_dot = 2 }, not = { any_of = [
   { has = { category = "merits", name = "Sorcerous Dabbler" }, not = { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 1 } } },
   { has = { category = "merits", name = "Scholomonariue" } },
+  { count = { category = "merits", names = ["No Place Like Home"], gte = 1 } },
 ] } }
 message = "Ritual Master gives two Thaumaturgy rituals per dot of Thaumaturgy, no more."
 page = "Vol. 2 Issue 1, p. 41"
@@ -2317,6 +2577,25 @@ name_prefix = "Necromancy: "
 forbids = { has = { category = "merits", name = "Memento Mori" }, more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Dementation" } } }
 message = "Memento Mori gives one Necromancy ritual per dot of Dementation."
 page = "Vol. 2 Issue 1, p. 37"
+
+# No Place Like Home: one more ritual per dot of Thaumaturgy (Volume 2 Issue 1, p. 44).
+# Named as the book spells it; `count` names it without needing it in the catalogue
+# under that spelling yet.
+[[checks]]
+category = "rituals"
+name_prefix = "Thaumaturgy: "
+forbids = { count = { category = "merits", names = ["No Place Like Home"], gte = 1 }, more_than_dots = { count = { category = "rituals", name_prefix = "Thaumaturgy: " }, dots = { category = "disciplines", name_prefix = "Thaumaturgy: " }, per_dot = 2 } }
+message = "No Place Like Home gives one more Thaumaturgy ritual per dot of Thaumaturgy, no more."
+page = "Vol. 2 Issue 1, p. 44"
+
+# Ritually Inept: no more Necromancy rituals than half the dots of Necromancy, rounded
+# down (Volume 2, p. 63).
+[[checks]]
+category = "rituals"
+name_prefix = "Necromancy: "
+forbids = { has = { category = "flaws", name = "Nagaraja: Ritually Inept" }, more_than_dots = { count = { category = "rituals", name_prefix = "Necromancy: " }, dots = { category = "disciplines", name_prefix = "Necromancy: " }, per_dot = 0.5 } }
+message = "Ritually Inept: you cannot learn more Necromancy rituals than half your dots of Necromancy, rounded down."
+page = "Vol. 2, p. 63"
 
 # Abyss Mysticism (Volume 2, pp. 98-99): rituals need Walk the Abyss and are no
 # higher than the mystic's Obtenebration; there is no limit on how many.
@@ -2675,17 +2954,31 @@ page = "94"
 
 [[checks]]
 category = "influence_elite_specializations"
-forbids = { more_than_dots = { count = { category = "influence_elite_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Elite" } } }
+forbids = { more_than_dots = { count = { category = "influence_elite_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Elite" } }, not = { has = { category = "merits", name = "Monopoly" } } }
 strength = "note"
 message = "Each dot of Influences: The Elite gives one area."
 page = "103"
 
 [[checks]]
+category = "influence_elite_specializations"
+forbids = { more_than_dots = { count = { category = "influence_elite_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Elite" }, per_dot = 2 } }
+strength = "note"
+message = "Monopoly gives two areas per dot of Influences: The Elite, no more."
+page = "405"
+
+[[checks]]
 category = "influence_underworld_specializations"
-forbids = { more_than_dots = { count = { category = "influence_underworld_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Underworld" } } }
+forbids = { more_than_dots = { count = { category = "influence_underworld_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Underworld" } }, not = { has = { category = "merits", name = "Monopoly" } } }
 strength = "note"
 message = "Each dot of Influences: The Underworld gives one area."
 page = "103"
+
+[[checks]]
+category = "influence_underworld_specializations"
+forbids = { more_than_dots = { count = { category = "influence_underworld_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Underworld" }, per_dot = 2 } }
+strength = "note"
+message = "Monopoly gives two areas per dot of Influences: The Underworld, no more."
+page = "405"
 
 # --- Attributes ----------------------------------------------------------------------
 

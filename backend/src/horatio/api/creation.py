@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from horatio import creation, sheets
+from horatio import clan_merits, creation, sheets
 from horatio.api.sheets import TraitRefOut, players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character
@@ -94,9 +94,27 @@ class BudgetChange(BaseModel):
     because: list[TraitRefOut]
 
 
+class ClanMeritOut(BaseModel):
+    """A merit the clan needs, from the merit points: a bloodline or rarity merit."""
+
+    name: str
+    points: int
+    # Why the clan needs it, and the page saying so.
+    why: str
+    page: str | None = None
+    # What the player chose with it, such as a Koldun's other path.
+    detail: str = ""
+
+
 class CreationOut(BaseModel):
     complete: bool
     pools: list[PoolOut]
+    # The merits the clan needs, held from the merit points: not among the merit pool's
+    # picks (`traits`), though their points are in its `used`.
+    clan_merits: list[ClanMeritOut] = []
+    # Whether the setting says how rare the clan is, so the rarity merits come with
+    # the clan rather than being picked.
+    rarity_known: bool = False
     # Paths whose Morality starts lower than Humanity's 5, for the merits bought now.
     path_starts: list[PathStart] = []
     budget_changes: list[BudgetChange] = []
@@ -138,6 +156,12 @@ def refs(found: Iterable[tuple[str, str]]) -> list[TraitRefOut]:
 def creation_out(db: DbSession, character: Character) -> CreationOut:
     catalogue = creation.rules_for(db, character).rule_set.categories
     fits = creation.fitting(db, character)
+    clan = clan_merits.held(db, character)
+    details = {
+        r.definition.name: r.trait.detail
+        for r in sheets.sheet_rows(db, character)
+        if r.category.key == "merits" and r.definition.name in clan.names
+    }
     freed = creation.freed_picks(db, character)
     needs = [
         StepNeed(step=v.check.step, message=v.message)
@@ -173,6 +197,7 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
                     freed_by=refs(freed.get(r.key, [])),
                 )
                 for r in p.traits
+                if not (p.category == "merits" and r.definition.name in clan.names)
             ],
         )
 
@@ -181,6 +206,13 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
         complete=character.creation_completed_at is not None,
         needs=list({(n.step, n.message): n for n in needs}.values()),
         pools=[pool_out(p) for p in sorted(placed, key=lambda p: (p.category, -p.rating))],
+        clan_merits=[
+            ClanMeritOut(
+                name=m.name, points=m.points, why=m.why, page=m.page, detail=details[m.name]
+            )
+            for m in clan.merits
+        ],
+        rarity_known=clan.rarity_known,
         budget_changes=[
             BudgetChange(category=category, because=refs(because))
             for category, because in creation.budget_changes(db, character).items()

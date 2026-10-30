@@ -36,7 +36,9 @@ def put(person: Person, character_id: str, category: str, name: str, to: int) ->
 def vivian(troupe: Troupe, *, merits: list[tuple[str, int]] | None = None) -> str:
     """The book's Vivian (p. 299): an Assamite Vizier's ghoul in the Camarilla, with
     Uncommon Clan and Code of Honor from creation, Auspex 3 and Quietus 2, every XP
-    of her creation spent, and accepted by the troupe."""
+    of her creation spent, and accepted by the troupe. The Camarilla setting plays the
+    Viziers as the Assamites' default, so the clan gives her Uncommon Clan alone
+    (p. 403)."""
     allow(troupe, ["vampire", "ghoul"])
     ghoul = ghoul_of(
         troupe.player,
@@ -44,6 +46,11 @@ def vivian(troupe: Troupe, *, merits: list[tuple[str, int]] | None = None) -> st
         name="Vivian",
         building_troupe_id=troupe.id,
     )
+    camarilla = troupe.player.client.put(
+        f"/characters/{ghoul}/traits",
+        json={"category": "sect", "name": "Camarilla", "rating": None},
+    )
+    assert camarilla.status_code == 200, camarilla.text
     taken = merits if merits is not None else [("Uncommon Clan", 2), ("Code of Honor", 2)]
     place(
         troupe.player,
@@ -293,7 +300,8 @@ def test_skills_and_backgrounds_bought_in_play_are_repriced(troupe: Troupe) -> N
         ("Brawl 4 → 5, bought in play, repriced", -5),
         ("Resources 0 → 1, bought in play, repriced", -1),
     ]
-    assert found["balance_after"] == 14 - 6 - 5 - 1
+    # The Uncommon Clan her clan gave her comes off, its 2 XP refunded.
+    assert found["balance_after"] == 14 + 2 - 6 - 5 - 1
     done = troupe.storyteller.client.post(
         f"/characters/{ghoul}/embrace", json={**ancilla, "embraced_on": NIGHT}
     )

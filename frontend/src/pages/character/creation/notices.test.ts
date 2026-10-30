@@ -24,7 +24,7 @@ function sheet(traits: SheetTraitOut[], problems: SheetOut["problems"] = []): Sh
   return { traits, problems } as SheetOut;
 }
 
-const creation = (pools: PoolOut[], needs: CreationOut["needs"] = []): CreationOut => ({ complete: false, pools, needs, path_starts: [], budget_changes: [], given: [] });
+const creation = (pools: PoolOut[], needs: CreationOut["needs"] = []): CreationOut => ({ complete: false, pools, needs, path_starts: [], budget_changes: [], given: [], clan_merits: [], rarity_known: false });
 
 describe("strayPicks", () => {
   it("marks a starting dot on a discipline that is no longer in-clan, on Concept and on Disciplines", () => {
