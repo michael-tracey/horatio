@@ -331,9 +331,11 @@ def test_carried_takes_one_abiding_source_and_the_cap(troupe: Troupe) -> None:
         found = sect_status.carried(troupe.session, character, troupe_id, **options)
         return [(c.name, c.source) for c in found]
 
-    # The first title by name, and none of its conditional status.
-    assert carried()[:1] == [("Noble", "Primogen")]
+    # Only the active title is a source: the higher, given together; and none of
+    # its conditional status.
+    assert carried()[:1] == [("Noble", "Seneschal")]
     assert [n for n, _ in carried()] == ["Noble", "Warned", "Loyal", "Loyal"]
+    assert carried(abiding_source="Primogen")[:1] == [("Noble", "Seneschal")]
     assert [n for n, _ in carried(abiding_source="Seneschal", absent={"Prince"})][:2] == [
         "Noble",
         "Authority",
@@ -343,6 +345,12 @@ def test_carried_takes_one_abiding_source_and_the_cap(troupe: Troupe) -> None:
         "Established",
         "Privileged",
     ]
+    switched = troupe.player.client.put(
+        f"/characters/{agnes}/titles/active", json={"name": "Primogen"}
+    )
+    assert switched.status_code == 200, switched.text
+    troupe.session.expire_all()
+    assert carried()[:1] == [("Noble", "Primogen")]
 
 
 # --- caps and bans ------------------------------------------------------------------------------

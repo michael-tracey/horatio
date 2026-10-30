@@ -320,8 +320,14 @@ function Titles({ status }: { status: PlayStatusOut }) {
       <ul className="flex flex-col gap-1 text-sm">
         {status.titles.map((t) => (
           <li key={t.name}>
-            <span className="text-gold">{t.name}</span>
-            {t.status.length > 0 ? `: ${gives(t.status)}` : <span className="text-mist">: no status</span>}
+            <span className={t.active ? "text-gold" : "text-parchment"}>{t.name}</span>
+            {!t.active ? (
+              <span className="text-mist">: not active, so no status</span>
+            ) : t.status.length > 0 ? (
+              `: ${gives(t.status)}`
+            ) : (
+              <span className="text-mist">: no status</span>
+            )}
             {t.next_game && <span className="text-xs text-mist"> (given during this game: its status from the next)</span>}
           </li>
         ))}

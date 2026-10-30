@@ -132,6 +132,7 @@ def test_a_house_title_has_a_sect_and_gives_status(troupe: Troupe, session: Sess
             "character_name": "Elena",
             "sect": "Camarilla",
             "out_of_sect": False,
+            "active": True,
         }
     ]
 

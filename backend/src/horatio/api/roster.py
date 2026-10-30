@@ -41,6 +41,8 @@ class RosterEntry(BaseModel):
     titles: list[str]
     # Those of another sect than the character's, kept for staff to look at.
     out_of_sect_titles: list[str]
+    # The one of them that gives it status; None if none is active.
+    active_title: str | None = None
     # From the sheet as it stands, if it has one.
     sect: str | None
     # Where its picture is (horatio.pictures), or None.
@@ -99,6 +101,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
     known = titles.title_data(db, troupe_id)
     seated = whos_who.seated_clans(db, troupe)
     held = {c.id: titles.held(db, troupe_id, c.id) for _, c, _ in rows}
+    active = titles.active_titles(db, troupe_id)
     pending = list(
         db.execute(
             select(Approval.character_id, Approval.kind).where(
@@ -122,6 +125,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             out_of_sect_titles=[
                 t for t in held[c.id] if titles.out_of_sect(known.get(t), sects.get(c.id))
             ],
+            active_title=active.get(c.id),
             sect=sects.get(c.id),
             picture=pictures.picture_url(c.id, c.picture_id),
             clan=standing[c.id].clan,
@@ -326,6 +330,9 @@ MESSAGES: dict[str, str] = {
     "npc.deleted": "{actor} deleted the NPC {character}.",
     "title.given": "{actor} gave {character} the title {title}.",
     "title.taken": "{actor} took the title {title} from {character}.",
+    "title.chosen": "{actor} chose the title {title} for {character} ({what}).",
+    "title.made_active": "{actor} made {title} {character}'s active title ({what}).",
+    "title.given_up": "{actor} gave up {character}'s title {title} ({what}).",
     "title.added": "{actor} added the title {title} to the troupe.",
     "title.changed": "{actor} changed the title {title}: now {what}.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
@@ -349,6 +356,7 @@ MESSAGES: dict[str, str] = {
     "status.resolved": "{actor} took {status} off {character}: nothing gives it now{because}.",
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
     "troupe.status_by": "{actor} set Status on sheets: {setting}.",
+    "troupe.titles_by": "{actor} set Titles on sheets: {setting}.",
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
     "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",

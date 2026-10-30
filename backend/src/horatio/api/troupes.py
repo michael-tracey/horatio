@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, closing, handles, pictures, sect_status, xp_range
+from horatio import audit, closing, handles, pictures, sect_status, titles, xp_range
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Character,
@@ -63,6 +63,9 @@ class TroupeOut(BaseModel):
     # Status on sheets (horatio.sect_status): "players" keep their own fleeting and
     # negative status, naming the patron, or only "staff" add and remove it.
     status_by: str
+    # Titles on sheets (horatio.titles): "players" choose their characters' titles
+    # from their sect's, or only "staff" give them.
+    titles_by: str
     # What its game badges print (horatio.badges): the titles held here or not, and
     # the status carried into a game here: "all", "negative" only, or "none".
     badge_titles: bool
@@ -100,6 +103,7 @@ class TroupeChanges(BaseModel):
     downtime_xp: int | None = Field(default=None, ge=0, le=100)
     starting_xp: int | None = Field(default=None, ge=0, le=10000)
     status_by: Literal["players", "staff"] | None = None
+    titles_by: Literal["players", "staff"] | None = None
     badge_titles: bool | None = None
     badge_status: Literal["all", "negative", "none"] | None = None
     badge_pronouns: bool | None = None
@@ -223,6 +227,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         influence_lookback_days=troupe.influence_lookback_days,
         diablerie_flaws=troupe.diablerie_flaws,
         status_by=troupe.status_by,
+        titles_by=troupe.titles_by,
         badge_titles=troupe.badge_titles,
         badge_status=troupe.badge_status,
         badge_pronouns=troupe.badge_pronouns,
@@ -407,6 +412,16 @@ def change_troupe(
             "troupe.status_by",
             troupe_id=troupe.id,
             setting=sect_status.SETTING_TEXT[body.status_by],
+        )
+    if body.titles_by is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        troupe.titles_by = body.titles_by
+        audit.record(
+            db,
+            user,
+            "troupe.titles_by",
+            troupe_id=troupe.id,
+            setting=titles.SETTING_TEXT[body.titles_by],
         )
     if body.badge_titles is not None or body.badge_status is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
