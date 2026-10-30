@@ -6,7 +6,7 @@ Each character holding titles keeps its highest at court active, so it loses the
 status only of the others.
 
 Revision ID: 0109
-Revises: 0105
+Revises: 0106
 Create Date: 2026-10-30 12:00:00.000000
 """
 
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0109"
-down_revision: str | None = "0105"
+down_revision: str | None = "0106"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
