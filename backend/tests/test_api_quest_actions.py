@@ -220,8 +220,28 @@ def test_a_character_picks_a_quest_shared_with_it_and_joins_it(
     [answer] = submitted["answers"]
     assert answer["structured"] == {"quest_id": quest_id, "scenario": 1}
     assert answer["body"] == "Bram searches the chantry's records."
-    # It counts against Bram's general actions.
+    # It counts against Bram's general actions: with it, three more are one too many.
     assert submitted["allowance"]["general"] == 3
+    general = next(
+        q["id"]
+        for q in submitted["questions"]
+        if q["kind"] == "action" and q["action_kind"] == "general"
+    )
+    too_many = second.client.put(
+        f"/characters/{bram}/downtime/answers",
+        json={
+            "answers": [
+                {
+                    "question_id": answer["question_id"],
+                    "body": answer["body"],
+                    "structured": answer["structured"],
+                },
+                *({"question_id": general, "slot": n, "body": f"Errand {n}."} for n in (1, 2, 3)),
+            ]
+        },
+    )
+    assert too_many.status_code == 422
+    assert "more general actions than the 3" in too_many.json()["detail"]
     seen = ok(second.client.get(f"/characters/{bram}/quests/{quest_id}"))
     assert (seen["role"], seen["party"]) == ("joined", ["Agnes", "Bram"])
     assert seen["downtime_only"] is True

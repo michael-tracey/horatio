@@ -2757,6 +2757,7 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   const lead = await person(browser, "qdt-lead");
   const leader = await person(browser, "qdt-leader");
   const joiner = await person(browser, "qdt-joiner");
+  const idler = await person(browser, "qdt-idler");
   const headers = { "X-Horatio": "1" };
   const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
     const response = await page.request.fetch(url, { method, headers, data });
@@ -2786,6 +2787,7 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   };
   const agnes = await build(leader.page, "Agnes");
   const bram = await build(joiner.page, "Bram");
+  const cara = await build(idler.page, "Cara");
 
   // Quests on; a Complex 2 quest for Agnes, Downtime Only, sent and shared with Bram.
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/quest-settings`, { enabled: true, requests_per_cycle: 1 });
@@ -2800,6 +2802,8 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   await send(lead.page, "POST", `/api/quests/${quest.id}/requirements`, { options: [{ kind: "text", text: "A boat at night" }] });
   await send(lead.page, "POST", `/api/quests/${quest.id}/send`);
   await send(leader.page, "POST", `/api/characters/${agnes}/quests/${quest.id}/share`, { character_ids: [bram] });
+  // Cara is in the party too, but will put in no Quest action.
+  await send(lead.page, "POST", `/api/quests/${quest.id}/members`, { character_ids: [cara], joined: true });
 
   // A new cycle's form has the Quest action, spending a general action.
   const now = Date.now();
@@ -2844,6 +2848,8 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   await expect(forAgnes.getByText("Complex 2 · Downtime only · Scenario 1 of 2")).toBeVisible();
   await expect(forAgnes.getByText("Still to meet: A boat at night")).toBeVisible();
   await expect(forAgnes.getByText("Also put in a Quest action: Bram.")).toBeVisible();
+  // Nothing's Simple: Cara, in the party with no Quest action, shows as not having spent one.
+  await expect(forAgnes.getByText("Not spent the action this scenario needs: Cara.", { exact: false })).toBeVisible();
   await expect(forAgnes.getByLabel("What the party is told")).toHaveValue("You find the cellar beneath the chantry.");
   await forAgnes.getByRole("button", { name: "Record scenario 1's result" }).click();
   await expect(l.getByText("Scenario 1: passed, recorded here; it goes out with this cycle's delivery.")).toHaveCount(2);
@@ -2864,6 +2870,9 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   await b.goto(`/characters/${bram}/results`);
   await expect(b.getByText("The Drowned Archive, scenario 1: passed.", { exact: false })).toBeVisible();
   await b.screenshot(shots("quest-downtime-results"));
+  // Cara, who put in no action, hears the result as the quest's news at the same delivery.
+  await idler.page.goto(`/characters/${cara}/quests/${quest.id}`);
+  await expect(idler.page.getByText("Scenario 1: passed")).toBeVisible();
   await l.goto(`/troupes/${troupe.id}/quests/${quest.id}`);
   await expect(l.getByText("In Flood month: Quest actions from Agnes, Bram.")).toBeVisible();
   await expect(l.getByRole("listitem", { name: "Scenario 2" }).getByText("Downtime only: its result is recorded from a Quest action", { exact: false })).toBeVisible();
