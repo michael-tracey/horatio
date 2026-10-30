@@ -12216,6 +12216,13 @@
       },
       "MergePreview": {
         "properties": {
+          "also": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Also",
+            "type": "array"
+          },
           "characters": {
             "items": {
               "$ref": "#/components/schemas/MergeCharacter"
@@ -12281,6 +12288,7 @@
           "settings",
           "handles",
           "others",
+          "also",
           "refusals"
         ],
         "title": "MergePreview",

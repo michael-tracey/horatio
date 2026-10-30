@@ -4311,6 +4311,13 @@ test("the custodian merges two accounts of one person: the characters and staff 
   const approval = await send(twice.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
   await send(lead.page, "POST", `/api/approvals/${approval.id}/approve`, {});
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: twice.handle, role: "narrator" });
+  // It has pronouns and lines and veils, which the first has not, and the custodian
+  // has started changing its email.
+  await send(twice.page, "PUT", "/api/profile", { display_name: "mga-twice", pronouns: "they/them" });
+  await send(twice.page, "PUT", "/api/profile/lines-veils", { lines: ["Spiders"], veils: [], shared: false });
+  const twiceId = (await (await twice.page.request.get("/api/auth/me")).json()).id;
+  const newEmail = `new-${twice.email}`;
+  await send(custodian.page, "POST", `/api/players/${twiceId}/email-change`, { email: newEmail, reason: "Lost the old address" });
 
   // The custodian finds the second account on People and merges it into the first.
   const c = custodian.page;
@@ -4329,13 +4336,16 @@ test("the custodian merges two accounts of one person: the characters and staff 
   await expect(dialog.getByRole("listitem").filter({ hasText: "Hester Vane" })).toContainText(troupeName);
   await expect(dialog.getByText(`${troupeName}: its narrator role`)).toBeVisible();
   await expect(dialog.getByText(`@${twice.handle} will find @${real.handle}, for good`)).toBeVisible();
+  await expect(dialog.getByText(`Its pronouns, lines and veils (not shared), as @${real.handle} has none`)).toBeVisible();
+  await expect(dialog.getByText(`Its change of email waiting, to ${newEmail}, is cancelled.`)).toBeVisible();
   await c.screenshot(shots("merge-accounts-confirm"));
   await dialog.getByRole("button", { name: `Merge into @${real.handle}` }).click();
   await expect(dialog).toBeHidden();
   // The closed account is no longer listed; searching its handle finds the other.
   await c.getByLabel("Search people").fill(twice.handle);
   await expect(c.locator("main li").filter({ hasText: real.email })).toBeVisible();
-  await expect(c.locator("main li").filter({ hasText: twice.email })).toHaveCount(0);
+  // (Its email is still in the log of recent account events below.)
+  await expect(c.getByRole("button", { name: "Merge mga-twice with another account" })).toHaveCount(0);
 
   // The closed account is signed out, and can't sign in again.
   const t = twice.page;
