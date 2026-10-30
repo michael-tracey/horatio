@@ -78,6 +78,10 @@ class Troupe(Imported, Record):
     # The clans with a seat at its court, by clan without the bloodline; None until
     # staff choose, for the clans whose Primogen is held there (horatio.whos_who).
     seated_clans: Mapped[list[str] | None] = mapped_column(JSONB)
+    # House rule: how rare each clan is in its setting, by clan without the bloodline
+    # ("Lasombra": "rare"), over the book's rarity for the setting's sect. A character
+    # built here takes the rarity merit it names (horatio.clan_merits).
+    clan_rarity: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a

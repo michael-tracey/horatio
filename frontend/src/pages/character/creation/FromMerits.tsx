@@ -6,6 +6,7 @@ import { useAction, useRefusals } from "../../../hooks";
 import { FreeChoicesStep } from "./FreeChoicesStep";
 import { pageText } from "../../troupe/bookPage";
 import { Because } from "./Because";
+import { comesWithClan } from "./clanMerits";
 import { ChoiceSelect } from "../ChoiceSelect";
 import { fieldSkills } from "../fields";
 import type { StepRef } from "./notices";
@@ -51,7 +52,8 @@ export function FromMerits({ character, creation, sheet, catalogue, traits, choi
           step={step}
           fields={fieldSkills(catalogue)}
           traits={traits
-            .filter((t) => t.category === pool.category)
+            // A bloodline or rarity merit comes with the clan, and is shown on Merits & flaws.
+            .filter((t) => t.category === pool.category && !(t.category === "merits" && comesWithClan(t.name, creation)))
             .map((t) => catalogue.traits.find((c) => c.category === t.category && c.name === t.name))
             .filter((t): t is TraitOut => !!t)}
         />

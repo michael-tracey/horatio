@@ -3034,6 +3034,42 @@ test("Stolen Potential takes away the focus in the attribute it names, and the c
   await expect(p.getByText("Social Focus", { exact: true }).first()).toBeVisible();
 });
 
+test("a bloodline's clan takes its merit from the merit points on Merits & flaws, another clan gives it back, and one that does not fit is refused (#313)", async ({ browser }) => {
+  const { page: p } = await person(browser, "bloodline-merit");
+  const id = await creatingVampire(p, "Urban Howl", "Gangrel: Coyote", [], { merits: [["Code of Honor", 2]] });
+  await p.goto(`/characters/${id}/create/merits`);
+  // The clan's merit, ticked and fixed, with why; its 2 points are spent with Code of Honor's.
+  const fromClan = p.getByRole("region", { name: "From the clan" });
+  await expect(fromClan.getByRole("checkbox", { name: "Bloodline: Coyote, given by the clan" })).toBeChecked();
+  await expect(fromClan.getByRole("checkbox", { name: "Bloodline: Coyote, given by the clan" })).toBeDisabled();
+  await expect(fromClan).toContainText("Gangrel: Coyote is a bloodline. (p. 238)");
+  const merits = p.getByRole("region", { name: "Merits", exact: true });
+  await expect(merits.getByText("4 of 7 points")).toBeVisible();
+  // No bloodline merit is offered as a pick, even with everything shown.
+  await p.getByLabel("Show Merits").selectOption("Everything");
+  await expect(merits.getByRole("checkbox", { name: /^Bloodline: Noiad/ })).toHaveCount(0);
+
+  // Concept says what the clan takes; a plain Gangrel gives it back.
+  await p.goto(`/characters/${id}/create/concept`);
+  await expect(p.getByText("The clan takes Bloodline: Coyote (2 points) from your merit points.")).toBeVisible();
+  await p.getByLabel("Clan").selectOption("Gangrel");
+  await expect(p.getByText("The clan takes Bloodline: Coyote (2 points) from your merit points.")).toHaveCount(0);
+  await p.goto(`/characters/${id}/create/merits`);
+  await expect(p.getByRole("region", { name: "From the clan" })).toHaveCount(0);
+  await expect(p.getByRole("region", { name: "Merits", exact: true }).getByText("2 of 7 points")).toBeVisible();
+
+  // With all 7 points spent, the Koldun's 4-point bloodline does not fit.
+  const filled = await p.request.put(`/api/characters/${id}/creation/categories/merits`, {
+    headers: { "X-Horatio": "1" },
+    data: { picks: [{ name: "Code of Honor" }, { name: "Iron Will" }, { name: "Lucky" }] },
+  });
+  expect(filled.status(), await filled.text()).toBe(200);
+  await p.goto(`/characters/${id}/create/concept`);
+  await p.getByLabel("Clan").selectOption("Tzimisce: Koldun");
+  await expect(p.getByText(/Tzimisce: Koldun needs Bloodline: Koldun \(4 points\), which does not fit: 7 of the 7 merit points are spent/)).toBeVisible();
+  await expect(p.getByLabel("Clan")).toHaveValue("Gangrel");
+});
+
 test("an Angelis Ater chooses its third in-clan discipline on Disciplines, places its starting dots and finishes (#312)", async ({ browser }) => {
   const { page: p } = await person(browser, "angelis-ater");
   const id = await creatingVampire(p, "Black Angel", "Baali: Angelis Ater", [], {
@@ -3550,8 +3586,8 @@ test("a merit taken in the creation wizard gives the traits it grants", async ({
   await p.getByRole("button", { name: "Save and continue" }).click();
   // Saving waits for the lists of what can be taken to reload, which takes a while with both browsers at it.
   await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
-  // Only the merit's own point comes from the budget.
-  await expect(p.getByText("Extrasensory Perceptions (1 of 7 points)")).toBeVisible();
+  // Only the merit's own point comes from the budget, beside the clan's Bloodline: Creeps (2, #313).
+  await expect(p.getByText("Bloodline: Creeps, Extrasensory Perceptions (3 of 7 points)")).toBeVisible();
   await p.getByRole("button", { name: "Finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   // The sheet shows the creation card until the finished character reloads, and it lists Wits too.
@@ -7411,6 +7447,9 @@ test("staff Embrace a ghoul: it becomes a vampire in XP debt, the cart waits, an
     building_troupe_id: troupeId,
     domitor: { name: "The Vizier", clan: "Assamite: Vizier" },
   });
+  // In the Camarilla, as the book has her: its Assamites are Viziers, so the clan gives
+  // her Uncommon Clan alone (p. 403, #313).
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
   const build: Record<string, [string, number][]> = {
     attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
     focus_physicals: [["Strength", 1]],

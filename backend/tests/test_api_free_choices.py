@@ -500,11 +500,12 @@ def test_old_habits_gives_up_to_three_points_of_sabbat_merits_free(troupe: Troup
     assert balance(troupe.player, character_id) == before
     # A free merit's own grants apply: Black Hand Membership gives the Branded status.
     assert "Branded" in ratings(troupe.player, character_id, "status_traits")
-    # Merits given are not merits bought: only Old Habits counts against the limit of 7.
+    # Merits given are not merits bought: only Old Habits counts against the limit of 7,
+    # beside the clan's Bloodline: Volgirre (2).
     limit = next(
         lim for lim in sheet(troupe.player, character_id)["limits"] if lim["category"] == "merits"
     )
-    assert limit["used"] == 3
+    assert limit["used"] == 3 + 2
     # Other Sabbat merits cannot be chosen, nor merits of other kinds.
     other = choose(troupe.player, character_id, "Old Habits", [pick(grant, "Rugged")])
     assert other.status_code == 422

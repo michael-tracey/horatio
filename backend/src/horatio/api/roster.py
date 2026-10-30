@@ -387,6 +387,7 @@ MESSAGES: dict[str, str] = {
     " {beast}, flaw: {flaw}.",
     "house.diablerie_flaws": "{actor} set what diablerie does to Lesser Generation and Thin"
     " Blooded: it {setting}.",
+    "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
     "sheet.give": "{actor} gave {character} {name} {rating} by exception ({cost} XP): {reason}",
     "creation.pick": "{actor} picked {name} {rating} for {character}.",
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",

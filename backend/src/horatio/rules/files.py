@@ -2,6 +2,7 @@
 
 import tomllib
 from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, cast
 
@@ -328,6 +329,64 @@ def names_left_out(raw: Any, left_out: Sequence[Mapping[str, str]]) -> bool:
     return False
 
 
+# A clan's rarity in a sect's setting (MET: VTM p. 237), commonest first: each step
+# rarer costs 2 merit points more.
+RARITIES = ("common", "uncommon", "rare", "restricted")
+
+
+# In a clan's `rarity`, the key for its rarity in every setting, and in none.
+EVERYWHERE = "*"
+
+
+def fold_clan_rarity(
+    where: str, tables: Sequence[Mapping[str, Any]], traits: dict[tuple[str, str], TraitData]
+) -> None:
+    """Keep each sect's clan rarity table (`clan_rarity`) in the clans' properties, as
+    horatio.clan_merits reads it: on each clan, `rarity`, its rarity and page in each
+    sect's setting (restricted where the setting does not list it), or in every
+    setting (EVERYWHERE) from a table with no sect; on a bloodline the setting plays
+    as its clan's default, `default_in`, the page for each sect."""
+    families = sorted(n for (c, n) in traits if c == "clan" and ":" not in n)
+    rarity: dict[str, dict[str, dict[str, str]]] = {f: {} for f in families}
+    default_in: dict[str, dict[str, str]] = {}
+
+    def listed_in(table: Mapping[str, Any]) -> dict[str, str]:
+        listed: dict[str, str] = {}
+        for level in RARITIES[:-1]:
+            for clan in table.get(level, []):
+                if clan not in rarity:
+                    raise ValueError(f"{where}: clan_rarity names unknown clan {clan!r}")
+                if clan in listed:
+                    raise ValueError(f"{where}: clan_rarity lists {clan!r} twice")
+                listed[clan] = level
+        return listed
+
+    everywhere = [t for t in tables if "sect" not in t]
+    for table in everywhere:
+        for clan, level in listed_in(table).items():
+            rarity[clan][EVERYWHERE] = {"rarity": level, "page": table["page"]}
+    for table in tables:
+        if "sect" not in table:
+            continue
+        sect, page = table["sect"], table["page"]
+        if ("sect", sect) not in traits:
+            raise ValueError(f"{where}: clan_rarity for unknown sect {sect!r}")
+        listed = listed_in(table)
+        for family in families:
+            if EVERYWHERE not in rarity[family]:
+                found = listed.get(family, "restricted")
+                rarity[family][sect] = {"rarity": found, "page": page}
+        for bloodline in table.get("defaults", []):
+            if ("clan", bloodline) not in traits or ":" not in bloodline:
+                raise ValueError(f"{where}: clan_rarity default {bloodline!r} is no bloodline")
+            default_in.setdefault(bloodline, {})[sect] = page
+    for name, by_sect in [*rarity.items(), *default_in.items()]:
+        key = ("clan", name)
+        prop = "rarity" if ":" not in name else "default_in"
+        if by_sect:
+            traits[key] = replace(traits[key], properties={**traits[key].properties, prop: by_sect})
+
+
 def load_rule_set(path: Path) -> RuleSetData:
     with path.open("rb") as f:
         raw = borrowed(path, tomllib.load(f))
@@ -369,10 +428,12 @@ def load_rule_set(path: Path) -> RuleSetData:
     cap_changes = list(raw.get("cap_changes", []))
     outsiders = list(raw.get("outsiders", []))
     status_caps = raw.get("status_caps")
+    clan_rarity = list(raw.get("clan_rarity", []))
     for trait_file in raw.get("trait_files", []):
         with (path.parent / trait_file).open("rb") as f:
             included = tomllib.load(f)
         raw_traits += included.get("traits", [])
+        clan_rarity += included.get("clan_rarity", [])
         titles += included.get("titles", [])
         sects += included.get("sects", [])
         social_ages += included.get("social_ages", [])
@@ -410,6 +471,7 @@ def load_rule_set(path: Path) -> RuleSetData:
             # A trait's tags ("vampire_only") are kept with its properties.
             properties={**t.get("properties", {}), **({"tags": t["tags"]} if "tags" in t else {})},
         )
+    fold_clan_rarity(path.name, clan_rarity, traits)
     raw_checks = list(raw.get("checks", []))
     creation_only = list(raw.get("creation_only", []))
     for check_file in raw.get("check_files", []):

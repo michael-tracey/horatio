@@ -8,7 +8,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import deletion, domitors, leaving, pictures, pronouns, renames, social_age
+from horatio import (
+    clan_merits,
+    deletion,
+    domitors,
+    leaving,
+    pictures,
+    pronouns,
+    renames,
+    social_age,
+)
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
 from horatio.models import Character, RuleSet, Troupe, User
@@ -279,6 +288,7 @@ def set_building_troupe(
     ensure_house_traits_fit(db, character, building)
     character.building_troupe_id = building
     sync_fixed_ratings(db, character)
+    clan_merits.resync(db, [character])
     db.commit()
     return character_out(db, character)
 
@@ -301,6 +311,8 @@ def bind(db: DbSession, user: User, ghoul: Character, body: DomitorIn) -> None:
         disciplines=body.disciplines,
         moved=[domitors.Placed(p.name, p.rating, p.detail) for p in body.moved],
     )
+    # The domitor's clan and bloodline are the ghoul's, and so are their merits.
+    clan_merits.refuse_overspent(clan_merits.sync(db, ghoul))
 
 
 def domitor_out(db: DbSession, ghoul: Character) -> DomitorOut | None:

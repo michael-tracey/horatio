@@ -20,7 +20,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, clan_merits
 from horatio.models import Character, CharacterTrait, User
 from horatio.rules.checks import holds_trait, matches
 from horatio.rules.house_effects import either
@@ -432,6 +432,17 @@ def place_pick(
     flaws, the trait at its point value from the budget."""
     ensure_creating(db, character)
     definition, trait_category = find_definition(db, character, category, name)
+    if category == "merits":
+        found = clan_merits.held(db, character)
+        if definition.name in found.names:
+            # The clan gave it already: there is nothing to pick.
+            return next(
+                r.trait
+                for r in sheet_rows(db, character)
+                if r.category.key == "merits" and r.definition.name == definition.name
+            )
+        if found.managed(definition.name):
+            raise conflict(clan_merits.not_by_hand(definition.name, found))
     all_pools = pools(db, character)
     points_pool = all_pools.get((category, 0))
     if points_pool is not None and points_pool.kind == "points":
@@ -498,6 +509,10 @@ def remove_pick(
     )
     if trait is None or trait.creation_pick is None:
         raise conflict(f"{name} has no creation pick.")
+    if category == "merits":
+        found = clan_merits.held(db, character)
+        if found.managed(definition.name):
+            raise conflict(clan_merits.not_by_hand(definition.name, found))
     if (trait.rating or 0) > trait.free_rating:
         raise conflict(f"Undo the dots bought for {name} first.")
     db.delete(trait)
@@ -557,11 +572,21 @@ def set_category_picks(
     points = all_pools.get((category, 0))
     is_points = points is not None and points.kind == "points"
 
-    rows = {(r.definition.name, r.trait.detail): r for r in every_row if r.category.key == category}
+    # The merits the clan needs are the clan's: kept as they are, and not picked by hand.
+    clan = clan_merits.held(db, character) if category == "merits" else None
+    rows = {
+        (r.definition.name, r.trait.detail): r
+        for r in every_row
+        if r.category.key == category and not (clan and r.definition.name in clan.names)
+    }
     wanted: dict[tuple[str, str], int] = {}
     definitions = {}
     for spec in picks:
         definition, _ = find_definition(db, character, category, spec.name)
+        if clan is not None and definition.name in clan.names:
+            continue
+        if clan is not None and clan.managed(definition.name):
+            raise conflict(clan_merits.not_by_hand(definition.name, clan))
         key = (definition.name, spec.detail)
         if key in wanted:
             raise unprocessable(f"{spec.name} is picked twice.")
@@ -571,9 +596,12 @@ def set_category_picks(
 
     if is_points:
         assert points is not None
-        if sum(wanted.values()) > points.allowed:
+        given = clan.points if clan is not None else 0
+        if sum(wanted.values()) + given > points.allowed:
+            with_clan = f", with the clan's {given}" if given else ""
             raise conflict(
-                f"That is {sum(wanted.values())} points; the budget is {points.allowed}."
+                f"That is {sum(wanted.values()) + given} points{with_clan};"
+                f" the budget is {points.allowed}."
             )
     else:
         for rating in set(wanted.values()):
@@ -661,6 +689,18 @@ def complete(db: Session, player: User, character: Character) -> None:
             )
             + ("." + short if short else "")
         )
+    # Points overspent: the clan's merits can take more than is left, when the setting
+    # changes after the merits are picked (a house rule, another troupe to build for).
+    spent = [p for p in every if p.kind == "points" and p.remaining < 0]
+    if spent:
+        found = clan_merits.held(db, character)
+
+        def overspent(p: Pool) -> str:
+            given = p.category == "merits" and found.merits
+            clan = f", {found.points} of them the clan's" if given else ""
+            return f"{p.category.replace('_', ' ')} {p.used} of {p.allowed}{clan}"
+
+        raise conflict("Too many points: " + ", ".join(overspent(p) for p in spent))
     # More picks than the rules give: a merit may have taken a pool away, as Thin
     # Blooded does the pick at 2. They are kept until their player moves them.
     over = [

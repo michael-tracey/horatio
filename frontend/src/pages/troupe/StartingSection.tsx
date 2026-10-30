@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { StartingCategoryOut, StartingRule } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { ClanRarity } from "./ClanRarity";
 import { DiablerieFlaws } from "./DiablerieFlaws";
 import { useHouseSplat } from "./HouseSplat";
 import { XpRangeCard } from "./XpRange";
@@ -43,6 +44,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
           ))}
         </ul>
       </Card>
+      <ClanRarity troupeId={troupeId} canEdit={canEdit} />
       <ExperienceDefaults troupeId={troupeId} canEdit={canEdit} />
       <XpRangeCard
         troupeId={troupeId}

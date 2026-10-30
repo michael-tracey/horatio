@@ -3281,6 +3281,137 @@
         "title": "ClanLogosOut",
         "type": "object"
       },
+      "ClanMeritOut": {
+        "description": "A merit the clan needs, from the merit points: a bloodline or rarity merit.",
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "points",
+          "why"
+        ],
+        "title": "ClanMeritOut",
+        "type": "object"
+      },
+      "ClanRarityIn": {
+        "properties": {
+          "rarities": {
+            "additionalProperties": {
+              "enum": [
+                "common",
+                "uncommon",
+                "rare",
+                "restricted"
+              ],
+              "type": "string"
+            },
+            "title": "Rarities",
+            "type": "object"
+          }
+        },
+        "required": [
+          "rarities"
+        ],
+        "title": "ClanRarityIn",
+        "type": "object"
+      },
+      "ClanRarityOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanRarityRow"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "sects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sects",
+            "type": "array"
+          },
+          "setting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setting"
+          }
+        },
+        "required": [
+          "sects",
+          "setting",
+          "clans"
+        ],
+        "title": "ClanRarityOut",
+        "type": "object"
+      },
+      "ClanRarityRow": {
+        "properties": {
+          "book": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Book",
+            "type": "object"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House"
+          }
+        },
+        "required": [
+          "clan",
+          "book",
+          "house"
+        ],
+        "title": "ClanRarityRow",
+        "type": "object"
+      },
       "ClanSection": {
         "properties": {
           "character_ids": {
@@ -4027,6 +4158,14 @@
               }
             ]
           },
+          "clan_merits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ClanMeritOut"
+            },
+            "title": "Clan Merits",
+            "type": "array"
+          },
           "complete": {
             "title": "Complete",
             "type": "boolean"
@@ -4060,6 +4199,11 @@
             },
             "title": "Pools",
             "type": "array"
+          },
+          "rarity_known": {
+            "default": false,
+            "title": "Rarity Known",
+            "type": "boolean"
           },
           "shortfalls": {
             "default": [],
@@ -37445,6 +37589,102 @@
           }
         },
         "summary": "Change Check",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/clan-rarity": {
+      "get": {
+        "description": "How rare each clan is in the troupe's setting: the book's for each sect, and\nthe troupe's own where it names one (horatio.clan_merits).",
+        "operationId": "read_clan_rarity_api_troupes__troupe_id__clan_rarity_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanRarityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Clan Rarity",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "description": "Name how rare clans are here. Characters being built here take the rarity merit\nit names straight away; finished characters keep theirs.",
+        "operationId": "set_clan_rarity_api_troupes__troupe_id__clan_rarity_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanRarityIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanRarityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Clan Rarity",
         "tags": [
           "house rules"
         ]

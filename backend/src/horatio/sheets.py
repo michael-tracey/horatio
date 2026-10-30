@@ -1406,6 +1406,10 @@ def broken_since(
             # A trait held before its grant needed a choice is left be until changed.
             if (trait.category, trait.name, trait.detail, grant.key) in before.unchosen:
                 continue
+            # A bloodline merit comes with the clan, so its choice (a Koldun's other
+            # path) is made after, on Merits & flaws.
+            if trait.category == "merits" and trait.name.startswith("Bloodline:"):
+                continue
             options = choices(grant, rule_set)
             listed = ", ".join(options) if len(options) <= 8 else "the trait it applies to"
             refused.append(
@@ -1444,8 +1448,16 @@ def checked(
     except BaseException:
         savepoint.rollback()
         raise
+    from horatio import clan_merits  # imports this module
+
+    # The merits a clan needs follow it while the character is built.
+    overspent = clan_merits.sync(db, character)
+    if overspent is not None:
+        savepoint.rollback()
+        raise conflict(overspent)
     if user is not None:
         apply_grants(db, user, character, converts_before)
+    lower_on_taking(db, character, before)
     if character.kind != "pc":
         savepoint.commit()
         return
@@ -1454,6 +1466,53 @@ def checked(
         savepoint.rollback()
         raise conflict(refusal(refused))
     savepoint.commit()
+
+
+def lower_on_taking(db: Session, character: Character, before: SheetState) -> None:
+    """Carry out the `lower_to` grants of traits newly taken: Flexible Morals drops
+    Morality to 3 if it is higher. Nothing is refunded. Taken back while the character
+    is still being built, a Morality left where the merit put it starts as it did."""
+    rules = rules_for(db, character)
+    rows = sheet_rows(db, character)
+    held_before = {key for key, rating in before.ratings.items() if rating}
+    for grant in rules.rule_set.grants:
+        if grant.kind != "lower_to":
+            continue
+        source = (grant.source["category"], grant.source["name"])
+        now = any(
+            (r.category.key, r.definition.name) == source and (r.trait.rating or 0) > 0
+            for r in rows
+        )
+        was = any(key[:2] == source for key in held_before)
+        if now == was or (not now and character.creation_completed_at is not None):
+            continue
+        name = grant.target.get("name")
+        for row in rows:
+            if row.category.key not in grant.categories or (name and row.definition.name != name):
+                continue
+            trait = row.trait
+            if now and (trait.rating or 0) > grant.amount:
+                trait.rating = grant.amount
+                trait.free_rating = min(trait.free_rating, grant.amount)
+            elif not now and trait.rating == trait.free_rating == grant.amount:
+                start = morality_start(rules, row.category.key, row.definition.name)
+                if start is not None:
+                    trait.rating = trait.free_rating = start
+    db.flush()
+
+
+def morality_start(rules: TroupeRules, category: str, name: str) -> int | None:
+    """The rating a Morality starts at: Humanity's starting rating, or a Path's start
+    when taken in creation (core p. 306)."""
+    for starting in rules.starting_traits():
+        if starting.category != category:
+            continue
+        if starting.name == name:
+            return starting.rating
+        lowered = path_start(rules, category, starting.name)
+        if lowered is not None:
+            return lowered[0]
+    return None
 
 
 # The archetype a player makes up (p. 86): its detail is the name they give it, and

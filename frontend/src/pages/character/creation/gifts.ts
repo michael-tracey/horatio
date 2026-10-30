@@ -36,6 +36,7 @@ export const SKILL_MERITS = merits([
   "Seasoned Traveler",
   "Chosen of Cappadocius",
   "Skill Aptitude",
+  "Art Imitates Life",
 ]);
 
 /** Merits that make dots in a background free, or place the dots the player chooses (Ventrue Royalty); and the flaws that set the Generation. */

@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from tests.api_helpers import Person, Troupe, new_character
+from tests.api_helpers import Person, Troupe, finish, new_character
 from tests.test_api_downtimes import member_character, my_downtime, new_cycle, open_cycle
 
 pytestmark = pytest.mark.usefixtures("without_bank")
@@ -96,10 +96,15 @@ def test_hunted_says_what_its_actions_are_for_and_when_the_allowance_falls_short
 
 def member_with(troupe: Troupe, name: str, clan: str, *traits: tuple[str, str, int]) -> str:
     """A character of `clan` holding `traits` from creation, accepted home."""
-    character_id = new_character(troupe, troupe.player, name, clan=clan)
-    for category, trait, rating in traits:
-        taken = take(troupe.player, character_id, category, trait, rating)
-        assert taken.status_code == 200, taken.text
+    character_id = new_character(troupe, troupe.player, name, clan=clan, finished=False)
+    # Taken on the Merits & flaws step: some, such as Black Sheep, are creation-only.
+    for category in {category for category, _, _ in traits}:
+        picks = [{"name": trait} for c, trait, _ in traits if c == category]
+        placed = troupe.player.client.put(
+            f"/characters/{character_id}/creation/categories/{category}", json={"picks": picks}
+        )
+        assert placed.status_code == 200, placed.text
+    finish(troupe, character_id)
     asked = troupe.player.client.post(
         f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
     )

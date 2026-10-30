@@ -4153,6 +4153,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/clan-rarity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Clan Rarity
+         * @description How rare each clan is in the troupe's setting: the book's for each sect, and
+         *     the troupe's own where it names one (horatio.clan_merits).
+         */
+        get: operations["read_clan_rarity_api_troupes__troupe_id__clan_rarity_get"];
+        /**
+         * Set Clan Rarity
+         * @description Name how rare clans are here. Characters being built here take the rarity merit
+         *     it names straight away; finished characters keep theirs.
+         */
+        put: operations["set_clan_rarity_api_troupes__troupe_id__clan_rarity_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/closing": {
         parameters: {
             query?: never;
@@ -6821,6 +6847,52 @@ export interface components {
             /** Dark Pack */
             dark_pack: boolean;
         };
+        /**
+         * ClanMeritOut
+         * @description A merit the clan needs, from the merit points: a bloodline or rarity merit.
+         */
+        ClanMeritOut: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Page */
+            page?: string | null;
+            /** Points */
+            points: number;
+            /** Why */
+            why: string;
+        };
+        /** ClanRarityIn */
+        ClanRarityIn: {
+            /** Rarities */
+            rarities: {
+                [key: string]: "common" | "uncommon" | "rare" | "restricted";
+            };
+        };
+        /** ClanRarityOut */
+        ClanRarityOut: {
+            /** Clans */
+            clans: components["schemas"]["ClanRarityRow"][];
+            /** Sects */
+            sects: string[];
+            /** Setting */
+            setting: string | null;
+        };
+        /** ClanRarityRow */
+        ClanRarityRow: {
+            /** Book */
+            book: {
+                [key: string]: string;
+            };
+            /** Clan */
+            clan: string;
+            /** House */
+            house: string | null;
+        };
         /** ClanSection */
         ClanSection: {
             /** Character Ids */
@@ -7070,6 +7142,11 @@ export interface components {
              */
             budget_changes: components["schemas"]["BudgetChange"][];
             clan_choice?: components["schemas"]["ClanChoiceOut"] | null;
+            /**
+             * Clan Merits
+             * @default []
+             */
+            clan_merits: components["schemas"]["ClanMeritOut"][];
             /** Complete */
             complete: boolean;
             /**
@@ -7086,6 +7163,11 @@ export interface components {
             path_starts: components["schemas"]["PathStart"][];
             /** Pools */
             pools: components["schemas"]["PoolOut"][];
+            /**
+             * Rarity Known
+             * @default false
+             */
+            rarity_known: boolean;
             /**
              * Shortfalls
              * @default []
@@ -23049,6 +23131,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_clan_rarity_api_troupes__troupe_id__clan_rarity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanRarityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_clan_rarity_api_troupes__troupe_id__clan_rarity_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClanRarityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanRarityOut"];
                 };
             };
             /** @description Validation Error */
