@@ -135,6 +135,7 @@ def sync_rule_set(session: Session, data: RuleSetData) -> RuleSet:
         row.buy_off_factor = category.buy_off_factor
         row.downtime_actions = category.downtime_actions
         row.downtime_waived_by = [dict(w) for w in category.downtime_waived_by]
+        row.downtime_added_by = [dict(a) for a in category.downtime_added_by]
         row.specializes = dict(category.specializes) if category.specializes else None
     session.flush()
 
@@ -384,6 +385,7 @@ def allowance_row(
         min_rating=rule.min_rating,
         scheme=rule.scheme,
         amount=rule.amount,
+        note=rule.note,
     )
 
 
@@ -690,6 +692,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
             trait=trait,
             min_rating=row.min_rating,
             house=row.troupe_id is not None,
+            note=row.note,
         )
 
     creation_rows = list(
@@ -791,6 +794,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 buy_off_factor=c.buy_off_factor,
                 downtime_actions=c.downtime_actions,
                 downtime_waived_by=tuple(c.downtime_waived_by),
+                downtime_added_by=tuple(c.downtime_added_by),
                 specializes=c.specializes,
             )
             for c in categories

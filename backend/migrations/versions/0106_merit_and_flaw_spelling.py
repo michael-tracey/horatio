@@ -1,7 +1,7 @@
 """Merits and flaws spelt as the books spell them; the two listed twice become one
 
 Revision ID: 0106
-Revises: 0103
+Revises: 0105
 Create Date: 2026-10-28 12:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0106"
-down_revision: str | None = "0103"
+down_revision: str | None = "0105"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

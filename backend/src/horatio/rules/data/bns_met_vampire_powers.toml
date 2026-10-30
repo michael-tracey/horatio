@@ -1069,6 +1069,13 @@ focus = { Wits = "Half damage from sunlight." }
 # Core p. 171.
 active = { key = "Stone Strength", form = true, page = 171, notes = ["No damage from fire; flaming attacks do normal damage.", "You can't be staked."] }
 
+# In-clan with Blight of the Ever-Hungry (Vol. 2, p. 62), but no book we use gives its
+# powers: `unwritten`, so it has none here, and staff record them by hand.
+[[disciplines]]
+name = "Necromancy: Path of the Graveborne"
+note = "The Nagaraja path Blight of the Ever-Hungry makes in-clan. Its powers are in no book Horatio draws on: ask your storyteller."
+unwritten = true
+
 [[disciplines]]
 name = "Necromancy: Sepulchre Path"
 pool = "Social + Occult"

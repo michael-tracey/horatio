@@ -551,17 +551,28 @@ page = "261"
 
 # Crafts, Performance and Science are each bought for one field (p. 92). The names
 # are the skills the catalogue marks `requires_specialization` (a test keeps them so).
-# The wizard asks for the field on the Skills step.
+# The wizard asks for the field on the Skills step. A skill a merit gives takes its
+# field from the merit's detail, so the merit's own check asks for it (Artist's Blessing).
 [[checks]]
 category = "skills"
 requires = { any_of = [
   { self = { has_detail = true } },
   { not = { self = { names = ["Crafts", "Performance", "Science"] } } },
+  { self = { given = true } },
 ] }
 strength = "complete"
 step = "skills"
 message = "Crafts, Performance and Science need a field, such as Performance: Singing."
 page = "92"
+
+# Artist's Blessing gives its free dots in one Crafts or Performance skill, so it
+# names the field with it: Performance: Singing, not Performance (pp. 92, 243).
+[[checks]]
+category = "merits"
+name = "Artist's Blessing"
+forbids = { self = { detail_without_field = ["Crafts", "Performance"] } }
+message = "Artist's Blessing: name the skill with its field, such as Performance: Singing or Crafts: Painting."
+page = "243"
 
 # --- Caitiff and extra in-clan disciplines (pp. 242, 246, 248) ----------------------
 

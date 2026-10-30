@@ -13,6 +13,8 @@ class AllowanceLine:
     action_kind: str
     source: str
     amount: int
+    # What the actions mean, from the rule (Hunted's are owed to staying hidden).
+    note: str = ""
 
 
 def allowance(
@@ -45,5 +47,5 @@ def allowance(
             source = f"{trait.name} {rating}" if rule.scheme == "per_dot" else trait.name
         if amount:
             totals[rule.action_kind] += amount
-            lines.append(AllowanceLine(rule.action_kind, source, amount))
+            lines.append(AllowanceLine(rule.action_kind, source, amount, rule.note))
     return {k: max(0, v) for k, v in totals.items()}, lines

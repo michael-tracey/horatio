@@ -12,6 +12,11 @@ import { FeedingCard } from "./FeedingCard";
 
 type Draft = Record<string, { body: string; structured?: Record<string, unknown> }[]>;
 
+/** "+3", "−2": an allowance line or adjustment, with a true minus. */
+function signed(n: number): string {
+  return n < 0 ? `\u2212${-n}` : `+${n}`;
+}
+
 function toDraft(downtime: MyDowntime): Draft {
   const draft: Draft = {};
   for (const q of downtime.questions) draft[q.id] = [];
@@ -132,16 +137,21 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
           <ul className="mt-3 border-t border-ash pt-2 text-xs text-mist">
             {d.breakdown.map((b, i) => (
               <li key={i}>
-                +{b.amount} {b.action_kind.replace(/_/g, " ")} from {b.source}
+                {signed(b.amount)} {b.action_kind.replace(/_/g, " ")} from {b.source}
+                {b.note && <span className="block pl-3">{b.note}</span>}
               </li>
             ))}
             {d.adjustments.map((a, i) => (
               <li key={`adj${i}`}>
-                {a.delta > 0 ? "+" : ""}
-                {a.delta} {a.action_kind.replace(/_/g, " ")}: {a.reason}
+                {signed(a.delta)} {a.action_kind.replace(/_/g, " ")}: {a.reason}
               </li>
             ))}
           </ul>
+          {Object.entries(d.short ?? {}).map(([kind, n]) => (
+            <p key={kind} className="mt-2 text-xs text-blood-bright">
+              {n} {kind.replace(/_/g, " ")} {n === 1 ? "action" : "actions"} short of what is owed this month.
+            </p>
+          ))}
         </Card>
         {submit.isSuccess && <Notice>Submitted. You can keep editing until the grace period ends.</Notice>}
       </aside>

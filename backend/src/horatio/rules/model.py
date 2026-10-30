@@ -67,6 +67,12 @@ class CategoryData:
     # discipline, buying a merit), unless the sheet holds a trait that waives it.
     downtime_actions: int | None = None
     downtime_waived_by: Sequence[Mapping[str, str]] = ()
+    # Traits that make each dot cost more actions: { category, name, amount, when?,
+    # no_waiver?, page? }. `when` is a condition on the trait gained, in the
+    # vocabulary of horatio.rules.checks (an out-of-clan discipline); `no_waiver`
+    # stops what waives the cost from doing so (Discipline Illiterate, Efficient
+    # Learner).
+    downtime_added_by: Sequence[Mapping[str, Any]] = ()
     # For a specialisation category: the skill or background it specialises,
     # as {category, name}.
     specializes: Mapping[str, str] | None = None
@@ -138,6 +144,9 @@ class AllowanceRuleData:
     trait: str | None = None
     min_rating: int = 1
     house: bool = False
+    # What it means, shown on the character's downtime beside the actions: Hunted's
+    # two actions go on staying hidden, and what not spending them does.
+    note: str = ""
 
     @property
     def key(self) -> tuple[str, str | None, str | None]:

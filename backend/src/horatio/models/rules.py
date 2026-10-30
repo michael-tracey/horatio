@@ -79,6 +79,10 @@ class TraitCategory(Record):
     downtime_waived_by: Mapped[list[dict[str, str]]] = mapped_column(
         JSONB, default=list, server_default="[]"
     )
+    # What makes each dot cost more actions (horatio.rules.model.CategoryData).
+    downtime_added_by: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
     # For a specialisation category: the skill or background it specialises.
     specializes: Mapped[dict[str, str] | None] = mapped_column(JSONB)
 
@@ -187,6 +191,8 @@ class AllowanceRule(Record):
     min_rating: Mapped[int] = mapped_column(default=1, server_default="1")
     scheme: Mapped[str]
     amount: Mapped[int]
+    # What it means, shown on the character's downtime (Hunted's actions).
+    note: Mapped[str] = mapped_column(default="", server_default="")
 
 
 class CreationRule(Record):

@@ -43,9 +43,9 @@ def allowed_while_viewing[F: Callable[..., Any]](endpoint: F) -> F:
 
 
 def end(db: Session, viewing: Viewing, kind: str, *, at: datetime | None = None) -> None:
-    """End a viewing, recording how: "stopped", "signed_out", "timed_out" or
-    "not_custodian". Only the first to end it records it, should two requests find
-    it at once."""
+    """End a viewing, recording how: "stopped", "signed_out", "timed_out",
+    "not_custodian" or "merged" (horatio.account_merges). Only the first to end it
+    records it, should two requests find it at once."""
     ended = db.execute(
         update(Viewing)
         .where(Viewing.id == viewing.id, Viewing.ended_at.is_(None))

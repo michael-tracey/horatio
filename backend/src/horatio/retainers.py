@@ -8,12 +8,17 @@ the same name. One held without a name, from before Retainers were bought one
 by one, is listed until it is named, with nothing kept for it.
 
 Retainers a merit gives are listed too, with their own dots, and are not part
-of the background. A row of the background's that no Retainer bought is named
-for (listed before they were bought one by one) stays listed with its own dots
-until it is removed; no new one can be added. A lost Retainer stays listed (the
-book takes its dots away for one game or two weeks for each dot, whichever is
-longer, which `Return` works out from the home troupe's schedule). Staff alone
-link a Retainer to an NPC.
+of the background. Where the rules say what a merit gives (a `retainer` grant,
+horatio.rules.grants: Ardent Companion's ghouled animal at 7), it is listed as
+soon as the merit is held, at the grant's dots, before anything is kept for it;
+the player names it, and its dots, kind and whether it is a ghoul are the
+grant's. One added by hand from a merit with no such grant keeps the dots given.
+
+A row of the background's that no Retainer bought is named for (listed before
+they were bought one by one) stays listed with its own dots until it is removed;
+no new one can be added. A lost Retainer stays listed (the book takes its dots
+away for one game or two weeks for each dot, whichever is longer, which `Return`
+works out from the home troupe's schedule). Staff alone link a Retainer to an NPC.
 """
 
 import dataclasses
@@ -35,6 +40,8 @@ from horatio.permissions import (
     can_view_character,
     troupe_role,
 )
+from horatio.rules.checks import matches
+from horatio.rules.grants import holds_source
 from horatio.rules.splats import vampire_in_clan_disciplines
 from horatio.sheets import rules_for, sheet_rows
 
@@ -111,16 +118,34 @@ def schedule(db: Session, character: Character) -> list[date]:
 
 def tracker(listed: "Listed") -> str:
     """What a Retainer's taps on the Play View are kept under: "retainer:Bocephus"
-    for one bought, by its row for one from a merit or listed before."""
+    for one bought, by its row for one from a merit or listed before, and by its
+    merit for one a merit gives with nothing kept for it yet."""
+    if listed.row is None and listed.given is not None:
+        return f"retainer:from:{listed.given.merit}"
     if listed.bought or listed.row is None:
         return f"retainer:{listed.name}"
     return f"retainer:{listed.row.id}"
 
 
 @dataclass(frozen=True)
+class Given:
+    """A Retainer a merit gives, as its `retainer` grant says (horatio.rules.grants)."""
+
+    merit: str
+    kind: str
+    dots: int
+    ghoul: bool = False
+    # What its discipline specialty can be, beside a ghoul's in-clan one.
+    disciplines: tuple[str, ...] = ()
+    note: str = ""
+    page: str | None = None
+
+
+@dataclass(frozen=True)
 class Listed:
     """One Retainer as listed: bought on the sheet (its name and dots are the
-    sheet's), or from a merit or listed before, with the dots kept in its row."""
+    sheet's), given by a merit's grant (its dots are the grant's), or from a merit
+    or listed before, with the dots kept in its row."""
 
     row: Retainer | None
     name: str
@@ -128,6 +153,15 @@ class Listed:
     bought: bool
     # For one lost: when its dots come back.
     back: Return | None = None
+    given: Given | None = None
+
+    @property
+    def from_merit(self) -> str:
+        return self.row.from_merit if self.row else self.given.merit if self.given else ""
+
+    @property
+    def ghoul(self) -> bool:
+        return self.given.ghoul if self.given else bool(self.row and self.row.ghoul)
 
 
 def rows(db: Session, character: Character) -> list[Retainer]:
@@ -154,9 +188,37 @@ def rating(db: Session, character: Character) -> int:
     return sum(dots for _, dots in bought(db, character))
 
 
+def given(db: Session, character: Character) -> list[Given]:
+    """The Retainers the character's merits give, by their `retainer` grants."""
+    rule_set = rules_for(db, character).rule_set
+    sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
+    found: list[Given] = []
+    for grant in rule_set.grants:
+        if grant.kind != "retainer":
+            continue
+        for trait in sheet:
+            if not holds_source(trait, grant.source) or trait.rating == 0:
+                continue
+            if grant.when is not None and not matches(grant.when, sheet, trait):
+                continue
+            target = grant.target
+            found.append(
+                Given(
+                    merit=trait.name,
+                    kind=target["kind"],
+                    dots=grant.amount,
+                    ghoul=bool(target.get("ghoul")),
+                    disciplines=tuple(target.get("disciplines", ())),
+                    note=target.get("note", ""),
+                    page=grant.page,
+                )
+            )
+    return found
+
+
 def read(db: Session, character: Character) -> list[Listed]:
-    """The Retainers bought, in the sheet's order, then those from merits and any
-    listed before, in the order they were saved."""
+    """The Retainers bought, in the sheet's order, then those merits give, then
+    those from other merits and any listed before, in the order they were saved."""
     kept = rows(db, character)
     named = {r.name: r for r in reversed(kept) if not r.from_merit}
     listed: list[Listed] = []
@@ -166,6 +228,11 @@ def read(db: Session, character: Character) -> list[Listed]:
         if row is not None:
             used.add(row.id)
         listed.append(Listed(row, name, dots, bought=True))
+    for spec in given(db, character):
+        row = next((r for r in kept if r.from_merit == spec.merit and r.id not in used), None)
+        if row is not None:
+            used.add(row.id)
+        listed.append(Listed(row, row.name if row else "", spec.dots, bought=False, given=spec))
     listed += [Listed(r, r.name, r.dots, bought=False) for r in kept if r.id not in used]
     if not any(e.row and e.row.lost and e.row.lost_on for e in listed):
         return listed
@@ -231,6 +298,10 @@ def _clean(db: Session, character: Character, drafts: list[Draft]) -> set[str]:
     held = dict(bought(db, character))
     known = set(skills(db, character))
     in_clan = set(domitor_disciplines(db, character))
+    # What merits give, by merit: each draft from one takes the next.
+    giving: dict[str, list[Given]] = {}
+    for spec in given(db, character):
+        giving.setdefault(spec.merit, []).append(spec)
     # Rows of the background's listed before Retainers were bought one by one.
     before = {r.id for r in rows(db, character) if not r.from_merit and r.name not in held}
     names = [d.name.strip() for d in drafts if not d.from_merit.strip()]
@@ -250,6 +321,14 @@ def _clean(db: Session, character: Character, drafts: list[Draft]) -> set[str]:
                 f"Buy {d.name} on the sheet first: each Retainer is bought on its own,"
                 " with its own dots.",
             )
+        spec = giving[d.from_merit].pop(0) if giving.get(d.from_merit) else None
+        if d.from_merit in giving and spec is None:
+            raise _refuse(
+                status.HTTP_409_CONFLICT,
+                f"{d.from_merit} gives {character.name} no more Retainers than it lists.",
+            )
+        if spec is not None:
+            d.dots, d.ghoul = spec.dots, spec.ghoul
         top = MAX_MERIT_DOTS if d.from_merit else MAX_DOTS
         if not 1 <= d.dots <= top:
             raise _refuse(
@@ -261,16 +340,19 @@ def _clean(db: Session, character: Character, drafts: list[Draft]) -> set[str]:
                 status.HTTP_409_CONFLICT, f"{character.name} does not have {d.from_merit}."
             )
         d.specialties = [x.strip() for x in d.specialties if x.strip()]
-        d.discipline = d.discipline.strip() if d.ghoul else ""
+        allowed = set(spec.disciplines) if spec and spec.disciplines else in_clan
+        d.discipline = d.discipline.strip() if d.ghoul or (spec and spec.disciplines) else ""
         if not set(d.specialties) <= known or len(set(d.specialties)) < len(d.specialties):
             raise _refuse(
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
                 f"{d.name}'s specialties are each a different skill.",
             )
-        if d.discipline and d.discipline not in in_clan:
+        if d.discipline and d.discipline not in allowed:
             raise _refuse(
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
-                f"{d.name}'s discipline is one in-clan for {character.name}.",
+                f"{d.name}'s discipline is one of {', '.join(sorted(allowed))}."
+                if spec and spec.disciplines
+                else f"{d.name}'s discipline is one in-clan for {character.name}.",
             )
         taken = len(d.specialties) + (1 if d.discipline else 0)
         if taken > d.dots:

@@ -58,6 +58,14 @@ class RetainerOut(BaseModel):
     back_games: int = 0
     back_on: date | None = None
     away: bool = False
+    # Given by its merit's rules (horatio.rules.grants): its dots, `kind` ("Ghouled
+    # animal") and being a ghoul are the merit's, with a note of how it is built,
+    # the page, and what its discipline specialty can be beside a ghoul's.
+    given: bool = False
+    kind: str = ""
+    note: str = ""
+    page: str | None = None
+    given_disciplines: list[str] = []
 
 
 class RetainersOut(BaseModel):
@@ -104,23 +112,28 @@ def listed(db: Session, entries: list[retainers.Listed], viewer: User | None) ->
                 dots=e.dots,
                 bought=e.bought,
                 description=r.description if r else "",
-                from_merit=r.from_merit if r else "",
+                from_merit=e.from_merit,
                 lost=r.lost if r else None,
                 lost_on=r.lost_on if r else None,
                 npc_id=npc.id if npc else None,
                 npc_name=npc.name if npc else None,
-                ghoul=r.ghoul if r else False,
+                ghoul=e.ghoul,
                 specialties=list(r.specialties) if r else [],
                 discipline=r.discipline if r else "",
                 powers=powers(r.discipline, e.dots) if r and r.discipline else [],
                 pool=e.dots * 2,
                 health=e.dots,
-                blood=retainers.GHOUL_BLOOD if r and r.ghoul else 0,
+                blood=retainers.GHOUL_BLOOD if e.ghoul else 0,
                 tracker=retainers.tracker(e),
                 back_from=e.back.earliest if e.back else None,
                 back_games=e.back.games if e.back else 0,
                 back_on=e.back.on if e.back else None,
                 away=e.back.away(date.today()) if e.back else False,
+                given=e.given is not None,
+                kind=e.given.kind if e.given else "",
+                note=e.given.note if e.given else "",
+                page=e.given.page if e.given else None,
+                given_disciplines=list(e.given.disciplines) if e.given else [],
             )
         )
     return out

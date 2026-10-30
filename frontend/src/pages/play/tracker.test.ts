@@ -376,6 +376,9 @@ describe("spending sect status (issue #253)", () => {
         titles: [],
         carried: [carried("status:Authority", "Authority", "Abiding", spent), carried("held:h1", "Loyal", "Fleeting")],
         fleeting_cap: 5,
+        cap_why: [],
+        outsider_sect: null,
+        outsider_through: null,
         suppressed: [],
       },
     });

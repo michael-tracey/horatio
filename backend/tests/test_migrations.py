@@ -76,7 +76,7 @@ def test_the_spelling_migration_renames_in_place_and_folds_in_the_misspelt_twin(
     expertise = merit_definition(engine, "Thaumaturgic Expertise")
     assert blase is not None and expertise is not None
 
-    command.downgrade(alembic_config, "0103")
+    command.downgrade(alembic_config, "0105")
     try:
         assert merit_definition(engine, "Blase") == blase
         with engine.begin() as connection:

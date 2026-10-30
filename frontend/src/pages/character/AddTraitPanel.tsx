@@ -9,7 +9,8 @@ import { AskStaff } from "./AskStaff";
 import type { CartLine, Exception } from "./cart";
 import { foundElsewhere, shownChips, useBarred, useChoices } from "./choices";
 import { QuickPicks } from "./creation/DotGrid";
-import { detailNeed, isInstance } from "./fields";
+import { detailNeed, fieldSkills, isInstance } from "./fields";
+import { ChoiceSelect } from "./ChoiceSelect";
 import { FreeChoicesFields } from "./FreeChoices";
 import { sayable, summary, toSend, type FreePick } from "./freeChoices";
 import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
@@ -204,6 +205,7 @@ export function AddTraitPanel({
           name={asking.name}
           refusal={unavailable[asking.name] ?? ""}
           trait={asking}
+          fields={fieldSkills(catalogue)}
           rated={!!cat?.rated}
           maxRating={cat?.max_rating}
           onCancel={() => setAsking(null)}
@@ -226,12 +228,7 @@ export function AddTraitPanel({
           {trait.house_rule && <Notice>House rule: {trait.house_rule}</Notice>}
           {trait.choices ? (
             <Field label="Which?" hint={`${trait.name} gives one of these.`}>
-              <Select required value={detail} onChange={(e) => setDetail(e.target.value)}>
-                <option value="">Choose…</option>
-                {trait.choices.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </Select>
+              <ChoiceSelect required choices={trait.choices} fields={fieldSkills(catalogue)} value={detail} onChange={setDetail} />
             </Field>
           ) : (
             <Field label={need?.label ?? "Detail"} hint={need?.hint ?? "Optional: a specialisation, subject, or name."}>

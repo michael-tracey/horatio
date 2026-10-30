@@ -2,9 +2,18 @@
 
 import type { RetainerOut } from "../../api/types";
 
-/** How a Retainer is named in lists: one held without a name, from before each was named, says so. */
-export function retainerName(r: Pick<RetainerOut, "name">): string {
-  return r.name || "A Retainer not yet named";
+/**
+ * How a Retainer is named in lists: one a merit gives, not named yet, by what it
+ * is; one held without a name, from before each was named, says so.
+ */
+export function retainerName(r: Pick<RetainerOut, "name"> & Partial<Pick<RetainerOut, "kind">>): string {
+  if (r.name) return r.name;
+  return r.kind ? `${r.kind}, not yet named` : "A Retainer not yet named";
+}
+
+/** The merits whose Retainers are given by the rules, so not added by hand. */
+export function givingMerits(retainers: Pick<RetainerOut, "given" | "from_merit">[]): string[] {
+  return [...new Set(retainers.filter((r) => r.given).map((r) => r.from_merit))];
 }
 
 /** Where a Retainer's dots come from, when not from buying it on the sheet. */

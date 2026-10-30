@@ -378,8 +378,8 @@ page = "263"
 # --- in-clan disciplines replaced ----------------------------------------------------
 
 # The merit sets all of the character's in-clan disciplines, in place of the clan's.
-# Nagaraja lose Dominate and the Ash Path; the Graveborne path is in no book the
-# catalogue draws on, so the name stands for it until the path is added.
+# Nagaraja lose Dominate and the Ash Path. No book we use describes the Graveborne
+# path's powers, so the catalogue lists it without them.
 [[grants]]
 source = { category = "merits", name = "Blight of the Ever-Hungry" }
 kind = "replace_in_clan"
@@ -453,6 +453,53 @@ kind = "free_up_to"
 target = { category = "backgrounds", name = "Haven" }
 amount = 5
 page = "Vol. 2, p. 55"
+
+# Built to pass as a Giovanni: the identity is a Giovanni one, so it has its name.
+[[grants]]
+source = { category = "merits", name = "Blood Deceit" }
+kind = "free_up_to"
+target = { category = "backgrounds", name = "Alternate Identity", detail = "Giovanni" }
+amount = 4
+page = "Vol. 2 Issue 1, p. 47"
+
+# --- Retainers a merit gives ----------------------------------------------------------
+# Each its own Retainer, built at `amount` dots, apart from the Retainers background:
+# listed with the character's Retainers, where the player names it (horatio.retainers).
+
+[[grants]]
+source = { category = "merits", name = "Ardent Companion" }
+kind = "retainer"
+target = { category = "backgrounds", name = "Retainers", kind = "Ghouled animal", ghoul = true }
+amount = 7
+page = "Vol. 2 Issue 1, p. 39"
+
+[[grants]]
+source = { category = "merits", name = "Ghostly Retainer" }
+kind = "retainer"
+target = { category = "backgrounds", name = "Retainers", kind = "Wraith", note = "Built with the wraith rules (p. 500). With the Sepulchre Path, 1 Blood summons it to you." }
+amount = 5
+page = "240"
+
+[[grants]]
+source = { category = "merits", name = "Paragon" }
+kind = "retainer"
+target = { category = "backgrounds", name = "Retainers", kind = "Ventrue lieutenant", note = "A Ventrue neonate with 3, 2 and 1 dots in three of Resources, Haven, Herd and Influence; no techniques or elder powers." }
+amount = 6
+page = "245"
+
+[[grants]]
+source = { category = "merits", name = "Sage of the Spirits" }
+kind = "retainer"
+target = { category = "backgrounds", name = "Retainers", kind = "Nature spirit", note = "Built with the spirit rules of MET: WTA (p. 623). Lost, a level 3 Heroic Quest finds another." }
+amount = 5
+page = "Vol. 2 Issue 1, p. 32"
+
+[[grants]]
+source = { category = "merits", name = "Walking Dead" }
+kind = "retainer"
+target = { category = "backgrounds", name = "Retainers", kind = "Zombie", disciplines = ["Fortitude", "Obfuscate"], note = "Built as Shambling Hordes makes them (p. 175), but thinking: it can help with downtime actions. Lost, 1 downtime action raises another." }
+amount = 5
+page = "Vol. 2 Issue 1, pp. 48-49"
 
 # --- free traits the player chooses ----------------------------------------------------
 # The choices are kept on the merit held (CharacterTrait.choices) and change freely
@@ -947,12 +994,6 @@ why = "Builds the character as a ghoul with 7 discipline dots; staff build it."
 
 [[rules_only]]
 category = "merits"
-name = "Ghostly Retainer"
-page = "240"
-why = "A wraith NPC built as a level 5 Retainer, not dots of the Retainers background."
-
-[[rules_only]]
-category = "merits"
 name = "Humble Abode"
 page = "Vol. 2 Issue 1, p. 36"
 why = "Two Haven advantages the player chooses, on top of the background's dots."
@@ -973,7 +1014,8 @@ why = "A focus and a bonus that change with the moon each game."
 category = "merits"
 name = "Paragon"
 page = "245"
-why = "A Ventrue lieutenant NPC built as a level 6 Retainer, more money from Resources and an extra action per Influence."
+partly = true
+why = "The lieutenant, a level 6 Retainer, is given. Not modelled: twice the money from Resources, and an extra action for each Influence held."
 
 [[rules_only]]
 category = "merits"

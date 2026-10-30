@@ -42,6 +42,11 @@ The caps (p. 313): a character carries into a game the status of one abiding
 source (its titles and its social age are each a source), all its innate and
 negative status, and up to 5 fleeting, or 3 under a lesser ban and 1 under a
 greater.
+
+Some merits and flaws change the fleeting cap (`cap_changes`): Reputation carries
+1 more (p. 252), Tainted Embrace 1 fewer (p. 405), on top of any ban. One lets a
+character no sect has Accepted hold a sect's fleeting status all the same
+(`outsiders`): Emissary to the Camarilla, one Camarilla fleeting status (p. 404).
 """
 
 from collections.abc import Iterable, Mapping, Sequence
@@ -167,12 +172,37 @@ class StatusCapsData:
 
 
 @dataclass(frozen=True)
+class CapChangeData:
+    """A merit or flaw that changes the most fleeting status its holder carries:
+    `fleeting` more, or fewer, after any ban (Tainted Embrace: 1 fewer)."""
+
+    category: str
+    name: str
+    fleeting: int
+    page: str | None = None
+
+
+@dataclass(frozen=True)
+class OutsiderData:
+    """A merit that lets a character no sect has Accepted hold up to `fleeting`
+    fleeting status of `sect` (Emissary to the Camarilla)."""
+
+    category: str
+    name: str
+    sect: str
+    fleeting: int
+    page: str | None = None
+
+
+@dataclass(frozen=True)
 class StatusRulesData:
     """A rule set's status rules beyond its status traits."""
 
     caps: StatusCapsData | None = None
     sects: Mapping[str, SectData] = field(default_factory=dict[str, SectData])
     social_ages: tuple[SocialAgeStatusData, ...] = ()
+    cap_changes: tuple[CapChangeData, ...] = ()
+    outsiders: tuple[OutsiderData, ...] = ()
 
 
 NO_STATUS_RULES = StatusRulesData()
@@ -287,10 +317,28 @@ def caps_from_dict(raw: Mapping[str, Any]) -> StatusCapsData:
     )
 
 
+def cap_change_from_dict(raw: Mapping[str, Any]) -> CapChangeData:
+    return CapChangeData(
+        category=raw["category"], name=raw["name"], fleeting=raw["fleeting"], page=raw.get("page")
+    )
+
+
+def outsider_from_dict(raw: Mapping[str, Any]) -> OutsiderData:
+    return OutsiderData(
+        category=raw["category"],
+        name=raw["name"],
+        sect=raw["sect"],
+        fleeting=raw["fleeting"],
+        page=raw.get("page"),
+    )
+
+
 def status_rules_from(
     caps: Mapping[str, Any] | None,
     sects: Iterable[Mapping[str, Any]],
     social_ages: Iterable[Mapping[str, Any]],
+    cap_changes: Iterable[Mapping[str, Any]] = (),
+    outsiders: Iterable[Mapping[str, Any]] = (),
 ) -> StatusRulesData:
     by_name: dict[str, SectData] = {}
     for raw in sects:
@@ -302,6 +350,8 @@ def status_rules_from(
         caps=caps_from_dict(caps) if caps is not None else None,
         sects=by_name,
         social_ages=tuple(social_age_from_dict(a) for a in social_ages),
+        cap_changes=tuple(cap_change_from_dict(c) for c in cap_changes),
+        outsiders=tuple(outsider_from_dict(o) for o in outsiders),
     )
 
 
@@ -326,11 +376,14 @@ def plain(value: Any) -> Any:
 
 
 def status_rules_to_dict(rules: StatusRulesData, titles: Sequence[TitleData]) -> dict[str, Any]:
-    """What `rule_sets.status_rules` holds: the caps, the sects, the social ages, and
-    the titles that are more than a name (the names are in `rule_sets.titles`)."""
+    """What `rule_sets.status_rules` holds: the caps and what changes them, the
+    sects, the social ages, and the titles that are more than a name (the names are
+    in `rule_sets.titles`)."""
     found: dict[str, Any] = {
         "sects": [plain(s) for s in rules.sects.values()],
         "social_ages": [plain(a) for a in rules.social_ages],
+        "cap_changes": [plain(c) for c in rules.cap_changes],
+        "outsiders": [plain(o) for o in rules.outsiders],
         "titles": [
             plain(t) for t in titles if t.sect or t.gives_status or t.page or t.rank is not None
         ],
@@ -341,7 +394,13 @@ def status_rules_to_dict(rules: StatusRulesData, titles: Sequence[TitleData]) ->
 
 
 def status_rules_from_dict(raw: Mapping[str, Any]) -> StatusRulesData:
-    return status_rules_from(raw.get("caps"), raw.get("sects", []), raw.get("social_ages", []))
+    return status_rules_from(
+        raw.get("caps"),
+        raw.get("sects", []),
+        raw.get("social_ages", []),
+        raw.get("cap_changes", []),
+        raw.get("outsiders", []),
+    )
 
 
 # --- checking --------------------------------------------------------------------------------
@@ -421,6 +480,19 @@ def check_status_rules(
         if age.age not in SOCIAL_AGES:
             raise ValueError(f"{where}: no such social age")
         abiding(age.status, age.sect, where)
+
+    for change in rules.cap_changes:
+        if (change.category, change.name) not in known_traits:
+            raise ValueError(f"a cap change names an unknown trait {change.name!r}")
+        if not change.fleeting:
+            raise ValueError(f"the cap change of {change.name!r} changes nothing")
+    for outsider in rules.outsiders:
+        if (outsider.category, outsider.name) not in known_traits:
+            raise ValueError(f"an outsider rule names an unknown trait {outsider.name!r}")
+        if outsider.sect not in rules.sects:
+            raise ValueError(f"{outsider.name!r} gives status of a sect with no status rules")
+        if outsider.fleeting < 1:
+            raise ValueError(f"{outsider.name!r} lets its holder hold no status")
 
     caps = rules.caps
     if caps is not None and not (
