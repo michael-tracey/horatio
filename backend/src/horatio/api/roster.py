@@ -405,6 +405,10 @@ MESSAGES: dict[str, str] = {
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",
     "account.suspension_lifted.ended": "{member}'s suspension ended.",
+    "account.suspended.merged": "{actor} merged @{merged_handle}, which was suspended, into"
+    " {member}, who is suspended in its place.",
+    "account.suspension_lifted.merged": "{actor} lifted {member}'s suspension, merging the"
+    " account into @{kept_handle}, which is suspended already.",
     "account.suspension_email_failed": "Horatio could not email {member} about their "
     "suspension: {error}",
     "account.handle_changed": "{actor} changed their handle from {from_handle} to {handle}.",
@@ -414,6 +418,8 @@ MESSAGES: dict[str, str] = {
     "account.view_as_ended.timed_out": "{actor}'s viewing as {member} ended after 30 minutes.",
     "account.view_as_ended.not_custodian": "{actor}'s viewing as {member} ended: they are"
     " no longer custodian.",
+    "account.view_as_ended.merged": "{actor}'s viewing as {member} ended: the account was"
+    " merged into another.",
     "account.email_change_started": "{actor} started changing {member}'s email from "
     "{from_email} to {to_email}{because}.",
     "account.email_change_started.self": "{actor} asked to change their email from "
@@ -424,6 +430,8 @@ MESSAGES: dict[str, str] = {
     "confirm {member}'s new email: {error}",
     "account.email_change_cancelled": "{actor} cancelled changing {member}'s email to {to_email}.",
     "account.email_change_cancelled.self": "{actor} cancelled changing their email to {to_email}.",
+    "account.email_change_cancelled.merged": "{actor} cancelled changing {member}'s email to"
+    " {to_email}, merging the account into @{kept_handle}.",
     "account.email_changed": "{member} confirmed their new email, {to_email}, changed by "
     "{made_by} from {from_email}{because}.",
     "account.email_changed.self": "{member} confirmed their new email, {to_email}, changed "

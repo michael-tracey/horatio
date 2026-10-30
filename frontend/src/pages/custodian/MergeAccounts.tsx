@@ -133,6 +133,16 @@ function Confirm({
           </li>
         </ul>
       </section>
+      {p.also.length > 0 && (
+        <section>
+          <h3 className="mb-1 text-mist">Also</h3>
+          <ul className="list-disc space-y-1 pl-5">
+            {p.also.map((a) => (
+              <li key={a}>{a}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <p>
         {gone} is then closed: signed out everywhere, it can't sign in, and it isn't listed or found. Its email is kept for the record, but free for use. What
         it did stays as it was, shown as “{p.merge.display_name} (merged into {keep})”.

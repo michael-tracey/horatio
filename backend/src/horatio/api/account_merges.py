@@ -48,6 +48,9 @@ class MergePreview(BaseModel):
     handles: list[str]
     # The rest that moves, each as a phrase.
     others: list[str]
+    # What else the merge does, each as a sentence: to a suspension, a change of
+    # email waiting, a viewing as the account.
+    also: list[str]
     # Why it can't be merged now, if it can't.
     refusals: list[str]
 
@@ -86,6 +89,7 @@ def preview_out(found: account_merges.Preview) -> MergePreview:
         settings=found.settings,
         handles=found.handles,
         others=found.others,
+        also=found.also,
         refusals=found.refusals,
     )
 
@@ -96,7 +100,7 @@ def preview_merge(keep: str, merge: str, db: DbSession, user: CurrentUser) -> Me
     for the custodian to confirm."""
     require_custodian(user)
     return preview_out(
-        account_merges.preview(db, existing_user(db, keep), existing_user(db, merge))
+        account_merges.preview(db, existing_user(db, keep), existing_user(db, merge), user)
     )
 
 
