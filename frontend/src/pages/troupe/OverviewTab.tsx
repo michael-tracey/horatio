@@ -8,7 +8,7 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { BadgeSetting } from "./BadgeSetting";
 import type { abilities } from "./roles";
-import { StatusSetting } from "./StatusSetting";
+import { StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
 import { XpRangeCard } from "./XpRange";
 
@@ -27,6 +27,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
       <SplatsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       <StatusSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
+      <TitlesSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       <BadgeSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
       {troupe.whos_who && <WhosWhoSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />}
       <div className="md:col-span-2">

@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
-import type { BanOut, CharacterOut, HeldOut, StatusAbout, StatusIn, StatusOut, SuppressionOut } from "../../api/types";
+import type { CharacterOut, HeldOut, StatusAbout, StatusIn, StatusOut, SuppressionOut } from "../../api/types";
 import { InfoButton } from "../../components/InfoButton";
 import { PatronPicker } from "../../components/PatronPicker";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
+import { Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { bySource, capText, endingText, outsiderText, suppressedText } from "./status";
@@ -32,7 +32,7 @@ export function About({ about }: { about: StatusAbout | undefined }) {
 }
 
 /** A reason staff give for a change, asked for in place, then the change. */
-function WithReason({
+export function WithReason({
   label,
   name = label,
   needed,
@@ -334,38 +334,6 @@ function Suppress({ character, onDone }: { character: CharacterOut; onDone: () =
   );
 }
 
-function BanRow({ character, status, ban }: { character: CharacterOut; status: StatusOut; ban: BanOut }) {
-  const mark = useAction((body: { mark: "applies" | "exempt" | null; reason: string }) =>
-    unwrap(api.PUT("/api/characters/{character_id}/status/bans", { params: { path: { character_id: character.id } }, body: { ban: ban.applies_to, ...body } })),
-  );
-  const how =
-    ban.marked === false ? `exempt: ${ban.reason}` : ban.marked ? `staff say it applies: ${ban.reason}` : ban.by_sheet ? "the sheet shows it" : null;
-  return (
-    <li className="flex flex-col gap-0.5">
-      <span>
-        <Badge tone={ban.applies ? "blood" : "mist"}>{ban.level}</Badge> <span className={ban.applies ? "text-parchment" : "text-mist"}>{ban.applies_to}</span>
-        {how && <span className="text-xs text-mist"> ({how})</span>}
-      </span>
-      {status.staff && (
-        <span className="flex flex-wrap gap-1">
-          {ban.applies && ban.marked !== false && (
-            <WithReason label="Exempt" needed pending={mark.isPending} onConfirm={(reason) => mark.mutate({ mark: "exempt", reason })} />
-          )}
-          {!ban.applies && (
-            <WithReason label="It applies" needed pending={mark.isPending} onConfirm={(reason) => mark.mutate({ mark: "applies", reason })} />
-          )}
-          {ban.marked !== null && (
-            <Button variant="ghost" className="min-h-8 px-2 text-xs" disabled={mark.isPending} onClick={() => mark.mutate({ mark: null, reason: "" })}>
-              As the sheet shows
-            </Button>
-          )}
-        </span>
-      )}
-      <ErrorText error={mark.error} />
-    </li>
-  );
-}
-
 function Unresolved({ character, status, name }: { character: CharacterOut; status: StatusOut; name: string }) {
   const resolve = useAction((reason: string) =>
     unwrap(api.POST("/api/characters/{character_id}/status/resolve", { params: { path: { character_id: character.id } }, body: { name, reason } })),
@@ -384,10 +352,11 @@ function Unresolved({ character, status, name }: { character: CharacterOut; stat
 }
 
 /**
- * The character's sect status (MET: VTM pp. 310-317): what its titles, social age
- * and merits give, the fleeting and negative status it holds with each one's
- * patron, and its bans. Who adds and removes held status is the home troupe's
- * Status on sheets setting. It is the character page's own Status tab.
+ * The character's sect status (MET: VTM pp. 310-317): what its active title, social
+ * age and merits give, and the fleeting and negative status it holds with each
+ * one's patron. Who adds and removes held status is the home troupe's Status on
+ * sheets setting. It is on the character page's Status & Titles tab, below its
+ * titles and beside its bans.
  */
 export function StatusCard({ character }: { character: CharacterOut }) {
   const status = useStatus(character.id);
@@ -399,7 +368,6 @@ export function StatusCard({ character }: { character: CharacterOut }) {
   if (nothing) return <Empty>{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</Empty>;
   const fleeting = s.held.filter((h) => h.type === "Fleeting");
   const negative = s.held.filter((h) => h.type === "Negative");
-  const bans = s.bans.filter((b) => b.applies || s.staff);
   return (
     <Card
       dense
@@ -407,8 +375,8 @@ export function StatusCard({ character }: { character: CharacterOut }) {
       info={
         <InfoButton label="About Status">
           <span className="block">
-            Status is what the sect thinks of the character (MET: VTM pp. 310-317). Titles, social age and merits give abiding and innate status; fleeting and
-            negative status is held, each one with who gave it.
+            Status is what the sect thinks of the character (MET: VTM pp. 310-317). The active title, social age and merits give abiding and innate status;
+            fleeting and negative status is held, each one with who gave it.
           </span>
           <span className="mt-1 block">
             {s.setting === "staff"
@@ -512,17 +480,6 @@ export function StatusCard({ character }: { character: CharacterOut }) {
             <ul className="mt-1 flex flex-col gap-1">
               {s.unresolved.map((name) => (
                 <Unresolved key={name} character={character} status={s} name={name} />
-              ))}
-            </ul>
-          </section>
-        )}
-        {bans.length > 0 && (
-          <section aria-label="Status bans">
-            <h3 className="text-xs tracking-wide text-mist uppercase">Status bans</h3>
-            <p className="text-xs text-mist">A lesser ban cuts fleeting status to 3, a greater to 1 (MET: VTM p. 312).</p>
-            <ul className="mt-1 flex flex-col gap-1.5">
-              {bans.map((b) => (
-                <BanRow key={b.applies_to} character={character} status={s} ban={b} />
               ))}
             </ul>
           </section>

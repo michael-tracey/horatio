@@ -2314,6 +2314,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/titles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Titles
+         * @description The titles the character holds in its home troupe, the active one, and those
+         *     it can choose.
+         */
+        get: operations["read_titles_api_characters__character_id__titles_get"];
+        put?: never;
+        /**
+         * Choose Title
+         * @description The character takes one of its home troupe's titles of its sect. Staff are told.
+         */
+        post: operations["choose_title_api_characters__character_id__titles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/titles/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Make Active
+         * @description Make a title the character holds its active one: its status in place of the
+         *     old one's. Staff are told.
+         */
+        put: operations["make_active_api_characters__character_id__titles_active_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/titles/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Give Up Title
+         * @description The character gives up a title, and the status it gave. Staff are told.
+         */
+        delete: operations["give_up_title_api_characters__character_id__titles__name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/traits": {
         parameters: {
             query?: never;
@@ -6480,6 +6546,11 @@ export interface components {
              */
             kind: "action";
         };
+        /** ActiveIn */
+        ActiveIn: {
+            /** Name */
+            name: string;
+        };
         /** AdjustmentIn */
         AdjustmentIn: {
             /** Action Kind */
@@ -7571,6 +7642,27 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** CharacterTitlesOut */
+        CharacterTitlesOut: {
+            /** Acting */
+            acting: ("player" | "staff") | null;
+            /** Can Switch */
+            can_switch: boolean;
+            /** Choices */
+            choices: components["schemas"]["TitleChoiceOut"][];
+            /** Held */
+            held: components["schemas"]["HeldTitleOut"][];
+            /** Sect */
+            sect: string | null;
+            /** Setting */
+            setting: string;
+            /** Troupe Id */
+            troupe_id: string | null;
+            /** Troupe Name */
+            troupe_name: string | null;
+            /** Why */
+            why: string | null;
+        };
         /** CheckChange */
         CheckChange: {
             /** Strength */
@@ -7623,6 +7715,16 @@ export interface components {
             options: string[];
             /** Value */
             value: string;
+        };
+        /** ChooseIn */
+        ChooseIn: {
+            /**
+             * Active
+             * @default false
+             */
+            active: boolean;
+            /** Name */
+            name: string;
         };
         /**
          * ClanChoiceOut
@@ -10201,6 +10303,21 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** HeldTitleOut */
+        HeldTitleOut: {
+            /** Active */
+            active: boolean;
+            /** Name */
+            name: string;
+            /** Out Of Sect */
+            out_of_sect: boolean;
+            /** Page */
+            page: string | null;
+            /** Sect */
+            sect: string | null;
+            /** Status */
+            status: string[];
+        };
         /** HeldTitles */
         HeldTitles: {
             /** Titles */
@@ -12257,6 +12374,11 @@ export interface components {
              * @default []
              */
             status: string[];
+            /**
+             * Unique
+             * @default false
+             */
+            unique: boolean;
         };
         /** NewTroupe */
         NewTroupe: {
@@ -13603,6 +13725,11 @@ export interface components {
              */
             email_renames: boolean;
             /**
+             * Email Titles
+             * @default false
+             */
+            email_titles: boolean;
+            /**
              * Email Troupe Requests
              * @default false
              */
@@ -14793,6 +14920,8 @@ export interface components {
         };
         /** RosterEntry */
         RosterEntry: {
+            /** Active Title */
+            active_title?: string | null;
             /**
              * Character Id
              * Format: uuid
@@ -16337,9 +16466,36 @@ export interface components {
              * @default []
              */
             status: string[];
+            /**
+             * Unique
+             * @default false
+             */
+            unique: boolean;
+        };
+        /** TitleChoiceOut */
+        TitleChoiceOut: {
+            /** Holders */
+            holders: string[];
+            /** Name */
+            name: string;
+            /** Open */
+            open: boolean;
+            /** Page */
+            page: string | null;
+            /** Sect */
+            sect: string | null;
+            /** Status */
+            status: string[];
+            /** Unique */
+            unique: boolean;
         };
         /** TitleHeldOut */
         TitleHeldOut: {
+            /**
+             * Active
+             * @default false
+             */
+            active: boolean;
             /** Name */
             name: string;
             /** Next Game */
@@ -16349,6 +16505,11 @@ export interface components {
         };
         /** TitleHolderOut */
         TitleHolderOut: {
+            /**
+             * Active
+             * @default false
+             */
+            active: boolean;
             /**
              * Character Id
              * Format: uuid
@@ -16379,6 +16540,11 @@ export interface components {
             sect: string | null;
             /** Status */
             status: string[];
+            /**
+             * Unique
+             * @default false
+             */
+            unique: boolean;
             /** While Absent */
             while_absent: components["schemas"]["WhileAbsentOut"][];
         };
@@ -16512,6 +16678,8 @@ export interface components {
             starting_xp?: number | null;
             /** Status By */
             status_by?: ("players" | "staff") | null;
+            /** Titles By */
+            titles_by?: ("players" | "staff") | null;
             /** Whos Who Negative */
             whos_who_negative?: boolean | null;
         };
@@ -16613,6 +16781,8 @@ export interface components {
             starting_xp: number;
             /** Status By */
             status_by: string;
+            /** Titles By */
+            titles_by: string;
             /** Whos Who */
             whos_who: boolean;
             /** Whos Who Negative */
@@ -16987,6 +17157,8 @@ export interface components {
         };
         /** WhosWhoEntry */
         WhosWhoEntry: {
+            /** Active Title */
+            active_title?: string | null;
             /** Bans */
             bans: string[];
             /**
@@ -21760,6 +21932,139 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_titles_api_characters__character_id__titles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterTitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    choose_title_api_characters__character_id__titles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChooseIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterTitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_active_api_characters__character_id__titles_active_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterTitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_up_title_api_characters__character_id__titles__name__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterTitlesOut"];
                 };
             };
             /** @description Validation Error */

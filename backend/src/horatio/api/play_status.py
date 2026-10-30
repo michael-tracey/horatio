@@ -55,6 +55,8 @@ class TitleHeldOut(BaseModel):
     status: list[SourceStatus]
     # Given since the game began: it gives nothing until the next game.
     next_game: bool
+    # The one of its titles here that gives status; the others give none.
+    active: bool = False
 
 
 class CarriedOut(BaseModel):
@@ -163,6 +165,7 @@ def play_status_out(
                 if t.data and t.gives and at.troupe
                 else [],
                 next_game=t.next_game,
+                active=t.active,
             )
             for t in at.titles
         ],

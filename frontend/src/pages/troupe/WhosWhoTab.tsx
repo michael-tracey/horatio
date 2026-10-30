@@ -153,8 +153,9 @@ function EntryCard({ entry: e, kind, seated, represent }: { entry: WhosWhoEntry;
         {(e.titles.length > 0 || e.visiting) && (
           <span className="flex flex-wrap gap-1">
             {e.titles.map((t) => (
-              <Badge key={t} tone="gold">
+              <Badge key={t} tone={e.titles.length > 1 && t !== e.active_title ? "mist" : "gold"}>
                 {t}
+                {e.titles.length > 1 && t === e.active_title && " (active)"}
               </Badge>
             ))}
             {e.visiting && <Badge>{e.visiting_from ? `Visiting from ${e.visiting_from}` : "Visiting"}</Badge>}

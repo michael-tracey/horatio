@@ -43,6 +43,8 @@ class WhosWhoEntry(BaseModel):
     player_name: str | None
     # The titles it holds here, highest first.
     titles: list[str]
+    # The one of them that gives it status; None if none is active.
+    active_title: str | None = None
     # What others can see or sense about it, as its badge says.
     visible: list[str]
     # The status bans that apply to it: "Greater status ban: A known Caitiff.".
@@ -135,6 +137,7 @@ def entry_out(entry: whos_who.Entry, lines_veils: LinesVeils | None = None) -> W
         player_id=c.player_id if c.kind == "pc" else None,
         player_name=entry.player,
         titles=entry.titles,
+        active_title=entry.active_title,
         visible=entry.visible,
         bans=entry.bans,
         negative=entry.negative,

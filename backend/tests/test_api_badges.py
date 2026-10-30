@@ -280,8 +280,9 @@ def test_a_badge_prints_the_status_carried_into_a_game(troupe: Troupe) -> None:
     badge = badge_of(troupe, "Elena")
 
     assert badge["titles"] == ["Harpy", "Prince"]
-    # Harpy comes first by name: its status alone, not the Prince's nor the Elder's.
-    assert badge["status"] == ["Prominent", "Noble", "Guardian", "Loyal ×2"]
+    # The Prince is the active title, the higher: its status alone, not the Harpy's
+    # nor the Elder's.
+    assert badge["status"] == ["Authority", "Commander", "Sovereign", "Loyal ×2"]
     assert badge["negative"] == ["Warned"]
 
 

@@ -76,6 +76,8 @@ class Entry:
     player_pronouns: str | None = None
     # Filled in by #267 and #268.
     represented_by: str | None = None
+    # The one of its titles that gives it status (horatio.titles).
+    active_title: str | None = None
     left_reason: str | None = None
 
     @property
@@ -258,6 +260,7 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
         held[who].append(name)
     for names in held.values():
         names.sort(key=lambda n: titles.court_key(order, n))
+    active = titles.active_titles(db, troupe.id)
     characters = members(db, troupe, held)
     gone = departed(db, troupe)
     ids = [c.id for c in characters + gone]
@@ -305,6 +308,7 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
                 pronouns=c.pronouns,
                 player_pronouns=players[c.player_id].pronouns if c.kind == "pc" else None,
                 titles=held.get(c.id, []),
+                active_title=active.get(c.id),
                 visible=visible[c.id],
                 bans=bans(db, c),
                 represented_by=None

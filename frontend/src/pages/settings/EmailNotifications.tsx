@@ -5,7 +5,7 @@ import { Card, Loading, Notice } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { Choice, Setting } from "./SettingsPage";
 
-type EmailKind = "email_downtime" | "email_approvals" | "email_troupe_requests" | "email_renames" | "email_pictures";
+type EmailKind = "email_downtime" | "email_approvals" | "email_troupe_requests" | "email_renames" | "email_pictures" | "email_titles";
 
 /** Each kind of notification that can come by email (horatio.notification_emails.TOPICS). */
 const KINDS: [EmailKind, string, string][] = [
@@ -14,6 +14,7 @@ const KINDS: [EmailKind, string, string][] = [
   ["email_troupe_requests", "Troupe requests", "New troupes people ask the custodian for, and the answer to your own."],
   ["email_renames", "Character renames", "When a character you play or run is renamed."],
   ["email_pictures", "Pictures removed", "When someone removes a picture you added."],
+  ["email_titles", "Titles chosen", "When a player in a troupe you run chooses, gives up or switches their character's title."],
 ];
 
 /**

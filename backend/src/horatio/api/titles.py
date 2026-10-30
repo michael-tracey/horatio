@@ -29,6 +29,8 @@ class TitleHolderOut(BaseModel):
     # It holds a title of another sect, given before titles had sects or since it
     # changed sect: kept, for staff to look at.
     out_of_sect: bool
+    # The one of its titles here that gives it status.
+    active: bool = False
 
 
 class TitleOut(BaseModel):
@@ -43,6 +45,9 @@ class TitleOut(BaseModel):
     page: str | None
     # Added by this troupe, which can change and remove it.
     house: bool
+    # Only one character holds it at a time: players cannot choose it while
+    # someone does.
+    unique: bool = False
     # The troupe gives it now: it has no sect, or one of the troupe's. One it
     # doesn't is listed only while someone holds it.
     offered: bool
@@ -71,6 +76,8 @@ class TitleChange(BaseModel):
     sect: str | None = None
     # Abiding status of its sect, or general status.
     status: list[str] = []
+    # Only one character holds it at a time.
+    unique: bool = False
 
 
 class NewTitle(TitleChange):
@@ -95,6 +102,7 @@ def title_out(
         ],
         page=title.page,
         house=title.name in house,
+        unique=title.unique,
         offered=titles.offers(troupe, title),
         holders=holders,
     )
@@ -112,6 +120,7 @@ def titles_out(db: DbSession, troupe: Troupe) -> TitlesOut:
                 character_name=h.character.name,
                 sect=h.sect,
                 out_of_sect=h.out_of_sect,
+                active=h.active,
             )
         )
     # A title held but no longer in the rules is still listed, so it can be taken.
@@ -144,7 +153,7 @@ def list_titles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Title
 @router.post("/titles", status_code=status.HTTP_201_CREATED)
 def add_title(troupe_id: uuid.UUID, body: NewTitle, db: DbSession, user: CurrentUser) -> TitlesOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_TITLES)
-    titles.add_title(db, user, troupe, body.name, body.sect, body.status)
+    titles.add_title(db, user, troupe, body.name, body.sect, body.status, body.unique)
     db.commit()
     return titles_out(db, troupe)
 
@@ -155,7 +164,7 @@ def change_title(
 ) -> TitlesOut:
     """Change the sect and status of a title the troupe added, for all who hold it."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_TITLES)
-    titles.change_title(db, user, troupe, name, body.sect, body.status)
+    titles.change_title(db, user, troupe, name, body.sect, body.status, body.unique)
     db.commit()
     return titles_out(db, troupe)
 

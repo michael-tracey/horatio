@@ -87,6 +87,21 @@
         "title": "ActionSpend",
         "type": "object"
       },
+      "ActiveIn": {
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ActiveIn",
+        "type": "object"
+      },
       "AdjustmentIn": {
         "properties": {
           "action_kind": {
@@ -3102,6 +3117,105 @@
         "title": "CharacterRef",
         "type": "object"
       },
+      "CharacterTitlesOut": {
+        "properties": {
+          "acting": {
+            "anyOf": [
+              {
+                "enum": [
+                  "player",
+                  "staff"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acting"
+          },
+          "can_switch": {
+            "title": "Can Switch",
+            "type": "boolean"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/TitleChoiceOut"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "held": {
+            "items": {
+              "$ref": "#/components/schemas/HeldTitleOut"
+            },
+            "title": "Held",
+            "type": "array"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "setting": {
+            "title": "Setting",
+            "type": "string"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "sect",
+          "setting",
+          "acting",
+          "can_switch",
+          "why",
+          "held",
+          "choices"
+        ],
+        "title": "CharacterTitlesOut",
+        "type": "object"
+      },
       "CheckChange": {
         "properties": {
           "strength": {
@@ -3266,6 +3380,26 @@
           "value"
         ],
         "title": "ChoiceOut",
+        "type": "object"
+      },
+      "ChooseIn": {
+        "properties": {
+          "active": {
+            "default": false,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ChooseIn",
         "type": "object"
       },
       "ClanChoiceOut": {
@@ -10133,6 +10267,61 @@
         "title": "HeldOut",
         "type": "object"
       },
+      "HeldTitleOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "out_of_sect": {
+            "title": "Out Of Sect",
+            "type": "boolean"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "status": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "sect",
+          "status",
+          "page",
+          "active",
+          "out_of_sect"
+        ],
+        "title": "HeldTitleOut",
+        "type": "object"
+      },
       "HeldTitles": {
         "properties": {
           "titles": {
@@ -15354,6 +15543,11 @@
             },
             "title": "Status",
             "type": "array"
+          },
+          "unique": {
+            "default": false,
+            "title": "Unique",
+            "type": "boolean"
           }
         },
         "required": [
@@ -18824,6 +19018,11 @@
             "title": "Email Renames",
             "type": "boolean"
           },
+          "email_titles": {
+            "default": false,
+            "title": "Email Titles",
+            "type": "boolean"
+          },
           "email_troupe_requests": {
             "default": false,
             "title": "Email Troupe Requests",
@@ -22090,6 +22289,17 @@
       },
       "RosterEntry": {
         "properties": {
+          "active_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Title"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -26117,13 +26327,86 @@
             },
             "title": "Status",
             "type": "array"
+          },
+          "unique": {
+            "default": false,
+            "title": "Unique",
+            "type": "boolean"
           }
         },
         "title": "TitleChange",
         "type": "object"
       },
+      "TitleChoiceOut": {
+        "properties": {
+          "holders": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Holders",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "open": {
+            "title": "Open",
+            "type": "boolean"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "status": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Status",
+            "type": "array"
+          },
+          "unique": {
+            "title": "Unique",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "sect",
+          "status",
+          "page",
+          "unique",
+          "holders",
+          "open"
+        ],
+        "title": "TitleChoiceOut",
+        "type": "object"
+      },
       "TitleHeldOut": {
         "properties": {
+          "active": {
+            "default": false,
+            "title": "Active",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -26150,6 +26433,11 @@
       },
       "TitleHolderOut": {
         "properties": {
+          "active": {
+            "default": false,
+            "title": "Active",
+            "type": "boolean"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -26240,6 +26528,11 @@
             },
             "title": "Status",
             "type": "array"
+          },
+          "unique": {
+            "default": false,
+            "title": "Unique",
+            "type": "boolean"
           },
           "while_absent": {
             "items": {
@@ -26756,6 +27049,21 @@
             ],
             "title": "Status By"
           },
+          "titles_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "players",
+                  "staff"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Titles By"
+          },
           "whos_who_negative": {
             "anyOf": [
               {
@@ -27037,6 +27345,10 @@
             "title": "Status By",
             "type": "string"
           },
+          "titles_by": {
+            "title": "Titles By",
+            "type": "string"
+          },
           "whos_who": {
             "title": "Whos Who",
             "type": "boolean"
@@ -27071,6 +27383,7 @@
           "influence_lookback_days",
           "diablerie_flaws",
           "status_by",
+          "titles_by",
           "badge_titles",
           "badge_status",
           "badge_pronouns",
@@ -28020,6 +28333,17 @@
       },
       "WhosWhoEntry": {
         "properties": {
+          "active_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Title"
+          },
           "bans": {
             "items": {
               "type": "string"
@@ -36092,6 +36416,209 @@
         "summary": "Remove Status",
         "tags": [
           "status"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/titles": {
+      "get": {
+        "description": "The titles the character holds in its home troupe, the active one, and those\nit can choose.",
+        "operationId": "read_titles_api_characters__character_id__titles_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterTitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Titles",
+        "tags": [
+          "titles"
+        ]
+      },
+      "post": {
+        "description": "The character takes one of its home troupe's titles of its sect. Staff are told.",
+        "operationId": "choose_title_api_characters__character_id__titles_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChooseIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterTitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choose Title",
+        "tags": [
+          "titles"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/titles/active": {
+      "put": {
+        "description": "Make a title the character holds its active one: its status in place of the\nold one's. Staff are told.",
+        "operationId": "make_active_api_characters__character_id__titles_active_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterTitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Active",
+        "tags": [
+          "titles"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/titles/{name}": {
+      "delete": {
+        "description": "The character gives up a title, and the status it gave. Staff are told.",
+        "operationId": "give_up_title_api_characters__character_id__titles__name__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterTitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Up Title",
+        "tags": [
+          "titles"
         ]
       }
     },

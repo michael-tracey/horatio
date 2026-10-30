@@ -86,7 +86,7 @@ Several characters of one troupe put on one page of the Play View, side by side,
 _Avoid_: Encounter, group view
 
 **Title**:
-A position a character holds in one troupe, such as Prince or Primogen, given by that troupe's storytellers or assistant storytellers. A title means nothing outside its troupe.
+A position a character holds in one troupe, such as Prince or Primogen. Its player chooses it from that troupe's titles of the character's sect, and the troupe's storytellers and assistant storytellers are told; they can also give and take titles, and a troupe can keep titles to them alone. A title only one character holds at a time, such as Prince, is theirs to give while someone holds it. Of the titles a character holds in a troupe, at most one is active, and only that one gives status. A title means nothing outside its troupe.
 _Avoid_: Rank, office, court position
 
 **Vault**:
