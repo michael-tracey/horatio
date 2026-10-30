@@ -4050,6 +4050,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/responses/{response_id}/quest-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Quest Result
+         * @description Record the result of the scenario a Quest action was for, on its quest. It is
+         *     the response to every member's Quest action on that scenario in the cycle, and
+         *     goes out with the cycle's delivery.
+         */
+        post: operations["record_quest_result_api_responses__response_id__quest_result_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rules": {
         parameters: {
             query?: never;
@@ -7887,6 +7909,13 @@ export interface components {
         };
         /** CycleOut */
         CycleOut: {
+            /**
+             * Action Kinds
+             * @default {}
+             */
+            action_kinds: {
+                [key: string]: string;
+            };
             /** Closed At */
             closed_at: string | null;
             /**
@@ -7912,6 +7941,11 @@ export interface components {
             opened_at: string | null;
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
+            /**
+             * Quests Enabled
+             * @default false
+             */
+            quests_enabled: boolean;
             /** Status */
             status: string;
             /**
@@ -11254,6 +11288,11 @@ export interface components {
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
             /**
+             * Quests
+             * @default []
+             */
+            quests: components["schemas"]["QuestChoiceOut"][];
+            /**
              * Short
              * @default {}
              */
@@ -12965,6 +13004,58 @@ export interface components {
             /** Public */
             public: boolean;
         };
+        /**
+         * QuestActionOut
+         * @description The quest a Quest action names (horatio.quest_actions), as staff answer it.
+         */
+        QuestActionOut: {
+            /** Acted */
+            acted: string[];
+            /** Awaiting Delivery */
+            awaiting_delivery: boolean;
+            /** Category */
+            category: string;
+            /** Difficulty */
+            difficulty: number;
+            /** Downtime Only */
+            downtime_only: boolean;
+            /** Fail Text */
+            fail_text: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Not Spent */
+            not_spent: string[];
+            /** Recorded Here */
+            recorded_here: boolean;
+            /** Requirements */
+            requirements: components["schemas"]["QuestActionRequirementOut"][];
+            /** Result */
+            result: string | null;
+            /** Result Text */
+            result_text: string;
+            /** Scenario */
+            scenario: number | null;
+            /** Scenario Count */
+            scenario_count: number;
+            /** Status */
+            status: string;
+            /** Success Text */
+            success_text: string;
+        };
+        /** QuestActionRequirementOut */
+        QuestActionRequirementOut: {
+            /** Label */
+            label: string;
+            /** Met */
+            met: boolean;
+            /** Met By Name */
+            met_by_name: string;
+        };
         /** QuestCharacterChoice */
         QuestCharacterChoice: {
             /**
@@ -12992,6 +13083,31 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * QuestChoiceOut
+         * @description A quest the character can choose for a Quest action.
+         */
+        QuestChoiceOut: {
+            /** Category */
+            category: string;
+            /** Difficulty */
+            difficulty: number;
+            /** Downtime Only */
+            downtime_only: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+            /** Scenario */
+            scenario: number | null;
+            /** Scenario Count */
+            scenario_count: number;
+        };
         /** QuestDeliveryOut */
         QuestDeliveryOut: {
             /** Channel */
@@ -13009,6 +13125,23 @@ export interface components {
             status: string;
             /** Subject */
             subject: string;
+        };
+        /**
+         * QuestDowntimeOut
+         * @description Who put in a Quest action for the quest in the troupe's current cycle.
+         */
+        QuestDowntimeOut: {
+            /** Acted */
+            acted: string[];
+            /**
+             * Cycle Id
+             * Format: uuid
+             */
+            cycle_id: string;
+            /** Cycle Name */
+            cycle_name: string;
+            /** Not Spent */
+            not_spent: string[];
         };
         /** QuestIn */
         QuestIn: {
@@ -13089,6 +13222,7 @@ export interface components {
             deliveries: components["schemas"]["QuestDeliveryOut"][];
             /** Difficulty */
             difficulty: number;
+            downtime?: components["schemas"]["QuestDowntimeOut"] | null;
             /** Downtime Only */
             downtime_only: boolean;
             /** Ended On */
@@ -13203,6 +13337,21 @@ export interface components {
              */
             troupe_id: string;
         };
+        /** QuestResultIn */
+        QuestResultIn: {
+            /**
+             * Ends
+             * @default false
+             */
+            ends: boolean;
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "passed" | "failed";
+            /** Text */
+            text?: string | null;
+        };
         /** QuestRowOut */
         QuestRowOut: {
             /** Assigned To Any Narrator */
@@ -13266,7 +13415,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "action" | "custom";
+            kind: "action" | "custom" | "quest";
             /** Max Answers */
             max_answers?: number | null;
             /**
@@ -13310,7 +13459,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "action" | "custom";
+            kind: "action" | "custom" | "quest";
             /** Max Answers */
             max_answers?: number | null;
             /**
@@ -13943,6 +14092,13 @@ export interface components {
         };
         /** ScenarioOut */
         ScenarioOut: {
+            /**
+             * Awaiting Delivery
+             * @default false
+             */
+            awaiting_delivery: boolean;
+            /** Cycle Name */
+            cycle_name?: string | null;
             /** Fail Text */
             fail_text: string;
             /** Number */
@@ -16132,6 +16288,7 @@ export interface components {
              */
             influence_blocks: components["schemas"]["BlockWarningOut"][];
             influence_entry?: components["schemas"]["InfluenceEntryRef"] | null;
+            quest?: components["schemas"]["QuestActionOut"] | null;
             /** Question */
             question: string;
             /** Status */
@@ -24253,6 +24410,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LookupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_quest_result_api_responses__response_id__quest_result_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestResultIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
                 };
             };
             /** @description Validation Error */

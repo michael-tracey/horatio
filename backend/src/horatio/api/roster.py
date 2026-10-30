@@ -326,6 +326,10 @@ MESSAGES: dict[str, str] = {
     "quest.built": "{actor} built the quest {quest}.",
     "quest.sent": "{actor} sent the requirements of the quest {quest}.",
     "quest.result": "{actor} sent scenario {scenario} of the quest {quest}: {result}.",
+    "quest.result_recorded": "{actor} recorded scenario {scenario} of the quest {quest} in"
+    " {cycle}: {result}.",
+    "quest.result_delivered": "{actor} sent scenario {scenario} of the quest {quest} with"
+    " {cycle}'s delivery.",
     "quest.closed": "{actor} closed the quest {quest}: {note}",
     "quest.joined": "{character} joined the quest {quest}.",
     "npc.created": "{actor} made an NPC, {character}.",

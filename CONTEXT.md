@@ -296,7 +296,7 @@ The questions a downtime cycle asks, started as a copy of the troupe's previous 
 _Avoid_: Template, Google Form
 
 **Question**:
-One prompt on a downtime form; either an action question or a custom question.
+One prompt on a downtime form: an action question, a custom question, or the Quest action.
 _Avoid_: Field, item
 
 **Action Question**:
@@ -400,6 +400,14 @@ _Avoid_: Prereq, prerequisite (that is a check's)
 **Scenario**:
 One test of a quest, numbered from 1, with its success and fail text. Staff send each one's result to the party; a failed one is tried again unless it ends the quest.
 _Avoid_: Stage, step, round
+
+**Quest Action**:
+The downtime form's question, added to new forms while the troupe runs quests, in which a character names one quest it can take part in; submitting it joins the party. It spends an action of the kind the troupe chooses, general unless it chooses another. Staff record the scenario's result on the quest once, and it is the response to every member's Quest action on that scenario, sent with the cycle's delivery. For a Complex or Epic quest, a party member with no Quest action that cycle shows to staff as not having spent the action the scenario needs (Vol. II Issue 1, p. 102).
+_Avoid_: Quest question, quest slot
+
+**Downtime Only**:
+A quest whose results are recorded only through Quest actions in a downtime, never at a game.
+_Avoid_: Downtime quest
 
 **Quest Leader**:
 The character a quest is for, who leads its party: the one who asked for it, the one staff give it to, or the first to join one offered more widely. Its player shares the quest and tells its tale.

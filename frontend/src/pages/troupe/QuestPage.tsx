@@ -387,22 +387,42 @@ function Scenarios({ quest: q }: { quest: QuestOut }) {
           <ErrorText error={save.error} />
         </form>
       ) : (
-        <ol className="flex flex-col gap-3">
-          {q.scenarios.map((s) => (
-            <li key={s.number} aria-label={`Scenario ${s.number}`} className="rounded-md border border-ash p-3 text-sm">
-              <p className="mb-1 text-gold">{s.result ? resultText(s) : `Scenario ${s.number}`}</p>
-              {s.result ? (
-                <RichText text={s.result_text} />
-              ) : (
-                <>
-                  <p className="text-mist">Success: {s.success_text || "not written yet"}</p>
-                  <p className="text-mist">Fail: {s.fail_text || "not written yet"}</p>
-                </>
+        <>
+          {q.downtime && (
+            <p aria-label="Quest actions" className="mb-3 text-sm text-mist">
+              In {q.downtime.cycle_name}: {q.downtime.acted.length ? `Quest actions from ${q.downtime.acted.join(", ")}.` : "no Quest actions yet."}
+              {q.downtime.not_spent.length > 0 && (
+                <span className="block text-blood-bright">
+                  Not spent the action the next scenario needs: {q.downtime.not_spent.join(", ")}. Nothing's Simple, Vol. II Issue 1, p. 102.
+                </span>
               )}
-              {q.can_send && q.status === "active" && next?.number === s.number && <SendResult quest={q} number={s.number} success={s.success_text} fail={s.fail_text} />}
-            </li>
-          ))}
-        </ol>
+            </p>
+          )}
+          <ol className="flex flex-col gap-3">
+            {q.scenarios.map((s) => (
+              <li key={s.number} aria-label={`Scenario ${s.number}`} className="rounded-md border border-ash p-3 text-sm">
+                <p className="mb-1 text-gold">{s.result ? resultText(s) : `Scenario ${s.number}`}</p>
+                {s.result ? (
+                  <RichText text={s.result_text} />
+                ) : (
+                  <>
+                    <p className="text-mist">Success: {s.success_text || "not written yet"}</p>
+                    <p className="text-mist">Fail: {s.fail_text || "not written yet"}</p>
+                  </>
+                )}
+                {s.awaiting_delivery && <p className="mt-1 text-xs text-mist">Recorded in {s.cycle_name}; it goes out with that cycle's delivery.</p>}
+                {q.can_send &&
+                  q.status === "active" &&
+                  next?.number === s.number &&
+                  (q.downtime_only ? (
+                    <p className="mt-2 text-xs text-mist">Downtime only: its result is recorded from a Quest action, in a downtime cycle's responses.</p>
+                  ) : (
+                    <SendResult quest={q} number={s.number} success={s.success_text} fail={s.fail_text} />
+                  ))}
+              </li>
+            ))}
+          </ol>
+        </>
       )}
     </Card>
   );

@@ -221,6 +221,17 @@ const ANSWER_TYPES = [
   ["yes_no", "Yes / no"],
 ] as const;
 
+/** The Quest action, as a new form has it while the troupe runs quests. */
+const QUEST_ACTION: QuestionIn = {
+  kind: "quest",
+  action_kind: "general",
+  prompt: "Quest",
+  help_text: "Choose a quest your character takes part in, and say what they do towards it.",
+  answer_type: "long_text",
+  options: [],
+  required: false,
+};
+
 function FormEditor({ cycle }: { cycle: CycleOut }) {
   const [questions, setQuestions] = useState<QuestionIn[]>(cycle.questions);
   const save = useAction(() =>
@@ -241,7 +252,7 @@ function FormEditor({ cycle }: { cycle: CycleOut }) {
       {questions.map((q, i) => (
         <Card
           key={q.id ?? `new${i}`}
-          title={q.kind === "action" ? `Action: ${q.action_kind?.replace(/_/g, " ")}` : "Custom question"}
+          title={q.kind === "quest" ? "Quest action" : q.kind === "action" ? `Action: ${q.action_kind?.replace(/_/g, " ")}` : "Custom question"}
           actions={
             editable && (
               <span className="flex gap-1">
@@ -279,7 +290,18 @@ function FormEditor({ cycle }: { cycle: CycleOut }) {
                 <Textarea rows={2} disabled={!editable} value={(q.options ?? []).join("\n")} onChange={(e) => update(i, { options: e.target.value.split("\n") })} />
               </Field>
             )}
-            {q.kind === "action" ? (
+            {q.kind === "quest" && (
+              <Field label="Spends" hint="Which of the character's actions a Quest action uses.">
+                <Select disabled={!editable} value={q.action_kind ?? "general"} onChange={(e) => update(i, { action_kind: e.target.value })}>
+                  {Object.entries(cycle.action_kinds ?? {}).map(([key, name]) => (
+                    <option key={key} value={key}>
+                      {name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
+            {q.kind === "action" || q.kind === "quest" ? (
               <Field label="Most answers" hint="Blank: as many as the character's actions allow.">
                 <Input
                   type="number"
@@ -303,6 +325,11 @@ function FormEditor({ cycle }: { cycle: CycleOut }) {
           <Button variant="secondary" onClick={() => setQuestions([...questions, { kind: "custom", prompt: "New question", answer_type: "long_text", help_text: "", options: [], required: false }])}>
             Add a custom question
           </Button>
+          {cycle.quests_enabled && !questions.some((q) => q.kind === "quest") && (
+            <Button variant="secondary" onClick={() => setQuestions([...questions, { ...QUEST_ACTION }])}>
+              Add the Quest action
+            </Button>
+          )}
           <Button onClick={() => save.mutate(undefined)} disabled={save.isPending}>
             Save form
           </Button>

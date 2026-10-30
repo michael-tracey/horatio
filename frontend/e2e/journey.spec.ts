@@ -2750,6 +2750,126 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   await s.screenshot(shots("quest-player"));
 });
 
+test("quests in downtime: a Quest action joins a Downtime Only quest, one result answers both members, and it goes out with the delivery", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "qdt-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "qdt-lead");
+  const leader = await person(browser, "qdt-leader");
+  const joiner = await person(browser, "qdt-joiner");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Downtime Questers ${run}`, lead_handle: lead.handle });
+  const build = async (page: Page, name: string) => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const agnes = await build(leader.page, "Agnes");
+  const bram = await build(joiner.page, "Bram");
+
+  // Quests on; a Complex 2 quest for Agnes, Downtime Only, sent and shared with Bram.
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/quest-settings`, { enabled: true, requests_per_cycle: 1 });
+  const quest = await send(lead.page, "POST", `/api/troupes/${troupe.id}/quests`, {
+    name: "The Drowned Archive",
+    category: "complex",
+    difficulty: 2,
+    downtime_only: true,
+    leader_id: agnes,
+    scenarios: [{ success_text: "You find the cellar beneath the chantry." }, { success_text: "The archive is yours." }],
+  });
+  await send(lead.page, "POST", `/api/quests/${quest.id}/requirements`, { options: [{ kind: "text", text: "A boat at night" }] });
+  await send(lead.page, "POST", `/api/quests/${quest.id}/send`);
+  await send(leader.page, "POST", `/api/characters/${agnes}/quests/${quest.id}/share`, { character_ids: [bram] });
+
+  // A new cycle's form has the Quest action, spending a general action.
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Flood month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+  const l = lead.page;
+  await l.goto(`/cycles/${cycle.id}/form`);
+  const form = l.locator("section").filter({ has: l.getByRole("heading", { name: "Quest action" }) });
+  await expect(form.getByLabel("Spends")).toHaveValue("general");
+
+  // Bram's player picks the quest shared with him, says what he does, and submits: he joins it.
+  const b = joiner.page;
+  await b.goto(`/characters/${bram}/downtime`);
+  const card = b.locator("section").filter({ has: b.getByRole("heading", { name: "Quest", exact: true }) });
+  await card.getByRole("button", { name: /Add an action/ }).click();
+  await expect(card.getByLabel("Which quest").locator("option", { hasText: "The Drowned Archive: Complex 2 · Downtime only · scenario 1 of 2 · choosing it joins the party" })).toHaveCount(1);
+  await card.getByLabel("Which quest").selectOption(quest.id);
+  await card.getByLabel("Quest", { exact: true }).fill("Bram rows out to the flooded chantry.");
+  await b.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(b.getByText("submitted", { exact: true })).toBeVisible();
+  await expect(b.getByText("1 / 3")).toBeVisible();
+  await b.goto(`/characters/${bram}/quests/${quest.id}`);
+  await expect(b.getByText("The party: Agnes, Bram")).toBeVisible();
+  await expect(b.getByText("Complex 2 · Downtime only", { exact: false })).toBeVisible();
+
+  // Agnes puts in hers too; the cycle closes.
+  const agnesForm = await (await leader.page.request.get(`/api/characters/${agnes}/downtime`)).json();
+  const question = agnesForm.questions.find((q: { kind: string }) => q.kind === "quest");
+  await send(leader.page, "PUT", `/api/characters/${agnes}/downtime/answers`, {
+    answers: [{ question_id: question.id, body: "Agnes bribes the ferryman.", structured: { quest_id: quest.id } }],
+  });
+  await send(leader.page, "POST", `/api/characters/${agnes}/downtime/submit`);
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: false });
+
+  // The lead answers beside the quest: one success, and both responses show it.
+  await l.goto(`/cycles/${cycle.id}/responses`);
+  const forAgnes = l.getByRole("region", { name: "Quest: The Drowned Archive" }).first();
+  await expect(forAgnes.getByText("Complex 2 · Downtime only · Scenario 1 of 2")).toBeVisible();
+  await expect(forAgnes.getByText("Still to meet: A boat at night")).toBeVisible();
+  await expect(forAgnes.getByText("Also put in a Quest action: Bram.")).toBeVisible();
+  await expect(forAgnes.getByLabel("What the party is told")).toHaveValue("You find the cellar beneath the chantry.");
+  await forAgnes.getByRole("button", { name: "Record scenario 1's result" }).click();
+  await expect(l.getByText("Scenario 1: passed, recorded here; it goes out with this cycle's delivery.")).toHaveCount(2);
+  await expect(l.getByLabel("Response to Agnes")).toHaveValue(/You find the cellar beneath the chantry\./);
+  await expect(l.getByLabel("Response to Bram")).toHaveValue(/You find the cellar beneath the chantry\./);
+  await l.screenshot(shots("quest-downtime-responses"));
+
+  // Nothing reaches the party before the delivery.
+  await b.reload();
+  await expect(b.getByText("Scenario 1: passed")).toHaveCount(0);
+
+  // The delivery sends it, and the quest moves on to scenario 2, still for downtime only.
+  await l.goto(`/cycles/${cycle.id}`);
+  await l.getByRole("button", { name: "Deliver results" }).click();
+  await expect(l.getByText("Delivered 2 downtimes.", { exact: false })).toBeVisible();
+  await b.reload();
+  await expect(b.getByText("Scenario 1: passed")).toBeVisible();
+  await b.goto(`/characters/${bram}/results`);
+  await expect(b.getByText("The Drowned Archive, scenario 1: passed.", { exact: false })).toBeVisible();
+  await b.screenshot(shots("quest-downtime-results"));
+  await l.goto(`/troupes/${troupe.id}/quests/${quest.id}`);
+  await expect(l.getByText("In Flood month: Quest actions from Agnes, Bram.")).toBeVisible();
+  await expect(l.getByRole("listitem", { name: "Scenario 2" }).getByText("Downtime only: its result is recorded from a Quest action", { exact: false })).toBeVisible();
+  await expect(l.getByRole("button", { name: "Send scenario 2's result" })).toHaveCount(0);
+});
+
 test("a Caitiff chooses their in-clan disciplines while creating", async ({ browser }) => {
   const { page } = await person(browser, "caitiff");
   await page.getByLabel("Name").fill("Nobody's Child");

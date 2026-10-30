@@ -9,12 +9,13 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import quest_requirements, quests
+from horatio import quest_actions, quest_requirements, quests
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Character,
     Delivery,
+    DowntimeCycle,
     Quest,
     QuestLogEntry,
     QuestRequest,
@@ -116,10 +117,14 @@ class ScenarioOut(BaseModel):
     number: int
     success_text: str
     fail_text: str
-    # passed | failed, once sent.
+    # passed | failed, once recorded.
     result: str | None
     result_text: str
     sent_at: datetime | None
+    # Recorded through this downtime cycle's Quest actions (horatio.quest_actions),
+    # and still to go out with its delivery.
+    cycle_name: str | None = None
+    awaiting_delivery: bool = False
 
 
 class MemberOut(BaseModel):
@@ -143,6 +148,17 @@ class QuestDeliveryOut(BaseModel):
     channel: str
     status: str
     last_error: str | None
+
+
+class QuestDowntimeOut(BaseModel):
+    """Who put in a Quest action for the quest in the troupe's current cycle."""
+
+    cycle_id: uuid.UUID
+    cycle_name: str
+    acted: list[str]
+    # For a Complex or Epic quest, party members who put in none, so have not spent
+    # the action its scenario needs (Nothing's Simple, Vol. II Issue 1, p. 102).
+    not_spent: list[str]
 
 
 class Guidance(BaseModel):
@@ -187,6 +203,8 @@ class QuestOut(BaseModel):
     log: list[LogOut]
     request: QuestRequestOut | None
     deliveries: list[QuestDeliveryOut]
+    # Quest actions for it in the troupe's open (or last closed) downtime cycle.
+    downtime: QuestDowntimeOut | None = None
     # The reader may change it, assign it, send it and check sheets against it.
     can_edit: bool
     can_assign: bool
@@ -524,7 +542,8 @@ def requirement_out(
     )
 
 
-def scenario_out(s: QuestScenario) -> ScenarioOut:
+def scenario_out(db: DbSession, s: QuestScenario) -> ScenarioOut:
+    cycle = db.get(DowntimeCycle, s.cycle_id) if s.cycle_id else None
     return ScenarioOut(
         number=s.number,
         success_text=s.success_text,
@@ -532,6 +551,27 @@ def scenario_out(s: QuestScenario) -> ScenarioOut:
         result=s.result,
         result_text=s.result_text,
         sent_at=s.sent_at,
+        cycle_name=cycle.name if cycle else None,
+        awaiting_delivery=quests.awaiting_delivery(s),
+    )
+
+
+def downtime_out(db: DbSession, quest: Quest) -> QuestDowntimeOut | None:
+    if quest.sent_at is None:
+        return None
+    cycle = quest_actions.cycle_now(db, quest.troupe_id)
+    if cycle is None:
+        return None
+    acted = quest_actions.actions(db, quest, cycle)
+    if quest.status != "active" and not acted:
+        return None
+    return QuestDowntimeOut(
+        cycle_id=cycle.id,
+        cycle_name=cycle.name,
+        acted=[a.character.name for a in acted],
+        not_spent=[c.name for c in quest_actions.not_spent(db, quest, cycle)]
+        if quest.status == "active"
+        else [],
     )
 
 
@@ -598,7 +638,7 @@ def quest_out(db: DbSession, user: User, troupe: Troupe, quest: Quest) -> QuestO
         requirements=[
             requirement_out(db, quest, r, running) for r in quests.requirements(db, quest)
         ],
-        scenarios=[scenario_out(s) for s in quests.scenarios(db, quest)],
+        scenarios=[scenario_out(db, s) for s in quests.scenarios(db, quest)],
         members=[
             MemberOut(
                 character_id=c.id,
@@ -628,6 +668,7 @@ def quest_out(db: DbSession, user: User, troupe: Troupe, quest: Quest) -> QuestO
             )
             for d, name in sent_out
         ],
+        downtime=downtime_out(db, quest),
         can_edit=may_work and open_,
         can_assign=running and open_,
         can_send=running and open_,
@@ -657,7 +698,13 @@ def player_quest_out(
 ) -> PlayerQuestOut:
     leader = db.get(Character, quest.leader_id) if quest.leader_id else None
     in_party = role in ("leader", "joined")
-    sent = [s for s in quests.scenarios(db, quest) if s.result is not None]
+    all_scenarios = quests.scenarios(db, quest)
+    # A result recorded through a downtime cycle shows once that cycle is delivered,
+    # and so does the end it brought.
+    sent = [s for s in all_scenarios if s.result is not None and s.sent_at is not None]
+    waiting = any(quests.awaiting_delivery(s) for s in all_scenarios)
+    status = "active" if waiting and quest.status in ("completed", "failed") else quest.status
+    ended = status in ("completed", "failed")
     return PlayerQuestOut(
         id=quest.id,
         name=quest.name,
@@ -665,7 +712,7 @@ def player_quest_out(
         category=quest.category,  # type: ignore[arg-type]  # checked by the database
         difficulty=quest.difficulty,
         downtime_only=quest.downtime_only,
-        status=quest.status,
+        status=status,
         role=role,
         leader_name=leader.name if leader else None,
         party=[c.name for c in quests.party(db, quest)],
@@ -677,7 +724,7 @@ def player_quest_out(
             )
             for r in quests.requirements(db, quest)
         ],
-        scenario_count=len(quests.scenarios(db, quest)),
+        scenario_count=len(all_scenarios),
         results=[
             PlayerScenarioOut(
                 number=s.number, result=s.result or "", text=s.result_text, sent_at=s.sent_at
@@ -686,16 +733,14 @@ def player_quest_out(
         ]
         if in_party
         else [],
-        ended_on=quest.ended_on,
-        finished_by=[f["name"] for f in quest.finished_by],
+        ended_on=quest.ended_on if ended else None,
+        finished_by=[f["name"] for f in quest.finished_by] if ended else [],
         close_note=quest.close_note,
         tale=quest.tale if in_party else "",
         tale_approved=quest.tale_approved_at is not None,
         can_join=quest.status == "active" and role in ("invited", "offered"),
         can_share=quest.status == "active" and role == "leader",
-        can_write_tale=role == "leader"
-        and quest.status in ("completed", "failed")
-        and quest.tale_approved_at is None,
+        can_write_tale=role == "leader" and ended and quest.tale_approved_at is None,
     )
 
 

@@ -8,7 +8,16 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import downtimes, feeding, influence, pictures, social_age, xp_range
+from horatio import (
+    downtimes,
+    feeding,
+    influence,
+    pictures,
+    quest_actions,
+    quests,
+    social_age,
+    xp_range,
+)
 from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
@@ -16,6 +25,7 @@ from horatio.models import (
     Character,
     CycleParticipant,
     DowntimeCycle,
+    Quest,
     Question,
     Submission,
     Troupe,
@@ -32,7 +42,10 @@ AnswerType = Literal["long_text", "short_text", "choice", "number", "yes_no"]
 
 class QuestionIn(BaseModel):
     id: uuid.UUID | None = None
-    kind: Literal["action", "custom"]
+    # An action question, a custom one, or the Quest action (horatio.quest_actions).
+    kind: Literal["action", "custom", "quest"]
+    # The kind of action it spends; for the Quest action, general unless the troupe
+    # chooses another.
     action_kind: str | None = None
     prompt: str = Field(min_length=1)
     help_text: str = ""
@@ -76,6 +89,10 @@ class CycleOut(BaseModel):
     # XP each character gets for submitting its downtime.
     completion_xp: int
     questions: list[QuestionOut]
+    # The troupe's action kinds, key to name, for the form's questions to spend.
+    action_kinds: dict[str, str] = {}
+    # The troupe runs quests, so its form may have the Quest action.
+    quests_enabled: bool = False
 
 
 class AllowanceLineOut(BaseModel):
@@ -197,6 +214,21 @@ class AnswerIn(BaseModel):
     structured: dict[str, Any] | None = None
 
 
+class QuestChoiceOut(BaseModel):
+    """A quest the character can choose for a Quest action."""
+
+    id: uuid.UUID
+    name: str
+    category: str
+    difficulty: int
+    downtime_only: bool
+    # leader | joined | invited | offered: choosing one it is not in joins it.
+    role: str
+    # The scenario the party faces next, of how many.
+    scenario: int | None
+    scenario_count: int
+
+
 class AnswersIn(BaseModel):
     answers: list[AnswerIn]
     # The Feeding section; left out, it stays as it was.
@@ -230,6 +262,8 @@ class MyDowntime(BaseModel):
     influence: list[InfluenceStandingOut] = []
     # The Feeding section, for a character that feeds.
     feeding: MyFeedingOut | None = None
+    # The quests its Quest action can name, when the form has one.
+    quests: list[QuestChoiceOut] = []
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -251,6 +285,7 @@ def question_out(q: Question) -> QuestionOut:
 
 
 def cycle_out(db: DbSession, cycle: DowntimeCycle) -> CycleOut:
+    troupe = db.get_one(Troupe, cycle.troupe_id)
     return CycleOut(
         id=cycle.id,
         troupe_id=cycle.troupe_id,
@@ -262,7 +297,40 @@ def cycle_out(db: DbSession, cycle: DowntimeCycle) -> CycleOut:
         closed_at=cycle.closed_at,
         completion_xp=cycle.completion_xp,
         questions=[question_out(q) for q in downtimes.questions(db, cycle)],
+        action_kinds=downtimes.troupe_action_kinds(db, troupe),
+        quests_enabled=troupe.quests_enabled,
     )
+
+
+def quest_choices(
+    db: DbSession, character: Character, cycle: DowntimeCycle, submission: Submission | None
+) -> list[QuestChoiceOut]:
+    """The quests the character can choose now, and any its answers already name."""
+    found = quest_actions.choices(db, character, cycle)
+    offered = {q.id for q, _ in found}
+    for answer in downtimes.answers_for(db, submission) if submission else []:
+        quest_id = quest_actions.quest_id_of(answer.structured)
+        quest = db.get(Quest, quest_id) if quest_id and quest_id not in offered else None
+        role = quests.role_of(db, quest, character) if quest else None
+        if quest is not None and role is not None:
+            found.append((quest, role))
+            offered.add(quest.id)
+    out: list[QuestChoiceOut] = []
+    for quest, role in found:
+        scenario = quests.current_scenario(db, quest)
+        out.append(
+            QuestChoiceOut(
+                id=quest.id,
+                name=quest.name,
+                category=quest.category,
+                difficulty=quest.difficulty,
+                downtime_only=quest.downtime_only,
+                role=role,
+                scenario=scenario.number if scenario else None,
+                scenario_count=len(quests.scenarios(db, quest)),
+            )
+        )
+    return out
 
 
 def completion_awarded(db: DbSession, p: CycleParticipant) -> int | None:
@@ -594,6 +662,9 @@ def my_downtime_out(
         completion_xp_awarded=completion_awarded(db, participant),
         influence=[standing_out(s) for t, s in standings.items() if t in asked],
         feeding=my_feeding_out(db, character, cycle, participant, submission),
+        quests=quest_choices(db, character, cycle, submission)
+        if any(q.kind == "quest" for q in questions)
+        else [],
     )
 
 

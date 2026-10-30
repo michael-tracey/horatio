@@ -95,7 +95,8 @@ class Quest(Record):
     objective: Mapped[str] = mapped_column(default="", server_default="")
     category: Mapped[str] = mapped_column(default="simple", server_default="simple")
     difficulty: Mapped[int] = mapped_column(default=1, server_default="1")
-    # Must be completed in downtime (horatio.quests; the Quest action comes later).
+    # Must be completed in downtime: its results are recorded only through a downtime
+    # Quest action (horatio.quest_actions).
     downtime_only: Mapped[bool] = mapped_column(default=False, server_default="false")
     # For staff only.
     staff_notes: Mapped[str] = mapped_column(default="", server_default="")
@@ -214,6 +215,11 @@ class QuestScenario(Record):
     result_text: Mapped[str] = mapped_column(default="", server_default="")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     sent_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # Recorded through a downtime cycle's Quest actions (horatio.quest_actions): it
+    # goes out with that cycle's delivery, and sent_at stays empty until then.
+    cycle_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("downtime_cycles.id", ondelete="SET NULL"), index=True
+    )
     # The party when it passed ([character id]): who it unlocks other quests for.
     party: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
 

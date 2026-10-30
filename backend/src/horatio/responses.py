@@ -323,8 +323,11 @@ def deliver_cycle(
 ) -> tuple[int, int]:
     """Deliver every submission that has written responses: in Horatio, where it
     was not delivered already, and queued on each of the troupe's connectors that
-    has nothing for it yet. Returns how many were delivered in Horatio, and how
+    has nothing for it yet; with them, the quest results recorded through the cycle
+    (horatio.quest_actions). Returns how many were delivered in Horatio, and how
     many deliveries were queued on connectors."""
+    from horatio import quest_actions
+
     if cycle.status not in ("closed", "complete"):
         raise conflict("Close the cycle before delivering results.")
     rows = db.execute(
@@ -375,6 +378,7 @@ def deliver_cycle(
         )
         count += 1
     db.flush()
+    quest_actions.deliver(db, staff, cycle)
     audit.record(
         db,
         staff,
