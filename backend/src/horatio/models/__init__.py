@@ -37,6 +37,7 @@ from horatio.models.equipment import EquipmentEvent, EquipmentItem
 from horatio.models.influence import InfluenceEntry
 from horatio.models.influence_blocks import InfluenceBlock
 from horatio.models.influence_effects import InfluenceEffect
+from horatio.models.locations import Location, TroupeLocationQuality
 from horatio.models.notifications import EmailNotice, Notification
 from horatio.models.npcs import StockNpc
 from horatio.models.people import (
@@ -53,6 +54,14 @@ from horatio.models.play import (
     PlayEvent,
     PlayGame,
     PoolModifier,
+)
+from horatio.models.quests import (
+    Quest,
+    QuestLogEntry,
+    QuestMember,
+    QuestRequest,
+    QuestRequirement,
+    QuestScenario,
 )
 from horatio.models.retainers import AlternateIdentity, Retainer
 from horatio.models.rules import (
@@ -108,6 +117,8 @@ __all__ = [
     "InfluenceBlock",
     "InfluenceEntry",
     "InfluenceEffect",
+    "Location",
+    "TroupeLocationQuality",
     "RandomTable",
     "Response",
     "Notification",
@@ -119,6 +130,12 @@ __all__ = [
     "PlayEvent",
     "PlayGame",
     "Question",
+    "Quest",
+    "QuestLogEntry",
+    "QuestMember",
+    "QuestRequest",
+    "QuestRequirement",
+    "QuestScenario",
     "Submission",
     "TroupeConnector",
     "Approval",

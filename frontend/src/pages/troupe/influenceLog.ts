@@ -55,6 +55,8 @@ export function sourceText(entry: Pick<InfluenceEntryOut, "source" | "cycle_name
       return "At a game";
     case "import":
       return entry.reference ? `Imported (${entry.reference})` : "Imported";
+    case "quest":
+      return entry.cycle_name ? `For a quest, for ${entry.cycle_name}` : "For a quest";
     default:
       return entry.cycle_name ? `By hand, for ${entry.cycle_name}` : "By hand";
   }

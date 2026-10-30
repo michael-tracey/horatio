@@ -10,12 +10,14 @@ import { CyclesTab } from "./CyclesTab";
 import { EquipmentTab } from "./EquipmentTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
 import { LinesVeilsTab } from "./LinesVeilsTab";
+import { LocationsTab } from "./LocationsTab";
 import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
 import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlayersTab } from "./PlayersTab";
+import { QuestsTab } from "./QuestsTab";
 import { PlayTab } from "./PlayTab";
 import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
@@ -43,6 +45,14 @@ export function TroupePage() {
     queryFn: () =>
       unwrap(api.GET("/api/troupes/{troupe_id}/approvals", { params: { path: { troupe_id: troupeId }, query: { state: "pending" } } })),
     enabled: running,
+    refetchInterval: 60_000,
+  });
+  // New quest requests, beside the other counts.
+  const newQuests = useQuery({
+    queryKey: ["quest-requests", troupeId, "new"],
+    queryFn: () =>
+      unwrap(api.GET("/api/troupes/{troupe_id}/quest-requests", { params: { path: { troupe_id: troupeId }, query: { show: "new" } } })),
+    enabled: running && !!troupe.data?.quests_enabled,
     refetchInterval: 60_000,
   });
 
@@ -91,6 +101,7 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
               ...(can.running ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
+              ...(can.running ? [{ to: `${base}/locations`, label: "Locations" }] : []),
               ...(can.running ? [{ to: `${base}/equipment`, label: "Equipment" }] : []),
               ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
             ],
@@ -109,6 +120,7 @@ export function TroupePage() {
               ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
               ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
               ...(can.running ? [{ to: `${base}/influence`, label: "Influence log" }] : []),
+              ...(can.staff && t.quests_enabled ? [{ to: `${base}/quests`, label: "Quests", count: newQuests.data?.length ?? 0 }] : []),
             ],
           },
           {
@@ -135,6 +147,7 @@ export function TroupePage() {
         {can.running && <Route path="npcs/:characterId" element={<StockNpcBuilder troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
+        {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
         {can.running && <Route path="rules/*" element={<RulesTab troupeId={t.id} canEdit={can.storyteller} />} />}
@@ -146,6 +159,7 @@ export function TroupePage() {
         {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} canLog={can.running} />} />}
         {can.running && <Route path="influence/*" element={<InfluenceLogTab troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
+        {can.staff && t.quests_enabled && <Route path="quests/*" element={<QuestsTab troupeId={t.id} running={can.running} />} />}
       </Routes>
     </>
   );

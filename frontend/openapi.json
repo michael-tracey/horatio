@@ -69,6 +69,24 @@
         "title": "ActionKindOut",
         "type": "object"
       },
+      "ActionSpend": {
+        "properties": {
+          "action_kind": {
+            "default": "general",
+            "maxLength": 100,
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "kind": {
+            "const": "action",
+            "default": "action",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "title": "ActionSpend",
+        "type": "object"
+      },
       "ActiveIn": {
         "properties": {
           "name": {
@@ -693,6 +711,37 @@
         "title": "ArchivedTroupeOut",
         "type": "object"
       },
+      "AspectNeed": {
+        "properties": {
+          "aspect": {
+            "enum": [
+              "clan",
+              "bloodline",
+              "sect"
+            ],
+            "title": "Aspect",
+            "type": "string"
+          },
+          "kind": {
+            "const": "aspect",
+            "default": "aspect",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "aspect",
+          "name"
+        ],
+        "title": "AspectNeed",
+        "type": "object"
+      },
       "Assignment": {
         "properties": {
           "any_narrator": {
@@ -714,6 +763,29 @@
           }
         },
         "title": "Assignment",
+        "type": "object"
+      },
+      "AssignmentIn": {
+        "properties": {
+          "any_narrator": {
+            "default": false,
+            "title": "Any Narrator",
+            "type": "boolean"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "title": "AssignmentIn",
         "type": "object"
       },
       "AttributeChange": {
@@ -1104,6 +1176,34 @@
           "characters"
         ],
         "title": "AwardsOut",
+        "type": "object"
+      },
+      "BackgroundSpend": {
+        "properties": {
+          "dots": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Dots",
+            "type": "integer"
+          },
+          "kind": {
+            "const": "background",
+            "default": "background",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "dots"
+        ],
+        "title": "BackgroundSpend",
         "type": "object"
       },
       "BackupOut": {
@@ -2935,6 +3035,69 @@
         "title": "CharacterOut",
         "type": "object"
       },
+      "CharacterQuestsOut": {
+        "properties": {
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "quests": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerQuestOut"
+            },
+            "title": "Quests",
+            "type": "array"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerRequestOut"
+            },
+            "title": "Requests",
+            "type": "array"
+          },
+          "used": {
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "limit",
+          "used",
+          "cycle_name",
+          "refusal",
+          "requests",
+          "quests"
+        ],
+        "title": "CharacterQuestsOut",
+        "type": "object"
+      },
       "CharacterRef": {
         "properties": {
           "id": {
@@ -3413,6 +3576,137 @@
           "clans"
         ],
         "title": "ClanLogosOut",
+        "type": "object"
+      },
+      "ClanMeritOut": {
+        "description": "A merit the clan needs, from the merit points: a bloodline or rarity merit.",
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "points",
+          "why"
+        ],
+        "title": "ClanMeritOut",
+        "type": "object"
+      },
+      "ClanRarityIn": {
+        "properties": {
+          "rarities": {
+            "additionalProperties": {
+              "enum": [
+                "common",
+                "uncommon",
+                "rare",
+                "restricted"
+              ],
+              "type": "string"
+            },
+            "title": "Rarities",
+            "type": "object"
+          }
+        },
+        "required": [
+          "rarities"
+        ],
+        "title": "ClanRarityIn",
+        "type": "object"
+      },
+      "ClanRarityOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanRarityRow"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "sects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sects",
+            "type": "array"
+          },
+          "setting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setting"
+          }
+        },
+        "required": [
+          "sects",
+          "setting",
+          "clans"
+        ],
+        "title": "ClanRarityOut",
+        "type": "object"
+      },
+      "ClanRarityRow": {
+        "properties": {
+          "book": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Book",
+            "type": "object"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House"
+          }
+        },
+        "required": [
+          "clan",
+          "book",
+          "house"
+        ],
+        "title": "ClanRarityRow",
         "type": "object"
       },
       "ClanSection": {
@@ -4161,6 +4455,14 @@
               }
             ]
           },
+          "clan_merits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ClanMeritOut"
+            },
+            "title": "Clan Merits",
+            "type": "array"
+          },
           "complete": {
             "title": "Complete",
             "type": "boolean"
@@ -4194,6 +4496,11 @@
             },
             "title": "Pools",
             "type": "array"
+          },
+          "rarity_known": {
+            "default": false,
+            "title": "Rarity Known",
+            "type": "boolean"
           },
           "shortfalls": {
             "default": [],
@@ -9657,6 +9964,24 @@
         "title": "GivenOut",
         "type": "object"
       },
+      "Guidance": {
+        "properties": {
+          "requirements": {
+            "title": "Requirements",
+            "type": "integer"
+          },
+          "scenarios": {
+            "title": "Scenarios",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "requirements",
+          "scenarios"
+        ],
+        "title": "Guidance",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -9681,6 +10006,34 @@
           "handle"
         ],
         "title": "HandleIn",
+        "type": "object"
+      },
+      "HavenAdvantageOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs": {
+            "title": "Needs",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "page",
+          "text",
+          "needs"
+        ],
+        "title": "HavenAdvantageOut",
         "type": "object"
       },
       "Health": {
@@ -9728,6 +10081,130 @@
           "boxes"
         ],
         "title": "HealthLevel",
+        "type": "object"
+      },
+      "HeldLocationOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "joint": {
+            "title": "Joint",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "not_counted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Counted"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "joint",
+          "not_counted"
+        ],
+        "title": "HeldLocationOut",
+        "type": "object"
+      },
+      "HeldLocationQualityOut": {
+        "properties": {
+          "counts": {
+            "title": "Counts",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "free_here": {
+            "title": "Free Here",
+            "type": "string"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "iconic",
+              "supernatural",
+              "elysium"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "known": {
+            "title": "Known",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "kind",
+          "known",
+          "counts",
+          "house",
+          "free_here"
+        ],
+        "title": "HeldLocationQualityOut",
+        "type": "object"
+      },
+      "HeldNegativeQualityOut": {
+        "properties": {
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "effect": {
+            "title": "Effect",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "level",
+          "secret",
+          "by",
+          "effect"
+        ],
+        "title": "HeldNegativeQualityOut",
         "type": "object"
       },
       "HeldOut": {
@@ -9971,7 +10448,8 @@
               "downtime",
               "game",
               "hand",
-              "import"
+              "import",
+              "quest"
             ],
             "title": "Source",
             "type": "string"
@@ -11117,7 +11595,8 @@
               "downtime",
               "game",
               "hand",
-              "import"
+              "import",
+              "quest"
             ],
             "title": "Source",
             "type": "string"
@@ -11273,6 +11752,42 @@
           "total"
         ],
         "title": "InfluenceLogOut",
+        "type": "object"
+      },
+      "InfluenceSpend": {
+        "properties": {
+          "area": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Area",
+            "type": "string"
+          },
+          "kind": {
+            "const": "influence",
+            "default": "influence",
+            "title": "Kind",
+            "type": "string"
+          },
+          "level": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Level",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "level"
+        ],
+        "title": "InfluenceSpend",
         "type": "object"
       },
       "InfluenceSpendOut": {
@@ -11583,6 +12098,27 @@
           "url"
         ],
         "title": "Invite",
+        "type": "object"
+      },
+      "ItemSpend": {
+        "properties": {
+          "item": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Item",
+            "type": "string"
+          },
+          "kind": {
+            "const": "item",
+            "default": "item",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item"
+        ],
+        "title": "ItemSpend",
         "type": "object"
       },
       "ItemTapIn": {
@@ -11919,6 +12455,1534 @@
         "title": "LiveReset",
         "type": "object"
       },
+      "LocationCatalogueOut": {
+        "properties": {
+          "book": {
+            "title": "Book",
+            "type": "string"
+          },
+          "can_change_house": {
+            "title": "Can Change House",
+            "type": "boolean"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/LocationCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "feeding_blocks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Feeding Blocks",
+            "type": "array"
+          },
+          "haven_advantages": {
+            "items": {
+              "$ref": "#/components/schemas/HavenAdvantageOut"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "influence_areas": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Influence Areas",
+            "type": "object"
+          },
+          "limit": {
+            "enum": [
+              "refuse",
+              "note"
+            ],
+            "title": "Limit",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/NegativeQualityOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/LocationOptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "own": {
+            "items": {
+              "$ref": "#/components/schemas/OwnLocationQualityOut"
+            },
+            "title": "Own",
+            "type": "array"
+          },
+          "pages": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Pages",
+            "type": "object"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/LocationQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "types": {
+            "items": {
+              "$ref": "#/components/schemas/LocationTypeOut"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "types",
+          "options",
+          "qualities",
+          "negatives",
+          "haven_advantages",
+          "own",
+          "limit",
+          "pages",
+          "book",
+          "influence_areas",
+          "characters",
+          "feeding_blocks",
+          "can_change_house"
+        ],
+        "title": "LocationCatalogueOut",
+        "type": "object"
+      },
+      "LocationChange": {
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "default": "none",
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Controller Id"
+          },
+          "controller_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Controller Name",
+            "type": "string"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "maximum": 9999.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Of Id"
+          },
+          "heir_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heir Id"
+          },
+          "heir_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Heir Name",
+            "type": "string"
+          },
+          "influence_area": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joint Id"
+          },
+          "joint_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Joint Name",
+            "type": "string"
+          },
+          "kind": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "default": false,
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "map_link": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Map Link",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationNegativeIn"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationQualityIn"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "rating": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "web_address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "title": "LocationChange",
+        "type": "object"
+      },
+      "LocationCharacter": {
+        "properties": {
+          "haven": {
+            "title": "Haven",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "haven"
+        ],
+        "title": "LocationCharacter",
+        "type": "object"
+      },
+      "LocationControlOut": {
+        "properties": {
+          "controls": {
+            "title": "Controls",
+            "type": "integer"
+          },
+          "elsewhere": {
+            "title": "Elsewhere",
+            "type": "integer"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationOut"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "over": {
+            "title": "Over",
+            "type": "boolean"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "controls",
+          "limit",
+          "why",
+          "over",
+          "locations",
+          "elsewhere"
+        ],
+        "title": "LocationControlOut",
+        "type": "object"
+      },
+      "LocationDetailOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "elysium_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Qualities"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heir": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "influence_area": {
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "map_link": {
+            "title": "Map Link",
+            "type": "string"
+          },
+          "most_qualities": {
+            "title": "Most Qualities",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/HeldNegativeQualityOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "not_counted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Counted"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "quality_count": {
+            "title": "Quality Count",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "subsidiaries": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSubsidiaryOut"
+            },
+            "title": "Subsidiaries",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "web_address": {
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "parent",
+          "kind",
+          "rating",
+          "qualities",
+          "quality_count",
+          "most_qualities",
+          "negatives",
+          "control",
+          "controller",
+          "joint",
+          "heir",
+          "influence_type",
+          "influence_area",
+          "address",
+          "web_address",
+          "map_link",
+          "feeding_block",
+          "locked",
+          "haven_of",
+          "haven_advantages",
+          "elysium_since",
+          "elysium_qualities",
+          "notes",
+          "subsidiaries",
+          "not_counted",
+          "updated_at",
+          "log"
+        ],
+        "title": "LocationDetailOut",
+        "type": "object"
+      },
+      "LocationIn": {
+        "description": "A location's fields; on a change, those left out stay as they are.",
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "default": "none",
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Controller Id"
+          },
+          "controller_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Controller Name",
+            "type": "string"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "maximum": 9999.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Of Id"
+          },
+          "heir_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heir Id"
+          },
+          "heir_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Heir Name",
+            "type": "string"
+          },
+          "influence_area": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joint Id"
+          },
+          "joint_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Joint Name",
+            "type": "string"
+          },
+          "kind": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "default": false,
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "map_link": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Map Link",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationNegativeIn"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationQualityIn"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "rating": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "web_address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "LocationIn",
+        "type": "object"
+      },
+      "LocationLimitIn": {
+        "properties": {
+          "strength": {
+            "enum": [
+              "refuse",
+              "note"
+            ],
+            "title": "Strength",
+            "type": "string"
+          }
+        },
+        "required": [
+          "strength"
+        ],
+        "title": "LocationLimitIn",
+        "type": "object"
+      },
+      "LocationNegativeIn": {
+        "properties": {
+          "by": {
+            "default": "",
+            "maxLength": 120,
+            "title": "By",
+            "type": "string"
+          },
+          "level": {
+            "default": 1,
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "default": false,
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "LocationNegativeIn",
+        "type": "object"
+      },
+      "LocationOptionIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "LocationOptionIn",
+        "type": "object"
+      },
+      "LocationOptionOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "text",
+          "on"
+        ],
+        "title": "LocationOptionOut",
+        "type": "object"
+      },
+      "LocationOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "elysium_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Qualities"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heir": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "influence_area": {
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "map_link": {
+            "title": "Map Link",
+            "type": "string"
+          },
+          "most_qualities": {
+            "title": "Most Qualities",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/HeldNegativeQualityOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "not_counted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Counted"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "quality_count": {
+            "title": "Quality Count",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "subsidiaries": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSubsidiaryOut"
+            },
+            "title": "Subsidiaries",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "web_address": {
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "parent",
+          "kind",
+          "rating",
+          "qualities",
+          "quality_count",
+          "most_qualities",
+          "negatives",
+          "control",
+          "controller",
+          "joint",
+          "heir",
+          "influence_type",
+          "influence_area",
+          "address",
+          "web_address",
+          "map_link",
+          "feeding_block",
+          "locked",
+          "haven_of",
+          "haven_advantages",
+          "elysium_since",
+          "elysium_qualities",
+          "notes",
+          "subsidiaries",
+          "not_counted",
+          "updated_at"
+        ],
+        "title": "LocationOut",
+        "type": "object"
+      },
+      "LocationPerson": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "LocationPerson",
+        "type": "object"
+      },
+      "LocationQualityArchivedIn": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "archived"
+        ],
+        "title": "LocationQualityArchivedIn",
+        "type": "object"
+      },
+      "LocationQualityIn": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "LocationQualityIn",
+        "type": "object"
+      },
+      "LocationQualityOut": {
+        "properties": {
+          "counts": {
+            "title": "Counts",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "excludes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Excludes",
+            "type": "array"
+          },
+          "haven_free": {
+            "title": "Haven Free",
+            "type": "string"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "iconic",
+              "supernatural",
+              "elysium"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "min_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Rating"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "option": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Option"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "per_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Qualities"
+          },
+          "repeatable": {
+            "title": "Repeatable",
+            "type": "boolean"
+          },
+          "suggested": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSuggestion"
+            },
+            "title": "Suggested",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "text",
+          "page",
+          "detail",
+          "repeatable",
+          "counts",
+          "excludes",
+          "haven_free",
+          "suggested",
+          "option",
+          "house",
+          "min_rating",
+          "per_qualities"
+        ],
+        "title": "LocationQualityOut",
+        "type": "object"
+      },
+      "LocationRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "LocationRef",
+        "type": "object"
+      },
+      "LocationSubsidiaryOut": {
+        "properties": {
+          "control": {
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "with_parent": {
+            "title": "With Parent",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "control",
+          "controller",
+          "with_parent"
+        ],
+        "title": "LocationSubsidiaryOut",
+        "type": "object"
+      },
+      "LocationSuggestion": {
+        "description": "What a quest for a quality should ask for: a trait (or any one of `traits`)\nat `levels` by the location's rating, lowest first, or a power, or words.",
+        "properties": {
+          "alternative": {
+            "default": "",
+            "title": "Alternative",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "expend": {
+            "default": false,
+            "title": "Expend",
+            "type": "boolean"
+          },
+          "levels": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "power": {
+            "default": "",
+            "title": "Power",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "title": "Text",
+            "type": "string"
+          },
+          "trait": {
+            "default": "",
+            "title": "Trait",
+            "type": "string"
+          },
+          "traits": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Traits",
+            "type": "array"
+          }
+        },
+        "title": "LocationSuggestion",
+        "type": "object"
+      },
+      "LocationTypeOut": {
+        "properties": {
+          "iconic": {
+            "title": "Iconic",
+            "type": "boolean"
+          },
+          "key": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "per_rating": {
+            "title": "Per Rating",
+            "type": "integer"
+          },
+          "quest": {
+            "title": "Quest",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "per_rating",
+          "iconic",
+          "quest",
+          "text"
+        ],
+        "title": "LocationTypeOut",
+        "type": "object"
+      },
       "LockedOut": {
         "description": "A trait accepting the character fixes, such as Generation, at the rating it\nis accepted at.",
         "properties": {
@@ -12189,6 +14253,52 @@
         "title": "LogEntryOut",
         "type": "object"
       },
+      "LogIn": {
+        "properties": {
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "LogIn",
+        "type": "object"
+      },
+      "LogOut": {
+        "properties": {
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "actor_name",
+          "text"
+        ],
+        "title": "LogOut",
+        "type": "object"
+      },
       "LogStandingOut": {
         "description": "What the Log influence tool needs about a character.",
         "properties": {
@@ -12416,6 +14526,59 @@
         "title": "Me",
         "type": "object"
       },
+      "MemberOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "player_name",
+          "status"
+        ],
+        "title": "MemberOut",
+        "type": "object"
+      },
+      "MembersIn": {
+        "properties": {
+          "character_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Character Ids",
+            "type": "array"
+          },
+          "joined": {
+            "default": false,
+            "title": "Joined",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_ids"
+        ],
+        "title": "MembersIn",
+        "type": "object"
+      },
       "MembershipOut": {
         "properties": {
           "home": {
@@ -12586,6 +14749,26 @@
           "summary"
         ],
         "title": "MergeStaff",
+        "type": "object"
+      },
+      "MetIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "option": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Option",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "MetIn",
         "type": "object"
       },
       "ModifierChange": {
@@ -13090,6 +15273,47 @@
         "title": "NeedLineOut",
         "type": "object"
       },
+      "NegativeQualityOut": {
+        "properties": {
+          "levels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "names_who": {
+            "title": "Names Who",
+            "type": "boolean"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "raised_by": {
+            "title": "Raised By",
+            "type": "string"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "page",
+          "removed",
+          "levels",
+          "raised_by",
+          "names_who"
+        ],
+        "title": "NegativeQualityOut",
+        "type": "object"
+      },
       "NewCharacter": {
         "properties": {
           "building_troupe_id": {
@@ -13382,6 +15606,21 @@
           "name"
         ],
         "title": "NewTroupeRequest",
+        "type": "object"
+      },
+      "NoteIn": {
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "NoteIn",
         "type": "object"
       },
       "NotificationOut": {
@@ -13924,6 +16163,30 @@
         "title": "OptionList",
         "type": "object"
       },
+      "OptionOut": {
+        "properties": {
+          "expends": {
+            "title": "Expends",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "option": {
+            "additionalProperties": true,
+            "title": "Option",
+            "type": "object"
+          }
+        },
+        "required": [
+          "option",
+          "label",
+          "expends"
+        ],
+        "title": "OptionOut",
+        "type": "object"
+      },
       "OtherOut": {
         "description": "Another character at the game. Of another sect, only its name and sect.",
         "properties": {
@@ -14139,6 +16402,121 @@
           "purpose"
         ],
         "title": "OwnEntryOut",
+        "type": "object"
+      },
+      "OwnLocationQualityIn": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "iconic",
+              "supernatural",
+              "elysium"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "repeatable": {
+            "default": false,
+            "title": "Repeatable",
+            "type": "boolean"
+          },
+          "suggested": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationSuggestion"
+            },
+            "title": "Suggested",
+            "type": "array"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "text"
+        ],
+        "title": "OwnLocationQualityIn",
+        "type": "object"
+      },
+      "OwnLocationQualityOut": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "held_by": {
+            "title": "Held By",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "iconic",
+              "supernatural",
+              "elysium"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "repeatable": {
+            "title": "Repeatable",
+            "type": "boolean"
+          },
+          "suggested": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSuggestion"
+            },
+            "title": "Suggested",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "text",
+          "detail",
+          "repeatable",
+          "suggested",
+          "archived",
+          "held_by"
+        ],
+        "title": "OwnLocationQualityOut",
         "type": "object"
       },
       "Owner": {
@@ -15778,6 +18156,300 @@
         "title": "PlayerOut",
         "type": "object"
       },
+      "PlayerQuestOut": {
+        "description": "A quest as one of its characters' players sees it.",
+        "properties": {
+          "can_join": {
+            "title": "Can Join",
+            "type": "boolean"
+          },
+          "can_share": {
+            "title": "Can Share",
+            "type": "boolean"
+          },
+          "can_write_tale": {
+            "title": "Can Write Tale",
+            "type": "boolean"
+          },
+          "category": {
+            "enum": [
+              "simple",
+              "complex",
+              "epic"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "close_note": {
+            "title": "Close Note",
+            "type": "string"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "downtime_only": {
+            "title": "Downtime Only",
+            "type": "boolean"
+          },
+          "ended_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended On"
+          },
+          "finished_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Finished By",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "leader_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leader Name"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "objective": {
+            "title": "Objective",
+            "type": "string"
+          },
+          "party": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Party",
+            "type": "array"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerRequirementOut"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerScenarioOut"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "scenario_count": {
+            "title": "Scenario Count",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tale": {
+            "title": "Tale",
+            "type": "string"
+          },
+          "tale_approved": {
+            "title": "Tale Approved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "objective",
+          "category",
+          "difficulty",
+          "downtime_only",
+          "status",
+          "role",
+          "leader_name",
+          "party",
+          "requirements",
+          "scenario_count",
+          "results",
+          "ended_on",
+          "finished_by",
+          "close_note",
+          "tale",
+          "tale_approved",
+          "can_join",
+          "can_share",
+          "can_write_tale"
+        ],
+        "title": "PlayerQuestOut",
+        "type": "object"
+      },
+      "PlayerRequestOut": {
+        "properties": {
+          "answered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answered At"
+          },
+          "can_withdraw": {
+            "title": "Can Withdraw",
+            "type": "boolean"
+          },
+          "companions": {
+            "title": "Companions",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "objective": {
+            "title": "Objective",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "quest_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quest Id"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "objective",
+          "reason",
+          "companions",
+          "status",
+          "outcome",
+          "note",
+          "created_at",
+          "answered_at",
+          "quest_id",
+          "can_withdraw"
+        ],
+        "title": "PlayerRequestOut",
+        "type": "object"
+      },
+      "PlayerRequirementOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "met": {
+            "title": "Met",
+            "type": "boolean"
+          },
+          "met_by_name": {
+            "title": "Met By Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "met",
+          "met_by_name"
+        ],
+        "title": "PlayerRequirementOut",
+        "type": "object"
+      },
+      "PlayerScenarioOut": {
+        "properties": {
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "result": {
+            "title": "Result",
+            "type": "string"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "result",
+          "text",
+          "sent_at"
+        ],
+        "title": "PlayerScenarioOut",
+        "type": "object"
+      },
       "PlayerSummary": {
         "properties": {
           "display_name": {
@@ -16009,6 +18681,36 @@
           "value"
         ],
         "title": "PoolPart",
+        "type": "object"
+      },
+      "PoolSpend": {
+        "properties": {
+          "amount": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "kind": {
+            "const": "pool",
+            "default": "pool",
+            "title": "Kind",
+            "type": "string"
+          },
+          "pool": {
+            "enum": [
+              "willpower",
+              "blood"
+            ],
+            "title": "Pool",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pool",
+          "amount"
+        ],
+        "title": "PoolSpend",
         "type": "object"
       },
       "PoolVariant": {
@@ -17147,6 +19849,801 @@
         "title": "PublicIn",
         "type": "object"
       },
+      "QuestCharacterChoice": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "title": "QuestCharacterChoice",
+        "type": "object"
+      },
+      "QuestCharacterRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "QuestCharacterRef",
+        "type": "object"
+      },
+      "QuestDeliveryOut": {
+        "properties": {
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "character_name",
+          "subject",
+          "channel",
+          "status",
+          "last_error"
+        ],
+        "title": "QuestDeliveryOut",
+        "type": "object"
+      },
+      "QuestIn": {
+        "properties": {
+          "category": {
+            "default": "simple",
+            "enum": [
+              "simple",
+              "complex",
+              "epic"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "difficulty": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "downtime_only": {
+            "default": false,
+            "title": "Downtime Only",
+            "type": "boolean"
+          },
+          "leader_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leader Id"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "objective": {
+            "default": "",
+            "maxLength": 8000,
+            "title": "Objective",
+            "type": "string"
+          },
+          "offer": {
+            "default": "character",
+            "enum": [
+              "character",
+              "chosen",
+              "unlocked",
+              "troupe"
+            ],
+            "title": "Offer",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "scenarios": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ScenarioIn"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenarios"
+          },
+          "staff_notes": {
+            "default": "",
+            "maxLength": 8000,
+            "title": "Staff Notes",
+            "type": "string"
+          },
+          "unlock_quest_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlock Quest Id"
+          },
+          "unlock_scenario": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlock Scenario"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "QuestIn",
+        "type": "object"
+      },
+      "QuestOut": {
+        "description": "A quest as staff see it.",
+        "properties": {
+          "assigned_to_any_narrator": {
+            "title": "Assigned To Any Narrator",
+            "type": "boolean"
+          },
+          "assigned_to_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To Name"
+          },
+          "assigned_to_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To User Id"
+          },
+          "can_assign": {
+            "title": "Can Assign",
+            "type": "boolean"
+          },
+          "can_check": {
+            "title": "Can Check",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_send": {
+            "title": "Can Send",
+            "type": "boolean"
+          },
+          "category": {
+            "enum": [
+              "simple",
+              "complex",
+              "epic"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "close_note": {
+            "title": "Close Note",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "deliveries": {
+            "items": {
+              "$ref": "#/components/schemas/QuestDeliveryOut"
+            },
+            "title": "Deliveries",
+            "type": "array"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "downtime_only": {
+            "title": "Downtime Only",
+            "type": "boolean"
+          },
+          "ended_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended On"
+          },
+          "finished_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Finished By",
+            "type": "array"
+          },
+          "guidance": {
+            "$ref": "#/components/schemas/Guidance"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "leader": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestCharacterRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "log": {
+            "items": {
+              "$ref": "#/components/schemas/LogOut"
+            },
+            "title": "Log",
+            "type": "array"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "objective": {
+            "title": "Objective",
+            "type": "string"
+          },
+          "offer": {
+            "enum": [
+              "character",
+              "chosen",
+              "unlocked",
+              "troupe"
+            ],
+            "title": "Offer",
+            "type": "string"
+          },
+          "read_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Read By",
+            "type": "array"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestRequestOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementOut"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioOut"
+            },
+            "title": "Scenarios",
+            "type": "array"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "staff_notes": {
+            "title": "Staff Notes",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tale": {
+            "title": "Tale",
+            "type": "string"
+          },
+          "tale_approved": {
+            "title": "Tale Approved",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "unlock_quest_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlock Quest Id"
+          },
+          "unlock_quest_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlock Quest Name"
+          },
+          "unlock_scenario": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlock Scenario"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "objective",
+          "category",
+          "difficulty",
+          "downtime_only",
+          "staff_notes",
+          "status",
+          "leader",
+          "offer",
+          "unlock_quest_id",
+          "unlock_quest_name",
+          "unlock_scenario",
+          "assigned_to_user_id",
+          "assigned_to_name",
+          "assigned_to_any_narrator",
+          "read_by",
+          "sent_at",
+          "ended_on",
+          "finished_by",
+          "closed_at",
+          "close_note",
+          "tale",
+          "tale_approved",
+          "guidance",
+          "requirements",
+          "scenarios",
+          "members",
+          "log",
+          "request",
+          "deliveries",
+          "can_edit",
+          "can_assign",
+          "can_send",
+          "can_check"
+        ],
+        "title": "QuestOut",
+        "type": "object"
+      },
+      "QuestRequestOut": {
+        "properties": {
+          "answered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answered At"
+          },
+          "assigned_to_any_narrator": {
+            "title": "Assigned To Any Narrator",
+            "type": "boolean"
+          },
+          "assigned_to_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To Name"
+          },
+          "assigned_to_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To User Id"
+          },
+          "can_assign": {
+            "title": "Can Assign",
+            "type": "boolean"
+          },
+          "can_work": {
+            "title": "Can Work",
+            "type": "boolean"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "companions": {
+            "title": "Companions",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "objective": {
+            "title": "Objective",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "quest_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quest Id"
+          },
+          "quest_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quest Name"
+          },
+          "quest_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quest Status"
+          },
+          "read_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Read By",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "character_id",
+          "character_name",
+          "player_name",
+          "objective",
+          "reason",
+          "companions",
+          "status",
+          "outcome",
+          "note",
+          "created_at",
+          "answered_at",
+          "assigned_to_user_id",
+          "assigned_to_name",
+          "assigned_to_any_narrator",
+          "quest_id",
+          "quest_name",
+          "quest_status",
+          "read_by",
+          "can_work",
+          "can_assign"
+        ],
+        "title": "QuestRequestOut",
+        "type": "object"
+      },
+      "QuestRowOut": {
+        "properties": {
+          "assigned_to_any_narrator": {
+            "title": "Assigned To Any Narrator",
+            "type": "boolean"
+          },
+          "assigned_to_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To Name"
+          },
+          "category": {
+            "enum": [
+              "simple",
+              "complex",
+              "epic"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "leader_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leader Name"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "offer": {
+            "enum": [
+              "character",
+              "chosen",
+              "unlocked",
+              "troupe"
+            ],
+            "title": "Offer",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "category",
+          "difficulty",
+          "leader_name",
+          "offer",
+          "assigned_to_name",
+          "assigned_to_any_narrator",
+          "created_at"
+        ],
+        "title": "QuestRowOut",
+        "type": "object"
+      },
+      "QuestSettingsIn": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "requests_per_cycle": {
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Requests Per Cycle",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "requests_per_cycle"
+        ],
+        "title": "QuestSettingsIn",
+        "type": "object"
+      },
       "QuestionIn": {
         "properties": {
           "action_kind": {
@@ -17861,6 +21358,230 @@
         "title": "RepricedOut",
         "type": "object"
       },
+      "RequestAnswerIn": {
+        "properties": {
+          "note": {
+            "maxLength": 4000,
+            "title": "Note",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "not_needed",
+              "refused"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "note"
+        ],
+        "title": "RequestAnswerIn",
+        "type": "object"
+      },
+      "RequestIn": {
+        "properties": {
+          "companions": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Companions",
+            "type": "string"
+          },
+          "objective": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Objective",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "objective"
+        ],
+        "title": "RequestIn",
+        "type": "object"
+      },
+      "RequirementCheckOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "meets": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Meets",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "meets"
+        ],
+        "title": "RequirementCheckOut",
+        "type": "object"
+      },
+      "RequirementIn": {
+        "properties": {
+          "options": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "action": "#/components/schemas/ActionSpend",
+                  "aspect": "#/components/schemas/AspectNeed",
+                  "background": "#/components/schemas/BackgroundSpend",
+                  "influence": "#/components/schemas/InfluenceSpend",
+                  "item": "#/components/schemas/ItemSpend",
+                  "pool": "#/components/schemas/PoolSpend",
+                  "status": "#/components/schemas/StatusSpend",
+                  "text": "#/components/schemas/TextNeed",
+                  "trait": "#/components/schemas/TraitNeed"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TraitNeed"
+                },
+                {
+                  "$ref": "#/components/schemas/AspectNeed"
+                },
+                {
+                  "$ref": "#/components/schemas/InfluenceSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/BackgroundSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/StatusSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/PoolSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/ActionSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/ItemSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/TextNeed"
+                }
+              ]
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Options",
+            "type": "array"
+          }
+        },
+        "required": [
+          "options"
+        ],
+        "title": "RequirementIn",
+        "type": "object"
+      },
+      "RequirementOut": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementCheckOut"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "met": {
+            "title": "Met",
+            "type": "boolean"
+          },
+          "met_by_character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Met By Character Id"
+          },
+          "met_by_name": {
+            "title": "Met By Name",
+            "type": "string"
+          },
+          "met_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Met Label"
+          },
+          "met_patron": {
+            "title": "Met Patron",
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/OptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "options",
+          "met",
+          "met_by_character_id",
+          "met_by_name",
+          "met_label",
+          "met_patron",
+          "spent",
+          "checks"
+        ],
+        "title": "RequirementOut",
+        "type": "object"
+      },
       "ResetFor": {
         "properties": {
           "display_name": {
@@ -18039,6 +21760,40 @@
           "regains"
         ],
         "title": "ResourceOut",
+        "type": "object"
+      },
+      "ResultIn": {
+        "properties": {
+          "ends": {
+            "default": false,
+            "title": "Ends",
+            "type": "boolean"
+          },
+          "result": {
+            "enum": [
+              "passed",
+              "failed"
+            ],
+            "title": "Result",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "ResultIn",
         "type": "object"
       },
       "ResultOut": {
@@ -18761,6 +22516,327 @@
         "title": "SampleOut",
         "type": "object"
       },
+      "SavedLocationOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "control": {
+            "enum": [
+              "character",
+              "named",
+              "none",
+              "uncontrollable"
+            ],
+            "title": "Control",
+            "type": "string"
+          },
+          "controller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "elysium_qualities": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Qualities"
+          },
+          "elysium_since": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elysium Since"
+          },
+          "feeding_block": {
+            "title": "Feeding Block",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_of": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heir": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "influence_area": {
+            "title": "Influence Area",
+            "type": "string"
+          },
+          "influence_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "elite",
+                  "underworld"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Influence Type"
+          },
+          "joint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "map_link": {
+            "title": "Map Link",
+            "type": "string"
+          },
+          "most_qualities": {
+            "title": "Most Qualities",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/HeldNegativeQualityOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "not_counted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Counted"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "quality_count": {
+            "title": "Quality Count",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "subsidiaries": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSubsidiaryOut"
+            },
+            "title": "Subsidiaries",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "web_address": {
+            "title": "Web Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "name",
+          "parent",
+          "kind",
+          "rating",
+          "qualities",
+          "quality_count",
+          "most_qualities",
+          "negatives",
+          "control",
+          "controller",
+          "joint",
+          "heir",
+          "influence_type",
+          "influence_area",
+          "address",
+          "web_address",
+          "map_link",
+          "feeding_block",
+          "locked",
+          "haven_of",
+          "haven_advantages",
+          "elysium_since",
+          "elysium_qualities",
+          "notes",
+          "subsidiaries",
+          "not_counted",
+          "updated_at",
+          "warnings"
+        ],
+        "title": "SavedLocationOut",
+        "type": "object"
+      },
+      "ScenarioIn": {
+        "properties": {
+          "fail_text": {
+            "default": "",
+            "maxLength": 8000,
+            "title": "Fail Text",
+            "type": "string"
+          },
+          "success_text": {
+            "default": "",
+            "maxLength": 8000,
+            "title": "Success Text",
+            "type": "string"
+          }
+        },
+        "title": "ScenarioIn",
+        "type": "object"
+      },
+      "ScenarioOut": {
+        "properties": {
+          "fail_text": {
+            "title": "Fail Text",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "result_text": {
+            "title": "Result Text",
+            "type": "string"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "success_text": {
+            "title": "Success Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "success_text",
+          "fail_text",
+          "result",
+          "result_text",
+          "sent_at"
+        ],
+        "title": "ScenarioOut",
+        "type": "object"
+      },
       "SceneName": {
         "properties": {
           "name": {
@@ -19321,6 +23397,25 @@
           "settlement"
         ],
         "title": "SettlementOverride",
+        "type": "object"
+      },
+      "ShareIn": {
+        "properties": {
+          "character_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Character Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_ids"
+        ],
+        "title": "ShareIn",
         "type": "object"
       },
       "SharedBackgroundChange": {
@@ -21108,6 +25203,24 @@
         "title": "StatusResolveIn",
         "type": "object"
       },
+      "StatusSpend": {
+        "properties": {
+          "kind": {
+            "const": "status",
+            "default": "status",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "StatusSpend",
+        "type": "object"
+      },
       "StepNeed": {
         "properties": {
           "message": {
@@ -21762,6 +25875,25 @@
         "title": "TakeBackEquipmentIn",
         "type": "object"
       },
+      "TaleIn": {
+        "properties": {
+          "approve": {
+            "default": false,
+            "title": "Approve",
+            "type": "boolean"
+          },
+          "tale": {
+            "maxLength": 20000,
+            "title": "Tale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tale"
+        ],
+        "title": "TaleIn",
+        "type": "object"
+      },
       "Tally": {
         "properties": {
           "lines": {
@@ -22154,6 +26286,27 @@
         "title": "TestPool",
         "type": "object"
       },
+      "TextNeed": {
+        "properties": {
+          "kind": {
+            "const": "text",
+            "default": "text",
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "TextNeed",
+        "type": "object"
+      },
       "TitleChange": {
         "properties": {
           "sect": {
@@ -22518,6 +26671,56 @@
           "name"
         ],
         "title": "TraitChange",
+        "type": "object"
+      },
+      "TraitNeed": {
+        "properties": {
+          "category": {
+            "enum": [
+              "skills",
+              "focus",
+              "backgrounds",
+              "merits",
+              "flaws",
+              "disciplines",
+              "power",
+              "techniques",
+              "rituals"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "kind": {
+            "const": "trait",
+            "default": "trait",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "default": 1,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "specialization": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Specialization",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "TraitNeed",
         "type": "object"
       },
       "TraitOut": {
@@ -23111,6 +27314,14 @@
             "title": "Public",
             "type": "boolean"
           },
+          "quest_requests_per_cycle": {
+            "title": "Quest Requests Per Cycle",
+            "type": "integer"
+          },
+          "quests_enabled": {
+            "title": "Quests Enabled",
+            "type": "boolean"
+          },
           "session_xp": {
             "title": "Session Xp",
             "type": "integer"
@@ -23177,6 +27388,8 @@
           "badge_status",
           "badge_pronouns",
           "whos_who_negative",
+          "quests_enabled",
+          "quest_requests_per_cycle",
           "whos_who",
           "portrait",
           "banner",
@@ -28862,6 +33075,50 @@
         ]
       }
     },
+    "/api/characters/{character_id}/locations": {
+      "get": {
+        "description": "For staff: how many locations the character controls, of how many it may.",
+        "operationId": "character_locations_api_characters__character_id__locations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationControlOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Locations",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
     "/api/characters/{character_id}/log": {
       "get": {
         "description": "Everything that happened to the character, newest first. Its player sees it\nall; a troupe's staff see the sheet's own history and what happened in their\ntroupe, not in the character's other troupes.",
@@ -30877,6 +35134,397 @@
         "summary": "Set Pronouns",
         "tags": [
           "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/quest-requests": {
+      "post": {
+        "description": "Ask the home troupe's staff for a custom quest. Refused, with the reason, past\nthe troupe's limit for the cycle.",
+        "operationId": "request_quest_api_characters__character_id__quest_requests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/quests": {
+      "get": {
+        "description": "The character's quest requests and the quests it may see. Nothing while its\nhome troupe has quests off.",
+        "operationId": "character_quests_api_characters__character_id__quests_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterQuestsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Quests",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/quests/{quest_id}": {
+      "get": {
+        "operationId": "character_quest_api_characters__character_id__quests__quest_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerQuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/quests/{quest_id}/join": {
+      "post": {
+        "description": "Join a quest shared with or offered to the character.",
+        "operationId": "join_quest_api_characters__character_id__quests__quest_id__join_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerQuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Join Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/quests/{quest_id}/share": {
+      "post": {
+        "description": "The leader's player shares the quest with other characters of the troupe, who\nmay then see it and join.",
+        "operationId": "share_quest_api_characters__character_id__quests__quest_id__share_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerQuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Share Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/quests/{quest_id}/share-choices": {
+      "get": {
+        "description": "The troupe's other characters the leader can share the quest with.",
+        "operationId": "share_choices_api_characters__character_id__quests__quest_id__share_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuestCharacterChoice"
+                  },
+                  "title": "Response Share Choices Api Characters  Character Id  Quests  Quest Id  Share Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Share Choices",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/quests/{quest_id}/tale": {
+      "put": {
+        "description": "The leader's player tells the tale of a quest that has ended (p. 102).",
+        "operationId": "tell_tale_api_characters__character_id__quests__quest_id__tale_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerQuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tell Tale",
+        "tags": [
+          "quests"
         ]
       }
     },
@@ -34861,6 +39509,136 @@
         ]
       }
     },
+    "/api/locations/{location_id}": {
+      "delete": {
+        "description": "Take a location off the list; its subsidiaries stay, with no conglomerate.",
+        "operationId": "remove_location_api_locations__location_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Location",
+        "tags": [
+          "locations"
+        ]
+      },
+      "get": {
+        "operationId": "read_location_api_locations__location_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Location",
+        "tags": [
+          "locations"
+        ]
+      },
+      "patch": {
+        "description": "Change a location: the fields given, the rest as they are.",
+        "operationId": "change_location_api_locations__location_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedLocationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Location",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
     "/api/notifications": {
       "get": {
         "operationId": "list_notifications_api_notifications_get",
@@ -35652,6 +40430,1133 @@
         "summary": "Set Lines Veils",
         "tags": [
           "lines-veils"
+        ]
+      }
+    },
+    "/api/quest-requests/{request_id}/accept": {
+      "post": {
+        "description": "A narrator takes a request assigned to any narrator.",
+        "operationId": "accept_request_api_quest_requests__request_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Request",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quest-requests/{request_id}/answer": {
+      "post": {
+        "description": "Answer without a quest: not needed, which gives the slot back, or refused.",
+        "operationId": "answer_request_api_quest_requests__request_id__answer_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestAnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Request",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quest-requests/{request_id}/assignment": {
+      "put": {
+        "operationId": "assign_request_api_quest_requests__request_id__assignment_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assign Request",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quest-requests/{request_id}/read": {
+      "post": {
+        "operationId": "read_request_api_quest_requests__request_id__read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Request",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quest-requests/{request_id}/withdraw": {
+      "post": {
+        "operationId": "withdraw_request_api_quest_requests__request_id__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Request",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}": {
+      "get": {
+        "operationId": "read_quest_api_quests__quest_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Quest",
+        "tags": [
+          "quests"
+        ]
+      },
+      "put": {
+        "operationId": "change_quest_api_quests__quest_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/accept": {
+      "post": {
+        "operationId": "accept_quest_api_quests__quest_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/assignment": {
+      "put": {
+        "operationId": "assign_quest_api_quests__quest_id__assignment_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assign Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/close": {
+      "post": {
+        "description": "Switch the quest off, with a note its characters see.",
+        "operationId": "close_quest_api_quests__quest_id__close_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Close Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/log": {
+      "post": {
+        "operationId": "add_log_api_quests__quest_id__log_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Log",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/members": {
+      "post": {
+        "description": "Offer the quest to characters, who may join; or put them in its party.",
+        "operationId": "add_members_api_quests__quest_id__members_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MembersIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Members",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/members/{character_id}": {
+      "delete": {
+        "operationId": "remove_member_api_quests__quest_id__members__character_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Member",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/read": {
+      "post": {
+        "operationId": "read_mark_quest_api_quests__quest_id__read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Mark Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/requirements": {
+      "post": {
+        "operationId": "add_requirement_api_quests__quest_id__requirements_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Requirement",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/requirements/{requirement_id}": {
+      "delete": {
+        "operationId": "remove_requirement_api_quests__quest_id__requirements__requirement_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Requirement",
+        "tags": [
+          "quests"
+        ]
+      },
+      "put": {
+        "operationId": "change_requirement_api_quests__quest_id__requirements__requirement_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Requirement",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/requirements/{requirement_id}/met": {
+      "delete": {
+        "operationId": "unmeet_requirement_api_quests__quest_id__requirements__requirement_id__met_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unmeet Requirement",
+        "tags": [
+          "quests"
+        ]
+      },
+      "post": {
+        "description": "Mark a requirement met by a character, a party member or a patron, spending\nwhat its alternative expends.",
+        "operationId": "meet_requirement_api_quests__quest_id__requirements__requirement_id__met_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Meet Requirement",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/scenarios/{number}/result": {
+      "post": {
+        "description": "Send a scenario's result to the party. The last one passed completes the quest.",
+        "operationId": "send_result_api_quests__quest_id__scenarios__number__result_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "title": "Number",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResultIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Result",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/send": {
+      "post": {
+        "description": "Send the requirements to the leader and party: the quest is under way.",
+        "operationId": "send_quest_api_quests__quest_id__send_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Quest",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/tale": {
+      "put": {
+        "description": "Edit the tale, and approve it as the official account.",
+        "operationId": "staff_tale_api_quests__quest_id__tale_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Staff Tale",
+        "tags": [
+          "quests"
         ]
       }
     },
@@ -37972,6 +43877,102 @@
           }
         },
         "summary": "Change Check",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/clan-rarity": {
+      "get": {
+        "description": "How rare each clan is in the troupe's setting: the book's for each sect, and\nthe troupe's own where it names one (horatio.clan_merits).",
+        "operationId": "read_clan_rarity_api_troupes__troupe_id__clan_rarity_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanRarityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Clan Rarity",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "description": "Name how rare clans are here. Characters being built here take the rarity merit\nit names straight away; finished characters keep theirs.",
+        "operationId": "set_clan_rarity_api_troupes__troupe_id__clan_rarity_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanRarityIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanRarityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Clan Rarity",
         "tags": [
           "house rules"
         ]
@@ -40370,7 +46371,8 @@
                     "downtime",
                     "game",
                     "hand",
-                    "import"
+                    "import",
+                    "quest"
                   ],
                   "type": "string"
                 },
@@ -40749,6 +46751,448 @@
         "summary": "Troupe Lines Veils",
         "tags": [
           "lines-veils"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-limit": {
+      "put": {
+        "description": "What going over a character's control limit does: refuse it, or note it.",
+        "operationId": "set_limit_api_troupes__troupe_id__location_limit_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationLimitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationCatalogueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Limit",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-options/{key}": {
+      "put": {
+        "description": "Switch one of the house options for locations on or off.",
+        "operationId": "set_option_api_troupes__troupe_id__location_options__key__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationOptionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationCatalogueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Option",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-qualities": {
+      "post": {
+        "description": "Add a quality of the troupe's own to the catalogue.",
+        "operationId": "add_quality_api_troupes__troupe_id__location_qualities_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnLocationQualityIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnLocationQualityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Quality",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-qualities/{quality_id}": {
+      "put": {
+        "description": "Change one of the troupe's own qualities; locations that have it keep it,\nrenamed with it.",
+        "operationId": "change_quality_api_troupes__troupe_id__location_qualities__quality_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quality_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quality Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnLocationQualityIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnLocationQualityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Quality",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-qualities/{quality_id}/archived": {
+      "put": {
+        "description": "Stop offering one of the troupe's qualities, or offer it again. Locations that\nhave it keep it.",
+        "operationId": "archive_quality_api_troupes__troupe_id__location_qualities__quality_id__archived_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "quality_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quality Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationQualityArchivedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnLocationQualityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Quality",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/locations": {
+      "get": {
+        "description": "Every location the troupe keeps, by name.",
+        "operationId": "list_locations_api_troupes__troupe_id__locations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LocationOut"
+                  },
+                  "title": "Response List Locations Api Troupes  Troupe Id  Locations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Locations",
+        "tags": [
+          "locations"
+        ]
+      },
+      "post": {
+        "operationId": "add_location_api_troupes__troupe_id__locations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedLocationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Location",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/locations/catalogue": {
+      "get": {
+        "description": "The location types, qualities, negative qualities and Haven advantages as the\ntroupe plays them, with its house options, and what a location can name.",
+        "operationId": "read_catalogue_api_troupes__troupe_id__locations_catalogue_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationCatalogueOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Catalogue",
+        "tags": [
+          "locations"
         ]
       }
     },
@@ -41493,6 +47937,292 @@
         "summary": "Set Public",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/quest-characters": {
+      "get": {
+        "description": "The troupe's active characters, to lead, join or meet a quest's requirements.",
+        "operationId": "quest_characters_api_troupes__troupe_id__quest_characters_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuestCharacterChoice"
+                  },
+                  "title": "Response Quest Characters Api Troupes  Troupe Id  Quest Characters Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Quest Characters",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/quest-requests": {
+      "get": {
+        "description": "The troupe's quest requests, oldest first: open ones, new ones, those assigned\nto the reader or to any narrator, those whose quest waits to be sent, or those\nanswered.",
+        "operationId": "quest_requests_api_troupes__troupe_id__quest_requests_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "show",
+            "required": false,
+            "schema": {
+              "default": "open",
+              "enum": [
+                "open",
+                "new",
+                "mine",
+                "any_narrator",
+                "to_send",
+                "answered"
+              ],
+              "title": "Show",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuestRequestOut"
+                  },
+                  "title": "Response Quest Requests Api Troupes  Troupe Id  Quest Requests Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Quest Requests",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/quest-settings": {
+      "put": {
+        "description": "Turn quests on or off, and set how many requests a character may make a cycle.",
+        "operationId": "set_quest_settings_api_troupes__troupe_id__quest_settings_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestSettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Quest Settings",
+        "tags": [
+          "quests"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/quests": {
+      "get": {
+        "description": "The troupe's quests, newest first. A narrator sees those assigned to them or to\nany narrator.",
+        "operationId": "troupe_quests_api_troupes__troupe_id__quests_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "show",
+            "required": false,
+            "schema": {
+              "default": "open",
+              "enum": [
+                "open",
+                "draft",
+                "active",
+                "ended",
+                "closed",
+                "all"
+              ],
+              "title": "Show",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuestRowOut"
+                  },
+                  "title": "Response Troupe Quests Api Troupes  Troupe Id  Quests Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Quests",
+        "tags": [
+          "quests"
+        ]
+      },
+      "post": {
+        "description": "Build a quest, in draft: from a request, or from nothing. Running staff build\nany; a narrator builds from a request assigned to them.",
+        "operationId": "build_quest_api_troupes__troupe_id__quests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Build Quest",
+        "tags": [
+          "quests"
         ]
       }
     },

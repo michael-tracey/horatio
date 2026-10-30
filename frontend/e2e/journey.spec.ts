@@ -2705,6 +2705,170 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await p.screenshot(shots("influence-history"));
 });
 
+test("quests: a player asks for one, staff build it Complex 2 and send it, it is shared and joined, Elite 6 is spent, and it is completed with its tale", async ({ browser }) => {
+  // Four people, two characters, and the whole of a quest from request to tale.
+  test.slow();
+  const custodian = await person(browser, "quest-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "quest-lead");
+  const player = await person(browser, "quest-player");
+  const second = await person(browser, "quest-second");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Quests ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const home = async (p: Page, id: string) => {
+    const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+    expect(asked.status(), await asked.text()).toBe(201);
+    const approved = await lead.page.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+    expect(approved.status(), await approved.text()).toBe(200);
+  };
+  const disciplines: [string, number][] = [["Celerity", 2], ["Potence", 1], ["Presence", 1]];
+  // Agnes has Medicine 3; Bram has Elite 5 with High Society, enough for an Elite 6 action.
+  const agnes = await builtVampire(player.page, "Agnes", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]], disciplines }, [
+    ["skills", "Medicine", 3],
+  ]);
+  const bram = await builtVampire(second.page, "Bram", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Influences: The Elite", 3], ["Herd", 2], ["Generation", 1]], disciplines }, [
+    ["backgrounds", "Influences: The Elite", 5],
+    ["influence_elite_specializations", "High Society", 1],
+  ]);
+  await home(player.page, agnes);
+  await home(second.page, bram);
+
+  // Quests are off: Agnes's player sees no Quests tab. The lead turns them on, one request a cycle.
+  const p = player.page;
+  await p.goto(`/characters/${agnes}`);
+  await expect(p.locator("main").getByRole("link", { name: "Results", exact: true })).toBeVisible();
+  await expect(p.locator("main").getByRole("link", { name: "Quests", exact: true })).toHaveCount(0);
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/quests`);
+  await l.getByRole("button", { name: "Change quest settings" }).click();
+  await l.getByLabel("Run quests in this troupe").check();
+  await l.getByLabel("Requests per character per cycle").fill("1");
+  await l.getByRole("button", { name: "Save" }).click();
+  await expect(l.getByText("On: 1 request per character each downtime cycle.")).toBeVisible();
+
+  // The player asks for a quest; a second is refused with the reason.
+  await p.reload();
+  await p.locator("main").getByRole("link", { name: "Quests", exact: true }).click();
+  await p.getByLabel("What do you want to achieve?").fill("Find Miles' journal");
+  await p.getByLabel("Why (optional)").fill("It names his sire");
+  await p.getByRole("button", { name: "Ask for this quest" }).click();
+  const request = p.getByRole("listitem", { name: "Quest request" });
+  await expect(request.getByText("Waiting")).toBeVisible();
+  await expect(p.getByText("Agnes has made 1 of 1 quest request until the next downtime cycle.")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Ask for this quest" })).toHaveCount(0);
+
+  // The lead's bell has it as a task; the queue shows it as new, and the lead takes it on.
+  await l.reload();
+  await l.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await l.getByRole("button", { name: /Agnes asks for a quest: Find Miles' journal/ }).click();
+  const card = l.getByRole("listitem", { name: "Request from Agnes" });
+  await expect(card.getByText("New")).toBeVisible();
+  await expect(l.getByRole("link", { name: /Quests/ }).getByLabel("1 waiting")).toBeVisible();
+  await card.getByLabel("Assign Agnes's request to").selectOption({ label: "quest-lead" });
+  await expect(card.getByText("Assigned to quest-lead")).toBeVisible();
+  await p.reload();
+  await expect(request.getByText("Being worked on")).toBeVisible();
+
+  // Built from the request as Complex 2, with the book's numbers as a guide.
+  await card.getByRole("button", { name: "Build a quest" }).click();
+  await l.getByLabel("Quest name").fill("The Lost Journal");
+  await l.getByLabel("Category").selectOption("complex");
+  await l.getByLabel("Difficulty").selectOption("2");
+  await expect(l.getByText("The book gives this 4 requirements and 2 scenarios.", { exact: false })).toBeVisible();
+  await l.getByRole("button", { name: "Build the quest" }).click();
+  await expect(l.getByRole("heading", { name: "The Lost Journal" })).toBeVisible();
+  await expect(l.getByText("Complex 2 · Leader: Agnes", { exact: false })).toBeVisible();
+
+  // Four requirements: "Medicine 3 or Science (Biology)", "Expend Elite 6 (High Society)", an aspect and words.
+  const builder = l.getByRole("form", { name: "New requirement" });
+  const alternative = (n: number) => builder.getByRole("group", { name: `Alternative ${n}` });
+  await alternative(1).getByLabel("Name").fill("Medicine");
+  await alternative(1).getByLabel("Rating").fill("3");
+  await builder.getByRole("button", { name: "Add an alternative" }).click();
+  await alternative(2).getByLabel("Name").fill("Science");
+  await alternative(2).getByLabel("Specialisation").fill("Biology");
+  await builder.getByRole("button", { name: "Add requirement" }).click();
+  const requirement = (n: number) => l.getByRole("listitem", { name: `Requirement ${n}` });
+  await expect(requirement(1).getByText("Medicine 3 or Science (Biology)", { exact: true })).toBeVisible();
+  await alternative(1).getByLabel("Kind").selectOption({ label: "Expend influence" });
+  await alternative(1).getByLabel("Level").fill("6");
+  await alternative(1).getByLabel("Area").fill("High Society");
+  await builder.getByRole("button", { name: "Add requirement" }).click();
+  await expect(requirement(2).getByText("Expend Elite 6 (High Society)", { exact: true })).toBeVisible();
+  await alternative(1).getByLabel("Kind").selectOption({ label: "A clan, bloodline or sect" });
+  await alternative(1).getByLabel("Name").fill("Brujah");
+  await builder.getByRole("button", { name: "Add requirement" }).click();
+  await expect(requirement(3).getByText("Brujah (clan)", { exact: true })).toBeVisible();
+  await alternative(1).getByLabel("Kind").selectOption({ label: "Something else, in words" });
+  await alternative(1).getByLabel("Text").fill("Access to Miles' journal");
+  await builder.getByRole("button", { name: "Add requirement" }).click();
+  await expect(requirement(4).getByText("Access to Miles' journal", { exact: true })).toBeVisible();
+  // Checked against the party's sheets: Agnes has Medicine 3, but no Elite.
+  await expect(requirement(1).getByText("Medicine 3: Agnes meets it now")).toBeVisible();
+  await expect(requirement(2).getByText("Expend Elite 6 (High Society): no one in the party meets it now")).toBeVisible();
+
+  // Its two scenarios' text, written ahead; then the requirements are sent.
+  await l.getByRole("button", { name: "Edit scenarios" }).click();
+  await l.getByRole("group", { name: "Scenario 1" }).getByLabel("Success text").fill("You find the cellar beneath the chantry.");
+  await l.getByRole("group", { name: "Scenario 2" }).getByLabel("Success text").fill("The journal is yours.");
+  await l.getByRole("button", { name: "Save scenarios" }).click();
+  await l.getByRole("button", { name: "Send requirements" }).click();
+  await expect(l.getByText("Under way")).toBeVisible();
+  await l.screenshot(shots("quest-staff"));
+
+  // The player is told, sees the requirements, and shares the quest with Bram.
+  await p.reload();
+  await p.getByRole("button", { name: /^Notifications, \d+ waiting$/ }).click();
+  await p.getByRole("button", { name: /The quest The Lost Journal for Agnes: its requirements are here/ }).click();
+  await expect(p.getByRole("heading", { name: "The Lost Journal" })).toBeVisible();
+  await expect(p.getByText("Expend Elite 6 (High Society)")).toBeVisible();
+  await p.getByLabel("Share with").selectOption({ label: "Bram" });
+  await p.getByRole("button", { name: "Share", exact: true }).click();
+
+  // Bram's player sees it shared, and joins.
+  const s = second.page;
+  await s.goto(`/characters/${bram}`);
+  await s.locator("main").getByRole("link", { name: "Quests", exact: true }).click();
+  await s.getByRole("link", { name: "The Lost Journal" }).click();
+  await expect(s.getByText("Shared with you", { exact: false })).toBeVisible();
+  await s.getByRole("button", { name: "Join this quest" }).click();
+  await expect(s.getByText("The party: Agnes, Bram")).toBeVisible();
+
+  // The lead marks Expend Elite 6 met by Bram: it goes in the influence log.
+  await l.reload();
+  await expect(requirement(2).getByText("Expend Elite 6 (High Society): Bram meets it now")).toBeVisible();
+  await requirement(2).getByLabel("Met by").selectOption({ label: "Bram" });
+  await requirement(2).getByRole("button", { name: "Mark met" }).click();
+  await expect(requirement(2).getByText("Met by Bram (logged as E1).", { exact: false })).toBeVisible();
+  await l.goto(`/troupes/${troupeId}/influence`);
+  await expect(l.getByRole("listitem", { name: "Entry E1" }).getByText("For the quest The Lost Journal")).toBeVisible();
+
+  // Scenario 1's result, then scenario 2's: the quest is completed.
+  await l.goBack();
+  await l.getByRole("button", { name: "Send scenario 1's result" }).click();
+  await expect(l.getByRole("listitem", { name: "Scenario 1" }).getByText("Scenario 1: passed")).toBeVisible();
+  await l.getByRole("button", { name: "Send scenario 2's result" }).click();
+  await expect(l.getByText("Completed", { exact: true })).toBeVisible();
+
+  // The leader's player reads the results and tells the tale; the lead approves it.
+  await p.reload();
+  await expect(p.getByText("The journal is yours.")).toBeVisible();
+  await expect(p.getByText(/Completed on .*, by Agnes, Bram\./)).toBeVisible();
+  await p.getByLabel("The tale").fill("We went by night, and Bram called in a favour from the gala.");
+  await p.getByRole("button", { name: "Save the tale" }).click();
+  await expect(p.getByText("Waiting for approval")).toBeVisible();
+  await l.reload();
+  await expect(l.getByLabel("The tale")).toHaveValue("We went by night, and Bram called in a favour from the gala.");
+  await l.getByRole("button", { name: "Approve the tale" }).click();
+  await expect(l.getByText("Approved", { exact: true })).toBeVisible();
+  await s.reload();
+  await expect(s.getByText("We went by night, and Bram called in a favour from the gala.")).toBeVisible();
+  await expect(s.getByText("Approved", { exact: true })).toBeVisible();
+  await s.screenshot(shots("quest-player"));
+});
+
 test("a Caitiff chooses their in-clan disciplines while creating", async ({ browser }) => {
   const { page } = await person(browser, "caitiff");
   await page.getByLabel("Name").fill("Nobody's Child");
@@ -3151,6 +3315,42 @@ test("Stolen Potential takes away the focus in the attribute it names, and the c
   await expect(p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) })).toContainText("Stolen Potential: Mental");
   await expect(p.getByText("Mental Focus", { exact: true })).toHaveCount(0);
   await expect(p.getByText("Social Focus", { exact: true }).first()).toBeVisible();
+});
+
+test("a bloodline's clan takes its merit from the merit points on Merits & flaws, another clan gives it back, and one that does not fit is refused (#313)", async ({ browser }) => {
+  const { page: p } = await person(browser, "bloodline-merit");
+  const id = await creatingVampire(p, "Urban Howl", "Gangrel: Coyote", [], { merits: [["Code of Honor", 2]] });
+  await p.goto(`/characters/${id}/create/merits`);
+  // The clan's merit, ticked and fixed, with why; its 2 points are spent with Code of Honor's.
+  const fromClan = p.getByRole("region", { name: "From the clan" });
+  await expect(fromClan.getByRole("checkbox", { name: "Bloodline: Coyote, given by the clan" })).toBeChecked();
+  await expect(fromClan.getByRole("checkbox", { name: "Bloodline: Coyote, given by the clan" })).toBeDisabled();
+  await expect(fromClan).toContainText("Gangrel: Coyote is a bloodline. (p. 238)");
+  const merits = p.getByRole("region", { name: "Merits", exact: true });
+  await expect(merits.getByText("4 of 7 points")).toBeVisible();
+  // No bloodline merit is offered as a pick, even with everything shown.
+  await p.getByLabel("Show Merits").selectOption("Everything");
+  await expect(merits.getByRole("checkbox", { name: /^Bloodline: Noiad/ })).toHaveCount(0);
+
+  // Concept says what the clan takes; a plain Gangrel gives it back.
+  await p.goto(`/characters/${id}/create/concept`);
+  await expect(p.getByText("The clan takes Bloodline: Coyote (2 points) from your merit points.")).toBeVisible();
+  await p.getByLabel("Clan").selectOption("Gangrel");
+  await expect(p.getByText("The clan takes Bloodline: Coyote (2 points) from your merit points.")).toHaveCount(0);
+  await p.goto(`/characters/${id}/create/merits`);
+  await expect(p.getByRole("region", { name: "From the clan" })).toHaveCount(0);
+  await expect(p.getByRole("region", { name: "Merits", exact: true }).getByText("2 of 7 points")).toBeVisible();
+
+  // With all 7 points spent, the Koldun's 4-point bloodline does not fit.
+  const filled = await p.request.put(`/api/characters/${id}/creation/categories/merits`, {
+    headers: { "X-Horatio": "1" },
+    data: { picks: [{ name: "Code of Honor" }, { name: "Iron Will" }, { name: "Lucky" }] },
+  });
+  expect(filled.status(), await filled.text()).toBe(200);
+  await p.goto(`/characters/${id}/create/concept`);
+  await p.getByLabel("Clan").selectOption("Tzimisce: Koldun");
+  await expect(p.getByText(/Tzimisce: Koldun needs Bloodline: Koldun \(4 points\), which does not fit: 7 of the 7 merit points are spent/)).toBeVisible();
+  await expect(p.getByLabel("Clan")).toHaveValue("Gangrel");
 });
 
 test("an Angelis Ater chooses its third in-clan discipline on Disciplines, places its starting dots and finishes (#312)", async ({ browser }) => {
@@ -3669,8 +3869,8 @@ test("a merit taken in the creation wizard gives the traits it grants", async ({
   await p.getByRole("button", { name: "Save and continue" }).click();
   // Saving waits for the lists of what can be taken to reload, which takes a while with both browsers at it.
   await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
-  // Only the merit's own point comes from the budget.
-  await expect(p.getByText("Extrasensory Perceptions (1 of 7 points)")).toBeVisible();
+  // Only the merit's own point comes from the budget, beside the clan's Bloodline: Creeps (2, #313).
+  await expect(p.getByText("Bloodline: Creeps, Extrasensory Perceptions (3 of 7 points)")).toBeVisible();
   await p.getByRole("button", { name: "Finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   // The sheet shows the creation card until the finished character reloads, and it lists Wits too.
@@ -7530,6 +7730,9 @@ test("staff Embrace a ghoul: it becomes a vampire in XP debt, the cart waits, an
     building_troupe_id: troupeId,
     domitor: { name: "The Vizier", clan: "Assamite: Vizier" },
   });
+  // In the Camarilla, as the book has her: its Assamites are Viziers, so the clan gives
+  // her Uncommon Clan alone (p. 403, #313).
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
   const build: Record<string, [string, number][]> = {
     attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
     focus_physicals: [["Strength", 1]],
@@ -7999,6 +8202,109 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   await dots.getByRole("button", { name: "Log dots" }).click();
   await expect(l.getByText("2 of 5 dots")).toBeVisible();
   await expect(l.getByLabel("Sharing it")).toHaveText("Sharing it: Agnes 2 dots. Took their dots out: Bram.");
+});
+
+test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an eleventh quality, adds a secret negative, and a narrator never sees them", async ({ browser }) => {
+  const custodian = await person(browser, "loc-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "loc-lead");
+  const owner = await person(browser, "loc-owner");
+  const narrator = await person(browser, "loc-narrator");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Grove Court ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: narrator.handle, role: "narrator" });
+
+  // Agnes, at home in the troupe, will control it.
+  const { id: agnes } = await send(owner.page, "POST", "/api/characters", { splat: "vampire", name: "Agnes Grove" });
+  await send(owner.page, "PUT", `/api/characters/${agnes}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 3], ["Social", 7], ["Mental", 5]],
+    focus_physicals: [["Dexterity", 1]],
+    focus_mentals: [["Intelligence", 1]],
+    focus_socials: [["Manipulation", 1]],
+    skills: [["Leadership", 4], ["Subterfuge", 3], ["Academics", 3], ["Awareness", 2], ["Empathy", 2], ["Investigation", 2], ["Dodge", 1], ["Drive", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Resources", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(owner.page, "PUT", `/api/characters/${agnes}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(owner.page, "POST", `/api/characters/${agnes}/creation/complete`);
+  const asked = await send(owner.page, "POST", `/api/characters/${agnes}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+
+  // The lead adds the Grove Arcade: prestige 5, with ten qualities.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Locations", exact: true }).click();
+  await expect(l.getByText("No locations yet.")).toBeVisible();
+  await l.getByRole("button", { name: "Add a location" }).click();
+  const add = l.getByRole("form", { name: "Add a location" });
+  await add.getByLabel("Name", { exact: true }).fill("Grove Arcade");
+  await add.getByLabel("Type").selectOption("prestige");
+  await add.getByLabel("Rating").selectOption("5");
+  for (const quality of ["Size", "Guards", "Location", "Staff", "Profitable", "Profitable", "Historic", "Fancy", "Luxury", "Haunt"])
+    await add.getByLabel("Add a quality").selectOption(quality);
+  await expect(add.getByText("Qualities · 10 of 10")).toBeVisible();
+  await add.getByLabel("Address", { exact: true }).fill("1 Page Ave, Asheville");
+  await add.getByLabel("Feeding block").fill("The Rack");
+  await add.getByLabel("Influence", { exact: true }).selectOption("elite");
+  await add.getByLabel("Influence area").fill("Commercial Industry");
+  await add.getByLabel("Control", { exact: true }).selectOption("controlled");
+  await add.getByRole("combobox", { name: "Controller" }).fill("Agnes");
+  await add.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Agnes Grove/ }).click();
+  await add.getByRole("button", { name: "Add location" }).click();
+  await expect(l.getByRole("heading", { name: "Grove Arcade" })).toBeVisible();
+  await expect(l.getByText("Prestige 5 · 10 of 10 qualities")).toBeVisible();
+  await expect(l.getByText("Commercial Industry (Elite)")).toBeVisible();
+
+  // An eleventh quality is refused, with the reason.
+  await l.getByRole("button", { name: "Edit" }).click();
+  const edit = l.getByRole("form", { name: "Change Grove Arcade" });
+  await edit.getByLabel("Add a quality").selectOption("Isolated");
+  await edit.getByRole("button", { name: "Save changes" }).click();
+  await expect(edit.getByRole("alert")).toHaveText(/A prestige 5 location has at most 10 qualities .*p\. 121.*this one would have 11\./);
+
+  // Hunters watch it, kept secret from Agnes's player.
+  await edit.getByRole("button", { name: "Remove Isolated" }).click();
+  await edit.getByRole("button", { name: "Add a negative quality" }).click();
+  await edit.getByLabel("Negative quality").selectOption("Compromised");
+  await edit.getByLabel("Secret from the controller").check();
+  await edit.getByLabel("Who is behind Compromised").fill("hunters");
+  await edit.getByRole("button", { name: "Save changes" }).click();
+  await expect(l.getByText("Compromised ×1", { exact: true })).toBeVisible();
+  await expect(l.getByText("Secret", { exact: true })).toBeVisible();
+  await expect(l.getByText(/changed Grove Arcade: negatives \+Compromised ×1, secret \(hunters\)/)).toBeVisible();
+  await l.screenshot(shots("location"));
+
+  // Back on the list, it's found by its quality.
+  await l.getByRole("link", { name: "← All locations" }).click();
+  await l.getByLabel("Quality").selectOption("Haunt");
+  await expect(l.getByRole("list", { name: "Locations" }).getByRole("link", { name: "Grove Arcade" })).toBeVisible();
+  await l.getByLabel("Quality").selectOption("Workshop");
+  await expect(l.getByText("No locations match.")).toBeVisible();
+  const wide = await l.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(wide).toBeLessThanOrEqual(0);
+
+  // The sheet shows staff how many Agnes controls, of how many she may.
+  await l.goto(`/characters/${agnes}`);
+  await expect(l.getByText(/Controls 1 of 5 locations/)).toBeVisible();
+
+  // Neither the narrator nor Agnes's player sees the list.
+  const n = narrator.page;
+  await n.goto(`/troupes/${troupe.id}`);
+  await expect(n.getByRole("link", { name: "Locations", exact: true })).toHaveCount(0);
+  expect((await n.request.get(`/api/troupes/${troupe.id}/locations`)).status()).toBe(403);
+  expect((await owner.page.request.get(`/api/troupes/${troupe.id}/locations`)).status()).toBe(403);
+  await owner.page.goto(`/characters/${agnes}`);
+  await expect(owner.page.getByRole("heading", { name: "Agnes Grove" })).toBeVisible();
+  await expect(owner.page.getByText(/Controls 1 of 5 locations/)).toHaveCount(0);
 });
 
 test("a troupe gives equipment: a dagger from a template, a rifle by hand, refused when it breaks the rules, and a special blade from the character's page", async ({ browser }) => {

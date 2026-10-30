@@ -5,8 +5,8 @@ a troupe's own title can be one only one character holds
 Each character holding titles keeps its highest at court active, so it loses the
 status only of the others.
 
-Revision ID: 0109
-Revises: 0106
+Revision ID: 0112
+Revises: 0111
 Create Date: 2026-10-30 12:00:00.000000
 """
 
@@ -16,8 +16,8 @@ from typing import Any
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0109"
-down_revision: str | None = "0106"
+revision: str = "0112"
+down_revision: str | None = "0111"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

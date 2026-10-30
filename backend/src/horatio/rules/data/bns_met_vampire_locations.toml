@@ -1,0 +1,691 @@
+# Stock Locations (issue #325): the places that matter in a chronicle, kept by a
+# troupe's staff (horatio.locations). From MET: VTM Vol. II Issue 1 (Update 2),
+# pp. 117-133, in our own words; the Haven advantages are the core book's, p. 102.
+# Read by horatio.rules.locations, which checks this file's shape.
+#
+# [[types]]: a location's type, with the most qualities it takes per point of
+#   rating (`per_rating`), and whether it takes iconic qualities. A haven is a
+#   character's Haven background placed on the list: advantages, not qualities.
+#
+# [[options]]: the house options, each a troupe's change to the book that is on
+#   unless the troupe switches it off. `text` says what it changes.
+#
+# [[qualities]]: what a location can have, by `kind`: standard, iconic (only on
+#   an iconic location), supernatural (one per location) or elysium (only on an
+#   Elysium, which earns them with time). Each has its `page` and `text`, and:
+#   - `option`: the house option it belongs to; it is in the catalogue only while
+#     that option is on. `replaces` names the book's quality it stands in for;
+#   - `detail`: what an instance can name, such as Laboratory's specialisation;
+#   - `repeatable`: a location can have it more than once (with another detail);
+#   - `counts = false`: it does not count toward the location's qualities;
+#   - `excludes`: qualities it cannot be held with;
+#   - `haven_free`: the skill that gives it free on its holder's Haven;
+#   - `suggested`: what a quest to add it should ask for (#326), each one of
+#       { trait, levels?, detail?, expend?, alternative? }   a trait at a level
+#       { traits = [...], ... }                             any one of these
+#       { power = "Discipline: Power" }                     a power
+#       { text }                                            anything else
+#     `levels` go by the location's rating, lowest first, as the troupe's sheet
+#     writes them ("Crafts [2,3,4]"); `expend` spends the trait rather than tests
+#     it; `detail` is the specialisation or area it wants; `alternative` is what
+#     can stand in for it.
+#
+# [[limits]]: a house option's limit on one quality: `min_rating`, the lowest
+#   rating that can take it; or `per_qualities`, one more of it for each that
+#   many qualities the location can have (it is then repeatable).
+#
+# [[negatives]]: negative qualities, each up to `most` times (`raised_by` a
+#   quality that lets it take one more), with what each level does (`levels`),
+#   and how it is removed. Any can be kept secret from the controller (p. 127);
+#   `names_who` asks who is behind it.
+#
+# [[haven_advantages]]: the Haven background's advantages, one per dot.
+# `needs` is a skill a character must have to take it.
+
+types_page = "118-119, 121"
+control_page = "119"
+joint_page = "121"
+haven_page = "117"
+elysium_page = "131"
+
+[[types]]
+key = "standard"
+name = "Standard"
+per_rating = 1
+quest = "Simple"
+text = "A run-of-the-mill place that serves a purpose: a warehouse, an office, a shop. Anyone can control one."
+
+[[types]]
+key = "prestige"
+name = "Prestige"
+per_rating = 2
+quest = "Complex"
+text = "A local landmark, notable for its architecture, history or culture. Only controlled within the character's own city."
+
+[[types]]
+key = "iconic"
+name = "Iconic"
+per_rating = 2
+iconic = true
+quest = "Heroic"
+text = "A place known well beyond the city, perhaps the world. Staff decide whether a character can control it at all, and control is always conditional."
+
+[[types]]
+key = "haven"
+name = "Haven"
+per_rating = 0
+text = "A character's Haven background, placed on the list. It can't be targeted as a Stock Location can, and it doesn't count toward the control limit (p. 117)."
+
+# --- house options ------------------------------------------------------------
+
+[[options]]
+key = "conglomerates"
+name = "Conglomerates"
+text = "A location can be the parent of others, as a mall's management office is of its shops. The parent lists its subsidiaries and who controls each. Controlling it lets a quest for a subsidiary ignore one requirement, and a character who controls every subsidiary has the parent free, outside the control limit. Adds the Conglomerate quality."
+
+[[options]]
+key = "two_libraries"
+name = "Two libraries"
+text = "Library [Repository] (Lore) and Library [Mundane] (Academics and Linguistics) in place of the book's one Library."
+
+[[options]]
+key = "house_qualities"
+name = "The troupe's added qualities"
+text = "Adds Clubhouse, Derelict, Medical Facility, Tranquil and Travel Center to the catalogue."
+
+[[options]]
+key = "quality_limits"
+name = "Limits on qualities"
+text = "Fancy and Lowdown and Dirty only on a location rated 4 or higher. Profitable can be taken more than once, one for each 3 qualities the location can have, each giving Resources at that many dots."
+
+[[options]]
+key = "two_laboratories"
+name = "Laboratory with two specialisations"
+text = "A Laboratory covers two Science specialisations, or Animal Ken, rather than one."
+
+[[limits]]
+option = "quality_limits"
+quality = "Fancy"
+min_rating = 4
+
+[[limits]]
+option = "quality_limits"
+quality = "Lowdown and Dirty"
+min_rating = 4
+
+[[limits]]
+option = "quality_limits"
+quality = "Profitable"
+per_qualities = 3
+
+# --- standard qualities (pp. 121-124) -----------------------------------------
+
+[[qualities]]
+name = "Artistic"
+kind = "standard"
+page = "121"
+text = "A work of art in itself: its controller has one more dot of Fame while known to control it."
+suggested = [
+  { trait = "Crafts", levels = [2, 3, 4] },
+  { trait = "Performance", levels = [3, 4] },
+  { trait = "Academics", levels = [4, 5], alternative = "an Art specialisation" },
+]
+
+[[qualities]]
+name = "Cutting Edge"
+kind = "standard"
+page = "121-122"
+text = "Built around high technology: its controller can use an unfocused Analyze (Path of Technomancy) here, and has +3 wild card on Computer challenges here."
+suggested = [
+  { trait = "Computer", levels = [2, 3, 4] },
+  { trait = "Science", levels = [4, 5] },
+  { trait = "Resources", levels = [5] },
+]
+
+[[qualities]]
+name = "Dead Zone"
+kind = "standard"
+page = "122"
+text = "No phone or internet signal without a landline or dedicated wi-fi, and powers that control technology (Technomancy, Jam Technology) don't work here."
+
+[[qualities]]
+name = "Distracting"
+kind = "standard"
+page = "122"
+text = "Noise, lights or darkness make it hard to keep track of anything: Heightened Senses and similar powers don't work here, even for its controller."
+
+[[qualities]]
+name = "Fancy"
+kind = "standard"
+page = "122"
+text = "Where the wealthy gather: its controller has one more Elite influence action each downtime."
+suggested = [
+  { trait = "Resources", levels = [4, 5], expend = true },
+  { trait = "Influences: The Elite", levels = [4, 5], expend = true },
+  { trait = "Academics", levels = [4, 5] },
+]
+
+[[qualities]]
+name = "Firewall"
+kind = "standard"
+page = "122"
+text = "Hard to reach remotely: +3 to the difficulty of getting into its computer systems."
+haven_free = "Computer"
+
+[[qualities]]
+name = "Guards"
+kind = "standard"
+page = "122"
+text = "Armed guards worth 5 dots of Retainers, split as the controller likes, protect it and never leave it. +1 to the difficulty of any quest to break in."
+suggested = [
+  { trait = "Security", levels = [2, 3, 4] },
+  { power = "Dominate: Forgetful Mind" },
+]
+
+[[qualities]]
+name = "Hangout"
+kind = "standard"
+page = "122"
+text = "Mortals from many walks of life gather here: its controller has a separate Contacts 1."
+detail = "Contacts specialisation"
+suggested = [
+  { trait = "Empathy", levels = [2, 3, 4] },
+  { traits = ["Contacts", "Influences: The Elite", "Influences: The Underworld", "Allies"], levels = [2, 3, 4], detail = "of the player's choosing" },
+]
+
+[[qualities]]
+name = "Historic"
+kind = "standard"
+page = "122"
+text = "Culturally or historically significant: +1 to the difficulty of any quest to take control of it."
+suggested = [
+  { trait = "Academics", levels = [2, 3, 4] },
+  { trait = "Fame", levels = [1, 2] },
+  { power = "Auspex: Spirit's Touch" },
+]
+
+[[qualities]]
+name = "Lowdown and Dirty"
+kind = "standard"
+page = "122"
+text = "Where the underworld gathers: its controller has one more Underworld influence action each downtime."
+suggested = [
+  { trait = "Stealth", levels = [4, 5] },
+  { trait = "Streetwise", levels = [4, 5] },
+  { trait = "Influences: The Underworld", levels = [4, 5], expend = true },
+]
+
+[[qualities]]
+name = "Hole in the Wall"
+kind = "standard"
+page = "122"
+text = "Hard to find: nobody can target it unless they have been there themselves."
+
+[[qualities]]
+name = "Isolated"
+kind = "standard"
+page = "122"
+text = "Away from mortals: only the most blatant Masquerade breaches here draw attention."
+
+[[qualities]]
+name = "Laboratory"
+kind = "standard"
+page = "122"
+text = "A specialised laboratory: +3 wild card on challenges in its Science specialisation. Can be taken again for another."
+detail = "Science specialisation"
+repeatable = true
+
+[[qualities]]
+name = "Laboratory"
+kind = "standard"
+page = "122"
+option = "two_laboratories"
+replaces = "Laboratory"
+text = "A specialised laboratory: +3 wild card on challenges in its two Science specialisations, or in Animal Ken. Can be taken again for others."
+detail = "Two Science specialisations, or Animal Ken"
+repeatable = true
+
+[[qualities]]
+name = "Library"
+kind = "standard"
+page = "123"
+text = "A library of things mortals can't read: an hour's research here gives +3 wild card on a Lore test."
+
+[[qualities]]
+name = "Library [Repository]"
+kind = "standard"
+page = "123"
+option = "two_libraries"
+replaces = "Library"
+text = "A repository of occult knowledge: an hour's research here gives +3 wild card on a Lore test."
+suggested = [
+  { trait = "Occult", levels = [2, 3, 4] },
+  { trait = "Lore", levels = [2, 3, 4] },
+  { trait = "Loremaster" },
+]
+
+[[qualities]]
+name = "Library [Mundane]"
+kind = "standard"
+page = "123"
+option = "two_libraries"
+replaces = "Library"
+text = "An ordinary library of note: an hour's research here gives +3 wild card on an Academics or Linguistics test."
+suggested = [
+  { trait = "Academics", levels = [2, 3, 4] },
+  { trait = "Linguistics", levels = [2, 3, 4] },
+]
+
+[[qualities]]
+name = "Location"
+kind = "standard"
+page = "123"
+text = "Somewhere that protects it, such as a good neighbourhood: downtime actions against it cost twice as many, and staff may give story benefits."
+
+[[qualities]]
+name = "Luxury"
+kind = "standard"
+page = "123"
+text = "Comfortable and expensive: its owner has +3 on Social tests against mortals here."
+
+[[qualities]]
+name = "Off the Grid"
+kind = "standard"
+page = "123"
+text = "No electronics, yet fully working: it can't be reached over the internet or through ordinary bureaucracy."
+
+[[qualities]]
+name = "Profitable"
+kind = "standard"
+page = "123"
+text = "It makes money: its controller has a separate Resources 1."
+suggested = [
+  { trait = "Leadership", levels = [2, 3, 4] },
+  { trait = "Academics", levels = [3, 4], alternative = "a Business specialisation" },
+]
+
+[[qualities]]
+name = "Public Property"
+kind = "standard"
+page = "123"
+text = "Government owned but vampire controlled: +3 to the difficulty of bureaucratic actions against it, and it ignores its first Out of Code."
+
+[[qualities]]
+name = "Refuge"
+kind = "standard"
+page = "123"
+text = "Emergency power and supplies (blood too, for a vampire): 30 days for one person per point of rating, shared as its controller likes."
+
+[[qualities]]
+name = "Security"
+kind = "standard"
+page = "123"
+text = "A security system: -3 to challenges to break in, and its controller, if present, always has a turn's warning."
+haven_free = "Security"
+
+[[qualities]]
+name = "Size"
+kind = "standard"
+page = "123"
+text = "Enormous: a warehouse's worth of goods or people can be hidden here."
+suggested = [
+  { trait = "Resources", levels = [1, 2, 3] },
+  { trait = "Retainers", levels = [1, 2, 3] },
+  { trait = "Academics", levels = [3, 4], alternative = "an Architecture specialisation" },
+]
+
+[[qualities]]
+name = "Sprawling"
+kind = "standard"
+page = "123"
+text = "Confusing to strangers: they may talk privately as if elsewhere, and others can't declare fair escape here; leaving takes five unchallenged minutes."
+
+[[qualities]]
+name = "Staff"
+kind = "standard"
+page = "123"
+text = "Servants for the owner and guests, who fight as 1-dot Retainers if they must. They don't raise the control limit."
+suggested = [
+  { trait = "Empathy", levels = [2, 3, 4] },
+  { trait = "Leadership", levels = [2, 3, 4] },
+  { trait = "Retainers", levels = [1, 2, 3] },
+]
+
+[[qualities]]
+name = "Sturdy"
+kind = "standard"
+page = "123-124"
+text = "Solidly built: +3 to the difficulty of damaging it, and it ignores its first Damaged."
+suggested = [
+  { trait = "Security", levels = [2, 3, 4] },
+  { trait = "Academics", levels = [3, 4], alternative = "an Architecture specialisation" },
+]
+
+[[qualities]]
+name = "Venue"
+kind = "standard"
+page = "124"
+text = "A fine performance venue: +3 wild card on non-supernatural challenges in its Performance specialisation. Can be taken again for another."
+detail = "Performance specialisation"
+repeatable = true
+suggested = [
+  { trait = "Performance", levels = [2, 3, 4] },
+  { traits = ["Influences: The Elite", "Influences: The Underworld"], levels = [3] },
+  { trait = "Academics", levels = [2, 3, 4] },
+]
+
+[[qualities]]
+name = "Workshop"
+kind = "standard"
+page = "124"
+text = "Made for making things: +3 wild card on challenges in its Crafts specialisation. Can be taken again for another."
+detail = "Crafts specialisation"
+repeatable = true
+suggested = [
+  { trait = "Crafts", levels = [2, 3, 4] },
+  { traits = ["Contacts", "Influences: The Elite", "Influences: The Underworld", "Allies"], detail = "Arts" },
+]
+
+# --- the troupe's added qualities (house options) ------------------------------
+
+[[qualities]]
+name = "Clubhouse"
+kind = "standard"
+option = "house_qualities"
+text = "The meeting place of a mortal organisation: its controller has a separate Allies 1, its nature set when the location is taken."
+detail = "Allies"
+suggested = [
+  { trait = "Empathy", levels = [3, 4] },
+  { traits = ["Contacts", "Influences: The Elite", "Influences: The Underworld", "Allies"], levels = [2, 3, 4], detail = "of the player's choosing" },
+  { power = "Presence: Entrancement" },
+]
+
+[[qualities]]
+name = "Conglomerate"
+kind = "standard"
+option = "conglomerates"
+text = "The administrative arm of an organisation, with its subsidiary locations. Controlling it lets a quest for a subsidiary ignore one requirement; controlling every subsidiary gives it free, outside the control limit."
+suggested = [
+  { trait = "Leadership", levels = [3, 4] },
+  { traits = ["Contacts", "Influences: The Elite", "Influences: The Underworld", "Allies"], detail = "Legal or Finance" },
+  { power = "Presence: Entrancement" },
+]
+
+[[qualities]]
+name = "Derelict"
+kind = "standard"
+option = "house_qualities"
+counts = false
+text = "Broken down and empty: a quest for it has one requirement fewer. It doesn't count toward the location's qualities."
+
+[[qualities]]
+name = "Medical Facility"
+kind = "standard"
+option = "house_qualities"
+text = "+3 wild card to anyone trained in Medicine here, and they can keep twice as much blood here. Anyone can keep blood here for a month as if they had Medicine 1."
+suggested = [
+  { trait = "Medicine", levels = [2, 3, 4] },
+  { trait = "Science", levels = [3, 4], alternative = "a medical specialisation" },
+]
+
+[[qualities]]
+name = "Tranquil"
+kind = "standard"
+option = "house_qualities"
+text = "Once a month, a downtime action or 15 minutes out of game here lowers a character's Derangement traits by 1."
+suggested = [
+  { trait = "Awareness", levels = [2, 3, 4] },
+  { text = "Personal Masquerade, Quell the Beast or Passion" },
+]
+
+[[qualities]]
+name = "Travel Center"
+kind = "standard"
+option = "house_qualities"
+text = "Once a month, Free Travel that Word on the Street can't track: across the state from a standard location, and abroad from a prestige or iconic one."
+suggested = [
+  { trait = "Drive", levels = [2, 3, 4] },
+  { traits = ["Contacts", "Influences: The Elite", "Influences: The Underworld", "Allies"], detail = "Transportation or Infrastructure" },
+]
+
+# --- iconic qualities (pp. 124-125) -------------------------------------------
+
+[[qualities]]
+name = "Celebrity"
+kind = "iconic"
+page = "124"
+text = "Anyone tied to it is famous worldwide: its controller has 5 temporary dots of mundane backgrounds (moved once a month, none above 6), but must spend 3 downtime actions a cycle keeping the Masquerade."
+
+[[qualities]]
+name = "Fortified"
+kind = "iconic"
+page = "124"
+text = "Only a military-grade attack can destroy it: breaching it from outside is difficulty 30 or more, getting past its inner security 25 or more."
+
+[[qualities]]
+name = "Nationalized"
+kind = "iconic"
+page = "124"
+text = "Held by the government: every consequence of a quest involving it is doubled."
+
+[[qualities]]
+name = "Protected"
+kind = "iconic"
+page = "125"
+text = "Guarded by legal, political and mystical means: it can't be harmed, violated or breached, and storytellers arrange coincidences to keep it so."
+
+[[qualities]]
+name = "World Renown"
+kind = "iconic"
+page = "125"
+text = "Famous in one field: its controller can spend influence anywhere in the world for that field, without Fame."
+
+# --- supernatural qualities (p. 125) ------------------------------------------
+
+[[qualities]]
+name = "Barren"
+kind = "supernatural"
+page = "125"
+text = "A poor place to feed: Blood from feeding here is halved, rounding up."
+
+[[qualities]]
+name = "Buffet"
+kind = "supernatural"
+page = "125"
+text = "A fine place to feed: Blood from feeding here is doubled."
+suggested = [
+  { trait = "Subterfuge", levels = [4, 5] },
+]
+
+[[qualities]]
+name = "Gauntlet"
+kind = "supernatural"
+page = "125"
+text = "The Gauntlet is thick here: crossing into or out of the Umbra takes twice as long."
+suggested = [
+  { trait = "Awareness", levels = [4, 5] },
+  { trait = "Occult", levels = [4, 5] },
+]
+
+[[qualities]]
+name = "Haunt"
+kind = "supernatural"
+page = "125"
+text = "The Shroud is thin, back to low each day: necromancers have +3 wild card dealing with ghosts here."
+suggested = [
+  { text = "Medium, or Necromancy" },
+  { trait = "Occult", levels = [4, 5] },
+]
+
+[[qualities]]
+name = "Tainted"
+kind = "supernatural"
+page = "125"
+text = "Wyrm-tainted: five minutes here gives a point of Wyrm Taint and eight hours up to one more (never a fifth). Gaian shapeshifters can't cross the Gauntlet here."
+suggested = [
+  { trait = "Lore", detail = "Werewolf or Umbra" },
+]
+
+# --- Elysium qualities (pp. 131-132) ------------------------------------------
+
+[[qualities]]
+name = "Arena"
+kind = "elysium"
+page = "131"
+text = "A place set aside for sport or combat between supernatural creatures, as the courtesies allow. Traditional elders may stay away."
+excludes = ["Intimidating Ground", "Traditional"]
+
+[[qualities]]
+name = "Easy Feeding"
+kind = "elysium"
+page = "132"
+text = "Close to one of the city's racks: feeding is a difficulty 1 Simple Quest of five minutes out of game, courtesies allowing."
+
+[[qualities]]
+name = "Holy Ground"
+kind = "elysium"
+page = "132"
+text = "A spiritual aura: anyone who willingly violates it loses a Morality trait. It triggers Repelled by Religion."
+
+[[qualities]]
+name = "Intimidating Ground"
+kind = "elysium"
+page = "132"
+text = "So daunting that violating it costs a point of Willpower."
+excludes = ["Arena", "Traditional"]
+
+[[qualities]]
+name = "Old Boy's Club"
+kind = "elysium"
+page = "132"
+text = "Close to mortal elite society: an evening without a Masquerade incident gives every attendee 1 dot of Fame for a month or two games, whichever is longer."
+
+[[qualities]]
+name = "Quarantined"
+kind = "elysium"
+page = "132"
+text = "Sealed from outside monitoring: breaking the Masquerade here is nearly impossible."
+
+[[qualities]]
+name = "Selective"
+kind = "elysium"
+page = "132"
+text = "Repels one kind of supernatural creature, as storytellers decide."
+detail = "Kind of creature"
+
+[[qualities]]
+name = "Soothing"
+kind = "elysium"
+page = "132"
+text = "Once a game, 10 calm minutes here removes a Beast trait. Visiting often may justify buying Morality."
+
+[[qualities]]
+name = "Traditional"
+kind = "elysium"
+page = "132"
+text = "A bastion of the Camarilla's traditions: those attending a gathering here gain the fleeting status Courteous, once every three games."
+excludes = ["Arena", "Intimidating Ground"]
+
+[[qualities]]
+name = "Universal Acceptance"
+kind = "elysium"
+page = "132"
+text = "Respected by every sect: violating it always earns the negative status Disgraced from one's own sect."
+
+# --- negative qualities (pp. 127-129) -----------------------------------------
+
+[[negatives]]
+name = "Damaged"
+page = "127-128"
+removed = "Each is removed with dots of Resources equal to the location's rating."
+raised_by = "Sturdy"
+levels = [
+  "One quality, chosen by staff, can't be used until every Damaged is removed.",
+  "Only one standard quality, chosen by staff, still works.",
+  "Destroyed: it loses all its standard qualities, and comes back as a rating 1 of its type with one standard quality.",
+]
+
+[[negatives]]
+name = "Insolvent"
+page = "128"
+removed = "Each is removed with Elite influence equal to the location's rating."
+levels = [
+  "Profitable gives nothing.",
+  "A drain on its owner, who must give it up if its rating is above their Resources.",
+  "Headed for foreclosure: anyone can take it with a Complex Quest at its rating.",
+]
+
+[[negatives]]
+name = "Compromised"
+page = "128"
+removed = "Each is removed with Underworld influence equal to the location's rating."
+names_who = true
+levels = [
+  "Hostile forces watch who comes and goes.",
+  "Hostile forces watch it closely, and act if they find its owner there.",
+  "Nothing goes unnoticed: using its standard qualities brings consequences.",
+]
+
+[[negatives]]
+name = "Out of Code"
+page = "128-129"
+removed = "Each is removed with Underworld influence equal to the location's rating."
+raised_by = "Public Property"
+levels = [
+  "Breaks code or licensing; it gets worse by itself if not fixed within two games.",
+  "On the verge of closure; it gets worse by itself if not fixed within two games.",
+  "Closed: none of its qualities can be used until every Out of Code is removed.",
+]
+
+[[negatives]]
+name = "Shunned"
+page = "129"
+removed = "Each is removed with Elite influence equal to the location's rating."
+levels = [
+  "Its controller gets nothing from Artistic, Fancy or Lowdown and Dirty.",
+  "Its controller has its rating fewer dots of Fame; at an Elysium, no one gains positive status at court.",
+  "Its controller loses all Fame and can't buy influence with XP while they control it.",
+]
+
+# --- Haven advantages (MET: VTM, p. 102) --------------------------------------
+
+[[haven_advantages]]
+name = "Guards"
+page = "102"
+text = "Guards worth 5 dots of Retainers, who stay in the Haven."
+
+[[haven_advantages]]
+name = "Library"
+page = "102"
+text = "An hour's research here gives +3 on a Research or Lore test."
+
+[[haven_advantages]]
+name = "Location"
+page = "102"
+text = "A good neighbourhood: downtime actions against the owner cost twice as many while they live here, with story benefits."
+
+[[haven_advantages]]
+name = "Luxury"
+page = "102"
+text = "Comfortable and expensive: +3 on Social tests against mortals here."
+
+[[haven_advantages]]
+name = "Security"
+page = "102"
+text = "-3 to challenges to break in or go unseen, and a turn's warning of a break-in. Free with the Security skill."
+
+[[haven_advantages]]
+name = "Size"
+page = "102"
+text = "Dozens of rooms: room for up to 10 more characters."
+
+[[haven_advantages]]
+name = "Staff"
+page = "102"
+text = "Servants, who fight as 1-dot Retainers if they must."
+
+[[haven_advantages]]
+name = "Occult"
+page = "102"
+text = "Wards that keep out supernatural Stock NPCs unless invited."
+needs = "Occult"

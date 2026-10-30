@@ -39,6 +39,7 @@ from horatio.api import (
     influence_log,
     influence_lookups,
     lines_veils,
+    locations,
     membership,
     notifications,
     npcs,
@@ -49,6 +50,7 @@ from horatio.api import (
     power_choices,
     preferences,
     printing,
+    quests,
     responses,
     retainers,
     roster,
@@ -152,6 +154,7 @@ for module in (
     influence_history,
     influence_lookups,
     shared_backgrounds,
+    locations,
     specializations,
     connectors,
     discord,
@@ -175,6 +178,7 @@ for module in (
     waiting,
     viewing,
     whos_who,
+    quests,
 ):
     api.include_router(module.router)
 

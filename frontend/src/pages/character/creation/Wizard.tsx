@@ -18,6 +18,8 @@ import { detailNeed, fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
 import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, spent, traitOf, type Allowed, type Picks } from "./logic";
 import { FromMerits } from "./FromMerits";
+import { ClanMerits } from "./ClanMerits";
+import { clanMeritsLine, clanPoints, comesWithClan } from "./clanMerits";
 import { EXTRA_IN_CLAN, IN_CLAN_MERITS, clanChoiceNeeded, clanChoiceOpen, inClanChoices, inClanOpen, inClanShortfalls, makesInClanChoice } from "./inClan";
 import { ClanChoice, InClanPicker, MoveStartingDots } from "./InClanPicker";
 import { DISCIPLINES_FROM_MERITS, INEPT, disciplinesIntro, ineptChoices, withoutDotReasons } from "./disciplines";
@@ -375,14 +377,18 @@ function StepView({
           // Picks from one budget of dots (a ghoul's disciplines).
           const budget = dotBudget(creation, category);
           if (pools[0]?.kind === "points" && !budget) {
+            // The merits the clan gives are the clan's, not picks (#313).
+            const clan = category === "merits" ? creation.clan_merits : [];
             return (
               <CheckedPointsList
                 key={category}
                 characterId={character.id}
                 category={category}
                 title={nameOf(category)}
-                traits={narrowed(category, traitsOf(category))}
+                traits={narrowed(category, traitsOf(category)).filter((t) => category !== "merits" || !comesWithClan(t.name, creation))}
                 budget={pools[0].allowed}
+                given={<ClanMerits character={character} merits={clan} catalogue={catalogue} />}
+                givenPoints={clanPoints({ clan_merits: clan })}
                 picks={mine}
                 onChange={set}
                 quick={quickPicks(traitsOf(category), sheet.traits)}
@@ -531,6 +537,7 @@ function ConceptStep({
         <OwnArchetype character={character} sheet={sheet} onSaved={() => setMakingOwn(false)} />
       )}
       {clanOf(sheet) && <InClanNow creation={creation} />}
+      {clanMeritsLine(creation) && <p className="text-sm text-mist">{clanMeritsLine(creation)}</p>}
       {clanOf(sheet) && !ghoul && <ClanChoice character={character} creation={creation} catalogue={catalogue} />}
       {clanOf(sheet) && !ghoul && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
       {clanOf(sheet) && !ghoul && <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS.concept!} />}
@@ -694,7 +701,7 @@ function ReviewStep({
                 {p.kind === "picks" ? ` at ${p.rating}` : ""}
               </span>
               <span>
-                {p.traits.map((t) => (t.detail ? `${t.name}: ${t.detail}` : t.name)).join(", ") || "—"}
+                {[...(p.category === "merits" ? creation.clan_merits.map((m) => (m.detail ? `${m.name}: ${m.detail}` : m.name)) : []), ...p.traits.map((t) => (t.detail ? `${t.name}: ${t.detail}` : t.name))].join(", ") || "—"}
                 {p === ghoulDots
                   ? ` (${p.used} of ${p.allowed} dots placed${p.remaining > 0 ? `, ${p.remaining} saved for later` : ""})`
                   : p.kind === "points"

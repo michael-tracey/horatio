@@ -56,7 +56,7 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
     AuditGroup.CREATION: ("Character creation", ("creation.",)),
     AuditGroup.STATUS: ("Status", ("status.", "troupe.status_by")),
     AuditGroup.TITLES: ("Titles", ("title.", "troupe.titles_by")),
-    AuditGroup.DOWNTIMES: ("Downtimes", ("downtime.", "response.", "delivery.")),
+    AuditGroup.DOWNTIMES: ("Downtimes", ("downtime.", "response.", "delivery.", "quest.")),
     AuditGroup.INFLUENCE: (
         "Influence",
         ("influence.", "shared_background.", "house.influence_lookback"),
@@ -69,7 +69,7 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
         "House rules",
         ("house.", "troupe.specializations", "troupe.sects_limited", "troupe.splats_limited"),
     ),
-    AuditGroup.TROUPES: ("Troupes", ("troupe.", "troupe_request.", "connector.")),
+    AuditGroup.TROUPES: ("Troupes", ("troupe.", "troupe_request.", "connector.", "location.")),
     AuditGroup.ACCOUNTS: ("Accounts", ("account.",)),
     AuditGroup.SYSTEM: ("System", ("backup.", "clan_logo.", "audit.")),
 }

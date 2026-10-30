@@ -75,6 +75,10 @@ class TroupeOut(BaseModel):
     # Its Who's Who (horatio.whos_who) shows the negative status each character
     # carries into a game here.
     whos_who_negative: bool
+    # Quests (horatio.quests): on or off, and the requests each character may make in
+    # a downtime cycle.
+    quests_enabled: bool
+    quest_requests_per_cycle: int
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -232,6 +236,8 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         badge_status=troupe.badge_status,
         badge_pronouns=troupe.badge_pronouns,
         whos_who_negative=troupe.whos_who_negative,
+        quests_enabled=troupe.quests_enabled,
+        quest_requests_per_cycle=troupe.quest_requests_per_cycle,
         whos_who=can_see_whos_who(db, user, troupe),
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),

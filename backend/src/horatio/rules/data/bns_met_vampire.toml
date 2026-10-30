@@ -813,6 +813,50 @@ category = "clan"
 name = "Ventrue: Crusader"
 properties = { in_clan = ["Auspex", "Dominate", "Fortitude"] }
 
+# How rare each clan is in each sect's setting (p. 237): a common clan costs nothing,
+# an uncommon one the Uncommon Clan merit (2 points), a rare one Rare Clan (4). A clan
+# the setting does not list is restricted: Restricted Clan (6), with the Storyteller's
+# permission. A bloodline is as rare as its clan, and needs its bloodline merit as
+# well (p. 238), but for the bloodline the setting plays as its clan's default
+# (`defaults`), which needs none; the clan's own line then pays the bloodline's 2
+# points instead, as one step rarer (pp. 238, 450-451, 485). Clan and bloodline
+# together costing more than 7 points take Restricted Clan instead (p. 237). A troupe
+# can name each clan's rarity itself (horatio.clan_merits). The loader keeps each
+# clan's rarity in its properties (horatio.rules.files.fold_clan_rarity).
+
+# The independent bloodlines carry their own rarity, whatever the setting (Volume 2,
+# pp. 50, 57); a table with no sect is for every setting, and for none.
+[[clan_rarity]]
+page = "Vol. 2, pp. 50, 57"
+uncommon = ["Nagaraja"]
+rare = ["Lhiannan"]
+
+[[clan_rarity]]
+sect = "Camarilla"
+page = "403-404"
+common = ["Brujah", "Caitiff", "Gangrel", "Malkavian", "Nosferatu", "Toreador", "Tremere", "Ventrue"]
+uncommon = ["Assamite", "Followers of Set", "Giovanni", "Ravnos"]
+rare = ["Cappadocians", "Daughters of Cacophony", "Gargoyles", "Lasombra", "Salubri", "Tzimisce"]
+defaults = ["Assamite: Vizier", "Cappadocians: Samedi", "Tzimisce: Carpathian"]
+
+# The book also makes some bloodlines' merits a point dearer in the Sabbat and Anarch
+# settings (pp. 451, 485); a troupe prices those with a house cost rule.
+[[clan_rarity]]
+sect = "Sabbat"
+page = "450-451"
+common = ["Brujah", "Caitiff", "Followers of Set", "Gangrel", "Lasombra", "Malkavian", "Nosferatu", "Toreador", "Tzimisce", "Ventrue"]
+uncommon = ["Assamite", "Cappadocians", "Ravnos", "Salubri", "Tremere"]
+rare = ["Daughters of Cacophony", "Gargoyles"]
+defaults = ["Gangrel: Coyote", "Tremere: Telyav", "Ventrue: Crusader"]
+
+[[clan_rarity]]
+sect = "Anarch"
+page = "484-485"
+common = ["Brujah", "Caitiff", "Followers of Set", "Gangrel", "Malkavian", "Nosferatu", "Toreador"]
+uncommon = ["Daughters of Cacophony", "Giovanni", "Lasombra", "Ravnos", "Ventrue"]
+rare = ["Assamite", "Cappadocians", "Salubri", "Tremere"]
+defaults = ["Cappadocians: Samedi"]
+
 
 # ---------------------------------------------------------------------------
 # Downtimes.

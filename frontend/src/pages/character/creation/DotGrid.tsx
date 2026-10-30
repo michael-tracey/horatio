@@ -313,6 +313,8 @@ export function PointsList({
   onDetail,
   why,
   under,
+  given,
+  givenPoints = 0,
   fields = NO_FIELDS,
 }: {
   title: string;
@@ -333,6 +335,9 @@ export function PointsList({
   why?: (name: string) => ReactNode;
   /** What a ticked one asks for next, shown under it (Vestiges of Greatness: its in-clan choice). */
   under?: (name: string) => ReactNode;
+  /** Merits held from the budget that are not picks (the clan's), shown first, and their points. */
+  given?: ReactNode;
+  givenPoints?: number;
   /** Skills bought once per field: a choice of one asks for the field too (Artist's Blessing). */
   fields?: Set<string>;
 }) {
@@ -342,7 +347,7 @@ export function PointsList({
   const filtered = filterable ? applyFilter(traits, filter, barred ?? unavailable) : traits;
   const listed = filtered.concat(traits.filter((t) => t.name in picks && !filtered.includes(t)));
   const { query, setQuery, shown } = useFiltered(listed, picks);
-  const used = spent(picks);
+  const used = spent(picks) + givenPoints;
   // Every one is listed, picks first: the filter, quick picks and search narrow it (#310).
   const visible = query.trim() ? shown : shown.filter((t) => t.name in picks).concat(shown.filter((t) => !(t.name in picks)));
 
@@ -378,6 +383,7 @@ export function PointsList({
           className="min-w-40 flex-1"
         />
       </div>
+      {given}
       <ul className="flex flex-col gap-1">
         {visible.map((t) => {
           const points = t.fixed_rating ?? 1;
@@ -392,7 +398,7 @@ export function PointsList({
                   className="mt-1"
                   checked={chosen}
                   disabled={!affordable}
-                  onChange={() => onChange(togglePoints(picks, budget, t.name, points))}
+                  onChange={() => onChange(togglePoints(picks, budget - givenPoints, t.name, points))}
                 />
                 <span className="min-w-0">
                   <span className="text-parchment">{t.name}</span> <span className="text-gold">({points})</span>

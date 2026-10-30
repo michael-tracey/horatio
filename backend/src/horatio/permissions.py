@@ -62,6 +62,8 @@ class TroupeAction(StrEnum):
     CHANGE_ANY_SCENE = "change_any_scene"
     VIEW_LINES_VEILS = "view_lines_veils"
     MANAGE_EQUIPMENT = "manage_equipment"
+    MANAGE_LOCATIONS = "manage_locations"
+    MANAGE_QUESTS = "manage_quests"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -114,6 +116,12 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # Giving the troupe's home characters equipment, making it special, changing it
     # and taking it back, and keeping the troupe's own templates (horatio.equipment).
     TroupeAction.MANAGE_EQUIPMENT: frozenset(_RUNNING),
+    # Seeing and keeping the troupe's locations, and their log. Narrators and players
+    # never see the record (horatio.locations).
+    TroupeAction.MANAGE_LOCATIONS: frozenset(_RUNNING),
+    # The troupe's quest requests and quests: building, checking and sending them
+    # (horatio.quests). Narrators work on those assigned to them, as for downtimes.
+    TroupeAction.MANAGE_QUESTS: frozenset(_RUNNING),
 }
 
 

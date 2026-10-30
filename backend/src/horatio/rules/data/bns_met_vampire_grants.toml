@@ -375,6 +375,16 @@ target = { category = "disciplines", choose = "any" }
 amount = 0
 page = "263"
 
+# --- Morality lowered on taking -------------------------------------------------------
+
+# Taking Flexible Morals drops Morality to 3 if it is higher (Volume 2 Issue 1, p. 36).
+[[grants]]
+source = { category = "merits", name = "Flexible Morals" }
+kind = "lower_to"
+target = { category = "paths" }
+amount = 3
+page = "Vol. 2 Issue 1, p. 36"
+
 # --- in-clan disciplines replaced ----------------------------------------------------
 
 # The merit sets all of the character's in-clan disciplines, in place of the clan's.
@@ -550,6 +560,14 @@ target = { category = "rituals" }
 amount = 50
 page = "Vol. 2 Issue 1, p. 47"
 
+# Rituals at their rating x1 XP, half the usual x2 (Volume 2 Issue 1, p. 42).
+[[grants]]
+source = { category = "merits", name = "Ritual Supremacy" }
+kind = "cost_percent"
+target = { category = "rituals" }
+amount = 50
+page = "Vol. 2 Issue 1, p. 42"
+
 # Up to 3 points of merits usually limited to the Sabbat. The Storyteller can forbid
 # ones that need an active Sabbat position: staff confirm by accepting the character.
 [[grants]]
@@ -654,6 +672,18 @@ page = "101"
 
 # --- cheaper traits -------------------------------------------------------------
 
+# Art Imitates Life: Grotesque or Angelic, chosen for good, lets its skill be bought at
+# the new level x1 XP, if the character cannot already (a Neonate can); the merit's
+# detail names the skill (Intimidation for Grotesque, Leadership for Angelic;
+# Volume 2 Issue 1, p. 53).
+[[grants]]
+source = { category = "merits", name = "Art Imitates Life" }
+when = { generation = { gte = 2 } }
+kind = "cost_percent"
+target = { category = "skills", choose = ["Intimidation", "Leadership"] }
+amount = 50
+page = "Vol. 2 Issue 1, p. 53"
+
 [[grants]]
 source = { category = "merits", name = "Supernatural Aria" }
 kind = "cost_percent"
@@ -676,6 +706,14 @@ kind = "price_in_clan"
 target = { category = "disciplines", choose = "any", choose_prefix = "Necromancy: ", except = ["Necromancy: Mortis Path"] }
 amount = 0
 page = "240"
+
+# A Nagaraja's path beside the Ash Path (Volume 2, p. 61).
+[[grants]]
+source = { category = "merits", name = "Necromantic Prowess" }
+kind = "price_in_clan"
+target = { category = "disciplines", choose = "any", choose_prefix = "Necromancy: ", except = ["Necromancy: Ash Path"] }
+amount = 0
+page = "Vol. 2, p. 61"
 
 [[grants]]
 source = { category = "merits", name = "Necromantic Insight" }

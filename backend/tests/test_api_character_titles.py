@@ -270,7 +270,7 @@ def test_staff_giving_titles_makes_the_first_active(troupe: Troupe) -> None:
 def test_the_migration_keeps_the_highest_title_active(
     engine: Engine, alembic_config: Config
 ) -> None:
-    before = ScriptDirectory.from_config(alembic_config).get_revision("0109").down_revision
+    before = ScriptDirectory.from_config(alembic_config).get_revision("0112").down_revision
     assert isinstance(before, str)
     command.downgrade(alembic_config, before)
     user, troupe, character = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()

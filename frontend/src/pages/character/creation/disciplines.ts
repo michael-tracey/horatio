@@ -23,6 +23,13 @@ export const BLOOD_MAGIC_MERITS = [
   "Chosen of the Crone",
   "Bloodline: Koldun",
   "Bloodline: Sorcerer",
+  "Necromantic Prowess",
+  "Sea Witch",
+  "Dark Magics",
+  "Voudoun Master",
+  "Kupala's Bounty",
+  "Thaumaturgically Gifted",
+  "Prodigy of the Flesh",
 ];
 
 export const INEPT = "Inept";

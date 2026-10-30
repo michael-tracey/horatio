@@ -324,6 +324,7 @@ def test_extrasensory_perceptions_gives_acute_senses_and_perception_and_takes_th
     assert granted(troupe.player, character_id, "merits") == {
         "Acute Sense: Hearing": (1, 1, ESP),
         "Acute Sense: Smell": (1, 1, ESP),
+        "Bloodline: Creeps": (2, 0, []),
         "Extrasensory Perceptions": (1, 0, []),
     }
     # A second Mental focus, past the usual one per attribute (p. 90).
@@ -331,9 +332,10 @@ def test_extrasensory_perceptions_gives_acute_senses_and_perception_and_takes_th
         "Intelligence": (1, 0, []),
         "Perception": (1, 1, ESP),
     }
-    # Only the merit itself is paid for, and counts toward the 7 merit points.
+    # Only the merit itself is paid for, and counts toward the 7 merit points, beside
+    # the clan's Bloodline: Creeps (2).
     assert sheet(troupe.player, character_id)["xp"]["balance"] == before - 1
-    assert merit_points(troupe.player, character_id) == 1
+    assert merit_points(troupe.player, character_id) == 1 + 2
     # What it gives cannot be sold back on its own.
     assert (
         take(troupe.player, character_id, "merits", "Acute Sense", 0, "Hearing").status_code == 422
@@ -341,7 +343,7 @@ def test_extrasensory_perceptions_gives_acute_senses_and_perception_and_takes_th
 
     take(troupe.player, character_id, "merits", "Extrasensory Perceptions", 0)
 
-    assert granted(troupe.player, character_id, "merits") == {}
+    assert granted(troupe.player, character_id, "merits") == {"Bloodline: Creeps": (2, 0, [])}
     assert granted(troupe.player, character_id, "focus_mentals") == {
         "Intelligence": (1, 0, []),
     }
@@ -359,8 +361,8 @@ def test_extrasensory_perceptions_while_creating(troupe: Troupe) -> None:
     taken = step("merits", [("Extrasensory Perceptions", 1)])
     assert taken.status_code == 200, taken.text
     merits = next(p for p in taken.json()["pools"] if p["category"] == "merits")
-    # Only the merit takes points from the budget.
-    assert merits["used"] == 1
+    # Only the merit takes points from the budget, beside the clan's Bloodline: Creeps (2).
+    assert merits["used"] == 1 + 2
     assert granted(troupe.player, character_id, "merits")["Acute Sense: Smell"] == (1, 1, ESP)
     # The Mental focus pick is still the player's own, next to the granted one.
     assert step("focus_mentals", [("Wits", 1)]).status_code == 200
@@ -371,7 +373,7 @@ def test_extrasensory_perceptions_while_creating(troupe: Troupe) -> None:
 
     assert step("merits", []).status_code == 200
 
-    assert granted(troupe.player, character_id, "merits") == {}
+    assert granted(troupe.player, character_id, "merits") == {"Bloodline: Creeps": (2, 0, [])}
     assert granted(troupe.player, character_id, "focus_mentals") == {"Wits": (1, 0, [])}
 
 
@@ -403,9 +405,16 @@ def test_a_granted_trait_still_answers_to_the_checks(troupe: Troupe) -> None:
 
 
 def test_a_granted_merit_grants_in_turn(troupe: Troupe) -> None:
-    character_id = new_character(troupe, troupe.player, clan="Assamite")
+    # Web of Knives is bought at character creation only (Vol. 2 Issue 1, p. 26).
+    character_id = new_character(troupe, troupe.player, clan="Assamite", finished=False)
 
-    taken = take(troupe.player, character_id, "merits", "Web of Knives", 3)
+    def merits(names: list[str]) -> Any:
+        return troupe.player.client.put(
+            f"/characters/{character_id}/creation/categories/merits",
+            json={"picks": [{"name": n} for n in names]},
+        )
+
+    taken = merits(["Web of Knives"])
 
     assert taken.status_code == 200, taken.text
     assert granted(troupe.player, character_id, "merits")["Path of Blood"] == (
@@ -413,11 +422,12 @@ def test_a_granted_merit_grants_in_turn(troupe: Troupe) -> None:
         3,
         ["Web of Knives"],
     )
-    # The Path of Blood merit converts Humanity, and Potence becomes in-clan.
-    assert ratings(troupe.player, character_id, "paths") == {"Blood": 5}
+    # The Path of Blood merit converts Humanity, starting at 4 as one bought in creation
+    # (p. 306), and Potence becomes in-clan.
+    assert ratings(troupe.player, character_id, "paths") == {"Blood": 4}
     assert ratings(troupe.player, character_id, "extra_in_clan_disciplines") == {"Potence": 1}
 
-    take(troupe.player, character_id, "merits", "Web of Knives", 0)
+    assert merits([]).status_code == 200
 
     assert ratings(troupe.player, character_id, "paths") == {"Humanity": 5}
     assert "Path of Blood" not in ratings(troupe.player, character_id, "merits")
