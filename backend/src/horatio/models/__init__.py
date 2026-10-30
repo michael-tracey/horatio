@@ -54,6 +54,14 @@ from horatio.models.play import (
     PlayGame,
     PoolModifier,
 )
+from horatio.models.quests import (
+    Quest,
+    QuestLogEntry,
+    QuestMember,
+    QuestRequest,
+    QuestRequirement,
+    QuestScenario,
+)
 from horatio.models.retainers import AlternateIdentity, Retainer
 from horatio.models.rules import (
     ActionKind,
@@ -119,6 +127,12 @@ __all__ = [
     "PlayEvent",
     "PlayGame",
     "Question",
+    "Quest",
+    "QuestLogEntry",
+    "QuestMember",
+    "QuestRequest",
+    "QuestRequirement",
+    "QuestScenario",
     "Submission",
     "TroupeConnector",
     "Approval",

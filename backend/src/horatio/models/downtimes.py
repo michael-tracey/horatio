@@ -231,6 +231,11 @@ class Delivery(Record):
     __table_args__ = (
         CheckConstraint("channel in ('horatio', 'discord', 'email')", name="channel"),
         CheckConstraint("status in ('pending', 'sent', 'failed')", name="status"),
+        CheckConstraint(
+            "(submission_id is not null and quest_id is null and character_id is null)"
+            " or (submission_id is null and quest_id is not null and character_id is not null)",
+            name="one_subject",
+        ),
         # Never send the same submission twice on one channel.
         Index(
             "uq_deliveries_sent_once",
@@ -241,7 +246,19 @@ class Delivery(Record):
         ),
     )
 
-    submission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("submissions.id"), index=True)
+    # A downtime's results, or a quest's news for one of its characters
+    # (horatio.quests): its requirements, or a scenario's result.
+    submission_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("submissions.id"), index=True
+    )
+    quest_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("quests.id", ondelete="CASCADE"), index=True
+    )
+    character_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE")
+    )
+    # A quest's message's subject, such as "Quest: The Lost Journal".
+    subject: Mapped[str] = mapped_column(default="", server_default="")
     channel: Mapped[str]
     status: Mapped[str] = mapped_column(default="pending", server_default="pending")
     test_mode: Mapped[bool] = mapped_column(default=False, server_default="false")
