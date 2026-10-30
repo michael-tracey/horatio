@@ -4,7 +4,8 @@ import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, GiveOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
-import { detailNeed } from "./fields";
+import { detailNeed, fieldSkills } from "./fields";
+import { ChoiceSelect } from "./ChoiceSelect";
 
 /**
  * Staff give a player's character a trait, or raise one, by exception: free,
@@ -133,19 +134,16 @@ export function GivePanel({
           </p>
           {trait.choices ? (
             <Field label="Which?">
-              <Select
+              <ChoiceSelect
                 required
+                choices={trait.choices}
+                fields={fieldSkills(catalogue)}
                 value={detail}
-                onChange={(e) => {
-                  setDetail(e.target.value);
+                onChange={(next) => {
+                  setDetail(next);
                   changed();
                 }}
-              >
-                <option value="">Choose…</option>
-                {trait.choices.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </Select>
+              />
             </Field>
           ) : (
             <Field label={detailNeed(trait)?.label ?? "Detail"} hint={detailNeed(trait)?.hint ?? "Optional: a specialisation, subject, or name."}>

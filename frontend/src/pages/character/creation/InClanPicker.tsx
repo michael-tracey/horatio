@@ -4,7 +4,7 @@ import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut } from "../../../api/types";
 import { Button, ErrorText } from "../../../components/ui";
 import { useAction, useUnavailable } from "../../../hooks";
-import { EXTRA_IN_CLAN, inClanChoice, inClanOptions, sheetKey, whenTapped } from "./inClan";
+import { EXTRA_IN_CLAN, either, inClanChoice, inClanOptions, sheetKey, whenTapped } from "./inClan";
 import { movePick, strayMoves } from "./disciplines";
 import { traitOf, type Picks } from "./logic";
 import { rulesTroupe } from "../rules";
@@ -146,6 +146,58 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
         </div>
       )}
       <ErrorText error={toggle.error ?? swapIn.error} />
+    </fieldset>
+  );
+}
+
+/**
+ * The in-clan discipline a clan leaves its player to choose (Angelis Ater: Potence,
+ * Presence or Obfuscate, p. 72), kept as the clan's detail. The server says which clan
+ * has one and what it is from (`creation.clan_choice`). Shown on Concept, on Disciplines
+ * while it is open, and from Review.
+ */
+export function ClanChoice({ character, creation, catalogue }: { character: CharacterOut; creation: CreationOut; catalogue: CatalogueOut }) {
+  const choice = creation.clan_choice;
+  // The one tapped shows as chosen at once, while it is saved and the sheet read again.
+  const [tapped, setTapped] = useState<string | null>(null);
+  const choose = useAction((detail: string) =>
+    unwrap(
+      api.PUT("/api/characters/{character_id}/traits", {
+        params: { path: { character_id: character.id } },
+        body: { category: "clan", name: choice!.clan, detail, rating: null, teacher: "" },
+      }),
+    ),
+  );
+  if (!choice) return null;
+  const chosen = tapped ?? choice.chosen;
+  const own = catalogue.traits.find((t) => t.category === "clan" && t.name === choice.clan)?.in_clan ?? [];
+  const page = choice.page ? ` (p. ${choice.page})` : "";
+  return (
+    <fieldset className="flex flex-col gap-2 rounded-md border border-ash p-3">
+      <legend className="px-1 text-sm text-parchment">In-clan choice{chosen ? "" : " (0 of 1)"}</legend>
+      <p className="text-xs text-mist">
+        {choice.clan}: {own.length ? `${own.join(", ")}, and one of ` : "one of "}
+        {either(choice.choices)}
+        {page}.
+      </p>
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+        {choice.choices.map((name) => (
+          <label key={name} className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name={`clan-choice-${character.id}`}
+              checked={chosen === name}
+              disabled={choose.isPending}
+              onChange={() => {
+                setTapped(name);
+                choose.mutate(name, { onSettled: () => setTapped(null) });
+              }}
+            />
+            <span>{name}</span>
+          </label>
+        ))}
+      </div>
+      <ErrorText error={choose.error} />
     </fieldset>
   );
 }

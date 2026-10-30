@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 from horatio import audit
 from horatio.models import Character, CharacterTrait, TraitCategory, TraitDefinition, User
 from horatio.permissions import viewable_characters
-from horatio.rules.model import SheetTrait
+from horatio.rules.model import RuleSetData, SheetTrait
 from horatio.rules.splats import DOMITOR_IN_CLAN, SPLATS
 from horatio.sheets import (
     Domitor,
@@ -129,10 +129,24 @@ def candidates(db: Session, user: User, ghoul: Character, query: str = "") -> li
     rule_set = rules_for(db, ghoul).rule_set
     out: list[Candidate] = []
     for vampire in found:
-        clan = next(r.definition.name for r in sheet_rows(db, vampire) if r.category.key == "clan")
+        row = next(r for r in sheet_rows(db, vampire) if r.category.key == "clan")
+        clan = row.definition.name
         own = rule_set.trait_properties("clan", clan).get("in_clan", [])
-        out.append(Candidate(vampire, clan, [*own, *caitiff_three(db, vampire)]))
+        chosen = [row.trait.detail] if row.trait.detail in clan_choices(rule_set, clan) else []
+        out.append(Candidate(vampire, clan, [*own, *chosen, *caitiff_three(db, vampire)]))
     return out
+
+
+def clan_choices(rule_set: RuleSetData, clan: str) -> list[str]:
+    """The in-clan disciplines a clan leaves its player to choose from (Angelis Ater)."""
+    return rule_set.trait_properties("clan", clan).get("choices", [])
+
+
+def domitor_clan_detail(db: Session, vampire: Character) -> str:
+    """The in-clan discipline the vampire chose for its clan, if its clan leaves one to
+    choose (Angelis Ater, p. 72): its ghoul's clan holds it too."""
+    row = next((r for r in sheet_rows(db, vampire) if r.category.key == "clan"), None)
+    return row.trait.detail if row is not None else ""
 
 
 def caitiff_three(db: Session, vampire: Character) -> list[str]:
@@ -228,6 +242,7 @@ def set_domitor(
             raise unprocessable("A domitor in Horatio has its own in-clan disciplines.")
         name = ""
         three = caitiff_three(db, domitor)
+        chosen = domitor_clan_detail(db, domitor)
     else:
         name = name.strip()
         if not name:
@@ -235,6 +250,7 @@ def set_domitor(
         if clan is None:
             raise unprocessable("Choose the domitor's clan and bloodline.")
         three = named_three(db, ghoul, clan, in_clan)
+        chosen = ""
     definition, _ = find_definition(db, ghoul, "clan", clan)
     placing: list[tuple[TraitDefinition, Placed]] = []
     if disciplines == "move":
@@ -250,7 +266,7 @@ def set_domitor(
             CharacterTrait.trait_definition_id.in_(clan_ids),
         )
     )
-    db.add(CharacterTrait(character_id=ghoul.id, trait_definition_id=definition.id))
+    db.add(CharacterTrait(character_id=ghoul.id, trait_definition_id=definition.id, detail=chosen))
     ghoul.domitor_id = domitor.id if domitor is not None else None
     ghoul.domitor_name = name
     db.flush()
@@ -293,9 +309,20 @@ def place_in_clan(db: Session, ghoul: Character, names: Sequence[str]) -> None:
 
 def follow_domitor(db: Session, ghoul: Character) -> None:
     """Keep a ghoul's in-clan disciplines its linked domitor's, as the domitor's
-    player changes the three a Caitiff chose."""
+    player changes the three a Caitiff chose, or the one its clan leaves to choose."""
     if ghoul.domitor_id is not None:
-        place_in_clan(db, ghoul, caitiff_three(db, db.get_one(Character, ghoul.domitor_id)))
+        domitor = db.get_one(Character, ghoul.domitor_id)
+        place_in_clan(db, ghoul, caitiff_three(db, domitor))
+        own = next((r for r in sheet_rows(db, domitor) if r.category.key == "clan"), None)
+        mine = next((r for r in sheet_rows(db, ghoul) if r.category.key == "clan"), None)
+        if (
+            own is not None
+            and mine is not None
+            and own.definition.name == mine.definition.name
+            and mine.trait.detail != own.trait.detail
+        ):
+            mine.trait.detail = own.trait.detail
+            db.flush()
 
 
 # Which characters' sheets the session has changed since it last committed: when a

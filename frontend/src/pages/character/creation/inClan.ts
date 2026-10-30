@@ -5,8 +5,8 @@
  * server's to say (`GET /unavailable`); this only counts the choices and words them.
  */
 
-import type { SheetOut, SheetTraitOut } from "../../../api/types";
-import { EXTRA_IN_CLAN, inOrder, type NoticeSource } from "./notices";
+import type { CreationOut, SheetOut, SheetTraitOut } from "../../../api/types";
+import { EXTRA_IN_CLAN, inOrder, stepFor, type NoticeSource } from "./notices";
 
 export { EXTRA_IN_CLAN };
 
@@ -140,4 +140,46 @@ export const inClanChoices: NoticeSource = ({ sheet, steps, ghoul }) => {
     ? `${adding}: choose the in-clan discipline it adds.`
     : `Choose ${left}${left < chooses ? " more" : ""} in-clan ${left === 1 ? "discipline" : "disciplines"}.`;
   return [{ key: "in-clan/choose", message, on: inOrder(steps, ["concept", adding ? "merits" : undefined]), fix: "concept", inClan: true }];
+};
+
+/** "A", "A or B", "A, B or C". */
+export function either(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names.at(-1)}` : (names[0] ?? "");
+}
+
+/** Whether the clan leaves an in-clan discipline to choose, not yet chosen (Angelis Ater, p. 72). */
+export function clanChoiceOpen(creation: CreationOut): boolean {
+  return !!creation.clan_choice && !creation.clan_choice.chosen;
+}
+
+/** The clan's own in-clan choice still to make: on Concept, where it is made, and on Disciplines, whose picks wait on it. */
+export const clanChoiceNeeded: NoticeSource = ({ creation, steps, ghoul }) => {
+  const choice = creation.clan_choice;
+  // A ghoul's is its domitor's.
+  if (ghoul || !choice || choice.chosen) return [];
+  const page = choice.page ? ` (p. ${choice.page})` : "";
+  return [
+    {
+      key: "in-clan/clan",
+      message: `${choice.clan}: choose one more in-clan discipline, ${either(choice.choices)}${page}.`,
+      on: inOrder(steps, ["concept", "disciplines"]),
+      fix: "concept",
+      inClan: true,
+    },
+  ];
+};
+
+/**
+ * Restricted picks that cannot all be placed, and why, as the server says (#312): "Only 2
+ * in-clan disciplines for 3 starting picks: Valeran is not a discipline Horatio has. Ask
+ * your storyteller." Left to the in-clan choices' own notices while one is open: making
+ * it is what fills the picks.
+ */
+export const inClanShortfalls: NoticeSource = ({ creation, sheet, steps, ghoul }) => {
+  if (!ghoul && (inClanOpen(sheet) || clanChoiceOpen(creation))) return [];
+  return creation.shortfalls.flatMap((short) => {
+    const placed = stepFor(steps, short.category)?.key;
+    if (!placed) return [];
+    return [{ key: `short/${short.category}/${short.restriction}`, message: short.message, on: [placed], fix: placed }];
+  });
 };
