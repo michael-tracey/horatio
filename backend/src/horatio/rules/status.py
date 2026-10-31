@@ -16,6 +16,12 @@ the trait's properties:
     punishment  a negative status: what breaking the censure brings
     duration    how long it lasts, as below: a negative status, or a fleeting one
                 that lapses (Scholar)
+    brings      a negative status: the negative status given with it, unless held
+                already (Bloodhunted brings Forsaken, p. 389)
+    takes_away  a negative status: the types of status its holder loses (Bloodhunted:
+                abiding, innate and fleeting). Given it, the fleeting status held is
+                lost for good; while it is held, titles, social age and merits give
+                none of those types, and no fleeting status is gained.
 
 and its page is the trait's page reference. A status says what holding it does,
 or that it has `no_rules_yet`: a status of the Independent Alliance has its sect
@@ -80,6 +86,8 @@ BAN_LEVELS: tuple[str, ...] = get_args(BanLevel)
 STATUS_CATEGORY = "status_traits"
 # The sect of the status every sect has.
 GENERAL = "General"
+# The types of status a negative status can take away from its holder.
+TAKEN_TYPES = ("Abiding", "Innate", "Fleeting")
 # Social ages, as horatio.social_age works them out.
 SOCIAL_AGES = ("Neonate", "Ancilla", "Elder")
 
@@ -110,6 +118,10 @@ class StatusData:
     censure: str = ""
     punishment: str = ""
     duration: DurationData | None = None
+    # The negative status given with it: Bloodhunted's Forsaken.
+    brings: tuple[str, ...] = ()
+    # The types of status its holder loses: Bloodhunted's abiding, innate and fleeting.
+    takes_away: tuple[str, ...] = ()
     # No book describes it yet (the Independent Alliance's): it has a name and a sect.
     no_rules_yet: bool = False
 
@@ -272,6 +284,8 @@ def status_from_trait(name: str, properties: Mapping[str, Any], page: str | None
         censure=properties.get("censure", ""),
         punishment=properties.get("punishment", ""),
         duration=duration_from_dict(duration) if duration else None,
+        brings=tuple(properties.get("brings", [])),
+        takes_away=tuple(properties.get("takes_away", [])),
         no_rules_yet=properties.get("no_rules_yet", False),
     )
 
@@ -472,8 +486,10 @@ def check_status_rules(
 ) -> None:
     """Refuse status rules that name a status, sect, clan or title the rule set
     lacks; a status that says not what it does, nor that it has no rules yet; a
-    title or social age giving status that is not abiding status of its sect; and a
-    sect's title that says not what it gives, or why it gives nothing."""
+    status other than negative that brings or takes away status, or that brings
+    status other than negative status of its sect; a title or social age giving
+    status that is not abiding status of its sect; and a sect's title that says not
+    what it gives, or why it gives nothing."""
     from horatio.rules.checks import validate_condition
 
     sect_names = {name for category, name in traits if category == "sect"}
@@ -500,6 +516,19 @@ def check_status_rules(
                 raise ValueError(f"{where}: a duration is at least one game or month")
             if duration.while_held is not None and duration.while_held not in statuses:
                 raise ValueError(f"{where} lasts while an unknown status is held")
+        if (status.brings or status.takes_away) and status.type != "Negative":
+            raise ValueError(f"{where} is not negative status, so brings or takes away none")
+        for name in status.brings:
+            brought = statuses.get(name)
+            if brought is None:
+                raise ValueError(f"{where} brings an unknown status {name!r}")
+            if brought.type != "Negative" or brought.sect not in (GENERAL, status.sect):
+                raise ValueError(f"{where} brings {name}, which is not negative status of its sect")
+            if brought.brings:
+                raise ValueError(f"{where} brings {name}, which brings more")
+        for taken in status.takes_away:
+            if taken not in TAKEN_TYPES:
+                raise ValueError(f"{where} takes away {taken!r}, not a type of status it can")
 
     known_traits = set(traits)
     for sect in rules.sects.values():

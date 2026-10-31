@@ -26234,6 +26234,14 @@
             "title": "Held",
             "type": "array"
           },
+          "lost": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DerivedOut"
+            },
+            "title": "Lost",
+            "type": "array"
+          },
           "outsider_sect": {
             "anyOf": [
               {
@@ -26282,6 +26290,17 @@
             },
             "title": "Suppressed",
             "type": "array"
+          },
+          "taken_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taken By"
           },
           "troupe_id": {
             "anyOf": [

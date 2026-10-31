@@ -365,6 +365,8 @@ MESSAGES: dict[str, str] = {
     "status.given_up": "{actor} gave up {character}'s {status} (from {patron}) unspent, to take"
     " {instead}.",
     "status.expired": "{character}'s {status} (from {patron}) ended.",
+    "status.lost": "{actor} gave {character} {by}, so it lost its fleeting status for good:"
+    " {statuses}.",
     "status.cleared": "{actor} made {character} {sect}, so it lost the status it held: {statuses}.",
     "status.resolved": "{actor} took {status} off {character}: nothing gives it now{because}.",
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",

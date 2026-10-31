@@ -46,6 +46,15 @@ export function outsiderText(s: { outsider_sect?: string | null; outsider_throug
   return `Accepted by no sect. As ${s.outsider_through ?? "a merit"} allows, it holds fleeting ${s.outsider_sect} status.`;
 }
 
+/**
+ * A held status that takes status away, in a line: "Agnes holds Bloodhunted: its
+ * titles, social age and merits give it no status while it does, and it holds no
+ * fleeting status."
+ */
+export function takenText(name: string, by: string): string {
+  return `${name} holds ${by}: its titles, social age and merits give it no status while it does, and it holds no fleeting status.`;
+}
+
 /** The kinds of status, in the order the Status & Titles tab lists them. */
 const TYPES = ["Accepted", "Abiding", "Innate", "Fleeting", "Negative"];
 

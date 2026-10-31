@@ -8,7 +8,7 @@ import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { capText, derivedLines, endingText, outsiderText, suppressedText, typeOrder } from "./status";
+import { capText, derivedLines, endingText, outsiderText, suppressedText, takenText, typeOrder } from "./status";
 
 export function useStatus(characterId: string) {
   return useQuery({
@@ -421,6 +421,7 @@ export function StatusCard({ character }: { character: CharacterOut }) {
   const fleeting = s.held.filter((h) => h.type === "Fleeting");
   const held = [...s.held].sort((a, b) => typeOrder(a.type) - typeOrder(b.type));
   const derived = derivedLines(s.derived, s.troupe_name);
+  const lost = derivedLines(s.lost, s.troupe_name);
   const counted = s.accepted || s.outsider_sect;
   return (
     <Card
@@ -452,6 +453,7 @@ export function StatusCard({ character }: { character: CharacterOut }) {
         {s.outsider_sect && !s.accepted && <p>{outsiderText(s)}</p>}
         {!counted && <p className="text-mist">{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</p>}
         {s.disgraced && <p className="text-blood-bright">{character.name} holds Disgraced, and gains no status while it does.</p>}
+        {s.taken_by && <p className="text-blood-bright">{takenText(character.name, s.taken_by)}</p>}
         {counted && (
           <p className="text-xs text-mist">
             <span>
@@ -472,6 +474,9 @@ export function StatusCard({ character }: { character: CharacterOut }) {
           {s.accepted && <Line name={s.accepted} type="Accepted" source={`by the ${s.sect}`} about={s.about[s.accepted]} />}
           {derived.map((d) => (
             <Line key={`${d.type}/${d.name}`} name={d.name} type={d.type} source={`from ${d.sources.join(" and ")}`} about={s.about[d.name]} />
+          ))}
+          {lost.map((d) => (
+            <Line key={`lost/${d.type}/${d.name}`} name={d.name} type={d.type} source={`lost while ${s.taken_by}: from ${d.sources.join(" and ")}`} about={s.about[d.name]} />
           ))}
           {held.map((h) => (
             <HeldRow key={h.id} character={character} status={s} held={h} />

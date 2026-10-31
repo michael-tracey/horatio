@@ -760,7 +760,7 @@ type = "Negative"
 sect = "General"
 censure = "No longer Accepted: no status or position, and you can be destroyed without breaking sect law. Someone with Authority can still let you stay in her domain."
 punishment = "None beyond the censure; a sect member who kills you gains Triumphant."
-source = "Breaking Disgraced's censure; spent Authority; a blood hunt."
+source = "Breaking Disgraced's censure; spent Authority; Bloodhunted, which brings it (p. 389)."
 [traits.properties.duration]
 text = "Until someone spends Authority to forgive you."
 
@@ -839,7 +839,7 @@ page_reference = "401"
 type = "Abiding"
 sect = "Camarilla"
 passive = "You hold praxis: give Courteous, Enforcer or Loyal without spending it, each person holding one at a time from you, and no one without Privileged or Authority can openly contradict you in your domain."
-spent = "Give Sanctioned, or call a blood hunt: the target is Forsaken in your city while you hold praxis."
+spent = "Give Sanctioned, or call a blood hunt: the target is Bloodhunted (p. 389), and Forsaken in your city while you hold praxis."
 source = "Prince, petty Prince."
 
 [[traits]]
@@ -910,6 +910,27 @@ source = "Spent Noble or Privileged."
 [traits.properties.duration]
 this_game = true
 text = "Only the game it is given at."
+
+# The blood hunt's sentence (pp. 389-390). It brings Forsaken with it, and takes the
+# holder's other status away for good: given it, the fleeting status held is lost;
+# while it lasts, titles, social age and merits give no status (horatio.sect_status).
+# Forsaken stays when the hunt is lifted, until Authority forgives it (p. 317). A
+# Prince may lift the hunt at an Elysium's milestone without penalty (Vol. II
+# Issue 1, p. 131).
+[[traits]]
+category = "status_traits"
+name = "Bloodhunted"
+page_reference = "389"
+[traits.properties]
+type = "Negative"
+sect = "Camarilla"
+brings = ["Forsaken"]
+takes_away = ["Abiding", "Innate", "Fleeting"]
+censure = "Lose all abiding, innate and fleeting status for good, and gain Forsaken. Offer or claim no boons. Anyone caught helping you within the domain gains Disgraced. The hunt holds in the domain, and in any whose Prince upholds it."
+punishment = "None beyond the hunt: whoever brings you down gains Triumphant, and the Prince may add a boon, a domain or the right of Amaranth."
+source = "A Prince's blood hunt, by spending Sovereign; a global one, by spending Ascendant (p. 401)."
+[traits.properties.duration]
+text = "Until you are destroyed, or the hunt is lifted: by its Prince at a cost, or without one at an Elysium's milestone (Vol. II Issue 1, p. 131); by a Justicar after a trial; when you gain praxis; or when its Prince falls and the next does not uphold it (p. 390)."
 
 # --- Sabbat (pp. 446-449) --------------------------------------------------------------------
 

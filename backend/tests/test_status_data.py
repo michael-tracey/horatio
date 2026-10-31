@@ -43,7 +43,7 @@ def test_every_status_has_a_sect() -> None:
 
     assert {sect: len(names) for sect, names in by_sect.items()} == {
         GENERAL: 18,
-        "Camarilla": 13,
+        "Camarilla": 14,
         "Sabbat": 17,
         "Anarch": 12,
         INDEPENDENT_ALLIANCE: 9,
@@ -107,6 +107,22 @@ def test_negative_status_lasts_as_the_book_says() -> None:
 
     forsaken = VAMPIRE.statuses["Forsaken"].duration
     assert forsaken is not None and forsaken.until_removed
+
+
+def test_bloodhunted_brings_forsaken_and_takes_status_away() -> None:
+    """The blood hunt's sentence (MET: VTM p. 389): its own negative status, which
+    brings Forsaken and takes away abiding, innate and fleeting status; lifted at an
+    Elysium's milestone without penalty (Vol. II Issue 1, p. 131)."""
+    hunted = VAMPIRE.statuses["Bloodhunted"]
+
+    assert (hunted.type, hunted.sect, hunted.page) == ("Negative", "Camarilla", "389")
+    assert hunted.brings == ("Forsaken",)
+    assert hunted.takes_away == ("Abiding", "Innate", "Fleeting")
+    assert hunted.duration is not None and hunted.duration.until_removed
+    assert "Vol. II Issue 1, p. 131" in hunted.duration.text
+    assert "Disgraced" in hunted.censure and "Triumphant" in hunted.punishment
+    assert not VAMPIRE.statuses["Forsaken"].brings
+    assert not VAMPIRE.statuses["Forsaken"].takes_away
 
 
 def test_accepted_is_not_status() -> None:
@@ -423,6 +439,38 @@ def test_a_status_says_what_it_does_or_that_it_has_no_rules_yet() -> None:
         with_status(no_rules_yet=True, passive="You glitter.")
     with_status(passive="You glitter.")
     with_status(no_rules_yet=True)
+
+
+def test_only_negative_status_brings_or_takes_away_status() -> None:
+    def with_status(**properties: Any) -> None:
+        traits = {
+            **VAMPIRE.traits,
+            ("status_traits", "Hunted"): TraitData(
+                category="status_traits",
+                name="Hunted",
+                properties={
+                    "type": "Negative",
+                    "sect": "Camarilla",
+                    "censure": "Run.",
+                    **properties,
+                },
+            ),
+        }
+        check_status_rules(traits, VAMPIRE.status_rules, VAMPIRE.titles)
+
+    with pytest.raises(ValueError, match="not negative status, so brings or takes away none"):
+        with_status(type="Abiding", passive="You glitter.", brings=["Forsaken"])
+    with pytest.raises(ValueError, match="brings an unknown status 'Outcast'"):
+        with_status(brings=["Outcast"])
+    with pytest.raises(ValueError, match="brings Loyal, which is not negative status of its"):
+        with_status(brings=["Loyal"])
+    with pytest.raises(ValueError, match="brings Cowardly, which is not negative status of its"):
+        with_status(brings=["Cowardly"])
+    with pytest.raises(ValueError, match="brings Bloodhunted, which brings more"):
+        with_status(brings=["Bloodhunted"])
+    with pytest.raises(ValueError, match="takes away 'Accepted', not a type of status it can"):
+        with_status(takes_away=["Accepted"])
+    with_status(brings=["Forsaken"], takes_away=["Fleeting"])
 
 
 def test_an_alias_is_a_name_of_one_title_only() -> None:

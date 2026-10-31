@@ -96,6 +96,60 @@ test("a player keeps their own sect status, naming its patron from the home trou
   expect(refused.status()).toBe(409);
 });
 
+test("a blood hunt: staff give a Primogen Bloodhunted, which brings Forsaken, loses his fleeting status for good and his title's status while it lasts (#340)", async ({ browser }) => {
+  const custodian = await person(browser, "bhunt-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bhunt-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of the Hunt ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const l = lead.page;
+  const send = async (url: string, data: object, method: "POST" | "PUT" = "POST") => {
+    const response = await l.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+
+  // Gaspard, a Camarilla NPC, the troupe's Primogen, Loyal from the Prince.
+  const { id } = await send(`/api/troupes/${troupeId}/npcs`, { name: "Gaspard Lenoir", wizard: false });
+  await send(`/api/characters/${id}/npc/ratings`, { category: "sect", name: "Camarilla", rating: null, detail: "" }, "PUT");
+  await send(`/api/troupes/${troupeId}/characters/${id}/titles`, { titles: ["Primogen"] }, "PUT");
+  await send(`/api/characters/${id}/status`, { name: "Loyal", patron_text: "Prince Ottavio" });
+
+  await l.goto(`/characters/${id}/status`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
+  await expect(card.getByRole("listitem", { name: "Noble" })).toContainText("from the title Primogen");
+  // Of no pillar clan, he is under a lesser ban.
+  await expect(card.getByText("Fleeting: 1 of 3")).toBeVisible();
+
+  // The Prince calls a blood hunt: the form says what Bloodhunted does.
+  await card.getByRole("button", { name: "Add status" }).click();
+  const form = l.getByRole("form", { name: "Add status" });
+  await form.getByLabel("Status").selectOption("Bloodhunted");
+  await expect(form.getByText(/Censure: Lose all abiding, innate and fleeting status for good, and gain Forsaken/)).toBeVisible();
+  await expect(form.getByText(/^Lasts: Until you are destroyed, or the hunt is lifted/)).toBeVisible();
+  await form.getByLabel("Or in your own words").fill("Prince Ottavio");
+  await form.getByRole("button", { name: "Add status" }).click();
+
+  // Forsaken comes with it; Loyal is gone, and the Primogen's Noble is lost while the hunt lasts.
+  await expect(card.getByText("Gaspard Lenoir holds Bloodhunted: its titles, social age and merits give it no status while it does, and it holds no fleeting status.")).toBeVisible();
+  await expect(card.getByRole("listitem", { name: "Bloodhunted" })).toContainText("from Prince Ottavio");
+  await expect(card.getByRole("listitem", { name: "Forsaken" })).toContainText("from Prince Ottavio");
+  await expect(card.getByRole("listitem", { name: "Loyal" })).toHaveCount(0);
+  await expect(card.getByRole("listitem", { name: "Noble" })).toContainText("lost while Bloodhunted: from the title Primogen");
+  await expect(card.getByText("Fleeting: 0 of 0 · Cap: Bloodhunted: none")).toBeVisible();
+  await l.screenshot(shots("status-bloodhunted"));
+
+  // Lifted at an Elysium's milestone: Noble is back, Forsaken stays, and Loyal stays lost.
+  await card.getByRole("button", { name: "Remove Bloodhunted" }).click();
+  await expect(card.getByRole("listitem", { name: "Bloodhunted" })).toHaveCount(0);
+  await expect(card.getByRole("listitem", { name: "Noble" })).toContainText("from the title Primogen");
+  await expect(card.getByRole("listitem", { name: "Noble" })).not.toContainText("lost");
+  await expect(card.getByRole("listitem", { name: "Forsaken" })).toBeVisible();
+  await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
+});
+
 test("Status & Titles: a Camarilla player sees the status held with its sources, takes Harpy from the titles sidebar and gains its status, switches to Keeper of Elysium, and opens a status ban, on desktop and phone (#321, #339)", async ({ browser }) => {
   const custodian = await person(browser, "stitles-cust");
   makeCustodian(custodian.email);

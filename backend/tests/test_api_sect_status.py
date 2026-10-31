@@ -505,6 +505,77 @@ def test_disgraced_stops_prestigious_sires_loyal(troupe: Troupe) -> None:
     assert status(troupe.player, agnes)["derived"] == []
 
 
+def test_bloodhunted_takes_status_away_and_brings_forsaken(troupe: Troupe) -> None:
+    """The blood hunt's sentence (MET: VTM p. 389): the fleeting status held is lost for
+    good, the title gives nothing while it lasts, and Forsaken comes with it."""
+    agnes = member(troupe)
+    entitle(troupe, agnes, "Primogen")
+    for _ in range(2):
+        assert add(troupe.player, agnes, "Loyal").status_code == 200
+
+    hunted = add(troupe.storyteller, agnes, "Bloodhunted", reason="Diablerie in Elysium")
+
+    assert hunted.status_code == 200, hunted.text
+    found = hunted.json()
+    assert [(h["name"], h["type"], h["patron"]["words"]) for h in found["held"]] == [
+        ("Bloodhunted", "Negative", "Prince Varga"),
+        ("Forsaken", "Negative", "Prince Varga"),
+    ]
+    assert found["taken_by"] == "Bloodhunted"
+    assert found["derived"] == []
+    assert [(d["name"], d["source"]) for d in found["lost"]] == [("Noble", "Primogen")]
+    assert (found["fleeting_cap"], found["cap_why"]) == (0, ["Bloodhunted: none"])
+    assert {"Bloodhunted", "Forsaken", "Noble"} <= set(found["about"])
+    log = [e["message"] for e in troupe.player.client.get(f"/characters/{agnes}/log").json()]
+    assert (
+        "storyteller gave Agnes (player) Bloodhunted, so it lost its fleeting status for good:"
+        " Loyal, Loyal." in log
+    )
+    assert (
+        "storyteller gave Agnes (player) the negative status Forsaken, from Prince Varga"
+        " (with Bloodhunted)." in log
+    )
+    refused = add(troupe.player, agnes, "Loyal")
+    assert refused.status_code == 409
+    assert "can hold no fleeting status (Bloodhunted: none)" in refused.json()["detail"]
+    character = troupe.session.get_one(Character, uuid.UUID(agnes))
+    carried = sect_status.carried(troupe.session, character, uuid.UUID(troupe.id))
+    assert [c.name for c in carried] == ["Bloodhunted", "Forsaken"]
+
+    # Lifted, the title gives its status again; the fleeting status lost stays lost,
+    # and Forsaken stays until Authority forgives it.
+    lifted = remove(
+        troupe.storyteller, agnes, held_id(troupe.player, agnes, "Bloodhunted"), "Elysium gala"
+    )
+
+    assert lifted.status_code == 200, lifted.text
+    found = lifted.json()
+    assert [h["name"] for h in found["held"]] == ["Forsaken"]
+    assert (found["taken_by"], found["lost"]) == (None, [])
+    assert [d["name"] for d in found["derived"]] == ["Noble"]
+    assert found["fleeting_cap"] == 5
+
+
+def test_bloodhunted_does_not_bring_a_second_forsaken(troupe: Troupe) -> None:
+    agnes = member(troupe)
+    assert add(troupe.storyteller, agnes, "Forsaken", reason="Broke Disgraced").status_code == 200
+
+    hunted = add(troupe.storyteller, agnes, "Bloodhunted", reason="Kin-slaying")
+
+    assert hunted.status_code == 200, hunted.text
+    assert sorted(h["name"] for h in hunted.json()["held"]) == ["Bloodhunted", "Forsaken"]
+    assert logged(troupe.session, agnes, "status.lost") == []
+
+
+def test_only_the_camarilla_holds_bloodhunted(troupe: Troupe) -> None:
+    rook = member(troupe, "Rook", sect="Sabbat", clan="Lasombra")
+
+    refused = add(troupe.storyteller, rook, "Bloodhunted", reason="Caught in the city")
+
+    assert refused.status_code == 422
+    assert "Bloodhunted is Camarilla status" in refused.json()["detail"]
+
+
 # --- negative status ends -----------------------------------------------------------------------
 
 
