@@ -3,7 +3,7 @@ once the character is accepted, the free traits chosen with a merit asked for, a
 the quest staff answered a request with (horatio.merit_requests)
 
 Revision ID: 0116
-Revises: 0114
+Revises: 0115
 Create Date: 2026-10-31 12:00:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0116"
-down_revision: str | None = "0114"
+down_revision: str | None = "0115"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
