@@ -5,7 +5,7 @@ import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, ErrorText } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { capText, endingText, outsiderText, suppressedText } from "../character/status";
+import { capText, endingText, NO_RULES_YET, outsiderText, suppressedText } from "../character/status";
 import { AddStatus, useStatus } from "../character/StatusCard";
 import { Others } from "./Others";
 import type { Shown } from "./tracker";
@@ -286,6 +286,7 @@ function StatusRow({ item, spend, undo }: { item: CarriedOut; spend: () => void;
             </span>
           )}
         </p>
+        {about?.no_rules_yet && <p className="text-xs text-mist">{NO_RULES_YET}</p>}
         {about?.passive && <p className="text-xs text-mist">Held: {about.passive}</p>}
         {about?.spent && <p className="text-xs text-mist">Spent: {about.spent}</p>}
         {about?.censure && <p className="text-xs text-mist">Censure: {about.censure}</p>}

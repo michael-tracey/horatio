@@ -58,6 +58,10 @@ for defying a Commander.
 
 **Carried into a game** (`carried`): the abiding status of one source (a title, or
 social age), all innate and negative status, and fleeting status up to the cap.
+
+**The rules by sect** (`status_rules`), for a troupe's Rules tab: every status of
+its sects and the general status, and what gives each there: its titles (the rule
+sets' and its own), social ages, factions and merits.
 """
 
 import uuid
@@ -96,6 +100,7 @@ from horatio.rules.status import (
     StatusData,
     TitleData,
 )
+from horatio.rules.store import read_troupe_rules
 from horatio.sheets import (
     apply_grants,
     chosen,
@@ -1334,3 +1339,93 @@ def lift(
     )
     db.delete(row)
     db.flush()
+
+
+# --- the rules, by sect ------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class StatusSource:
+    """Where a status comes from in a troupe: a title it gives (`house`: the troupe's
+    own), a social age, a faction, or a merit that grants it."""
+
+    kind: Literal["title", "social_age", "faction", "merit"]
+    name: str
+    page: str | None = None
+    # A title's other names: a Harpy is also a Master Harpy.
+    aliases: tuple[str, ...] = ()
+    # "while the Prince is absent", "one of Blessed or Enforcer, chosen each game".
+    condition: str = ""
+    house: bool = False
+
+
+@dataclass(frozen=True)
+class StatusRule:
+    status: StatusData
+    sources: tuple[StatusSource, ...]
+
+
+@dataclass(frozen=True)
+class SectRules:
+    """A sect's status (General: the status every sect has), with its Accepted."""
+
+    sect: str
+    accepted: str | None
+    page: str | None
+    statuses: tuple[StatusRule, ...]
+
+
+def status_rules(db: Session, troupe: Troupe) -> tuple[StatusCapsData, list[SectRules]]:
+    """Every status of the sects the troupe takes, and the general status, by sect:
+    what each does, and where it comes from here (its titles, the rule sets' and its
+    own, social ages, factions and merits). Also the caps."""
+    rules = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    data = titles.title_data(db, troupe.id)
+    order = titles.court_order(db, troupe.id)
+    house = {t.name for t in titles.house_titles(db, troupe.id)}
+    found: dict[str, list[StatusSource]] = defaultdict(list)
+    offices = sorted(
+        (t for t in data.values() if t.alias_of is None and titles.offers(troupe, t)),
+        key=lambda t: titles.court_key(order, t.name),
+    )
+    for title in offices:
+        aliases = tuple(n for n, t in data.items() if t.alias_of == title.name)
+        for given in title_status(title, troupe.id):
+            found[given.name].append(
+                StatusSource(
+                    "title", title.name, title.page, aliases, given.condition, title.name in house
+                )
+            )
+    sects = [GENERAL, *titles.troupe_sects(db, troupe)]
+    for age in rules.status_rules.social_ages:
+        if age.sect in sects:
+            for name in age.status:
+                found[name].append(StatusSource("social_age", age.age, age.page))
+    for (sect, faction), names in FACTION_STATUS.items():
+        if sect in sects:
+            for name in names:
+                found[name].append(StatusSource("faction", faction))
+    for grant in rules.grants:
+        if grant.target.get("category") == STATUS_CATEGORY and "name" in grant.target:
+            found[grant.target["name"]].append(
+                StatusSource("merit", grant.source.get("name", ""), grant.page)
+            )
+    kinds = {kind: i for i, kind in enumerate(("Accepted", "Abiding", "Innate", "Fleeting"))}
+    by_sect: list[SectRules] = []
+    for sect in sects:
+        statuses = sorted(
+            (s for s in rules.statuses.values() if s.sect == sect),
+            key=lambda s: (kinds.get(s.type, len(kinds)), s.name),
+        )
+        if not statuses:
+            continue
+        sect_data = rules.status_rules.sects.get(sect)
+        by_sect.append(
+            SectRules(
+                sect=sect,
+                accepted=sect_data.accepted if sect_data else None,
+                page=sect_data.page if sect_data else None,
+                statuses=tuple(StatusRule(s, tuple(found.get(s.name, ()))) for s in statuses),
+            )
+        )
+    return caps_of(rules), by_sect

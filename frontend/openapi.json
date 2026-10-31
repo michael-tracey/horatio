@@ -11574,8 +11574,45 @@
             "title": "Active",
             "type": "boolean"
           },
+          "alias_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias Of"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "gives_none": {
+            "default": "",
+            "title": "Gives None",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
+            "type": "string"
+          },
+          "no_rules_yet": {
+            "default": false,
+            "title": "No Rules Yet",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
             "type": "string"
           },
           "out_of_sect": {
@@ -25475,6 +25512,51 @@
         "title": "SectCondition",
         "type": "object"
       },
+      "SectStatusOut": {
+        "properties": {
+          "accepted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "sect": {
+            "title": "Sect",
+            "type": "string"
+          },
+          "statuses": {
+            "items": {
+              "$ref": "#/components/schemas/StatusRuleOut"
+            },
+            "title": "Statuses",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sect",
+          "accepted",
+          "page",
+          "statuses"
+        ],
+        "title": "SectStatusOut",
+        "type": "object"
+      },
       "SeenOut": {
         "description": "One status the other carries into its game. Its details (patron, where, the\nstory) are there only when `known`: a negative status, or a fleeting one the\nviewer has learned about with Leadership.",
         "properties": {
@@ -27187,6 +27269,11 @@
             "title": "Name",
             "type": "string"
           },
+          "no_rules_yet": {
+            "default": false,
+            "title": "No Rules Yet",
+            "type": "boolean"
+          },
           "page": {
             "anyOf": [
               {
@@ -27231,6 +27318,47 @@
           "page"
         ],
         "title": "StatusAbout",
+        "type": "object"
+      },
+      "StatusCapsOut": {
+        "description": "What a character carries into a game (MET: VTM p. 313).",
+        "properties": {
+          "abiding_sources": {
+            "title": "Abiding Sources",
+            "type": "integer"
+          },
+          "fleeting": {
+            "title": "Fleeting",
+            "type": "integer"
+          },
+          "greater_ban": {
+            "title": "Greater Ban",
+            "type": "integer"
+          },
+          "lesser_ban": {
+            "title": "Lesser Ban",
+            "type": "integer"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "abiding_sources",
+          "fleeting",
+          "lesser_ban",
+          "greater_ban",
+          "page"
+        ],
+        "title": "StatusCapsOut",
         "type": "object"
       },
       "StatusChoice": {
@@ -27599,6 +27727,159 @@
           "name"
         ],
         "title": "StatusResolveIn",
+        "type": "object"
+      },
+      "StatusRuleOut": {
+        "properties": {
+          "censure": {
+            "title": "Censure",
+            "type": "string"
+          },
+          "duration": {
+            "title": "Duration",
+            "type": "string"
+          },
+          "given_by": {
+            "items": {
+              "$ref": "#/components/schemas/StatusSourceOut"
+            },
+            "title": "Given By",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "no_rules_yet": {
+            "default": false,
+            "title": "No Rules Yet",
+            "type": "boolean"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "passive": {
+            "title": "Passive",
+            "type": "string"
+          },
+          "punishment": {
+            "title": "Punishment",
+            "type": "string"
+          },
+          "sect": {
+            "title": "Sect",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "sect",
+          "passive",
+          "spent",
+          "censure",
+          "punishment",
+          "duration",
+          "page",
+          "source",
+          "given_by"
+        ],
+        "title": "StatusRuleOut",
+        "type": "object"
+      },
+      "StatusRulesOut": {
+        "properties": {
+          "caps": {
+            "$ref": "#/components/schemas/StatusCapsOut"
+          },
+          "sects": {
+            "items": {
+              "$ref": "#/components/schemas/SectStatusOut"
+            },
+            "title": "Sects",
+            "type": "array"
+          }
+        },
+        "required": [
+          "caps",
+          "sects"
+        ],
+        "title": "StatusRulesOut",
+        "type": "object"
+      },
+      "StatusSourceOut": {
+        "description": "Where a status comes from in the troupe.",
+        "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "condition": {
+            "title": "Condition",
+            "type": "string"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "title",
+              "social_age",
+              "faction",
+              "merit"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "page",
+          "aliases",
+          "condition",
+          "house"
+        ],
+        "title": "StatusSourceOut",
         "type": "object"
       },
       "StatusSpend": {
@@ -28805,6 +29086,33 @@
       },
       "TitleChoiceOut": {
         "properties": {
+          "alias_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias Of"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "gives_none": {
+            "default": "",
+            "title": "Gives None",
+            "type": "string"
+          },
           "holders": {
             "items": {
               "type": "string"
@@ -28814,6 +29122,16 @@
           },
           "name": {
             "title": "Name",
+            "type": "string"
+          },
+          "no_rules_yet": {
+            "default": false,
+            "title": "No Rules Yet",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
             "type": "string"
           },
           "open": {
@@ -28940,12 +29258,39 @@
       },
       "TitleOut": {
         "properties": {
+          "alias_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias Of"
+          },
           "choose_one": {
             "items": {
               "type": "string"
             },
             "title": "Choose One",
             "type": "array"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "gives_none": {
+            "default": "",
+            "title": "Gives None",
+            "type": "string"
           },
           "holders": {
             "items": {
@@ -28960,6 +29305,16 @@
           },
           "name": {
             "title": "Name",
+            "type": "string"
+          },
+          "no_rules_yet": {
+            "default": false,
+            "title": "No Rules Yet",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
             "type": "string"
           },
           "offered": {
@@ -53413,6 +53768,50 @@
         "summary": "Set Starting Blood",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/status-rules": {
+      "get": {
+        "description": "Every status of the troupe's sects, and the general status, by sect: its type,\nwhat it does, and where it comes from here.",
+        "operationId": "status_rules_api_troupes__troupe_id__status_rules_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Status Rules",
+        "tags": [
+          "titles"
         ]
       }
     },

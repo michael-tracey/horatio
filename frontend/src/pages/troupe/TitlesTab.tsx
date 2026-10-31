@@ -7,7 +7,8 @@ import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { SeatsSetting } from "./SeatsSetting";
-import { titleGroups, titleStatus } from "./titleGroups";
+import { pageLabel } from "../../components/TraitInfo";
+import { aliasText, titleGives, titleGroups, titleStatusWords } from "./titleGroups";
 
 /** The titles this troupe gives, by sect: the rule set's and its own, each with the
  * status it gives and who holds it here. */
@@ -62,7 +63,11 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
         <p className="mt-3 text-xs text-mist">
           Give titles to characters on the Characters tab; players choose their own on their character's Status & Titles tab, unless the troupe keeps titles to
           staff. A title of a sect goes only to characters of that sect, and a title means nothing outside this troupe. Of a character's titles, only the
-          active one gives status.
+          active one gives status. What each status does is on the{" "}
+          <Link to={`/troupes/${troupeId}/rules/status`} className="text-parchment underline hover:text-gold">
+            Rules tab, under Status
+          </Link>
+          .
         </p>
       </Card>
     </div>
@@ -118,14 +123,21 @@ function TitleRow({ troupeId, title, data }: { troupeId: string; title: TitleOut
     unwrap(api.PUT("/api/troupes/{troupe_id}/titles/{name}", { ...target, body: { sect: t.sect, status: t.status, unique: t.unique } })),
   );
   const remove = useAction(() => unwrap(api.DELETE("/api/troupes/{troupe_id}/titles/{name}", target)));
-  const gives = titleStatus(title);
+  const page = pageLabel(title.page);
+  const alias = aliasText(title);
   return (
     <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2" aria-label={title.name}>
       <span className="font-medium text-parchment">{title.name}</span>
+      {alias && <span className="text-xs text-mist">{alias}</span>}
       {title.house && <Badge tone="gold">ours</Badge>}
       {title.unique && <Badge>one at a time</Badge>}
+      {title.no_rules_yet && <Badge>no rules yet</Badge>}
       {!title.offered && <Badge tone="blood">not a sect this troupe takes</Badge>}
-      <span className="text-xs text-mist">{gives ? `Gives ${gives}` : "Gives no status"}</span>
+      <span className="text-xs text-mist">
+        {titleGives(titleStatusWords(title), title)}
+        {page && ` · ${page}`}
+        {title.note && ` · ${title.note}`}
+      </span>
       <span className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm">
         {title.holders.length ? (
           title.holders.map((h) => (

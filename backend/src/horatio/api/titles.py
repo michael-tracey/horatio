@@ -1,12 +1,15 @@
-"""A troupe's titles, and who holds them."""
+"""A troupe's titles, and who holds them; and the status rules by sect, with where
+each status comes from in the troupe."""
 
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from horatio import titles
+from horatio import sect_status, titles
 from horatio.api.downtimes import staff_troupe
+from horatio.api.sect_status import StatusAbout, about
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, Troupe
 from horatio.permissions import TroupeAction
@@ -33,7 +36,34 @@ class TitleHolderOut(BaseModel):
     active: bool = False
 
 
-class TitleOut(BaseModel):
+class TitleWhatOut(BaseModel):
+    """What a title is, beyond the status it gives (horatio.rules.status.TitleData)."""
+
+    # The title it is another name for, giving the same: a Master Harpy is a Harpy.
+    alias_of: str | None = None
+    # A clan's title (a Tremere Lord): it has no sect, and gives no sect status.
+    clan: str | None = None
+    # Why it gives no status, where the book says so; its page is the title's page.
+    gives_none: str = ""
+    # What the rules data cannot say about what it gives, in words.
+    note: str = ""
+    # No book describes it yet (the Independent Alliance's): it gives nothing.
+    no_rules_yet: bool = False
+
+
+def title_what(title: TitleData | None) -> TitleWhatOut:
+    if title is None:
+        return TitleWhatOut()
+    return TitleWhatOut(
+        alias_of=title.alias_of,
+        clan=title.clan,
+        gives_none=title.gives_none,
+        note=title.note,
+        no_rules_yet=title.no_rules_yet,
+    )
+
+
+class TitleOut(TitleWhatOut):
     name: str
     # None: it can go to a character of any sect.
     sect: str | None
@@ -71,6 +101,53 @@ class TitlesOut(BaseModel):
     court_order: list[str]
 
 
+class StatusSourceOut(BaseModel):
+    """Where a status comes from in the troupe."""
+
+    kind: Literal["title", "social_age", "faction", "merit"]
+    # The title, social age ("Elder"), faction ("Loyalist") or merit.
+    name: str
+    page: str | None
+    # A title's other names: a Harpy is also a Master Harpy.
+    aliases: list[str]
+    # "while the Prince is absent", "one of Blessed or Enforcer, chosen each game".
+    condition: str
+    # The troupe's own title.
+    house: bool
+
+
+class StatusRuleOut(StatusAbout):
+    # Where it usually comes from, in words, as the rules data says.
+    source: str
+    # What gives it in the troupe: its titles, social ages, factions and merits.
+    given_by: list[StatusSourceOut]
+
+
+class SectStatusOut(BaseModel):
+    # "General" for the status every sect has.
+    sect: str
+    # The sect's name for Accepted: Acknowledged, Initiated, Committed.
+    accepted: str | None
+    page: str | None
+    statuses: list[StatusRuleOut]
+
+
+class StatusCapsOut(BaseModel):
+    """What a character carries into a game (MET: VTM p. 313)."""
+
+    abiding_sources: int
+    fleeting: int
+    lesser_ban: int
+    greater_ban: int
+    page: str | None
+
+
+class StatusRulesOut(BaseModel):
+    caps: StatusCapsOut
+    # The general status, then the status of each sect the troupe takes.
+    sects: list[SectStatusOut]
+
+
 class TitleChange(BaseModel):
     # None: it can go to a character of any sect.
     sect: str | None = None
@@ -92,6 +169,7 @@ def title_out(
     title: TitleData, troupe: Troupe, house: set[str], holders: list[TitleHolderOut]
 ) -> TitleOut:
     return TitleOut(
+        **title_what(title).model_dump(),
         name=title.name,
         sect=title.sect,
         status=list(title.status),
@@ -148,6 +226,49 @@ def list_titles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Title
     """The titles the troupe gives, with their sect and status, and who holds them."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_TITLES)
     return titles_out(db, troupe)
+
+
+@router.get("/status-rules")
+def status_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> StatusRulesOut:
+    """Every status of the troupe's sects, and the general status, by sect: its type,
+    what it does, and where it comes from here."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    caps, sects = sect_status.status_rules(db, troupe)
+    return StatusRulesOut(
+        caps=StatusCapsOut(
+            abiding_sources=caps.abiding_sources,
+            fleeting=caps.fleeting,
+            lesser_ban=caps.lesser_ban,
+            greater_ban=caps.greater_ban,
+            page=caps.page,
+        ),
+        sects=[
+            SectStatusOut(
+                sect=s.sect,
+                accepted=s.accepted,
+                page=s.page,
+                statuses=[
+                    StatusRuleOut(
+                        **about(r.status).model_dump(),
+                        source=r.status.source,
+                        given_by=[
+                            StatusSourceOut(
+                                kind=g.kind,
+                                name=g.name,
+                                page=g.page,
+                                aliases=list(g.aliases),
+                                condition=g.condition,
+                                house=g.house,
+                            )
+                            for g in r.sources
+                        ],
+                    )
+                    for r in s.statuses
+                ],
+            )
+            for s in sects
+        ],
+    )
 
 
 @router.post("/titles", status_code=status.HTTP_201_CREATED)

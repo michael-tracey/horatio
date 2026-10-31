@@ -7,7 +7,7 @@ import { InfoButton } from "../../components/InfoButton";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, Card, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
-import { titleGroups } from "../troupe/titleGroups";
+import { aliasText, titleGives, titleGroups } from "../troupe/titleGroups";
 import { StatusCard, useStatus, WithReason } from "./StatusCard";
 
 /**
@@ -35,11 +35,6 @@ function useTitles(characterId: string) {
     queryKey: ["character-titles", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/titles", { params: { path: { character_id: characterId } } })),
   });
-}
-
-/** What a title gives, in a line: "Gives Prominent · Noble", or "Gives no status". */
-function gives(status: string[]): string {
-  return status.length ? `Gives ${status.join(" · ")}` : "Gives no status";
 }
 
 /**
@@ -105,7 +100,8 @@ function HeldRow({ character, titles, held }: { character: CharacterOut; titles:
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex flex-wrap items-center gap-2">
           <span className={held.active ? "font-medium text-gold" : "text-parchment"}>{held.name}</span>
-          {held.sect && <span className="text-xs text-mist">{held.sect}</span>}
+          {(held.sect ?? held.clan) && <span className="text-xs text-mist">{held.sect ?? held.clan}</span>}
+          {held.alias_of && <span className="text-xs text-mist">{aliasText(held)}</span>}
           {held.active ? <Badge tone="gold">active</Badge> : <Badge>not active</Badge>}
           {held.out_of_sect && <Badge tone="blood">out of sect</Badge>}
         </span>
@@ -125,10 +121,11 @@ function HeldRow({ character, titles, held }: { character: CharacterOut; titles:
         )}
       </div>
       <span className={held.active ? "text-xs text-parchment/80" : "text-xs text-mist"}>
-        {gives(held.status)}
+        {titleGives(held.status, held)}
         {!held.active && held.status.length > 0 && " while active"}
         {page && ` · ${page}`}
       </span>
+      {held.note && <span className="text-xs text-mist">{held.note}</span>}
       {asking && (
         <span className="flex flex-wrap items-center gap-2 text-xs">
           <span>
@@ -196,15 +193,18 @@ function ChoiceRow({ character, titles, choice, active }: { character: Character
     unwrap(api.POST("/api/characters/{character_id}/titles", { params: { path: { character_id: character.id } }, body: { name: choice.name, active: makeActive } })),
   );
   const page = pageLabel(choice.page);
+  const alias = aliasText(choice);
   return (
     <li aria-label={choice.name} className="flex flex-col gap-1 py-1.5">
       <div className="flex items-start justify-between gap-2">
         <span className="min-w-0 flex-1">
           <span className="text-parchment">{choice.name}</span>
+          {alias && <span className="text-xs text-mist"> — {alias}</span>}
           <span className="block text-xs text-mist">
-            {gives(choice.status)}
+            {titleGives(choice.status, choice)}
             {page && ` · ${page}`}
           </span>
+          {choice.note && <span className="block text-xs text-mist">{choice.note}</span>}
           {choice.holders.length > 0 && (
             <span className="block text-xs text-mist">
               Held by {choice.holders.join(", ")}

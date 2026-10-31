@@ -1,5 +1,8 @@
 import type { DerivedOut, EndingOut, PatronChoiceOut, SuppressionOut } from "../../api/types";
 
+/** What a status no book describes (the Independent Alliance's) does. */
+export const NO_RULES_YET = "No rules yet: no book describes it, so the storytellers say what it does.";
+
 /** "2 more games", "1 more game". */
 function games(n: number): string {
   return `${n} more game${n === 1 ? "" : "s"}`;

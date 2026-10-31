@@ -88,6 +88,28 @@ def test_a_troupe_of_any_sect_lists_every_sects_titles(troupe: Troupe) -> None:
     assert set(found["Bishop"]["choose_one"]) == {"Blessed", "Enforcer"}
 
 
+def test_the_troupes_titles_say_what_each_gives_or_why_not(troupe: Troupe) -> None:
+    """Each title on the troupe's Titles page says what it is beyond its status: the
+    title another name is for, why it gives none, its clan, or no rules yet (#340)."""
+    found = listed(troupe)
+
+    assert found["Master Harpy"]["alias_of"] == "Harpy"
+    assert found["Master Harpy"]["status"] == ["Prominent", "Noble", "Guardian"]
+    assert (found["Abbot"]["gives_none"], found["Abbot"]["page"]) == (
+        "An Abbot gains no abiding status for the office.",
+        "421",
+    )
+    assert (found["Pontifex"]["clan"], found["Pontifex"]["sect"]) == ("Tremere", None)
+    assert (found["Trustee"]["no_rules_yet"], found["Trustee"]["status"]) == (True, [])
+    plain = found["Prince"]
+    assert (plain["alias_of"], plain["clan"], plain["gives_none"], plain["no_rules_yet"]) == (
+        None,
+        None,
+        "",
+        False,
+    )
+
+
 def test_a_title_goes_only_to_a_character_of_its_sect(troupe: Troupe) -> None:
     limit(troupe, ["Camarilla"])
     anarch = npc_of(troupe, "Baron Ruiz", "Anarch")
