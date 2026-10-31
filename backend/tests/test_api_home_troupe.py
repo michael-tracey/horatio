@@ -289,6 +289,21 @@ def test_the_sheet_is_locked_until_the_request_is_decided_or_withdrawn(troupe: T
     buy(troupe.player, character_id, "skills", "Brawl", 1)
 
 
+def test_a_character_says_which_troupe_it_is_waiting_on(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+
+    def asking() -> list[str | None]:
+        return [c["asking_troupe_id"] for c in troupe.player.client.get("/characters").json()]
+
+    assert asking() == [None]
+    request_home(troupe.player, character_id, troupe.id)
+    assert asking() == [troupe.id]
+    one = troupe.player.client.get(f"/characters/{character_id}").json()
+    assert one["asking_troupe_id"] == troupe.id
+    troupe.player.client.delete(f"/characters/{character_id}/home-troupe")
+    assert asking() == [None]
+
+
 def test_only_the_new_troupes_running_staff_decide(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     other = sign_up(troupe.client_for, "other-lead")

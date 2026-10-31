@@ -3942,6 +3942,18 @@
       },
       "CharacterOut": {
         "properties": {
+          "asking_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asking Troupe Id"
+          },
           "building_troupe_id": {
             "anyOf": [
               {
@@ -4111,6 +4123,7 @@
           "status",
           "home_troupe_id",
           "building_troupe_id",
+          "asking_troupe_id",
           "creation_complete",
           "kind",
           "owner_troupe_id",
@@ -17530,6 +17543,18 @@
       },
       "NpcOut": {
         "properties": {
+          "asking_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asking Troupe Id"
+          },
           "building_troupe_id": {
             "anyOf": [
               {
@@ -17714,6 +17739,7 @@
           "status",
           "home_troupe_id",
           "building_troupe_id",
+          "asking_troupe_id",
           "creation_complete",
           "kind",
           "owner_troupe_id",

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -44,7 +44,7 @@ test("a troupe changes what new characters start with and their downtime actions
   const p = player.page;
   await p.reload();
   await p.getByLabel("Name").fill("Mara");
-  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
   await p.getByLabel("Clan").selectOption("Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
@@ -98,7 +98,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   // A character built for the troupe starts at its floor.
   await p.getByRole("link", { name: "Characters" }).click();
   await p.getByLabel("Name").fill("Mara");
-  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
   await p.getByLabel("Clan").selectOption("Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
@@ -445,6 +445,70 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   // Their role is changed in the staff list.
   await lead.page.getByLabel("Role for staff-player").selectOption("assistant_storyteller");
   await expect(lead.page.getByText(`@${player.handle} · Assistant Storyteller`)).toBeVisible();
+});
+
+test("a new player goes from a troupe's page to building a character for it, the troupe already chosen", async ({ browser }) => {
+  const custodian = await person(browser, "playhere-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "playhere-lead");
+  const player = await person(browser, "playhere-new");
+  const troupeName = `Court of Open Doors ${run}`;
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // A new player is welcomed with the steps to a first game; staff, with no characters either, are not.
+  const p = player.page;
+  await expect(p.getByRole("heading", { name: "Welcome to Horatio" })).toBeVisible();
+  await lead.page.reload();
+  await expect(lead.page.getByText("No characters yet.")).toBeVisible();
+  await expect(lead.page.getByRole("heading", { name: "Welcome to Horatio" })).toHaveCount(0);
+
+  // The troupe's page says how to play there: one click to a character built for it.
+  await p.goto(`/troupes/${troupeId}`);
+  await expect(p.getByRole("heading", { name: "Play here" })).toBeVisible();
+  await p.screenshot(shots("play-here"));
+  await p.getByRole("link", { name: `Build a new character for ${troupeName}` }).click();
+  await expect(p).toHaveURL(new RegExp(`/characters\\?troupe=${troupeId}`));
+  await expect(p.getByLabel("Which troupe will you play in?")).toHaveValue(troupeId);
+  await expect(p.getByText(`Your troupe: ${troupeName}`)).toBeVisible();
+  await p.screenshot(shots("welcome"));
+
+  // Its staff see no such card.
+  await lead.page.goto(`/troupes/${troupeId}`);
+  await expect(lead.page.getByRole("heading", { level: 1 })).toContainText(troupeName);
+  await expect(lead.page.getByRole("heading", { name: "Play here" })).toHaveCount(0);
+});
+
+test("a player brings a character they have to a troupe from its page, and is told it waits for the storytellers", async ({ browser }) => {
+  const custodian = await person(browser, "bringer-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bringer-lead");
+  const player = await person(browser, "bringer-player");
+  const troupeName = `Court of Second Chances ${run}`;
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(custodian.page, troupeId);
+  const p = player.page;
+  await builtVampire(p, "Ottoline", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+
+  // "Ask to join" opens the character's Troupes tab with this troupe chosen.
+  await p.goto(`/troupes/${troupeId}`);
+  await expect(p.getByRole("heading", { name: "Play here" })).toBeVisible();
+  await p.getByRole("listitem").filter({ hasText: "Ottoline" }).getByRole("link", { name: "Ask to join" }).click();
+  await expect(p.getByRole("combobox", { name: "Troupe", exact: true })).toHaveValue(troupeId);
+  await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
+  await expect(p.getByText(`Waiting for ${troupeName}'s storytellers to accept this character.`)).toBeVisible();
+
+  // Back on the troupe's page, the card says so instead.
+  await p.goto(`/troupes/${troupeId}`);
+  await expect(p.getByRole("heading", { name: "Waiting for the storytellers" })).toBeVisible();
+  await expect(p.getByRole("link", { name: `Build a new character for ${troupeName}` })).toHaveCount(0);
 });
 
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {

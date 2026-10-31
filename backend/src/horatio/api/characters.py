@@ -20,7 +20,7 @@ from horatio import (
 )
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import grant_starting_traits
-from horatio.models import Character, RuleSet, Troupe, User
+from horatio.models import Approval, Character, RuleSet, Troupe, User
 from horatio.permissions import (
     TroupeAction,
     allows,
@@ -53,6 +53,8 @@ class CharacterOut(BaseModel):
     home_troupe_id: uuid.UUID | None
     # Until a home troupe accepts it, the troupe whose rules it is built by.
     building_troupe_id: uuid.UUID | None
+    # The troupe it has asked to make its home, while the storytellers decide.
+    asking_troupe_id: uuid.UUID | None
     creation_complete: bool
     kind: str  # pc | npc
     # The troupe an NPC belongs to.
@@ -158,6 +160,12 @@ def character_out(db: Session, character: Character) -> CharacterOut:
 def characters_out(db: Session, characters: Iterable[Character]) -> list[CharacterOut]:
     found = list(characters)
     standing = social_age.standings(db, [c.id for c in found])
+    pending = select(Approval.character_id, Approval.troupe_id).where(
+        Approval.character_id.in_([c.id for c in found]),
+        Approval.kind == "home_troupe_change",
+        Approval.status == "pending",
+    )
+    asking = {character_id: troupe_id for character_id, troupe_id in db.execute(pending)}
     return [
         CharacterOut(
             id=character.id,
@@ -168,6 +176,7 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
             status=character.status,
             home_troupe_id=character.home_troupe_id,
             building_troupe_id=character.building_troupe_id,
+            asking_troupe_id=asking.get(character.id),
             creation_complete=character.creation_completed_at is not None,
             kind=character.kind,
             owner_troupe_id=character.owner_troupe_id,

@@ -16,7 +16,8 @@ test("a character in no troupe can be deleted from the vault", async ({ browser 
   await page.getByRole("dialog").getByRole("button", { name: "Delete Short-lived for good" }).click();
 
   await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
-  await expect(page.getByText("No characters yet.")).toBeVisible();
+  // With none left, they are welcomed as a new player is.
+  await expect(page.getByRole("heading", { name: "Welcome to Horatio" })).toBeVisible();
 });
 
 test("merits and flaws on the sheet: Tainted Embrace caps fleeting status at 4 and says why, Slow Reactions lowers initiative, and Ardent Companion lists its Retainer (#314)", async ({ browser }) => {

@@ -28,15 +28,20 @@ export function BuildFor({
   const troupe = troupes.data?.find((t) => t.id === value);
   const offered = troupes.data?.filter((t) => !splat || t.id === value || t.allowed_splats.includes(splat));
   const start = !newCharacter ? "" : troupe ? ` It starts with ${troupe.xp_floor} XP, ${troupe.name}'s XP floor.` : " It starts with 30 XP.";
+  // Left on the book's rules while there are troupes: say why choosing one matters.
+  const why =
+    value === null && !disabled && offered?.length
+      ? "Building for a game? Choose its troupe so its house rules apply."
+      : "A troupe's own rules apply while you build; you can still change this until a troupe accepts the character.";
   return (
-    <Field label="Build for" hint={`A troupe's own rules apply while you build; you can still change this until a troupe accepts the character.${start}`}>
+    <Field label="Which troupe will you play in?" hint={`${why}${start}`}>
       <Select value={value ?? GENERIC} disabled={disabled} onChange={(e) => onChange(e.target.value || null)}>
-        <option value={GENERIC}>Generic rules (in my vault)</option>
         {offered?.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
           </option>
         ))}
+        <option value={GENERIC}>No troupe yet (book rules)</option>
       </Select>
     </Field>
   );
