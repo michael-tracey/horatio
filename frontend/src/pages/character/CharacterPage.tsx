@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 import { Link, Route, Routes, useMatch, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
-import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
+import { Badge, ErrorText, GroupedTabs, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { BackstoryTab, useBackstoryStanding } from "./BackstoryTab";
 import { CreationWizard } from "./creation/Wizard";
@@ -24,6 +24,7 @@ import { Pronouns } from "../../components/PronounsInput";
 import { CharacterPicture } from "./Picture";
 import { QuestsTab } from "./QuestsTab";
 import { ResultsTab } from "./ResultsTab";
+import { newResults, useSeenUpTo } from "./resultsSeen";
 import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
 import { SheetTab, useCatalogue } from "./SheetTab";
@@ -64,6 +65,13 @@ export function CharacterPage() {
 
   // The Backstory tab shows to its player and the storytellers deciding on or keeping it.
   const backstory = useBackstoryStanding(characterId, !!character.data);
+  // The counts on Downtime and Results, for its player once the character is in play.
+  const waiting = useQuery({
+    queryKey: ["downtime-waiting", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/downtime/waiting", { params: { path: { character_id: characterId } } })),
+    enabled: character.data?.kind === "pc" && character.data.player_id === me.data?.id && character.data.creation_complete,
+  });
+  const seen = useSeenUpTo(characterId);
 
   if (character.isPending) return <Loading />;
   if (character.error) return <ErrorText error={character.error} />;
@@ -183,25 +191,40 @@ export function CharacterPage() {
       {rename}
       {c.status === "retired" && <LeavingCard character={c} canChange={mine || custodian || (!!home.data && abilities(home.data.my_role, custodian).running)} />}
       {pronouns}
-      <Tabs
-        tabs={[
-          ...(creating ? [{ to: `${base}/create`, label: "Create" }] : []),
-          { to: base, label: "Sheet", end: true },
-          { to: `${base}/status`, label: "Status & Titles" },
-          { to: `${base}/equipment`, label: "Equipment" },
-          ...(creating ? [] : [{ to: `${base}/xp`, label: "Experience" }]),
-          ...(mine ? [{ to: `${base}/troupes`, label: "Troupes" }] : []),
-          ...(mine && !creating
-            ? [
-                { to: `${base}/downtime`, label: "Downtime" },
-                { to: `${base}/results`, label: "Results" },
-                ...(quests.data?.enabled ? [{ to: `${base}/quests`, label: "Quests" }] : []),
-              ]
-            : []),
-          ...(influence && !creating ? [{ to: `${base}/influence`, label: "Influence" }] : []),
-          ...(shared.data?.length ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
-          ...(backstory.data?.read ? [{ to: `${base}/backstory`, label: "Backstory" }] : []),
-          { to: `${base}/log`, label: "Log" },
+      <CharacterTabs
+        groups={[
+          { label: "Create", tabs: creating ? [{ to: `${base}/create`, label: "Create" }] : [] },
+          {
+            label: "Sheet",
+            tabs: [
+              { to: base, label: "Sheet", end: true },
+              { to: `${base}/status`, label: "Status & Titles" },
+              { to: `${base}/equipment`, label: "Equipment" },
+              ...(creating ? [] : [{ to: `${base}/xp`, label: "Experience" }]),
+              ...(shared.data?.length ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
+            ],
+          },
+          {
+            label: "Between games",
+            tabs: [
+              ...(mine && !creating
+                ? [
+                    { to: `${base}/downtime`, label: "Downtime", count: waiting.data?.due ? 1 : 0, countLabel: "due" },
+                    { to: `${base}/results`, label: "Results", count: waiting.data ? newResults(waiting.data.delivered, seen) : 0, countLabel: "new" },
+                    ...(quests.data?.enabled ? [{ to: `${base}/quests`, label: "Quests" }] : []),
+                  ]
+                : []),
+              ...(influence && !creating ? [{ to: `${base}/influence`, label: "Influence" }] : []),
+            ],
+          },
+          {
+            label: "About",
+            tabs: [
+              ...(mine ? [{ to: `${base}/troupes`, label: "Troupes" }] : []),
+              ...(backstory.data?.read ? [{ to: `${base}/backstory`, label: "Backstory" }] : []),
+              { to: `${base}/log`, label: "Log" },
+            ],
+          },
         ]}
       />
       <Routes>
@@ -238,13 +261,34 @@ export function CharacterPage() {
   );
 }
 
-/** The character's picture beside its name (the title's own space below moves out here). */
+/** The character's picture beside its name (the title's own space below moves out here).
+ * On a phone the name keeps to one line, cut short if it must, to leave room for the page. */
 function Header({ character, children }: { character: CharacterOut; children: ReactNode }) {
   return (
-    <div className="mb-6 flex items-center gap-4">
+    <div className="mb-4 flex items-center gap-3 sm:mb-6 sm:gap-4">
       <CharacterPicture character={character} />
-      <div className="min-w-0 flex-1 [&>div]:mb-0">{children}</div>
+      <div className="min-w-0 flex-1 [&>div]:mb-0 max-sm:[&>div>div:first-child]:max-w-full max-sm:[&_h1]:truncate max-sm:[&>div]:gap-2">{children}</div>
     </div>
+  );
+}
+
+type Group = Parameters<typeof GroupedTabs>[0]["groups"][number];
+
+/**
+ * A PC's tabs: on a phone in groups, with the open group's tabs under them; on
+ * a wider screen all in one row, as they fit. A group of one shows as its tab.
+ */
+function CharacterTabs({ groups }: { groups: Group[] }) {
+  const named = groups.map((g) => (g.tabs.length === 1 ? { ...g, label: g.tabs[0]!.label } : g));
+  return (
+    <>
+      <div className="sm:hidden">
+        <GroupedTabs label="Tab groups" groups={named} />
+      </div>
+      <div className="hidden sm:block">
+        <Tabs tabs={groups.flatMap((g) => g.tabs)} />
+      </div>
+    </>
   );
 }
 

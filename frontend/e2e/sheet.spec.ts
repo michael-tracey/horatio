@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
 
 /** A character's page and sheet, and what a player asks staff for from it. */
 
@@ -171,7 +171,7 @@ test("a player renames their character once in three months, and the custodian a
   await rename(p, "Agnes Bisset", "Agnes Moreau");
 
   // In a troupe, once every three months, and the troupe's storytellers are told.
-  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await characterTab(p, "Troupes");
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
   await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
@@ -205,7 +205,7 @@ test("a player renames their character once in three months, and the custodian a
   await p.keyboard.press("Escape");
 
   // The character's history keeps the old names.
-  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(p, "Log");
   await expect(p.getByText("rename-custodian renamed Agnes Duval to Agnes Lemaire (rename-player).")).toBeVisible();
   await expect(p.getByText("rename-player renamed Agnes Moreau to Agnes Duval.")).toBeVisible();
   await p.screenshot(shots("rename-log"));

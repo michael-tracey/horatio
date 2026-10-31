@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
 
 /** What the custodian does with people's accounts and characters. */
 
@@ -474,7 +474,7 @@ test("the custodian moves a character to another player, not while its game is u
   await expect(a.getByText(`The custodian moved Ottilie Marsh to you from @${before.handle}: Signed up twice; this is their real account`)).toBeVisible();
   await a.keyboard.press("Escape");
   await a.locator("main").getByRole("link", { name: /Ottilie Marsh/ }).click();
-  await a.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(a, "Log");
   await expect(
     a.getByText(`The custodian, mvc-custodian, moved Ottilie Marsh (mvc-after) from @${before.handle} to @${after.handle}: Signed up twice; this is their real account`),
   ).toBeVisible();
@@ -581,7 +581,7 @@ test("the custodian merges two accounts of one person: the characters and staff 
   await expect(r.getByText(`The custodian merged your account @${twice.handle} into this one, @${real.handle}: Signed up with Google and with email`)).toBeVisible();
   await r.keyboard.press("Escape");
   await r.locator("main").getByRole("link", { name: /Hester Vane/ }).click();
-  await r.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(r, "Log");
   // Its history keeps who did it, saying whom they were merged into.
   await expect(r.getByText(`mga-twice (merged into @${real.handle})`, { exact: false }).first()).toBeVisible();
   await r.screenshot(shots("merge-accounts-log"));

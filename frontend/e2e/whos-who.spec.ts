@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab } from "./support";
 
 /** The Who's Who, and what a player says about their character and themselves. */
 
@@ -67,7 +67,7 @@ test("why a character left: a player retires one Off-field and it is no longer w
   await dialog.getByRole("button", { name: "Retire Celeste" }).click();
   await expect(p.getByText("Why Celeste left: Off-field.")).toBeVisible();
   await expect(p.getByText("Listed under “No longer with us” on the Who's Who.")).toBeVisible();
-  await p.getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(p, "Log");
   await expect(p.getByText("retired Celeste: Off-field, listed under No longer with us. Gone to Chicago.")).toBeVisible();
   // Hortense is Inactive, unlisted by default, and Ana leaves it so.
   await (await retire(hortense, "Hortense", /^Inactive/, false)).getByRole("button", { name: "Retire Hortense" }).click();

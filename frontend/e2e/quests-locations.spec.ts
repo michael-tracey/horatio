@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
 
 /** Quests, the troupe's locations, and shared backgrounds. */
 
@@ -39,7 +39,7 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   // Quests are off: Agnes's player sees no Quests tab. The lead turns them on, one request a cycle.
   const p = player.page;
   await p.goto(`/characters/${agnes}`);
-  await expect(p.locator("main").getByRole("link", { name: "Results", exact: true })).toBeVisible();
+  await characterTab(p, "Results");
   await expect(p.locator("main").getByRole("link", { name: "Quests", exact: true })).toHaveCount(0);
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/rules/quests`);
@@ -51,7 +51,7 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
 
   // The player asks for a quest; a second is refused with the reason.
   await p.reload();
-  await p.locator("main").getByRole("link", { name: "Quests", exact: true }).click();
+  await characterTab(p, "Quests");
   await p.getByLabel("What do you want to achieve?").fill("Find Miles' journal");
   await p.getByLabel("Why (optional)").fill("It names his sire");
   await p.getByRole("button", { name: "Ask for this quest" }).click();
@@ -131,7 +131,7 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   // Bram's player sees it shared, and joins.
   const s = second.page;
   await s.goto(`/characters/${bram}`);
-  await s.locator("main").getByRole("link", { name: "Quests", exact: true }).click();
+  await characterTab(s, "Quests");
   await s.getByRole("link", { name: "The Lost Journal" }).click();
   await expect(s.getByText("Shared with you", { exact: false })).toBeVisible();
   await s.getByRole("button", { name: "Join this quest" }).click();

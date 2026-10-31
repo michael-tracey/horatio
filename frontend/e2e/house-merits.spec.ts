@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, undoInHeader } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, undoInHeader, characterTab } from "./support";
 
 /** A troupe's own merits, what they do on the sheet, and using them at a game. */
 
@@ -87,7 +87,7 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   await l.screenshot(shots("house-traits-applied"));
   await p.reload();
   await expect(part("Merits and Flaws")).toContainText("Favour of the Crossroads");
-  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(p, "Log");
   await expect(p.getByText(/the house merit of .* ★ Favour of the Crossroads \(free\): Saved the Prince's ghoul/)).toBeVisible();
 
   // A character only visiting the troupe is offered neither, by the player's list or by staff.
