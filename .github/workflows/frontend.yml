@@ -30,8 +30,15 @@ jobs:
       - run: npm run build
         working-directory: frontend
 
-  e2e:
+  # The suite split across runners, each with its own database and server. Four
+  # shards bring a 35-minute run to about 12; each repeats a minute of setup.
+  e2e-shard:
+    name: e2e-shard ${{ matrix.shard }}/${{ strategy.job-total }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:18
@@ -66,12 +73,13 @@ jobs:
             uv run uvicorn horatio.app:app --port 8766 --timeout-keep-alive 300 > "$RUNNER_TEMP/horatio.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/horatio.pid"
           for i in $(seq 1 30); do curl -sf localhost:8766/api/health && break; sleep 1; done
-      - run: npx playwright test
+      # The list reporter puts each test's time in the log, to weigh the shards by.
+      - run: npx playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }} --reporter=list
         working-directory: frontend
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: e2e-results
+          name: e2e-results-${{ matrix.shard }}
           path: frontend/test-results
           retention-days: 7
       # The running server holds uv's cache lock, and setup-uv's cache step waits
@@ -83,6 +91,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: e2e-api-log
+          name: e2e-api-log-${{ matrix.shard }}
           path: ${{ runner.temp }}/horatio.log
           retention-days: 7
+
+  # The one check to wait on: it passes only when every shard passed.
+  e2e:
+    needs: e2e-shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ needs.e2e-shard.result }}" = success
