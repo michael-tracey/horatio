@@ -124,7 +124,7 @@ function NameAndDescription({ troupe }: { troupe: TroupeOut }) {
         <Field label="Name">
           <Input required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Description">
+        <Field label="Description" hint="Its first lines show on the troupe list, to help players choose.">
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
         <ErrorText error={save.error} />

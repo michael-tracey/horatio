@@ -73,6 +73,46 @@ def test_the_list_says_for_each_troupe_the_role_held_and_whether_whos_who_opens(
     }
 
 
+def test_the_list_says_where_each_troupe_plays_if_it_takes_new_players_and_who_you_play_there(
+    troupe: Troupe,
+) -> None:
+    made = troupe.custodian.client.post(
+        "/troupes", json={"name": "Barons of the Bay", "lead_handle": troupe.storyteller.handle}
+    )
+    assert made.status_code == 201, made.text
+    member(troupe, "Bertrand")
+    member(troupe, "Agnes")
+    profile = troupe.lead.client.put(
+        f"/troupes/{troupe.id}/profile",
+        json={"new_players": "welcoming", "setting": {"city": "Leeds"}},
+    )
+    assert profile.status_code == 200, profile.text
+
+    def listed(person: Person) -> dict[str, tuple[str | None, str, list[str]]]:
+        return {
+            t["name"]: (t["new_players"], t["place"], t["my_characters"])
+            for t in person.client.get("/troupes").json()
+        }
+
+    assert listed(troupe.player) == {
+        "Barons of the Bay": (None, "", []),
+        "Lords of the Night": ("welcoming", "Leeds", ["Agnes", "Bertrand"]),
+    }
+    assert listed(troupe.stranger)["Lords of the Night"] == ("welcoming", "Leeds", [])
+
+    # The venue's region, when there is one, says where it plays before the setting's city.
+    changed = troupe.lead.client.put(
+        f"/troupes/{troupe.id}/profile",
+        json={"venue": {"region": "West Yorkshire"}, "setting": {"city": "Leeds"}},
+    )
+    assert changed.status_code == 200, changed.text
+    assert listed(troupe.player)["Lords of the Night"] == (
+        None,
+        "West Yorkshire",
+        ["Agnes", "Bertrand"],
+    )
+
+
 def test_only_the_lead_renames_or_describes_the_troupe(troupe: Troupe) -> None:
     for person in (troupe.storyteller, troupe.assistant, troupe.narrator, troupe.player):
         assert (

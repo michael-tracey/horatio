@@ -87,10 +87,10 @@ test("a player builds a ghoul in the wizard, bound to their own vampire, and lat
   // Built for a troupe that takes vampires only, a new character cannot be a ghoul.
   await p.reload();
   await p.getByLabel("Name").fill("Wendel");
-  await p.getByLabel("Build for").selectOption({ label: vampiresOnly });
+  await p.getByLabel("Which troupe will you play in?").selectOption({ label: vampiresOnly });
   await expect(p.getByLabel("Splat").locator("option")).toHaveText(["Vampire"]);
   await expect(p.getByText(`${vampiresOnly} takes vampire characters only.`)).toBeVisible();
-  await p.getByLabel("Build for").selectOption({ label: takesGhouls });
+  await p.getByLabel("Which troupe will you play in?").selectOption({ label: takesGhouls });
   await expect(p.getByLabel("Splat").locator("option")).toHaveText(["Vampire", "Ghoul"]);
   await p.getByLabel("Splat").selectOption("Ghoul");
   await p.getByRole("button", { name: "Create" }).click();

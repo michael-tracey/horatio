@@ -4,12 +4,15 @@ import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice } from "../components/ui";
 import { useAction, useMe } from "../hooks";
+import { useNext, withNext } from "../next";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mx-auto mt-2 max-w-sm sm:mt-8">
-      <img src="/logo.webp" alt="Horatio: MET legacy LARP tools" width={224} height={224} className="mx-auto mb-2 h-auto w-44 sm:w-56" />
-      <p className="mb-6 text-center text-sm text-mist italic">"Alas, poor Yorick! I knew him, Horatio."</p>
+      <img src="/logo.webp" alt="Horatio: MET legacy LARP tools" width={224} height={224} className="mx-auto mb-2 h-auto w-28 sm:w-56" />
+      <p className="mb-4 text-center text-sm text-parchment sm:mb-2">Character sheets and downtimes for Mind's Eye Theatre troupes.</p>
+      {/* A phone keeps its first screen for the form. */}
+      <p className="mb-6 hidden text-center text-sm text-mist italic sm:block">"Alas, poor Yorick! I knew him, Horatio."</p>
       <Card title={title}>{children}</Card>
     </div>
   );
@@ -18,14 +21,15 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
 export function SignInPage() {
   const me = useMe();
   const navigate = useNavigate();
+  const next = useNext();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const signIn = useAction(async () => {
     await unwrap(api.POST("/api/auth/login", { body: { login, password } }));
-    navigate("/characters");
+    navigate(next ?? "/characters");
   });
 
-  if (me.data) return <Navigate to="/characters" replace />;
+  if (me.data) return <Navigate to={next ?? "/characters"} replace />;
   const submit = (e: FormEvent) => {
     e.preventDefault();
     signIn.mutate(undefined);
@@ -39,7 +43,7 @@ export function SignInPage() {
         <Field label="Password">
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
-        <Link to="/forgot-password" className="-mt-2 self-end text-sm text-gold underline">
+        <Link to={withNext("/forgot-password", next)} className="-mt-2 self-end text-sm text-gold underline">
           Forgot your password?
         </Link>
         <ErrorText error={signIn.error} />
@@ -48,7 +52,7 @@ export function SignInPage() {
         </Button>
         <p className="text-center text-sm text-mist">
           New here?{" "}
-          <Link to="/sign-up" className="text-gold underline">
+          <Link to={withNext("/sign-up", next)} className="text-gold underline">
             Create an account
           </Link>
         </p>
@@ -59,10 +63,11 @@ export function SignInPage() {
 
 export function SignUpPage() {
   const navigate = useNavigate();
+  const next = useNext();
   const [form, setForm] = useState({ display_name: "", handle: "", email: "", password: "" });
   const signUp = useAction(async () => {
     await unwrap(api.POST("/api/auth/signup", { body: form }));
-    navigate("/characters");
+    navigate(next ?? "/characters");
   });
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value });
 
@@ -93,7 +98,7 @@ export function SignUpPage() {
         </Button>
         <p className="text-center text-sm text-mist">
           Already have one?{" "}
-          <Link to="/sign-in" className="text-gold underline">
+          <Link to={withNext("/sign-in", next)} className="text-gold underline">
             Sign in
           </Link>
         </p>
@@ -105,14 +110,15 @@ export function SignUpPage() {
 /** Ask for a reset link by email. The answer is the same whether or not an account
  * uses the address. Without email on the server, it says to ask the custodian. */
 export function ForgotPasswordPage() {
+  const next = useNext();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState<string | null>(null);
   const help = useQuery({ queryKey: ["forgot"], queryFn: () => unwrap(api.GET("/api/auth/forgot")) });
   const ask = useAction(async () => {
-    setSent((await unwrap(api.POST("/api/auth/forgot", { body: { email } }))).message);
+    setSent((await unwrap(api.POST("/api/auth/forgot", { body: { email, next } }))).message);
   });
   const back = (
-    <Link to="/sign-in" className="text-center text-sm text-gold underline">
+    <Link to={withNext("/sign-in", next)} className="text-center text-sm text-gold underline">
       Back to sign in
     </Link>
   );
@@ -162,6 +168,7 @@ export function ForgotPasswordPage() {
 export function ResetPasswordPage() {
   const { token = "" } = useParams();
   const navigate = useNavigate();
+  const next = useNext();
   const [password, setPassword] = useState("");
   const reset = useQuery({
     queryKey: ["reset", token],
@@ -170,7 +177,7 @@ export function ResetPasswordPage() {
   });
   const save = useAction(async () => {
     await unwrap(api.POST("/api/auth/reset", { body: { token, password } }));
-    navigate("/characters");
+    navigate(next ?? "/characters");
   });
 
   return (
@@ -180,10 +187,10 @@ export function ResetPasswordPage() {
       ) : reset.error ? (
         <div className="flex flex-col gap-4">
           <ErrorText error={reset.error} />
-          <Link to="/forgot-password" className="text-center text-sm text-gold underline">
+          <Link to={withNext("/forgot-password", next)} className="text-center text-sm text-gold underline">
             Ask for a new link
           </Link>
-          <Link to="/sign-in" className="text-center text-sm text-gold underline">
+          <Link to={withNext("/sign-in", next)} className="text-center text-sm text-gold underline">
             Back to sign in
           </Link>
         </div>

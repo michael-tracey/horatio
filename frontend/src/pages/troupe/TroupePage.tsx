@@ -19,6 +19,7 @@ import { MyWork, WorkTab } from "./WorkTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlayersTab } from "./PlayersTab";
 import { QuestsTab } from "./QuestsTab";
+import { PlayHere } from "./PlayHere";
 import { PlayTab } from "./PlayTab";
 import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
@@ -135,6 +136,7 @@ export function TroupePage() {
           },
         ]}
       />
+      {!can.staff && !t.archived && <PlayHere troupe={t} />}
       <Routes>
         <Route index element={<OverviewTab troupe={t} can={can} />} />
         <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />

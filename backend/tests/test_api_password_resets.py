@@ -160,6 +160,44 @@ def test_an_emailed_link_works_once_and_signs_out_everywhere(
     assert events(session, "account.reset_sent")[0].data["kind"] == "self"
 
 
+def test_an_emailed_link_goes_on_to_where_they_were_going(
+    client_for: Callable[[], TestClient], player: Person, mail: FakeSMTP
+) -> None:
+    asked = client_for().post(
+        "/auth/forgot", json={"email": player.email, "next": "/cycles/abc?tab=1"}
+    )
+
+    assert asked.status_code == 202
+    found = re.search(r"/reset-password/(\S+)", mail.sent[0].get_content())
+    assert found
+    token, _, query = found.group(1).partition("?")
+    assert query == "next=%2Fcycles%2Fabc%3Ftab%3D1"
+    assert client_for().get(f"/auth/reset/{token}").status_code == 200
+
+
+@pytest.mark.parametrize(
+    "unsafe",
+    [
+        "https://evil.example",
+        "//evil.example",
+        "/\\evil.example",
+        "/%2F/evil.example",
+        "/%5Cevil.example",
+        "/\t/evil.example",
+        "javascript:alert(1)",
+        "cycles/abc",
+    ],
+)
+def test_an_emailed_link_never_goes_on_to_another_site(
+    client_for: Callable[[], TestClient], player: Person, mail: FakeSMTP, unsafe: str
+) -> None:
+    assert resets.same_site_path(unsafe) is None
+    client_for().post("/auth/forgot", json={"email": player.email, "next": unsafe})
+
+    assert "next=" not in mail.sent[0].get_content()
+    assert link_in(mail.sent[0])
+
+
 def test_asking_again_cancels_the_earlier_link(
     client_for: Callable[[], TestClient], player: Person, session: Session, mail: FakeSMTP
 ) -> None:

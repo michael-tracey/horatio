@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut, XpStandingOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
@@ -143,7 +143,10 @@ function HomeTroupe({
   unbanked: number;
 }) {
   const path = { params: { path: { character_id: character.id } } };
-  const [troupeId, setTroupeId] = useState("");
+  // A troupe's "Play here" card links here with ?home=<id>, to ask that troupe at once.
+  const [params] = useSearchParams();
+  const asked = params.get("home");
+  const [troupeId, setTroupeId] = useState(troupes.some((t) => t.id === asked && t.id !== currentHome) ? asked! : "");
   const [differences, setDifferences] = useState<DifferenceOut[] | null>(null);
   const [settlements, setSettlements] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
@@ -160,6 +163,11 @@ function HomeTroupe({
     setDifferences(found);
     setSettlements(Object.fromEntries(found.map((d) => [key(d), d.allowed_settlements[0] ?? "keep_price"])));
   });
+  // Show what moving to the troupe the link chose means, as choosing it would.
+  useEffect(() => {
+    if (troupeId) preview.mutate(troupeId);
+    // Only for the troupe the page opened with; choosing another previews it on change.
+  }, []);
   const request = useAction(() =>
     unwrap(
       api.POST("/api/characters/{character_id}/home-troupe", {

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from horatio import audit, closing, handles, pictures, sect_status, titles, xp_range
+from horatio.api.troupe_profiles import Profile
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Character,
@@ -90,8 +91,15 @@ class TroupeOut(BaseModel):
     banner: str | None
     # Whether its profile shows to anyone, even people not signed in.
     public: bool
+    # From its profile, for choosing a troupe: whether it is taking new players
+    # (None says nothing either way), and where it plays, its venue's region or
+    # else its setting's city ("" for neither).
+    new_players: Literal["welcoming", "closed"] | None
+    place: str
     # The caller's own role here, if any.
     my_role: Role | None
+    # The caller's own active characters at home here, by name.
+    my_characters: list[str]
 
 
 class NewTroupe(BaseModel):
@@ -225,12 +233,42 @@ def troupes_out(db: DbSession, user: User, troupes: Sequence[Troupe]) -> list[Tr
     figures = xp_range.figures_of(db, troupes)
     roles = troupe_roles(db, user, troupes)
     whos_who = whos_who_troupes(db, user, troupes, roles)
-    return [one_out(t, figures[t.id], roles[t.id], t.id in whos_who) for t in troupes]
+    mine = home_characters(db, user, troupes)
+    return [
+        one_out(t, figures[t.id], roles[t.id], t.id in whos_who, mine.get(t.id, []))
+        for t in troupes
+    ]
+
+
+def home_characters(
+    db: DbSession, user: User, troupes: Sequence[Troupe]
+) -> dict[uuid.UUID, list[str]]:
+    """The names of the user's active player characters at home in each of the
+    troupes, asked of the database once."""
+    found: dict[uuid.UUID, list[str]] = {}
+    for troupe_id, name in db.execute(
+        select(Character.home_troupe_id, Character.name)
+        .where(
+            Character.player_id == user.id,
+            Character.kind == "pc",
+            Character.status == "active",
+            Character.home_troupe_id.in_([t.id for t in troupes]),
+        )
+        .order_by(Character.name)
+    ):
+        if troupe_id is not None:
+            found.setdefault(troupe_id, []).append(name)
+    return found
 
 
 def one_out(
-    troupe: Troupe, figures: xp_range.Figures, role: Role | None, whos_who: bool
+    troupe: Troupe,
+    figures: xp_range.Figures,
+    role: Role | None,
+    whos_who: bool,
+    my_characters: list[str],
 ) -> TroupeOut:
+    profile = Profile.model_validate(troupe.profile)
     return TroupeOut(
         id=troupe.id,
         name=troupe.name,
@@ -260,7 +298,10 @@ def one_out(
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
         public=troupe.public,
+        new_players=profile.new_players,
+        place=profile.venue.region or profile.setting.city,
         my_role=role,
+        my_characters=my_characters,
     )
 
 

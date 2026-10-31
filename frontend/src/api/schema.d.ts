@@ -8627,6 +8627,8 @@ export interface components {
         };
         /** CharacterOut */
         CharacterOut: {
+            /** Asking Troupe Id */
+            asking_troupe_id: string | null;
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -10986,6 +10988,8 @@ export interface components {
              * Format: email
              */
             email: string;
+            /** Next */
+            next?: string | null;
         };
         /** ForgotAnswer */
         ForgotAnswer: {
@@ -13884,6 +13888,8 @@ export interface components {
         };
         /** NpcOut */
         NpcOut: {
+            /** Asking Troupe Id */
+            asking_troupe_id: string | null;
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -18719,9 +18725,15 @@ export interface components {
              * Format: uuid
              */
             lead_user_id: string;
+            /** My Characters */
+            my_characters: string[];
             my_role: components["schemas"]["Role"] | null;
             /** Name */
             name: string;
+            /** New Players */
+            new_players: ("welcoming" | "closed") | null;
+            /** Place */
+            place: string;
             /** Portrait */
             portrait: string | null;
             /** Public */
