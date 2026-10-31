@@ -126,7 +126,7 @@ The vampiric blood in a ghoul's Blood pool: at most 5 of its 10, the only part i
 _Avoid_: Ghoul blood, vampire points
 
 **Trait**:
-A single rated or named entry on a character's sheet, such as a skill, merit, flaw, discipline or influence.
+A single rated or named entry on a character's sheet, such as a skill, merit, flaw, discipline or influence. Something a character owns, such as a Vampiric Text, is equipment, not a trait.
 _Avoid_: Stat, ability
 
 ### Rules
@@ -180,8 +180,12 @@ A special property of an item of equipment, such as Accurate or Concealable, fro
 _Avoid_: Perk, tag, trait (a trait is on the sheet)
 
 **Equipment**:
-The items a character holds: weapons, protective gear and miscellaneous gear, each with its qualities. Only the character's home troupe's storytellers and assistant storytellers give it equipment, change it or take it back, and an item belongs to the character, going with it to a new home troupe. Its player gives an item to another character of the same home troupe, or discards it, and staff restore a discarded item. At a game its player equips items on the Play View, within the book's limits (two hands of weapons, one piece of protective gear), and an equipped item's qualities change the test pools. Every item keeps its history.
+The items a character holds: weapons, protective gear and miscellaneous gear, each with its qualities, and Vampiric Texts. Only the character's home troupe's storytellers and assistant storytellers give it equipment, change it or take it back, and an item belongs to the character, going with it to a new home troupe. Its player gives an item to another character of the same home troupe, or discards it, and staff restore a discarded item. At a game its player equips items on the Play View (any but a Vampiric Text), within the book's limits (two hands of weapons, one piece of protective gear), and an equipped item's qualities change the test pools. Every item keeps its history.
 _Avoid_: Inventory, gear (for the whole), loot
+
+**Vampiric Text**:
+A book of Kindred lore a character owns, such as the Book of Nod: an item of equipment, given by storytellers from the catalogue's texts or by a name of the troupe's own, never chosen by a player. It has no qualities, isn't equipped at a game and changes no test pool, but is passed on, discarded and restored as any item is.
+_Avoid_: Tome, book (for the kind as a whole)
 
 **Special Item**:
 An item a troupe's storytellers or assistant storytellers make exceptional, such as a blade of Kindred legend: any number of qualities, still keeping the rules between them, and special effects of the troupe's own, marked as made by that troupe.

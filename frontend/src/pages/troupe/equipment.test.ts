@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EquipmentOut, EquipmentQualityOut } from "../../api/types";
-import { NEW_ITEM, body, combatFirst, factsText, fromTemplate, kindText, playText, qualityChoices, qualityText } from "./equipment";
+import { NEW_ITEM, body, combatFirst, factsText, fromTemplate, givenText, gradesOf, kindText, playText, qualityChoices, qualityText } from "./equipment";
 
 function quality(kind: string, name: string, more: Partial<EquipmentQualityOut> = {}): EquipmentQualityOut {
   return {
@@ -35,7 +35,7 @@ describe("equipment", () => {
   });
 
   it("starts from a template, the book's or the troupe's", () => {
-    expect(fromTemplate({ name: "Silver Dagger", kind: "melee", grade: "standard", qualities: [{ name: "Concealable", detail: "" }, { name: "Silver", detail: "" }], page: "521", facts: {} as never, archaic: false })).toEqual({
+    expect(fromTemplate({ name: "Silver Dagger", kind: "melee", grade: "standard", qualities: [{ name: "Concealable", detail: "" }, { name: "Silver", detail: "" }], page: "521", facts: {} as never, archaic: false, description: "" })).toEqual({
       ...NEW_ITEM,
       name: "Silver Dagger",
       qualities: [
@@ -58,11 +58,25 @@ describe("equipment", () => {
   });
 
   it("marks the book's Bow archaic, and sends archaic only for a ranged weapon", () => {
-    const bow = fromTemplate({ name: "Bow", kind: "ranged", grade: "standard", qualities: [], page: "524", facts: {} as never, archaic: true });
+    const bow = fromTemplate({ name: "Bow", kind: "ranged", grade: "standard", qualities: [], page: "524", facts: {} as never, archaic: true, description: "" });
     expect(bow.archaic).toBe(true);
     expect(body(bow).archaic).toBe(true);
     expect(body({ ...bow, kind: "melee" }).archaic).toBe(false);
     expect(kindText(RULES, { kind: "ranged", kind_name: "Ranged weapon", grade: "standard", crafted: false, archaic: true })).toBe("Archaic ranged weapon");
+  });
+
+  it("starts a Vampiric Text from the book's, with its line, and sends no qualities, crafting or cheap grade for one", () => {
+    const nod = fromTemplate({ name: "The Book of Nod", kind: "text", grade: "standard", qualities: [], page: "28, 421 & 453", facts: {} as never, archaic: false, description: "The legends of Caine." });
+    expect([nod.kind, nod.description]).toEqual(["text", "The legends of Caine."]);
+    const sent = body({ ...nod, grade: "cheap", crafted: true, qualities: [{ name: "Accurate", detail: "" }] });
+    expect([sent.grade, sent.crafted, sent.qualities]).toEqual(["standard", false, []]);
+    expect(gradesOf("text").map(([g]) => g)).toEqual(["standard", "special"]);
+    expect(gradesOf("melee").map(([g]) => g)).toEqual(["cheap", "standard", "special"]);
+  });
+
+  it("says where an item came from: given by a troupe, or moved from the sheet", () => {
+    expect(givenText({ from_sheet: false, given_by_name: "Lead", troupe_name: "Lords of the Night" })).toBe("Given by Lead of Lords of the Night");
+    expect(givenText({ from_sheet: true, given_by_name: null, troupe_name: null })).toBe("Moved from the sheet, where it was a trait");
   });
 
   it("sends a special item's effects only", () => {

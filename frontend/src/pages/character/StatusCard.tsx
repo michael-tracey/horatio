@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, HeldOut, StatusAbout, StatusIn, StatusOut, SuppressionOut } from "../../api/types";
 import { InfoButton } from "../../components/InfoButton";
 import { PatronPicker } from "../../components/PatronPicker";
 import { pageLabel } from "../../components/TraitInfo";
-import { Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { bySource, capText, endingText, outsiderText, suppressedText } from "./status";
+import { capText, derivedLines, endingText, outsiderText, suppressedText, typeOrder } from "./status";
 
 export function useStatus(characterId: string) {
   return useQuery({
@@ -81,6 +81,54 @@ export function WithReason({
   );
 }
 
+/** A status's type as a badge: "abiding", "negative". */
+function TypeBadge({ type }: { type: string }) {
+  const tone = type === "Negative" ? "blood" : type === "Fleeting" ? "mist" : "gold";
+  return <Badge tone={tone}>{type.toLowerCase()}</Badge>;
+}
+
+/**
+ * One status the character holds, in a line: its name, type and where it comes
+ * from, with any actions at the end. The name opens what the status does.
+ */
+function Line({
+  name,
+  type,
+  source,
+  about,
+  actions,
+  children,
+}: {
+  name: string;
+  type: string;
+  source: ReactNode;
+  about: StatusAbout | undefined;
+  actions?: ReactNode;
+  children?: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li aria-label={name} className="flex flex-col gap-0.5 py-2">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          {about ? (
+            <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="text-left font-medium text-parchment hover:text-gold">
+              {name}
+            </button>
+          ) : (
+            <span className="font-medium text-parchment">{name}</span>
+          )}
+          <TypeBadge type={type} />
+          <span className="text-xs text-mist">{source}</span>
+        </span>
+        {actions && <span className="flex flex-wrap gap-1">{actions}</span>}
+      </div>
+      {children}
+      {open && <About about={about} />}
+    </li>
+  );
+}
+
 function HeldRow({ character, status, held }: { character: CharacterOut; status: StatusOut; held: HeldOut }) {
   const dates = useDates();
   const remove = useAction((reason: string) =>
@@ -91,18 +139,15 @@ function HeldRow({ character, status, held }: { character: CharacterOut; status:
       }),
     ),
   );
-  const [open, setOpen] = useState(false);
   const where = [held.place, dates.day(held.given_on)].filter(Boolean).join(", ");
   return (
-    <li className="flex flex-col gap-0.5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span>
-          <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="text-left text-parchment hover:text-gold">
-            {held.name}
-          </button>
-          <span className="text-mist"> from {held.patron.words}</span>
-        </span>
-        {held.can_remove && (
+    <Line
+      name={held.name}
+      type={held.type}
+      source={`from ${held.patron.words}`}
+      about={status.about[held.name]}
+      actions={
+        held.can_remove && (
           <WithReason
             label="Remove"
             name={`Remove ${held.name}`}
@@ -110,14 +155,37 @@ function HeldRow({ character, status, held }: { character: CharacterOut; status:
             pending={remove.isPending}
             onConfirm={(reason) => remove.mutate(reason)}
           />
-        )}
-      </div>
-      <span className="text-xs text-mist">{where}</span>
+        )
+      }
+    >
+      <span className="text-xs text-mist">
+        {where}
+        {held.story && ` · ${held.story}`}
+      </span>
       {held.ending && <span className="text-xs text-gold">{endingText(held.ending, dates.day)}.</span>}
-      {held.story && <span className="text-xs text-mist">{held.story}</span>}
-      {open && <About about={status.about[held.name]} />}
       <ErrorText error={remove.error} />
-    </li>
+    </Line>
+  );
+}
+
+function Unresolved({ character, status, name }: { character: CharacterOut; status: StatusOut; name: string }) {
+  const resolve = useAction((reason: string) =>
+    unwrap(api.POST("/api/characters/{character_id}/status/resolve", { params: { path: { character_id: character.id } }, body: { name, reason } })),
+  );
+  return (
+    <Line
+      name={name}
+      type={status.about[name]?.type ?? "Unresolved"}
+      source="no title, social age or merit gives it now: for staff to resolve"
+      about={status.about[name]}
+      actions={
+        status.staff && (
+          <WithReason label="Take off" name={`Take off ${name}`} needed={character.kind === "pc"} pending={resolve.isPending} onConfirm={(reason) => resolve.mutate(reason)} />
+        )
+      }
+    >
+      <ErrorText error={resolve.error} />
+    </Line>
   );
 }
 
@@ -334,29 +402,13 @@ function Suppress({ character, onDone }: { character: CharacterOut; onDone: () =
   );
 }
 
-function Unresolved({ character, status, name }: { character: CharacterOut; status: StatusOut; name: string }) {
-  const resolve = useAction((reason: string) =>
-    unwrap(api.POST("/api/characters/{character_id}/status/resolve", { params: { path: { character_id: character.id } }, body: { name, reason } })),
-  );
-  return (
-    <li className="flex flex-wrap items-center justify-between gap-2">
-      <span>
-        {name} <span className="text-xs text-mist">no title, social age or merit gives it now</span>
-      </span>
-      {status.staff && (
-        <WithReason label="Take off" name={`Take off ${name}`} needed={character.kind === "pc"} pending={resolve.isPending} onConfirm={(reason) => resolve.mutate(reason)} />
-      )}
-      <ErrorText error={resolve.error} />
-    </li>
-  );
-}
-
 /**
- * The character's sect status (MET: VTM pp. 310-317): what its active title, social
- * age and merits give, and the fleeting and negative status it holds with each
- * one's patron. Who adds and removes held status is the home troupe's Status on
- * sheets setting. It is on the character page's Status & Titles tab, below its
- * titles and beside its bans.
+ * The character's sect status (MET: VTM pp. 310-317), as a list of what it holds
+ * now, a line each: Accepted by its sect, the abiding and innate status its active
+ * title, social age and merits give, and the fleeting and negative status it holds
+ * with each one's patron. Who adds and removes held status is the home troupe's
+ * Status on sheets setting. It is the main column of the character page's Status &
+ * Titles tab, beside its titles.
  */
 export function StatusCard({ character }: { character: CharacterOut }) {
   const status = useStatus(character.id);
@@ -367,7 +419,9 @@ export function StatusCard({ character }: { character: CharacterOut }) {
   const nothing = !s.accepted && !s.outsider_sect && !s.derived.length && !s.held.length && !s.unresolved.length;
   if (nothing) return <Empty>{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</Empty>;
   const fleeting = s.held.filter((h) => h.type === "Fleeting");
-  const negative = s.held.filter((h) => h.type === "Negative");
+  const held = [...s.held].sort((a, b) => typeOrder(a.type) - typeOrder(b.type));
+  const derived = derivedLines(s.derived, s.troupe_name);
+  const counted = s.accepted || s.outsider_sect;
   return (
     <Card
       dense
@@ -376,7 +430,7 @@ export function StatusCard({ character }: { character: CharacterOut }) {
         <InfoButton label="About Status">
           <span className="block">
             Status is what the sect thinks of the character (MET: VTM pp. 310-317). The active title, social age and merits give abiding and innate status;
-            fleeting and negative status is held, each one with who gave it.
+            fleeting and negative status is held, each one with who gave it. Tap a status to see what it does.
           </span>
           <span className="mt-1 block">
             {s.setting === "staff"
@@ -394,96 +448,48 @@ export function StatusCard({ character }: { character: CharacterOut }) {
         )
       }
     >
-      <div className="flex flex-col gap-3 text-sm">
-        {s.accepted ? (
-          <p>
-            {s.accepted} by the {s.sect}
-            {s.disgraced && <span className="text-blood-bright">, and Disgraced: it gains no status</span>}.
-          </p>
-        ) : s.outsider_sect ? (
-          <p>{outsiderText(s)}</p>
-        ) : (
-          <p className="text-mist">{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</p>
-        )}
-        {s.derived.length > 0 && (
-          <section aria-label="Status from titles, age and merits">
-            <h3 className="text-xs tracking-wide text-mist uppercase">From titles, age and merits</h3>
-            <ul className="mt-1 flex flex-col gap-1">
-              {bySource(s.derived).map((g) => (
-                <li key={g.key}>
-                  <span className="text-gold">
-                    {g.source}
-                    {g.kind === "faction" && " faction"}
-                  </span>
-                  {g.troupe && g.troupe !== s.troupe_name && <span className="text-xs text-mist"> in {g.troupe}</span>}:{" "}
-                  {g.status.map((d, i) => (
-                    <span key={`${d.name}/${d.condition}`}>
-                      {i > 0 && ", "}
-                      {d.name}
-                      {d.condition && <span className="text-xs text-mist"> ({d.condition})</span>}
-                    </span>
-                  ))}
-                  {g.kind === "merit" && <span className="text-xs text-mist"> (innate)</span>}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-        {(s.accepted || s.outsider_sect) && (
-          <section aria-label="Fleeting status">
-            <h3 className="text-xs tracking-wide text-mist uppercase">
+      <div className="flex flex-col gap-2 text-sm">
+        {s.outsider_sect && !s.accepted && <p>{outsiderText(s)}</p>}
+        {!counted && <p className="text-mist">{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</p>}
+        {s.disgraced && <p className="text-blood-bright">{character.name} holds Disgraced, and gains no status while it does.</p>}
+        {counted && (
+          <p className="text-xs text-mist">
+            <span>
               Fleeting: {fleeting.length} of {s.fleeting_cap}
-            </h3>
-            {capText(s.cap_why) && <p className="text-xs text-mist">{capText(s.cap_why)}</p>}
-            {fleeting.length ? (
-              <ul className="mt-1 flex flex-col gap-2">
-                {fleeting.map((h) => (
-                  <HeldRow key={h.id} character={character} status={s} held={h} />
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-mist">None held.</p>
-            )}
-            {fleeting.length > s.fleeting_cap && (
-              <p className="mt-1 text-xs text-blood-bright">Over the cap: only {s.fleeting_cap} count at a game. Give some up.</p>
-            )}
-            {s.suppressed.length > 0 && (
-              <ul className="mt-1 flex flex-col gap-1">
-                {s.suppressed.map((x) => (
-                  <SuppressedRow key={x.id ?? x.kind} character={character} suppressed={x} staff={s.staff} />
-                ))}
-              </ul>
-            )}
-            {s.staff &&
-              (suppressing ? (
-                <Suppress character={character} onDone={() => setSuppressing(false)} />
-              ) : (
-                <Button variant="ghost" className="mt-1 min-h-8 px-2 text-xs" onClick={() => setSuppressing(true)}>
-                  Suppress fleeting status…
-                </Button>
-              ))}
-          </section>
+            </span>
+            {capText(s.cap_why) && <span> · {capText(s.cap_why)}</span>}
+          </p>
         )}
-        {negative.length > 0 && (
-          <section aria-label="Negative status">
-            <h3 className="text-xs tracking-wide text-mist uppercase">Negative</h3>
-            <ul className="mt-1 flex flex-col gap-2">
-              {negative.map((h) => (
-                <HeldRow key={h.id} character={character} status={s} held={h} />
-              ))}
-            </ul>
-          </section>
+        {fleeting.length > s.fleeting_cap && <p className="text-xs text-blood-bright">Over the cap: only {s.fleeting_cap} count at a game. Give some up.</p>}
+        {s.suppressed.length > 0 && (
+          <ul className="flex flex-col gap-1">
+            {s.suppressed.map((x) => (
+              <SuppressedRow key={x.id ?? x.kind} character={character} suppressed={x} staff={s.staff} />
+            ))}
+          </ul>
         )}
-        {s.unresolved.length > 0 && (
-          <section aria-label="Status to resolve">
-            <h3 className="text-xs tracking-wide text-mist uppercase">From before, for staff to resolve</h3>
-            <ul className="mt-1 flex flex-col gap-1">
-              {s.unresolved.map((name) => (
-                <Unresolved key={name} character={character} status={s} name={name} />
-              ))}
-            </ul>
-          </section>
-        )}
+        <ul aria-label="Status held" className="flex flex-col divide-y divide-ash/60">
+          {s.accepted && <Line name={s.accepted} type="Accepted" source={`by the ${s.sect}`} about={s.about[s.accepted]} />}
+          {derived.map((d) => (
+            <Line key={`${d.type}/${d.name}`} name={d.name} type={d.type} source={`from ${d.sources.join(" and ")}`} about={s.about[d.name]} />
+          ))}
+          {held.map((h) => (
+            <HeldRow key={h.id} character={character} status={s} held={h} />
+          ))}
+          {s.unresolved.map((name) => (
+            <Unresolved key={name} character={character} status={s} name={name} />
+          ))}
+        </ul>
+        {counted && !fleeting.length && <p className="text-xs text-mist">No fleeting status held.</p>}
+        {s.staff &&
+          counted &&
+          (suppressing ? (
+            <Suppress character={character} onDone={() => setSuppressing(false)} />
+          ) : (
+            <Button variant="ghost" className="min-h-8 self-start px-2 text-xs" onClick={() => setSuppressing(true)}>
+              Suppress fleeting status…
+            </Button>
+          ))}
         {adding && <AddStatus character={character} status={s} onDone={() => setAdding(false)} />}
       </div>
     </Card>

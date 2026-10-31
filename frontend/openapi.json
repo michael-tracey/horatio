@@ -2553,7 +2553,8 @@
               "melee",
               "ranged",
               "protective",
-              "miscellaneous"
+              "miscellaneous",
+              "text"
             ],
             "title": "Kind",
             "type": "string"
@@ -7940,6 +7941,10 @@
           "facts": {
             "$ref": "#/components/schemas/EquipmentFactsOut"
           },
+          "from_sheet": {
+            "title": "From Sheet",
+            "type": "boolean"
+          },
           "given_at": {
             "format": "date-time",
             "title": "Given At",
@@ -8045,13 +8050,27 @@
             "type": "string"
           },
           "troupe_id": {
-            "format": "uuid",
-            "title": "Troupe Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
           },
           "troupe_name": {
-            "title": "Troupe Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
           }
         },
         "required": [
@@ -8079,6 +8098,7 @@
           "troupe_name",
           "given_by_name",
           "given_at",
+          "from_sheet",
           "can_change",
           "discarded",
           "history"
@@ -8136,6 +8156,10 @@
           },
           "facts": {
             "$ref": "#/components/schemas/EquipmentFactsOut"
+          },
+          "from_sheet": {
+            "title": "From Sheet",
+            "type": "boolean"
           },
           "given_at": {
             "format": "date-time",
@@ -8235,13 +8259,27 @@
             "type": "string"
           },
           "troupe_id": {
-            "format": "uuid",
-            "title": "Troupe Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
           },
           "troupe_name": {
-            "title": "Troupe Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
           }
         },
         "required": [
@@ -8269,6 +8307,7 @@
           "troupe_name",
           "given_by_name",
           "given_at",
+          "from_sheet",
           "can_change",
           "discarded"
         ],
@@ -8749,7 +8788,8 @@
               "melee",
               "ranged",
               "protective",
-              "miscellaneous"
+              "miscellaneous",
+              "text"
             ],
             "title": "Kind",
             "type": "string"
@@ -8787,6 +8827,11 @@
             "default": false,
             "title": "Archaic",
             "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
           },
           "facts": {
             "$ref": "#/components/schemas/EquipmentFactsOut"
@@ -9908,7 +9953,8 @@
               "melee",
               "ranged",
               "protective",
-              "miscellaneous"
+              "miscellaneous",
+              "text"
             ],
             "title": "Kind",
             "type": "string"
@@ -46722,7 +46768,8 @@
                     "melee",
                     "ranged",
                     "protective",
-                    "miscellaneous"
+                    "miscellaneous",
+                    "text"
                   ],
                   "type": "string"
                 },

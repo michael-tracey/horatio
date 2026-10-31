@@ -94,6 +94,7 @@ from horatio.models import (
     Troupe,
     User,
 )
+from horatio.rules.equipment import EQUIPPED_KINDS
 from horatio.rules.feeding import clan_family
 from horatio.rules.splats import SPLATS, Panels, Vitae, both
 
@@ -531,9 +532,10 @@ def carried_vitae(db: Session, character: Character, game: PlayGame | None, vita
 
 
 def held_items(db: Session, character: Character) -> tuple[HeldItem, ...]:
-    """The items the character holds, with the hands each takes and the pool
-    modifiers its qualities make, by its home troupe's rules."""
-    items = equipment.items_of(db, character)
+    """The items the character holds that it can equip, with the hands each takes
+    and the pool modifiers its qualities make, by its home troupe's rules. A
+    Vampiric Text is never equipped (#341)."""
+    items = [i for i in equipment.items_of(db, character) if i.kind in EQUIPPED_KINDS]
     if not items:
         return ()
     rules = equipment.equipment_rules(db, character.splat, equipment.home_of(character))

@@ -1,5 +1,6 @@
-# Equipment, written by hand (horatio.rules.equipment, issue #279): the four kinds of
-# item, the grades, every quality of each kind, and the book's sample items.
+# Equipment, written by hand (horatio.rules.equipment, issue #279): the kinds of item,
+# the grades, every quality of each kind, and the book's sample items; and the
+# Vampiric Texts storytellers give (issue #341), a kind of their own, at the end.
 #
 # From MET: Vampire The Masquerade (2013), Chapter Thirteen, "Props, Weapons, and
 # Armor", pp. 515-524, with the Ballistic and Hardened errata in the Vol. II Issue 1
@@ -32,7 +33,9 @@
 #                tab can't tell (against firearms), shown on a line of its own under
 #                the pool rather than in its total.
 # [[templates]]  name, kind, grade (standard if left out), page, qualities (each a
-#                name, or { name, detail }), and archaic for a bow or crossbow.
+#                name, or { name, detail }), and archaic for a bow or crossbow; a
+#                Vampiric Text has no qualities (qualities = []) and a description
+#                instead, in a line of our own words.
 
 # --- kinds -------------------------------------------------------------------------
 
@@ -71,6 +74,14 @@ name = "Miscellaneous gear"
 description = "Gear for challenges outside combat, such as lock-picks, a laptop or a vehicle."
 note = "No use in combat challenges, and the bonuses of only one piece count at a time."
 page = "520"
+
+# Horatio's own, not the book's: a book of Kindred lore a character owns, which
+# was a trait on the sheet before issue #341.
+[[kinds]]
+key = "text"
+name = "Vampiric text"
+description = "A book or scroll of Kindred lore, such as the Book of Nod, given by the storytellers."
+note = "It has no qualities, isn't equipped at a game and changes no test pool."
 
 # --- grades ------------------------------------------------------------------------
 
@@ -796,3 +807,207 @@ name = "SWAT Team Armor"
 kind = "protective"
 qualities = ["Full Body", "Rugged"]
 page = "524"
+
+# --- Vampiric Texts (issue #341) -------------------------------------------------------
+#
+# The catalogue's texts, which were the "Vampiric Texts" trait category until issue
+# #341: storytellers give them as items, by these names or one of their own. The
+# names are the catalogue's (Yorick's), with "Wounds of the Night's Sword" spelt
+# right. MET: VTM names some of them, mostly as the Sabbat's sacred texts (p. 421)
+# and those a Keeper of a Sacred Text can own (p. 453).
+
+[[templates]]
+name = "The Book of Nod"
+kind = "text"
+qualities = []
+description = "The legends of Caine and the first vampires, from Enoch to the fall of the Second City: the Sabbat's most sacred text."
+page = "28, 421 & 453"
+
+[[templates]]
+name = "The Erciyes Fragments"
+kind = "text"
+qualities = []
+description = "An obscure scripture of the Sabbat's canon, and one of the sacred texts a Keeper of a Sacred Text can own."
+page = "421 & 453"
+
+[[templates]]
+name = "Ubar Chronicles"
+kind = "text"
+qualities = []
+description = "An obscure scripture of the Sabbat's canon, and one of the sacred texts a Keeper of a Sacred Text can own."
+page = "421 & 453"
+
+[[templates]]
+name = "Gospels of Irad & Adah"
+kind = "text"
+qualities = []
+description = "An obscure scripture of the Sabbat's canon, and one of the sacred texts a Keeper of a Sacred Text can own."
+page = "421 & 453"
+
+[[templates]]
+name = "The Codex of the Damned"
+kind = "text"
+qualities = []
+description = "An obscure scripture of the Sabbat's canon, and one of the sacred texts a Keeper of a Sacred Text can own."
+page = "421 & 453"
+
+[[templates]]
+name = "Karavalanisha Vrana/Wounds of the Night's Sword"
+kind = "text"
+qualities = []
+description = "A vedic poem, one of the obscure scriptures of the Sabbat's canon."
+page = "421"
+
+[[templates]]
+name = "Revelations of the Dark Mother"
+kind = "text"
+qualities = []
+description = "A heretical text that only the Sabbat's most daring scholars research."
+page = "421"
+
+[[templates]]
+name = "Canticle of Japheth"
+kind = "text"
+qualities = []
+description = "A heretical text, which says that Caine is dead."
+page = "421"
+
+[[templates]]
+name = "Euagetaematikon/Book of Shining Blood"
+kind = "text"
+qualities = []
+description = "The gnostic gospel of the Cainite Heresy, which held that God meant vampires to rule mortals; heretical to the Sabbat."
+page = "30 & 426"
+
+# None of MET: VTM, By Night Studios Vol. 2, its Issue 1 update or the errata names
+# these, so they have no description and no page.
+
+[[templates]]
+name = "\"Outside the Garden\""
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Critias' Codex of Caine"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Das Tiefe Geheimnis/The Dark Secret"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Das Ungeheuer Darin"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Encyclopedia Vampirica"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Ephemeris"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Guarded Rubrics"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Kaymakli Fragment"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Nominis Inferni"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Analects of Mokur"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Analects of Saulot"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Book of Going Forth by Night"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Book of Thoth"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Books of al-Az the Elder"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Chronicle of the Lost Tribe"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Cycle of Lilith"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Diaries of Constantin Addams, Regent of the Sixth Circle"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Eight Disks/The Blasphemous Text"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Forbidden Garden; of Those Things Which Are Not Spoken"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Journal(s) of Rothriel"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The Sacrament of Caine"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The diary of Auston Jacobson"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The journal of Danika Ruthven"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The journal of Zelios"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "The journals of Thomas Bremond"
+kind = "text"
+qualities = []
+
+[[templates]]
+name = "Veneficorum Artum Sanguis"
+kind = "text"
+qualities = []
