@@ -1,23 +1,31 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import type { ReactNode } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Avatar } from "../components/Avatar";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Select } from "../components/ui";
-import { useAction } from "../hooks";
+import { useAction, useMe } from "../hooks";
 import { BuildFor } from "./character/BuildFor";
 import { splatsFor, useSplats } from "./character/splats";
 
 export function CharactersPage() {
   const navigate = useNavigate();
+  const me = useMe();
   const characters = useQuery({ queryKey: ["characters"], queryFn: () => unwrap(api.GET("/api/characters")) });
   const [name, setName] = useState("");
   const [wanted, setSplat] = useState("vampire");
-  const [buildFor, setBuildFor] = useState<string | null>(null);
+  // A troupe's "Play here" card links here with ?troupe=<id>, so the character is built for it.
+  const [params] = useSearchParams();
+  const [chosen, setBuildFor] = useState<string | null>(params.get("troupe"));
   // Only the splats the troupe built for takes; with none, every one.
   const splats = useSplats();
   const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
+  // A link to a troupe that isn't running (or isn't one) falls back to the book's rules.
+  const buildFor = troupes.data && !troupes.data.some((t) => t.id === chosen) ? null : chosen;
   const troupe = troupes.data?.find((t) => t.id === buildFor);
+  // Staff land here too, with no characters of their own; the welcome is for new players.
+  const staff = !!me.data?.is_custodian || !!troupes.data?.some((t) => t.my_role);
   const offered = splatsFor(splats.data ?? [], troupe);
   const splat = offered.some((s) => s.splat === wanted) ? wanted : (offered[0]?.splat ?? wanted);
   const create = useAction(async () => {
@@ -52,8 +60,12 @@ export function CharactersPage() {
                 </li>
               ))}
             </ul>
-          ) : (
+          ) : troupes.isPending || me.isPending ? (
+            <Loading />
+          ) : staff ? (
             <Empty>No characters yet.</Empty>
+          ) : (
+            <Welcome troupe={troupe?.name} />
           )}
           <ErrorText error={characters.error} />
         </Card>
@@ -87,5 +99,50 @@ export function CharactersPage() {
         </Card>
       </div>
     </>
+  );
+}
+
+/** What a new player does first: find their troupe, build a character for it, and ask it to accept them. */
+function Welcome({ troupe }: { troupe?: string }) {
+  return (
+    <section aria-label="Welcome" className="flex flex-col gap-3 py-2">
+      <h2 className="text-lg text-gold">Welcome to Horatio</h2>
+      <p className="text-sm text-mist">Horatio keeps your characters for the troupes you play in. Three steps to your first game:</p>
+      <ol className="flex flex-col gap-3 text-sm">
+        <Step n={1} title={troupe ? `Your troupe: ${troupe}` : "Find your troupe"}>
+          {troupe ? (
+            "Its house rules apply to the character you build."
+          ) : (
+            <>
+              Your storytellers may have sent you its link, or look for it in{" "}
+              <Link to="/troupes" className="text-gold underline">
+                the troupe list
+              </Link>
+              . Its page shows how to play there.
+            </>
+          )}
+        </Step>
+        <Step n={2} title="Build a character for it">
+          Give it a name under New character, choose its troupe, and Horatio walks you through the rest.
+        </Step>
+        <Step n={3} title="Ask the troupe to accept it">
+          Once it is finished, ask to make the troupe its home from the character's Troupes tab. Its storytellers take it from there.
+        </Step>
+      </ol>
+    </section>
+  );
+}
+
+function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gold/60 text-gold">
+        {n}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-parchment">{title}</span>
+        <span className="block text-mist">{children}</span>
+      </span>
+    </li>
   );
 }

@@ -8603,6 +8603,8 @@ export interface components {
         };
         /** CharacterOut */
         CharacterOut: {
+            /** Asking Troupe Id */
+            asking_troupe_id: string | null;
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -13763,6 +13765,8 @@ export interface components {
         };
         /** NpcOut */
         NpcOut: {
+            /** Asking Troupe Id */
+            asking_troupe_id: string | null;
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
