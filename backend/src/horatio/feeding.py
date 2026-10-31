@@ -367,15 +367,12 @@ def write_answer(
     working kept as it stood, or something else in the reply's own words. No
     result takes the answer back."""
     from horatio.downtimes import submission_for
-    from horatio.responses import delivered
 
     if cycle.status == "complete":
         raise conflict("This cycle is complete.")
     submission = submission_for(db, participant)
     if submission is None or submission.status != "submitted":
         raise conflict("Only a submitted downtime's feeding can be answered.")
-    if delivered(db, submission.id):
-        raise conflict("These results have already been delivered.")
     if result is not None and result not in RESULTS:
         raise unprocessable(f"Answer one of {', '.join(RESULTS)}.")
     reply = reply.strip()

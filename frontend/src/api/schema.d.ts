@@ -984,7 +984,8 @@ export interface paths {
         };
         /**
          * My Results
-         * @description Delivered downtime results for the player's character, newest first.
+         * @description Delivered downtime results for the player's character, newest first: for
+         *     each cycle, the latest delivery, which has every response as it was then.
          */
         get: operations["my_results_api_characters__character_id__downtime_results_get"];
         put?: never;
@@ -3006,7 +3007,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Deliver */
+        /**
+         * Deliver
+         * @description Deliver the downtimes with every response written, or with `partial` those
+         *     partly answered too: for the first time, or as an update if changed since.
+         */
         post: operations["deliver_api_cycles__cycle_id__deliver_post"];
         delete?: never;
         options?: never;
@@ -3023,7 +3028,8 @@ export interface paths {
         };
         /**
          * Cycle Deliveries
-         * @description Each submission against each channel: how its delivery went.
+         * @description Each submission against each channel: how ready it is, and how its delivery
+         *     went.
          */
         get: operations["cycle_deliveries_api_cycles__cycle_id__deliveries_get"];
         put?: never;
@@ -9315,6 +9321,14 @@ export interface components {
              */
             reason: string;
         };
+        /** DeliverIn */
+        DeliverIn: {
+            /**
+             * Partial
+             * @default false
+             */
+            partial: boolean;
+        };
         /** Delivered */
         Delivered: {
             /** Delivered */
@@ -9324,6 +9338,11 @@ export interface components {
              * @default 0
              */
             queued: number;
+            /**
+             * Updated
+             * @default 0
+             */
+            updated: number;
         };
         /** DeliveryOut */
         DeliveryOut: {
@@ -13967,6 +13986,10 @@ export interface components {
         };
         /** ParticipantDeliveries */
         ParticipantDeliveries: {
+            /** Answered */
+            answered: number;
+            /** Changed */
+            changed: boolean;
             /**
              * Character Id
              * Format: uuid
@@ -13974,10 +13997,16 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Delivered */
+            delivered: boolean;
             /** Deliveries */
             deliveries: {
                 [key: string]: components["schemas"]["DeliveryOut"];
             };
+            /** Due */
+            due: boolean;
+            /** To Answer */
+            to_answer: number;
         };
         /** ParticipantOut */
         ParticipantOut: {
@@ -16242,6 +16271,11 @@ export interface components {
             delivered_at: string | null;
             /** Message */
             message: string;
+            /**
+             * Updated
+             * @default false
+             */
+            updated: boolean;
         };
         /** RetainerIn */
         RetainerIn: {
@@ -25119,7 +25153,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeliverIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

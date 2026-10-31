@@ -6106,6 +6106,17 @@
         "title": "Decline",
         "type": "object"
       },
+      "DeliverIn": {
+        "properties": {
+          "partial": {
+            "default": false,
+            "title": "Partial",
+            "type": "boolean"
+          }
+        },
+        "title": "DeliverIn",
+        "type": "object"
+      },
       "Delivered": {
         "properties": {
           "delivered": {
@@ -6115,6 +6126,11 @@
           "queued": {
             "default": 0,
             "title": "Queued",
+            "type": "integer"
+          },
+          "updated": {
+            "default": 0,
+            "title": "Updated",
             "type": "integer"
           }
         },
@@ -18217,6 +18233,14 @@
       },
       "ParticipantDeliveries": {
         "properties": {
+          "answered": {
+            "title": "Answered",
+            "type": "integer"
+          },
+          "changed": {
+            "title": "Changed",
+            "type": "boolean"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -18226,17 +18250,34 @@
             "title": "Character Name",
             "type": "string"
           },
+          "delivered": {
+            "title": "Delivered",
+            "type": "boolean"
+          },
           "deliveries": {
             "additionalProperties": {
               "$ref": "#/components/schemas/DeliveryOut"
             },
             "title": "Deliveries",
             "type": "object"
+          },
+          "due": {
+            "title": "Due",
+            "type": "boolean"
+          },
+          "to_answer": {
+            "title": "To Answer",
+            "type": "integer"
           }
         },
         "required": [
           "character_id",
           "character_name",
+          "answered",
+          "to_answer",
+          "delivered",
+          "changed",
+          "due",
           "deliveries"
         ],
         "title": "ParticipantDeliveries",
@@ -24171,6 +24212,11 @@
           "message": {
             "title": "Message",
             "type": "string"
+          },
+          "updated": {
+            "default": false,
+            "title": "Updated",
+            "type": "boolean"
           }
         },
         "required": [
@@ -35284,7 +35330,7 @@
     },
     "/api/characters/{character_id}/downtime/results": {
       "get": {
-        "description": "Delivered downtime results for the player's character, newest first.",
+        "description": "Delivered downtime results for the player's character, newest first: for\neach cycle, the latest delivery, which has every response as it was then.",
         "operationId": "my_results_api_characters__character_id__downtime_results_get",
         "parameters": [
           {
@@ -41500,6 +41546,7 @@
     },
     "/api/cycles/{cycle_id}/deliver": {
       "post": {
+        "description": "Deliver the downtimes with every response written, or with `partial` those\npartly answered too: for the first time, or as an update if changed since.",
         "operationId": "deliver_api_cycles__cycle_id__deliver_post",
         "parameters": [
           {
@@ -41513,6 +41560,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DeliverIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -41543,7 +41607,7 @@
     },
     "/api/cycles/{cycle_id}/deliveries": {
       "get": {
-        "description": "Each submission against each channel: how its delivery went.",
+        "description": "Each submission against each channel: how ready it is, and how its delivery\nwent.",
         "operationId": "cycle_deliveries_api_cycles__cycle_id__deliveries_get",
         "parameters": [
           {
