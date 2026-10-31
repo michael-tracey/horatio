@@ -553,6 +553,33 @@ test("each step keeps its picks as they are made, through the step list and a re
   await expect(p.getByRole("link", { name: "Continue creating" })).toHaveCount(0);
 });
 
+test("on a phone the rating dots are big enough to tap, and a locked step says why in words (#361)", async ({ browser }) => {
+  const { page: p } = await person(browser, "big-dots");
+  // No Generation yet: the steps after Backgrounds are locked.
+  const id = await creatingVampire(p, "Thumb Taps", "Brujah", []);
+  await p.goto(`/characters/${id}/create/skills`);
+  await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible();
+
+  // At least 40px on a touch screen; the desktop keeps its compact rows.
+  const dot = (await p.getByRole("button", { name: "Brawl 1", exact: true }).boundingBox())!;
+  if (test.info().project.name === "phone") {
+    expect(dot.width).toBeGreaterThanOrEqual(40);
+    expect(dot.height).toBeGreaterThanOrEqual(40);
+  } else expect(dot.height).toBeLessThan(40);
+  // Clear stands apart from the last dot.
+  await tapMid(p, "Brawl 4");
+  const last = (await p.getByRole("button", { name: "Brawl 4", exact: true }).boundingBox())!;
+  const clear = (await p.getByRole("button", { name: "Clear Brawl" }).boundingBox())!;
+  expect(clear.x - (last.x + last.width)).toBeGreaterThanOrEqual(test.info().project.name === "phone" ? 12 : 4);
+
+  // The reason a step is locked is on the screen, not in a hover title, and read with the step.
+  const steps = p.getByRole("navigation", { name: "Creation steps" });
+  const why = /^Finish Backgrounds to open the steps after it: A vampire needs at least 1 dot of Generation/;
+  await expect(steps.getByText(why)).toBeVisible();
+  await expect(steps.getByText(/Disciplines/)).toHaveAccessibleDescription(why);
+  await p.screenshot(shots("creation-locked-why"));
+});
+
 test("Crafts, Performance and Science take a field in the wizard, kept through Back and a reload", async ({ browser }) => {
   const { page: p } = await person(browser, "fielder");
   await p.getByLabel("Name").fill("Lark");

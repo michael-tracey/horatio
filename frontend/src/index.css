@@ -5,6 +5,10 @@
   --color-night: #141016;
   --color-dusk: #1e1922;
   --color-ash: #2c2531;
+  /* Lines that must be seen: empty boxes, the edges of small buttons, what is
+     greyed out. At least 3:1 on night (3.69) and dusk (3.38); ash is for
+     dividers and fills, at about 1.2:1. */
+  --color-line: #756a7d;
   --color-mist: #9b8fa3;
   --color-parchment: #ede4d3;
   --color-blood: #a3253a;
@@ -12,6 +16,18 @@
   --color-gold: #c9a24a;
   --font-display: "Cinzel", "Georgia", serif;
   --font-sans: "Inter", system-ui, sans-serif;
+}
+
+/* A round tap button greyed out (+ at the most): no fill and a faint edge, so it
+   can't pass for an empty box, but its sign still seen at 3:1 in line. */
+@utility tap-off {
+  &:disabled,
+  &:disabled:hover {
+    cursor: not-allowed;
+    border-color: var(--color-ash);
+    background-color: transparent;
+    color: var(--color-line);
+  }
 }
 
 @layer base {

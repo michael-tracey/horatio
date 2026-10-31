@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import type { CharacterOut } from "../../api/types";
 import { HouseMark } from "../../components/HouseMark";
+import { StepButton } from "../../components/StepButton";
 import { Badge, Button, Card, ErrorText, Notice } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AskStaff } from "./AskStaff";
@@ -168,16 +169,15 @@ export function CartPanel({
                       <span className="flex shrink-0 items-center gap-2">
                         {exception && <Badge tone="gold">exception</Badge>}
                         {priced?.needs_approval && <Badge tone="gold">needs approval</Badge>}
-                        <button
-                          aria-label={`Take ${describe(line)} out of the cart`}
-                          className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment"
+                        <StepButton
+                          label={`Take ${describe(line)} out of the cart`}
                           onClick={() => {
                             setMessage(null);
                             cart.remove(line);
                           }}
                         >
                           ×
-                        </button>
+                        </StepButton>
                       </span>
                     </span>
                     {priced?.refused && <span className="text-xs text-blood-bright">{priced.refused}</span>}

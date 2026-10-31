@@ -128,6 +128,14 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
   // The first step that still needs something (a vampire's Generation): no going past it.
   const needs = creation.data.needs;
   const stuck = steps.findIndex((s) => needs.some((n) => s.categories.includes(n.step)));
+  // Said in words under the list, as a hover title never shows on a phone.
+  const lockedWhy =
+    stuck !== -1 && stuck < steps.length - 1
+      ? `Finish ${steps[stuck]!.title} to open the steps after it: ${needs
+          .filter((n) => steps[stuck]!.categories.includes(n.step))
+          .map((n) => n.message)
+          .join(" ")}`
+      : null;
   const go = (i: number) => navigate(`/characters/${character.id}/create/${steps[i]!.key}`);
 
   return (
@@ -141,9 +149,11 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
               {stuck !== -1 && i > stuck ? (
                 <span
                   aria-disabled="true"
+                  aria-describedby="locked-why"
                   title={`Finish ${steps[stuck]!.title} first`}
-                  className="block cursor-not-allowed rounded px-3 py-1.5 text-sm whitespace-nowrap text-ash"
+                  className="flex cursor-not-allowed items-center gap-1 rounded px-3 py-1.5 text-sm whitespace-nowrap text-line"
                 >
+                  <Lock />
                   {i + 1}. {s.title}
                 </span>
               ) : (
@@ -166,6 +176,12 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
             </li>
           ))}
         </ol>
+        {lockedWhy && (
+          <p id="locked-why" className="mt-2 flex gap-1.5 px-3 text-xs text-mist">
+            <Lock />
+            <span>{lockedWhy}</span>
+          </p>
+        )}
       </nav>
       <StepView
         key={steps[index]!.key}
@@ -181,6 +197,16 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
         ghoul={ghoul}
       />
     </div>
+  );
+}
+
+/** A small padlock, for a step not open yet. */
+function Lock() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="3" y="7" width="10" height="7" rx="1.5" />
+      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+    </svg>
   );
 }
 
