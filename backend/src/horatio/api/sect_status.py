@@ -30,6 +30,9 @@ class StatusAbout(BaseModel):
     punishment: str
     duration: str
     page: str | None
+    # No book describes it yet (the Independent Alliance's): staff use the troupe's
+    # own words.
+    no_rules_yet: bool = False
 
 
 class DerivedOut(BaseModel):
@@ -207,6 +210,7 @@ def about(status: sect_status.StatusData) -> StatusAbout:
         punishment=status.punishment,
         duration=status.duration.text if status.duration else "",
         page=status.page,
+        no_rules_yet=status.no_rules_yet,
     )
 
 

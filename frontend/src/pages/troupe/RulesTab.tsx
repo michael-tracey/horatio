@@ -12,6 +12,7 @@ import { HouseTraitsSection } from "./HouseTraitsSection";
 import { LocationRulesSection } from "./LocationRulesSection";
 import { QuestSettings } from "./QuestSettings";
 import { StartingSection } from "./StartingSection";
+import { StatusRulesSection } from "./StatusRulesSection";
 
 type Strength = "refuse" | "complete" | "review" | "note" | "off";
 
@@ -68,7 +69,8 @@ const ABOUT: Record<string, string> = {
 /**
  * The troupe's house rules, part by part: how it plays the rule set's checks,
  * what traits cost here, what new characters start with, how many downtime
- * actions characters get, and the troupe's own merits and flaws.
+ * actions characters get, and the troupe's own merits and flaws; and the status
+ * of each sect it takes, with where each comes from here.
  */
 export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const base = `/troupes/${troupeId}/rules`;
@@ -82,6 +84,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/starting`, label: "Starting points" },
           { to: `${base}/actions`, label: "Downtime actions" },
           { to: `${base}/house-traits`, label: "House merits and flaws" },
+          { to: `${base}/status`, label: "Status" },
           { to: `${base}/locations`, label: "Locations" },
           { to: `${base}/quests`, label: "Quests" },
         ]}
@@ -92,6 +95,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="actions" element={<AllowancesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="house-traits" element={<HouseTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="status" element={<StatusRulesSection troupeId={troupeId} />} />
         <Route path="locations" element={<LocationRulesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="quests" element={<QuestSettings troupeId={troupeId} canEdit={canEdit} />} />
       </Routes>

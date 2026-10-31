@@ -211,6 +211,53 @@ def test_a_paladin_is_a_templar_and_a_lesser_harpy_stands_in(troupe: Troupe) -> 
     ]
 
 
+def test_each_title_says_what_it_gives_or_why_not(troupe: Troupe) -> None:
+    """The picker gives each title's status; or why it gives none, with its page; or
+    that it has no rules yet; or its clan; and the title another name is for (#340)."""
+    vasquez = member(troupe, "Lady Vasquez")
+    choices = {c["name"]: c for c in titles_of(troupe.player, vasquez)["choices"]}
+
+    harpy, master = choices["Harpy"], choices["Master Harpy"]
+    assert (harpy["alias_of"], master["alias_of"]) == (None, "Harpy")
+    assert master["status"] == harpy["status"] == ["Prominent", "Noble", "Guardian"]
+    josian = choices["Josian Archon"]
+    assert (josian["status"], josian["page"]) == ([], "373")
+    assert josian["gives_none"].startswith("The book describes the Josians")
+    lord = choices["Lord"]
+    assert (lord["sect"], lord["clan"], lord["status"]) == (None, "Tremere", [])
+    assert choices["Myrmidon"]["note"].startswith("Sanctioned in place of")
+    assert choices["Soldier"]["clan"] is None  # a name only
+    assert not any(c["no_rules_yet"] for c in choices.values())
+
+    entitle(troupe, vasquez, "Master Harpy")
+    [held] = titles_of(troupe.player, vasquez)["held"]
+    assert (held["name"], held["alias_of"], held["status"]) == (
+        "Master Harpy",
+        "Harpy",
+        ["Prominent", "Noble", "Guardian"],
+    )
+
+    rook = member(troupe, "Rook", sect="Sabbat", clan="Lasombra")
+    abbot = {c["name"]: c for c in titles_of(troupe.player, rook)["choices"]}["Abbot"]
+    assert (abbot["gives_none"], abbot["page"]) == (
+        "An Abbot gains no abiding status for the office.",
+        "421",
+    )
+
+    ilse = member(troupe, "Ilse", sect="Independent Alliance", clan="Giovanni")
+    alliance = {c["name"]: c for c in titles_of(troupe.player, ilse)["choices"]}
+    actuary = alliance["Actuary"]
+    assert (actuary["no_rules_yet"], actuary["status"], actuary["page"]) == (True, [], None)
+    assert {n for n, c in alliance.items() if c["no_rules_yet"]} == {
+        "Actuary",
+        "Emissary",
+        "Executioner",
+        "Malak",
+        "Trustee",
+    }
+    assert alliance["Capo"]["clan"] == "Giovanni"
+
+
 def test_a_troupes_own_title_can_be_unique(troupe: Troupe) -> None:
     made = troupe.assistant.client.post(
         f"/troupes/{troupe.id}/titles",
