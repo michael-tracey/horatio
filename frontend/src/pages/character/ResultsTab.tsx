@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
-import { Card, Empty, ErrorText, Loading, RichText } from "../../components/ui";
+import { Badge, Card, Empty, ErrorText, Loading, RichText } from "../../components/ui";
 
 export function ResultsTab({ characterId }: { characterId: string }) {
   const results = useQuery({
@@ -14,7 +14,7 @@ export function ResultsTab({ characterId }: { characterId: string }) {
   return (
     <div className="flex flex-col gap-4">
       {results.data.map((r) => (
-        <Card key={r.cycle_id} title={r.cycle_name}>
+        <Card key={r.cycle_id} title={r.cycle_name} actions={r.updated && <Badge tone="gold">updated</Badge>}>
           <RichText text={r.message} />
         </Card>
       ))}

@@ -78,6 +78,7 @@ export type CheckOut = Schemas["CheckOut"];
 export type ConnectorOut = Schemas["ConnectorOut"];
 export type DeliveryStatus = Schemas["DeliveryStatus"];
 export type DeliveryOut = Schemas["DeliveryOut"];
+export type ParticipantDeliveries = Schemas["ParticipantDeliveries"];
 export type CostOut = Schemas["CostOut"];
 export type CostsOut = Schemas["CostsOut"];
 export type CostCategoryOut = Schemas["CostCategoryOut"];

@@ -283,8 +283,10 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   await expect(b.getByText("Scenario 1: passed")).toHaveCount(0);
 
   // The delivery sends it, and the quest moves on to scenario 2, still for downtime only.
-  await l.goto(`/cycles/${cycle.id}`);
-  await l.getByRole("button", { name: "Deliver results" }).click();
+  // Their feeding is still to answer, so both are partly written; the lead sends them anyway.
+  await l.goto(`/cycles/${cycle.id}/delivery`);
+  await l.getByLabel("Also deliver the 2 partly written, with what's written so far").check();
+  await l.getByRole("button", { name: "Deliver 2 downtimes" }).click();
   await expect(l.getByText("Delivered 2 downtimes.", { exact: false })).toBeVisible();
   await b.reload();
   await expect(b.getByText("Scenario 1: passed")).toBeVisible();

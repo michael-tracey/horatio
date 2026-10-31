@@ -8,6 +8,7 @@ import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { closeFacts, completeFacts } from "./delivery";
 import { DeliveryTab } from "./DeliveryTab";
 import { FeedingTab } from "./FeedingTab";
 import { LogInfluenceButton } from "./LogInfluence";
@@ -41,7 +42,7 @@ export function CyclePage() {
           { to: `${base}/participants`, label: "Participants" },
           { to: `${base}/feeding`, label: "Feeding" },
           { to: `${base}/responses`, label: "Responses" },
-          ...(c.status === "closed" || c.status === "complete" ? [{ to: `${base}/delivery`, label: "Delivery" }] : []),
+          { to: `${base}/delivery`, label: "Delivery" },
         ]}
       />
       <Routes>
@@ -50,7 +51,7 @@ export function CyclePage() {
         <Route path="participants" element={<Participants cycle={c} />} />
         <Route path="feeding" element={<FeedingTab cycle={c} />} />
         <Route path="responses" element={<Responses cycle={c} />} />
-        <Route path="delivery" element={<DeliveryTab cycleId={c.id} troupeId={c.troupe_id} />} />
+        <Route path="delivery" element={<DeliveryTab cycle={c} />} />
       </Routes>
     </>
   );
@@ -63,14 +64,36 @@ function Overview({ cycle }: { cycle: CycleOut }) {
     queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}/progress", path)),
     enabled: cycle.status !== "draft",
   });
-  const [delivered, setDelivered] = useState<{ delivered: number; queued: number } | null>(null);
+  // What is still to deliver, to say before marking the cycle complete.
+  const deliveries = useQuery({
+    queryKey: ["deliveries", cycle.id],
+    queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}/deliveries", path)),
+    enabled: cycle.status === "closed",
+  });
+  const [confirming, setConfirming] = useState<"close" | "complete" | null>(null);
   const open = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/open", path)));
   const [toCeiling, setToCeiling] = useState(true);
   const close = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/close", { ...path, body: { add_to_ceiling: toCeiling } })));
-  const deliver = useAction(async () => setDelivered(await unwrap(api.POST("/api/cycles/{cycle_id}/deliver", path))));
   const complete = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/complete", path)));
   const dates = useDates();
   const p = progress.data;
+  const now = new Date();
+  const facts =
+    confirming === "close" && p
+      ? closeFacts({
+          participants: p.participants,
+          submitted: p.submitted,
+          due: dates.deadline(cycle.closes_at),
+          lateUntil: new Date(cycle.grace_ends_at) > now ? dates.deadline(cycle.grace_ends_at) : null,
+          isPast: new Date(cycle.closes_at) <= now,
+        })
+      : confirming === "complete" && p && deliveries.data
+        ? completeFacts({
+            unwritten: p.responses - p.written,
+            responses: p.responses,
+            undelivered: deliveries.data.participants.filter((d) => d.due).length,
+          })
+        : null;
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -85,51 +108,60 @@ function Overview({ cycle }: { cycle: CycleOut }) {
             <CompletionXp cycle={cycle} />
           </dd>
         </dl>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {cycle.status === "draft" && (
-            <Button onClick={() => open.mutate(undefined)}>Open for submissions</Button>
-          )}
-          {cycle.status === "open" && (
-            <>
-              <Button variant="secondary" onClick={() => close.mutate(undefined)}>
-                Close submissions
+        {facts ? (
+          <section aria-label={confirming === "close" ? "Close submissions?" : "Mark complete?"} className="mt-4 rounded-md border border-gold/60 p-3">
+            <p className="font-medium">{confirming === "close" ? "Close submissions?" : "Mark complete?"}</p>
+            <ul className="mt-1 text-sm">
+              {facts.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                disabled={close.isPending || complete.isPending}
+                onClick={() => (confirming === "close" ? close : complete).mutate(undefined, { onSuccess: () => setConfirming(null) })}
+              >
+                {confirming === "close" ? "Yes, close submissions" : "Yes, mark complete"}
               </Button>
-              {cycle.completion_xp > 0 && (
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={toCeiling} onChange={(e) => setToCeiling(e.target.checked)} />
-                  Also add {cycle.completion_xp} XP to the troupe's ceiling
-                </label>
-              )}
-            </>
-          )}
-          {cycle.status === "closed" && (
-            <>
-              <Button onClick={() => deliver.mutate(undefined)}>Deliver results</Button>
-              <Button variant="secondary" onClick={() => complete.mutate(undefined)}>
-                Mark complete
+              <Button variant="ghost" onClick={() => setConfirming(null)}>
+                Cancel
               </Button>
-            </>
-          )}
-        </div>
+            </div>
+          </section>
+        ) : (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {cycle.status === "draft" && (
+              <Button onClick={() => open.mutate(undefined)}>Open for submissions</Button>
+            )}
+            {cycle.status === "open" && (
+              <>
+                <Button variant="secondary" disabled={!p} onClick={() => setConfirming("close")}>
+                  Close submissions
+                </Button>
+                {cycle.completion_xp > 0 && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={toCeiling} onChange={(e) => setToCeiling(e.target.checked)} />
+                    Also add {cycle.completion_xp} XP to the troupe's ceiling
+                  </label>
+                )}
+              </>
+            )}
+            {cycle.status === "closed" && (
+              <>
+                <Link to="delivery" className="inline-flex min-h-10 items-center justify-center rounded-md bg-blood px-4 text-sm font-medium text-parchment hover:bg-blood-bright">
+                  Deliver results
+                </Link>
+                <Button variant="secondary" disabled={!p || !deliveries.data} onClick={() => setConfirming("complete")}>
+                  Mark complete
+                </Button>
+              </>
+            )}
+          </div>
+        )}
         {cycle.status === "draft" && (
           <p className="mt-3 text-xs text-mist">Opening fixes who takes part and how many actions each character has.</p>
         )}
-        {delivered !== null && (
-          <Notice>
-            Delivered {delivered.delivered} downtime{delivered.delivered === 1 ? "" : "s"}.
-            {delivered.queued > 0 && (
-              <>
-                {" "}
-                {delivered.queued} {delivered.queued === 1 ? "copy is" : "copies are"} on the way through the troupe's connectors;{" "}
-                <Link to="delivery" className="underline">
-                  see Delivery
-                </Link>
-                .
-              </>
-            )}
-          </Notice>
-        )}
-        <ErrorText error={open.error ?? close.error ?? deliver.error ?? complete.error} />
+        <ErrorText error={open.error ?? close.error ?? complete.error} />
       </Card>
       {p && (
         <Card title="Progress">

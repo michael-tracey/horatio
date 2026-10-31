@@ -84,7 +84,10 @@ def connect(scene: Scene, **change: Any) -> Any:
 
 
 def deliver(scene: Scene) -> dict[str, int]:
-    response = scene.troupe.assistant.client.post(f"/cycles/{scene.cycle['id']}/deliver")
+    """Deliver, the one written response of four included."""
+    response = scene.troupe.assistant.client.post(
+        f"/cycles/{scene.cycle['id']}/deliver", json={"partial": True}
+    )
     assert response.status_code == 200, response.text
     return response.json()
 
@@ -105,7 +108,7 @@ def send_due(session: Session, at: datetime = START) -> int:
 
 
 def test_with_no_connectors_results_stay_in_horatio(scene: Scene, session: Session) -> None:
-    assert deliver(scene) == {"delivered": 1, "queued": 0}
+    assert deliver(scene) == {"delivered": 1, "updated": 0, "queued": 0}
 
     assert status(scene)["channels"] == ["horatio"]
     assert agnes_on(scene, "horatio")["status"] == "sent"
@@ -145,7 +148,7 @@ def test_delivering_queues_a_copy_that_the_worker_sends_once(
 ) -> None:
     connect(scene, mode="full")
 
-    assert deliver(scene) == {"delivered": 1, "queued": 1}
+    assert deliver(scene) == {"delivered": 1, "updated": 0, "queued": 1}
     assert agnes_on(scene, "discord")["status"] == "pending"
     assert send_due(session) == 1
 
@@ -156,9 +159,55 @@ def test_delivering_queues_a_copy_that_the_worker_sends_once(
     assert message.link.endswith(f"/characters/{scene.agnes}/results")
     assert agnes_on(scene, "discord")["status"] == "sent"
     # Delivering again, or the worker running again, sends nothing more.
-    assert deliver(scene) == {"delivered": 0, "queued": 0}
+    assert deliver(scene) == {"delivered": 0, "updated": 0, "queued": 0}
     assert send_due(session) == 0
     assert len(fake.sent) == 1
+
+
+def test_a_response_written_after_delivery_goes_out_as_an_update(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    connect(scene, mode="full")
+    deliver(scene)
+    send_due(session)
+    park = scene.response_for("Patrol the park")["id"]
+    scene.troupe.assistant.client.put(f"/responses/{park}", json={"body": "All quiet."})
+
+    assert deliver(scene) == {"delivered": 1, "updated": 1, "queued": 1}
+    assert send_due(session) == 1
+
+    [_, (target, message)] = fake.sent
+    assert target == "#agnes"
+    assert message.text.startswith("**Updated downtime results for Agnes (October 2026)**")
+    assert "*Result:* You feed well." in message.text
+    assert "*Result:* All quiet." in message.text
+    assert (
+        message.subject == "Lords of the Night: updated downtime results for Agnes (October 2026)"
+    )
+    assert agnes_on(scene, "discord")["status"] == "sent"
+
+
+def test_an_update_waiting_to_go_replaces_the_one_before(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    connect(scene, mode="alert")
+    deliver(scene)
+    park = scene.response_for("Patrol the park")["id"]
+    scene.troupe.assistant.client.put(f"/responses/{park}", json={"body": "All quiet."})
+
+    # The first copy has not gone yet, so only the results as they now stand go.
+    assert deliver(scene) == {"delivered": 1, "updated": 1, "queued": 0}
+    assert send_due(session) == 1
+    [(_, message)] = fake.sent
+    assert message.text.startswith("Your downtime results for Agnes (October 2026) are ready: ")
+    # Once that is sent, a later change goes as an update.
+    nominations = scene.response_for("Vera, for courtesy")["id"]
+    scene.troupe.assistant.client.put(f"/responses/{nominations}", json={"body": "Noted."})
+    deliver(scene)
+    send_due(session)
+    assert fake.sent[-1][1].text.startswith(
+        "Your downtime results for Agnes (October 2026) have been updated: "
+    )
 
 
 def test_an_alert_says_the_results_are_ready(
@@ -280,7 +329,7 @@ def test_test_mode_sends_to_the_test_target_only(
     assert agnes_on(scene, "discord")["test_mode"] is True
     # Out of test mode, delivering again sends it for real.
     connect(scene, test_mode=False)
-    assert deliver(scene) == {"delivered": 0, "queued": 1}
+    assert deliver(scene) == {"delivered": 0, "updated": 0, "queued": 1}
     send_due(session)
     assert [target for target, _ in fake.sent] == ["#st-test", "#agnes"]
     rows = session.scalars(select(Delivery).where(Delivery.channel == "discord")).all()

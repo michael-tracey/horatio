@@ -224,6 +224,12 @@ def test_progress(scene: Scene) -> None:
     assert progress["by_action_kind"]["general"] == {"written": 1, "total": 2}
 
 
+def deliveries(scene: Scene) -> list[dict[str, Any]]:
+    response = scene.troupe.assistant.client.get(f"/cycles/{scene.cycle['id']}/deliveries")
+    assert response.status_code == 200, response.text
+    return response.json()["participants"]
+
+
 def test_delivering_results_to_the_player(scene: Scene) -> None:
     troupe = scene.troupe
     cycle_id = scene.cycle["id"]
@@ -233,27 +239,77 @@ def test_delivering_results_to_the_player(scene: Scene) -> None:
     assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").status_code == 409
     troupe.assistant.client.post(f"/cycles/{cycle_id}/close")
     assert troupe.narrator.client.post(f"/cycles/{cycle_id}/deliver").status_code == 403
+    # 1 of 4 written: not finished, so delivering sends nothing unless asked to.
+    [agnes] = deliveries(scene)
+    assert (agnes["answered"], agnes["to_answer"], agnes["due"]) == (1, 4, True)
     assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").json() == {
-        "delivered": 1,
+        "delivered": 0,
+        "updated": 0,
         "queued": 0,
     }
+    partly = troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver", json={"partial": True})
+    assert partly.json() == {"delivered": 1, "updated": 0, "queued": 0}
 
     results = troupe.player.client.get(f"/characters/{scene.agnes}/downtime/results").json()
     assert len(results) == 1
+    assert results[0]["updated"] is False
     assert results[0]["message"] == (
         "**Downtime results for Agnes (October 2026)**\n\n"
         "**Downtime action**\n*Your action:* Feed at the docks\n*Result:* You feed well."
     )
-    # Never twice, and nothing changes after delivery.
+    # Never twice while nothing changes.
+    [agnes] = deliveries(scene)
+    assert (agnes["delivered"], agnes["changed"], agnes["due"]) == (True, False, False)
+    assert troupe.assistant.client.post(
+        f"/cycles/{cycle_id}/deliver", json={"partial": True}
+    ).json() == {"delivered": 0, "updated": 0, "queued": 0}
+    assert troupe.assistant.client.post(f"/cycles/{cycle_id}/complete").status_code == 200
+
+
+def test_a_response_written_after_delivery_reaches_the_player(scene: Scene) -> None:
+    troupe = scene.troupe
+    cycle_id = scene.cycle["id"]
+    for answer in ("Feed at the docks", "Patrol the park", "Lean on the mayor"):
+        response = scene.response_for(answer)["id"]
+        troupe.assistant.client.put(f"/responses/{response}", json={"body": f"Done: {answer}."})
+    troupe.assistant.client.post(f"/cycles/{cycle_id}/close")
+    troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver", json={"partial": True})
+
+    # The last response is written after delivery, and the downtime shows as changed.
+    nominations = scene.response_for("Vera, for courtesy")["id"]
+    written = troupe.assistant.client.put(f"/responses/{nominations}", json={"body": "Noted."})
+    assert written.status_code == 200, written.text
+    [agnes] = deliveries(scene)
+    assert (agnes["answered"], agnes["to_answer"]) == (4, 4)
+    assert (agnes["delivered"], agnes["changed"], agnes["due"]) == (True, True, True)
+
+    # Finished now, it goes by default, as an update.
     assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").json() == {
-        "delivered": 0,
+        "delivered": 1,
+        "updated": 1,
         "queued": 0,
     }
+    [result] = troupe.player.client.get(f"/characters/{scene.agnes}/downtime/results").json()
+    assert result["updated"] is True
+    assert result["message"].endswith("*Your action:* Vera, for courtesy\n*Result:* Noted.")
+    assert "*Result:* Done: Feed at the docks." in result["message"]
+    notes = troupe.player.client.get("/notifications").json()
+    summaries = [n["summary"] for n in notes["items"]]
+    assert "Downtime results for Agnes (October 2026) have been updated." in summaries
+    assert "Downtime results for Agnes (October 2026) are ready." in summaries
+    [agnes] = deliveries(scene)
+    assert (agnes["changed"], agnes["due"]) == (False, False)
+
+    # A changed response is an update too; once the cycle is complete, nothing changes.
+    feed = scene.response_for("Feed at the docks")["id"]
+    troupe.assistant.client.put(f"/responses/{feed}", json={"body": "You feed very well."})
+    assert deliveries(scene)[0]["changed"] is True
+    assert troupe.assistant.client.post(f"/cycles/{cycle_id}/deliver").json()["updated"] == 1
+    assert troupe.assistant.client.post(f"/cycles/{cycle_id}/complete").status_code == 200
     assert (
         troupe.assistant.client.put(f"/responses/{feed}", json={"body": "Changed"}).status_code
         == 409
     )
-    assert troupe.assistant.client.post(f"/cycles/{cycle_id}/complete").status_code == 200
 
 
 def test_fill_tables(scene: Scene) -> None:
