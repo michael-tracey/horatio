@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
 
 /** A character's page and sheet, and what a player asks staff for from it. */
 
@@ -140,6 +140,63 @@ test("the sheet says what a trait does, under its name, and what a heading is, i
   await expect(p.getByText("In-clan disciplines: Celerity, Potence, Presence.")).toHaveCount(0);
 });
 
+test("the sheet shows XP first on a phone, lists a discipline's powers, counts health and says the merit limit plainly (#362)", async ({ browser }) => {
+  const { page: p } = await person(browser, "power-lister");
+  const id = await builtVampire(p, "Perpetua", "Toreador", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await expect(part("Experience")).toBeVisible();
+
+  // On a phone, the XP to spend is on the first screen, above every trait; the
+  // Experience card itself is beside the sheet on a wide screen.
+  const xp = p.getByRole("button", { name: /^\d+ XP to spend$/ });
+  if (test.info().project.name === "phone") {
+    await expect(xp).toBeInViewport();
+    await xp.click();
+    await expect(part("Experience").getByText("Available", { exact: true })).toBeInViewport();
+  } else {
+    await expect(xp).toBeHidden();
+    await expect(part("Experience").getByText("Available", { exact: true })).toBeInViewport();
+  }
+  await p.screenshot(shots("sheet-xp-first"));
+
+  // Opening Auspex lists the powers its two dots give, as the Play View does.
+  const disciplines = part("Disciplines");
+  await disciplines.getByRole("button", { name: "Auspex", exact: true }).click();
+  await expect(disciplines.getByText("Heightened Senses")).toBeVisible();
+  await expect(disciplines.getByText("Aura Perception")).toBeVisible();
+  await expect(disciplines.getByText("Spirit's Touch")).toHaveCount(0);
+  await p.screenshot(shots("sheet-powers"));
+
+  // Health is a count of each level, not boxes to tick: damage is tracked on Play.
+  const health = part("Health Levels");
+  await expect(health.getByRole("img", { name: "Healthy: 3 boxes" })).toContainText("3");
+  await expect(health.getByRole("checkbox")).toHaveCount(0);
+  await expect(health.getByRole("link", { name: "Track damage in the Play View →" })).toHaveAttribute("href", `/play/characters/${id}`);
+
+  // The Experience card says what each limit counts, and the rule in an ⓘ.
+  const limits = part("Experience").getByRole("list", { name: "Limits" });
+  await expect(limits.getByText("Merits: 0 of 7 points used", { exact: true })).toBeVisible();
+  await expect(limits.getByText("Flaws: 0 of 7 XP paid out", { exact: true })).toBeVisible();
+  await part("Experience").getByRole("button", { name: "About these limits" }).click();
+  await expect(p.getByText("A character holds at most 7 points of merits.")).toBeVisible();
+
+  // The Add panel prices a trait as soon as it is chosen, and again when its rating changes.
+  await part("Skills").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Skills").fill("Computer");
+  await p.getByRole("button", { name: /^Computer/ }).click();
+  await expect(p.getByText(/^Costs \d+ XP\.$/)).toBeVisible();
+  const one = await p.getByText(/^Costs \d+ XP\.$/).textContent();
+  await p.getByLabel("Rating").fill("2");
+  await expect(p.getByText(/^Costs \d+ XP\.$/)).not.toHaveText(one!);
+  await expect(p.getByRole("button", { name: "Price it" })).toHaveCount(0);
+  await p.screenshot(shots("sheet-add-priced"));
+});
+
 test("a player renames their character once in three months, and the custodian any time", async ({ browser }) => {
   const custodian = await person(browser, "rename-custodian");
   makeCustodian(custodian.email);
@@ -171,7 +228,7 @@ test("a player renames their character once in three months, and the custodian a
   await rename(p, "Agnes Bisset", "Agnes Moreau");
 
   // In a troupe, once every three months, and the troupe's storytellers are told.
-  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await characterTab(p, "Troupes");
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit", exact: true }).click();
   await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
@@ -205,7 +262,7 @@ test("a player renames their character once in three months, and the custodian a
   await p.keyboard.press("Escape");
 
   // The character's history keeps the old names.
-  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(p, "Log");
   await expect(p.getByText("rename-custodian renamed Agnes Duval to Agnes Lemaire (rename-player).")).toBeVisible();
   await expect(p.getByText("rename-player renamed Agnes Moreau to Agnes Duval.")).toBeVisible();
   await p.screenshot(shots("rename-log"));
@@ -615,6 +672,43 @@ test("a skill's specialisations sit in its own list item, in the sheet's two col
     await expect(academics).toHaveCSS("break-inside", "avoid");
   }
   await p.screenshot(shots("specializations-stay-together"));
+});
+
+test("on a phone the − and + are big enough to tap, apart, and a greyed − says why when tapped (#361)", async ({ browser }) => {
+  const { page: p } = await person(browser, "thumb-steps");
+  const id = await builtVampire(p, "Ysolde", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Generation", 1], ["Herd", 2], ["Fame", 3]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}`);
+  const lower = p.getByRole("button", { name: "Lower Brawl" });
+  const raise = p.getByRole("button", { name: "Raise Brawl" });
+  await expect(raise).toBeVisible();
+
+  // At least 40px on a touch screen, with room between them; the desktop keeps its compact rows.
+  const minus = (await lower.boundingBox())!;
+  const plus = (await raise.boundingBox())!;
+  if (test.info().project.name === "phone") {
+    for (const box of [minus, plus]) {
+      expect(box.width).toBeGreaterThanOrEqual(40);
+      expect(box.height).toBeGreaterThanOrEqual(40);
+    }
+    expect(plus.x - (minus.x + minus.width)).toBeGreaterThanOrEqual(12);
+  } else expect(minus.height).toBeLessThan(40);
+
+  // Brawl 4 is all from creation, so − is greyed. Its reason is no hover title: a tap shows it, and nothing goes in the cart.
+  const why = "These dots were free, not bought with XP; only storytellers can take them away.";
+  await expect(lower).toBeDisabled();
+  await expect(lower).toHaveAccessibleDescription(why);
+  const reason = p.locator(`[id="${await lower.getAttribute("aria-describedby")}"]`);
+  await expect(reason).toBeHidden();
+  // Forced: Playwright won't click what is greyed, but a thumb can.
+  await lower.click({ force: true });
+  await expect(reason).toHaveText(why);
+  await expect(reason).toBeInViewport();
+  await p.screenshot(shots("greyed-minus-why"));
+  await expect(p.getByRole("list", { name: "Changes in the cart" })).toHaveCount(0);
 });
 
 test("an attribute stops rising at the limit Generation gives", async ({ browser }) => {

@@ -1013,6 +1013,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/downtime/waiting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Waiting
+         * @description A downtime to submit and when results were delivered, in a few small queries,
+         *     for the character page's tabs; the page itself judges which results are new.
+         */
+        get: operations["my_waiting_api_characters__character_id__downtime_waiting_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/embrace": {
         parameters: {
             query?: never;
@@ -1494,6 +1515,28 @@ export interface paths {
          *     troupe, not in the character's other troupes.
          */
         get: operations["character_log_api_characters__character_id__log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/making-room": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Making Room
+         * @description The traits chosen in `category` that `name` could swap in for, where the rules
+         *     refuse it as things stand: what a picker offers to swap out to make room for it.
+         *     All are tried in one request, saving nothing; the swap itself is made as a cart.
+         */
+        get: operations["making_room_api_characters__character_id__making_room_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9780,6 +9823,16 @@ export interface components {
             in_clan: string[];
             /** Name */
             name: string;
+        };
+        /**
+         * DowntimeWaiting
+         * @description What waits for a player between games, for the counts on their character's tabs.
+         */
+        DowntimeWaiting: {
+            /** Delivered */
+            delivered: string[];
+            /** Due */
+            due: boolean;
         };
         /**
          * EffectBlock
@@ -21285,6 +21338,37 @@ export interface operations {
             };
         };
     };
+    my_waiting_api_characters__character_id__downtime_waiting_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DowntimeWaiting"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_embraces_api_characters__character_id__embrace_get: {
         parameters: {
             query?: never;
@@ -22179,6 +22263,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    making_room_api_characters__character_id__making_room_get: {
+        parameters: {
+            query: {
+                category: string;
+                name: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
                 };
             };
             /** @description Validation Error */

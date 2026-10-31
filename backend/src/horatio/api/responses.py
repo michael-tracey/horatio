@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
-from horatio import influence_log, quest_actions, quest_requirements, quests, responses
+from horatio import downtimes, influence_log, quest_actions, quest_requirements, quests, responses
 from horatio.api.downtimes import staff_cycle, staff_troupe
 from horatio.api.influence import InfluenceAnswerOut, answer_out
 from horatio.api.influence_effects import BlockWarningOut, block_warnings
@@ -28,7 +28,12 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.permissions import TroupeAction, require_troupe_action
+from horatio.permissions import (
+    TroupeAction,
+    can_edit_character,
+    require_troupe_action,
+    visible_character,
+)
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(tags=["responses"])
@@ -171,6 +176,15 @@ class ResultOut(BaseModel):
     # Delivered again since, with responses written or changed after the first time.
     updated: bool = False
     message: str
+
+
+class DowntimeWaiting(BaseModel):
+    """What waits for a player between games, for the counts on their character's tabs."""
+
+    # An open cycle the character is in, with its downtime not yet submitted.
+    due: bool
+    # When each cycle's results last reached the player, newest first.
+    delivered: list[datetime]
 
 
 def entry_ref(db: DbSession, response: Response) -> InfluenceEntryRef | None:
@@ -492,3 +506,31 @@ def my_results(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> lis
             ),
         )
     return list(latest.values())
+
+
+@router.get("/characters/{character_id}/downtime/waiting")
+def my_waiting(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> DowntimeWaiting:
+    """A downtime to submit and when results were delivered, in a few small queries,
+    for the character page's tabs; the page itself judges which results are new."""
+    character = visible_character(db, user, character_id)
+    if not can_edit_character(db, user, character):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player sees this.")
+    found = downtimes.current_participation(db, character)
+    submission = downtimes.submission_for(db, found[1]) if found else None
+    delivered = db.execute(
+        select(func.max(Delivery.sent_at))
+        .join(Submission, Delivery.submission_id == Submission.id)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .where(
+            CycleParticipant.character_id == character.id,
+            Delivery.channel == "horatio",
+            Delivery.status == "sent",
+            Delivery.test_mode.is_(False),
+            Delivery.sent_at.is_not(None),
+        )
+        .group_by(CycleParticipant.cycle_id)
+    ).scalars()
+    return DowntimeWaiting(
+        due=found is not None and (submission is None or submission.status != "submitted"),
+        delivered=sorted((d for d in delivered if d is not None), reverse=True),
+    )

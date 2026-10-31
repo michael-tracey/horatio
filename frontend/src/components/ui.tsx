@@ -1,5 +1,5 @@
-import { cloneElement, useId } from "react";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactElement, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { cloneElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import type { ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactElement, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { usePreferences } from "../hooks";
 import { pipGroups } from "../ratings";
@@ -169,9 +169,66 @@ export function CountBubble({ count, label }: { count: number; label: string }) 
   );
 }
 
-export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolean; count?: number }[] }) {
+/** A tab, with a count of what waits on it, such as "2 new" (`countLabel` says what they are). */
+type Tab = { to: string; label: string; end?: boolean; count?: number; countLabel?: string };
+
+/** How wide the fade is at an edge of a tab bar with more beyond it. */
+const FADE_PX = 32;
+
+/**
+ * For a row of tabs that scrolls sideways on a narrow screen: brings the open
+ * tab (the one with `aria-current`) into view whenever the page changes, and
+ * fades whichever edge has more tabs beyond it, so the row is seen to scroll.
+ */
+function useTabRow<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const { pathname } = useLocation();
+  const [edges, setEdges] = useState({ start: false, end: false });
+  const measure = useCallback(() => {
+    const row = ref.current;
+    if (!row) return;
+    const start = row.scrollLeft > 1;
+    const end = row.scrollLeft + row.clientWidth < row.scrollWidth - 1;
+    setEdges((e) => (e.start === start && e.end === end ? e : { start, end }));
+  }, []);
+  useLayoutEffect(() => {
+    const row = ref.current;
+    const open = row?.querySelector<HTMLElement>("[aria-current]");
+    if (row && open) {
+      // Sideways only: scrollIntoView would move the page up or down too.
+      const box = row.getBoundingClientRect();
+      const tab = open.getBoundingClientRect();
+      if (tab.left < box.left + FADE_PX) row.scrollLeft -= box.left + FADE_PX - tab.left;
+      else if (tab.right > box.right - FADE_PX) row.scrollLeft += tab.right - box.right + FADE_PX;
+    }
+    measure();
+  }, [pathname, measure]);
+  useEffect(() => {
+    const row = ref.current;
+    if (!row || typeof ResizeObserver === "undefined") return;
+    // The row, and its tabs, which grow when a count comes in.
+    const watch = new ResizeObserver(measure);
+    watch.observe(row);
+    for (const tab of Array.from(row.children)) watch.observe(tab);
+    return () => watch.disconnect();
+  }, [measure]);
+  let style: CSSProperties | undefined;
+  if (edges.start || edges.end) {
+    const from = edges.start ? `transparent, black ${FADE_PX}px` : "black";
+    const to = edges.end ? `black calc(100% - ${FADE_PX}px), transparent` : "black";
+    const mask = `linear-gradient(to right, ${from}, ${to})`;
+    style = { maskImage: mask, WebkitMaskImage: mask };
+  }
+  return { ref, style, onScroll: measure };
+}
+
+/** The tab bars' shared look on a phone: the row runs to the screen's edges and scrolls. */
+const ROW = "-mx-4 flex overflow-x-auto px-4 sm:mx-0 sm:px-0";
+
+export function Tabs({ tabs }: { tabs: Tab[] }) {
+  const row = useTabRow<HTMLElement>();
   return (
-    <nav className="-mx-4 mb-6 flex gap-1 overflow-x-auto border-b border-ash px-4 sm:mx-0 sm:px-0">
+    <nav {...row} className={cx(ROW, "mb-6 gap-1 border-b border-ash")}>
       {tabs.map((t) => (
         <NavLink
           key={t.to}
@@ -179,14 +236,14 @@ export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolea
           end={t.end}
           className={({ isActive }) =>
             cx(
-              "border-b-2 px-3 py-2 text-sm whitespace-nowrap",
+              "shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap",
               isActive ? "border-gold text-parchment" : "border-transparent text-mist hover:text-parchment",
             )
           }
         >
           <span className="inline-flex items-center gap-1.5">
             {t.label}
-            {t.count !== undefined && <CountBubble count={t.count} label="waiting" />}
+            {t.count !== undefined && <CountBubble count={t.count} label={t.countLabel ?? "waiting"} />}
           </span>
         </NavLink>
       ))}
@@ -194,13 +251,11 @@ export function Tabs({ tabs }: { tabs: { to: string; label: string; end?: boolea
   );
 }
 
-type Tab = { to: string; label: string; end?: boolean; count?: number };
-
 /**
  * Tabs in groups, for a page with too many to fit one row: the groups in a row,
- * and under it the open group's own tabs, wrapping rather than scrolling. A
- * group opens its first tab; a group of one is a plain tab. Counts add up on
- * their group, so what waits is seen from anywhere.
+ * and under it the open group's own tabs. On a phone each row scrolls sideways,
+ * with the open tab kept in view. A group opens its first tab; a group of one
+ * is a plain tab. Counts add up on their group, so what waits is seen from anywhere.
  */
 export function GroupedTabs({ label, groups }: { label: string; groups: { label: string; tabs: Tab[] }[] }) {
   const { pathname } = useLocation();
@@ -208,9 +263,10 @@ export function GroupedTabs({ label, groups }: { label: string; groups: { label:
   const opens = (t: Tab) => (t.end ? here === t.to : here === t.to || here.startsWith(`${t.to}/`));
   const shown = groups.filter((g) => g.tabs.length > 0);
   const open = shown.find((g) => g.tabs.some(opens));
+  const row = useTabRow<HTMLElement>();
   return (
     <div className="mb-6">
-      <nav aria-label={label} className="flex flex-wrap gap-x-1 border-b border-ash">
+      <nav aria-label={label} {...row} className={cx(ROW, "gap-x-1 border-b border-ash")}>
         {shown.map((g) => {
           const active = g === open;
           const counts = g.tabs.filter((t) => t.count !== undefined);
@@ -221,7 +277,7 @@ export function GroupedTabs({ label, groups }: { label: string; groups: { label:
               to={g.tabs[0]!.to}
               aria-current={active ? "true" : undefined}
               className={cx(
-                "-mb-px border-b-2 px-3 py-2 text-sm whitespace-nowrap",
+                "shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap",
                 active ? "border-gold text-parchment" : "border-transparent text-mist hover:text-parchment",
               )}
             >
@@ -243,8 +299,10 @@ export function GroupedTabs({ label, groups }: { label: string; groups: { label:
  * `GroupedTabs`. For the parts of one page, inside it, use `PageTabs`.
  */
 export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]; className?: string }) {
+  const row = useTabRow<HTMLElement>();
   return (
-    <nav aria-label={label} className={cx("mb-5 flex flex-wrap gap-2", className)}>
+    // A className of its own replaces the margin below.
+    <nav aria-label={label} {...row} className={cx(ROW, "gap-2", className ?? "mb-5")}>
       {tabs.map((t) => (
         <NavLink
           key={t.to}
@@ -252,14 +310,14 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
           end={t.end}
           className={({ isActive }) =>
             cx(
-              "rounded-full border px-3 py-1 text-sm whitespace-nowrap",
+              "shrink-0 rounded-full border px-3 py-1 text-sm whitespace-nowrap",
               isActive ? "border-gold/60 bg-gold/10 text-parchment" : "border-ash text-mist hover:text-parchment",
             )
           }
         >
           <span className="inline-flex items-center gap-1.5">
             {t.label}
-            {t.count !== undefined && <CountBubble count={t.count} label="waiting" />}
+            {t.count !== undefined && <CountBubble count={t.count} label={t.countLabel ?? "waiting"} />}
           </span>
         </NavLink>
       ))}
@@ -273,9 +331,10 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
  * wrapped. On a phone it scrolls sideways rather than wrapping.
  */
 export function PageTabs({ label, tabs, className }: { label: string; tabs: Tab[]; className?: string }) {
+  const row = useTabRow<HTMLElement>();
   return (
     // A className of its own replaces the margin below (Tailwind does not let a later margin class win).
-    <nav aria-label={label} className={cx("max-w-full overflow-x-auto", className ?? "mb-5")}>
+    <nav aria-label={label} {...row} className={cx("max-w-full overflow-x-auto", className ?? "mb-5")}>
       <div className="inline-flex gap-0.5 rounded-md border border-ash bg-night p-0.5">
         {tabs.map((t) => (
           <NavLink
@@ -288,7 +347,7 @@ export function PageTabs({ label, tabs, className }: { label: string; tabs: Tab[
           >
             <span className="inline-flex items-center gap-1.5">
               {t.label}
-              {t.count !== undefined && <CountBubble count={t.count} label="waiting" />}
+              {t.count !== undefined && <CountBubble count={t.count} label={t.countLabel ?? "waiting"} />}
             </span>
           </NavLink>
         ))}

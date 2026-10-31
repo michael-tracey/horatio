@@ -75,7 +75,7 @@ export function Derangements({ view, record, tap }: { view: Shown; record: Recor
             tabIndex={-1}
             disabled={i < least}
             onClick={i < value ? down : up}
-            className={cx("h-9 w-9 rounded-md border transition-colors", i < value ? "border-gold/70 bg-gold/70" : "border-ash bg-night", i < least && "opacity-60")}
+            className={cx("h-9 w-9 rounded-md border transition-colors", i < value ? "border-gold/70 bg-gold/70" : "border-line bg-night", i < least && "opacity-60")}
           />
         ))}
       </div>
@@ -167,8 +167,8 @@ function RoundButton({ label, onClick, disabled, strong, children }: { label: st
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        "grid h-12 min-w-12 place-items-center rounded-full border px-3 text-lg font-semibold transition-colors active:scale-95 disabled:opacity-35",
-        strong ? "border-blood bg-blood text-parchment hover:bg-blood-bright" : "border-ash bg-night text-parchment hover:border-mist",
+        "grid h-12 min-w-12 place-items-center rounded-full border px-3 text-lg font-semibold transition-colors active:scale-95 tap-off",
+        strong ? "border-blood bg-blood text-parchment hover:bg-blood-bright" : "border-line bg-night text-parchment hover:border-mist",
       )}
     >
       {children}

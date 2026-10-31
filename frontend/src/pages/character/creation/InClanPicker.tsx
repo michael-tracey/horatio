@@ -45,22 +45,15 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   );
   const chosen = choice.chosen.map((t) => t.name);
   const given = new Map(choice.given.map((t) => [t.name, t.granted_by]));
-  // For the one tapped: which of those chosen it could take the place of, tried on the server.
-  // Keyed by the sheet, so a change (the swap itself) never has it asked again under the
-  // old key: each try is a whole cart judged, slow work on a busy server (#334).
+  // For the one tapped: which of those chosen it could take the place of. The server tries
+  // them all in one request on the sheet as read; a whole cart judged for each was dozens of
+  // queries apiece, and on a busy server the buttons waited seconds for them (#386).
+  // Keyed by the sheet, so a change (the swap itself) never has it asked again under the old key.
   const swaps = useQuery({
-    queryKey: ["in-clan-swaps", character.id, wanted, chosen, now],
+    queryKey: ["in-clan-swaps", character.id, wanted, now],
     enabled: !!wanted && chosen.length > 0,
     meta: { bySheet: true },
-    queryFn: async () => {
-      const tried = await Promise.all(
-        chosen.map(async (from) => {
-          const out = await unwrap(api.POST("/api/characters/{character_id}/cart", { ...path, body: { changes: swap(from, wanted!), dry_run: true } }));
-          return out.lines.every((l) => !l.refused) ? from : null;
-        }),
-      );
-      return tried.filter((n): n is string => !!n);
-    },
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/making-room", { params: { ...path.params, query: { category: EXTRA_IN_CLAN, name: wanted! } } })),
   });
   const swapIn = useAction(async (from: string) => {
     const out = await unwrap(api.POST("/api/characters/{character_id}/cart", { ...path, body: { changes: swap(from, wanted!), dry_run: false } }));

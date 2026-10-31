@@ -118,7 +118,7 @@ function Track({ label, title, tracker, value, most, tap, off = false }: { label
           aria-label={`Spend ${label}`}
           disabled={off || value <= 0}
           onClick={() => tap({ tracker, amount: -1, label })}
-          className="grid h-9 min-w-9 place-items-center rounded-full border border-ash bg-night text-parchment hover:border-mist disabled:opacity-35"
+          className="grid h-9 min-w-9 place-items-center rounded-full border border-line bg-night text-parchment hover:border-mist tap-off"
         >
           −
         </button>
@@ -127,7 +127,7 @@ function Track({ label, title, tracker, value, most, tap, off = false }: { label
           aria-label={`Restore ${label}`}
           disabled={off || value >= most}
           onClick={() => tap({ tracker, amount: 1, label })}
-          className="grid h-9 min-w-9 place-items-center rounded-full border border-ash bg-night text-parchment hover:border-mist disabled:opacity-35"
+          className="grid h-9 min-w-9 place-items-center rounded-full border border-line bg-night text-parchment hover:border-mist tap-off"
         >
           +
         </button>

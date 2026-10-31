@@ -21,6 +21,42 @@ export async function undoInHeader(page: Page, tap: string | RegExp) {
   return undo;
 }
 
+/** Which group each of a PC's tabs is in on a phone (CharacterPage). */
+const CHARACTER_GROUPS: Record<string, string> = {
+  Sheet: "Sheet",
+  "Status & Titles": "Sheet",
+  Equipment: "Sheet",
+  Experience: "Sheet",
+  "Shared backgrounds": "Sheet",
+  Downtime: "Between games",
+  Results: "Between games",
+  Quests: "Between games",
+  Influence: "Between games",
+  Troupes: "About",
+  Backstory: "About",
+  Log: "About",
+};
+
+/** A tab's name, with or without a count after it ("Results 2 new"). */
+const tabName = (name: string) => new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}( \\d+\\+? \\w+)?$`);
+
+/**
+ * Opens a tab of a PC's page: in its one row on a wide screen; on a phone,
+ * through its group, unless the group is open or is that tab alone.
+ */
+export async function characterTab(page: Page, name: string) {
+  const main = page.locator("main");
+  if ((page.viewportSize()?.width ?? 1280) >= 640) return main.getByRole("link", { name: tabName(name) }).click();
+  const sections = main.getByRole("navigation", { name: "Tab groups" });
+  await sections.waitFor();
+  const alone = sections.getByRole("link", { name: tabName(name) });
+  if (await alone.count()) return alone.click();
+  const group = CHARACTER_GROUPS[name] ?? name;
+  const tabs = main.getByRole("navigation", { name: group, exact: true });
+  if (!(await tabs.isVisible())) await sections.getByRole("link", { name: tabName(group) }).click();
+  await tabs.getByRole("link", { name: tabName(name) }).click();
+}
+
 export async function person(browser: Browser, name: string, options: BrowserContextOptions = {}): Promise<{ page: Page; email: string; handle: string }> {
   const page = await (await browser.newContext(options)).newPage();
   const email = `${name}-${run}@example.com`;

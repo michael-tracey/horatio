@@ -20,7 +20,8 @@ const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.hei
 export function CharacterPicture({ character }: { character: CharacterOut }) {
   const [open, setOpen] = useState(false);
   const changeable = character.status !== "retired";
-  const avatar = <Avatar name={character.name} picture={character.picture} clan={character.clan} size="lg" className="h-16 w-16 sm:h-28 sm:w-28" />;
+  // Smaller on a phone. The sizes are marked important to win over the avatar's own, set inline.
+  const avatar = <Avatar name={character.name} picture={character.picture} clan={character.clan} size="lg" className="size-14! max-sm:text-xl! sm:size-28!" />;
   if (!changeable) return avatar;
   return (
     <>
@@ -32,7 +33,7 @@ export function CharacterPicture({ character }: { character: CharacterOut }) {
         className="group relative shrink-0 rounded-full"
       >
         {avatar}
-        <span className="absolute right-0 bottom-0 grid h-6 w-6 place-items-center rounded-full border border-ash bg-dusk text-xs text-mist group-hover:border-gold group-hover:text-gold sm:h-7 sm:w-7">
+        <span className="absolute right-0 bottom-0 grid h-5 w-5 place-items-center rounded-full border border-ash bg-dusk text-[10px] text-mist group-hover:border-gold group-hover:text-gold sm:h-7 sm:w-7 sm:text-xs">
           ✎
         </span>
       </button>

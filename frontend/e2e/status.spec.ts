@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab } from "./support";
 
 /** Status and titles, on the sheet, on badges and at a game. */
 
@@ -75,7 +75,7 @@ test("a player keeps their own sect status, naming its patron from the home trou
   // Taken off again, and both in the character's log.
   await card.getByRole("button", { name: "Remove Loyal" }).click();
   await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
-  await p.getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(p, "Log");
   await expect(p.getByText("status-player gave Celestine the fleeting status Loyal, from Prince Aurelio (Prince at the time).")).toBeVisible();
   await expect(p.getByText("status-player removed Celestine's Loyal (from Prince Aurelio (Prince at the time)).")).toBeVisible();
 
@@ -608,7 +608,7 @@ test("at a game, a Seneschal elder chooses one source of status, spends Authorit
   await p.goto(`/characters/${id}/status`);
   const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
   await expect(card.getByText("from Prince Varga (Prince at the time)")).toBeVisible();
-  await p.getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(p, "Log");
   await expect(p.getByText("gstatus-player gave Isadora the fleeting status Courageous, from Prince Varga (Prince at the time) at game 1.")).toBeVisible();
   await expect(p.getByText("gstatus-player spent Isadora's Loyal (from The Keeper of Elysium) (a car from the motor pool).")).toBeVisible();
   await expect(p.getByText("gstatus-player undid spending Isadora's Loyal (from The Keeper of Elysium): it is back.")).toBeVisible();

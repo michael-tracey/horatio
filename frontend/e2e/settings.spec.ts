@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, PASSWORD, shots, person } from "./support";
+import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab } from "./support";
 
 /** A person's settings: handle, dates, text size, notifications and the Play View. */
 
@@ -98,7 +98,7 @@ test("dates and times show in each person's zone and format", async ({ browser }
   await page.getByLabel("New name").fill("Odile Brun");
   await page.getByRole("button", { name: "Rename", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Odile Brun");
-  await page.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(page, "Log");
   const renamed = page.locator("main time").first();
   await expect(renamed).toHaveText(/^\d{1,2} [A-Z][a-z]{2} \d{4}, \d{1,2}:\d{2} [ap]m$/);
   const log = page.url();
