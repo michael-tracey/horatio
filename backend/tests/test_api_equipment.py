@@ -95,7 +95,13 @@ def test_get_equipment(client: TestClient) -> None:
     response = client.get("/rules/vampire/equipment")
     assert response.status_code == 200, response.text
     body = response.json()
-    assert [k["key"] for k in body["kinds"]] == ["melee", "ranged", "protective", "miscellaneous"]
+    assert [k["key"] for k in body["kinds"]] == [
+        "melee",
+        "ranged",
+        "protective",
+        "miscellaneous",
+        "text",
+    ]
     ranged = body["kinds"][1]
     assert (ranged["name"], ranged["hands"], ranged["damage"], ranged["shots"]) == (
         "Ranged weapon",

@@ -23,8 +23,9 @@ FIXTURE = Path(__file__).parent / "fixtures" / "yorick_vampire_costs.json.gz"
 YORICK_SENTINEL_RATE = 9999
 
 # Yorick's engine priced a "humanity" category that no Vampire sheet has;
-# Horatio has only "paths".
-NOT_HORATIO_CATEGORIES = {"humanity"}
+# Horatio has only "paths". Vampiric texts are equipment in Horatio, not traits
+# (issue #341).
+NOT_HORATIO_CATEGORIES = {"humanity", "vampiric_texts"}
 
 
 def load_cases() -> list[dict[str, Any]]:

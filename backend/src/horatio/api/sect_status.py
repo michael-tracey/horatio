@@ -262,6 +262,8 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
     }
     statuses = found.rules.statuses
     shown = {d.name for d in found.derived} | {h.name for h in found.held} | set(found.unresolved)
+    if found.accepted:
+        shown.add(found.accepted)
     addable = (
         [
             about(s)

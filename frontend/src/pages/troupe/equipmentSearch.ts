@@ -5,7 +5,7 @@
  * takes it, and the items found as a CSV for a game night's armoury sheet.
  */
 import type { EquipmentItemOut } from "../../api/types";
-import { qualityText } from "./equipment";
+import { qualityText, type Kind } from "./equipment";
 
 export type Sort = "holder" | "name" | "date";
 export type Status = "held" | "discarded" | "taken_back";
@@ -80,7 +80,7 @@ export function searchQuery(s: ItemSearch, midnight: (day: string) => Date) {
   return {
     q: s.q.trim() || undefined,
     character_id: s.holders.length ? s.holders : undefined,
-    kind: (s.kind || undefined) as "melee" | "ranged" | "protective" | "miscellaneous" | undefined,
+    kind: (s.kind || undefined) as Kind | undefined,
     quality: s.quality || undefined,
     grade: (s.grade || undefined) as "cheap" | "standard" | "special" | undefined,
     status: s.statuses,
@@ -122,8 +122,8 @@ export function itemsCsv(items: EquipmentItemOut[], day: (at: string) => string)
     i.effects.map((e) => `${e.name}: ${e.effect}`).join("; "),
     i.description,
     STATUS_NAMES[i.status],
-    i.given_by_name ?? "",
-    i.troupe_name,
+    i.from_sheet ? "From the sheet" : (i.given_by_name ?? ""),
+    i.troupe_name ?? "",
     day(i.given_at),
     i.staff_note ?? "",
   ]);
