@@ -44,6 +44,8 @@ class NewPassword(BaseModel):
 
 class Forgot(BaseModel):
     email: EmailStr
+    # Where they were going, to go on to after setting a new password: a path on this site.
+    next: str | None = None
 
 
 class ForgotHelp(BaseModel):
@@ -239,7 +241,7 @@ def forgot_password(
     wait = limited(db, body.email, ip)
     if wait is not None:
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, wait)
-    asked = request_reset(db, body.email, ip)
+    asked = request_reset(db, body.email, ip, body.next)
     db.commit()
     if asked is not None:
         user, url = asked
