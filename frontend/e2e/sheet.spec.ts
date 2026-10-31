@@ -140,6 +140,63 @@ test("the sheet says what a trait does, under its name, and what a heading is, i
   await expect(p.getByText("In-clan disciplines: Celerity, Potence, Presence.")).toHaveCount(0);
 });
 
+test("the sheet shows XP first on a phone, lists a discipline's powers, counts health and says the merit limit plainly (#362)", async ({ browser }) => {
+  const { page: p } = await person(browser, "power-lister");
+  const id = await builtVampire(p, "Perpetua", "Toreador", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  await expect(part("Experience")).toBeVisible();
+
+  // On a phone, the XP to spend is on the first screen, above every trait; the
+  // Experience card itself is beside the sheet on a wide screen.
+  const xp = p.getByRole("button", { name: /^\d+ XP to spend$/ });
+  if (test.info().project.name === "phone") {
+    await expect(xp).toBeInViewport();
+    await xp.click();
+    await expect(part("Experience").getByText("Available", { exact: true })).toBeInViewport();
+  } else {
+    await expect(xp).toBeHidden();
+    await expect(part("Experience").getByText("Available", { exact: true })).toBeInViewport();
+  }
+  await p.screenshot(shots("sheet-xp-first"));
+
+  // Opening Auspex lists the powers its two dots give, as the Play View does.
+  const disciplines = part("Disciplines");
+  await disciplines.getByRole("button", { name: "Auspex", exact: true }).click();
+  await expect(disciplines.getByText("Heightened Senses")).toBeVisible();
+  await expect(disciplines.getByText("Aura Perception")).toBeVisible();
+  await expect(disciplines.getByText("Spirit's Touch")).toHaveCount(0);
+  await p.screenshot(shots("sheet-powers"));
+
+  // Health is a count of each level, not boxes to tick: damage is tracked on Play.
+  const health = part("Health Levels");
+  await expect(health.getByRole("img", { name: "Healthy: 3 boxes" })).toContainText("3");
+  await expect(health.getByRole("checkbox")).toHaveCount(0);
+  await expect(health.getByRole("link", { name: "Track damage in the Play View →" })).toHaveAttribute("href", `/play/characters/${id}`);
+
+  // The Experience card says what each limit counts, and the rule in an ⓘ.
+  const limits = part("Experience").getByRole("list", { name: "Limits" });
+  await expect(limits.getByText("Merits: 0 of 7 points used", { exact: true })).toBeVisible();
+  await expect(limits.getByText("Flaws: 0 of 7 XP paid out", { exact: true })).toBeVisible();
+  await part("Experience").getByRole("button", { name: "About these limits" }).click();
+  await expect(p.getByText("A character holds at most 7 points of merits.")).toBeVisible();
+
+  // The Add panel prices a trait as soon as it is chosen, and again when its rating changes.
+  await part("Skills").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Skills").fill("Computer");
+  await p.getByRole("button", { name: /^Computer/ }).click();
+  await expect(p.getByText(/^Costs \d+ XP\.$/)).toBeVisible();
+  const one = await p.getByText(/^Costs \d+ XP\.$/).textContent();
+  await p.getByLabel("Rating").fill("2");
+  await expect(p.getByText(/^Costs \d+ XP\.$/)).not.toHaveText(one!);
+  await expect(p.getByRole("button", { name: "Price it" })).toHaveCount(0);
+  await p.screenshot(shots("sheet-add-priced"));
+});
+
 test("a player renames their character once in three months, and the custodian any time", async ({ browser }) => {
   const custodian = await person(browser, "rename-custodian");
   makeCustodian(custodian.email);
