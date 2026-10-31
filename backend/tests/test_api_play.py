@@ -66,6 +66,7 @@ def test_a_new_game_starts_where_the_sheet_does(troupe: Troupe, agnes: str) -> N
     # No Generation dots count as Generation 1: 10 blood, 1 a turn.
     assert state["blood"] == {"value": 10, "most": 10, "start": 10}
     assert state["blood_per_turn"] == 1
+    assert (state["generation"], state["generation_number"]) == (0, None)
     # Herd 2: feeding at a game takes 5 minutes for 2 blood.
     assert state["herd"] == 2
     assert state["willpower"] == {"value": 6, "most": 6, "start": 6}

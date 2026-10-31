@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from horatio import (
     audit,
     domitors,
+    embrace,
     equipment,
     house_traits,
     influence_log,
@@ -285,7 +286,10 @@ class PlayView(BaseModel):
     splat: str = "vampire"
     clan: str | None
     sect: str | None
+    # The Generation background's rating, and the generation it gives: 12 for the
+    # 12th (None without a dot, or thin-blooded).
     generation: int
+    generation_number: int | None = None
     blood_per_turn: int
     # What `blood` is: Blood, a ghoul's Vitae, or a Stock NPC's kind's resource (Rage).
     blood_name: str = "Blood"
@@ -627,6 +631,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         clan=one("clan"),
         sect=one("sect"),
         generation=limits.generation,
+        generation_number=embrace.generation_of(rows) if limits.generation else None,
         blood_per_turn=limits.blood_per_turn,
         blood_name=limits.blood_name,
         herd=max(

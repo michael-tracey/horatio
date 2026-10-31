@@ -20,7 +20,7 @@ import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracke
 import { useModifiers } from "./useModifiers";
 import { usePlay } from "./usePlay";
 import { useReference } from "./useReference";
-import { useWakeLock } from "./wakeLock";
+import { useKeepAwake } from "./wakeLock";
 import { expandPower } from "../troupe/stockNpcs";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
@@ -38,7 +38,8 @@ function cx(...classes: (string | false | null | undefined)[]): string {
 export function ScenePage() {
   const { troupeId = "", sceneId = "" } = useParams();
   const prefs = usePreferences();
-  const awake = useWakeLock(prefs.keep_awake);
+  // As the Play View's switch on this device says, or the settings.
+  const awake = useKeepAwake(prefs.keep_awake).held;
   const client = useQueryClient();
   const sceneKey = ["scene", sceneId];
   const scene = useQuery({

@@ -31,7 +31,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   paper: "letter",
   badge_size: "3x5",
   quick_notes: true,
-  keep_awake: false,
+  keep_awake: true,
   play_tab: "tracker",
   text_size: "normal",
   email_downtime: false,

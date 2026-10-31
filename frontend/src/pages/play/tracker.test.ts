@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView } from "../../api/types";
-import { afterSending, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, withPending, type Tap } from "./tracker";
+import { afterSending, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, tapToast, withPending, type Tap } from "./tracker";
 
 function view(overrides: Partial<PlayView> = {}): PlayView {
   return {
@@ -241,6 +241,32 @@ describe("latestUndoable", () => {
     const shown = withPending(view(), [change("blood", -1, 1), makeTap({ kind: "note", note: "fed at the club" }, "g1", at(2))]);
 
     expect(latestUndoable(shown.log)?.text).toBe("Note");
+  });
+});
+
+describe("tapToast (#358)", () => {
+  it("says what a tap did and where the tracker stands, worded apart from the log", () => {
+    const shown = withPending(view(), []);
+    const spend = change("blood", -1, 1);
+
+    expect(tapToast(shown, spend)).toBe("Spent 1 Blood · 9/10");
+    expect(withPending(view(), [spend]).log[0]!.text).toBe("Blood 10 → 9");
+    expect(tapToast(shown, change("willpower", 1, 1))).toBe("Restored 1 Willpower · 6/6");
+    expect(tapToast(shown, change("health", 1, 1, "aggravated"))).toBe("Took 1 aggravated · 1/9 marked");
+    expect(tapToast(shown, change("morality", -1, 1))).toBe("Humanity −1 · 4/5");
+    expect(tapToast(shown, change("beast", 1, 1))).toBe("Beast traits +1 · 1/5");
+    expect(tapToast(shown, change("trait:backgrounds/Herd/", -1, 1))).toBe("Used 1 Herd · 1 of 2 left");
+    expect(tapToast(shown, makeTap({ kind: "note", note: "fed" }, "g1", at(1)))).toBe("Note added");
+  });
+
+  it("says where an undone tap left the tracker, waiting or saved", () => {
+    const spend = change("blood", -1, 1);
+    const waiting = withPending(view(), [spend]);
+    expect(tapToast(waiting, makeTap({ kind: "undo", undoes: spend.id }, "g1", at(2)))).toBe("Undone · Blood 10/10");
+
+    const { pending: _, ...entry } = waiting.log[0]!;
+    const saved = view({ blood: { value: 9, most: 10, start: 10 }, log: [entry] });
+    expect(tapToast(withPending(saved, []), makeTap({ kind: "undo", undoes: spend.id }, "g1", at(2)))).toBe("Undone · Blood 10/10");
   });
 });
 

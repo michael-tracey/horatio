@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, undoInHeader } from "./support";
 
 /** The Play View at a game: blood, feeding, the Beast and derangements. */
 
@@ -98,13 +98,37 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByRole("heading", { name: "Lucien" })).toBeVisible();
   await expect(p.getByLabel("Blood: 8 of 12")).toBeVisible();
   await expect(p.getByText("2 blood a turn")).toBeVisible();
+  // The header names the generation two dots of Generation give, not "Generation 2".
+  await expect(p.getByText("9th generation")).toBeVisible();
   // Quick notes start on, but Blood, Willpower and healing never stop to ask.
   await expect(p.getByLabel("Quick notes")).toBeChecked();
-  await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
+  await p.getByRole("button", { name: "Spend Blood", exact: true }).click();
   await expect(p.getByLabel("Blood: 7 of 12")).toBeVisible();
   await expect(p.getByRole("dialog", { name: "Note for this spend" })).toHaveCount(0);
   await expect(p.getByText("Blood 8 → 7")).toBeVisible();
   await expect(p.getByRole("status")).toHaveText("Saved");
+  // The tap says what it did in a toast, with Undo; Undo for it is in the header too.
+  await expect(p.getByText("Spent 1 Blood · 7/12")).toBeVisible();
+  const header = p.getByRole("banner");
+  await expect(await undoInHeader(p, "Blood 8 → 7")).toBeEnabled();
+  // The boxes are only to look at: brushing one changes nothing.
+  const bloodPanel = p.locator("section").filter({ has: p.getByLabel("Blood: 7 of 12") });
+  await bloodPanel.locator("[aria-hidden=true] > span").first().click();
+  await bloodPanel.locator("[aria-hidden=true] > span").last().click();
+  await expect(p.getByLabel("Blood: 7 of 12")).toBeVisible();
+  await expect(p.getByText("Blood 7 → 6")).toHaveCount(0);
+  // Humanity's "−" is outlined, not filled red like spending Blood.
+  await expect(p.getByRole("button", { name: "Spend Humanity" })).not.toHaveClass(/(^|\s)bg-blood(\s|$)/);
+  await expect(p.getByRole("button", { name: "Spend Blood", exact: true })).toHaveClass(/(^|\s)bg-blood(\s|$)/);
+  // The screen is kept awake by default; the switch in the header turns it off, remembered on this device.
+  const awake = header.getByRole("button", { name: "Keep the screen awake" });
+  await expect(awake).toHaveAttribute("aria-pressed", "true");
+  await awake.click();
+  await expect(awake).toHaveAttribute("aria-pressed", "false");
+  await p.reload();
+  await expect(awake).toHaveAttribute("aria-pressed", "false");
+  await awake.click();
+  await expect(awake).toHaveAttribute("aria-pressed", "true");
 
   await p.getByLabel("Quick notes").uncheck();
 
@@ -133,6 +157,9 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   // Celerity switched on: Alacrity adds its two powers to initiative, until it is off.
   await p.getByLabel("Celerity on").check();
   await expect(initiative.getByText("7", { exact: true })).toBeVisible();
+  // Taps on any tab say what they did, and Undo is in the header there too.
+  await expect(p.getByText("Celerity switched on")).toBeVisible();
+  await expect(await undoInHeader(p, /Celerity on/)).toBeEnabled();
   await expect(initiative).toContainText("Physical 5 + Alacrity 2");
   await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Celerity");
   await expect(switches).toHaveAccessibleDescription(/In use: Celerity/);
@@ -176,21 +203,33 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await p.getByRole("tab", { name: "Tracker" }).click();
 
   // No signal: the tap waits on the phone, and goes when the signal returns.
+  // The toast's Undo works offline too: the undo waits with it.
   await p.context().setOffline(true);
-  await p.getByRole("button", { name: "Spend Willpower", exact: true }).last().click();
+  await p.getByRole("button", { name: "Spend Blood", exact: true }).click();
+  const spent = p.getByText("Spent 1 Blood · 6/12");
+  await expect(spent).toBeVisible();
+  await p.screenshot(shots("play-toast"));
+  await spent.locator("..").getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(p.getByText("Undone · Blood 7/12")).toBeVisible();
+  await expect(p.getByLabel("Blood: 7 of 12")).toBeVisible();
+  await expect(p.getByText("Undid: Blood 7 → 6")).toBeVisible();
+  await p.getByRole("button", { name: "Spend Willpower", exact: true }).click();
   await expect(p.getByLabel("Willpower: 5 of 6")).toBeVisible();
-  await expect(p.getByRole("status")).toHaveText("Offline · 1 tap waiting");
+  await expect(p.getByRole("status")).toHaveText("Offline · 3 taps waiting");
   await p.screenshot(shots("play-offline"));
   await p.context().setOffline(false);
   await expect(p.getByRole("status")).toHaveText("Saved");
-  // Undo takes it back.
-  await p.getByRole("button", { name: "Undo Willpower 6 → 5" }).click();
+  // Undo in the header takes it back.
+  await (await undoInHeader(p, "Willpower 6 → 5")).click();
   await expect(p.getByText("Undid: Willpower 6 → 5")).toBeVisible();
   await expect(p.getByLabel("Willpower: 6 of 6")).toBeVisible();
 
   // Quick notes: what a Herd point was for. Then aggravated damage.
   await p.getByLabel("Quick notes").check();
   await p.getByRole("button", { name: "Use Herd" }).click();
+  // The note field waits to be tapped, so the keyboard doesn't come up by itself.
+  await expect(p.getByLabel(/What was Herd for/)).not.toBeFocused();
+  await expect(p.getByRole("dialog").getByRole("button", { name: "Skip the note" })).toBeVisible();
   await p.getByLabel(/What was Herd for/).fill("fed at the club");
   await p.getByRole("dialog").getByRole("button", { name: "Save" }).click();
   await expect(p.getByText("Herd 2 → 1")).toBeVisible();
@@ -342,7 +381,7 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
   await expect(p.getByRole("status")).toHaveText("Saved");
 
   // Undo puts the fight form back, with its damage; the Scene view on another page shows it as a badge.
-  await p.getByRole("button", { name: /^Undo Turned into Shape of the Beast: flight form/ }).click();
+  await (await undoInHeader(p, /Turned into Shape of the Beast: flight form/)).click();
   await expect(p.getByLabel("normal damage")).toHaveCount(5);
   await expect(p.getByRole("status")).toHaveText("Saved");
   const scene = await p.context().newPage();
@@ -657,7 +696,7 @@ test("Derangement traits on the Play View: a temporary derangement added, warnin
   await expect(p.getByRole("status")).toHaveText("Saved");
   await p.screenshot(shots("play-derangements"));
   // Undo takes one back, as any tap.
-  await p.getByRole("button", { name: "Undo Derangement traits 2 → 3" }).click();
+  await (await undoInHeader(p, "Derangement traits 2 → 3")).click();
   await expect(p.getByText("Undid: Derangement traits 2 → 3")).toBeVisible();
   await expect(traits.getByLabel("Derangement traits: 2 of 3")).toBeVisible();
   await expect(p.getByRole("status")).toHaveText("Saved");

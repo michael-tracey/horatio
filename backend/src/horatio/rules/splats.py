@@ -280,7 +280,7 @@ SPLATS: dict[str, Splat] = {
         facts=vampire_facts,
         in_clan=vampire_in_clan_disciplines,
         fact_words={
-            "generation": "Generation {}",
+            "generation": "Generation background {}",
             "in_clan": ("in-clan", "out-of-clan"),
             "clan": "{}",
             "clan_family": "{} clan",

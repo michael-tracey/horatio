@@ -309,6 +309,9 @@ def test_skills_and_backgrounds_bought_in_play_are_repriced(troupe: Troupe) -> N
     assert ratings(troupe.player, ghoul, "flaws") == {"Lesser Generation 1": 1}
     repriced = [(e["reason"], e["amount"]) for e in xp_history(troupe.player, ghoul)]
     assert ("The Embrace, 10th generation: Brawl 4 → 5 repriced", -5) in repriced
+    # The Play View names her generation, not only the background's rating.
+    play = troupe.player.client.get(f"/characters/{ghoul}/play").json()
+    assert (play["generation"], play["generation_number"]) == (2, 10)
 
 
 def test_the_domitors_childe_keeps_its_clan_merits(troupe: Troupe) -> None:

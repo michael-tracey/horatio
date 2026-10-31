@@ -56,7 +56,7 @@ OPERATOR_WORDS: dict[str, str] = {
 
 def describe(condition: Mapping[str, Any] | None, words: Mapping[str, Any]) -> str | None:
     """A condition in plain words, such as "out-of-clan, Generation 5 or more".
-    `words` gives each fact a template ("Generation {}"), or for a yes-or-no fact
+    `words` gives each fact a template ("Generation background {}"), or for a yes-or-no fact
     the words for yes and no."""
     if not condition:
         return None

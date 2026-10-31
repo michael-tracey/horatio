@@ -150,7 +150,7 @@ def test_a_neonate_crusader_buys_one_fortitude_elder_power_for_20_xp(troupe: Tro
         player, character_id, rating("luminary_disciplines", "Fortitude: Indestructible", 1)
     )
     assert line(luminary)["refused"] == (
-        "Luminary Disciplines can be bought only in-clan, Generation 5 or more."
+        "Luminary Disciplines can be bought only in-clan, Generation background 5 or more."
     )
 
 

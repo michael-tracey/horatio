@@ -534,7 +534,7 @@ test("a player says they committed diablerie, staff approve it, and then record 
   await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Diablerie" });
   const card = l.locator("section").filter({ hasText: "Sable" });
   await expect(card).toContainText("committed diablerie on 24 Oct 2026");
-  await expect(card).toContainText("Generation 1 → 2, as a free dot. Earlier buys keep what they cost.");
+  await expect(card).toContainText("Generation background ● → ●●, as a free dot. Earlier buys keep what they cost.");
   await expect(card).toContainText("Humanity goes down 1");
   await card.getByLabel("Beast traits at the next game").fill("2");
   await card.getByLabel("Who was diablerized").fill("Her sire");
@@ -576,7 +576,7 @@ test("a player says they committed diablerie, staff approve it, and then record 
   const form = dialog.getByRole("form", { name: "Record diablerie" });
   await form.getByLabel("Date").fill("2026-10-25");
   await form.getByLabel("Who was diablerized").fill("The Prince");
-  await expect(form).toContainText("Generation 2 → 3, as a free dot.");
+  await expect(form).toContainText("Generation background ●● → ●●●, as a free dot.");
   await form.getByLabel("Humanity lowered by").fill("2");
   await expect(form).toContainText("Humanity goes down 2, with no XP back.");
   await l.screenshot(shots("diablerie-record"));

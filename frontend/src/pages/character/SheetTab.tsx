@@ -472,7 +472,8 @@ export function SheetTab({
                     ...(groups.get(group) ?? new Map<string, SheetTraitOut[]>()),
                   ].map(([category, traits]) => (
                     <div key={category}>
-                      {category.toLowerCase() !== group.toLowerCase() && (
+                      {/* Morality's one row names the path (Humanity, Path of Caine), so "Path of Enlightenment/Humanity" over it only confuses. */}
+                      {category.toLowerCase() !== group.toLowerCase() && traits[0]!.category !== "paths" && (
                         <div className="mb-1 flex items-center gap-1.5">
                           <h3 className="font-sans text-xs tracking-wide text-mist uppercase">{category}</h3>
                           <CategoryInfo category={traits[0]!.category} name={category} catalogue={catalogue.data} />

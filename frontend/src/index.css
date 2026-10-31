@@ -33,6 +33,11 @@
     outline: 2px solid var(--color-gold);
     outline-offset: 2px;
   }
+  /* Small uppercase labels: on a phone, glyph widths rounded to whole pixels
+     open a gap after each T ("PAT H", "MONT H"). Unrounded widths keep them even. */
+  .uppercase {
+    text-rendering: geometricPrecision;
+  }
 }
 
 @media print {

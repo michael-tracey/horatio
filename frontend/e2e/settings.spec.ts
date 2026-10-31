@@ -196,13 +196,15 @@ test("the Play View opens as the settings say", async ({ browser }) => {
   await expect(page.getByRole("heading", { name: "Concept" })).toBeVisible();
   const characterId = new URL(page.url()).pathname.split("/")[2]!;
 
-  // As it opens by default: on the Tracker, quick notes on, the screen left to dim.
+  // As it opens by default: on the Tracker, quick notes on, the screen kept awake.
   await page.goto(`/play/characters/${characterId}`);
   await expect(page.getByRole("tab", { name: "Tracker" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByLabel("Quick notes")).toBeChecked();
-  await expect(page.getByText("Screen awake")).toHaveCount(0);
+  const awake = page.getByRole("button", { name: "Keep the screen awake" });
+  await expect(awake).toHaveAttribute("aria-pressed", "true");
+  await expect(awake).toHaveAttribute("title", "The screen stays on while the Play View is open.");
 
-  // Quick notes off, the screen kept awake, opening on Pools.
+  // Quick notes off, the screen left to dim, opening on Pools.
   await page.goto("/account/settings");
   const saved = () => page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
   for (const label of ["Quick notes", "Keep the screen awake"]) {
@@ -211,14 +213,14 @@ test("the Play View opens as the settings say", async ({ browser }) => {
     await done;
   }
   await expect(page.getByLabel("Quick notes")).not.toBeChecked();
-  await expect(page.getByLabel("Keep the screen awake")).toBeChecked();
+  await expect(page.getByLabel("Keep the screen awake")).not.toBeChecked();
   const done = saved();
   await page.getByRole("radiogroup", { name: "The Play View opens on" }).getByRole("radio", { name: "Pools" }).click();
   await done;
 
   await page.goto(`/play/characters/${characterId}`);
   await expect(page.getByRole("tab", { name: "Pools" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByText("Screen awake")).toBeVisible();
+  await expect(awake).toHaveAttribute("aria-pressed", "false");
   await page.screenshot(shots("play-settings"));
   // Choosing the Tracker stays on it, and a spend asks for no note.
   await page.getByRole("tab", { name: "Tracker" }).click();

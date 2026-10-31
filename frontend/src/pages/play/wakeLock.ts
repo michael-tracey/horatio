@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /** The parts of the Screen Wake Lock API used here, so tests can stand in for the browser. */
 type Sentinel = { released: boolean; release: () => Promise<void>; addEventListener: (type: "release", listener: () => void) => void };
@@ -63,4 +63,42 @@ export function useWakeLock(on: boolean): boolean {
     };
   }, [on]);
   return held;
+}
+
+const AWAKE = "horatio.keepAwake";
+
+/** This device's own choice from the Play View's switch, or null to follow the settings. */
+export function loadAwake(storage: Storage | undefined = globalThis.localStorage): boolean | null {
+  try {
+    const raw = storage?.getItem(AWAKE);
+    return raw === "on" ? true : raw === "off" ? false : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAwake(on: boolean | null, storage: Storage | undefined = globalThis.localStorage): void {
+  try {
+    if (on === null) storage?.removeItem(AWAKE);
+    else storage?.setItem(AWAKE, on ? "on" : "off");
+  } catch {
+    // Private windows keep nothing; the choice lasts the visit.
+  }
+}
+
+/**
+ * Whether the Play View keeps the screen awake (issue #358): the switch in its
+ * header, remembered on this device, or until it is used, the "Keep the screen
+ * awake" setting, which is on unless turned off. Gives the choice, a way to
+ * change it, and whether the lock is held now.
+ */
+export function useKeepAwake(setting: boolean): { on: boolean; set: (on: boolean) => void; held: boolean } {
+  const [chosen, setChosen] = useState(loadAwake);
+  const on = chosen ?? setting;
+  const held = useWakeLock(on);
+  const set = useCallback((next: boolean) => {
+    saveAwake(next);
+    setChosen(next);
+  }, []);
+  return { on, set, held };
 }

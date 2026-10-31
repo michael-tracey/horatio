@@ -15583,6 +15583,17 @@
       "LockedOut": {
         "description": "A trait accepting the character fixes, such as Generation, at the rating it\nis accepted at.",
         "properties": {
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -19543,6 +19554,17 @@
             "title": "Generation",
             "type": "integer"
           },
+          "generation_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Number"
+          },
           "half_blood": {
             "default": false,
             "title": "Half Blood",
@@ -20771,7 +20793,7 @@
             "type": "boolean"
           },
           "keep_awake": {
-            "default": false,
+            "default": true,
             "title": "Keep Awake",
             "type": "boolean"
           },
@@ -23039,6 +23061,23 @@
       },
       "QueuedApproval": {
         "properties": {
+          "age": {
+            "default": "",
+            "title": "Age",
+            "type": "string"
+          },
+          "asked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asked At"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -23124,6 +23163,17 @@
               }
             ],
             "title": "Picture"
+          },
+          "player_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Name"
           },
           "player_note": {
             "title": "Player Note",

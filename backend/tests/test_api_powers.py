@@ -162,7 +162,7 @@ def test_what_costs_rule_out_is_unavailable_too(troupe: Troupe) -> None:
     out_of_clan = next(n for n in names if n.startswith("Dominate: "))
     assert in_clan not in found
     assert found[out_of_clan] == (
-        "Luminary Disciplines can be bought only in-clan, Generation 5 or more."
+        "Luminary Disciplines can be bought only in-clan, Generation background 5 or more."
     )
 
 

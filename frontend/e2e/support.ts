@@ -11,6 +11,16 @@ export const run = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 export const PASSWORD = "a long enough password";
 export const shots = (name: string) => ({ path: `test-results/screens/${test.info().project.name}-${name}.png`, fullPage: true });
 
+/**
+ * The Play View's Undo, in its header on every tab, once it says it takes back
+ * `tap` (the log's line for it, or a pattern for the start of it).
+ */
+export async function undoInHeader(page: Page, tap: string | RegExp) {
+  const undo = page.getByRole("banner").getByRole("button", { name: "Undo", exact: true });
+  await expect(undo).toHaveAccessibleDescription(typeof tap === "string" ? `Undo ${tap}` : new RegExp(`^Undo ${tap.source}`));
+  return undo;
+}
+
 export async function person(browser: Browser, name: string, options: BrowserContextOptions = {}): Promise<{ page: Page; email: string; handle: string }> {
   const page = await (await browser.newContext(options)).newPage();
   const email = `${name}-${run}@example.com`;
