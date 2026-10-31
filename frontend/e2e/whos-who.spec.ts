@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
 
 /** The Who's Who, and what a player says about their character and themselves. */
 
@@ -14,6 +14,7 @@ test("why a character left: a player retires one Off-field and it is no longer w
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Empty Chairs ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
     const response = await page.request.fetch(url, { method, headers, data });
@@ -97,6 +98,7 @@ test("represented by: a Ravnos's player says the Brujah speak for them at court,
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Seats ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
     const response = await page.request.fetch(url, { method, headers, data });
@@ -173,6 +175,7 @@ test("the Who's Who: a player sees the court in rank order, their clan and Other
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Hall of Names ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
     const response = await page.request.fetch(url, { method, headers, data });
@@ -357,6 +360,7 @@ test("pronouns: a player gives their own and their character's, the Who's Who sh
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Hall of Voices ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const send = async (page: Page, method: "POST" | "PUT", url: string, data?: object) => {
     const response = await page.request.fetch(url, { method, headers, data });

@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio.models import Character, User
+from horatio.models import Troupe as TroupeRecord
 
 PASSWORD = "correct horse battery"
 
@@ -72,6 +73,15 @@ class Troupe:
                 f"/troupes/{self.id}/staff", json={"handle": person.handle, "role": role}
             )
             assert response.status_code == 200, response.text
+        # Accepting a character needs its backstory approved by default; tests about
+        # something else accept characters without one (test_api_backstories).
+        backstory_optional(session, self.id)
+
+
+def backstory_optional(session: Session, troupe_id: str) -> None:
+    """Let the troupe accept characters without an approved backstory, unlogged."""
+    session.get_one(TroupeRecord, uuid.UUID(troupe_id)).backstory_required = False
+    session.flush()
 
 
 def new_character(

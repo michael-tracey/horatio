@@ -12,7 +12,14 @@ from sqlalchemy.orm import Session
 from horatio.models import AuditEvent
 from horatio.rules.model import CostRuleData
 from horatio.rules.store import add_house_rule
-from tests.api_helpers import Person, Troupe, new_character, sign_up, without_starting_traits
+from tests.api_helpers import (
+    Person,
+    Troupe,
+    backstory_optional,
+    new_character,
+    sign_up,
+    without_starting_traits,
+)
 
 # Balances here are about settlements and purchases, not banking creation XP.
 pytestmark = pytest.mark.usefixtures("without_bank")
@@ -68,6 +75,7 @@ def second_troupe(troupe: Troupe) -> str:
         "/troupes", json={"name": "Second City", "lead_handle": troupe.storyteller.handle}
     )
     assert response.status_code == 201, response.text
+    backstory_optional(troupe.session, response.json()["id"])
     return response.json()["id"]
 
 

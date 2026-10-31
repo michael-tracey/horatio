@@ -242,8 +242,20 @@ XP a character owes, from its Embrace or put on it by its home troupe's staff, w
 _Avoid_: Negative XP, XP loan
 
 **Long Text**:
-A piece of free-form writing attached to a character, such as its background or history.
+A piece of free-form writing attached to a character, such as its background or history. Its backstory is one.
 _Avoid_: Notes, bio, extended text
+
+**Backstory**:
+The Long Text of a character's past: one per character, in Markdown, written freely or built from its troupe's backstory questions, as the troupe's house rules allow. Only its player, the custodian, and the storytellers and assistant storytellers of its home troupe (or of a troupe it asks to make home) read it; an NPC's belongs to its troupe's. Never with the sheet, on the Play View or printed. Its storytellers read it as part of accepting the character, and a troupe can require it approved first, as it does unless it says otherwise.
+_Avoid_: Background (that is a kind of trait), bio, history
+
+**Backstory Question**:
+One of a troupe's questions for building a backstory, in a set such as a Short Form: a long or short answer, a year, a choice, a scale between two poles, or a heading only, shown only when its condition holds on the sheet (social age, sect or a trait). Each answered question becomes its own section of the backstory.
+_Avoid_: Prompt, field, form (a downtime form's questions are Questions)
+
+**Backstory Feedback**:
+Staff sending a backstory back to its player, on the whole of it or one section, without declining the character. The player revises and resubmits it with a reply, and the thread is kept; the lead storyteller, storytellers and assistant storytellers approve it.
+_Avoid_: Rejection, review comments
 
 **Shared Background**:
 A Haven, Herd, Allies or Contacts that characters in a coterie, pack or gang pool together, each putting in dots of their own; the group's rating is what is put in, never more than 5. A troupe's storytellers and assistant storytellers set one up and keep its log; the players of the characters that have put dots in see it, and log uses for their own. It is a record only: it changes no rating on any sheet.
@@ -266,7 +278,7 @@ One sheet frozen when a troupe accepted the character as its home: the accepted 
 _Avoid_: Snapshot, revision
 
 **Approval**:
-The home troupe's storytellers' or assistant storytellers' decision on a home troupe change, a discipline purchase or a merit or flaw change. Other edits to a sheet take effect at once.
+The home troupe's storytellers' or assistant storytellers' decision on a home troupe change, a discipline purchase or a merit or flaw change. Other edits to a sheet take effect at once. A backstory is approved apart, as part of accepting the character.
 _Avoid_: Sign-off, review
 
 **Notification**:

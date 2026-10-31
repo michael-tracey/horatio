@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
+import { BackstoryTab, useBackstoryStanding } from "./BackstoryTab";
 import { CreationWizard } from "./creation/Wizard";
 import { choiceName } from "./creation/logic";
 import { abilities } from "../troupe/roles";
@@ -58,6 +59,9 @@ export function CharacterPage() {
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: homeId! } } })),
     enabled: !!homeId,
   });
+
+  // The Backstory tab shows to its player and the storytellers deciding on or keeping it.
+  const backstory = useBackstoryStanding(characterId, !!character.data);
 
   if (character.isPending) return <Loading />;
   if (character.error) return <ErrorText error={character.error} />;
@@ -120,11 +124,13 @@ export function CharacterPage() {
             { to: `${base}/status`, label: "Status & Titles" },
             { to: `${base}/equipment`, label: "Equipment" },
             { to: `${base}/influence`, label: "Influence" },
+            ...(backstory.data?.read ? [{ to: `${base}/backstory`, label: "Backstory" }] : []),
             { to: `${base}/log`, label: "Log" },
           ]}
         />
         <Routes>
           <Route index element={<NpcBuilder character={c} />} />
+          {backstory.data?.read && <Route path="backstory" element={<BackstoryTab character={c} />} />}
           <Route path="sheet" element={<SheetTab character={c} mine={false} badge />} />
           <Route path="status" element={<StatusTitlesTab character={c} />} />
           <Route path="equipment" element={<EquipmentTab character={c} />} />
@@ -188,6 +194,7 @@ export function CharacterPage() {
             : []),
           ...(influence ? [{ to: `${base}/influence`, label: "Influence" }] : []),
           ...(shared.data?.length ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
+          ...(backstory.data?.read ? [{ to: `${base}/backstory`, label: "Backstory" }] : []),
           { to: `${base}/log`, label: "Log" },
         ]}
       />
@@ -210,6 +217,7 @@ export function CharacterPage() {
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}
         <Route path="shared" element={<CharacterShared characterId={c.id} />} />
+        {backstory.data?.read && <Route path="backstory" element={<BackstoryTab character={c} />} />}
         {mine && !c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (
           <>

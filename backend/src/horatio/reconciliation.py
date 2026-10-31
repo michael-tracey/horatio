@@ -32,7 +32,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications, titles, xp_range
+from horatio import audit, backstories, notifications, titles, xp_range
 from horatio.creation import Pool, pools_for
 from horatio.models import (
     Approval,
@@ -606,6 +606,7 @@ def approve_change(
     change = db.scalars(
         select(HomeTroupeChange).where(HomeTroupeChange.approval_id == approval.id)
     ).one()
+    backstories.ensure_approved(db, character, db.get_one(Troupe, change.to_troupe_id))
     items = items_for(db, approval)
     unknown = set(overrides) - {i.id for i in items}
     if unknown:
