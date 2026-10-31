@@ -198,7 +198,10 @@ def test_a_review_check_the_finished_sheet_breaks_waits_once(troupe: Troupe) -> 
 
     assert [line["needs_approval"] for line in response.json()["lines"]] == [False, True]
     approvals = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
-    assert [a["kind"] for a in approvals] == ["review"]
+    # Once accepted, a merit is asked of staff anyway (horatio.merit_requests), and
+    # the review check goes with it.
+    assert [a["kind"] for a in approvals] == ["merit_flaw"]
+    assert approvals[0]["player_note"].startswith("Brujah cannot take Calm Heart")
 
 
 @pytest.mark.usefixtures("without_bank")

@@ -49,13 +49,14 @@ from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import (
+    ASKED_KIND,
     HELD_KINDS,
     SheetRow,
     conflict,
     ensure_house_traits_fit,
     ensure_unlocked,
     freeze_sheet,
-    pending_disciplines,
+    pending_purchases,
     rules_troupe,
     sheet_rows,
     sync_fixed_ratings,
@@ -214,7 +215,11 @@ def end_membership(
             Approval.status == "pending",
         )
     ):
-        if approval.kind in HELD_KINDS:
+        if approval.kind == ASKED_KIND:
+            from horatio.merit_requests import refund  # imports this module
+
+            refund(db, actor, character, approval, "withdrawn")
+        elif approval.kind in HELD_KINDS:
             undo_discipline(db, actor, character, approval, "withdrawn")
         approval.status = "withdrawn"
         approval.decided_at = datetime.now(UTC)
@@ -462,10 +467,10 @@ def request_change(
     ensure_unlocked(db, character)
     if character.creation_completed_at is None:
         raise conflict("Finish character creation before choosing a home troupe.")
-    if pending_disciplines(db, character):
+    if pending_purchases(db, character):
         raise conflict(
-            "Discipline dots are waiting for the home troupe's approval. "
-            "Wait for its decision, or withdraw them, before moving."
+            "Discipline dots or merit and flaw changes are waiting for the home troupe's "
+            "approval. Wait for its decision, or withdraw them, before moving."
         )
     ensure_house_traits_fit(db, character, troupe.id)
     join(db, player, character, troupe)

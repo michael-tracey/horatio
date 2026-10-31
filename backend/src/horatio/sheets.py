@@ -9,6 +9,8 @@ purchases since, but taking away accepted dots is a storyteller's business.
 
 Once the character has a home troupe, every discipline dot it buys waits on
 that troupe's staff: the XP is spent at once and refunded if they decline.
+A merit or flaw added or removed then is asked of them instead, and made only
+when they approve (horatio.merit_requests).
 Only a home troupe request locks the sheet, so the differences it settles stay
 the differences there are.
 
@@ -88,6 +90,14 @@ NEEDS_HOME_APPROVAL = frozenset({"disciplines"})
 # Approvals that hold dots on the sheet until decided: declining or withdrawing
 # takes them back and refunds the XP.
 HELD_KINDS = ("discipline", "review", "exception")
+
+# Categories where, once a home troupe has accepted the character, every change is
+# asked of its staff and made only when they approve (horatio.merit_requests).
+ASKED_OF_HOME = frozenset({"merits", "flaws"})
+ASKED_KIND = "merit_flaw"
+
+# Approvals with a purchase (DisciplinePurchase) behind them.
+PURCHASE_KINDS = (*HELD_KINDS, ASKED_KIND)
 
 FINISH_CREATION_FIRST = (
     "Build the character in the creation wizard first; "
@@ -321,16 +331,29 @@ def accepted_ratings(db: Session, character: Character) -> dict[TraitKey, int]:
     return floor
 
 
-def pending_disciplines(
-    db: Session, character: Character
+def pending_purchases(
+    db: Session, character: Character, kinds: Sequence[str] = PURCHASE_KINDS
 ) -> list[tuple[Approval, DisciplinePurchase]]:
+    """Purchases waiting on the home troupe: dots held on the sheet, and merit and
+    flaw changes asked for."""
     rows = db.execute(
         select(Approval, DisciplinePurchase)
         .join(DisciplinePurchase, DisciplinePurchase.approval_id == Approval.id)
-        .where(Approval.character_id == character.id, Approval.status == "pending")
+        .where(
+            Approval.character_id == character.id,
+            Approval.status == "pending",
+            Approval.kind.in_(kinds),
+        )
         .order_by(Approval.id)
     )
     return [(a, d) for a, d in rows]
+
+
+def pending_disciplines(
+    db: Session, character: Character
+) -> list[tuple[Approval, DisciplinePurchase]]:
+    """Dots on the sheet still waiting on the home troupe."""
+    return pending_purchases(db, character, HELD_KINDS)
 
 
 def xp_balance(db: Session, character: Character) -> int:
@@ -1590,6 +1613,9 @@ class Change:
     normal_cost: int | None = None
     # Earlier purchases it repriced (horatio.repricing), each with its own XP line.
     repriced: tuple[repricing.Repriced, ...] = ()
+    # Asked of the home troupe rather than made (horatio.merit_requests): what
+    # happens to the XP, in words.
+    asked: str | None = None
 
     @property
     def repricing_cost(self) -> int:
@@ -1844,10 +1870,14 @@ def set_trait(
     by_exception: ByException = None,
     by_staff: bool = False,
     because: str = "",
+    picks: Sequence[FreeChoice] = (),
 ) -> Change:
     """Add a trait, change its rating, or (at rating 0) remove it, buying or
     refunding the difference. Unrated traits replace the category's choice.
     `teacher` names who teaches a discipline dot that waits on the home troupe.
+    A merit or flaw changed by the player once a home troupe has accepted the
+    character is asked of its staff instead (horatio.merit_requests), with the
+    free traits `picks` chooses for a merit.
 
     A raise `free` (the reason it is) costs nothing: its dots are free dots, and
     its line in the XP history is 0 XP, with the reason. One made `by_exception`
@@ -1923,6 +1953,12 @@ def set_trait(
         raise conflict(
             f"{name} was chosen at {existing.free_rating} in character creation: "
             "only the dots bought with XP since can be taken back."
+        )
+    if asks_home(character, category.key, by_staff=by_staff, by_exception=by_exception):
+        from horatio import merit_requests  # imports this module
+
+        return merit_requests.ask(
+            db, player, character, category, definition, detail, rating or 0, existing, picks
         )
     priced: Quote | None
     try:
@@ -2106,6 +2142,21 @@ def set_trait(
     return Change(quote=quote, trait=trait, repriced=tuple(repriced))
 
 
+def asks_home(
+    character: Character, category: str, *, by_staff: bool, by_exception: ByException
+) -> bool:
+    """Whether a change the player makes to this category is asked of the home
+    troupe's staff rather than made: a merit or flaw, once a home troupe has
+    accepted the character. Staff, and exceptions, make it directly."""
+    return (
+        category in ASKED_OF_HOME
+        and character.kind == "pc"
+        and character.home_troupe_id is not None
+        and not by_staff
+        and by_exception is None
+    )
+
+
 def keep_opened(db: Session, character: Character, found: Opening, key: TraitKey) -> None:
     """Keep the power a merit opened on the merit's row, as a merit's free choices
     are kept (horatio.free_choices): the sheet and later changes know which it is."""
@@ -2134,11 +2185,14 @@ def forget_opened(db: Session, character: Character, key: TraitKey) -> None:
     db.flush()
 
 
-def lose_opened(db: Session, player: User, character: Character, merit: TraitKey) -> None:
+def lose_opened(
+    db: Session, player: User, character: Character, merit: TraitKey, *, refund: bool = True
+) -> None:
     """A merit that goes takes the powers it opened with it, their XP refunded, where
     a check it set aside would refuse them without it, as a diablerie takes the
     techniques the new Generation cannot hold. One the sheet may hold anyway (its
-    Generation has risen since) stays, judged as any other."""
+    Generation has risen since) stays, judged as any other. Without `refund`, for a
+    merit removed once accepted, the XP is lost (MET: VTM p. 236)."""
     rules = rules_for(db, character)
     sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
     without = [t for t in sheet if (t.category, t.name, t.detail) != merit]
@@ -2149,7 +2203,13 @@ def lose_opened(db: Session, player: User, character: Character, merit: TraitKey
         power = next(t for t in without if (t.category, t.name, t.detail) == key)
         if not barred(found.grant, checks, without, power) or opening(rules, without, power):
             continue
-        set_trait(db, player, character, *key, 0, because=f"lost with {merit[1]}")
+        if refund:
+            set_trait(db, player, character, *key, 0, because=f"lost with {merit[1]}")
+            continue
+        row = next(r for r in sheet_rows(db, character) if r.key == key)
+        forget_opened(db, character, key)
+        db.delete(row.trait)
+        db.flush()
 
 
 def change_choice(
@@ -2309,16 +2369,25 @@ def decide(
     xp: xp_range.Decision | None = None,
     at_cost: bool = False,
     diablerie: "Adjust | None" = None,
+    *,
+    by_quest: bool = False,
 ) -> Approval:
     """Approve or decline a request. `at_cost`, for a trait asked for free by
     exception: approve it, but charge the XP it costs at the normal price.
-    `diablerie`, for a diablerie a player asked to record: what staff change."""
+    `diablerie`, for a diablerie a player asked to record: what staff change.
+    A request answered with a quest is decided `by_quest`, as it ends."""
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
     character = lock_character(db, approval.character_id)
     if at_cost and not (approve and approval.kind == "exception"):
         raise unprocessable("Only an exception asked for free can be approved at normal cost.")
-    if not approve and approval.kind in HELD_KINDS:
+    if approval.kind == ASKED_KIND:
+        from horatio import merit_requests  # imports this module
+
+        if not by_quest:
+            merit_requests.ensure_not_questing(db, approval)
+        merit_requests.decided(db, staff, character, approval, approve)
+    elif not approve and approval.kind in HELD_KINDS:
         undo_discipline(db, staff, character, approval, "declined")
     elif approve and approval.kind == "exception":
         from horatio.trait_exceptions import approve_asked  # imports this module
@@ -2377,15 +2446,26 @@ def decide(
 
 
 def discipline_details(db: Session, approval: Approval) -> dict[str, Any]:
-    """What the log says about a held purchase: which trait, to what rating."""
-    if approval.kind not in HELD_KINDS:
+    """What the log says about a purchase: which trait, to what rating."""
+    if approval.kind not in PURCHASE_KINDS:
         return {}
-    found = db.execute(
-        select(TraitDefinition.name, DisciplinePurchase.to_rating)
-        .join(DisciplinePurchase, DisciplinePurchase.trait_definition_id == TraitDefinition.id)
+    bought, definition = db.execute(
+        select(DisciplinePurchase, TraitDefinition)
+        .join(TraitDefinition, DisciplinePurchase.trait_definition_id == TraitDefinition.id)
         .where(DisciplinePurchase.approval_id == approval.id)
     ).one()
-    return {"name": found[0], "rating": found[1]}
+    found: dict[str, Any] = {"name": definition.name, "rating": bought.to_rating}
+    if approval.kind == ASKED_KIND:
+        # A merit or flaw change, in words: "add Rugged 3", "buy off Dark Fate".
+        category = db.get_one(TraitCategory, definition.category_id)
+        name = f"★ {definition.name}" if definition.troupe_id else definition.name
+        name = f"{name}: {bought.detail}" if bought.detail else name
+        if bought.to_rating > bought.from_rating:
+            verb = "take on" if category.buy_off_factor else "add"
+            found["change"] = f"{verb} {name} {bought.to_rating}"
+        else:
+            found["change"] = f"{'buy off' if category.buy_off_factor else 'remove'} {name}"
+    return found
 
 
 def undo_discipline(
@@ -2437,7 +2517,18 @@ def undo_discipline(
 def withdraw(db: Session, player: User, approval: Approval) -> Approval:
     if approval.status != "pending":
         raise conflict(f"This request is already {approval.status}.")
-    if approval.kind in HELD_KINDS:
+    if approval.kind == ASKED_KIND:
+        from horatio import merit_requests  # imports this module
+
+        if approval.quest_id is not None:
+            raise conflict(
+                "Staff have answered this with a quest, so it can no longer be withdrawn: "
+                "it is decided when the quest ends."
+            )
+        merit_requests.refund(
+            db, player, lock_character(db, approval.character_id), approval, "withdrawn"
+        )
+    elif approval.kind in HELD_KINDS:
         undo_discipline(
             db, player, lock_character(db, approval.character_id), approval, "withdrawn"
         )

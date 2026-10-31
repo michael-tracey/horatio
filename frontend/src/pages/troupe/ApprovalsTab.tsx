@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { HouseMark } from "../../components/HouseMark";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { QueuedApproval, XpReviewOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
@@ -13,7 +13,7 @@ import { describeDifference, settlementLabel } from "../../settlements";
 import { joining, type XpChoice } from "./xpRange";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
-type Kind = "home_troupe_change" | "discipline" | "review" | "exception" | "diablerie";
+type Kind = "home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw";
 
 const KINDS: Record<Kind, string> = {
   home_troupe_change: "Home troupe requests",
@@ -21,6 +21,7 @@ const KINDS: Record<Kind, string> = {
   review: "Rule reviews",
   exception: "Exceptions",
   diablerie: "Diablerie",
+  merit_flaw: "Merits and flaws",
 };
 
 export function ApprovalsTab({ troupeId }: { troupeId: string }) {
@@ -70,6 +71,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [xp, setXp] = useState<XpChoice & { extra_reason: string }>({ self_entered: "keep", top_up: null, above_ceiling: "keep", extra: 0, extra_reason: "" });
   const dates = useDates();
+  const navigate = useNavigate();
   const [victim, setVictim] = useState("");
   const [adjust, setAdjust] = useState<DiablerieAdjust>({});
   const decide = useAction(({ approve, atCost = false }: { approve: boolean; atCost?: boolean }) =>
@@ -102,6 +104,10 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   const d = approval.discipline;
   const ex = approval.exception;
   const dia = approval.diablerie;
+  const merit = approval.kind === "merit_flaw" ? d : null;
+  const quest = approval.quest;
+  // Tied to a quest still under way: the quest decides it.
+  const questing = !!quest && (quest.status === "draft" || quest.status === "active");
 
   return (
     <Card
@@ -125,7 +131,11 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
                     : "exception"
                   : approval.kind === "diablerie"
                     ? "diablerie"
-                    : "sheet changes"}
+                    : approval.kind === "merit_flaw"
+                      ? merit?.category === "flaws"
+                        ? "flaw"
+                        : "merit"
+                      : "sheet changes"}
         </Badge>
       }
     >
@@ -149,7 +159,18 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           )}
         </div>
       )}
-      {d && !ex && (
+      {merit && <MeritFlawAsk ask={merit} pending={pending} />}
+      {quest && (
+        <p className="mb-3 text-sm">
+          Answered with the quest{" "}
+          <Link to={`/troupes/${approval.troupe_id}/quests/${quest.id}`} className="text-gold hover:text-parchment">
+            {quest.name}
+          </Link>{" "}
+          ({quest.status}).{" "}
+          {questing && <span className="text-mist">Completing it approves this; failing or closing it declines it and refunds any XP held.</span>}
+        </p>
+      )}
+      {d && !ex && !merit && (
         <p className="mb-3 text-sm">
           {d.name}
           {d.detail && `: ${d.detail}`}
@@ -227,7 +248,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         </div>
       )}
       {joining && approval.xp && <XpReview review={approval.xp} pending={pending} choice={xp} onChange={setXp} />}
-      {pending ? (
+      {pending && questing ? null : pending ? (
         <>
           <Field label="Note to the player">
             <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -242,6 +263,11 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
                 Approve, at normal cost
               </Button>
             )}
+            {approval.quest_suggestion && (
+              <Button variant="secondary" onClick={() => navigate(`/troupes/${approval.troupe_id}/quests/new?approval=${approval.id}`)}>
+                Answer with a quest
+              </Button>
+            )}
             <Button variant="danger" onClick={() => decide.mutate({ approve: false })} disabled={decide.isPending}>
               Decline
             </Button>
@@ -251,6 +277,39 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         approval.staff_note && <p className="text-sm text-mist">Note: {approval.staff_note}</p>
       )}
     </Card>
+  );
+}
+
+/** A merit or flaw asked to be added or removed: what it changes and what happens to the XP. */
+function MeritFlawAsk({ ask: m, pending }: { ask: NonNullable<QueuedApproval["discipline"]>; pending: boolean }) {
+  const flaw = m.category === "flaws";
+  const adding = m.to_rating > m.from_rating;
+  const name = (
+    <>
+      {m.name}
+      {m.detail && `: ${m.detail}`}
+      {m.house && <HouseMark label={m.house} />}
+    </>
+  );
+  const points = adding ? m.to_rating : m.from_rating;
+  return (
+    <div className="mb-3 flex flex-col gap-1 text-sm">
+      <p>
+        {adding ? (flaw ? "Take on the flaw " : "Add the merit ") : flaw ? "Buy off the flaw " : "Remove the merit "}
+        {name} ({points} {points === 1 ? "point" : "points"})
+        {adding && !flaw && `, for ${m.cost} XP`}
+        {adding && flaw && `, which gives ${-m.cost} XP`}
+        {!adding && flaw && `, for ${m.cost} XP: twice what it gave`}
+        {!adding && !flaw && ", with no XP back (MET: VTM p. 236)"}.
+      </p>
+      {pending && (
+        <p className="text-mist">
+          It isn't on the sheet yet. Approving {adding ? "puts it on the sheet" : "takes it off the sheet"}
+          {(adding && !flaw) || (!adding && !flaw) ? " and takes a downtime action" : ""}
+          {m.cost > 0 ? "; declining refunds the XP held." : "; declining leaves the sheet as it is."}
+        </p>
+      )}
+    </div>
   );
 }
 
