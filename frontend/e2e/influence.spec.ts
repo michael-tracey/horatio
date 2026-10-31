@@ -53,6 +53,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await next("Merits & flaws");
   await next("Review");
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
@@ -216,6 +217,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   await next("Merits & flaws");
   await next("Review");
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   const iris = new URL(p.url()).pathname.split("/")[2]!;
   const special = await p.request.put(`/api/characters/${iris}/traits`, {
@@ -355,6 +357,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await next("Merits & flaws");
   await next("Review");
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   const agnes = new URL(p.url()).pathname.split("/")[2]!;
   for (const [category, name, rating] of [

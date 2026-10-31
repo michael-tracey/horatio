@@ -159,6 +159,7 @@ test("a player builds a ghoul in the wizard, bound to their own vampire, and lat
   await expect(p.getByText("3 of 5 dots placed, 2 saved for later", { exact: false })).toBeVisible();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p).toHaveURL(new RegExp(`/characters/${ghoulId}$`));
   const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Domitor", exact: true }) });
   await expect(card.getByText("Bound to Lady Ysolde, Toreador.")).toBeVisible();
@@ -214,6 +215,7 @@ test("a ghoul with Stolen Potential naming Mental takes no Mental focus, and fin
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   await expect(p.getByText("Stolen Potential: Mental").first()).toBeVisible();
   await expect(p.getByText("Mental Focus", { exact: true })).toHaveCount(0);

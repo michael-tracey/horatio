@@ -66,6 +66,7 @@ test("Stolen Potential takes away the focus in the attribute it names, and the c
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 
   // The sheet holds the flaw, with its attribute, and no Mental focus.
@@ -209,6 +210,7 @@ test("Personal Cult frees a Herd pick, which goes elsewhere, and the character f
   await p.goto(`/characters/${id}/create/review`);
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   const herd = (await (await p.request.get(`/api/characters/${id}/sheet`)).json()).traits.find((t: { name: string }) => t.name === "Herd");
   expect([herd.rating, herd.free_rating]).toEqual([5, 5]);
@@ -392,6 +394,7 @@ test("a Ventrue takes Royalty in the wizard, is sent to Backgrounds, and places 
   await p.goto(`/characters/${id}/create/review`);
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   const sheet = await (await p.request.get(`/api/characters/${id}/sheet`)).json();
   const dots = Object.fromEntries(sheet.traits.filter((t: { category: string }) => t.category === "backgrounds").map((t: { name: string; rating: number; free_rating: number }) => [t.name, [t.rating, t.free_rating]]));
@@ -486,6 +489,7 @@ test("a merit taken in the creation wizard gives the traits it grants", async ({
   // Only the merit's own point comes from the budget, beside the clan's Bloodline: Creeps (2, #313).
   await expect(p.getByText("Bloodline: Creeps, Extrasensory Perceptions (3 of 7 points)")).toBeVisible();
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   // The sheet shows the creation card until the finished character reloads, and it lists Wits too.
   await expect(p.getByRole("heading", { name: "Character creation" })).toHaveCount(0);
@@ -498,6 +502,55 @@ test("a merit taken in the creation wizard gives the traits it grants", async ({
   await expect(row("Wits")).toBeVisible();
   // Given, not bought: neither can be taken off on its own.
   await expect(p.getByRole("button", { name: "Remove Acute Sense" })).toHaveCount(0);
+});
+
+test("each step keeps its picks as they are made, through the step list and a reload, and Finish creation asks first (#357)", async ({ browser }) => {
+  const { page: p } = await person(browser, "keeps-picks");
+  const id = await creatingVampire(p, "Kept Taps", "Brujah", [], {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}/create/skills`);
+  await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible();
+
+  // While she is being created, the page leads back here, not to Play, and the tabs for play wait.
+  await expect(p.getByRole("link", { name: "Continue creating" })).toBeVisible();
+  await expect(p.getByRole("link", { name: "Play", exact: true })).toHaveCount(0);
+  for (const tab of ["Experience", "Downtime", "Results", "Influence"]) await expect(p.locator("main").getByRole("link", { name: tab, exact: true })).toHaveCount(0);
+
+  // Taps not yet saved go with the player to another step, and are there on coming back.
+  const steps = p.getByRole("navigation", { name: "Creation steps" });
+  await tapMid(p, "Brawl 4");
+  await tapMid(p, "Dodge 3");
+  await steps.getByRole("link", { name: /Backgrounds/ }).click();
+  await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible();
+  await steps.getByRole("link", { name: /Skills/ }).click();
+  await expect(p.getByRole("button", { name: "Brawl 4", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByRole("button", { name: "Dodge 3", exact: true })).toHaveAttribute("aria-pressed", "true");
+
+  // The step saves itself a moment after the last tap, and a reload keeps it all.
+  for (const dot of ["Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2", "Investigation 1", "Leadership 1", "Medicine 1", "Melee 1"]) await tapMid(p, dot);
+  await expect(p.getByText(/^Saved \d/)).toBeVisible({ timeout: 15_000 });
+  await p.screenshot(shots("creation-saved"));
+  await p.reload();
+  for (const dot of ["Brawl 4", "Athletics 3", "Melee 1"]) await expect(p.getByRole("button", { name: dot, exact: true })).toHaveAttribute("aria-pressed", "true");
+
+  // Finishing asks first and says what changes; Not yet leaves her in creation.
+  await steps.getByRole("link", { name: /Review/ }).click();
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await expect(p.getByText("Finish creating Kept Taps? After this, the starting picks are fixed and new dots cost XP.")).toBeVisible();
+  await p.screenshot(shots("creation-finish-asks"));
+  await p.getByRole("button", { name: "Not yet" }).click();
+  await expect(p.getByText(/^Finish creating Kept Taps\?/)).toHaveCount(0);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+  await expect(p.getByRole("link", { name: "Play", exact: true })).toBeVisible();
+  await expect(p.getByRole("link", { name: "Continue creating" })).toHaveCount(0);
 });
 
 test("Crafts, Performance and Science take a field in the wizard, kept through Back and a reload", async ({ browser }) => {
@@ -574,6 +627,7 @@ test("Crafts, Performance and Science take a field in the wizard, kept through B
   await expect(p.getByText("Crafts needs a field:")).toHaveCount(0);
   await expect(p.getByText(/Crafts: Woodwork/)).toBeVisible();
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   await expect(p.getByRole("heading", { name: "Character creation" })).toHaveCount(0);
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
