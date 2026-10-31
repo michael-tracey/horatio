@@ -2,7 +2,7 @@
 (issue #340; MET: VTM Vol. 2, p. 267), off unless the troupe switches it on.
 
 Revision ID: 0119
-Revises: 0115
+Revises: 0116
 Create Date: 2026-10-31 12:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0119"
-down_revision: str | None = "0115"
+down_revision: str | None = "0116"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
