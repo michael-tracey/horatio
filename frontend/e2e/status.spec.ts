@@ -200,6 +200,14 @@ test("Enlightened: a Sabbat follower of an Accepted path holds it, and a Camaril
 
   await l.goto(`/characters/${seraphine}/status`);
   await expect(card.getByRole("listitem", { name: "Enlightened" })).toContainText("from Golconda Seeker");
+
+  // The status rules page lists the merits that give it here, Golconda Seeker among them.
+  await l.goto(`/troupes/${troupeId}/rules/status`);
+  const rule = l.getByRole("listitem", { name: "Enlightened", exact: true });
+  await expect(rule.getByText("innate", { exact: true })).toBeVisible();
+  await expect(rule).toContainText("Given here by the merits Golconda Seeker, Path of Caine, Path of Cathari");
+  await expect(rule).toContainText("Path of Typhon-Set.");
+  await expect(rule).toContainText("Vol. 2, p. 267");
 });
 
 test("Status & Titles: a Camarilla player sees the status held with its sources, takes Harpy from the titles sidebar and gains its status, switches to Keeper of Elysium, and opens a status ban, on desktop and phone (#321, #339)", async ({ browser }) => {

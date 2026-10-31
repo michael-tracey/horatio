@@ -1406,10 +1406,16 @@ def status_rules(db: Session, troupe: Troupe) -> tuple[StatusCapsData, list[Sect
             for name in names:
                 found[name].append(StatusSource("faction", faction))
     for grant in rules.grants:
-        if grant.target.get("category") == STATUS_CATEGORY and "name" in grant.target:
-            found[grant.target["name"]].append(
-                StatusSource("merit", grant.source.get("name", ""), grant.page)
-            )
+        if grant.target.get("category") != STATUS_CATEGORY or "name" not in grant.target:
+            continue
+        # A grant to a character of one sect (Enlightened, from a path the sect
+        # Accepts) counts only where the troupe takes that sect, and a merit once.
+        has = (grant.when or {}).get("has", {})
+        if has.get("category") == "sect" and has.get("name") not in sects:
+            continue
+        source = StatusSource("merit", grant.source.get("name", ""), grant.page)
+        if source not in found[grant.target["name"]]:
+            found[grant.target["name"]].append(source)
     kinds = {kind: i for i, kind in enumerate(("Accepted", "Abiding", "Innate", "Fleeting"))}
     by_sect: list[SectRules] = []
     for sect in sects:
