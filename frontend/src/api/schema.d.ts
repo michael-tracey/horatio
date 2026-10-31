@@ -8786,6 +8786,8 @@ export interface components {
             /** Entries */
             entries: components["schemas"]["DiablerieOut"][];
             waiting: components["schemas"]["ApprovalOut"] | null;
+            /** Waiting On */
+            waiting_on?: string | null;
         };
         /**
          * DiablerieOut

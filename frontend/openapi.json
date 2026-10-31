@@ -5695,6 +5695,18 @@
                 "type": "null"
               }
             ]
+          },
+          "waiting_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waiting On"
           }
         },
         "required": [

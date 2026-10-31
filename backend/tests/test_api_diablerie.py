@@ -244,6 +244,8 @@ def test_a_player_asks_and_a_storyteller_approves(troupe: Troupe) -> None:
         f"/characters/{character_id}/diablerie/ask", json={"committed_on": NIGHT}
     )
     assert twice.status_code == 409
+    mine = troupe.player.client.get(f"/characters/{character_id}/diablerie").json()
+    assert (mine["waiting_on"], mine["can_ask"]) == (NIGHT, False)
     [waiting] = troupe.lead.client.get(
         f"/troupes/{troupe.id}/approvals", params={"kind": "diablerie"}
     ).json()
@@ -268,7 +270,7 @@ def test_a_player_asks_and_a_storyteller_approves(troupe: Troupe) -> None:
     assert balance(troupe.player, character_id) == xp
     seen = troupe.storyteller.client.get(f"/characters/{character_id}/diablerie").json()
     assert [(e["committed_on"], e["victim"]) for e in seen["entries"]] == [(NIGHT, "Sire")]
-    assert seen["waiting"] is None
+    assert (seen["waiting"], seen["waiting_on"]) == (None, None)
 
 
 def test_declining_a_players_diablerie_changes_nothing(troupe: Troupe) -> None:
