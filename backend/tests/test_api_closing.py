@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from horatio.models import CharacterTitle
 from horatio.models import Troupe as TroupeRow
-from tests.api_helpers import Person, Troupe, new_character, sign_up
+from tests.api_helpers import Person, Troupe, backstory_optional, new_character, sign_up
 from tests.test_api_downtimes import member_character, new_cycle, open_cycle
 from tests.test_api_play import send, tap
 
@@ -47,6 +47,7 @@ class Court:
         second = troupe.custodian.client.post(
             "/troupes", json={"name": "Second City", "lead_handle": troupe.stranger.handle}
         ).json()["id"]
+        backstory_optional(troupe.session, second)
         self.bertrand = new_character(troupe, self.other, "Bertrand")
         asked = self.other.client.post(
             f"/characters/{self.bertrand}/home-troupe", json={"troupe_id": second}

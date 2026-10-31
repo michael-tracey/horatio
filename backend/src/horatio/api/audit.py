@@ -47,7 +47,10 @@ class AuditGroup(StrEnum):
 # Each group's name, and the starts of the actions in it. An action can be in more
 # than one: a troupe's XP range is the troupe's and XP's.
 GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
-    AuditGroup.APPROVALS: ("Approvals", ("approval.", "standing.", "home_troupe.")),
+    AuditGroup.APPROVALS: (
+        "Approvals",
+        ("approval.", "standing.", "home_troupe.", "backstory."),
+    ),
     AuditGroup.XP: ("XP", ("xp.", "troupe.starting_xp", "troupe.xp_", "downtime.completion_xp")),
     AuditGroup.SHEETS: (
         "Sheets",

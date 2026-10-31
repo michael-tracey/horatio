@@ -4,8 +4,9 @@ Only a character in no troupe can be deleted, so its player must first leave
 every troupe, and each of those troupes' logs records that it left. Deletion
 then records one last entry in every troupe the character was ever in, and
 removes the character and everything that is only about it: its sheet, XP,
-approvals, diableries, equipment, its downtime submissions and their responses, and
-its games on the Play View with their taps, counters, modifiers and derangements.
+approvals, diableries, equipment, backstory, its downtime submissions and their
+responses, and its games on the Play View with their taps, counters, modifiers and
+derangements.
 The troupe logs keep their entries, with the character's name.
 """
 
@@ -19,6 +20,9 @@ from horatio.models import (
     Answer,
     Approval,
     AuditEvent,
+    Backstory,
+    BackstoryAnswer,
+    BackstoryFeedback,
     Character,
     CharacterTitle,
     CharacterTrait,
@@ -128,6 +132,9 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(delete(EquipmentEvent).where(EquipmentEvent.item_id.in_(held)))
     db.execute(delete(EquipmentItem).where(EquipmentItem.character_id == cid))
     db.execute(delete(CharacterTrait).where(CharacterTrait.character_id == cid))
+    db.execute(delete(BackstoryAnswer).where(BackstoryAnswer.character_id == cid))
+    db.execute(delete(BackstoryFeedback).where(BackstoryFeedback.character_id == cid))
+    db.execute(delete(Backstory).where(Backstory.character_id == cid))
     db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
     # A troupe's locations it controlled, jointly or as heir, keep its name; a Haven
     # of its is one no longer.

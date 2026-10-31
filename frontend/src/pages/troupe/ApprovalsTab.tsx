@@ -11,6 +11,8 @@ import { useAction } from "../../hooks";
 import { adjusted, DiablerieAdjustFields, DiablerieEffects, type DiablerieAdjust } from "../character/Diablerie";
 import { describeDifference, settlementLabel } from "../../settlements";
 import { joining, type XpChoice } from "./xpRange";
+import { useBackstoryStanding } from "../character/BackstoryTab";
+import { ApprovalBackstory } from "./ApprovalBackstory";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
 type Kind = "home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw";
@@ -101,6 +103,9 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
   );
   const pending = approval.status === "pending";
   const joining = approval.kind === "home_troupe_change";
+  // A troupe that requires it accepts a character only with its backstory approved.
+  const backstory = useBackstoryStanding(approval.character_id, joining && pending);
+  const needsBackstory = joining && pending && !!backstory.data?.required && !backstory.data.approved;
   const d = approval.discipline;
   const ex = approval.exception;
   const dia = approval.diablerie;
@@ -248,14 +253,16 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         </div>
       )}
       {joining && approval.xp && <XpReview review={approval.xp} pending={pending} choice={xp} onChange={setXp} />}
+      {joining && pending && <ApprovalBackstory characterId={approval.character_id} />}
       {pending && questing ? null : pending ? (
         <>
           <Field label="Note to the player">
             <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
           </Field>
           <ErrorText error={decide.error} />
+          {needsBackstory && <p className="mt-2 text-sm text-mist">Approve the backstory first: this troupe needs it approved before accepting the character.</p>}
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button onClick={() => decide.mutate({ approve: true })} disabled={decide.isPending}>
+            <Button onClick={() => decide.mutate({ approve: true })} disabled={decide.isPending || needsBackstory}>
               Approve
             </Button>
             {ex?.free && (

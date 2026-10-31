@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -36,6 +36,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  await backstoryOptional(custodian.page, troupeName);
 
   // The lead adds a narrator.
   await lead.page.getByRole("link", { name: "Troupes" }).click();
@@ -623,6 +624,7 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await custodian.page.reload();
   const troupeName = `Hungry Night ${run}`;
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
 
   // Agnes (Toreador, Herd 2) and Bram (Brujah, no Herd), both at home in the troupe.
   const build = async (page: Page, name: string, clan: string, backgrounds: [string, number][]) => {

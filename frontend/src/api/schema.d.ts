@@ -328,6 +328,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backstory-questions/{question_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change Question */
+        patch: operations["change_question_api_backstory_questions__question_id__patch"];
+        trace?: never;
+    };
+    "/api/backstory-sets/{set_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change Set */
+        patch: operations["change_set_api_backstory_sets__set_id__patch"];
+        trace?: never;
+    };
+    "/api/backstory-sets/{set_id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Question */
+        post: operations["add_question_api_backstory_sets__set_id__questions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/backups": {
         parameters: {
             query?: never;
@@ -414,6 +465,165 @@ export interface paths {
          *     in a troupe, or the custodian at any time (see horatio/renames.py).
          */
         patch: operations["change_character_api_characters__character_id__patch"];
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Backstory */
+        get: operations["get_backstory_api_characters__character_id__backstory_get"];
+        /**
+         * Save Backstory
+         * @description Save the backstory, as opened at `version`: refused if it has changed since.
+         */
+        put: operations["save_backstory_api_characters__character_id__backstory_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory/answers/{question_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Answer Question
+         * @description Save one answer, as the player goes.
+         */
+        put: operations["answer_question_api_characters__character_id__backstory_answers__question_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve */
+        post: operations["approve_api_characters__character_id__backstory_approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Back
+         * @description Send the backstory back to its player with feedback, without declining the
+         *     character.
+         */
+        post: operations["send_back_api_characters__character_id__backstory_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Questions
+         * @description For its writer, the questions the character is asked, with its answers. For
+         *     staff reading it, the questions answered, as question and answer, including any
+         *     archived since.
+         */
+        get: operations["character_questions_api_characters__character_id__backstory_questions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory/resubmit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resubmit */
+        post: operations["resubmit_api_characters__character_id__backstory_resubmit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory/sets/{set_id}/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build
+         * @description Write a set's answers into the backstory as its sections, replacing only those
+         *     it built before.
+         */
+        post: operations["build_api_characters__character_id__backstory_sets__set_id__build_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory/standing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Backstory Standing
+         * @description Whether the person may read the backstory, and where it stands, without its text.
+         */
+        get: operations["backstory_standing_api_characters__character_id__backstory_standing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/characters/{character_id}/badge": {
@@ -4751,6 +4961,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/backstory-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Set */
+        post: operations["add_set_api_troupes__troupe_id__backstory_sets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/backstory-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Backstory Settings
+         * @description How the troupe's backstories are written, whether one must be approved before a
+         *     character is accepted, and its questions. For its staff.
+         */
+        get: operations["backstory_settings_api_troupes__troupe_id__backstory_settings_get"];
+        /** Set Backstory Settings */
+        put: operations["set_backstory_settings_api_troupes__troupe_id__backstory_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/backstory-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Load Template
+         * @description Add the starting template's question sets, for the troupe to edit.
+         */
+        post: operations["load_template_api_troupes__troupe_id__backstory_template_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/badges": {
         parameters: {
             query?: never;
@@ -6762,6 +7031,19 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * AgeCondition
+         * @description Shown for characters of these social ages.
+         */
+        AgeCondition: {
+            /** Ages */
+            ages: ("Neonate" | "Ancilla" | "Elder")[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "social_age";
+        };
         /** AllowanceChange */
         AllowanceChange: {
             /** Amount */
@@ -6889,6 +7171,49 @@ export interface components {
             structured: {
                 [key: string]: unknown;
             };
+        };
+        /** AnsweredQuestionOut */
+        AnsweredQuestionOut: {
+            /** Answer */
+            answer: string;
+            /** Answer Text */
+            answer_text: string;
+            /** Archived */
+            archived: boolean;
+            /** Hint */
+            hint: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "long" | "short" | "year" | "choice" | "scale" | "heading";
+            /** Optional */
+            optional: boolean;
+            /** Options */
+            options: string[];
+            /** Text */
+            text: string;
+            /** Title */
+            title: string;
+        };
+        /** AnsweredSetOut */
+        AnsweredSetOut: {
+            /** Built */
+            built: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Questions */
+            questions: components["schemas"]["AnsweredQuestionOut"][];
         };
         /** AnswersIn */
         AnswersIn: {
@@ -7204,6 +7529,365 @@ export interface components {
             kind: "background";
             /** Name */
             name: string;
+        };
+        /** BackstoryAnswerIn */
+        BackstoryAnswerIn: {
+            /** Answer */
+            answer: string;
+        };
+        /** BackstoryAnswerOut */
+        BackstoryAnswerOut: {
+            /** Answer */
+            answer: string;
+            /**
+             * Question Id
+             * Format: uuid
+             */
+            question_id: string;
+        };
+        /** BackstoryApproveIn */
+        BackstoryApproveIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Version */
+            version: number;
+        };
+        /** BackstoryBuildIn */
+        BackstoryBuildIn: {
+            /**
+             * Replace Edits
+             * @default false
+             */
+            replace_edits: boolean;
+        };
+        /** BackstoryFeedbackIn */
+        BackstoryFeedbackIn: {
+            /** Body */
+            body: string;
+            /**
+             * Section
+             * @default
+             */
+            section: string;
+        };
+        /** BackstoryIn */
+        BackstoryIn: {
+            /** Text */
+            text: string;
+            /** Version */
+            version: number;
+        };
+        /** BackstoryLineOut */
+        BackstoryLineOut: {
+            /**
+             * Change
+             * @enum {string}
+             */
+            change: "same" | "added" | "removed" | "skipped";
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /** Text */
+            text: string;
+        };
+        /** BackstoryOut */
+        BackstoryOut: {
+            /**
+             * Approved
+             * @default false
+             */
+            approved: boolean;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By Name */
+            approved_by_name?: string | null;
+            /** Changed At */
+            changed_at?: string | null;
+            /** Changed By Name */
+            changed_by_name?: string | null;
+            /**
+             * Changed Since Approval
+             * @default false
+             */
+            changed_since_approval: boolean;
+            /** Differences */
+            differences?: components["schemas"]["BackstoryLineOut"][] | null;
+            /**
+             * Edited Sets
+             * @default []
+             */
+            edited_sets: string[];
+            /**
+             * Length
+             * @default 0
+             */
+            length: number;
+            /**
+             * Mode
+             * @default free
+             * @enum {string}
+             */
+            mode: "free" | "either" | "wizard";
+            /** Read */
+            read: boolean;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** Review */
+            review: boolean;
+            /**
+             * State
+             * @default none
+             * @enum {string}
+             */
+            state: "none" | "returned" | "resubmitted" | "approved";
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Thread
+             * @default []
+             */
+            thread: components["schemas"]["BackstoryThreadEntryOut"][];
+            /** Troupe Id */
+            troupe_id?: string | null;
+            /** Troupe Name */
+            troupe_name?: string | null;
+            /**
+             * Version
+             * @default 0
+             */
+            version: number;
+            /** Write */
+            write: boolean;
+            /**
+             * Written
+             * @default false
+             */
+            written: boolean;
+        };
+        /**
+         * BackstoryQuestionChange
+         * @description Change a question's words and the rest, archive it or bring it back, or move it.
+         */
+        BackstoryQuestionChange: {
+            /** Archived */
+            archived?: boolean | null;
+            /** Move */
+            move?: ("up" | "down") | null;
+            question?: components["schemas"]["BackstoryQuestionIn"] | null;
+        };
+        /** BackstoryQuestionIn */
+        BackstoryQuestionIn: {
+            /** Condition */
+            condition?: (components["schemas"]["AgeCondition"] | components["schemas"]["SectCondition"] | components["schemas"]["TraitCondition"]) | null;
+            /**
+             * Hint
+             * @default
+             */
+            hint: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "long" | "short" | "year" | "choice" | "scale" | "heading";
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Options
+             * @default []
+             */
+            options: string[];
+            /** Text */
+            text: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** BackstoryQuestionOut */
+        BackstoryQuestionOut: {
+            /** Archived */
+            archived: boolean;
+            /** Condition */
+            condition: (components["schemas"]["AgeCondition"] | components["schemas"]["SectCondition"] | components["schemas"]["TraitCondition"]) | null;
+            /** Hint */
+            hint: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "long" | "short" | "year" | "choice" | "scale" | "heading";
+            /** Optional */
+            optional: boolean;
+            /** Options */
+            options: string[];
+            /** Text */
+            text: string;
+            /** Title */
+            title: string;
+        };
+        /** BackstoryQuestionSetChange */
+        BackstoryQuestionSetChange: {
+            /** Archived */
+            archived?: boolean | null;
+            /** Move */
+            move?: ("up" | "down") | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** BackstoryQuestionSetIn */
+        BackstoryQuestionSetIn: {
+            /** Name */
+            name: string;
+        };
+        /** BackstoryQuestionSetOut */
+        BackstoryQuestionSetOut: {
+            /** Archived */
+            archived: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Questions */
+            questions: components["schemas"]["BackstoryQuestionOut"][];
+        };
+        /** BackstoryResubmitIn */
+        BackstoryResubmitIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** BackstorySettingsIn */
+        BackstorySettingsIn: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "free" | "either" | "wizard";
+            /** Required */
+            required: boolean;
+        };
+        /** BackstorySettingsOut */
+        BackstorySettingsOut: {
+            /** Can Edit */
+            can_edit: boolean;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "free" | "either" | "wizard";
+            /** Required */
+            required: boolean;
+            /** Sects */
+            sects: string[];
+            /** Sets */
+            sets: components["schemas"]["BackstoryQuestionSetOut"][];
+        };
+        /**
+         * BackstoryStandingOut
+         * @description What the person asking may do with a character's backstory, and where it
+         *     stands, without its text.
+         */
+        BackstoryStandingOut: {
+            /**
+             * Approved
+             * @default false
+             */
+            approved: boolean;
+            /** Changed At */
+            changed_at?: string | null;
+            /**
+             * Changed Since Approval
+             * @default false
+             */
+            changed_since_approval: boolean;
+            /**
+             * Length
+             * @default 0
+             */
+            length: number;
+            /**
+             * Mode
+             * @default free
+             * @enum {string}
+             */
+            mode: "free" | "either" | "wizard";
+            /** Read */
+            read: boolean;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** Review */
+            review: boolean;
+            /**
+             * State
+             * @default none
+             * @enum {string}
+             */
+            state: "none" | "returned" | "resubmitted" | "approved";
+            /** Troupe Id */
+            troupe_id?: string | null;
+            /** Troupe Name */
+            troupe_name?: string | null;
+            /** Write */
+            write: boolean;
+            /**
+             * Written
+             * @default false
+             */
+            written: boolean;
+        };
+        /** BackstoryThreadEntryOut */
+        BackstoryThreadEntryOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Author Name */
+            author_name: string;
+            /** Body */
+            body: string;
+            /** By Player */
+            by_player: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "feedback" | "reply" | "approved";
+            /** Section */
+            section: string;
         };
         /** BackupOut */
         BackupOut: {
@@ -7872,6 +8556,18 @@ export interface components {
             splat: string;
             /** Status */
             status: string;
+        };
+        /** CharacterQuestionsOut */
+        CharacterQuestionsOut: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "free" | "either" | "wizard";
+            /** Sets */
+            sets: components["schemas"]["AnsweredSetOut"][];
+            /** Troupe Name */
+            troupe_name: string | null;
         };
         /** CharacterQuestsOut */
         CharacterQuestsOut: {
@@ -15992,6 +16688,19 @@ export interface components {
             seated: string[] | null;
         };
         /**
+         * SectCondition
+         * @description Shown for characters of these sects.
+         */
+        SectCondition: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "sect";
+            /** Sects */
+            sects: string[];
+        };
+        /**
          * SeenOut
          * @description One status the other carries into its game. Its details (patron, where, the
          *     story) are there only when `known`: a negative status, or a fleeting one the
@@ -17383,6 +18092,24 @@ export interface components {
              * @default
              */
             teacher: string;
+        };
+        /**
+         * TraitCondition
+         * @description Shown for characters holding this background, merit or flaw.
+         */
+        TraitCondition: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "backgrounds" | "merits" | "flaws";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "trait";
+            /** Name */
+            name: string;
         };
         /** TraitNeed */
         TraitNeed: {
@@ -18963,6 +19690,111 @@ export interface operations {
             };
         };
     };
+    change_question_api_backstory_questions__question_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryQuestionChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstorySettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_set_api_backstory_sets__set_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryQuestionSetChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstorySettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_question_api_backstory_sets__set_id__questions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryQuestionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstorySettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_backups_api_backups_get: {
         parameters: {
             query?: never;
@@ -19167,6 +19999,311 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_backstory_api_characters__character_id__backstory_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_backstory_api_characters__character_id__backstory_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_question_api_characters__character_id__backstory_answers__question_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryAnswerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_api_characters__character_id__backstory_approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryApproveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_back_api_characters__character_id__backstory_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryFeedbackIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_questions_api_characters__character_id__backstory_questions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterQuestionsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resubmit_api_characters__character_id__backstory_resubmit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryResubmitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_api_characters__character_id__backstory_sets__set_id__build_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                set_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryBuildIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    backstory_standing_api_characters__character_id__backstory_standing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryStandingOut"];
                 };
             };
             /** @description Validation Error */
@@ -27614,6 +28751,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClosingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_set_api_troupes__troupe_id__backstory_sets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryQuestionSetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstorySettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    backstory_settings_api_troupes__troupe_id__backstory_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstorySettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_backstory_settings_api_troupes__troupe_id__backstory_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstorySettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstorySettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    load_template_api_troupes__troupe_id__backstory_template_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstorySettingsOut"];
                 };
             };
             /** @description Validation Error */

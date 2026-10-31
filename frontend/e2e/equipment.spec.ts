@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
 
 /** Equipment: giving it, reading it, equipping it and finding it. */
 
@@ -20,6 +20,7 @@ test("a troupe gives equipment: a dagger from a template, a rifle by hand, refus
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Armoury ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: assistant.handle, role: "assistant_storyteller" });
 
   // Agnes is at home in the troupe; Vera only visits it.
@@ -174,6 +175,7 @@ test("a player reads their character's equipment and what each quality does, on 
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Quartermaster ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   const { id: odile } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Odile" });
   await send(player.page, "PUT", `/api/characters/${odile}/traits`, { category: "clan", name: "Brujah", rating: null });
   for (const [category, picks] of Object.entries({ ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] }))
@@ -255,6 +257,7 @@ test("a player equips a katana and a flak vest in the Pools drawer, and the pool
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Gear Locker ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   const { id: brunhild } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Brunhild" });
   await send(player.page, "PUT", `/api/characters/${brunhild}/traits`, { category: "clan", name: "Brujah", rating: null });
   for (const [category, picks] of Object.entries({ ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] }))
@@ -352,7 +355,9 @@ test("players give equipment to each other in their home troupe and discard it, 
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Pawnshop ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   const ferry = await send(custodian.page, "POST", "/api/troupes", { name: `Ferry ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, ferry.id);
   const build = async (page: Page, name: string, home: string) => {
     const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
     await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
@@ -464,6 +469,7 @@ test("a storyteller gives the Book of Nod from a character's page, its player pa
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Scriptorium ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   const build = async (page: Page, name: string) => {
     const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
     await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
@@ -547,6 +553,7 @@ test("staff find who holds what in the Characters filter, and items on the Equip
   await custodian.page.reload();
   const troupeName = `Lantern Watch ${run}`;
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
 
   // Ilse (Camarilla) is the player's, at home in the troupe; Otto (Camarilla), Pell (no sect) and Rhea (Camarilla) are its NPCs.
   const { id: ilse } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Ilse" });

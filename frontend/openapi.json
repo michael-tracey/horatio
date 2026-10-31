@@ -149,6 +149,35 @@
         "title": "AdjustmentOut",
         "type": "object"
       },
+      "AgeCondition": {
+        "description": "Shown for characters of these social ages.",
+        "properties": {
+          "ages": {
+            "items": {
+              "enum": [
+                "Neonate",
+                "Ancilla",
+                "Elder"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Ages",
+            "type": "array"
+          },
+          "kind": {
+            "const": "social_age",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "ages"
+        ],
+        "title": "AgeCondition",
+        "type": "object"
+      },
       "AllowanceChange": {
         "properties": {
           "amount": {
@@ -437,6 +466,108 @@
           "structured"
         ],
         "title": "AnswerOut",
+        "type": "object"
+      },
+      "AnsweredQuestionOut": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "answer_text": {
+            "title": "Answer Text",
+            "type": "string"
+          },
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "long",
+              "short",
+              "year",
+              "choice",
+              "scale",
+              "heading"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "optional": {
+            "title": "Optional",
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "text",
+          "title",
+          "hint",
+          "optional",
+          "options",
+          "answer",
+          "answer_text",
+          "archived"
+        ],
+        "title": "AnsweredQuestionOut",
+        "type": "object"
+      },
+      "AnsweredSetOut": {
+        "properties": {
+          "built": {
+            "title": "Built",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/AnsweredQuestionOut"
+            },
+            "title": "Questions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "built",
+          "questions"
+        ],
+        "title": "AnsweredSetOut",
         "type": "object"
       },
       "AnswersIn": {
@@ -1252,6 +1383,860 @@
           "dots"
         ],
         "title": "BackgroundSpend",
+        "type": "object"
+      },
+      "BackstoryAnswerIn": {
+        "properties": {
+          "answer": {
+            "maxLength": 500000,
+            "title": "Answer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "answer"
+        ],
+        "title": "BackstoryAnswerIn",
+        "type": "object"
+      },
+      "BackstoryAnswerOut": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "question_id": {
+            "format": "uuid",
+            "title": "Question Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question_id",
+          "answer"
+        ],
+        "title": "BackstoryAnswerOut",
+        "type": "object"
+      },
+      "BackstoryApproveIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Note",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "BackstoryApproveIn",
+        "type": "object"
+      },
+      "BackstoryBuildIn": {
+        "properties": {
+          "replace_edits": {
+            "default": false,
+            "title": "Replace Edits",
+            "type": "boolean"
+          }
+        },
+        "title": "BackstoryBuildIn",
+        "type": "object"
+      },
+      "BackstoryFeedbackIn": {
+        "properties": {
+          "body": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "section": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Section",
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "title": "BackstoryFeedbackIn",
+        "type": "object"
+      },
+      "BackstoryIn": {
+        "properties": {
+          "text": {
+            "maxLength": 500000,
+            "title": "Text",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "text",
+          "version"
+        ],
+        "title": "BackstoryIn",
+        "type": "object"
+      },
+      "BackstoryLineOut": {
+        "properties": {
+          "change": {
+            "enum": [
+              "same",
+              "added",
+              "removed",
+              "skipped"
+            ],
+            "title": "Change",
+            "type": "string"
+          },
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "change",
+          "text"
+        ],
+        "title": "BackstoryLineOut",
+        "type": "object"
+      },
+      "BackstoryOut": {
+        "properties": {
+          "approved": {
+            "default": false,
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By Name"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          },
+          "changed_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed By Name"
+          },
+          "changed_since_approval": {
+            "default": false,
+            "title": "Changed Since Approval",
+            "type": "boolean"
+          },
+          "differences": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BackstoryLineOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Differences"
+          },
+          "edited_sets": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Edited Sets",
+            "type": "array"
+          },
+          "length": {
+            "default": 0,
+            "title": "Length",
+            "type": "integer"
+          },
+          "mode": {
+            "default": "free",
+            "enum": [
+              "free",
+              "either",
+              "wizard"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "read": {
+            "title": "Read",
+            "type": "boolean"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "review": {
+            "title": "Review",
+            "type": "boolean"
+          },
+          "state": {
+            "default": "none",
+            "enum": [
+              "none",
+              "returned",
+              "resubmitted",
+              "approved"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "title": "Text",
+            "type": "string"
+          },
+          "thread": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackstoryThreadEntryOut"
+            },
+            "title": "Thread",
+            "type": "array"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          },
+          "version": {
+            "default": 0,
+            "title": "Version",
+            "type": "integer"
+          },
+          "write": {
+            "title": "Write",
+            "type": "boolean"
+          },
+          "written": {
+            "default": false,
+            "title": "Written",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "read",
+          "write",
+          "review"
+        ],
+        "title": "BackstoryOut",
+        "type": "object"
+      },
+      "BackstoryQuestionChange": {
+        "description": "Change a question's words and the rest, archive it or bring it back, or move it.",
+        "properties": {
+          "archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived"
+          },
+          "move": {
+            "anyOf": [
+              {
+                "enum": [
+                  "up",
+                  "down"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackstoryQuestionIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "BackstoryQuestionChange",
+        "type": "object"
+      },
+      "BackstoryQuestionIn": {
+        "properties": {
+          "condition": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "sect": "#/components/schemas/SectCondition",
+                    "social_age": "#/components/schemas/AgeCondition",
+                    "trait": "#/components/schemas/TraitCondition"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AgeCondition"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SectCondition"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TraitCondition"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "hint": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Hint",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "long",
+              "short",
+              "year",
+              "choice",
+              "scale",
+              "heading"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "optional": {
+            "default": false,
+            "title": "Optional",
+            "type": "boolean"
+          },
+          "options": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Options",
+            "type": "array"
+          },
+          "text": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "BackstoryQuestionIn",
+        "type": "object"
+      },
+      "BackstoryQuestionOut": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "sect": "#/components/schemas/SectCondition",
+                    "social_age": "#/components/schemas/AgeCondition",
+                    "trait": "#/components/schemas/TraitCondition"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AgeCondition"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SectCondition"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TraitCondition"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "long",
+              "short",
+              "year",
+              "choice",
+              "scale",
+              "heading"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "optional": {
+            "title": "Optional",
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "text",
+          "title",
+          "hint",
+          "optional",
+          "options",
+          "condition",
+          "archived"
+        ],
+        "title": "BackstoryQuestionOut",
+        "type": "object"
+      },
+      "BackstoryQuestionSetChange": {
+        "properties": {
+          "archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived"
+          },
+          "move": {
+            "anyOf": [
+              {
+                "enum": [
+                  "up",
+                  "down"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "BackstoryQuestionSetChange",
+        "type": "object"
+      },
+      "BackstoryQuestionSetIn": {
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "BackstoryQuestionSetIn",
+        "type": "object"
+      },
+      "BackstoryQuestionSetOut": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/BackstoryQuestionOut"
+            },
+            "title": "Questions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived",
+          "questions"
+        ],
+        "title": "BackstoryQuestionSetOut",
+        "type": "object"
+      },
+      "BackstoryResubmitIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "BackstoryResubmitIn",
+        "type": "object"
+      },
+      "BackstorySettingsIn": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "free",
+              "either",
+              "wizard"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mode",
+          "required"
+        ],
+        "title": "BackstorySettingsIn",
+        "type": "object"
+      },
+      "BackstorySettingsOut": {
+        "properties": {
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "mode": {
+            "enum": [
+              "free",
+              "either",
+              "wizard"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "sects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sects",
+            "type": "array"
+          },
+          "sets": {
+            "items": {
+              "$ref": "#/components/schemas/BackstoryQuestionSetOut"
+            },
+            "title": "Sets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mode",
+          "required",
+          "can_edit",
+          "sets",
+          "sects"
+        ],
+        "title": "BackstorySettingsOut",
+        "type": "object"
+      },
+      "BackstoryStandingOut": {
+        "description": "What the person asking may do with a character's backstory, and where it\nstands, without its text.",
+        "properties": {
+          "approved": {
+            "default": false,
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          },
+          "changed_since_approval": {
+            "default": false,
+            "title": "Changed Since Approval",
+            "type": "boolean"
+          },
+          "length": {
+            "default": 0,
+            "title": "Length",
+            "type": "integer"
+          },
+          "mode": {
+            "default": "free",
+            "enum": [
+              "free",
+              "either",
+              "wizard"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "read": {
+            "title": "Read",
+            "type": "boolean"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "review": {
+            "title": "Review",
+            "type": "boolean"
+          },
+          "state": {
+            "default": "none",
+            "enum": [
+              "none",
+              "returned",
+              "resubmitted",
+              "approved"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          },
+          "write": {
+            "title": "Write",
+            "type": "boolean"
+          },
+          "written": {
+            "default": false,
+            "title": "Written",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "read",
+          "write",
+          "review"
+        ],
+        "title": "BackstoryStandingOut",
+        "type": "object"
+      },
+      "BackstoryThreadEntryOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "author_name": {
+            "title": "Author Name",
+            "type": "string"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "by_player": {
+            "title": "By Player",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "feedback",
+              "reply",
+              "approved"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "author_name",
+          "by_player",
+          "section",
+          "body",
+          "at"
+        ],
+        "title": "BackstoryThreadEntryOut",
         "type": "object"
       },
       "BackupOut": {
@@ -3139,6 +4124,44 @@
           "left_listed"
         ],
         "title": "CharacterOut",
+        "type": "object"
+      },
+      "CharacterQuestionsOut": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "free",
+              "either",
+              "wizard"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "sets": {
+            "items": {
+              "$ref": "#/components/schemas/AnsweredSetOut"
+            },
+            "title": "Sets",
+            "type": "array"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "mode",
+          "troupe_name",
+          "sets"
+        ],
+        "title": "CharacterQuestionsOut",
         "type": "object"
       },
       "CharacterQuestsOut": {
@@ -24415,6 +25438,30 @@
         "title": "SeatsOut",
         "type": "object"
       },
+      "SectCondition": {
+        "description": "Shown for characters of these sects.",
+        "properties": {
+          "kind": {
+            "const": "sect",
+            "title": "Kind",
+            "type": "string"
+          },
+          "sects": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Sects",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "sects"
+        ],
+        "title": "SectCondition",
+        "type": "object"
+      },
       "SeenOut": {
         "description": "One status the other carries into its game. Its details (patron, where, the\nstory) are there only when `known`: a negative status, or a fleeting one the\nviewer has learned about with Leadership.",
         "properties": {
@@ -28077,6 +29124,38 @@
           "name"
         ],
         "title": "TraitChange",
+        "type": "object"
+      },
+      "TraitCondition": {
+        "description": "Shown for characters holding this background, merit or flaw.",
+        "properties": {
+          "category": {
+            "enum": [
+              "backgrounds",
+              "merits",
+              "flaws"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "kind": {
+            "const": "trait",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "category",
+          "name"
+        ],
+        "title": "TraitCondition",
         "type": "object"
       },
       "TraitNeed": {
@@ -31887,6 +32966,165 @@
         ]
       }
     },
+    "/api/backstory-questions/{question_id}": {
+      "patch": {
+        "operationId": "change_question_api_backstory_questions__question_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "question_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Question Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryQuestionChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstorySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Question",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/backstory-sets/{set_id}": {
+      "patch": {
+        "operationId": "change_set_api_backstory_sets__set_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "set_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryQuestionSetChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstorySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Set",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/backstory-sets/{set_id}/questions": {
+      "post": {
+        "operationId": "add_question_api_backstory_sets__set_id__questions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "set_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryQuestionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstorySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Question",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
     "/api/backups": {
       "get": {
         "operationId": "list_backups_api_backups_get",
@@ -32155,6 +33393,477 @@
         "summary": "Change Character",
         "tags": [
           "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory": {
+      "get": {
+        "operationId": "get_backstory_api_characters__character_id__backstory_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Backstory",
+        "tags": [
+          "backstories"
+        ]
+      },
+      "put": {
+        "description": "Save the backstory, as opened at `version`: refused if it has changed since.",
+        "operationId": "save_backstory_api_characters__character_id__backstory_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Backstory",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory/answers/{question_id}": {
+      "put": {
+        "description": "Save one answer, as the player goes.",
+        "operationId": "answer_question_api_characters__character_id__backstory_answers__question_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "question_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Question Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryAnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryAnswerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Question",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory/approve": {
+      "post": {
+        "operationId": "approve_api_characters__character_id__backstory_approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryApproveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory/feedback": {
+      "post": {
+        "description": "Send the backstory back to its player with feedback, without declining the\ncharacter.",
+        "operationId": "send_back_api_characters__character_id__backstory_feedback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryFeedbackIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Back",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory/questions": {
+      "get": {
+        "description": "For its writer, the questions the character is asked, with its answers. For\nstaff reading it, the questions answered, as question and answer, including any\narchived since.",
+        "operationId": "character_questions_api_characters__character_id__backstory_questions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterQuestionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Questions",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory/resubmit": {
+      "post": {
+        "operationId": "resubmit_api_characters__character_id__backstory_resubmit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryResubmitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resubmit",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory/sets/{set_id}/build": {
+      "post": {
+        "description": "Write a set's answers into the backstory as its sections, replacing only those\nit built before.",
+        "operationId": "build_api_characters__character_id__backstory_sets__set_id__build_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "set_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryBuildIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Build",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory/standing": {
+      "get": {
+        "description": "Whether the person may read the backstory, and where it stands, without its text.",
+        "operationId": "backstory_standing_api_characters__character_id__backstory_standing_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryStandingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Backstory Standing",
+        "tags": [
+          "backstories"
         ]
       }
     },
@@ -45189,6 +46898,198 @@
         "summary": "Archive Troupe",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/backstory-sets": {
+      "post": {
+        "operationId": "add_set_api_troupes__troupe_id__backstory_sets_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryQuestionSetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstorySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Set",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/backstory-settings": {
+      "get": {
+        "description": "How the troupe's backstories are written, whether one must be approved before a\ncharacter is accepted, and its questions. For its staff.",
+        "operationId": "backstory_settings_api_troupes__troupe_id__backstory_settings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstorySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Backstory Settings",
+        "tags": [
+          "backstories"
+        ]
+      },
+      "put": {
+        "operationId": "set_backstory_settings_api_troupes__troupe_id__backstory_settings_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstorySettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstorySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Backstory Settings",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/backstory-template": {
+      "post": {
+        "description": "Add the starting template's question sets, for the troupe to edit.",
+        "operationId": "load_template_api_troupes__troupe_id__backstory_template_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstorySettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Load Template",
+        "tags": [
+          "backstories"
         ]
       }
     },

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
 
 /** Influence: the troupe's log, Gossip, and attacks. */
 
@@ -20,6 +20,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  await backstoryOptional(custodian.page, troupeName);
 
   // The player builds Corvin for the troupe, with Elite 3, and asks to make it home.
   const p = player.page;
@@ -177,6 +178,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  await backstoryOptional(custodian.page, troupeName);
   const l = lead.page;
   await l.getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
@@ -315,6 +317,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  await backstoryOptional(custodian.page, troupeName);
   const l = lead.page;
   await l.getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
