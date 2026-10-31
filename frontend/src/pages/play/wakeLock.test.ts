@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { keepAwake, type Lockable, type Visible } from "./wakeLock";
+import { keepAwake, loadAwake, saveAwake, type Lockable, type Visible } from "./wakeLock";
 
 /** A browser that grants wake locks (or refuses them), and a page that can be hidden and shown. */
 function browser({ refuse = false } = {}) {
@@ -99,5 +99,41 @@ describe("keepAwake", () => {
     keepAwake(refused.nav, refused.doc, refused.onChange);
     await settle();
     expect(refused.seen).toEqual([false]);
+  });
+});
+
+describe("the Play View's own keep-awake switch, remembered on the device", () => {
+  function memory(): Storage {
+    const items = new Map<string, string>();
+    return {
+      get length() {
+        return items.size;
+      },
+      clear: () => items.clear(),
+      getItem: (k) => items.get(k) ?? null,
+      key: (i) => [...items.keys()][i] ?? null,
+      removeItem: (k) => void items.delete(k),
+      setItem: (k, v) => void items.set(k, v),
+    };
+  }
+
+  it("follows the settings until it is used, then keeps its choice", () => {
+    const storage = memory();
+    expect(loadAwake(storage)).toBeNull();
+    saveAwake(false, storage);
+    expect(loadAwake(storage)).toBe(false);
+    saveAwake(true, storage);
+    expect(loadAwake(storage)).toBe(true);
+    saveAwake(null, storage);
+    expect(loadAwake(storage)).toBeNull();
+  });
+
+  it("keeps nothing where the browser refuses to keep anything", () => {
+    const refuse = () => {
+      throw new DOMException("Blocked", "SecurityError");
+    };
+    const refusing = { ...memory(), getItem: refuse, setItem: refuse, removeItem: refuse };
+    expect(loadAwake(refusing)).toBeNull();
+    expect(() => saveAwake(true, refusing)).not.toThrow();
   });
 });

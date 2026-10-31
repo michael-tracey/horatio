@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { ExpendableOut, GameOut, InfluenceDetailsIn, InfluenceStandingOut, PlayView } from "../../api/types";
 import { LinesVeilsNote } from "../../components/LinesVeils";
+import { useToast } from "../../components/Toast";
 import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
@@ -20,7 +21,7 @@ import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
-import { DRANK, incapacitated, influenceStanding, latestUndoable, type Damage, type Shown, type ShownEntry } from "./tracker";
+import { DRANK, incapacitated, influenceStanding, latestUndoable, tapToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
 import { usePlay, type Play, type Sync } from "./usePlay";
 import { useEquipment } from "./useEquipment";
 import { useReference } from "./useReference";
@@ -28,7 +29,7 @@ import { StockPlay } from "./StockPlay";
 import { VitaeTracker } from "./Vitae";
 import { ShownWarning } from "./TrackerWarning";
 import { beastWarning } from "./warnings";
-import { useWakeLock } from "./wakeLock";
+import { useKeepAwake } from "./wakeLock";
 
 type Change = { tracker: string; amount: number; damage?: Damage; label: string };
 type RecordTap = (change: Change) => void;
@@ -53,13 +54,14 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
 /**
  * A living sheet for a game, laid out for a phone in one hand, in three tabs:
  * the Sheet to look things up in; the Tracker, with blood, Willpower, health,
- * Morality and Beast traits as big boxes to tap, the character's limited uses
- * and the game's log with Undo; and Pools, its test pools and powers; with
- * Status for a character with sect status, and Equipment. Taps are kept on the
- * phone when there is no signal and sent when it returns. The Sheet, Pools and
- * Equipment load when the page opens, so the tabs switch at once.
- * The person's settings choose the tab it opens on, whether quick notes start
- * on, and whether the screen stays awake while it is open.
+ * Morality and Beast traits as boxes with big buttons to tap, the character's
+ * limited uses and the game's log; and Pools, its test pools and powers; with
+ * Status for a character with sect status, and Equipment. Each tap says what it
+ * did in a toast with Undo, and Undo for the last tap is in the header on every
+ * tab. Taps are kept on the phone when there is no signal and sent when it
+ * returns. The Sheet, Pools and Equipment load when the page opens, so the tabs
+ * switch at once. The person's settings choose the tab it opens on and whether
+ * quick notes start on; the screen stays awake as the header's switch says.
  */
 export function PlayPage() {
   const { characterId = "" } = useParams();
@@ -73,14 +75,17 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const [params, setParams] = useSearchParams();
   const prefs = usePreferences();
   const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? prefs.play_tab;
-  const { view, shown, tap, sync, accept } = play;
+  const { view, shown, sync, accept } = play;
+  const tap = useToldTap(play);
   const { reference, error: referenceError } = useReference(characterId);
   // Asked now, so the Equipment tab opens at once and is kept on the phone for a game with no signal.
   useEquipment(characterId);
   // Quick notes start as the settings say; the switch changes them for this visit.
   const [quickNotes, setQuickNotes] = useState(prefs.quick_notes);
-  const awake = useWakeLock(prefs.keep_awake);
+  const awake = useKeepAwake(prefs.keep_awake);
   const [asking, setAsking] = useState<Change | null>(null);
+  // Undoing a spend whose influence log entry staff have changed asks first.
+  const [checking, setChecking] = useState<ShownEntry | null>(null);
   const [spending, setSpending] = useState<Change | null>(null);
   // An influence spend in the game's log whose details are being added or changed.
   const [detailing, setDetailing] = useState<ShownEntry | null>(null);
@@ -100,9 +105,11 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const scene = params.get("scene");
   const sceneTroupe = params.get("troupe");
   const back = scene ? (sceneTroupe ? `/play/troupes/${sceneTroupe}/scenes/${scene}` : `/play/troupes/${scene}/scene`) : null;
+  const undo = (entry: ShownEntry) => (entry.influence?.changed_by_staff ? setChecking(entry) : tap({ kind: "undo", undoes: entry.id }));
+  const undoButton = <UndoLast last={shown ? latestUndoable(shown.log) : undefined} undo={undo} />;
 
-  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
 
   const record: RecordTap = (change) => {
     // Influence always asks for the spend's details, for the troupe's influence log.
@@ -116,7 +123,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
     reference ? show(reference) : referenceError ? <ErrorText error={referenceError} /> : <p className="py-8 text-center text-mist">Loading…</p>;
 
   return (
-    <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} name={shown.character_name} tabs={tabs}>
+    <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
       <PowersBanner powers={shown.powers} tap={tap} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
@@ -147,12 +154,13 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
                 tracker="blood"
                 value={shown.blood.value}
                 most={shown.blood.most}
-                hint={`${bloodPerTurn(shown)} a turn${shown.half_blood ? " · Half Blood: fed short last downtime" : ""}`}
+                hint={shown.half_blood ? "Half Blood: fed short last downtime" : undefined}
                 record={record}
+                loud
                 extra={shown.panels.feed ? <FeedButton onClick={() => setFeeding(true)} /> : undefined}
               />
             )}
-            <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} />
+            <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} loud />
             <HealthTracker view={shown} record={record} />
             <div className="grid gap-3">
               {shown.morality && (
@@ -185,7 +193,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
           {reference && <RetainerPools retainers={reference.retainers} tracks={shown.retainers} tap={record} />}
           <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={setQuickNotes} online={sync.online} onChange={accept} />
           <Notes add={(note) => tap({ kind: "note", note })} />
-          <GameLog view={shown} undo={(entry) => tap({ kind: "undo", undoes: entry.id })} onDetails={sync.online ? setDetailing : undefined} />
+          {/* Its Undo is the header's, on every tab. */}
+          <GameLog view={shown} onDetails={sync.online ? setDetailing : undefined} />
           <ResetGame view={shown} sync={sync} onReset={accept} />
           <PastGames characterId={characterId} current={shown.game?.id} />
         </>
@@ -202,6 +211,19 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
           }}
         />
       )}
+      {checking && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gold/50 bg-dusk p-4 shadow-2xl">
+          <UndoCheck
+            entry={checking}
+            className="mx-auto max-w-3xl"
+            onUndo={() => {
+              tap({ kind: "undo", undoes: checking.id });
+              setChecking(null);
+            }}
+            onKeep={() => setChecking(null)}
+          />
+        </div>
+      )}
       {detailing?.influence && <DetailsLater view={shown} entry={detailing} onDone={() => setDetailing(null)} onChange={accept} />}
       {asking && (
         <NoteSheet
@@ -217,12 +239,17 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   );
 }
 
-/** The page around the sheet: back to the character (or to the scene it was opened from), whether the screen is kept awake and taps are saved, and the tabs. */
+/**
+ * The page around the sheet: back to the character (or to the scene it was
+ * opened from), the switch that keeps the screen awake, Undo, whether taps are
+ * saved, and the tabs.
+ */
 function PlayShell({
   characterId,
   scene,
   sync,
   awake,
+  undo,
   name,
   tabs,
   children,
@@ -231,7 +258,8 @@ function PlayShell({
   /** Where "Back to the scene" goes, when it was opened from one. */
   scene: string | null;
   sync: Sync;
-  awake: boolean;
+  awake: KeepAwake;
+  undo: ReactNode;
   name?: string;
   tabs: ReactNode;
   children: ReactNode;
@@ -245,16 +273,14 @@ function PlayShell({
               ← Back to the scene
             </Link>
           ) : (
-            <Link to={`/characters/${characterId}`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
-              ← {name ?? "Back"}
+            <Link to={`/characters/${characterId}`} className="inline-flex min-h-10 min-w-0 items-center text-sm text-mist hover:text-parchment">
+              <span className="truncate">← {name ?? "Back"}</span>
             </Link>
           )}
-          <span className="flex items-start gap-2">
-            {awake && (
-              <span className="rounded-full border border-ash px-2.5 py-0.5 text-xs whitespace-nowrap text-mist" title="Kept on while the Play View is open, as your settings ask.">
-                ☀ Screen awake
-              </span>
-            )}
+          {/* On a narrow phone with taps waiting, the pill drops below the buttons rather than off the screen. */}
+          <span className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+            <AwakeSwitch awake={awake} />
+            {undo}
             <SyncStatus sync={sync} />
           </span>
         </div>
@@ -263,6 +289,78 @@ function PlayShell({
       <main className="mx-auto flex max-w-3xl flex-col gap-3 px-4 pt-3">{children}</main>
     </div>
   );
+}
+
+export type KeepAwake = ReturnType<typeof useKeepAwake>;
+
+/** Keeping the screen awake, on or off, in the Play View's header; remembered on the device. */
+export function AwakeSwitch({ awake }: { awake: KeepAwake }) {
+  const can = typeof navigator !== "undefined" && "wakeLock" in navigator;
+  const title = !awake.on ? "The screen may dim and lock as usual." : can ? (awake.held ? "The screen stays on while the Play View is open." : "Asking to keep the screen on…") : "This browser can't keep the screen on.";
+  return (
+    <button
+      type="button"
+      aria-pressed={awake.on}
+      aria-label="Keep the screen awake"
+      title={title}
+      onClick={() => awake.set(!awake.on)}
+      className={cx(
+        "inline-flex min-h-10 items-center rounded-full border px-2.5 text-xs whitespace-nowrap",
+        awake.on ? "border-gold/60 bg-gold/10 text-gold" : "border-ash text-mist line-through",
+      )}
+    >
+      ☀ Awake
+    </button>
+  );
+}
+
+/**
+ * Undo for the last tap, described by the tap it takes back. The tap goes in
+ * the description, not the name, so the name never takes in a control's own
+ * label (a switch's "Celerity on") on the tabs beside it.
+ */
+export function UndoLast({ last, undo }: { last: ShownEntry | undefined; undo: (entry: ShownEntry) => void }) {
+  return (
+    <Button variant="secondary" className="px-3" disabled={!last} onClick={() => last && undo(last)} title={last ? `Undo ${last.text}` : undefined}>
+      Undo
+    </Button>
+  );
+}
+
+/**
+ * The Play View's `tap`, saying in the shared toast what each tap did, with
+ * Undo: "Spent 1 Blood · 9/10 · Undo". Undo is a tap like any other, so it
+ * waits on the phone with the rest when there is no signal.
+ */
+export function useToldTap(play: Play): Play["tap"] {
+  const toast = useToast();
+  const { tap } = play;
+  // The screen as it is now, read when a tap is made rather than when this was.
+  const shown = useRef(play.shown);
+  shown.current = play.shown;
+  const told = useCallback(
+    (what: Parameters<Play["tap"]>[0]): Tap => {
+      const before = shown.current;
+      const made = tap(what);
+      if (!before) return made;
+      toast({
+        message: tapToast(before, made),
+        action:
+          made.kind === "undo"
+            ? undefined
+            : {
+                label: "Undo",
+                onClick: () => {
+                  // Not if it was undone another way meanwhile.
+                  if (shown.current?.log.some((e) => e.id === made.id && !e.undone)) told({ kind: "undo", undoes: made.id });
+                },
+              },
+      });
+      return made;
+    },
+    [tap, toast],
+  );
+  return told;
 }
 
 /** Sheet, Tracker, Pools, (for a character with sect status) Status and Equipment: big tabs across the top, for a thumb. */
@@ -330,7 +428,8 @@ function Identity({ view }: { view: PlayView }) {
         Domitor: <span className="text-parchment/90">{reference.domitor.name}</span>
       </span>
     ) : null,
-    view.panels.generation && view.generation ? `Generation ${view.generation}` : null,
+    // The background's rating, not the vampire's generation from Caine.
+    view.panels.generation && view.generation ? `Generation background ${view.generation}` : null,
     view.blood_per_turn > 0 || view.panels.feed ? `${bloodPerTurn(view)} ${view.blood_name.toLowerCase()} a turn` : null,
   ].filter(Boolean);
   return (
@@ -376,7 +475,20 @@ function Panel({ title, actions, children }: { title: ReactNode; actions?: React
 }
 
 /** A big round button for one thumb. */
-function TapButton({ label, children, onClick, disabled, tone = "plain" }: { label: string; children: ReactNode; onClick: () => void; disabled?: boolean; tone?: "plain" | "blood" }) {
+function TapButton({
+  label,
+  children,
+  onClick,
+  disabled,
+  tone = "plain",
+}: {
+  label: string;
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  /** Filled red only for spending Blood and Willpower; outlined red for a rare, serious change. */
+  tone?: "plain" | "blood" | "outline";
+}) {
   return (
     <button
       type="button"
@@ -385,7 +497,11 @@ function TapButton({ label, children, onClick, disabled, tone = "plain" }: { lab
       disabled={disabled}
       className={cx(
         "grid h-12 min-w-12 place-items-center rounded-full border px-3 text-lg font-semibold transition-colors active:scale-95 disabled:opacity-35",
-        tone === "blood" ? "border-blood bg-blood text-parchment hover:bg-blood-bright" : "border-ash bg-night text-parchment hover:border-mist",
+        tone === "blood"
+          ? "border-blood bg-blood text-parchment hover:bg-blood-bright"
+          : tone === "outline"
+            ? "border-blood/70 bg-night text-blood-bright hover:bg-blood/15"
+            : "border-ash bg-night text-parchment hover:border-mist",
       )}
     >
       {children}
@@ -394,8 +510,8 @@ function TapButton({ label, children, onClick, disabled, tone = "plain" }: { lab
 }
 
 /**
- * Boxes to the tracker's most, filled up to its value. Tapping a filled box
- * spends one, an empty box restores one; the buttons do the same.
+ * Boxes to the tracker's most, filled up to its value, to see at a glance. Only
+ * the − and + buttons change it, so a thumb brushing a box changes nothing.
  */
 export function BoxTracker({
   title,
@@ -408,6 +524,7 @@ export function BoxTracker({
   spendIsUp,
   extra,
   warning,
+  loud,
 }: {
   title: string;
   tracker: string;
@@ -422,6 +539,8 @@ export function BoxTracker({
   extra?: ReactNode;
   /** What the count brings (Beast traits), under the boxes. */
   warning?: ReactNode;
+  /** Spending is the everyday tap (Blood, Willpower): "−" is filled red. Otherwise the harmful button is outlined. */
+  loud?: boolean;
 }) {
   const down = () => record({ tracker, amount: -1, label: title });
   const up = () => record({ tracker, amount: 1, label: title });
@@ -435,14 +554,11 @@ export function BoxTracker({
         </span>
       }
     >
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${title} boxes`}>
+      {/* The count beside the title says the same for a screen reader. */}
+      <div className="flex flex-wrap gap-1.5" aria-hidden="true">
         {Array.from({ length: most }, (_, i) => (
-          <button
+          <span
             key={i}
-            type="button"
-            aria-label={i < value ? `Spend ${title}` : `Restore ${title}`}
-            tabIndex={-1}
-            onClick={i < value ? down : up}
             className={cx(
               "rounded-md border transition-colors",
               small ? "h-9 w-9" : "h-10 w-10",
@@ -456,10 +572,10 @@ export function BoxTracker({
         <span className="text-xs text-mist">{hint}</span>
         <span className="flex gap-2">
           {extra}
-          <TapButton label={spendIsUp ? `Remove a ${title} point` : `Spend ${title}`} onClick={down} disabled={value <= 0} tone={spendIsUp ? "plain" : "blood"}>
+          <TapButton label={spendIsUp ? `Remove a ${title} point` : `Spend ${title}`} onClick={down} disabled={value <= 0} tone={spendIsUp ? "plain" : loud ? "blood" : "outline"}>
             −
           </TapButton>
-          <TapButton label={spendIsUp ? `Gain a ${title} point` : `Restore ${title}`} onClick={up} disabled={value >= most} tone={spendIsUp ? "blood" : "plain"}>
+          <TapButton label={spendIsUp ? `Gain a ${title} point` : `Restore ${title}`} onClick={up} disabled={value >= most} tone={spendIsUp ? "outline" : "plain"}>
             +
           </TapButton>
         </span>
@@ -637,7 +753,7 @@ function ExpendableRow({ item, record, onRemove }: { item: ExpendableOut; record
   );
 }
 
-/** A one-line note for a spend, in quick note mode. */
+/** A one-line note for a spend, in quick note mode; skipping it spends all the same. */
 function NoteSheet({ change, onSave, onCancel }: { change: Change; onSave: (note: string) => void; onCancel: () => void }) {
   const [note, setNote] = useState("");
   return (
@@ -651,11 +767,12 @@ function NoteSheet({ change, onSave, onCancel }: { change: Change; onSave: (note
       >
         <label className="flex flex-col gap-1 text-sm">
           What was {change.label} for? (optional)
-          <Input autoFocus maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="got the Prince's itinerary" />
+          {/* No autofocus: the keyboard comes up only for a player who wants to type. */}
+          <Input maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="got the Prince's itinerary" />
         </label>
         <div className="flex gap-2">
           <Button type="submit" className="min-h-12 flex-1">
-            Save
+            {note.trim() ? "Save" : "Skip the note"}
           </Button>
           <Button type="button" variant="ghost" className="min-h-12" onClick={onCancel}>
             Cancel
@@ -869,47 +986,43 @@ export function LogEntries({ log, onDetails }: { log: ShownEntry[]; onDetails?: 
   );
 }
 
-export function GameLog({ view, undo, onDetails }: { view: Shown; undo: (entry: ShownEntry) => void; onDetails?: (entry: ShownEntry) => void }) {
+/** The game's log, with Undo for its last tap unless the page has Undo of its own (the Play View's header). */
+export function GameLog({ view, undo, onDetails }: { view: Shown; undo?: (entry: ShownEntry) => void; onDetails?: (entry: ShownEntry) => void }) {
   const last = latestUndoable(view.log);
   // Undoing a spend takes its entry off the influence log; if staff have changed it there, ask first.
   const [checking, setChecking] = useState<ShownEntry | null>(null);
   return (
-    <Panel
-      title="This game"
-      actions={
-        <Button
-          variant="secondary"
-          disabled={!last}
-          onClick={() => last && (last.influence?.changed_by_staff ? setChecking(last) : undo(last))}
-          aria-label={last ? `Undo ${last.text}` : "Undo"}
-        >
-          Undo
-        </Button>
-      }
-    >
-      {checking && (
-        <div className="mb-3 flex flex-col gap-2 rounded-md border border-blood/60 bg-blood/15 p-3 text-sm" role="alertdialog" aria-label="Undo a changed spend">
-          <p>
-            Staff have changed {checking.influence?.short_id} in the influence log since it was spent. Undoing it takes it off the log, with their changes.
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="danger"
-              onClick={() => {
-                undo(checking);
-                setChecking(null);
-              }}
-            >
-              Undo anyway
-            </Button>
-            <Button variant="ghost" onClick={() => setChecking(null)}>
-              Keep it
-            </Button>
-          </div>
-        </div>
+    <Panel title="This game" actions={undo && <UndoLast last={last} undo={(entry) => (entry.influence?.changed_by_staff ? setChecking(entry) : undo(entry))} />}>
+      {checking && undo && (
+        <UndoCheck
+          entry={checking}
+          className="mb-3"
+          onUndo={() => {
+            undo(checking);
+            setChecking(null);
+          }}
+          onKeep={() => setChecking(null)}
+        />
       )}
       <LogEntries log={view.log} onDetails={onDetails} />
     </Panel>
+  );
+}
+
+/** Asked before undoing a spend whose influence log entry staff have changed since. */
+function UndoCheck({ entry, className, onUndo, onKeep }: { entry: ShownEntry; className?: string; onUndo: () => void; onKeep: () => void }) {
+  return (
+    <div className={cx("flex flex-col gap-2 rounded-md border border-blood/60 bg-blood/15 p-3 text-sm", className)} role="alertdialog" aria-label="Undo a changed spend">
+      <p>Staff have changed {entry.influence?.short_id} in the influence log since it was spent. Undoing it takes it off the log, with their changes.</p>
+      <div className="flex gap-2">
+        <Button variant="danger" onClick={onUndo}>
+          Undo anyway
+        </Button>
+        <Button variant="ghost" onClick={onKeep}>
+          Keep it
+        </Button>
+      </div>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, undoInHeader } from "./support";
 
 /** A troupe's own merits, what they do on the sheet, and using them at a game. */
 
@@ -269,9 +269,9 @@ test("a house merit in play: the ST makes Battle Trance, a switch and a use a ga
   await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Battle Trance");
   await p.screenshot(shots("house-play-switch"));
 
-  // Undo, from the log, switches it off again.
+  // Undo, in the header, switches it off again.
   await p.getByRole("tab", { name: "Tracker" }).click();
-  await p.getByRole("button", { name: "Undo Battle Trance on" }).click();
+  await (await undoInHeader(p, "Battle Trance on")).click();
   await expect(p.getByRole("status")).toHaveText("Saved");
   await expect(p.getByRole("region", { name: "Switched on now" })).toHaveCount(0);
 

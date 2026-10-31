@@ -14995,7 +14995,7 @@ export interface components {
             email_troupe_requests: boolean;
             /**
              * Keep Awake
-             * @default false
+             * @default true
              */
             keep_awake: boolean;
             /**
