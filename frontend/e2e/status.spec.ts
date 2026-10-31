@@ -150,6 +150,57 @@ test("a blood hunt: staff give a Primogen Bloodhunted, which brings Forsaken, lo
   await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
 });
 
+test("Enlightened: a Sabbat follower of an Accepted path holds it, and a Camarilla Golconda Seeker only once the troupe's house option is on (#340)", async ({ browser }) => {
+  const custodian = await person(browser, "enlight-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "enlight-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of the Seekers ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const l = lead.page;
+  const send = async (url: string, data: object, method: "POST" | "PUT" = "POST") => {
+    const response = await l.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const npc = async (name: string, sect: string, ratings: [string, string, number][]) => {
+    const { id } = await send(`/api/troupes/${troupeId}/npcs`, { name, wizard: false });
+    await send(`/api/characters/${id}/npc/ratings`, { category: "sect", name: sect, rating: null, detail: "" }, "PUT");
+    for (const [category, trait, rating] of ratings) await send(`/api/characters/${id}/npc/ratings`, { category, name: trait, rating, detail: "" }, "PUT");
+    return id as string;
+  };
+  // Brother Anselm follows the Path of Caine, which the Sabbat Accepts (Vol. 2, p. 266).
+  const anselm = await npc("Brother Anselm", "Sabbat", [["merits", "Path of Caine", 3]]);
+  // Seraphine seeks Golconda in the Camarilla.
+  const seraphine = await npc("Seraphine Vautrin", "Camarilla", [
+    ["skills", "Lore", 4],
+    ["paths", "Humanity", 5],
+    ["merits", "Golconda Seeker", 5],
+  ]);
+
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
+  await l.goto(`/characters/${anselm}/status`);
+  await expect(card.getByRole("listitem", { name: "Enlightened" })).toContainText("from Path of Caine");
+  await card.getByRole("button", { name: "Enlightened" }).click();
+  await expect(card.getByText("Vol. 2, p. 267")).toBeVisible();
+  await l.goto(`/characters/${seraphine}/status`);
+  await expect(card.getByRole("listitem", { name: "Acknowledged" })).toBeVisible();
+  await expect(card.getByRole("listitem", { name: "Enlightened" })).toHaveCount(0);
+
+  // The lead switches on the optional rule, on the house rules' Starting points page.
+  await l.goto(`/troupes/${troupeId}/rules/starting`);
+  const golconda = l.locator("section").filter({ has: l.getByRole("heading", { name: "Golconda and Enlightened" }) });
+  await expect(golconda.getByLabel(/Golconda Seekers are Enlightened/)).not.toBeChecked();
+  // It saves as it is clicked, and shows once saved.
+  await golconda.getByLabel(/Golconda Seekers are Enlightened/).click();
+  await expect(golconda.getByLabel(/Golconda Seekers are Enlightened/)).toBeChecked();
+  await l.screenshot(shots("golconda-setting"));
+
+  await l.goto(`/characters/${seraphine}/status`);
+  await expect(card.getByRole("listitem", { name: "Enlightened" })).toContainText("from Golconda Seeker");
+});
+
 test("Status & Titles: a Camarilla player sees the status held with its sources, takes Harpy from the titles sidebar and gains its status, switches to Keeper of Elysium, and opens a status ban, on desktop and phone (#321, #339)", async ({ browser }) => {
   const custodian = await person(browser, "stitles-cust");
   makeCustodian(custodian.email);

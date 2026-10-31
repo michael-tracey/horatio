@@ -24,7 +24,12 @@ from horatio.rules.model import (
     TraitData,
 )
 from horatio.rules.splats import SPLATS
-from horatio.rules.status import check_status_rules, status_rules_from, titles_from
+from horatio.rules.status import (
+    check_status_rules,
+    path_grants,
+    status_rules_from,
+    titles_from,
+)
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -427,6 +432,7 @@ def load_rule_set(path: Path) -> RuleSetData:
     social_ages = list(raw.get("social_ages", []))
     cap_changes = list(raw.get("cap_changes", []))
     outsiders = list(raw.get("outsiders", []))
+    path_stances = list(raw.get("path_stances", []))
     status_caps = raw.get("status_caps")
     clan_rarity = list(raw.get("clan_rarity", []))
     for trait_file in raw.get("trait_files", []):
@@ -439,6 +445,7 @@ def load_rule_set(path: Path) -> RuleSetData:
         social_ages += included.get("social_ages", [])
         cap_changes += included.get("cap_changes", [])
         outsiders += included.get("outsiders", [])
+        path_stances += included.get("path_stances", [])
         status_caps = included.get("status_caps", status_caps)
     # A category can hold the traits of another, by name, even one left out: a ghoul's
     # domitor's in-clan disciplines are those a vampire's extra ones can be.
@@ -501,6 +508,8 @@ def load_rule_set(path: Path) -> RuleSetData:
     for grant_file in raw.get("grant_files", []):
         with (path.parent / grant_file).open("rb") as f:
             raw_grants += tomllib.load(f).get("grants", [])
+    # Enlightened, from the merit of each path a sect Accepts (horatio.rules.status).
+    raw_grants += path_grants(path_stances)
     grants = load_grants(path.name, raw_grants, traits, categories, left_out)
     try:
         validate_sets_aside(grants, checks)
@@ -521,7 +530,9 @@ def load_rule_set(path: Path) -> RuleSetData:
     feeding_modifiers = [feeding_modifier_from_dict(r) for r in raw.get("feeding_modifiers", [])]
     try:
         title_data = titles_from(titles)
-        status_rules = status_rules_from(status_caps, sects, social_ages, cap_changes, outsiders)
+        status_rules = status_rules_from(
+            status_caps, sects, social_ages, cap_changes, outsiders, path_stances
+        )
         check_status_rules(traits, status_rules, title_data)
     except ValueError as error:
         raise ValueError(f"{path.name}: {error}") from error

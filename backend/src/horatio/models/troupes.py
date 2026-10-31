@@ -63,6 +63,10 @@ class Troupe(Imported, Record):
     # (horatio.diablerie): "leave" it, "remove" it and the XP it gave, or "keep_xp"
     # to remove it and keep that XP.
     diablerie_flaws: Mapped[str] = mapped_column(default="leave", server_default="leave")
+    # House option: the troupe's sect recognises the pursuit of Golconda, so a
+    # Golconda Seeker holds the innate status Enlightened (Vol. 2, p. 267). Off unless
+    # switched on (horatio.rules.grants.HOUSE_OPTIONS).
+    golconda_enlightened: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Status on sheets (horatio.sect_status): who adds and removes fleeting and
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.

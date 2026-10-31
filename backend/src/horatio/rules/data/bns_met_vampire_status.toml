@@ -549,6 +549,49 @@ name = "Trustee"
 sect = "Independent Alliance"
 no_rules_yet = true
 
+# --- Paths of Enlightenment (Vol. 2, pp. 266-267) --------------------------------------------
+#
+# Each sect's stance on the Paths of Enlightenment, by their merits. A character
+# with the merit of a path its sect Accepts holds the innate status Enlightened
+# (p. 267): the rules loader makes that grant for each Accepted path. A path the
+# sect holds Heretical (`all_heretical` for every path) may bring a status ban;
+# one that is neither gives nothing. A sect with status rules bans following any
+# path (an `on_path` ban) exactly when it holds every path Heretical and Accepts
+# none, and the loader checks the two agree. Chronicles may change these lists.
+
+[[path_stances]]
+sect = "Camarilla"
+all_heretical = true
+note = "Every path is Heretical, and brings a lesser ban (p. 403)."
+page = "Vol. 2, p. 266"
+
+[[path_stances]]
+sect = "Sabbat"
+accepted = [
+  "Path of Caine", "Path of Cathari", "Path of Chivalry", "Path of Death and the Soul",
+  "Path of Feral Heart", "Path of Heaven", "Path of Honorable Accord",
+  "Path of Metamorphosis", "Path of Night", "Path of Orion",
+  "Path of Power and the Inner Voice",
+]
+heretical = ["Path of Evil Revelations"]
+note = "Harmony and Lilith are no longer Heretical (since 2006), but not yet Accepted."
+page = "Vol. 2, p. 266"
+
+[[path_stances]]
+sect = "Independent Alliance"
+accepted = [
+  "Path of Ecstasy", "Path of Death and the Soul", "Path of Scorched Heart", "Path of Night",
+  "Path of Typhon-Set",
+]
+heretical = ["Path of Caine", "Path of Evil Revelations"]
+page = "Vol. 2, p. 266"
+
+[[path_stances]]
+sect = "Anarch"
+all_heretical = true
+note = "Every path is Heretical, and brings a greater ban (p. 484)."
+page = "Vol. 2, p. 266"
+
 # --- general status (pp. 313-317) ------------------------------------------------------------
 #
 # Status is used on characters in the user's jurisdiction: within the last 30 days in
@@ -763,6 +806,20 @@ punishment = "None beyond the censure; a sect member who kills you gains Triumph
 source = "Breaking Disgraced's censure; spent Authority; Bloodhunted, which brings it (p. 389)."
 [traits.properties.duration]
 text = "Until someone spends Authority to forgive you."
+
+# Innate status from a Path of Enlightenment merit, where the sect Accepts the path
+# (Vol. 2, p. 267; the grants come from `path_stances` above). With the troupe's
+# house option, also from Golconda Seeker (the optional rule on p. 267).
+[[traits]]
+category = "status_traits"
+name = "Enlightened"
+page_reference = "Vol. 2, p. 267"
+[traits.properties]
+type = "Innate"
+sect = "General"
+passive = "A master of your path: when your Animal Ken removes Beast traits someone on your path would not have gained, remove one more."
+spent = "Decline one activity against your path's tenets, saying briefly why; others must respect it, unless it would let you skirt your sect's laws."
+source = "The merit of a path your sect Accepts (Vol. 2, p. 266); Golconda Seeker, where the troupe's house option says its sect recognises Golconda."
 
 # --- Camarilla (pp. 400-403) -----------------------------------------------------------------
 

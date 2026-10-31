@@ -35,6 +35,7 @@ from horatio.rules.store import (
     add_house_rule,
     change_house_allowance_rule,
     change_house_rule,
+    forget_rules,
     house_allowance_rules,
     house_cost_rules,
     read_troupe_rules,
@@ -44,7 +45,7 @@ from horatio.rules.store import (
     set_check_override,
     set_house_creation_rules,
 )
-from horatio.sheets import sync_troupe_fixed_ratings
+from horatio.sheets import apply_grants, playing_by, sync_troupe_fixed_ratings
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["house rules"])
 
@@ -814,6 +815,36 @@ def set_diablerie_flaws(
         troupe_id=troupe.id,
         setting=diablerie.SETTING_TEXT[body.setting],
     )
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
+class GolcondaIn(BaseModel):
+    # The troupe's sect recognises the pursuit of Golconda: Golconda Seekers hold the
+    # innate status Enlightened (Vol. 2, p. 267).
+    on: bool
+
+
+@router.put("/golconda")
+def set_golconda(
+    troupe_id: uuid.UUID, body: GolcondaIn, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """Switch on or off the optional rule that Golconda Seekers are Enlightened. The
+    characters playing by the troupe's rules gain or lose it at once."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    if troupe.golconda_enlightened != body.on:
+        troupe.golconda_enlightened = body.on
+        audit.record(
+            db,
+            user,
+            "house.golconda",
+            troupe_id=troupe.id,
+            setting="are Enlightened" if body.on else "are not Enlightened",
+        )
+        db.flush()
+        forget_rules(db)
+        for character in playing_by(db, troupe.id):
+            apply_grants(db, user, character)
     db.commit()
     return troupe_out(db, user, troupe)
 

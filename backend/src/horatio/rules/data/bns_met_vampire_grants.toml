@@ -227,6 +227,17 @@ target = { category = "status_traits", name = "Loyal" }
 amount = 1
 page = "405"
 
+# The optional rule on Vol. 2, p. 267: a sect that recognises the pursuit of
+# Golconda gives its Golconda Seekers Enlightened. Only while the troupe's house
+# option is on (horatio.rules.grants.HOUSE_OPTIONS); off unless it switches it on.
+[[grants]]
+source = { category = "merits", name = "Golconda Seeker" }
+option = "golconda_enlightened"
+kind = "free_up_to"
+target = { category = "status_traits", name = "Enlightened" }
+amount = 1
+page = "Vol. 2, p. 267"
+
 [[grants]]
 source = { category = "merits", name = "Black Hand Membership" }
 kind = "free_up_to"

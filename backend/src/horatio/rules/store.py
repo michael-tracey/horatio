@@ -733,6 +733,11 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         )
 
     troupe_name = house[0][1] if house else ""
+    # The house options the troupe has on: a grant under any other is left out.
+    troupe = session.get(Troupe, troupe_id) if troupe_id is not None else None
+    options: set[str | None] = {None}
+    if troupe is not None and troupe.golconda_enlightened:
+        options.add("golconda_enlightened")
     traits: dict[tuple[str, str], TraitData] = {}
     taken: set[uuid.UUID] = set()
     for d in definitions:
@@ -774,7 +779,9 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         titles=titles_from([*rule_set.titles, *rule_set.status_rules.get("titles", [])]),
         status_rules=status_rules_from_dict(rule_set.status_rules),
         checks=tuple(check_from_dict(c) for c in rule_set.checks),
-        grants=tuple(grant_from_dict(g) for g in rule_set.grants),
+        grants=tuple(
+            g for g in (grant_from_dict(r) for r in rule_set.grants) if g.option in options
+        ),
         feeding_modifiers=tuple(feeding_modifier_from_dict(m) for m in rule_set.feeding_modifiers),
         creation_only=creation_only,
         banked_xp=rule_set.banked_xp,

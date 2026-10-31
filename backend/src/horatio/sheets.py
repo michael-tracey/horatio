@@ -186,14 +186,21 @@ def held_at(db: Session, character: Character, category: str, name: str) -> int 
     return fixed_rating(rules_for(db, character), sheet, category, name)
 
 
+def playing_by(db: Session, troupe_id: uuid.UUID) -> list[Character]:
+    """Every character playing by the troupe's rules (rules_troupe)."""
+    return list(
+        db.scalars(
+            select(Character).where(
+                (Character.home_troupe_id == troupe_id)
+                | (Character.home_troupe_id.is_(None) & (Character.building_troupe_id == troupe_id))
+            )
+        )
+    )
+
+
 def sync_troupe_fixed_ratings(db: Session, troupe_id: uuid.UUID) -> None:
     """`sync_fixed_ratings` for every character playing by the troupe's rules."""
-    for character in db.scalars(
-        select(Character).where(
-            (Character.home_troupe_id == troupe_id)
-            | (Character.home_troupe_id.is_(None) & (Character.building_troupe_id == troupe_id))
-        )
-    ):
+    for character in playing_by(db, troupe_id):
         sync_fixed_ratings(db, character)
 
 

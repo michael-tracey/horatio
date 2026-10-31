@@ -7,6 +7,7 @@ import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components
 import { useAction } from "../../hooks";
 import { ClanRarity } from "./ClanRarity";
 import { DiablerieFlaws } from "./DiablerieFlaws";
+import { GolcondaSetting } from "./GolcondaSetting";
 import { useHouseSplat } from "./HouseSplat";
 import { XpRangeCard } from "./XpRange";
 
@@ -59,6 +60,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
       />
       <StartingBlood troupeId={troupeId} canEdit={canEdit} />
       <DiablerieFlaws troupeId={troupeId} canEdit={canEdit} />
+      <GolcondaSetting troupeId={troupeId} canEdit={canEdit} />
     </div>
   );
 }

@@ -117,6 +117,10 @@ Kind = Literal[
     "lower_to",
     "retainer",
 ]
+# Troupe house options a grant can hold under, each off unless the troupe switches
+# it on: Golconda Seekers hold Enlightened (Vol. 2, p. 267; Troupe.golconda_enlightened).
+HOUSE_OPTIONS = ("golconda_enlightened",)
+
 KINDS = (
     "add",
     "free_up_to",
@@ -157,6 +161,8 @@ class GrantData:
     convert_from: Mapping[str, str] | None = None
     # For free_choices: how many the player chooses and how much (places, count, points).
     picks: Mapping[str, Any] | None = None
+    # The troupe house option it holds under (HOUSE_OPTIONS): only while that is on.
+    option: str | None = None
 
     @property
     def categories(self) -> list[str]:
@@ -583,6 +589,7 @@ def grant_from_dict(raw: Mapping[str, Any]) -> GrantData:
         when=raw.get("when"),
         convert_from=raw.get("from"),
         picks=raw.get("picks"),
+        option=raw.get("option"),
     )
 
 
@@ -601,6 +608,8 @@ def validate_grant(
         raise ValueError(f"grant {grant.key} comes from an unknown trait {source}")
     if grant.kind not in KINDS:
         raise ValueError(f"grant {grant.key} has unknown kind {grant.kind!r}")
+    if grant.option is not None and grant.option not in HOUSE_OPTIONS:
+        raise ValueError(f"grant {grant.key} holds under an unknown house option")
     for category in grant.categories:
         if category not in categories:
             raise ValueError(f"grant {grant.key} names unknown category {category!r}")

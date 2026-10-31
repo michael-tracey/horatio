@@ -21,6 +21,7 @@ from horatio.rules.status import (
     GENERAL,
     SOCIAL_AGES,
     STATUS_TYPES,
+    PathStanceData,
     TitleData,
     WhileAbsentData,
     check_status_rules,
@@ -42,7 +43,7 @@ def test_every_status_has_a_sect() -> None:
         by_sect.setdefault(status.sect, set()).add(status.name)
 
     assert {sect: len(names) for sect, names in by_sect.items()} == {
-        GENERAL: 18,
+        GENERAL: 19,
         "Camarilla": 14,
         "Sabbat": 17,
         "Anarch": 12,
@@ -62,7 +63,8 @@ def test_every_book_status_says_what_it_does_and_where() -> None:
     for status in VAMPIRE.statuses.values():
         if status.sect not in BOOK_SECTS:
             continue
-        needs = {"source": status.source, "page": (status.page or "")[:1].isdigit()}
+        page = status.page or ""
+        needs = {"source": status.source, "page": page[:1].isdigit() or page.startswith("Vol.")}
         if status.type == "Negative":
             needs |= {
                 "censure": status.censure,
@@ -123,6 +125,67 @@ def test_bloodhunted_brings_forsaken_and_takes_status_away() -> None:
     assert "Disgraced" in hunted.censure and "Triumphant" in hunted.punishment
     assert not VAMPIRE.statuses["Forsaken"].brings
     assert not VAMPIRE.statuses["Forsaken"].takes_away
+
+
+SABBAT_PATHS = {
+    "Path of Caine", "Path of Cathari", "Path of Chivalry", "Path of Death and the Soul",
+    "Path of Feral Heart", "Path of Heaven", "Path of Honorable Accord",
+    "Path of Metamorphosis", "Path of Night", "Path of Orion",
+    "Path of Power and the Inner Voice",
+}  # fmt: skip
+
+
+def test_each_sects_accepted_and_heretical_paths() -> None:
+    """Vol. 2, p. 266: the Camarilla and the Anarchs hold every path Heretical, the
+    Sabbat Accepts eleven, and the Independent Alliance five."""
+    stances = VAMPIRE.status_rules.path_stances
+
+    assert set(stances) == {"Camarilla", "Sabbat", "Anarch", INDEPENDENT_ALLIANCE}
+    assert all(s.page == "Vol. 2, p. 266" for s in stances.values())
+    for sect in ("Camarilla", "Anarch"):
+        assert stances[sect].all_heretical and not stances[sect].accepted, sect
+        assert stances[sect].stance("Path of Night") == "heretical"
+    sabbat = stances["Sabbat"]
+    assert set(sabbat.accepted) == SABBAT_PATHS
+    assert sabbat.heretical == ("Path of Evil Revelations",)
+    assert sabbat.stance("Path of Harmony") is None
+    alliance = stances[INDEPENDENT_ALLIANCE]
+    assert set(alliance.accepted) == {
+        "Path of Ecstasy", "Path of Death and the Soul", "Path of Scorched Heart",
+        "Path of Night", "Path of Typhon-Set",
+    }  # fmt: skip
+    assert set(alliance.heretical) == {"Path of Caine", "Path of Evil Revelations"}
+
+
+def test_an_accepted_paths_merit_gives_enlightened() -> None:
+    """Vol. 2, p. 267: the innate status, granted for each Accepted path to a
+    character of that sect, and from Golconda Seeker only under the house option."""
+    enlightened = VAMPIRE.statuses["Enlightened"]
+    assert (enlightened.type, enlightened.sect) == ("Innate", GENERAL)
+    assert enlightened.page == "Vol. 2, p. 267"
+    target = {"category": "status_traits", "name": "Enlightened"}
+    grants = [g for g in VAMPIRE.grants if g.target == target]
+    by_path = {
+        (g.when["has"]["name"], g.source["name"]) for g in grants if g.option is None and g.when
+    }
+    assert by_path == {("Sabbat", p) for p in SABBAT_PATHS} | {
+        (INDEPENDENT_ALLIANCE, p)
+        for p in VAMPIRE.status_rules.path_stances[INDEPENDENT_ALLIANCE].accepted
+    }
+    [golconda] = [g for g in grants if g.option is not None]
+    assert golconda.source == {"category": "merits", "name": "Golconda Seeker"}
+    assert golconda.option == "golconda_enlightened"
+    assert all(g.page == "Vol. 2, p. 267" for g in grants)
+
+
+def test_a_path_ban_goes_with_every_path_heretical() -> None:
+    """The Camarilla's lesser ban and the Anarchs' greater ban on following a path are
+    the same lists: every path Heretical, none Accepted. The Sabbat bans none."""
+    for name, sect in VAMPIRE.status_rules.sects.items():
+        stance = VAMPIRE.status_rules.path_stances[name]
+        bans_paths = [b.level for b in sect.bans if b.when == {"on_path": True}]
+        assert bans_paths == ({"Camarilla": ["lesser"], "Anarch": ["greater"]}.get(name, [])), name
+        assert bool(bans_paths) == stance.all_heretical, name
 
 
 def test_accepted_is_not_status() -> None:
@@ -471,6 +534,42 @@ def test_only_negative_status_brings_or_takes_away_status() -> None:
     with pytest.raises(ValueError, match="takes away 'Accepted', not a type of status it can"):
         with_status(takes_away=["Accepted"])
     with_status(brings=["Forsaken"], takes_away=["Fleeting"])
+
+
+def test_path_stances_name_paths_and_agree_with_the_bans() -> None:
+    def with_stances(*stances: PathStanceData) -> None:
+        rules = replace(
+            VAMPIRE.status_rules,
+            path_stances={**VAMPIRE.status_rules.path_stances, **{s.sect: s for s in stances}},
+        )
+        check_status_rules(VAMPIRE.traits, rules, VAMPIRE.titles)
+
+    with pytest.raises(ValueError, match="'Path of Gold', which is not a path's merit"):
+        with_stances(PathStanceData("Sabbat", accepted=("Path of Gold",)))
+    with pytest.raises(ValueError, match="'Golconda Seeker', which is not a path's merit"):
+        with_stances(PathStanceData("Sabbat", heretical=("Golconda Seeker",)))
+    with pytest.raises(ValueError, match="both Accepted and Heretical"):
+        with_stances(
+            PathStanceData("Sabbat", accepted=("Path of Night",), heretical=("Path of Night",))
+        )
+    with pytest.raises(ValueError, match="every path is Heretical, so it names none"):
+        with_stances(PathStanceData("Anarch", all_heretical=True, heretical=("Path of Night",)))
+    # The Camarilla bans following any path, so it must hold every path Heretical...
+    with pytest.raises(ValueError, match="goes with every path Heretical"):
+        with_stances(PathStanceData("Camarilla", accepted=("Path of Night",)))
+    # ...and the Sabbat, which bans none, cannot.
+    with pytest.raises(ValueError, match="goes with every path Heretical"):
+        with_stances(PathStanceData("Sabbat", all_heretical=True))
+    with pytest.raises(ValueError, match="not a sect in the catalogue"):
+        with_stances(PathStanceData("Atlanteans"))
+    rules = replace(
+        VAMPIRE.status_rules,
+        path_stances={
+            k: v for k, v in VAMPIRE.status_rules.path_stances.items() if k != "Camarilla"
+        },
+    )
+    with pytest.raises(ValueError, match="bans every path, but has no stance on them"):
+        check_status_rules(VAMPIRE.traits, rules, VAMPIRE.titles)
 
 
 def test_an_alias_is_a_name_of_one_title_only() -> None:

@@ -5366,6 +5366,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/golconda": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Golconda
+         * @description Switch on or off the optional rule that Golconda Seekers are Enlightened. The
+         *     characters playing by the troupe's rules gain or lose it at once.
+         */
+        put: operations["set_golconda_api_troupes__troupe_id__golconda_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/house-traits": {
         parameters: {
             query?: never;
@@ -10447,6 +10468,11 @@ export interface components {
             name: string;
             /** Rating */
             rating: number;
+        };
+        /** GolcondaIn */
+        GolcondaIn: {
+            /** On */
+            on: boolean;
         };
         /** Guidance */
         Guidance: {
@@ -17465,6 +17491,11 @@ export interface components {
             diablerie_flaws: string;
             /** Downtime Xp */
             downtime_xp: number;
+            /**
+             * Golconda Enlightened
+             * @default false
+             */
+            golconda_enlightened: boolean;
             /**
              * Id
              * Format: uuid
@@ -28879,6 +28910,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_golconda_api_troupes__troupe_id__golconda_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GolcondaIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
             };
             /** @description Validation Error */
             422: {
