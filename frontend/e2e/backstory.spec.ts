@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ATTRIBUTES_AND_FOCUSES, builtVampire, closeContextsAfterEach, makeCustodian, person, run, shots } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, builtVampire, closeContextsAfterEach, makeCustodian, person, run, shots, characterTab } from "./support";
 
 /** A character's backstory: written in Markdown or built from the troupe's questions, and approved as part of accepting the character. */
 
@@ -119,7 +119,7 @@ test("staff read a joining character's backstory, send it back on one section, a
 
   // Isolde's player writes her backstory in Markdown, previews it, and saves it.
   await p.goto(`/characters/${id}`);
-  await p.locator("main").getByRole("link", { name: "Backstory", exact: true }).click();
+  await characterTab(p, "Backstory");
   await p.getByRole("button", { name: "Write the backstory" }).click();
   await p.getByLabel("Your backstory, in Markdown").fill("## My sire\n\nHe was **cruel**.\n\n## Since\n\n- I fled\n- I hid");
   await p.getByRole("button", { name: "Preview" }).click();
@@ -129,7 +129,7 @@ test("staff read a joining character's backstory, send it back on one section, a
   await expect(p.getByText(/^Last changed /)).toBeVisible();
   await expect(p.getByRole("listitem").filter({ hasText: "I hid" })).toBeVisible();
 
-  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await characterTab(p, "Troupes");
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
   await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
 
 /** Ghouls: building, playing and Embracing them. */
 
@@ -377,10 +377,10 @@ test("staff Embrace a ghoul: it becomes a vampire in XP debt, the cart waits, an
   // An award pays the debt first, and the XP history says so.
   await send(l, "POST", `/api/characters/${id}/xp`, { amount: 14, reason: "Game, 31 October" });
   // The cart keeps Brawl while she looks at her XP history on its own tab.
-  await p.getByRole("link", { name: "Experience", exact: true }).click();
+  await characterTab(p, "Experience");
   const award = p.getByRole("row").filter({ hasText: "Game, 31 October" });
   await expect(award).toContainText("9 XP to the debt; it is paid off");
-  await p.getByRole("link", { name: "Sheet", exact: true }).click();
+  await characterTab(p, "Sheet");
   await expect(cart).toContainText("Brawl 4 → 5");
   await expect(p.getByText(/XP debt: /)).toHaveCount(0);
   await p.getByRole("button", { name: "Spend XP" }).click();

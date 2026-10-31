@@ -266,6 +266,42 @@ def test_delivering_results_to_the_player(scene: Scene) -> None:
     assert troupe.assistant.client.post(f"/cycles/{cycle_id}/complete").status_code == 200
 
 
+def test_what_waits_for_the_player_between_games(
+    client_for: Callable[[], TestClient], session: Session
+) -> None:
+    troupe = Troupe(client_for, session)
+    bram = member_character(troupe, troupe.player, "Bram")
+
+    def waiting() -> dict[str, Any]:
+        response = troupe.player.client.get(f"/characters/{bram}/downtime/waiting")
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    # Nothing is due until a cycle opens, and a draft is still due.
+    cycle = new_cycle(troupe)
+    assert waiting() == {"due": False, "delivered": []}
+    open_cycle(troupe, cycle)
+    assert waiting()["due"] is True
+    general = question_id(my_downtime(troupe.player, bram).json(), "Downtime action")
+    save(troupe.player, bram, [{"question_id": general, "slot": 1, "body": "Read"}])
+    assert waiting()["due"] is True
+    troupe.player.client.post(f"/characters/{bram}/downtime/submit")
+    assert waiting()["due"] is False
+
+    # Once delivered, the results' time shows; the staff never see it.
+    troupe.assistant.client.post(f"/cycles/{cycle['id']}/close")
+    response = next(
+        r
+        for r in troupe.assistant.client.get(f"/cycles/{cycle['id']}/responses").json()
+        if r["answer"] == "Read"
+    )
+    troupe.assistant.client.put(f"/responses/{response['id']}", json={"body": "You learn."})
+    troupe.assistant.client.post(f"/cycles/{cycle['id']}/deliver", json={"partial": True})
+    assert len(waiting()["delivered"]) == 1
+    staff = troupe.storyteller.client.get(f"/characters/{bram}/downtime/waiting")
+    assert staff.status_code == 403
+
+
 def test_a_response_written_after_delivery_reaches_the_player(scene: Scene) -> None:
     troupe = scene.troupe
     cycle_id = scene.cycle["id"]

@@ -1013,6 +1013,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/downtime/waiting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Waiting
+         * @description A downtime to submit and when results were delivered, in a few small queries,
+         *     for the character page's tabs; the page itself judges which results are new.
+         */
+        get: operations["my_waiting_api_characters__character_id__downtime_waiting_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/embrace": {
         parameters: {
             query?: never;
@@ -9802,6 +9823,16 @@ export interface components {
             in_clan: string[];
             /** Name */
             name: string;
+        };
+        /**
+         * DowntimeWaiting
+         * @description What waits for a player between games, for the counts on their character's tabs.
+         */
+        DowntimeWaiting: {
+            /** Delivered */
+            delivered: string[];
+            /** Due */
+            due: boolean;
         };
         /**
          * EffectBlock
@@ -21294,6 +21325,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyDowntime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_waiting_api_characters__character_id__downtime_waiting_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DowntimeWaiting"];
                 };
             };
             /** @description Validation Error */

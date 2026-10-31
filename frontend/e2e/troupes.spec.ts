@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -126,7 +126,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await p.getByRole("button", { name: "Finish creation" }).click();
   await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
-  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
+  await characterTab(p, "Experience");
   await expect(p.getByText(`Starting experience: ${troupeName}'s XP floor`)).toBeVisible();
 
   // Mara was played elsewhere first: her player adds that XP themselves.
@@ -136,7 +136,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await expect(p.getByText("self-entered", { exact: true })).toBeVisible();
 
   // Asking to make the troupe her home, she sees she is above its ceiling.
-  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await characterTab(p, "Troupes");
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
   await expect(p.getByText("That is 10 XP above the ceiling.", { exact: false })).toBeVisible();
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
@@ -153,7 +153,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await expect(l.getByText("Nothing pending.")).toBeVisible();
 
   // Taking it away is its own entry in Mara's XP history.
-  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
+  await characterTab(p, "Experience");
   await expect(p.getByText(`XP above ${troupeName}'s ceiling of 120`)).toBeVisible();
   await expect(p.getByText("above a ceiling", { exact: true })).toBeVisible();
 });
@@ -401,7 +401,7 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   await p.getByLabel("Name").fill("Agnes Moreau");
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
-  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await characterTab(p, "Troupes");
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Visit" }).click();
   await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();

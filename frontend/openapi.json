@@ -7440,6 +7440,29 @@
         "title": "DomitorOut",
         "type": "object"
       },
+      "DowntimeWaiting": {
+        "description": "What waits for a player between games, for the counts on their character's tabs.",
+        "properties": {
+          "delivered": {
+            "items": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": "Delivered",
+            "type": "array"
+          },
+          "due": {
+            "title": "Due",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "due",
+          "delivered"
+        ],
+        "title": "DowntimeWaiting",
+        "type": "object"
+      },
       "EffectBlock": {
         "description": "One thing a house merit or flaw does on the sheet, at a game or between games\n(horatio.rules.house_effects). Each kind reads only its own fields.",
         "properties": {
@@ -35466,6 +35489,50 @@
         "summary": "Submit",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/downtime/waiting": {
+      "get": {
+        "description": "A downtime to submit and when results were delivered, in a few small queries,\nfor the character page's tabs; the page itself judges which results are new.",
+        "operationId": "my_waiting_api_characters__character_id__downtime_waiting_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DowntimeWaiting"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Waiting",
+        "tags": [
+          "responses"
         ]
       }
     },

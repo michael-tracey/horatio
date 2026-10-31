@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, undoInHeader } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, undoInHeader, characterTab } from "./support";
 
 /** Influence: the troupe's log, Gossip, and attacks. */
 
@@ -55,7 +55,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await p.getByRole("button", { name: "Finish creation" }).click();
   await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
-  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await characterTab(p, "Troupes");
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
   await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
@@ -150,7 +150,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
 
   // The player sees Corvin's own action, and no one else's, nor the tool.
   await p.goto(`/characters/${corvin}`);
-  await p.locator("main").getByRole("link", { name: "Influence", exact: true }).click();
+  await characterTab(p, "Influence");
   const own = p.getByRole("listitem", { name: "Entry E1" });
   await expect(own.getByText("Elite · 4: Smooth Over")).toBeVisible();
   await expect(own.getByText("To bury the inspector's report")).toBeVisible();
@@ -225,7 +225,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
     data: { category: "influence_elite_specializations", name: "News Media", rating: 1 },
   });
   expect(special.status(), await special.text()).toBe(200);
-  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await characterTab(p, "Troupes");
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
   await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();

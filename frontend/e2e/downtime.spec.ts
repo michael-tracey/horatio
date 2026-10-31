@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -186,11 +186,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByRole("button", { name: "Change Agnes's picture" }).locator('img[src*="/pictures/"]')).toBeVisible();
   await p.screenshot(shots("picture"));
   // The character's own log says when, who and what.
-  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(p, "Log");
   await expect(p.getByText("bought Influences: The Elite 1 for Agnes (1 XP).", { exact: false })).toBeVisible();
 
   // …and asks to make the troupe its home.
-  await p.locator("main").getByRole("link", { name: "Troupes", exact: true }).click();
+  await characterTab(p, "Troupes");
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
   await expect(p.getByText("Nothing differs")).toBeVisible();
   await expect(p.getByText(/If accepted now, 11 XP will be lost/)).toBeVisible();
@@ -233,7 +233,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("The floor and ceiling went up by 8.", { exact: false })).toBeVisible();
 
   // Once accepted, a discipline dot waits on the home troupe, with the XP held.
-  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  await characterTab(p, "Sheet");
   await p.getByRole("button", { name: "Raise Celerity" }).click();
   await expect(cart.getByText("Celerity 2 → 3 · 9 XP")).toBeVisible();
   await expect(cart.getByText("needs approval")).toBeVisible();
@@ -387,7 +387,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByLabel("How it's priced").selectOption({ label: "One price, whatever the rating" });
   await expect(lead.page.getByText("Talisman is always held at one rating (3 by the book).", { exact: false })).toBeVisible();
   await lead.page.getByRole("button", { name: "Cancel" }).click();
-  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  await characterTab(p, "Sheet");
   await p.getByRole("button", { name: "Raise Investigation" }).click();
   // Until it is spent, the sheet shows what the rating would become.
   const investigation = p.locator("li", { has: p.getByRole("button", { name: "Raise Investigation" }) });
@@ -395,7 +395,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("Spent 1 XP.")).toBeVisible();
   await expect(investigation.getByLabel("2 dots", { exact: true })).toHaveText("2");
-  await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();
+  await characterTab(p, "Log");
   await expect(p.getByText("raised Agnes's Investigation from 1 to 2 (1 XP).", { exact: false })).toBeVisible();
 
   // The troupe lists the areas its Elite influence covers; Agnes picks one.
@@ -409,7 +409,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await elite.getByLabel("Influence: Elite, one per line").fill("Police\nFinance");
   await elite.getByRole("button", { name: "Save our list" }).click();
   await expect(elite.getByText("Finance, Police")).toBeVisible();
-  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  await characterTab(p, "Sheet");
   await p.reload(); // to see the list the lead has just set
   await p.getByRole("button", { name: "Add to Influence: Elite" }).click();
   await p.getByRole("button", { name: "Police", exact: true }).click();
@@ -437,7 +437,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("0 of 1 submitted")).toBeVisible();
 
   // The player answers and submits. The deadline shows with its zone, so everyone agrees on it.
-  await p.getByRole("link", { name: "Downtime", exact: true }).click();
+  await characterTab(p, "Downtime");
   await expect(p.getByText(/^Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \S+$/)).toBeVisible();
   await p.getByRole("button", { name: /Add an action/ }).first().click();
   await p.getByLabel("Downtime action").fill("Hunt along the river docks.");
@@ -498,7 +498,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Each participant against each channel; with no connectors, in Horatio only.
   await expect(lead.page.getByRole("columnheader", { name: "In Horatio" })).toBeVisible();
   await expect(lead.page.getByRole("row", { name: /Agnes.*sent/ })).toBeVisible();
-  await p.getByRole("link", { name: "Results" }).click();
+  await characterTab(p, "Results");
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));
 
@@ -577,7 +577,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("No influence actions match these filters.")).toBeVisible();
 
   // The printable sheet, in the paper sheet's order.
-  await p.getByRole("link", { name: "Sheet", exact: true }).click();
+  await characterTab(p, "Sheet");
   await p.getByRole("link", { name: "Print", exact: true }).click();
   await expect(p.getByText(/Home troupe: Court of Ash/)).toBeVisible();
   await expect(p.getByText("Brawl")).toBeVisible();
@@ -739,6 +739,100 @@ test("a downtime keeps the player's writing: autosave, a failed save, a refetch,
   await p.screenshot(shots("downtime-saved"));
   await p.reload();
   await expect(answer).toHaveValue(longer);
+});
+
+test("a character's tabs show a downtime due and new results, and on a phone both are a tap away without scrolling sideways (#360)", async ({ browser }) => {
+  const custodian = await person(browser, "dtcount-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "dtcount-lead");
+  const player = await person(browser, "dtcount-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data: method === "GET" ? undefined : (data ?? {}) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Waiting Counts ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const { id } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Perpetua" });
+  await send(player.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(player.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(player.page, "POST", `/api/characters/${id}/creation/complete`);
+  const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Counting month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+
+  // On the Sheet, the downtime waiting shows. On a phone the tabs are in groups,
+  // and Between games carries the count; its first two tabs are Downtime and Results.
+  const p = player.page;
+  const phone = test.info().project.name === "phone";
+  const width = p.viewportSize()!.width;
+  const main = p.locator("main");
+  const sections = main.getByRole("navigation", { name: "Tab groups" });
+  const between = main.getByRole("navigation", { name: "Between games", exact: true });
+  const fits = async (link: ReturnType<Page["getByRole"]>) => {
+    const box = (await link.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+  };
+  await p.goto(`/characters/${id}`);
+  if (phone) {
+    const group = sections.getByRole("link", { name: "Between games 1 waiting" });
+    await fits(group);
+    await p.screenshot(shots("character-tabs-grouped"));
+    await group.click();
+    await expect(p).toHaveURL(new RegExp(`/characters/${id}/downtime$`));
+    await fits(between.getByRole("link", { name: "Downtime 1 due" }));
+    await fits(between.getByRole("link", { name: "Results", exact: true }));
+    await p.screenshot(shots("character-tabs-downtime-due"));
+  } else {
+    await expect(main.getByRole("link", { name: "Downtime 1 due" })).toBeVisible();
+  }
+
+  // Submitted, nothing is due.
+  const form = await send(p, "GET", `/api/characters/${id}/downtime`);
+  const question = form.questions.find((q: { prompt: string }) => q.prompt === "Downtime action");
+  await send(p, "PUT", `/api/characters/${id}/downtime/answers`, { answers: [{ question_id: question.id, slot: 1, body: "Count the ships in the harbour." }] });
+  await send(p, "POST", `/api/characters/${id}/downtime/submit`);
+  await p.goto(`/characters/${id}`);
+  if (phone) await expect(sections.getByRole("link", { name: "Between games", exact: true })).toBeVisible();
+  else await expect(main.getByRole("link", { name: "Downtime", exact: true })).toBeVisible();
+
+  // The results are delivered: new until the player opens Results.
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: true });
+  const [response] = await send(lead.page, "GET", `/api/cycles/${cycle.id}/responses`);
+  await send(lead.page, "PUT", `/api/responses/${response.id}`, { body: "Eleven ships, and one flies no flag." });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/deliver`, { partial: true });
+  await p.reload();
+  if (phone) await expect(sections.getByRole("link", { name: "Between games 1 waiting" })).toBeVisible();
+  await characterTab(p, "Results");
+  await expect(p.getByText("Eleven ships, and one flies no flag.")).toBeVisible();
+  if (phone) {
+    await expect(between.getByRole("link", { name: "Results", exact: true })).toBeVisible();
+    await expect(sections.getByRole("link", { name: "Between games", exact: true })).toBeVisible();
+  } else {
+    await expect(main.getByRole("link", { name: "Results", exact: true })).toBeVisible();
+  }
+  await p.reload();
+  await expect(p.getByText("Eleven ships, and one flies no flag.")).toBeVisible();
+  await expect(main.getByRole("link", { name: /^Results \d/ })).toHaveCount(0);
 });
 
 test("feeding in a downtime: Herd given to another character, both answered, and half Blood at the next game", async ({ browser }) => {
