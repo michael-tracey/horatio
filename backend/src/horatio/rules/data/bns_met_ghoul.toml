@@ -212,11 +212,6 @@ name = "Sabbat Ritae"
 group = "Backgrounds"
 
 [[categories]]
-key = "vampiric_texts"
-name = "Vampiric Texts"
-group = "Backgrounds"
-
-[[categories]]
 key = "influence_elite_specializations"
 name = "Influence: Elite"
 group = "Backgrounds"
@@ -345,10 +340,6 @@ scheme = "free"
 
 [[cost_rules]]
 category = "sabbat_rituals"
-scheme = "free"
-
-[[cost_rules]]
-category = "vampiric_texts"
 scheme = "free"
 
 [[cost_rules]]

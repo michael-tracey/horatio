@@ -21,15 +21,17 @@ const GROUPS: { title: string; kinds: string[] }[] = [
   { title: "Weapons", kinds: ["melee", "ranged"] },
   { title: "Protective gear", kinds: ["protective"] },
   { title: "Other equipment", kinds: ["miscellaneous"] },
+  { title: "Vampiric texts", kinds: ["text"] },
 ];
 
 /**
  * The Play View's Equipment tab: what the character holds, laid out for the table,
- * weapons first, then armour, then the rest. Each item says what its qualities do in
- * play ("Fast: +3 initiative"); on a phone its card opens to each quality's full
- * effect, its special effects and its description, which a wider screen shows at
- * once. Items are equipped in the Pools tab's drawer, where their qualities change
- * the pools (#306). A visiting character's equipment shows wherever it plays.
+ * weapons first, then armour, then the rest, and Vampiric Texts last. Each item
+ * says what its qualities do in play ("Fast: +3 initiative"); on a phone its card
+ * opens to each quality's full effect, its special effects and its description,
+ * which a wider screen shows at once. Items are equipped in the Pools tab's drawer,
+ * where their qualities change the pools (#306); a text is never equipped. A
+ * visiting character's equipment shows wherever it plays.
  *
  * With `view` and `tap`, its player (or staff) gives an item to another character
  * or discards it, as a tap (#282): it leaves the tab at once, even with no signal,

@@ -39,7 +39,7 @@ from horatio.rules.equipment import EquipmentRules, item_qualities
 router = APIRouter(tags=["equipment"])
 
 Status = Literal["held", "taken_back", "discarded"]
-Kind = Literal["melee", "ranged", "protective", "miscellaneous"]
+Kind = Literal["melee", "ranged", "protective", "miscellaneous", "text"]
 Grade = Literal["cheap", "standard", "special"]
 STATUSES: tuple[Status, ...] = ("held", "taken_back", "discarded")
 
@@ -98,11 +98,14 @@ class EquipmentItemOut(BaseModel):
     # What its qualities do to the holder's test pools while it is equipped.
     modifiers: list[EquipmentModifierOut]
     status: Status
-    # The troupe that gave it, who gave it and when.
-    troupe_id: uuid.UUID
-    troupe_name: str
+    # The troupe that gave it, who gave it and when. For a Vampiric Text moved from
+    # the sheet (from_sheet), the holder's home troupe then, if it had one, and
+    # when it was put on the sheet.
+    troupe_id: uuid.UUID | None
+    troupe_name: str | None
     given_by_name: str | None
     given_at: datetime
+    from_sheet: bool
     # The reader can change it or take it back: staff of the holder's home troupe.
     can_change: bool
     # Set once it is discarded.
@@ -357,9 +360,10 @@ class Reader:
             modifiers=[modifier_out(m) for m in equipment.item_modifiers(rules, item)],
             status=item.status,  # type: ignore[arg-type]  # checked by the database
             troupe_id=item.troupe_id,
-            troupe_name=self.troupe(item.troupe_id).name,
+            troupe_name=self.troupe(item.troupe_id).name if item.troupe_id else None,
             given_by_name=self.user_name(item.given_by),
             given_at=item.given_at,
+            from_sheet=item.from_sheet,
             can_change=manages and item.status == "held",
             discarded=self.discarded(item) if item.status == "discarded" else None,
         )

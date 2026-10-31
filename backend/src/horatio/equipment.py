@@ -1,6 +1,7 @@
 """Equipment (issue #283): weapons, protective gear and miscellaneous gear, with the
-book's qualities (MET: VTM pp. 515-524). The rules are horatio.rules.equipment's;
-`check` is what every equipment ticket asks before an item is made or changed.
+book's qualities (MET: VTM pp. 515-524), and Vampiric Texts (issue #341). The rules
+are horatio.rules.equipment's; `check` is what every equipment ticket asks before an
+item is made or changed.
 
 A troupe's storytellers and assistant storytellers give equipment to the characters
 whose home troupe it is, PCs and the troupe's NPCs alike (issue #280), and only to
@@ -8,6 +9,11 @@ them: a visiting character carries its own home troupe's equipment, which the
 troupe it visits can't change. They can make an item special: any number of
 qualities, still keeping the rules between them, and effects of the troupe's own.
 They change an item or take it back with a reason, and the holder's player is told.
+
+A Vampiric Text, such as the Book of Nod, is an item of a kind of its own, with no
+qualities: one of the catalogue's texts, or one of the troupe's own (special). It
+is given, passed, discarded and restored as any item is, but never equipped.
+Texts held as traits before were made items by migration 0115 (`from_sheet`).
 
 A character's player, or its home troupe's staff, gives its items to another
 character of the same home troupe, or discards them (issue #282). A discarded item
@@ -44,6 +50,7 @@ from horatio.models import (
 from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules.equipment import (
     ATHLETICS_POOL,
+    TEXT,
     WEAPON,
     WEAPON_POOLS,
     Assessment,
@@ -250,6 +257,22 @@ def can_manage(db: Session, user: User, troupe: Troupe) -> bool:
 
 
 ARCHAIC_REFUSED = "Only a ranged weapon is archaic (a bow or crossbow)."
+TEXT_GRADE_REFUSED = (
+    "A text is standard, as the books' texts are, or special, one of the troupe's own."
+)
+
+
+def kind_problems(kind: str, grade: str, *, crafted: bool, archaic: bool) -> list[str]:
+    """What the item's kind refuses besides qualities: archaic for anything but a
+    ranged weapon; crafting, or the cheap grade, for a text."""
+    problems: list[str] = []
+    if archaic and kind != "ranged":
+        problems.append(ARCHAIC_REFUSED)
+    if kind == TEXT and crafted:
+        problems.append("A text isn't crafted.")
+    if kind == TEXT and grade == "cheap":
+        problems.append(TEXT_GRADE_REFUSED)
+    return problems
 
 
 def refused(rules: EquipmentRules, fields: ItemFields) -> list[str]:
@@ -261,8 +284,9 @@ def refused(rules: EquipmentRules, fields: ItemFields) -> list[str]:
         problems.insert(0, "An item needs a name.")
     if fields.effects and not fields.special:
         problems.append("Only a special item has special effects.")
-    if fields.archaic and fields.kind != "ranged":
-        problems.append(ARCHAIC_REFUSED)
+    problems += kind_problems(
+        fields.kind, fields.grade, crafted=fields.crafted, archaic=fields.archaic
+    )
     if any(not e.name or not e.effect for e in fields.effects):
         problems.append("Each special effect needs a name and what it does.")
     return problems
@@ -940,6 +964,8 @@ def tap_text(kept: Mapping[str, Any]) -> str:
 def event_summary(rules: EquipmentRules, event: EquipmentEvent, troupe: str | None) -> str:
     """A line of an item's history, for staff: "Given to Agnes by Lords of the
     Night, from the template Silver Dagger"."""
+    if event.action == "given" and event.changes.get("from_sheet"):
+        return f"Moved from {event.to_name}'s sheet, where it was a trait"
     if event.action == "given":
         template = event.changes.get("template")
         source = f", from the template {template}" if template else ""

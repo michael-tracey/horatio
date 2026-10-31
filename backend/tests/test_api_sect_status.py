@@ -222,6 +222,8 @@ def test_only_its_own_sects_status_and_only_while_accepted(troupe: Troupe) -> No
     assert add(troupe.player, agnes, "Authority").status_code == 422
     found = status(troupe.player, agnes)
     assert found["accepted"] == "Acknowledged"
+    # What Accepted status does, for the tab's list.
+    assert found["about"]["Acknowledged"]["type"] == "Accepted"
     addable = {s["name"] for s in found["addable"]}
     assert {"Loyal", "Warned", "Acclaimed"} <= addable
     assert not addable & {"Devout", "Authority", "Acknowledged"}

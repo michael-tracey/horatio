@@ -35,7 +35,6 @@ CATEGORIES = {
     "backgrounds": "backgrounds",
     "haven_specializations": "haven_specializations",
     "sabbat_rituals": "sabbat_rituals",
-    "vampiric_texts": "vampiric_texts",
     "influence_elite_specializations": "influence_elite_specializations",
     "influence_underworld_specializations": "influence_underworld_specializations",
     "merits": "merits",
@@ -47,6 +46,9 @@ CATEGORIES = {
     "sects": "sect",
     "factions": "faction",
 }
+
+# Vampiric texts (Yorick's vampiric_texts) are not imported: since issue #341 they
+# are equipment, templates written by hand in bns_met_vampire_equipment.toml.
 
 # Sect status (Yorick's status_traits) is not imported: each status, with its sect
 # and what it does, is written by hand in bns_met_vampire_status.toml.

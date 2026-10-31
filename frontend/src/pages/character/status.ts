@@ -46,19 +46,51 @@ export function outsiderText(s: { outsider_sect?: string | null; outsider_throug
   return `Accepted by no sect. As ${s.outsider_through ?? "a merit"} allows, it holds fleeting ${s.outsider_sect} status.`;
 }
 
-/** A source of derived status and what it gives: "Prince: Authority, Commander, Sovereign". */
-export type DerivedSource = { key: string; source: string; kind: DerivedOut["kind"]; troupe: string | null; status: DerivedOut[] };
+/** The kinds of status, in the order the Status & Titles tab lists them. */
+const TYPES = ["Accepted", "Abiding", "Innate", "Fleeting", "Negative"];
 
-/** Derived status grouped by where it comes from, in the order given. */
-export function bySource(derived: DerivedOut[]): DerivedSource[] {
-  const found = new Map<string, DerivedSource>();
+/** Where a status's type comes in the list: unknown types last. */
+export function typeOrder(type: string): number {
+  const i = TYPES.indexOf(type);
+  return i < 0 ? TYPES.length : i;
+}
+
+/**
+ * Where a derived status comes from, in words: "the title Seneschal (while the
+ * Prince is absent)", "the social age Elder", "the Loyalist faction", or the merit
+ * that gives it. `home` is the home troupe's name: a title held elsewhere says where.
+ */
+export function sourceText(d: Pick<DerivedOut, "kind" | "source" | "condition" | "troupe_name">, home: string | null): string {
+  const where = d.troupe_name && d.troupe_name !== home ? ` in ${d.troupe_name}` : "";
+  const what =
+    d.kind === "title"
+      ? `the title ${d.source}${where}`
+      : d.kind === "social_age"
+        ? `the social age ${d.source}`
+        : d.kind === "faction"
+          ? `the ${d.source} faction`
+          : d.source;
+  return d.condition ? `${what} (${d.condition})` : what;
+}
+
+/** A status the character's title, social age, faction or merits give, with every source of it. */
+export type DerivedLine = { name: string; type: string; sources: string[] };
+
+/**
+ * Derived status as the list shows it, a line per status: the same status from a
+ * title and a social age is one line naming both. Abiding before innate, and
+ * otherwise in the order given.
+ */
+export function derivedLines(derived: DerivedOut[], home: string | null): DerivedLine[] {
+  const found = new Map<string, DerivedLine>();
   for (const d of derived) {
-    const key = `${d.kind}/${d.troupe_id ?? ""}/${d.source}`;
-    const group = found.get(key) ?? { key, source: d.source, kind: d.kind, troupe: d.troupe_name, status: [] };
-    group.status.push(d);
-    found.set(key, group);
+    const key = `${d.type}/${d.name}`;
+    const line = found.get(key) ?? { name: d.name, type: d.type, sources: [] };
+    const source = sourceText(d, home);
+    if (!line.sources.includes(source)) line.sources.push(source);
+    found.set(key, line);
   }
-  return [...found.values()];
+  return [...found.values()].sort((a, b) => typeOrder(a.type) - typeOrder(b.type));
 }
 
 /** A patron as the list shows it: "Elena Varga (Prince)", or the name alone. */
