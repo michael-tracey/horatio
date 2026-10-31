@@ -167,6 +167,103 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   expect(refused.status()).toBe(409);
 });
 
+test("once accepted, a merit or flaw is asked of the home troupe: one declined, a flaw bought off through a quest", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "meritask-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "meritask-lead");
+  const player = await person(browser, "meritask-play");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Asking ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const l = lead.page;
+  const settings = await l.request.put(`/api/troupes/${troupeId}/quest-settings`, { headers, data: { enabled: true, requests_per_cycle: 1 } });
+  expect(settings.status(), await settings.text()).toBe(200);
+
+  // Wilhelmina took Low Pain Threshold before the troupe accepted her.
+  const p = player.page;
+  const id = await builtVampire(p, "Wilhelmina", "Toreador", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]], disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]] }, [
+    ["flaws", "Low Pain Threshold", 3],
+  ]);
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBe(201);
+  const accepted = await l.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBe(200);
+  const awarded = await l.request.post(`/api/characters/${id}/xp`, { headers, data: { amount: 20, reason: "Last game" } });
+  expect(awarded.status(), await awarded.text()).toBe(201);
+
+  // Adding Rugged is asked of the troupe, its 3 XP held; buying off the flaw costs twice its points.
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  const trait = (name: string) => p.locator(`li[data-trait="${name}"]`);
+  await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Merits").fill("Rugged");
+  await p.getByRole("button", { name: /^Rugged/ }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await trait("Low Pain Threshold").getByRole("button", { name: "Remove Low Pain Threshold" }).click();
+  const rugged = cart.getByRole("listitem").filter({ hasText: "Rugged" });
+  // Each line is tried on the sheet as it is priced, which takes a while on a busy server.
+  await expect(rugged).toContainText("Asked of the home troupe: 3 XP held until they decide.", { timeout: 15_000 });
+  await expect(rugged).toContainText("needs approval");
+  await expect(cart.getByRole("listitem").filter({ hasText: "Low Pain Threshold" })).toContainText("buying it off costs 6 XP, twice what it gave");
+  await p.screenshot(shots("merit-flaw-asked"));
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
+  // Nothing has changed on the sheet yet: both wait, marked.
+  await expect(trait("Rugged")).toContainText("awaiting approval");
+  await expect(trait("Low Pain Threshold")).toContainText("removal awaiting approval");
+  await expect(part("Health Levels").getByRole("img", { name: "Injured: 2 boxes" })).toBeVisible();
+
+  // The lead has both in the bell, and declines Rugged.
+  await l.goto(`/troupes/${troupeId}`);
+  await l.getByRole("button", { name: "Notifications, 2 waiting" }).click();
+  await l.getByRole("button", { name: /Wilhelmina asks to add Rugged \(3 XP\)/ }).click();
+  const ruggedCard = l.locator("section").filter({ hasText: "Add the merit Rugged" });
+  await expect(ruggedCard).toContainText("for 3 XP");
+  await ruggedCard.getByLabel("Note to the player").fill("Not this season.");
+  await ruggedCard.getByRole("button", { name: "Decline" }).click();
+  await expect(ruggedCard).toHaveCount(0);
+
+  // The flaw is answered with a quest: the builder starts at Complex 3.
+  const flawCard = l.locator("section").filter({ hasText: "Buy off the flaw Low Pain Threshold" });
+  await expect(flawCard).toContainText("for 6 XP: twice what it gave");
+  await flawCard.getByRole("button", { name: "Answer with a quest" }).click();
+  await expect(l.getByLabel("Quest name")).toHaveValue("Buy off Low Pain Threshold");
+  await expect(l.getByLabel("Category")).toHaveValue("complex");
+  await expect(l.getByLabel("Difficulty")).toHaveValue("3");
+  await l.screenshot(shots("merit-flaw-quest-builder"));
+  await l.getByRole("button", { name: "Build the quest" }).click();
+  await expect(l.getByText("It answers a request: Wilhelmina buys off Low Pain Threshold (6 XP held).")).toBeVisible();
+  const questId = new URL(l.url()).pathname.split("/").at(-1)!;
+
+  // The queue shows it waits on the quest, with no yes or no.
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  await expect(flawCard).toContainText("Answered with the quest Buy off Low Pain Threshold (draft).");
+  await expect(flawCard.getByRole("button", { name: "Approve", exact: true })).toHaveCount(0);
+
+  // Its requirements sent and its three scenarios passed, the quest is completed.
+  const post = async (url: string, data: object) => {
+    const response = await l.request.post(url, { headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+  };
+  await post(`/api/quests/${questId}/requirements`, { options: [{ kind: "text", text: "A sire's blessing" }] });
+  await post(`/api/quests/${questId}/send`, {});
+  await p.reload();
+  await expect(p.getByText("answered with the quest Buy off Low Pain Threshold")).toBeVisible();
+  for (const number of [1, 2, 3]) await post(`/api/quests/${questId}/scenarios/${number}/result`, { result: "passed" });
+
+  // The flaw is gone and its lost health level back; Rugged's XP came back when declined.
+  await p.reload();
+  await expect(trait("Low Pain Threshold")).toHaveCount(0);
+  await expect(trait("Rugged")).toHaveCount(0);
+  await expect(part("Health Levels").getByRole("img", { name: "Injured: 3 boxes" })).toBeVisible();
+  await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
+  await expect(p.getByText("Rugged 3 → 0 (declined)")).toBeVisible();
+  await expect(p.getByText("Low Pain Threshold 3 → 0", { exact: true })).toBeVisible();
+});
+
 test("changes on the sheet wait in a cart, and only Spend XP makes them, all or none", async ({ browser }) => {
   const { page: p } = await person(browser, "carter");
   await p.getByLabel("Name").fill("Wren");

@@ -324,3 +324,8 @@ def test_an_accepted_flaw_is_bought_off_for_twice_its_value(troupe: Troupe) -> N
     assert bought_off.status_code == 200, bought_off.text
     assert bought_off.json()["cost"] == 2
     assert bought_off.json()["sheet"]["xp"]["balance"] == before - 2
+    # Asked of the home troupe (horatio.merit_requests): it goes once they approve.
+    [request] = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
+    troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
+    traits = troupe.player.client.get(f"/characters/{character_id}/sheet").json()["traits"]
+    assert "Dark Secret" not in [t["name"] for t in traits]

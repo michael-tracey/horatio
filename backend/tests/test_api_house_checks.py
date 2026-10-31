@@ -70,7 +70,8 @@ def test_review_holds_the_change_for_the_home_troupe(troupe: Troupe) -> None:
 
     assert taken.status_code == 200, taken.text
     [request] = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
-    assert request["kind"] == "review"
+    # A merit taken once accepted is asked of staff anyway, with the check it breaks.
+    assert request["kind"] == "merit_flaw"
     assert request["player_note"].startswith("Brujah cannot take Calm Heart")
     assert request["discipline"]["name"] == "Calm Heart"
 

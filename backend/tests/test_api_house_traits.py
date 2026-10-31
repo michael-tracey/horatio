@@ -15,7 +15,8 @@ from tests.test_api_downtimes import my_downtime, new_cycle, open_cycle
 from tests.test_api_npcs_titles import make_npc
 from tests.test_api_play import send, tap, texts, view
 from tests.test_api_renames import character_log, other_troupe, troupe_log, visit
-from tests.test_api_sheets import buy, make_home_troupe_member, sheet
+from tests.test_api_sheets import buy as ask_to_buy
+from tests.test_api_sheets import make_home_troupe_member, sheet
 
 pytestmark = pytest.mark.usefixtures("without_bank")
 
@@ -43,6 +44,16 @@ def made(troupe: Troupe, **fields: Any) -> dict[str, Any]:
     response = make(troupe, **fields)
     assert response.status_code == 201, response.text
     return response.json()
+
+
+def buy(troupe: Troupe, person: Person, character_id: str, *args: Any) -> Any:
+    """Buy a trait. A merit or flaw asked of the home troupe once the character is
+    accepted (horatio.merit_requests) is approved at once, as these tests are not
+    about that."""
+    response = ask_to_buy(person, character_id, *args)
+    for request in troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json():
+        troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
+    return response
 
 
 def homed(troupe: Troupe, name: str = "Agnes") -> str:
@@ -143,15 +154,19 @@ def test_home_and_building_characters_buy_one_like_a_book_merit(troupe: Troupe) 
     ).json()["id"]
     finish(troupe, building)
 
-    bought = buy(troupe.player, home, "merits", "Child of the Crossroads", 2)
+    bought = buy(troupe, troupe.player, home, "merits", "Child of the Crossroads", 2)
     assert bought.status_code == 200, bought.text
     assert bought.json()["cost"] == 2
-    assert buy(troupe.player, building, "merits", "Child of the Crossroads", 2).json()["cost"] == 2
+    assert (
+        buy(troupe, troupe.player, building, "merits", "Child of the Crossroads", 2).json()["cost"]
+        == 2
+    )
     held = trait(troupe.player, home, "Child of the Crossroads")
     assert held is not None
     assert held["house"]["label"] == "House merit of Lords of the Night"
     assert held["house"]["applied"] is None
-    assert "player bought ★ Child of the Crossroads 2 for Agnes (2 XP)." in character_log(
+    # Once accepted, it is asked of staff (horatio.merit_requests).
+    assert "player asked to add ★ Child of the Crossroads 2 for Agnes; pending." in character_log(
         troupe.player, home
     )
 
@@ -164,7 +179,7 @@ def test_a_visiting_character_can_neither_take_one_nor_be_given_one(troupe: Trou
     visit(troupe.player, visitor, troupe.id)
     visit(troupe.player, visitor, elsewhere)
 
-    refused = buy(troupe.player, visitor, "merits", "Child of the Crossroads", 2)
+    refused = buy(troupe, troupe.player, visitor, "merits", "Child of the Crossroads", 2)
     assert refused.status_code == 422
     for house in (buildable, staff_only):
         assigned = apply(troupe, visitor, house["id"], free=True)
@@ -177,7 +192,7 @@ def test_a_staff_only_merit_is_refused_through_the_cart(troupe: Troupe) -> None:
     made(troupe, name="Favour of the Court", availability="staff", points=3)
     character_id = homed(troupe)
 
-    refused = buy(troupe.player, character_id, "merits", "Favour of the Court", 3)
+    refused = buy(troupe, troupe.player, character_id, "merits", "Favour of the Court", 3)
     assert refused.status_code == 409
     assert (
         refused.json()["detail"]
@@ -224,7 +239,10 @@ def test_staff_apply_one_free_with_a_reason_for_both_logs(troupe: Troupe) -> Non
     assert any("given free by staff: A gift of the Prince" in e["reason"] for e in xp)
 
     # Only staff take it away.
-    assert buy(troupe.player, character_id, "merits", "Favour of the Court", 0).status_code == 409
+    assert (
+        buy(troupe, troupe.player, character_id, "merits", "Favour of the Court", 0).status_code
+        == 409
+    )
     assert apply(troupe, character_id, house["id"], free=True).status_code == 409
     removed = remove(troupe, character_id, house["id"])
     assert removed.status_code == 200, removed.text
@@ -254,7 +272,7 @@ def test_a_free_merit_counts_toward_the_limit_unless_staff_say_not(troupe: Troup
     outside = made(troupe, name="Blessing of the Elders", availability="staff", points=3)
     character_id = homed(troupe)
     for name in ("Iron Will", "Rugged"):  # 3 points each
-        assert buy(troupe.player, character_id, "merits", name, 3).status_code == 200
+        assert buy(troupe, troupe.player, character_id, "merits", name, 3).status_code == 200
 
     over = apply(troupe, character_id, counted["id"], free=True)
     assert over.status_code == 409
@@ -262,7 +280,7 @@ def test_a_free_merit_counts_toward_the_limit_unless_staff_say_not(troupe: Troup
     given = apply(troupe, character_id, outside["id"], free=True, counts_toward_limit=False)
     assert given.status_code == 200, given.text
     # Left out of the 7 points: a 1-point merit still fits.
-    assert buy(troupe.player, character_id, "merits", "Acute Sense", 1).status_code == 200
+    assert buy(troupe, troupe.player, character_id, "merits", "Acute Sense", 1).status_code == 200
 
 
 def test_staff_give_an_npc_one(troupe: Troupe) -> None:
@@ -282,7 +300,10 @@ def test_archived_holders_keep_it_and_no_one_new_takes_it(troupe: Troupe) -> Non
     house = made(troupe)
     holder = homed(troupe)
     newcomer = homed(troupe, "Bram")
-    assert buy(troupe.player, holder, "merits", "Child of the Crossroads", 2).status_code == 200
+    assert (
+        buy(troupe, troupe.player, holder, "merits", "Child of the Crossroads", 2).status_code
+        == 200
+    )
 
     archived = troupe.storyteller.client.put(
         f"/troupes/{troupe.id}/house-traits/{house['id']}/archived", json={"archived": True}
@@ -291,7 +312,7 @@ def test_archived_holders_keep_it_and_no_one_new_takes_it(troupe: Troupe) -> Non
     assert archived.status_code == 200
     assert archived.json()["archived"] is True
     assert trait(troupe.player, holder, "Child of the Crossroads") is not None
-    refused = buy(troupe.player, newcomer, "merits", "Child of the Crossroads", 2)
+    refused = buy(troupe, troupe.player, newcomer, "merits", "Child of the Crossroads", 2)
     assert refused.status_code == 409
     assert "archived" in refused.json()["detail"]
     assert (
@@ -322,7 +343,9 @@ def test_a_change_applies_to_every_holder_and_xp_stays(troupe: Troupe) -> None:
     first, second = homed(troupe), homed(troupe, "Bram")
     for character_id in (first, second):
         assert (
-            buy(troupe.player, character_id, "merits", "Child of the Crossroads", 2).status_code
+            buy(
+                troupe, troupe.player, character_id, "merits", "Child of the Crossroads", 2
+            ).status_code
             == 200
         )
     balances = [sheet(troupe.player, c)["xp"]["balance"] for c in (first, second)]
@@ -393,7 +416,7 @@ def test_a_creation_only_house_merit_cannot_be_bought_afterwards(troupe: Troupe)
     made(troupe, creation_only=True)
     character_id = homed(troupe)
 
-    refused = buy(troupe.player, character_id, "merits", "Child of the Crossroads", 2)
+    refused = buy(troupe, troupe.player, character_id, "merits", "Child of the Crossroads", 2)
 
     assert refused.status_code == 409
     assert "only be chosen during character creation" in refused.json()["detail"]
@@ -453,7 +476,7 @@ def test_a_holder_gets_its_free_dots_and_its_summary(troupe: Troupe) -> None:
     old_money(troupe)
     character_id = homed(troupe)
 
-    bought = buy(troupe.player, character_id, "merits", "Old Money", 2)
+    bought = buy(troupe, troupe.player, character_id, "merits", "Old Money", 2)
 
     assert bought.status_code == 200, bought.text
     resources = trait(troupe.player, character_id, "Resources")
@@ -479,6 +502,10 @@ def test_one_taken_through_the_cart_meets_its_own_check_with_its_free_dots(troup
     bought = spend(troupe.player, character_id, merit)
 
     assert bought.status_code == 200, bought.text
+    # Asked of staff once accepted; approving meets the check with its free dots too.
+    [request] = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
+    approved = troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
+    assert approved.status_code == 200, approved.text
     resources = trait(troupe.player, character_id, "Resources")
     assert resources is not None
     assert (resources["rating"], resources["free_rating"]) == (2, 2)
@@ -515,7 +542,9 @@ def test_the_preview_shows_what_a_new_character_would_get(troupe: Troupe) -> Non
 
 def test_the_preview_tries_it_on_one_of_the_troupes_characters(troupe: Troupe) -> None:
     character_id = homed(troupe)
-    assert buy(troupe.player, character_id, "backgrounds", "Resources", 3).status_code == 200
+    assert (
+        buy(troupe, troupe.player, character_id, "backgrounds", "Resources", 3).status_code == 200
+    )
     raised = {"kind": "raise_max", "category": "backgrounds", "names": ["Resources"], "amount": 1}
     priced = {
         "kind": "cost_percent",
@@ -593,7 +622,7 @@ def test_changing_its_effects_changes_every_holder_and_xp_stays(troupe: Troupe) 
     house = old_money(troupe)
     first, second = homed(troupe), homed(troupe, "Bram")
     for character_id in (first, second):
-        assert buy(troupe.player, character_id, "merits", "Old Money", 2).status_code == 200
+        assert buy(troupe, troupe.player, character_id, "merits", "Old Money", 2).status_code == 200
     balances = [sheet(troupe.player, c)["xp"]["balance"] for c in (first, second)]
 
     changed = troupe.storyteller.client.put(

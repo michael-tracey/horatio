@@ -32,6 +32,7 @@ from horatio.models import (
     DisciplinePurchase,
     HomeTroupeChange,
     Notification,
+    Quest,
     QuestRequest,
     TraitDefinition,
     Troupe,
@@ -98,11 +99,19 @@ def approval_tasks(db: Session, user: User) -> list[Item]:
     troupes = {t.id: t for t in troupes_where(db, user, TroupeAction.APPROVE_CHANGES)}
     if not troupes:
         return []
+    # One answered with a quest still under way waits on the quest, not on them.
+    questing = select(Quest.id).where(
+        Quest.id == Approval.quest_id, Quest.status.in_(("draft", "active"))
+    )
     rows = list(
         db.execute(
             select(Approval, Character)
             .join(Character, Approval.character_id == Character.id)
-            .where(Approval.troupe_id.in_(troupes), Approval.status == "pending")
+            .where(
+                Approval.troupe_id.in_(troupes),
+                Approval.status == "pending",
+                ~questing.exists(),
+            )
         )
     )
     return approval_items(db, troupes, [(approval, about) for approval, about in rows])
@@ -139,6 +148,9 @@ def approval_items(
                 f"{character} asks for {name}{detail} {bought.from_rating} → {bought.to_rating}"
                 " by exception"
             )
+        elif approval.kind == "merit_flaw" and approval.id in disciplines:
+            name, bought = disciplines[approval.id]
+            summary = f"{character} asks {merit_flaw_ask(name, bought)}"
         elif approval.id in disciplines:
             name, bought = disciplines[approval.id]
             detail = f": {bought.detail}" if bought.detail else ""
@@ -168,6 +180,17 @@ def approval_items(
             )
         )
     return items
+
+
+def merit_flaw_ask(name: str, bought: DisciplinePurchase) -> str:
+    """What a merit or flaw request asks, as "to remove Calm Heart (no XP back)"."""
+    label = f"{name}: {bought.detail}" if bought.detail else name
+    if bought.to_rating > bought.from_rating:
+        paid = f"{bought.cost} XP" if bought.cost >= 0 else f"gives {-bought.cost} XP"
+        return f"to add {label} ({paid})"
+    if bought.cost:
+        return f"to buy off {label} ({bought.cost} XP)"
+    return f"to remove {label} (no XP back)"
 
 
 def troupe_request_tasks(db: Session, user: User) -> list[Item]:

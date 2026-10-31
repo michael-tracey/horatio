@@ -266,7 +266,7 @@ One sheet frozen when a troupe accepted the character as its home: the accepted 
 _Avoid_: Snapshot, revision
 
 **Approval**:
-The home troupe's storytellers' or assistant storytellers' decision on a home troupe change or a discipline purchase. Nothing else on a sheet is approved: edits take effect at once.
+The home troupe's storytellers' or assistant storytellers' decision on a home troupe change, a discipline purchase or a merit or flaw change. Other edits to a sheet take effect at once.
 _Avoid_: Sign-off, review
 
 **Notification**:
@@ -277,8 +277,12 @@ _Avoid_: Alert, inbox item
 A discipline dot bought once the character has a home troupe. The experience is spent at once and the dot shows as awaiting approval until the home troupe decides; declining, withdrawing or leaving the troupe takes the dot back and refunds the experience.
 _Avoid_: Discipline request, teaching
 
+**Merit or Flaw Change**:
+A merit or flaw added to or removed from a character's sheet once its home troupe has accepted it. The player asks, and nothing changes on the sheet until the home troupe approves: a merit's XP, or twice a flaw's points to buy it off, is held meanwhile and refunded if they decline or the player withdraws; removing a merit gives nothing back. Staff can answer with a quest instead, which approves it if completed and declines it if failed or closed. Merits and flaws that stand for the Embrace, clan or bloodline can't be removed.
+_Avoid_: Merit request, buy-off request
+
 **Home Troupe**:
-The one troupe that holds a character's sheet: it accepts the character, awards its experience, approves its discipline purchases, and runs the downtime cycles it takes part in.
+The one troupe that holds a character's sheet: it accepts the character, awards its experience, approves its discipline purchases and merit or flaw changes, and runs the downtime cycles it takes part in.
 _Avoid_: Main troupe, primary troupe
 
 **Home Troupe Change**:

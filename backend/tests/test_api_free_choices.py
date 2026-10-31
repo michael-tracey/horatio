@@ -250,6 +250,9 @@ def test_a_merit_taken_after_acceptance_is_chosen_for_once(troupe: Troupe) -> No
     character_id = new_character(troupe, troupe.player, clan="Ventrue")
     make_home_troupe_member(troupe.session, troupe, character_id)
     take(troupe.player, character_id, "merits", "Ventrue Royalty", 2)
+    # Asked of staff once accepted; approved, with nothing chosen yet.
+    [request] = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
+    troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
     grant = grant_key(troupe.player, character_id, "Ventrue Royalty")
 
     first = choose(
