@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { Link, Route, Routes, useParams } from "react-router";
+import { Link, Route, Routes, useMatch, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Badge, ErrorText, Loading, PageTitle, Tabs } from "../../components/ui";
@@ -33,6 +33,8 @@ import { XpTab } from "./XpTab";
 
 export function CharacterPage() {
   const { characterId = "" } = useParams();
+  // The Downtime tab has its own main button, Submit, so Play steps back there.
+  const onDowntime = !!useMatch("/characters/:characterId/downtime");
   const me = useMe();
   const character = useQuery({
     queryKey: ["character", characterId],
@@ -71,7 +73,7 @@ export function CharacterPage() {
   const play = (
     <Link
       to={`/play/characters/${c.id}`}
-      className="inline-flex min-h-10 items-center justify-center rounded-md bg-blood px-5 text-sm font-medium text-parchment hover:bg-blood-bright"
+      className={`inline-flex min-h-10 items-center justify-center rounded-md px-5 text-sm font-medium text-parchment ${onDowntime ? "border border-ash bg-dusk hover:border-mist" : "bg-blood hover:bg-blood-bright"}`}
     >
       Play
     </Link>
