@@ -30,6 +30,7 @@ import { VitaeTracker } from "./Vitae";
 import { ShownWarning } from "./TrackerWarning";
 import { beastWarning } from "./warnings";
 import { useKeepAwake } from "./wakeLock";
+import { generationText } from "../../generation";
 
 type Change = { tracker: string; amount: number; damage?: Damage; label: string };
 type RecordTap = (change: Change) => void;
@@ -428,8 +429,7 @@ function Identity({ view }: { view: PlayView }) {
         Domitor: <span className="text-parchment/90">{reference.domitor.name}</span>
       </span>
     ) : null,
-    // The background's rating, not the vampire's generation from Caine.
-    view.panels.generation && view.generation ? `Generation background ${view.generation}` : null,
+    view.panels.generation && view.generation ? generationText(view.generation, view.generation_number) : null,
     view.blood_per_turn > 0 || view.panels.feed ? `${bloodPerTurn(view)} ${view.blood_name.toLowerCase()} a turn` : null,
   ].filter(Boolean);
   return (

@@ -314,7 +314,12 @@ def vampire_rules(db: Session, character: Character) -> TroupeRules:
 
 def sire_generation(db: Session, vampire: Character) -> int | None:
     """A vampire's generation as its sheet has it."""
-    rows = sheets.sheet_rows(db, vampire)
+    return generation_of(sheets.sheet_rows(db, vampire))
+
+
+def generation_of(rows: Sequence[sheets.SheetRow]) -> int | None:
+    """The generation sheet rows give: their Generation dots and any Lesser
+    Generation flaw. None without a dot, or thin-blooded."""
     dots = next(
         (
             r.trait.rating or 0

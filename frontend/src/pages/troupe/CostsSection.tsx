@@ -11,7 +11,7 @@ import type { Pricing, Scheme } from "./costs";
 
 /** What a price is about, in a few words: "Path of Blood, Assamite clan". */
 function subject(cost: CostOut, category: CostCategoryOut | undefined): string {
-  const what = cost.trait ?? `All ${category?.name.toLowerCase() ?? cost.category}`;
+  const what = cost.trait ?? `All ${category?.name ?? cost.category}`;
   return cost.condition_text ? `${what}, ${cost.condition_text}` : what;
 }
 

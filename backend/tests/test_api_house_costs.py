@@ -42,8 +42,8 @@ def test_the_rule_set_prices_are_listed_in_plain_words(troupe: Troupe) -> None:
     assert by_subject[("attributes", None, None)]["price_text"] == "3 XP per dot"
     assert by_subject[("merits", None, None)]["price_text"] == "1 XP per point"
     assert by_subject[("flaws", None, None)]["price_text"] == "1 XP back per point"
-    assert by_subject[("skills", None, "Generation 1")]["price_text"] == (
-        "1 XP × the new dot's number"
+    assert by_subject[("skills", None, "Generation background 1")]["price_text"] == (
+        "1 XP × the new rating"
     )
     path = by_subject[("merits", "Path of Blood", "Assamite clan")]
     assert (path["price_text"], path["house"], path["id"]) == ("2 XP", False, None)
@@ -95,7 +95,7 @@ def test_a_category_price_leaves_more_specific_rule_set_prices_alone(
     replaced = [c for c in costs(troupe)["costs"] if c["replaced"]]
     assert [(c["category"], c["condition_text"]) for c in replaced] == [
         ("skills", None),
-        ("skills", "Generation 1"),
+        ("skills", "Generation background 1"),
     ]
 
 
@@ -138,7 +138,7 @@ def test_changing_and_removing_a_price(troupe: Troupe, session: Session) -> None
     changed = troupe.storyteller.client.put(url, json={"scheme": "progressive", "rate": 1})
 
     assert changed.status_code == 200, changed.text
-    assert changed.json()["price_text"] == "1 XP × the new dot's number"
+    assert changed.json()["price_text"] == "1 XP × the new rating"
     # What was bought keeps what it cost; the next dot is priced the new way.
     assert sheet(troupe.player, character_id)["xp"]["spent"] == spent
     assert buy(troupe.player, character_id, "attributes", "Physical", 2).json()["cost"] == 2
@@ -148,7 +148,4 @@ def test_changing_and_removing_a_price(troupe: Troupe, session: Session) -> None
     assert buy(troupe.player, character_id, "attributes", "Physical", 3).json()["cost"] == 3
     assert not [c for c in costs(troupe)["costs"] if c["house"]]
     log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
-    assert (
-        "storyteller removed the troupe's price for Attributes (1 XP × the new dot's number)."
-        in log
-    )
+    assert "storyteller removed the troupe's price for Attributes (1 XP × the new rating)." in log

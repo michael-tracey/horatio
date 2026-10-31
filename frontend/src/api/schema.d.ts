@@ -13003,6 +13003,8 @@ export interface components {
          *     is accepted at.
          */
         LockedOut: {
+            /** Generation */
+            generation?: number | null;
             /** Name */
             name: string;
             /** Rating */
@@ -14491,6 +14493,8 @@ export interface components {
             game: components["schemas"]["GameOut"] | null;
             /** Generation */
             generation: number;
+            /** Generation Number */
+            generation_number?: number | null;
             /**
              * Half Blood
              * @default false
@@ -15847,6 +15851,13 @@ export interface components {
         /** QueuedApproval */
         QueuedApproval: {
             /**
+             * Age
+             * @default
+             */
+            age: string;
+            /** Asked At */
+            asked_at?: string | null;
+            /**
              * Character Id
              * Format: uuid
              */
@@ -15877,6 +15888,8 @@ export interface components {
             locks: components["schemas"]["LockedOut"][];
             /** Picture */
             picture: string | null;
+            /** Player Name */
+            player_name?: string | null;
             /** Player Note */
             player_note: string;
             quest?: components["schemas"]["ApprovalQuestOut"] | null;

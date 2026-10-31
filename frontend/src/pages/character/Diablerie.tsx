@@ -5,6 +5,7 @@ import type { CharacterOut, DiablerieEffectsOut, DiablerieEffectsPlanOut, Diable
 import { Button, ErrorText, Field, Input, Notice, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { dots, generationText } from "../../generation";
 
 /** What staff change from the form's fill-in: Humanity lowered, and Beast traits for the next game. */
 export type DiablerieAdjust = { humanity?: number; beast?: number };
@@ -17,7 +18,7 @@ export function DiablerieEffects({ effects, done = false }: { effects: Diablerie
   return (
     <ul className="flex flex-col gap-1 text-sm">
       <li>
-        Generation {effects.from_generation} → {effects.to_generation}, as a free dot. Earlier buys keep what they cost.
+        {generationText(effects.from_generation)} → {dots(effects.to_generation)}, as a free dot. Earlier buys keep what they cost.
       </li>
       {effects.techniques.map((t) => (
         <li key={`${t.name}/${t.detail}`}>

@@ -33,9 +33,12 @@ export function ApprovalBackstory({ characterId }: { characterId: string }) {
           Backstory: <Badge tone={s.approved ? "mist" : "gold"}>{words}</Badge>
           {s.required && !s.approved && <span className="text-xs text-mist">Needed before accepting.</span>}
         </p>
-        <Button variant="ghost" className="min-h-8 px-2" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? "Hide the backstory" : "Read the backstory"}
-        </Button>
+        {/* Nothing to read until something is written. */}
+        {s.written && (
+          <Button variant="ghost" className="min-h-8 px-2" aria-expanded={open} onClick={() => setOpen(!open)}>
+            {open ? "Hide the backstory" : "Read the backstory"}
+          </Button>
+        )}
       </div>
       {open &&
         (backstory.isPending ? (

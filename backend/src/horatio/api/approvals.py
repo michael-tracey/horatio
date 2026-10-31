@@ -1,7 +1,7 @@
 """The approvals queue storytellers and assistant storytellers work from."""
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from horatio import (
     diablerie,
+    embrace,
     free_choices,
     house_traits,
     merit_requests,
@@ -36,6 +37,7 @@ from horatio.models import (
     TraitCategory,
     TraitDefinition,
     Troupe,
+    User,
 )
 from horatio.permissions import TroupeAction, require_troupe_action
 from horatio.reconciliation import allowed_settlements, items_for
@@ -140,6 +142,9 @@ class LockedOut(BaseModel):
 
     name: str
     rating: int | None
+    # For Generation: the generation that rating gives, 12 for the 12th (None
+    # for one thin-blooded).
+    generation: int | None = None
 
 
 class FreeChoicesSummaryOut(BaseModel):
@@ -158,6 +163,12 @@ class QueuedApproval(ApprovalOut):
     # The character's picture (horatio.pictures) and clan, for its placeholder.
     picture: str | None
     clan: str | None
+    # Its social age (Neonate, Ancilla, Elder), or what it is without one (Ghoul).
+    age: str = ""
+    # Its player's name; None for an NPC.
+    player_name: str | None = None
+    # When it was asked.
+    asked_at: datetime | None = None
     # For a discipline: the dots bought and what they cost. For a change held for
     # review or asked by exception, the same.
     discipline: DisciplineOut | None
@@ -279,9 +290,16 @@ def locks_out(db: DbSession, approval: Approval, character: Character) -> list[L
     ):
         return []
     rule_set = sheets.rules_for(db, character).rule_set
+    rows = sheets.sheet_rows(db, character)
     return [
-        LockedOut(name=r.definition.name, rating=r.trait.rating)
-        for r in sheets.sheet_rows(db, character)
+        LockedOut(
+            name=r.definition.name,
+            rating=r.trait.rating,
+            generation=embrace.generation_of(rows)
+            if r.category.key == "backgrounds" and r.definition.name == embrace.GENERATION
+            else None,
+        )
+        for r in rows
         if sheets.locks_at(rule_set, r.category.key, r.definition.name) == "accepted"
     ]
 
@@ -423,12 +441,22 @@ def troupe_approvals(
         query = query.where(Approval.kind == kind)
     rows = list(db.execute(query))
     standing = social_age.standings(db, list({c.id for _, c in rows}))
+    players = {c.player_id for _, c in rows if c.kind == "pc"}
+    player_names = {
+        user_id: name
+        for user_id, name in db.execute(
+            select(User.id, User.display_name).where(User.id.in_(players))
+        )
+    }
     return [
         QueuedApproval(
             **approval_out(a).model_dump(),
             character_name=c.name,
             picture=pictures.picture_url(c.id, c.picture_id),
             clan=standing[c.id].clan,
+            age=standing[c.id].age,
+            player_name=player_names.get(c.player_id) if c.kind == "pc" else None,
+            asked_at=a.created_at,
             discipline=discipline_out(db, a),
             exception=exception_out(db, a),
             diablerie=diablerie_out(db, a),

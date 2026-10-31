@@ -202,5 +202,5 @@ def describe(rule: CostRuleData, unit: str = "dot") -> str:
     if rule.scheme == "per_dot":
         return f"{xp(rule.rate)} per {unit}"
     if rule.scheme == "progressive":
-        return f"{xp(rule.rate)} × the new {unit}'s number"
+        return f"{xp(rule.rate)} × the new rating"
     return xp(rule.rate)
