@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
 import { AskStaff } from "./AskStaff";
 import type { CartLine, Exception } from "./cart";
 import { foundElsewhere, shownChips, useBarred, useChoices } from "./choices";
@@ -32,8 +31,8 @@ export type NewTrait = {
 /**
  * Add a trait to one part of the sheet: pick a category from its chips, then from
  * a searchable list of what the character can take there (or everything), see
- * what it costs, and put it in the cart. Traits the rules would refuse are greyed
- * out with the reason. What the character can take counts the cart.
+ * what it costs (priced as it is chosen), and put it in the cart. Traits the rules
+ * would refuse are greyed out with the reason. What the character can take counts the cart.
  */
 export function AddTraitPanel({
   character,
@@ -63,7 +62,6 @@ export function AddTraitPanel({
   const [name, setName] = useState("");
   const [detail, setDetail] = useState("");
   const [rating, setRating] = useState(1);
-  const [quote, setQuote] = useState<{ cost: number; because?: string | null } | null>(null);
   const [teacher, setTeacher] = useState("");
   const [picks, setPicks] = useState<FreePick[]>([]);
   // A trait the rules refuse, asked of staff as an exception.
@@ -106,6 +104,13 @@ export function AddTraitPanel({
   });
   const offers = free.data ?? [];
   const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null, teacher: asksTeacher ? teacher : "" };
+  const priced = !!trait && !!cat?.rated && !asking && (body.rating ?? 0) >= 1;
+  const quote = useQuote(character.id, priced, body);
+  // On a phone the list grows with the page, so the chosen trait's form is brought into view.
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (name) form.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  }, [name]);
 
   const choose = (t: TraitOut) => {
     setAsking(null);
@@ -113,12 +118,7 @@ export function AddTraitPanel({
     setPicks([]);
     setDetail("");
     setRating(1);
-    setQuote(null);
   };
-  const price = useAction(async () => {
-    const result = await unwrap(api.POST("/api/characters/{character_id}/quote", { params: { path: { character_id: character.id } }, body }));
-    setQuote(result);
-  });
   const add = () => {
     onAdd({
       category,
@@ -159,7 +159,8 @@ export function AddTraitPanel({
           className="min-w-40 flex-1"
         />
       </div>
-      <ul className="flex max-h-72 flex-col overflow-y-auto">
+      {/* Its own scroll area only on a wider screen: on a phone, one inside the page's is hard to work. */}
+      <ul className="flex flex-col sm:max-h-72 sm:overflow-y-auto">
         {matching.map((t) => (
           <TraitChoice
             key={t.name}
@@ -217,7 +218,8 @@ export function AddTraitPanel({
       )}
       {trait && (
         <form
-          className="flex flex-col gap-3 border-t border-ash pt-3"
+          ref={form}
+          className="flex scroll-mb-20 flex-col gap-3 border-t border-ash pt-3"
           onSubmit={(e) => {
             e.preventDefault();
             add();
@@ -242,10 +244,7 @@ export function AddTraitPanel({
                 min={1}
                 max={cat.max_rating ?? undefined}
                 value={rating}
-                onChange={(e) => {
-                  setRating(Number(e.target.value));
-                  setQuote(null);
-                }}
+                onChange={(e) => setRating(Number(e.target.value))}
               />
             </Field>
           )}
@@ -265,14 +264,15 @@ export function AddTraitPanel({
             </>
           )}
           {/* A power a merit opens says so: "Hard as Steel: 20 XP." */}
-          {quote !== null && <p className="text-sm">{quote.because ? `${quote.because}.` : `Costs ${quote.cost} XP.`}</p>}
-          <ErrorText error={price.error} />
+          {quote.data ? (
+            <p className="text-sm" aria-live="polite">
+              {quote.data.because ? `${quote.data.because}.` : `Costs ${quote.data.cost} XP.`}
+            </p>
+          ) : (
+            priced && !quote.error && <p className="text-sm text-mist">Pricing…</p>
+          )}
+          <ErrorText error={quote.error} />
           <div className="flex gap-2">
-            {cat?.rated && (
-              <Button type="button" variant="secondary" disabled={price.isPending} onClick={() => price.mutate(undefined)}>
-                Price it
-              </Button>
-            )}
             <Button type="submit" disabled={!sayable(picks, offers)}>
               Add to cart
             </Button>
@@ -281,6 +281,31 @@ export function AddTraitPanel({
       )}
     </div>
   );
+}
+
+/** How long a choice must stay put before it is priced: a quote judges the whole sheet. */
+const SETTLE_MS = 400;
+
+/**
+ * What adding the trait would cost, asked once the choice (a rating, a detail typed)
+ * has stayed put for a moment, not on every keystroke. Only an answer for the
+ * choice as it stands is given.
+ */
+function useQuote(characterId: string, enabled: boolean, body: { category: string; name: string; detail: string; rating: number | null }) {
+  const asked = { category: body.category, name: body.name, detail: body.detail, rating: body.rating, teacher: "" };
+  const now = JSON.stringify(asked);
+  const [settled, setSettled] = useState(now);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(now), SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [now]);
+  const quote = useQuery({
+    queryKey: ["quote", characterId, now],
+    queryFn: ({ signal }) => unwrap(api.POST("/api/characters/{character_id}/quote", { params: { path: { character_id: characterId } }, body: asked, signal })),
+    enabled: enabled && settled === now,
+    retry: false,
+  });
+  return enabled ? quote : { data: undefined, error: null };
 }
 
 /**

@@ -266,7 +266,9 @@ export function CartBar({ characterId, cart }: { characterId: string; cart: Cart
   const prices = useCartPrices(characterId, cart.lines);
   if (!cart.lines.length) return null;
   const net = prices.totals?.net;
-  const summary = `${plural(cart.lines.length, "change")}${net != null && net !== 0 ? ` · ${costText(net)}` : ""}`;
+  const left = prices.totals?.left;
+  // What is left to spend after them, as the top of the sheet says it on a phone.
+  const summary = `${plural(cart.lines.length, "change")}${net != null && net !== 0 ? ` · ${costText(net)}` : ""}${left == null ? "" : left < 0 ? ` · ${-left} XP short` : ` · ${left} XP left`}`;
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 border-t border-ash bg-night/95 px-4 py-2 backdrop-blur lg:hidden">
       <button
