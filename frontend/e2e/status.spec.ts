@@ -154,7 +154,9 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
   await expect(line("Loyal").getByText("fleeting", { exact: true })).toBeVisible();
   await expect(line("Loyal")).toContainText("from Mirela Stoica (Prince at the time)");
   await expect(line("Loyal")).toContainText("For holding the door");
-  await expect(choices.getByRole("listitem", { name: "Harpy" }).getByText("Gives Prominent · Noble · Guardian")).toBeVisible();
+  await expect(choices.getByRole("listitem", { name: "Harpy", exact: true }).getByText("Gives Prominent · Noble · Guardian")).toBeVisible();
+  // The Master Harpy is the Harpy by another name, and gives the same (#340).
+  await expect(choices.getByRole("listitem", { name: "Master Harpy" }).getByText("Gives Prominent · Noble · Guardian")).toBeVisible();
   const statusBox = (await status.boundingBox())!;
   const titlesBox = (await titles.boundingBox())!;
   if (p.viewportSize()!.width >= 1024) expect(titlesBox.x).toBeGreaterThanOrEqual(statusBox.x + statusBox.width);
@@ -167,7 +169,7 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
 
   // Harpy, the first title, is active at once, and gives its status.
   await choices.getByRole("button", { name: "Take Harpy" }).click();
-  await expect(held.getByRole("listitem", { name: "Harpy" }).getByText("active", { exact: true })).toBeVisible();
+  await expect(held.getByRole("listitem", { name: "Harpy", exact: true }).getByText("active", { exact: true })).toBeVisible();
   for (const name of ["Prominent", "Noble", "Guardian"]) await expect(line(name)).toContainText("from the title Harpy");
   await expect(line("Noble").getByText("abiding", { exact: true })).toBeVisible();
   await p.screenshot(shots("status-titles"));
@@ -179,7 +181,7 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
   await choices.getByRole("button", { name: "Take Keeper of Elysium" }).click();
   await choices.getByRole("group", { name: "Take Keeper of Elysium" }).getByRole("button", { name: "Make it active" }).click();
   await expect(held.getByRole("listitem", { name: "Keeper of Elysium" }).getByText("active", { exact: true })).toBeVisible();
-  await expect(held.getByRole("listitem", { name: "Harpy" }).getByText("not active")).toBeVisible();
+  await expect(held.getByRole("listitem", { name: "Harpy", exact: true }).getByText("not active")).toBeVisible();
   for (const name of ["Enforcer", "Guardian"]) await expect(line(name)).toContainText("from the title Keeper of Elysium");
   await expect(list).not.toContainText("Harpy");
 
@@ -220,7 +222,7 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
   const leadStatus = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
   const leadTitles = l.getByRole("complementary", { name: "Titles" });
   await expect(leadBans.getByRole("button", { name: /lesser ban: Not Embraced into a pillar clan/ })).toBeVisible();
-  await expect(leadTitles.getByRole("listitem", { name: "Harpy" })).toBeVisible();
+  await expect(leadTitles.getByRole("listitem", { name: "Harpy", exact: true })).toBeVisible();
   const leadStatusBox = (await leadStatus.boundingBox())!;
   const bansBox = (await leadBans.boundingBox())!;
   const leadTitlesBox = (await leadTitles.boundingBox())!;

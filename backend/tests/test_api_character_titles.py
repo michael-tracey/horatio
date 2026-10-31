@@ -192,6 +192,25 @@ def test_a_unique_titles_other_names_are_one_office(troupe: Troupe) -> None:
     assert take(troupe.storyteller, skelter, "Baron").status_code == 200
 
 
+def test_a_paladin_is_a_templar_and_a_lesser_harpy_stands_in(troupe: Troupe) -> None:
+    """A Paladin gives a Templar's Enforcer (p. 420); a Lesser Harpy gains Guardian
+    at her gathering while the Master Harpy is away (p. 379)."""
+    rook = member(troupe, "Rook", sect="Sabbat", clan="Lasombra")
+    assert take(troupe.player, rook, "Paladin").status_code == 200
+    assert from_titles(troupe.player, rook) == {"Paladin": ["Enforcer"]}
+    vasquez = member(troupe, "Lady Vasquez")
+
+    choices = {c["name"]: c for c in titles_of(troupe.player, vasquez)["choices"]}
+    assert choices["Lesser Harpy"]["status"] == ["Guardian while the Harpy is away"]
+    assert choices["Master Harpy"]["status"] == ["Prominent", "Noble", "Guardian"]
+    assert take(troupe.player, vasquez, "Lesser Harpy").status_code == 200
+
+    derived = [d for d in status(troupe.player, vasquez)["derived"] if d["kind"] == "title"]
+    assert [(d["name"], d["source"], d["condition"]) for d in derived] == [
+        ("Guardian", "Lesser Harpy", "while the Harpy is absent")
+    ]
+
+
 def test_a_troupes_own_title_can_be_unique(troupe: Troupe) -> None:
     made = troupe.assistant.client.post(
         f"/troupes/{troupe.id}/titles",
