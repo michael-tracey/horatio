@@ -282,8 +282,8 @@ export function CartBar({ characterId, cart }: { characterId: string; cart: Cart
 }
 
 /**
- * Finish character creation. With changes still in the cart, it asks first
- * whether to apply them or drop them.
+ * Finish character creation. It can't be taken back, so it asks first, saying
+ * what changes; with changes still in the cart, whether to apply them or drop them.
  */
 export function FinishCreation({
   character,
@@ -316,25 +316,38 @@ export function FinishCreation({
   const pending = cart.lines.length > 0;
   return (
     <div className={className}>
-      {asking && pending ? (
+      {asking ? (
         <div className="flex flex-col gap-2">
-          <Notice>
-            {plural(cart.lines.length, "change")} in the cart {cart.lines.length === 1 ? "is" : "are"} not applied yet. Apply them, or drop them, before finishing?
-          </Notice>
+          <p role="status" className="text-sm text-gold">
+            Finish creating {character.name}? After this, the starting picks are fixed and new dots cost XP.
+          </p>
+          {pending && (
+            <Notice>
+              {plural(cart.lines.length, "change")} in the cart {cart.lines.length === 1 ? "is" : "are"} not applied yet. Apply them, or drop them, before finishing?
+            </Notice>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Button disabled={finish.isPending} onClick={() => finish.mutate("apply")}>
-              Apply them and finish
-            </Button>
-            <Button variant="secondary" disabled={finish.isPending} onClick={() => finish.mutate("drop")}>
-              Drop them and finish
-            </Button>
+            {pending ? (
+              <>
+                <Button disabled={finish.isPending} onClick={() => finish.mutate("apply")}>
+                  Apply them and finish
+                </Button>
+                <Button variant="secondary" disabled={finish.isPending} onClick={() => finish.mutate("drop")}>
+                  Drop them and finish
+                </Button>
+              </>
+            ) : (
+              <Button disabled={finish.isPending} onClick={() => finish.mutate(null)}>
+                Yes, finish creation
+              </Button>
+            )}
             <Button variant="ghost" onClick={() => setAsking(false)}>
-              Cancel
+              {pending ? "Cancel" : "Not yet"}
             </Button>
           </div>
         </div>
       ) : (
-        <Button disabled={disabled || finish.isPending} onClick={() => (pending ? setAsking(true) : finish.mutate(null))}>
+        <Button disabled={disabled || finish.isPending} onClick={() => setAsking(true)}>
           {children}
         </Button>
       )}

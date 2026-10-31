@@ -70,14 +70,15 @@ export function CharacterPage() {
   const c = character.data;
   const base = `/characters/${c.id}`;
   const custodian = !!me.data?.is_custodian;
-  const play = (
+  const primaryLink = (to: string, label: string, secondary = false) => (
     <Link
-      to={`/play/characters/${c.id}`}
-      className={`inline-flex min-h-10 items-center justify-center rounded-md px-5 text-sm font-medium text-parchment ${onDowntime ? "border border-ash bg-dusk hover:border-mist" : "bg-blood hover:bg-blood-bright"}`}
+      to={to}
+      className={`inline-flex min-h-10 items-center justify-center rounded-md px-5 text-sm font-medium text-parchment ${secondary ? "border border-ash bg-dusk hover:border-mist" : "bg-blood hover:bg-blood-bright"}`}
     >
-      Play
+      {label}
     </Link>
   );
+  const play = primaryLink(`/play/characters/${c.id}`, "Play", onDowntime);
   const rename = renaming && <RenameCharacter key={c.id} character={c} asCustodian={custodian} onDone={() => setRenaming(false)} />;
   const pronouns = saying && <CharacterPronouns key={c.id} character={c} onDone={() => setSaying(false)} />;
   const name = (
@@ -145,6 +146,9 @@ export function CharacterPage() {
   }
 
   const mine = c.player_id === me.data?.id;
+  // While its player is still creating it, the page leads back to the wizard, and the
+  // tabs for a character in play (experience, downtimes, influence) wait until it's done.
+  const creating = mine && !c.creation_complete;
   const influence = mine || custodian || (!!home.data && abilities(home.data.my_role, custodian).running);
   // The custodian renames at any time; the player once every 3 months in a troupe.
   const canRename = custodian || (mine && c.status === "active");
@@ -158,7 +162,7 @@ export function CharacterPage() {
           actions={
             <div className="flex flex-wrap items-center gap-3">
               {c.status === "retired" && <Badge>retired</Badge>}
-              {play}
+              {creating ? primaryLink(`${base}/create`, "Continue creating") : play}
               {c.status === "active" && <GiveEquipment character={c} />}
               <CharacterMenu
                 character={c}
@@ -181,20 +185,20 @@ export function CharacterPage() {
       {pronouns}
       <Tabs
         tabs={[
-          ...(mine && !c.creation_complete ? [{ to: `${base}/create`, label: "Create" }] : []),
+          ...(creating ? [{ to: `${base}/create`, label: "Create" }] : []),
           { to: base, label: "Sheet", end: true },
           { to: `${base}/status`, label: "Status & Titles" },
           { to: `${base}/equipment`, label: "Equipment" },
-          { to: `${base}/xp`, label: "Experience" },
-          ...(mine
+          ...(creating ? [] : [{ to: `${base}/xp`, label: "Experience" }]),
+          ...(mine ? [{ to: `${base}/troupes`, label: "Troupes" }] : []),
+          ...(mine && !creating
             ? [
-                { to: `${base}/troupes`, label: "Troupes" },
                 { to: `${base}/downtime`, label: "Downtime" },
                 { to: `${base}/results`, label: "Results" },
                 ...(quests.data?.enabled ? [{ to: `${base}/quests`, label: "Quests" }] : []),
               ]
             : []),
-          ...(influence ? [{ to: `${base}/influence`, label: "Influence" }] : []),
+          ...(influence && !creating ? [{ to: `${base}/influence`, label: "Influence" }] : []),
           ...(shared.data?.length ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
           ...(backstory.data?.read ? [{ to: `${base}/backstory`, label: "Backstory" }] : []),
           { to: `${base}/log`, label: "Log" },
@@ -220,7 +224,7 @@ export function CharacterPage() {
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}
         <Route path="shared" element={<CharacterShared characterId={c.id} />} />
         {backstory.data?.read && <Route path="backstory" element={<BackstoryTab character={c} />} />}
-        {mine && !c.creation_complete && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
+        {creating && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (
           <>
             <Route path="troupes" element={<TroupesTab character={c} />} />
