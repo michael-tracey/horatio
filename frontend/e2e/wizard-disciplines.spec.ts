@@ -137,7 +137,8 @@ test("a Caitiff chooses three common disciplines on Concept, takes Vestiges of G
   await expect(p.getByText("In-clan disciplines (3 of 3)")).toBeVisible();
   await p.getByRole("checkbox", { name: "Protean" }).click();
   const room = p.getByRole("group", { name: "Make room for Protean" });
-  await expect(room.getByRole("button", { name: /^Swap / })).toHaveCount(3);
+  // Each swap is tried on the server as a whole cart, three at once: on CI's busy server the slowest takes up to 5 s (#334).
+  await expect(room.getByRole("button", { name: /^Swap / })).toHaveCount(3, { timeout: 15_000 });
   await room.getByRole("button", { name: "Swap Obfuscate for Protean" }).click();
   await expect(p.getByRole("checkbox", { name: "Protean" })).toBeChecked();
   await expect(p.getByRole("checkbox", { name: "Obfuscate" })).not.toBeChecked();
@@ -208,7 +209,8 @@ for (const forTroupe of [false, true]) {
     await expect(p.getByRole("group", { name: "Changed by other steps" }).getByRole("link", { name: "Go to Concept" })).toHaveCount(0);
     await p.getByRole("checkbox", { name: "Protean", exact: true }).click();
     const room = p.getByRole("group", { name: "Make room for Protean" });
-    await expect(room.getByRole("button", { name: /^Swap / })).toHaveCount(3);
+    // Each swap is tried on the server as a whole cart, three at once: on CI's busy server the slowest takes up to 5 s (#334).
+    await expect(room.getByRole("button", { name: /^Swap / })).toHaveCount(3, { timeout: 15_000 });
     await room.getByRole("button", { name: "Swap Obfuscate for Protean" }).click();
     await expect(p.getByRole("checkbox", { name: "Protean", exact: true })).toBeChecked();
     await expect(p.getByText("Vestiges of Greatness: choose one")).toHaveCount(0);

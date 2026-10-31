@@ -46,9 +46,12 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   const chosen = choice.chosen.map((t) => t.name);
   const given = new Map(choice.given.map((t) => [t.name, t.granted_by]));
   // For the one tapped: which of those chosen it could take the place of, tried on the server.
+  // Keyed by the sheet, so a change (the swap itself) never has it asked again under the
+  // old key: each try is a whole cart judged, slow work on a busy server (#334).
   const swaps = useQuery({
     queryKey: ["in-clan-swaps", character.id, wanted, chosen, now],
     enabled: !!wanted && chosen.length > 0,
+    meta: { bySheet: true },
     queryFn: async () => {
       const tried = await Promise.all(
         chosen.map(async (from) => {

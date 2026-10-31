@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
@@ -109,7 +109,17 @@ export function DomitorForm({ character, sheet, catalogue, onDone }: { character
   const inClan = inClanOf(draft, catalogue);
   const placed = Object.values(moved).reduce((n, r) => n + r, 0);
   const missing = draftMissing(draft) ?? (disciplines === "move" && placed !== total ? `Move all ${total} dots; ${placed} are placed.` : null);
-  const save = useAction(() => unwrap(api.PUT("/api/characters/{character_id}/domitor", { params: path, body: domitorBody(draft, disciplines, moved) })));
+  const client = useQueryClient();
+  const save = useAction(async () => {
+    const saved = await unwrap(api.PUT("/api/characters/{character_id}/domitor", { params: path, body: domitorBody(draft, disciplines, moved) }));
+    // The save answers with the domitor as it now is: shown at once, not once every
+    // query on the page has been asked again, which takes seconds on a busy server
+    // (#334). A read still out from before the save would only bring the old one back.
+    const key = ["domitor", character.id];
+    await client.cancelQueries({ queryKey: key });
+    client.setQueryData(key, saved);
+    return saved;
+  });
   const named = draft.kind === "named" ? draft : { kind: "named" as const, name: "", clan: "", three: ["", "", ""] };
 
   return (
