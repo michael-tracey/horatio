@@ -40,6 +40,10 @@ quest with no leader leads it. Staff add characters to the party at a game.
 **Closing.** Staff switch a quest off at any point, with a note; it can no longer
 be joined or progressed, and those who could see it see why.
 
+**Answering a request.** Staff can answer a merit or flaw request in the approvals
+queue with a quest for its character (horatio.merit_requests): completing the quest
+approves the request, failing or closing it declines it.
+
 **Telling the Tale** (p. 102): once it ends, the leader's player writes what
 happened, and staff edit and approve it as the official account.
 """
@@ -990,6 +994,11 @@ def send_result(
         from horatio import location_quests
 
         location_quests.complete(db, staff, quest)
+    if ended is not None:
+        # One answering a merit or flaw request decides it (horatio.merit_requests).
+        from horatio import merit_requests
+
+        merit_requests.quest_ended(db, staff, quest, ended == "completed")
     if cycle is None:
         summary, subject, full_text = result_news(quest, scenario, ended)
         tell(
@@ -1039,6 +1048,10 @@ def close(db: Session, staff: User, quest: Quest, note: str) -> None:
     request = request_of(db, quest)
     if request is not None and request.status not in ("answered", "withdrawn"):
         finish_request(db, staff, request, "refused", note)
+    from horatio import merit_requests  # imports this module
+
+    said = f"The quest {quest.name} was closed: {note}"
+    merit_requests.quest_ended(db, staff, quest, False, said)
     if was_sent:
         leader = db.get(Character, quest.leader_id) if quest.leader_id else None
         seen = [*([leader] if leader else []), *(c for _, c in members(db, quest))]

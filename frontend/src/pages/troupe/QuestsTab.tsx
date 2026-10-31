@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Route, Routes, useNavigate, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { QuestIn, QuestRequestOut } from "../../api/types";
+import type { QuestIn, QuestRequestOut, QueuedApproval } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTabs, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -490,54 +490,82 @@ function bookGuidance(category: string, difficulty: number): { requirements: num
 }
 
 function NewQuest({ troupeId }: { troupeId: string }) {
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const requestId = params.get("request");
+  const approvalId = params.get("approval");
   const request = useQuery({
     queryKey: ["quest-requests", troupeId, "open"],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/quest-requests", { params: { path: { troupe_id: troupeId }, query: { show: "open" } } })),
     enabled: !!requestId,
   });
+  const approvals = useQuery({
+    queryKey: ["approvals", troupeId, "pending", "merit_flaw"],
+    queryFn: () =>
+      unwrap(api.GET("/api/troupes/{troupe_id}/approvals", { params: { path: { troupe_id: troupeId }, query: { state: "pending", kind: "merit_flaw" } } })),
+    enabled: !!approvalId,
+  });
   const from = request.data?.find((r) => r.id === requestId);
+  const answering = approvals.data?.find((a) => a.id === approvalId);
   const locationId = params.get("location");
+  if (requestId && request.isPending) return <Loading />;
+  if (approvalId && approvals.isPending) return <Loading />;
+  if (from && buildsFromLocation(from.kind) && from.location) {
+    return <LocationQuestBuilder troupeId={troupeId} locationId={from.location.id} request={from} start={changeFromRequest(from)} />;
+  }
+  if (!requestId && locationId) return <LocationQuestBuilder troupeId={troupeId} locationId={locationId} />;
+  if (approvalId && !answering?.quest_suggestion) return <ErrorText error={approvals.error ?? "That request is already answered."} />;
+  return <QuestBuilder key={approvalId ?? requestId ?? ""} troupeId={troupeId} from={from} answering={answering} />;
+}
+
+/** The plain quest builder: from nothing, from a quest request, or answering a merit or flaw request in the approvals queue. */
+function QuestBuilder({ troupeId, from, answering }: { troupeId: string; from?: QuestRequestOut; answering?: QueuedApproval }) {
+  const navigate = useNavigate();
+  const suggested = answering?.quest_suggestion;
   const [draft, setDraft] = useState<QuestDraft>({
-    name: "",
-    objective: "",
-    category: "simple",
-    difficulty: 1,
+    name: suggested?.name ?? "",
+    objective: suggested?.objective ?? "",
+    category: suggested?.category ?? "simple",
+    difficulty: suggested?.difficulty ?? 1,
     downtime_only: false,
     staff_notes: "",
-    leader_id: null,
+    leader_id: answering?.character_id ?? null,
     offer: "character",
     unlock_quest_id: null,
     unlock_scenario: null,
   });
   const build = useAction(async () => {
     const made = await unwrap(
-      api.POST("/api/troupes/{troupe_id}/quests", { params: { path: { troupe_id: troupeId } }, body: { ...draft, request_id: requestId } }),
+      api.POST("/api/troupes/{troupe_id}/quests", {
+        params: { path: { troupe_id: troupeId } },
+        body: { ...draft, request_id: from?.id ?? null, approval_id: answering?.id ?? null },
+      }),
     );
     navigate(`/troupes/${troupeId}/quests/${made.id}`);
   });
-  if (requestId && request.isPending) return <Loading />;
-  if (from && buildsFromLocation(from.kind) && from.location) {
-    return <LocationQuestBuilder troupeId={troupeId} locationId={from.location.id} request={from} start={changeFromRequest(from)} />;
-  }
-  if (!requestId && locationId) return <LocationQuestBuilder troupeId={troupeId} locationId={locationId} />;
   return (
-    <Card title={from ? `A quest for ${from.character_name}` : "New quest"}>
+    <Card title={from ? `A quest for ${from.character_name}` : answering ? `A quest for ${answering.character_name}` : "New quest"}>
       {from && (
         <p className="mb-3 text-sm text-mist">
           From the request: “{from.objective}”. Left empty, its objective is the request's words.
         </p>
       )}
+      {answering && (
+        <p className="mb-3 text-sm text-mist">
+          Answering the request: {suggested?.objective} Completing the quest approves it; failing or closing it declines it.
+          {answering.discipline?.category === "flaws" && answering.discipline.to_rating < answering.discipline.from_rating
+            ? " Buying off a flaw is a Complex quest at its points, or an Epic one for 5 points (Vol. II Issue 1, pp. 104-105)."
+            : ""}
+        </p>
+      )}
       <form
+        aria-label="Build a quest"
         className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
           build.mutate(undefined);
         }}
       >
-        <QuestFields troupeId={troupeId} draft={draft} onChange={(change) => setDraft({ ...draft, ...change })} fromRequest={!!from} />
+        <QuestFields troupeId={troupeId} draft={draft} onChange={(change) => setDraft({ ...draft, ...change })} fromRequest={!!from || !!answering} />
         <p className="text-sm text-mist">{guidanceText(bookGuidance(draft.category, draft.difficulty))} Its scenarios start empty, to fill in on the quest.</p>
         <div>
           <Button type="submit" disabled={build.isPending}>

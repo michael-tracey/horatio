@@ -9,10 +9,11 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import location_quests, quest_actions, quest_requirements, quests
+from horatio import location_quests, merit_requests, quest_actions, quest_requirements, quests
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
+    Approval,
     Character,
     Delivery,
     DowntimeCycle,
@@ -211,6 +212,18 @@ class QuestLocationOut(BaseModel):
     change: str
 
 
+class QuestAnswersOut(BaseModel):
+    """A merit or flaw request a quest answers."""
+
+    approval_id: uuid.UUID
+    # "Agnes buys off Dark Fate".
+    change: str
+    # pending | approved | declined | withdrawn
+    status: str
+    # XP held while it waits; for a flaw taken on, negative: what it gives.
+    cost: int
+
+
 class QuestOut(BaseModel):
     """A quest as staff see it."""
 
@@ -251,6 +264,9 @@ class QuestOut(BaseModel):
     downtime: QuestDowntimeOut | None = None
     # The location it changes, for those who keep locations.
     location: QuestLocationOut | None = None
+    # The merit or flaw requests it answers (horatio.merit_requests): completing it
+    # approves them, failing or closing it declines them.
+    answers: list[QuestAnswersOut] = []
     # The reader may change it, assign it, send it and check sheets against it.
     can_edit: bool
     can_assign: bool
@@ -378,6 +394,8 @@ class QuestIn(BaseModel):
     unlock_scenario: int | None = Field(default=None, ge=1, le=20)
     # The request it answers.
     request_id: uuid.UUID | None = None
+    # Or the merit or flaw request in the approvals queue it answers.
+    approval_id: uuid.UUID | None = None
     # Its scenarios; the book's number of empty ones if left out.
     scenarios: list[ScenarioIn] | None = Field(default=None, max_length=20)
 
@@ -732,11 +750,26 @@ def quest_out(db: DbSession, user: User, troupe: Troupe, quest: Quest) -> QuestO
         ],
         downtime=downtime_out(db, quest),
         location=location_out(db, quest) if running else None,
+        answers=answers_out(db, quest) if running else [],
         can_edit=may_work and open_,
         can_assign=running and open_,
         can_send=running and open_,
         can_check=running,
     )
+
+
+def answers_out(db: DbSession, quest: Quest) -> list[QuestAnswersOut]:
+    return [
+        QuestAnswersOut(
+            approval_id=approval.id,
+            change=merit_requests.describe(db, approval),
+            status=approval.status,
+            cost=merit_requests.asked_of(db, approval)[1].cost,
+        )
+        for approval in db.scalars(
+            select(Approval).where(Approval.quest_id == quest.id).order_by(Approval.id)
+        )
+    ]
 
 
 def location_out(db: DbSession, quest: Quest) -> QuestLocationOut | None:
@@ -1137,18 +1170,30 @@ def build_quest(troupe_id: uuid.UUID, body: QuestIn, db: DbSession, user: Curren
     any; a narrator builds from a request assigned to them."""
     troupe = staff_troupe(db, user, troupe_id)
     request = None
+    approval = None
+    fields = fields_from(body)
     if body.request_id is not None:
         request = db.get(QuestRequest, body.request_id)
         if request is None or request.troupe_id != troupe.id:
             raise not_found("request")
         if not quests.may_work_on(db, user, troupe, request):
             raise forbidden()
+    elif body.approval_id is not None:
+        # Answering a merit or flaw request: for its character, by those who decide it.
+        approval = db.get(Approval, body.approval_id)
+        if approval is None or approval.troupe_id != troupe.id:
+            raise not_found("request")
+        require_troupe_action(db, user, troupe, TroupeAction.APPROVE_CHANGES)
+        if not troupe.quests_enabled:
+            raise HTTPException(status.HTTP_409_CONFLICT, "This troupe doesn't run quests.")
+        fields.leader_id = approval.character_id
+        fields.offer = "character"
     else:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_QUESTS)
     texts = texts_from(body)
-    quest = quests.create(
-        db, user, troupe, fields_from(body), request=request, scenario_texts=texts or ()
-    )
+    quest = quests.create(db, user, troupe, fields, request=request, scenario_texts=texts or ())
+    if approval is not None:
+        merit_requests.tie(db, user, approval, quest)
     db.commit()
     return quest_out(db, user, troupe, quest)
 

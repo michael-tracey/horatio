@@ -20,6 +20,10 @@ and says which purchases it repriced.
 A line can be asked as an exception (horatio.trait_exceptions): the checks its
 trait breaks on the finished sheet are set aside for it rather than refusing
 it, and it waits on the home troupe's staff; asked free, it costs nothing.
+
+Once a home troupe has accepted the character, a merit or flaw line is asked of
+its staff (horatio.merit_requests): it is tried on the sheet as it stands at that
+line, then taken back, so the lines after it see the sheet without it.
 """
 
 from collections.abc import Callable, Sequence
@@ -189,8 +193,10 @@ def make(db: Session, user: User, character: Character, change: Change) -> sheet
                 teacher=change.teacher,
                 free=asked.reason if asked and asked.free else None,
                 by_exception="asked" if asked else None,
+                picks=change.picks,
             )
-            if change.picks and change.rating:
+            # A merit asked of the home troupe keeps its picks until approved.
+            if change.picks and change.rating and made.asked is None:
                 free_choices.set_choices(
                     db, character, change.category, change.name, change.detail, change.picks
                 )
@@ -213,6 +219,14 @@ def make(db: Session, user: User, character: Character, change: Change) -> sheet
 def would_cost(db: Session, character: Character, change: Change) -> int | None:
     """What a refused change would have cost, where that can be told."""
     try:
+        if isinstance(change, SetRating) and change.rating is not None:
+            from horatio import merit_requests  # imports this module
+
+            asked = merit_requests.would_cost(
+                db, character, change.category, change.name, change.detail, change.rating
+            )
+            if asked is not None:
+                return asked
         if isinstance(change, SetRating):
             quote, _ = sheets.quote_change(
                 db, character, change.category, change.name, change.detail, change.rating
@@ -234,7 +248,7 @@ def waiting(db: Session, character: Character) -> int:
             .where(
                 Approval.character_id == character.id,
                 Approval.status == "pending",
-                Approval.kind.in_(sheets.HELD_KINDS),
+                Approval.kind.in_(sheets.PURCHASE_KINDS),
             )
         )
         or 0
@@ -328,7 +342,9 @@ def apply_changes(
                 cost=balance - sheets.xp_balance(db, character),
                 needs_approval=waiting(db, character) > held,
                 repriced=made.repriced if made is not None else (),
-                because=made.quote.opening.because
+                because=made.asked
+                if made is not None and made.asked is not None
+                else made.quote.opening.because
                 if made is not None and made.quote is not None and made.quote.opening is not None
                 else None,
             )

@@ -225,12 +225,15 @@ def test_storytellers_give_a_trait_free_and_despite_the_rules(troupe: Troupe) ->
         n["summary"] == "assistant gave Agnes Calm Heart 1, free: A gift from the Prince"
         for n in told
     )
-    # The player cannot take it away again for XP.
+    # The player cannot take it away again for XP: removing it is asked of staff,
+    # with nothing back (horatio.merit_requests).
     removed = troupe.player.client.put(
         f"/characters/{character_id}/traits",
         json={"category": "merits", "name": "Calm Heart", "rating": 0},
     )
-    assert removed.status_code in (409, 422)
+    assert removed.status_code == 200, removed.text
+    assert removed.json()["cost"] == 0
+    assert "Calm Heart" in [t["name"] for t in removed.json()["sheet"]["traits"]]
 
 
 def test_an_excepted_rule_is_not_flagged_while_another_is(troupe: Troupe) -> None:
@@ -244,6 +247,9 @@ def test_an_excepted_rule_is_not_flagged_while_another_is(troupe: Troupe) -> Non
         json={"category": "merits", "name": "Ritual Master", "rating": 1},
     )
     assert bought.status_code == 200, bought.text
+    # Asked of staff once accepted; approved, it is on the sheet.
+    [request] = [a for a in waiting(troupe) if a["kind"] == "merit_flaw"]
+    troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
 
     problems = [p["name"] for p in sheet(troupe.player, character_id)["problems"]]
 

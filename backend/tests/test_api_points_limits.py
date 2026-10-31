@@ -62,11 +62,17 @@ def test_merit_points_count_at_the_troupes_price(troupe: Troupe, session: Sessio
     )
     character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)
-    take(troupe.player, character_id, "merits", "Iron Will", 3)
-    take(troupe.player, character_id, "merits", "Rugged", 2)  # a 3-point merit by the book
 
-    assert take(troupe.player, character_id, "merits", "Acute Sense", 1).status_code == 200
-    assert take(troupe.player, character_id, "merits", "Light Sleeper", 1).status_code == 200
+    # Once accepted, each merit is asked of staff, and counts once approved.
+    def taken(name: str, rating: int) -> None:
+        assert take(troupe.player, character_id, "merits", name, rating).status_code == 200
+        for request in troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json():
+            troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
+
+    taken("Iron Will", 3)
+    taken("Rugged", 2)  # a 3-point merit by the book
+    taken("Acute Sense", 1)
+    taken("Light Sleeper", 1)
     assert limits(troupe.player, character_id)["merits"] == (7, 7)
 
 
