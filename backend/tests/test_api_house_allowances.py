@@ -74,6 +74,9 @@ def test_traits_that_change_the_allowance(troupe: Troupe) -> None:
     troupe.player.client.put(
         f"/characters/{agnes}/traits", json={"category": "flaws", "name": "Hunted", "rating": 4}
     )
+    # Once accepted, a flaw is asked of staff (horatio.merit_requests).
+    for request in troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json():
+        troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
     hunted = add(troupe, action_kind="general", category="flaws", trait="Hunted", amount=-1)
     resources = add(
         troupe, action_kind="general", category="backgrounds", trait="Resources", amount=1

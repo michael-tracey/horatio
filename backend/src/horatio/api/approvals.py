@@ -12,6 +12,7 @@ from horatio import (
     diablerie,
     free_choices,
     house_traits,
+    merit_requests,
     pictures,
     sheets,
     social_age,
@@ -31,6 +32,8 @@ from horatio.models import (
     Character,
     DisciplinePurchase,
     HomeTroupeChange,
+    Quest,
+    TraitCategory,
     TraitDefinition,
     Troupe,
 )
@@ -58,6 +61,9 @@ class ReconciliationOut(BaseModel):
 
 
 class DisciplineOut(BaseModel):
+    # The trait's category: "disciplines", or "merits" or "flaws" for a merit or
+    # flaw request.
+    category: str = ""
     name: str
     detail: str
     from_rating: int
@@ -89,6 +95,24 @@ class DiablerieAskOut(BaseModel):
     plan: DiablerieEffectsPlanOut | None = None
     # Once approved: what it did.
     done: DiablerieEffectsOut | None = None
+
+
+class ApprovalQuestOut(BaseModel):
+    """The quest a request was answered with."""
+
+    id: uuid.UUID
+    name: str
+    # draft | active | completed | failed | closed
+    status: str
+
+
+class QuestSuggestionOut(BaseModel):
+    """What the quest builder starts from, answering a merit or flaw request."""
+
+    name: str
+    objective: str
+    category: Literal["simple", "complex", "epic"]
+    difficulty: int
 
 
 class XpReviewOut(BaseModel):
@@ -149,6 +173,11 @@ class QueuedApproval(ApprovalOut):
     locks: list[LockedOut] = []
     # For a home troupe request still waiting: the free traits the player chose.
     free_choices: list[FreeChoicesSummaryOut] = []
+    # For a merit or flaw request: the quest staff answered it with, if they did.
+    quest: ApprovalQuestOut | None = None
+    # For a merit or flaw request still waiting, while the troupe runs quests and none
+    # answers it yet: the quest to start building from.
+    quest_suggestion: QuestSuggestionOut | None = None
 
 
 class SettlementOverride(BaseModel):
@@ -325,16 +354,18 @@ def diablerie_out(db: DbSession, approval: Approval) -> DiablerieAskOut | None:
 
 
 def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
-    if approval.kind not in sheets.HELD_KINDS:
+    if approval.kind not in sheets.PURCHASE_KINDS:
         return None
     found = db.execute(
-        select(DisciplinePurchase, TraitDefinition.name)
+        select(DisciplinePurchase, TraitDefinition.name, TraitCategory.key)
         .join(TraitDefinition, DisciplinePurchase.trait_definition_id == TraitDefinition.id)
+        .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
         .where(DisciplinePurchase.approval_id == approval.id)
     ).one()
-    bought, name = found
+    bought, name, category = found
     mark = house_traits.marks(db, [bought.trait_definition_id]).get(bought.trait_definition_id)
     return DisciplineOut(
+        category=category,
         name=name,
         detail=bought.detail,
         from_rating=bought.from_rating,
@@ -345,13 +376,36 @@ def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
     )
 
 
+def quest_out(db: DbSession, approval: Approval) -> ApprovalQuestOut | None:
+    quest = db.get(Quest, approval.quest_id) if approval.quest_id else None
+    if quest is None:
+        return None
+    return ApprovalQuestOut(id=quest.id, name=quest.name, status=quest.status)
+
+
+def quest_suggestion_out(
+    db: DbSession, approval: Approval, troupe: Troupe
+) -> QuestSuggestionOut | None:
+    if not troupe.quests_enabled or merit_requests.can_answer_with_quest(db, approval):
+        return None
+    found = merit_requests.suggestion(db, approval)
+    return QuestSuggestionOut(
+        name=found.name,
+        objective=found.objective,
+        category=found.category,
+        difficulty=found.difficulty,
+    )
+
+
 @router.get("/troupes/{troupe_id}/approvals")
 def troupe_approvals(
     troupe_id: uuid.UUID,
     db: DbSession,
     user: CurrentUser,
     state: Literal["pending", "approved", "declined", "withdrawn"] = "pending",
-    kind: Literal["home_troupe_change", "discipline", "review", "exception", "diablerie"]
+    kind: Literal[
+        "home_troupe_change", "discipline", "review", "exception", "diablerie", "merit_flaw"
+    ]
     | None = None,
 ) -> list[QueuedApproval]:
     """The troupe's requests in one state, oldest first: of one kind, if given."""
@@ -382,6 +436,8 @@ def troupe_approvals(
             xp=xp_review_out(db, a, c),
             locks=locks_out(db, a, c),
             free_choices=free_choices_out(db, a, c),
+            quest=quest_out(db, a),
+            quest_suggestion=quest_suggestion_out(db, a, troupe),
         )
         for a, c in rows
     ]
