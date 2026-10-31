@@ -266,6 +266,14 @@ MESSAGES: dict[str, str] = {
     "approval.approved.diablerie": "{actor} approved {character}'s diablerie.",
     "approval.declined.diablerie": "{actor} declined {character}'s diablerie.",
     "approval.withdrawn.diablerie": "{actor} withdrew {character}'s diablerie.",
+    "approval.request.merit_flaw": "{actor} asked to {change} for {character}; pending.",
+    "approval.approved.merit_flaw": "{actor} approved: {change} for {character}.",
+    "approval.declined.merit_flaw": "{actor} declined: {change} for {character}; any XP"
+    " held refunded.",
+    "approval.withdrawn.merit_flaw": "{actor} withdrew: {change} for {character}; any XP"
+    " held refunded.",
+    "approval.quest.merit_flaw": "{actor} answered the request to {change} for {character}"
+    " with the quest {quest}.",
     "approval.request.home_troupe_change": "{actor} asked to make this {character}'s home.",
     "approval.approved.home_troupe_change": "{actor} accepted {character}; this is its home.",
     "approval.approved": "{actor} approved {character}.",

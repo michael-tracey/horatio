@@ -4,7 +4,7 @@ the troupe's settings for how backstories are written and whether one must be
 approved before a character is accepted (on, for every troupe)
 
 Revision ID: 0117
-Revises: 0115
+Revises: 0116
 Create Date: 2026-10-31 18:00:00.000000
 """
 
@@ -16,7 +16,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0117"
-down_revision: str | None = "0115"
+down_revision: str | None = "0116"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

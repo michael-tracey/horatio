@@ -5,6 +5,7 @@ gives; and the caps."""
 import shutil
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import pytest
 from alembic import command
@@ -15,7 +16,7 @@ from sqlalchemy.orm import Session
 from horatio.models import RuleSet, TraitCategory, TraitDefinition
 from horatio.rules.checks import matches
 from horatio.rules.files import DATA_DIR, load_rule_set
-from horatio.rules.model import SheetTrait
+from horatio.rules.model import SheetTrait, TraitData
 from horatio.rules.status import (
     GENERAL,
     SOCIAL_AGES,
@@ -23,6 +24,7 @@ from horatio.rules.status import (
     TitleData,
     WhileAbsentData,
     check_status_rules,
+    titles_from,
 )
 from horatio.rules.store import read_troupe_rules, sync_rule_set
 from horatio.social_age import AGES
@@ -80,6 +82,7 @@ def test_the_independent_alliance_has_no_effects_without_a_book() -> None:
     for status in VAMPIRE.statuses.values():
         if status.sect == INDEPENDENT_ALLIANCE:
             assert (status.passive, status.spent, status.page) == ("", "", None), status.name
+        assert status.no_rules_yet == (status.sect == INDEPENDENT_ALLIANCE), status.name
 
 
 def test_status_names_are_spelt_as_the_book_has_them() -> None:
@@ -164,6 +167,7 @@ TITLE_STATUS = {
     "Imperator": ("Camarilla", {"Ascendant", "Authority", "Commander"}),
     "Justicar": ("Camarilla", {"Ascendant", "Authority", "Commander"}),
     "Archon": ("Camarilla", {"Commander", "Noble"}),
+    "Myrmidon": ("Camarilla", {"Commander"}),
     "Alastor": ("Camarilla", {"Commander"}),
     "Prince": ("Camarilla", {"Authority", "Commander", "Sovereign"}),
     "Petty Prince": ("Camarilla", {"Authority", "Sovereign"}),
@@ -171,6 +175,8 @@ TITLE_STATUS = {
     "Primogen": ("Camarilla", {"Noble"}),
     "Whip": ("Camarilla", set()),
     "Harpy": ("Camarilla", {"Prominent", "Noble", "Guardian"}),
+    "Master Harpy": ("Camarilla", {"Prominent", "Noble", "Guardian"}),
+    "Lesser Harpy": ("Camarilla", set()),
     "Keeper of Elysium": ("Camarilla", {"Enforcer", "Guardian"}),
     "Sheriff": ("Camarilla", {"Enforcer", "Privileged"}),
     "Scourge": ("Camarilla", {"Enforcer"}),
@@ -179,14 +185,20 @@ TITLE_STATUS = {
     "Archbishop": ("Sabbat", {"Authority", "Glorious", "Ordained"}),
     "Bishop": ("Sabbat", set()),
     "Templar": ("Sabbat", {"Enforcer"}),
+    "Paladin": ("Sabbat", {"Enforcer"}),
     "Priscus": ("Sabbat", {"Infamous", "Prominent", "Sacrosanct"}),
     "Ductus": ("Sabbat", {"Blessed"}),
     "Priest": ("Sabbat", {"Ordained"}),
     "Abbot": ("Sabbat", set()),
     "Baron": ("Anarch", {"Authority", "Mandate"}),
+    "Advocate": ("Anarch", {"Authority", "Mandate"}),
+    "President": ("Anarch", {"Authority", "Mandate"}),
+    "Minister": ("Anarch", {"Authority", "Mandate"}),
     "Constable": ("Anarch", {"Enforcer", "Warrant"}),
     "Architect": ("Anarch", {"Enforcer"}),
+    "Civil Engineer": ("Anarch", {"Enforcer"}),
     "Ambassador": ("Anarch", {"Established"}),
+    "Herald": ("Anarch", {"Established"}),
 }
 
 
@@ -209,16 +221,118 @@ def test_conditional_title_status() -> None:
     assert bishop.choose_one == ("Blessed", "Enforcer")
     assert [(a.title, a.status) for a in bishop.while_absent] == [("Archbishop", ("Ordained",))]
     assert "Blood Bath" in bishop.while_absent[0].note
+    # A Lesser Harpy gains Guardian at her gathering while the Master Harpy is away.
+    lesser = titles["Lesser Harpy"]
+    assert lesser.while_absent == (
+        WhileAbsentData("Harpy", ("Guardian",), "At her own local gathering."),
+    )
+    assert (lesser.page, lesser.unique) == ("379", False)
+
+
+def test_a_myrmidon_is_an_archon_with_sanctioned_in_place_of_noble() -> None:
+    myrmidon = VAMPIRE.titles_by_name["Myrmidon"]
+
+    assert (myrmidon.status, myrmidon.page) == (("Commander",), "371")
+    assert "Sanctioned" in myrmidon.note
+    assert VAMPIRE.statuses["Sanctioned"].type == "Fleeting"
+
+
+def test_every_sect_title_gives_status_or_says_why_not() -> None:
+    """A title of a sect gives status, or says why the book gives it none and where,
+    or has no rules yet (the Independent Alliance's)."""
+    for title in VAMPIRE.titles:
+        if title.sect is None:
+            continue
+        if title.no_rules_yet:
+            assert (title.sect, title.page) == (INDEPENDENT_ALLIANCE, None), title.name
+        elif not title.gives_status:
+            assert title.gives_none and (title.page or "").isdigit(), title.name
+
+
+def test_titles_the_book_gives_no_status_say_so() -> None:
+    titles = VAMPIRE.titles_by_name
+
+    for name, (sect, page) in {
+        "Abbot": ("Sabbat", "421"),
+        "Seraph": ("Sabbat", "424"),
+        "Dominion": ("Sabbat", "424"),
+        "Agent": ("Sabbat", "424"),
+        "Grand Inquisitor": ("Sabbat", "425"),
+        "Judge Inquisitor": ("Sabbat", "425"),
+        "Knight Inquisitor": ("Sabbat", "425"),
+        "Watcher": ("Sabbat", "425"),
+        "Josian Archon": ("Camarilla", "373"),
+    }.items():
+        assert (titles[name].sect, titles[name].page) == (sect, page), name
+        assert titles[name].gives_none and not titles[name].gives_status, name
+
+
+def test_the_independent_alliances_titles_have_no_rules_yet() -> None:
+    alliance = {t.name for t in VAMPIRE.titles if t.sect == INDEPENDENT_ALLIANCE}
+
+    assert alliance == {"Actuary", "Emissary", "Executioner", "Malak", "Trustee"}
+    assert all(VAMPIRE.titles_by_name[name].no_rules_yet for name in alliance)
+    assert not any(t.no_rules_yet for t in VAMPIRE.titles if t.sect != INDEPENDENT_ALLIANCE)
+
+
+def test_other_names_give_the_same() -> None:
+    titles = VAMPIRE.titles_by_name
+
+    assert {
+        name: titles[name].office
+        for name in VAMPIRE.titles_by_name
+        if titles[name].alias_of is not None
+    } == {
+        "Master Harpy": "Harpy",
+        "Paladin": "Templar",
+        "Advocate": "Baron",
+        "President": "Baron",
+        "Minister": "Baron",
+        "Civil Engineer": "Architect",
+        "Herald": "Ambassador",
+    }
+    # Emissary stays the Independent Alliance's title.
+    assert titles["Emissary"].sect == INDEPENDENT_ALLIANCE
+    assert titles["Master Harpy"].unique and titles["President"].unique
+
+
+def test_an_advocate_is_a_baron() -> None:
+    titles = VAMPIRE.titles_by_name
+    advocate = titles["Advocate"]
+
+    assert (advocate.alias_of, advocate.office, advocate.sect) == ("Baron", "Baron", "Anarch")
+    assert advocate.status == titles["Baron"].status == ("Authority", "Mandate")
+    assert advocate.unique and advocate.rank == titles["Baron"].rank
+    assert titles["Baron"].aliases == ("Advocate", "President", "Minister")
+
+
+def test_clan_titles_have_a_clan_and_no_sect() -> None:
+    titles = VAMPIRE.titles_by_name
+
+    for name, (clan, page) in {
+        "Lord": ("Tremere", "64"),
+        "Pontifex": ("Tremere", "187"),
+        "Capo": ("Giovanni", "38"),
+        "Don": ("Giovanni", "38"),
+        "Dona": ("Giovanni", "38"),
+    }.items():
+        assert (titles[name].clan, titles[name].sect, titles[name].page) == (clan, None, page)
+        assert not titles[name].gives_status
+    # No sect's title is a clan's.
+    assert not any(t.clan and t.sect for t in VAMPIRE.titles)
+
+
+def test_social_ages_are_not_titles() -> None:
+    assert not {"Neonate", "Ancilla", "Elder"} & set(VAMPIRE.titles_by_name)
 
 
 def test_other_titles_stay_titles() -> None:
     titles = VAMPIRE.titles_by_name
 
-    assert titles["Capo"] == TitleData("Capo")
-    assert titles["Myrmidon"].sect == "Camarilla" and not titles["Myrmidon"].gives_status
-    assert titles["Trustee"].sect == INDEPENDENT_ALLIANCE
-    # Every title the catalogue listed is still there, with Petty Prince beside them.
-    assert len(VAMPIRE.titles) == 61
+    assert titles["Rom baro"] == TitleData("Rom baro")
+    # Every title the catalogue listed is still there but the social ages, with
+    # Petty Prince, Lesser Harpy and the other names beside them.
+    assert len(VAMPIRE.titles) == 66
 
 
 def test_social_age_status() -> None:
@@ -262,6 +376,63 @@ def test_a_title_gives_only_abiding_status_of_its_sect() -> None:
         check(TitleData("Duke", while_absent=(WhileAbsentData("King", ("Noble",)),)))
     # A title with no sect may give any sect's abiding status.
     check(TitleData("Master of Elysium", status=("Guardian",)))
+
+
+def test_a_sect_title_says_what_it_gives_or_why_not() -> None:
+    with pytest.raises(ValueError, match="Camarilla title that says not what it gives"):
+        check(TitleData("Duke", sect="Camarilla"))
+    with pytest.raises(ValueError, match="says why it gives no status, but not where"):
+        check(TitleData("Duke", sect="Camarilla", gives_none="The book gives none."))
+    with pytest.raises(ValueError, match="gives status, and says why it gives none"):
+        check(TitleData("Duke", sect="Camarilla", status=("Noble",), gives_none="None.", page="1"))
+    with pytest.raises(ValueError, match="no rules yet, so it says nothing more"):
+        check(TitleData("Duke", sect=INDEPENDENT_ALLIANCE, no_rules_yet=True, page="12"))
+    with pytest.raises(ValueError, match="no rules yet, but no sect"):
+        check(TitleData("Duke", no_rules_yet=True))
+    check(TitleData("Duke", sect="Camarilla", gives_none="The book gives none.", page="1"))
+    check(TitleData("Duke", sect=INDEPENDENT_ALLIANCE, no_rules_yet=True))
+    # A title of no sect may be only a name.
+    check(TitleData("Duke"))
+
+
+def test_a_clan_title_is_of_a_known_clan_and_no_sect() -> None:
+    with pytest.raises(ValueError, match="unknown clan 'Atlanteans'"):
+        check(TitleData("Duke", clan="Atlanteans"))
+    with pytest.raises(ValueError, match="clan's title, so it has no sect"):
+        check(TitleData("Duke", clan="Tremere", sect="Camarilla", status=("Noble",)))
+    with pytest.raises(ValueError, match="clan's title, so it gives no sect status"):
+        check(TitleData("Duke", clan="Tremere", status=("Noble",)))
+    check(TitleData("Duke", clan="Tremere"))
+
+
+def test_a_status_says_what_it_does_or_that_it_has_no_rules_yet() -> None:
+    def with_status(**properties: Any) -> None:
+        traits = {
+            **VAMPIRE.traits,
+            ("status_traits", "Gilded"): TraitData(
+                category="status_traits",
+                name="Gilded",
+                properties={"type": "Abiding", "sect": "Camarilla", **properties},
+            ),
+        }
+        check_status_rules(traits, VAMPIRE.status_rules, VAMPIRE.titles)
+
+    with pytest.raises(ValueError, match="says not what it does, nor that it has no rules yet"):
+        with_status()
+    with pytest.raises(ValueError, match="no rules yet, so it says nothing more"):
+        with_status(no_rules_yet=True, passive="You glitter.")
+    with_status(passive="You glitter.")
+    with_status(no_rules_yet=True)
+
+
+def test_an_alias_is_a_name_of_one_title_only() -> None:
+    with pytest.raises(ValueError, match="'Prince' is a title, and another name for Duke"):
+        titles_from([{"name": "Duke", "aliases": ["Prince"]}, {"name": "Prince"}])
+    with pytest.raises(ValueError, match="another name for both Duke and Earl"):
+        titles_from([{"name": "Duke", "aliases": ["Lord"]}, {"name": "Earl", "aliases": ["Lord"]}])
+    # A bare name in the catalogue's list may be an alias: the table says what it is.
+    [advocate, baron] = titles_from(["Advocate", {"name": "Baron", "aliases": ["Advocate"]}])
+    assert (advocate.name, advocate.alias_of, baron.aliases) == ("Advocate", "Baron", ("Advocate",))
 
 
 def test_a_ban_with_a_condition_naming_an_unknown_trait_is_refused() -> None:

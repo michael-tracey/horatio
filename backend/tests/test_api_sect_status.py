@@ -615,10 +615,22 @@ def test_a_loyalist_has_loyalist_status_while_it_holds_no_sabbat_title(troupe: T
     assert "Loyalist" not in {d["name"] for d in status(troupe.player, rook)["derived"]}
 
 
-def test_ancilla_and_elder_titles_give_no_status_beside_social_age(troupe: Troupe) -> None:
+def test_an_elder_title_held_from_before_gives_no_status_beside_social_age(
+    troupe: Troupe,
+) -> None:
+    """Ancilla and Elder are social ages, not titles (#340): one held from before
+    stays, giving nothing; the social age gives the status."""
     elder = member(troupe, "Old Mother")
     put_trait(troupe.session, elder, "backgrounds", "Generation", 3)
-    entitle(troupe, elder, "Elder")
+    troupe.session.add(
+        CharacterTitle(troupe_id=uuid.UUID(troupe.id), character_id=uuid.UUID(elder), name="Elder")
+    )
+    troupe.session.commit()
+    refused = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/characters/{elder}/titles", json={"titles": ["Elder", "Ancilla"]}
+    )
+    assert refused.status_code == 422
+    assert refused.json()["detail"] == "Not a title here: Ancilla. Add it to the troupe first."
 
     derived = status(troupe.player, elder)["derived"]
     assert sorted(d["name"] for d in derived) == ["Confirmed", "Established", "Privileged"]

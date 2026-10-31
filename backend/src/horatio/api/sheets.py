@@ -14,6 +14,7 @@ from horatio.models import (
     AppliedHouseTrait,
     Approval,
     Character,
+    Quest,
     RuleSet,
     TraitCategory,
     TraitDefinition,
@@ -223,12 +224,20 @@ class SheetTroupeOut(BaseModel):
 
 
 class PendingDisciplineOut(BaseModel):
+    """Dots waiting on the home troupe, or a merit or flaw asked to be added or removed
+    (kind merit_flaw), which is not on the sheet until approved."""
+
     approval_id: uuid.UUID
+    kind: str = "discipline"
+    category: str = ""
     name: str
     detail: str
     from_rating: int
     to_rating: int
+    # XP held; for a flaw taken on, negative: what it gives once approved.
     cost: int
+    # The quest staff answered it with, once its requirements are sent.
+    quest: str | None = None
 
 
 class ExceptionOut(BaseModel):
@@ -490,8 +499,24 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
     ]
     earned, spent = sheets.earned_and_spent(entries)
     pending = sheets.pending_approvals(db, character)
-    held = sheets.pending_disciplines(db, character)
-    held_from = {(d.trait_definition_id, d.detail): d.from_rating for _, d in held}
+    held = sheets.pending_purchases(db, character)
+    held_from = {
+        (d.trait_definition_id, d.detail): d.from_rating
+        for a, d in held
+        if a.kind in sheets.HELD_KINDS
+    }
+    # Merits and flaws asked of the home troupe: the player may ask to remove any but
+    # those integral to the character, which asking says.
+    asking = sheets.asks_home(character, "merits", by_staff=False, by_exception=None)
+    questing = {
+        q.id: q.name
+        for q in db.scalars(
+            select(Quest).where(
+                Quest.id.in_([a.quest_id for a, _ in held if a.quest_id]),
+                Quest.status != "draft",
+            )
+        )
+    }
     house = house_marks(db, rows)
     joined = sheets.memberships(db, character)
     names = {
@@ -501,11 +526,11 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
         )
     }
     definitions = {
-        d.id: d.name
-        for d in db.scalars(
-            select(TraitDefinition).where(
-                TraitDefinition.id.in_([d.trait_definition_id for _, d in held])
-            )
+        d.id: (d.name, category)
+        for d, category in db.execute(
+            select(TraitDefinition, TraitCategory.key)
+            .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+            .where(TraitDefinition.id.in_([d.trait_definition_id for _, d in held]))
         )
     }
     return SheetOut(
@@ -540,8 +565,13 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 detail=r.trait.detail,
                 rating=r.trait.rating,
                 free_rating=r.trait.free_rating,
-                # A flaw can be bought off whatever was accepted (at a price).
-                min_rating=r.trait.free_rating
+                # A flaw can be bought off whatever was accepted (at a price), and
+                # once accepted any merit or flaw can be asked away.
+                min_rating=0
+                if asking
+                and r.category.key in sheets.ASKED_OF_HOME
+                and r.trait.granted_rating < (r.trait.rating or 0)
+                else r.trait.free_rating
                 if r.category.buy_off_factor
                 else max(r.trait.free_rating, floor.get(r.key, 0)),
                 pending_from=held_from.get((r.definition.id, r.trait.detail)),
@@ -605,11 +635,14 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
         pending_disciplines=[
             PendingDisciplineOut(
                 approval_id=a.id,
-                name=definitions[d.trait_definition_id],
+                kind=a.kind,
+                category=definitions[d.trait_definition_id][1],
+                name=definitions[d.trait_definition_id][0],
                 detail=d.detail,
                 from_rating=d.from_rating,
                 to_rating=d.to_rating,
                 cost=d.cost,
+                quest=questing.get(a.quest_id) if a.quest_id else None,
             )
             for a, d in held
         ],
@@ -660,6 +693,7 @@ def change_trait(
     character_id: uuid.UUID, body: TraitChange, db: DbSession, user: CurrentUser
 ) -> ChangeOut:
     character = players_character(db, user, character_id)
+    balance = sheets.xp_balance(db, character)
     with sheets.checked(db, character, user):
         change = sheets.set_trait(
             db,
@@ -674,6 +708,9 @@ def change_trait(
         )
     db.commit()
     cost = (change.quote.cost if change.quote else 0) + change.repricing_cost
+    if change.asked is not None:
+        # Asked of the home troupe: what it holds now (horatio.merit_requests).
+        cost = balance - sheets.xp_balance(db, character)
     return ChangeOut(cost=cost, sheet=sheet_out(db, character))
 
 
@@ -944,12 +981,13 @@ def award_xp(
 def withdraw_discipline(
     character_id: uuid.UUID, approval_id: uuid.UUID, db: DbSession, user: CurrentUser
 ) -> None:
-    """Take back discipline dots still waiting on the home troupe, and get the XP back."""
+    """Take back discipline dots still waiting on the home troupe, or a merit or flaw
+    request, and get the XP back."""
     character = players_character(db, user, character_id)
     waiting = next(
-        (a for a, _ in sheets.pending_disciplines(db, character) if a.id == approval_id), None
+        (a for a, _ in sheets.pending_purchases(db, character) if a.id == approval_id), None
     )
     if waiting is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such discipline is waiting.")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such request is waiting.")
     sheets.withdraw(db, user, waiting)
     db.commit()

@@ -12,22 +12,23 @@ from horatio.models.base import Record
 class Approval(Record):
     """Something waiting on (or decided by) a troupe's storytellers or assistant
     storytellers: a home troupe change, a discipline dot bought in the home
-    troupe, a change held for review, a trait asked for by exception, or a
-    diablerie a player says they committed. One queue for every kind. `sheet_change`
-    is kept only for history."""
+    troupe, a change held for review, a trait asked for by exception, a
+    diablerie a player says they committed, or a merit or flaw added or removed
+    once the character is accepted (horatio.merit_requests). One queue for every
+    kind. `sheet_change` is kept only for history."""
 
     __tablename__ = "approvals"
     __table_args__ = (
         CheckConstraint(
             "kind in ('sheet_change', 'home_troupe_change', 'discipline', 'review',"
-            " 'exception', 'diablerie')",
+            " 'exception', 'diablerie', 'merit_flaw')",
             name="kind",
         ),
         CheckConstraint(
             "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
         ),
         # A character has at most one home troupe request waiting in each troupe;
-        # dots held for approval each wait on their own.
+        # dots held for approval, and merit and flaw changes, each wait on their own.
         Index(
             "uq_approvals_one_pending",
             "character_id",
@@ -35,7 +36,8 @@ class Approval(Record):
             "kind",
             unique=True,
             postgresql_where=text(
-                "status = 'pending' and kind not in ('discipline', 'review', 'exception')"
+                "status = 'pending'"
+                " and kind not in ('discipline', 'review', 'exception', 'merit_flaw')"
             ),
         ),
     )
@@ -50,12 +52,18 @@ class Approval(Record):
     decided_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     staff_note: Mapped[str] = mapped_column(default="", server_default="")
+    # The quest staff answered it with (horatio.merit_requests): completing it
+    # approves the request, failing or closing it declines it.
+    quest_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("quests.id", ondelete="SET NULL"), index=True
+    )
 
 
 class DisciplinePurchase(Record):
     """The dots of a discipline bought in the home troupe, held until its staff decide;
-    also the dots of a change held for review or asked for by exception. The XP is
-    spent when bought and refunded if they decline."""
+    also the dots of a change held for review or asked for by exception, and a merit
+    or flaw asked to be added or removed (which is not on the sheet until approved).
+    The XP is spent when bought and refunded if they decline."""
 
     __tablename__ = "discipline_purchases"
 
@@ -67,6 +75,9 @@ class DisciplinePurchase(Record):
     cost: Mapped[int]
     # Who teaches it, as the player says: out-of-clan powers need a teacher (p. 112).
     teacher: Mapped[str] = mapped_column(default="", server_default="")
+    # For a merit asked for: the free traits its player chose with it, given when
+    # it is approved ([{grant, name, detail, amount}]).
+    choices: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class HomeTroupeChange(Record):

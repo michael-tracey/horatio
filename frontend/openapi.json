@@ -697,6 +697,31 @@
         "title": "ApprovalOut",
         "type": "object"
       },
+      "ApprovalQuestOut": {
+        "description": "The quest a request was answered with.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "title": "ApprovalQuestOut",
+        "type": "object"
+      },
       "ArchiveIn": {
         "properties": {
           "archived": {
@@ -6984,6 +7009,11 @@
       },
       "DisciplineOut": {
         "properties": {
+          "category": {
+            "default": "",
+            "title": "Category",
+            "type": "string"
+          },
           "cost": {
             "title": "Cost",
             "type": "integer"
@@ -18420,10 +18450,16 @@
         "type": "object"
       },
       "PendingDisciplineOut": {
+        "description": "Dots waiting on the home troupe, or a merit or flaw asked to be added or removed\n(kind merit_flaw), which is not on the sheet until approved.",
         "properties": {
           "approval_id": {
             "format": "uuid",
             "title": "Approval Id",
+            "type": "string"
+          },
+          "category": {
+            "default": "",
+            "title": "Category",
             "type": "string"
           },
           "cost": {
@@ -18438,9 +18474,25 @@
             "title": "From Rating",
             "type": "integer"
           },
+          "kind": {
+            "default": "discipline",
+            "title": "Kind",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "quest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quest"
           },
           "to_rating": {
             "title": "To Rating",
@@ -21589,6 +21641,36 @@
         "title": "QuestActionRequirementOut",
         "type": "object"
       },
+      "QuestAnswersOut": {
+        "description": "A merit or flaw request a quest answers.",
+        "properties": {
+          "approval_id": {
+            "format": "uuid",
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "change": {
+            "title": "Change",
+            "type": "string"
+          },
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approval_id",
+          "change",
+          "status",
+          "cost"
+        ],
+        "title": "QuestAnswersOut",
+        "type": "object"
+      },
       "QuestCharacterChoice": {
         "properties": {
           "id": {
@@ -21778,6 +21860,18 @@
       },
       "QuestIn": {
         "properties": {
+          "approval_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
           "category": {
             "default": "simple",
             "enum": [
@@ -21952,6 +22046,14 @@
       "QuestOut": {
         "description": "A quest as staff see it.",
         "properties": {
+          "answers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/QuestAnswersOut"
+            },
+            "title": "Answers",
+            "type": "array"
+          },
           "assigned_to_any_narrator": {
             "title": "Assigned To Any Narrator",
             "type": "boolean"
@@ -22616,6 +22718,40 @@
         "title": "QuestSettingsIn",
         "type": "object"
       },
+      "QuestSuggestionOut": {
+        "description": "What the quest builder starts from, answering a merit or flaw request.",
+        "properties": {
+          "category": {
+            "enum": [
+              "simple",
+              "complex",
+              "epic"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "objective": {
+            "title": "Objective",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "objective",
+          "category",
+          "difficulty"
+        ],
+        "title": "QuestSuggestionOut",
+        "type": "object"
+      },
       "QuestionIn": {
         "properties": {
           "action_kind": {
@@ -22901,6 +23037,26 @@
           "player_note": {
             "title": "Player Note",
             "type": "string"
+          },
+          "quest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalQuestOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quest_suggestion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestSuggestionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "reconciliation": {
             "items": {
@@ -34379,7 +34535,7 @@
     },
     "/api/characters/{character_id}/disciplines/{approval_id}": {
       "delete": {
-        "description": "Take back discipline dots still waiting on the home troupe, and get the XP back.",
+        "description": "Take back discipline dots still waiting on the home troupe, or a merit or flaw\nrequest, and get the XP back.",
         "operationId": "withdraw_discipline_api_characters__character_id__disciplines__approval_id__delete",
         "parameters": [
           {
@@ -46627,7 +46783,8 @@
                     "discipline",
                     "review",
                     "exception",
-                    "diablerie"
+                    "diablerie",
+                    "merit_flaw"
                   ],
                   "type": "string"
                 },

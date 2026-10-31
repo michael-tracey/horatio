@@ -125,6 +125,21 @@ function Overview({ quest: q, troupeId }: { quest: QuestOut; troupeId: string })
               changes: {q.location.change}.
             </p>
           )}
+          {(q.answers ?? []).map((a) => (
+            <p key={a.approval_id} data-answers>
+              {a.status === "pending" ? (
+                <>
+                  It answers a request: {a.change}
+                  {a.cost > 0 ? ` (${a.cost} XP held)` : ""}. Completing it approves the request; failing or closing it declines it
+                  {a.cost > 0 ? " and refunds the XP" : ""}.
+                </>
+              ) : (
+                <>
+                  It answered a request: {a.change}, {a.status}.
+                </>
+              )}
+            </p>
+          ))}
           <p className="text-mist">{guidanceText(q.guidance)}</p>
           {q.staff_notes && <p className="whitespace-pre-line text-mist">Staff notes: {q.staff_notes}</p>}
           {q.request && (
