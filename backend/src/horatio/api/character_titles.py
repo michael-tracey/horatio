@@ -10,6 +10,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from horatio import sheets, titles
+from horatio.api.titles import TitleWhatOut, title_what
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, User
 from horatio.permissions import visible_character
@@ -17,7 +18,7 @@ from horatio.permissions import visible_character
 router = APIRouter(prefix="/characters/{character_id}/titles", tags=["titles"])
 
 
-class HeldTitleOut(BaseModel):
+class HeldTitleOut(TitleWhatOut):
     name: str
     sect: str | None
     # The status it gives while active: "Noble", "Blessed or Enforcer".
@@ -29,7 +30,7 @@ class HeldTitleOut(BaseModel):
     out_of_sect: bool
 
 
-class TitleChoiceOut(BaseModel):
+class TitleChoiceOut(TitleWhatOut):
     name: str
     sect: str | None
     status: list[str]
@@ -96,6 +97,7 @@ def titles_out(db: DbSession, user: User, character: Character) -> CharacterTitl
     holding = titles.held(db, troupe.id, character.id)
     held = [
         HeldTitleOut(
+            **title_what(data.get(name)).model_dump(),
             name=name,
             sect=data[name].sect if name in data else None,
             status=titles.gives_words(data.get(name)),
@@ -113,6 +115,7 @@ def titles_out(db: DbSession, user: User, character: Character) -> CharacterTitl
             holders.setdefault(office, []).append(h.character.name)
     choices = [
         TitleChoiceOut(
+            **title_what(t).model_dump(),
             name=name,
             sect=t.sect,
             status=titles.gives_words(t),

@@ -302,6 +302,80 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
   await expect(leadBans.getByRole("button", { name: /lesser ban: Not Embraced into a pillar clan/ })).toContainText("exempt");
 });
 
+test("titles say what they give, or why not, and the troupe's rules list every status by sect with where it comes from, on desktop and phone (#340)", async ({ browser }) => {
+  const custodian = await person(browser, "tgives-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tgives-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Many Names ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const p = lead.page;
+  const npc = async (name: string, sect: string) => {
+    const response = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(response.status(), await response.text()).toBe(201);
+    const id = (await response.json()).id as string;
+    const rated = await p.request.put(`/api/characters/${id}/npc/ratings`, { headers, data: { category: "sect", name: sect, rating: null } });
+    expect(rated.status(), await rated.text()).toBe(200);
+    return id;
+  };
+  const cosima = await npc("Cosima Thorne", "Camarilla");
+  const ilse = await npc("Ilse Varnhagen", "Independent Alliance");
+  const noScroll = async () => expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  // A Camarilla NPC's titles to choose: each says what it gives, why it gives none
+  // with its page, or its clan; another name says whose it is.
+  await p.goto(`/characters/${cosima}/status`);
+  const choices = p.getByRole("complementary", { name: "Titles" }).getByRole("region", { name: "Titles to choose" });
+  const choice = (name: string) => choices.getByRole("listitem", { name, exact: true });
+  await expect(choice("Harpy")).toContainText("Gives Prominent · Noble · Guardian · MET: VTM p. 379");
+  await expect(choice("Master Harpy")).toContainText("Master Harpy — another name for Harpy");
+  await expect(choice("Master Harpy")).toContainText("Gives Prominent · Noble · Guardian");
+  await expect(choice("Josian Archon")).toContainText("The book describes the Josians but gives them no status of their own · MET: VTM p. 373");
+  await expect(choice("Myrmidon")).toContainText("Sanctioned in place of an Archon's Noble");
+  await choices.getByText(/Titles of any sect/).click();
+  await expect(choice("Lord")).toContainText("A Tremere title: it gives no sect status");
+  await noScroll();
+  await p.screenshot(shots("titles-gives"));
+  // Taken, the Master Harpy is held as the Harpy by another name.
+  await choices.getByRole("button", { name: "Take Master Harpy" }).click();
+  const held = p.getByRole("complementary", { name: "Titles" }).getByRole("region", { name: "Titles held" });
+  await expect(held.getByRole("listitem", { name: "Master Harpy" })).toContainText("another name for Harpy");
+  await expect(held.getByRole("listitem", { name: "Master Harpy" })).toContainText("Gives Prominent · Noble · Guardian");
+
+  // The Independent Alliance's titles have no rules yet.
+  await p.goto(`/characters/${ilse}/status`);
+  await expect(choice("Actuary")).toContainText("No rules yet: no book describes it, so it gives no status");
+
+  // The troupe's Titles page says the same.
+  await p.goto(`/troupes/${troupeId}/titles`);
+  const title = (name: string) => p.getByRole("listitem", { name, exact: true });
+  await expect(title("Abbot")).toContainText("An Abbot gains no abiding status for the office · MET: VTM p. 421");
+  await expect(title("Paladin")).toContainText("another name for Templar");
+  await expect(title("Trustee").getByText("no rules yet", { exact: true })).toBeVisible();
+  await expect(title("Pontifex")).toContainText("A Tremere title: it gives no sect status");
+
+  // The rules page, from there: every status by sect, its type, what it does, and
+  // what gives it in this troupe.
+  await p.getByRole("link", { name: "Rules tab, under Status" }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/rules/status$`));
+  for (const sect of ["General", "Anarch", "Camarilla", "Independent Alliance", "Sabbat"])
+    await expect(p.getByRole("heading", { name: `${sect} status`, exact: true })).toBeVisible();
+  const rule = (name: string) => p.getByRole("listitem", { name, exact: true });
+  await expect(rule("Noble").getByText("abiding", { exact: true })).toBeVisible();
+  await expect(rule("Noble")).toContainText("Held: ");
+  await expect(rule("Noble")).toContainText(
+    "Given here by the titles Archon, Seneschal, Primogen, Whip (while the Primogen is absent) and Harpy (or Master Harpy).",
+  );
+  await expect(rule("Confirmed")).toContainText("Given here by the social ages Ancilla and Elder.");
+  await expect(rule("Loyal")).toContainText("the merit Prestigious Sire");
+  await expect(rule("Warned").getByText("negative", { exact: true })).toBeVisible();
+  await expect(rule("Chairman").getByText("no rules yet", { exact: true })).toBeVisible();
+  await expect(rule("Chairman")).toContainText("No rules yet: no book describes it, so the storytellers say what it does.");
+  await noScroll();
+  await p.screenshot(shots("status-rules"));
+});
+
 test("a troupe chooses whether its badges print titles and status: by default all of it, or negative status only", async ({ browser }) => {
   const custodian = await person(browser, "badgeset-cust");
   makeCustodian(custodian.email);

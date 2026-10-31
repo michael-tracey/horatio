@@ -8,7 +8,7 @@ import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { capText, derivedLines, endingText, outsiderText, suppressedText, takenText, typeOrder } from "./status";
+import { capText, derivedLines, endingText, NO_RULES_YET, outsiderText, suppressedText, takenText, typeOrder } from "./status";
 
 export function useStatus(characterId: string) {
   return useQuery({
@@ -23,6 +23,7 @@ export function About({ about }: { about: StatusAbout | undefined }) {
   const page = pageLabel(about.page);
   return (
     <span className="block text-xs text-mist">
+      {about.no_rules_yet && <span className="block">{NO_RULES_YET}</span>}
       {about.passive && <span className="block">Held: {about.passive}</span>}
       {about.spent && <span className="block">Spent: {about.spent}</span>}
       {about.censure && <span className="block">Censure: {about.censure}</span>}
