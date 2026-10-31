@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, undoInHeader } from "./support";
 
 /** Influence: the troupe's log, Gossip, and attacks. */
 
@@ -264,7 +264,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   await sheet.getByRole("button", { name: "Skip details" }).click();
   await expect(elite.getByText("Backgrounds · 0 of 3 left")).toBeVisible();
   await expect(p.getByRole("status")).toHaveText("Saved");
-  await p.getByRole("button", { name: "Undo Elite: details to come" }).click();
+  await (await undoInHeader(p, "Elite: details to come")).click();
   await expect(p.getByText("Undid: Influences: The Elite 1 → 0")).toBeVisible();
   await expect(elite.getByText("Backgrounds · 1 of 3 left")).toBeVisible();
 

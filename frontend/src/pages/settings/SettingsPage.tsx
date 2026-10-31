@@ -3,6 +3,7 @@ import type { Preferences } from "../../api/types";
 import { Card, ErrorText, Input } from "../../components/ui";
 import { deviceZone, useDates } from "../../dates";
 import { usePreferences, useSavingPreferences, useSetPreferences } from "../../hooks";
+import { saveAwake } from "../play/wakeLock";
 import { EmailNotifications } from "./EmailNotifications";
 import { HandleCard } from "./HandleCard";
 
@@ -50,7 +51,16 @@ function Toggle({ name, label }: { name: "quick_notes" | "keep_awake"; label: st
   const set = useSetPreferences();
   return (
     <label className="inline-flex min-h-9 items-center gap-2 text-sm text-mist">
-      <input type="checkbox" className="h-5 w-5 accent-[var(--color-gold)]" checked={prefs[name]} onChange={(e) => set.mutate({ [name]: e.target.checked })} />
+      <input
+        type="checkbox"
+        className="h-5 w-5 accent-[var(--color-gold)]"
+        checked={prefs[name]}
+        onChange={(e) => {
+          // The Play View's own switch on this device gives way to the setting just chosen.
+          if (name === "keep_awake") saveAwake(null);
+          set.mutate({ [name]: e.target.checked });
+        }}
+      />
       <span className="sr-only">{label}</span>
       {prefs[name] ? "On" : "Off"}
     </label>
@@ -207,7 +217,11 @@ export function SettingsPage() {
         </Setting>
         <Setting
           label="Keep the screen awake"
-          hint={"wakeLock" in navigator ? "While the Play View is open. Uses more battery." : "While the Play View is open. This browser can't, but your phone's may."}
+          hint={
+            "wakeLock" in navigator
+              ? "While the Play View is open. Uses more battery. The switch in the Play View changes it for one device."
+              : "While the Play View is open. This browser can't, but your phone's may."
+          }
         >
           <Toggle name="keep_awake" label="Keep the screen awake" />
         </Setting>

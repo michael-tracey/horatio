@@ -382,6 +382,59 @@ export function latestUndoable(log: ShownEntry[]): ShownEntry | undefined {
   return log.find((e) => e.kind !== "undo" && !e.undone);
 }
 
+/** Where a tracker stands, for a toast: "5/6", "1/9 marked", "1 of 2 left"; null for one with no count. */
+function level(view: PlayView, tracker: string): string | null {
+  if (tracker === "health") return `${view.health.marks.length}/${healthMost(view)} marked`;
+  if (tracker === DRANK) return view.vitae ? `${view.blood.value}/${view.blood.most}` : null;
+  if (isFixed(tracker)) {
+    const t = tracker === "morality" ? view.morality : view[tracker];
+    const top = most(view, tracker);
+    return t && top !== undefined ? `${t.value}/${top}` : null;
+  }
+  const kept = retainerTracker(view, tracker)?.track;
+  if (kept) return `${kept.value}/${kept.most}`;
+  const found = view.expendables.find((e) => e.key === tracker);
+  return found ? `${found.left} of ${found.uses} left` : null;
+}
+
+/**
+ * What the toast says a tap did, and where the tracker stands after it:
+ * "Spent 1 Blood · 9/10". Worded apart from the log's line ("Blood 10 → 9"),
+ * which stays the record. `view` is the screen as it was before the tap.
+ */
+export function tapToast(view: Shown, tap: Tap): string {
+  const after = withPending(view, [tap]);
+  if (tap.kind === "note") return "Note added";
+  if (tap.kind === "undo") {
+    const undone = view.log.find((e) => e.id === tap.undoes);
+    const now = undone?.kind === "change" ? level(after, undone.tracker) : null;
+    return now ? `Undone · ${trackerName(view, undone!.tracker)} ${now}` : "Undone";
+  }
+  const { tracker, amount } = tap;
+  const n = Math.abs(amount);
+  const now = level(after, tracker);
+  const tail = now ? ` · ${now}` : "";
+  const name = trackerName(view, tracker);
+  if (tracker === "health") return `${amount > 0 ? "Took" : "Healed"} ${n} ${tap.damage ?? "normal"}${tail}`;
+  if (tracker === DRANK) return `Drank ${n} vitae${tail}`;
+  if (tracker === "blood" || tracker === "willpower") return `${amount < 0 ? "Spent" : "Restored"} ${n} ${name}${tail}`;
+  if (view.expendables.some((e) => e.key === tracker)) return `${amount < 0 ? "Used" : "Restored"} ${n} ${name}${tail}`;
+  if (isFixed(tracker) || tracker.startsWith(RETAINER)) return `${name} ${amount < 0 ? "−" : "+"}${n}${tail}`;
+  if (isStatus(tracker)) return amount < 0 ? `${name} spent${tracker.startsWith(HELD) ? " for good" : ""}` : `${name} restored`;
+  if (tracker.startsWith(TEMPORARY)) return amount > 0 ? "Derangement added" : "Derangement removed";
+  if (tracker.startsWith(ITEM)) {
+    const item = tap.equipment?.item_name || "Item";
+    return tap.equipment?.to_character_id ? `${item} given to ${tap.equipment.to_name || "another character"}` : `${item} discarded`;
+  }
+  if (tracker.startsWith(SWITCH)) {
+    const power = view.powers.find((p) => SWITCH + p.key === tracker);
+    if (power?.form) return amount > 0 ? `Now in ${power.name}` : `Left ${power.name}`;
+    return `${power?.name ?? name} switched ${amount > 0 ? "on" : "off"}`;
+  }
+  if (tracker.startsWith(EQUIP)) return `${view.equipment.find((i) => EQUIP + i.id === tracker)?.name ?? "Item"} ${amount > 0 ? "equipped" : "put away"}`;
+  return "Saved";
+}
+
 /** Damage marked into the Incapacitated boxes: the character loses their simple action. */
 export function incapacitated(view: PlayView): boolean {
   const before = healthMost({ ...view, health: { ...view.health, levels: view.health.levels.filter((l) => l.name !== "Incapacitated") } });

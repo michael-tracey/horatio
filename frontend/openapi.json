@@ -20730,7 +20730,7 @@
             "type": "boolean"
           },
           "keep_awake": {
-            "default": false,
+            "default": true,
             "title": "Keep Awake",
             "type": "boolean"
           },

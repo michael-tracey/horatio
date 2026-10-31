@@ -4,10 +4,10 @@ import { ErrorText } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { kindPages, resourceText } from "../troupe/npcKinds";
 import { RulesCard, StatBlock } from "../troupe/StockNpcBuilder";
-import { BoxTracker, GameLog, HealthTracker, Notes, PastGames, ResetGame, SyncStatus } from "./PlayPage";
+import { AwakeSwitch, BoxTracker, GameLog, HealthTracker, Notes, PastGames, ResetGame, SyncStatus, useToldTap, type KeepAwake } from "./PlayPage";
 import type { Damage } from "./tracker";
 import type { Play, Sync } from "./usePlay";
-import { useWakeLock } from "./wakeLock";
+import { useKeepAwake } from "./wakeLock";
 
 /**
  * A Stock NPC's Play View (MET: VTM pp. 489–490; issue #215), simpler than a
@@ -19,8 +19,10 @@ import { useWakeLock } from "./wakeLock";
 export function StockPlay({ characterId, play }: { characterId: string; play: Play }) {
   const [params] = useSearchParams();
   const prefs = usePreferences();
-  const awake = useWakeLock(prefs.keep_awake);
-  const { view, shown, tap, sync, accept } = play;
+  const awake = useKeepAwake(prefs.keep_awake);
+  const { view, shown, sync, accept } = play;
+  // Each tap says what it did in a toast, with Undo.
+  const tap = useToldTap(play);
   // Opened from a Scene view's card: the way back is to that scene.
   const scene = params.get("scene");
   const sceneTroupe = params.get("troupe");
@@ -53,7 +55,7 @@ export function StockPlay({ characterId, play }: { characterId: string; play: Pl
         </p>
       </section>
       <div className="grid gap-3 md:grid-cols-2">
-        <BoxTracker title={shown.blood_name} tracker="blood" value={shown.blood.value} most={shown.blood.most} hint={resourceText(stock.stats.resource)} record={record} />
+        <BoxTracker title={shown.blood_name} tracker="blood" value={shown.blood.value} most={shown.blood.most} hint={resourceText(stock.stats.resource)} record={record} loud />
         <HealthTracker view={shown} record={record} />
       </div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -69,7 +71,7 @@ export function StockPlay({ characterId, play }: { characterId: string; play: Pl
 }
 
 /** The page around it: back to the scene it was opened from, or to the NPC's builder, and whether taps are saved. */
-function StockShell({ back, builder, name, sync, awake, children }: { back: string | null; builder: string; name?: string; sync: Sync; awake: boolean; children: ReactNode }) {
+function StockShell({ back, builder, name, sync, awake, children }: { back: string | null; builder: string; name?: string; sync: Sync; awake: KeepAwake; children: ReactNode }) {
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
@@ -83,12 +85,8 @@ function StockShell({ back, builder, name, sync, awake, children }: { back: stri
               ← {name ?? "Back"}
             </Link>
           )}
-          <span className="flex items-start gap-2">
-            {awake && (
-              <span className="rounded-full border border-ash px-2.5 py-0.5 text-xs whitespace-nowrap text-mist" title="Kept on while the Play View is open, as your settings ask.">
-                ☀ Screen awake
-              </span>
-            )}
+          <span className="flex items-center gap-2">
+            <AwakeSwitch awake={awake} />
             <SyncStatus sync={sync} />
           </span>
         </div>

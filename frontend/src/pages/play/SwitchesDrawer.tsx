@@ -100,6 +100,8 @@ export function SwitchesDrawer({
           className="fixed inset-x-0 bottom-0 z-20 max-h-[60vh] overflow-y-auto border-t border-gold/50 bg-dusk p-4 shadow-2xl outline-none"
           role="dialog"
           aria-label="Forms, powers and modifiers"
+          // A toast for a switch tapped here shows above the sheet, not over it.
+          data-toast-clear
         >
           <div className="mx-auto flex max-w-3xl flex-col gap-3">
             <div className="flex items-baseline justify-between gap-3">

@@ -33,7 +33,7 @@ class Preferences(BaseModel):
     badge_size: Literal["3x5", "3x4", "cr80", "4x6"] = "3x5"
     # The Play View, as it opens (#105).
     quick_notes: bool = True
-    keep_awake: bool = False
+    keep_awake: bool = True
     play_tab: Literal["tracker", "sheet", "pools"] = "tracker"
     # Normal or larger text, everywhere but on paper (#107).
     text_size: Literal["normal", "large"] = "normal"
