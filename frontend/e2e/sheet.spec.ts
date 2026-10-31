@@ -498,14 +498,33 @@ test("a player says they committed diablerie, staff approve it, and then record 
   await l.goto(`/troupes/${troupeId}/rules/starting`);
   await expect(l.getByText("Leave the flaw.")).toBeVisible();
 
-  // The player asks, with the date and a note.
+  // The sheet has no Diablerie card: the player asks from the ⋯ menu, with the date and a note.
   await p.goto(`/characters/${id}`);
-  await p.getByRole("button", { name: "Ask staff: I committed diablerie" }).click();
-  const ask = p.getByRole("form", { name: "Ask staff about diablerie" });
-  await ask.getByLabel("Date").fill("2026-10-24");
-  await ask.getByLabel("Note").fill("Drank my sire at Elysium");
-  await ask.getByRole("button", { name: "Ask staff", exact: true }).click();
-  await expect(p.getByText("You said Sable committed diablerie.")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Diablerie", exact: true })).toHaveCount(0);
+  const askStaff = async () => {
+    await p.getByRole("button", { name: "More for Sable" }).click();
+    await p.getByRole("menuitem", { name: "Ask staff: I committed diablerie…" }).click();
+    const ask = p.getByRole("form", { name: "Ask staff about diablerie" });
+    await ask.getByLabel("Date").fill("2026-10-24");
+    await ask.getByLabel("Note").fill("Drank my sire at Elysium");
+    return ask;
+  };
+  await (await askStaff()).getByRole("button", { name: "Ask staff", exact: true }).click();
+  const waiting = p.getByText("Diablerie on 24 Oct 2026 waits for the storytellers.");
+  await expect(waiting).toBeVisible();
+  // While it waits, the menu has nothing more to ask; the player can withdraw it from the sheet.
+  await p.getByRole("button", { name: "More for Sable" }).click();
+  await expect(p.getByRole("menuitem", { name: "Retire…" })).toBeVisible();
+  await expect(p.getByRole("menuitem", { name: /diablerie/ })).toHaveCount(0);
+  await p.keyboard.press("Escape");
+  await p.getByRole("button", { name: "Withdraw", exact: true }).click();
+  await expect(waiting).toHaveCount(0);
+  // And asks again.
+  const again = await askStaff();
+  await p.screenshot(shots("diablerie-ask"));
+  await again.getByRole("button", { name: "Ask staff", exact: true }).click();
+  await expect(waiting).toBeVisible();
   expect(await held("Generation")).toBe(1);
 
   // The lead sees what approving does, changes the Beast traits, and approves.
@@ -521,30 +540,47 @@ test("a player says they committed diablerie, staff approve it, and then record 
   await card.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(l.getByText("Nothing pending.")).toBeVisible();
 
-  // Generation went up free, Humanity fell, and the date shows on the sheet and the printed sheet.
+  // Generation went up free and Humanity fell. Nothing waits now, so the sheet has nothing on
+  // diablerie; the date shows behind the ⋯ menu (without the victim) and on the printed sheet.
   expect(await held("Generation")).toBe(2);
   expect(await held("Humanity")).toBe(4);
   await p.reload();
+  await expect(p.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
+  await expect(waiting).toHaveCount(0);
+  await expect(p.getByRole("heading", { name: "Diablerie", exact: true })).toHaveCount(0);
+  await p.getByRole("button", { name: "More for Sable" }).click();
+  await p.getByRole("menuitem", { name: "Ask staff: I committed diablerie…" }).click();
   await expect(p.getByRole("list", { name: "Diablerie" })).toContainText("Diablerie: 24 Oct 2026");
   await expect(p.getByRole("list", { name: "Diablerie" })).not.toContainText("Her sire");
-  await p.screenshot(shots("diablerie-sheet"));
   await p.goto(`/print/characters/${id}`);
   await expect(p.getByText("Diablerie: 24 Oct 2026")).toBeVisible();
   // Two Beast traits wait for the next game on the Play View.
   expect((await (await p.request.get(`/api/characters/${id}/play`)).json()).beast.value).toBe(2);
 
-  // The lead records another from the character's page, and takes more Humanity than filled in.
+  // The lead opens Record diablerie from the ⋯ menu, and sees who was diablerized.
   await l.goto(`/characters/${id}`);
-  await expect(l.getByRole("list", { name: "Diablerie" })).toContainText("Her sire");
-  await l.getByRole("button", { name: "Record diablerie" }).click();
-  const form = l.getByRole("form", { name: "Record diablerie" });
+  await expect(l.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
+  await expect(l.getByRole("heading", { name: "Diablerie", exact: true })).toHaveCount(0);
+  const recordDiablerie = async () => {
+    await l.getByRole("button", { name: "More for Sable" }).click();
+    await l.getByRole("menuitem", { name: "Record diablerie…" }).click();
+    return l.getByRole("dialog", { name: "Record diablerie for Sable" });
+  };
+  await expect((await recordDiablerie()).getByRole("list", { name: "Diablerie" })).toContainText("Her sire");
+  await l.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(l.getByRole("dialog")).toHaveCount(0);
+  // And records another, taking more Humanity than filled in.
+  const dialog = await recordDiablerie();
+  const form = dialog.getByRole("form", { name: "Record diablerie" });
   await form.getByLabel("Date").fill("2026-10-25");
   await form.getByLabel("Who was diablerized").fill("The Prince");
   await expect(form).toContainText("Generation 2 → 3, as a free dot.");
   await form.getByLabel("Humanity lowered by").fill("2");
   await expect(form).toContainText("Humanity goes down 2, with no XP back.");
+  await l.screenshot(shots("diablerie-record"));
   await form.getByRole("button", { name: "Record diablerie" }).click();
-  await expect(l.getByRole("list", { name: "Diablerie" })).toContainText("Diablerie: 25 Oct 2026");
+  await expect(dialog).toBeHidden();
+  await expect((await recordDiablerie()).getByRole("list", { name: "Diablerie" })).toContainText("Diablerie: 25 Oct 2026");
   expect(await held("Generation")).toBe(3);
   expect(await held("Humanity")).toBe(2);
 });
