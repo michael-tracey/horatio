@@ -30,6 +30,7 @@ class Troupe(Imported, Record):
         CheckConstraint("titles_by in ('players', 'staff')", name="titles_by"),
         CheckConstraint("badge_status in ('all', 'negative', 'none')", name="badge_status"),
         CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
+        CheckConstraint("backstory_mode in ('free', 'either', 'wizard')", name="backstory_mode"),
     )
 
     name: Mapped[str]
@@ -102,6 +103,11 @@ class Troupe(Imported, Record):
         JSONB, default=list, server_default="[]"
     )
     location_limit: Mapped[str] = mapped_column(default="refuse", server_default="refuse")
+    # Backstories (horatio.backstories): how its characters' are written, "free" text
+    # only, "either" free text or its questions, or its questions only ("wizard");
+    # and whether one must be approved before a character is accepted here.
+    backstory_mode: Mapped[str] = mapped_column(default="free", server_default="free")
+    backstory_required: Mapped[bool] = mapped_column(default=True, server_default="true")
     # Its profile (horatio.troupe_profiles), which anyone signed in can see, and
     # anyone at all when `public` is ticked. The portrait and banner are the ids
     # their files are kept under (horatio.pictures); the portrait's crop is as a

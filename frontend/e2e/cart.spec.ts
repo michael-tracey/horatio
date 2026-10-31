@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
 
 /** The XP cart: changes on the sheet wait in it until Spend XP makes them. */
 
@@ -14,6 +14,7 @@ test("Generation changes in the cart until a home troupe accepts the character, 
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
 
   // Ottoline, a Neonate (Generation 1), finishes creation and buys Brawl and Herd at a Neonate's prices: 5 and 3 XP.
@@ -85,6 +86,7 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of the Crown ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
 
   // Cordelia, a finished Ventrue with two dots of Resources bought (3 XP at a Neonate's prices).
@@ -176,6 +178,7 @@ test("once accepted, a merit or flaw is asked of the home troupe: one declined, 
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Asking ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const l = lead.page;
   const settings = await l.request.put(`/api/troupes/${troupeId}/quest-settings`, { headers, data: { enabled: true, requests_per_cycle: 1 } });

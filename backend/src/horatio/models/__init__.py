@@ -7,6 +7,13 @@ from horatio.models.approvals import (
     ReconciliationItem,
 )
 from horatio.models.audit import AuditEvent
+from horatio.models.backstories import (
+    Backstory,
+    BackstoryAnswer,
+    BackstoryFeedback,
+    BackstoryQuestion,
+    BackstoryQuestionSet,
+)
 from horatio.models.base import Base
 from horatio.models.characters import (
     AppliedHouseTrait,
@@ -96,6 +103,11 @@ from horatio.models.troupes import (
 from horatio.models.viewing import Viewing
 
 __all__ = [
+    "Backstory",
+    "BackstoryAnswer",
+    "BackstoryFeedback",
+    "BackstoryQuestion",
+    "BackstoryQuestionSet",
     "ActionKind",
     "AppliedHouseTrait",
     "HouseTrait",

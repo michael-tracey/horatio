@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
 
 /** Quests, the troupe's locations, and shared backgrounds. */
 
@@ -16,6 +16,7 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Quests ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const home = async (p: Page, id: string) => {
     const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
@@ -185,6 +186,7 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Downtime Questers ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   const build = async (page: Page, name: string) => {
     const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
     await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
@@ -312,6 +314,7 @@ test("a coterie's shared Haven: staff set it up, a player logs a use, and the ot
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Shared Roof ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
 
   // Agnes and Bram, both at home in the troupe.
   const build = async (page: Page, name: string) => {
@@ -407,6 +410,7 @@ test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Grove Court ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: narrator.handle, role: "narrator" });
 
   // Agnes, at home in the troupe, will control it.
@@ -512,6 +516,7 @@ test("location quests: a player acquires Ruby's Bar, adds Profitable, a rival ma
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Ruby Court ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/quest-settings`, { enabled: true, requests_per_cycle: 5 });
 
   // Agnes has Elite 3, for the repair; Bram is her rival. Both are at home in the troupe.

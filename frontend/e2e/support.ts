@@ -41,6 +41,19 @@ export function makeCustodian(email: string) {
   execFileSync("uv", ["run", "python", "-m", "horatio.custodian", email], { cwd: "../backend", stdio: "ignore" });
 }
 
+/** Lets a troupe accept characters without an approved backstory, as a troupe needs
+ * one by default: for tests about something else. `p` is the custodian or one of
+ * the troupe's storytellers; `troupe` is its id or its name. */
+export async function backstoryOptional(p: Page, troupe: string) {
+  let id = troupe;
+  if (!/^[0-9a-f-]{36}$/.test(troupe)) {
+    const troupes: { id: string; name: string }[] = await (await p.request.get("/api/troupes")).json();
+    id = troupes.find((t) => t.name === troupe)!.id;
+  }
+  const response = await p.request.put(`/api/troupes/${id}/backstory-settings`, { headers: { "X-Horatio": "1" }, data: { mode: "free", required: false } });
+  expect(response.status(), await response.text()).toBeLessThan(300);
+}
+
 /** A vampire in character creation built through the API: its clan, the in-clan
  * disciplines it chooses, and the creation picks of `build`. */
 export async function creatingVampire(p: Page, name: string, clan: string, inClan: string[], build: Record<string, [string, number][]> = {}) {

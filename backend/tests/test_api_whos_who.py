@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from tests.api_helpers import Person, Troupe, new_character, sign_up
+from tests.api_helpers import Person, Troupe, backstory_optional, new_character, sign_up
 from tests.test_api_sect_status import add, entitle, member, npc
 
 
@@ -182,6 +182,7 @@ def test_only_staff_and_players_of_active_characters_see_it(
     elsewhere = troupe.custodian.client.post(
         "/troupes", json={"name": "Barons of the Bay", "lead_handle": troupe.lead.handle}
     ).json()["id"]
+    backstory_optional(troupe.session, elsewhere)
     guest = new_character(troupe, visitor, "Guest", clan="Toreador")
     asked = visitor.client.post(f"/characters/{guest}/home-troupe", json={"troupe_id": elsewhere})
     assert asked.status_code == 201, asked.text

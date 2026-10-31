@@ -15,6 +15,7 @@ from horatio.api import (
     approvals,
     audit,
     auth,
+    backstories,
     backups,
     badges,
     cart,
@@ -181,6 +182,7 @@ for module in (
     viewing,
     whos_who,
     quests,
+    backstories,
 ):
     api.include_router(module.router)
 
