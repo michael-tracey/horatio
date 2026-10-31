@@ -1,8 +1,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
-import type { CharacterOut, DiablerieEffectsOut, DiablerieEffectsPlanOut } from "../../api/types";
-import { Button, Card, ErrorText, Field, Input, Notice, Textarea } from "../../components/ui";
+import type { CharacterOut, DiablerieEffectsOut, DiablerieEffectsPlanOut, DiablerieListOut } from "../../api/types";
+import { Button, ErrorText, Field, Input, Notice, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
@@ -106,66 +106,76 @@ export function adjusted(plan: DiablerieEffectsPlanOut, adjust: DiablerieAdjust)
   return { ...plan, humanity_lowered: adjust.humanity ?? plan.humanity_lowered, beast_traits: adjust.beast ?? plan.beast_traits };
 }
 
-/**
- * The diablerie on a character's sheet (MET: VTM p. 306): the date of each, what it
- * did, and for the home troupe's storytellers and assistants a form to record one;
- * for the player, a way to ask them to.
- */
-export function DiablerieCard({ character, mine }: { character: CharacterOut; mine: boolean }) {
-  const dates = useDates();
-  const [open, setOpen] = useState(false);
-  const list = useQuery({
+/** The diablerie on a character (MET: VTM p. 306): what is recorded, whether the viewer can record or ask, and any request waiting. */
+export function useDiablerie(character: CharacterOut) {
+  return useQuery({
     queryKey: ["diablerie", character.id],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/diablerie", { params: { path: { character_id: character.id } } })),
+    // Only a PC can have one recorded, or asked for.
+    enabled: character.kind === "pc",
   });
+}
+
+/** What the ⋯ menu offers: staff record a diablerie, the player asks staff to. */
+export function diablerieAction(list: DiablerieListOut | undefined): string | null {
+  if (list?.can_record) return "Record diablerie…";
+  if (list?.can_ask) return "Ask staff: I committed diablerie…";
+  return null;
+}
+
+/** On the sheet, only while a diablerie the player asked for waits on the storytellers; the player can withdraw it. */
+export function DiablerieWaiting({ character, mine }: { character: CharacterOut; mine: boolean }) {
+  const dates = useDates();
+  const list = useDiablerie(character);
   const withdraw = useAction(() => unwrap(api.DELETE("/api/characters/{character_id}/diablerie/ask", { params: { path: { character_id: character.id } } })));
-  if (!list.data) return null;
   const d = list.data;
-  if (!d.entries.length && !d.can_record && !d.can_ask && !d.waiting) return null;
+  if (!d?.waiting) return null;
+  const on = d.waiting_on ? ` on ${dates.day(d.waiting_on)}` : "";
   return (
-    <Card
-      dense
-      title="Diablerie"
-      actions={
-        !open && (d.can_record || d.can_ask) ? (
-          <Button variant="secondary" className="min-h-8 px-2" onClick={() => setOpen(true)}>
-            {d.can_record ? "Record diablerie" : "Ask staff: I committed diablerie"}
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-3">
+        <Notice>
+          {mine ? `Diablerie${on} waits for the storytellers.` : `${character.name}'s player says it committed diablerie${on}. It waits for the storytellers.`}
+        </Notice>
+        {mine && (
+          <Button variant="ghost" className="min-h-8 px-2" onClick={() => withdraw.mutate(undefined)} disabled={withdraw.isPending}>
+            Withdraw
           </Button>
-        ) : undefined
-      }
-    >
-      {d.entries.length > 0 && (
-        <ul aria-label="Diablerie" className="flex flex-col gap-3 text-sm">
-          {d.entries.map((e) => (
-            <li key={e.id}>
-              <p className="text-parchment">Diablerie: {dates.day(e.committed_on)}</p>
-              {e.note && <p className="text-xs text-mist">{e.note}</p>}
-              {e.victim && <p className="text-xs text-mist">Diablerized (staff only): {e.victim}</p>}
-              {e.effects && (
-                <div className="mt-1 text-xs text-mist">
-                  <DiablerieEffects effects={e.effects} done />
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {d.waiting && (
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-          <Notice>
-            {mine ? `You said ${character.name} committed diablerie.` : `${character.name}'s player says it committed diablerie.`} Waiting on the home troupe's storytellers.
-          </Notice>
-          {mine && (
-            <Button variant="ghost" className="min-h-8 px-2" onClick={() => withdraw.mutate(undefined)} disabled={withdraw.isPending}>
-              Withdraw
-            </Button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
       <ErrorText error={withdraw.error} />
-      {open && d.can_record && <RecordForm character={character} onClose={() => setOpen(false)} />}
-      {open && !d.can_record && d.can_ask && <AskForm character={character} onClose={() => setOpen(false)} />}
-    </Card>
+    </div>
+  );
+}
+
+/** Behind the ⋯ menu: the diablerie already recorded, then the form to record one (staff) or ask for one (the player). */
+export function DiablerieForm({ character, list, onClose }: { character: CharacterOut; list: DiablerieListOut; onClose: () => void }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {list.entries.length > 0 && <DiablerieEntries list={list} />}
+      {list.can_record ? <RecordForm character={character} onClose={onClose} /> : list.can_ask && <AskForm character={character} onClose={onClose} />}
+    </div>
+  );
+}
+
+/** Each diablerie recorded: its date, note, what it did, and for staff who was diablerized. */
+function DiablerieEntries({ list }: { list: DiablerieListOut }) {
+  const dates = useDates();
+  return (
+    <ul aria-label="Diablerie" className="flex flex-col gap-3 rounded-md border border-ash p-2 text-sm">
+      {list.entries.map((e) => (
+        <li key={e.id}>
+          <p className="text-parchment">Diablerie: {dates.day(e.committed_on)}</p>
+          {e.note && <p className="text-xs text-mist">{e.note}</p>}
+          {e.victim && <p className="text-xs text-mist">Diablerized (staff only): {e.victim}</p>}
+          {e.effects && (
+            <div className="mt-1 text-xs text-mist">
+              <DiablerieEffects effects={e.effects} done />
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -209,7 +219,7 @@ function RecordForm({ character, onClose }: { character: CharacterOut; onClose: 
   return (
     <form
       aria-label="Record diablerie"
-      className="mt-3 flex flex-col gap-3 rounded-md border border-gold/40 bg-night/60 p-3"
+      className="flex flex-col gap-3"
       onSubmit={(e) => {
         e.preventDefault();
         record.mutate(undefined);
@@ -268,7 +278,7 @@ function AskForm({ character, onClose }: { character: CharacterOut; onClose: () 
   return (
     <form
       aria-label="Ask staff about diablerie"
-      className="mt-3 flex flex-col gap-3 rounded-md border border-gold/40 bg-night/60 p-3"
+      className="flex flex-col gap-3"
       onSubmit={(e) => {
         e.preventDefault();
         ask.mutate(undefined);
