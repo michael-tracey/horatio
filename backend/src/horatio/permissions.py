@@ -17,6 +17,7 @@ one place.
 """
 
 import uuid
+from collections.abc import Sequence
 from enum import StrEnum
 
 from fastapi import HTTPException, status
@@ -218,24 +219,63 @@ def _running_staff_of(db: Session, user: User, character: Character) -> bool:
     return False
 
 
+def troupe_roles(
+    db: Session, user: User, troupes: Sequence[Troupe]
+) -> dict[uuid.UUID, Role | None]:
+    """`troupe_role` for each of the troupes, asked of the database once."""
+    staff = {
+        troupe_id: Role(role)
+        for troupe_id, role in db.execute(
+            select(TroupeStaff.troupe_id, TroupeStaff.role).where(
+                TroupeStaff.user_id == user.id,
+                TroupeStaff.troupe_id.in_([t.id for t in troupes]),
+            )
+        )
+    }
+    return {
+        t.id: Role.LEAD_STORYTELLER if t.lead_user_id == user.id else staff.get(t.id)
+        for t in troupes
+    }
+
+
 def can_see_whos_who(db: Session, user: User, troupe: Troupe) -> bool:
     """A troupe's Who's Who is for its staff, and for every player with an active
     character in it, home or visiting (horatio.whos_who). It is never public."""
+    return troupe.id in whos_who_troupes(db, user, [troupe])
+
+
+def whos_who_troupes(
+    db: Session,
+    user: User,
+    troupes: Sequence[Troupe],
+    roles: dict[uuid.UUID, Role | None] | None = None,
+) -> set[uuid.UUID]:
+    """Those of the troupes whose Who's Who the user may see (`can_see_whos_who`),
+    asked of the database at most twice, whatever their number. `roles` are their
+    `troupe_roles`, if already known."""
     if user.is_custodian:
-        return True
-    if troupe.archived_at is not None:
-        return False
-    if troupe_role(db, user, troupe) is not None:
-        return True
-    playing = exists().where(
-        TroupeMembership.troupe_id == troupe.id,
-        TroupeMembership.left_at.is_(None),
-        TroupeMembership.character_id == Character.id,
-        Character.kind == "pc",
-        Character.player_id == user.id,
-        Character.status == "active",
+        return {t.id for t in troupes}
+    running = [t for t in troupes if t.archived_at is None]
+    if not running:
+        return set()
+    if roles is None:
+        roles = troupe_roles(db, user, running)
+    staffed = {t.id for t in running if roles[t.id] is not None}
+    others = [t.id for t in running if t.id not in staffed]
+    if not others:
+        return staffed
+    playing = db.scalars(
+        select(TroupeMembership.troupe_id)
+        .join(Character, TroupeMembership.character_id == Character.id)
+        .where(
+            TroupeMembership.troupe_id.in_(others),
+            TroupeMembership.left_at.is_(None),
+            Character.kind == "pc",
+            Character.player_id == user.id,
+            Character.status == "active",
+        )
     )
-    return bool(db.scalar(select(playing)))
+    return staffed | set(playing)
 
 
 def can_edit_character(db: Session, user: User, character: Character) -> bool:

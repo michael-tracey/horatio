@@ -6,7 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from tests.api_helpers import Troupe, sign_up
+from tests.api_helpers import Person, Troupe, sign_up
+from tests.test_api_sect_status import member
 
 
 @pytest.fixture
@@ -37,6 +38,39 @@ def test_people_see_their_own_role(troupe: Troupe) -> None:
         (troupe.narrator, "narrator"),
     ):
         assert person.client.get(f"/troupes/{troupe.id}").json()["my_role"] == role
+
+
+def test_the_list_says_for_each_troupe_the_role_held_and_whether_whos_who_opens(
+    troupe: Troupe,
+) -> None:
+    # Asked of the database for all the troupes at once (#334): each keeps its own answer.
+    made = troupe.custodian.client.post(
+        "/troupes", json={"name": "Barons of the Bay", "lead_handle": troupe.storyteller.handle}
+    )
+    assert made.status_code == 201, made.text
+    member(troupe)
+
+    def listed(person: Person) -> dict[str, tuple[str | None, bool]]:
+        return {
+            t["name"]: (t["my_role"], t["whos_who"]) for t in person.client.get("/troupes").json()
+        }
+
+    assert listed(troupe.storyteller) == {
+        "Barons of the Bay": ("lead_storyteller", True),
+        "Lords of the Night": ("storyteller", True),
+    }
+    assert listed(troupe.player) == {
+        "Barons of the Bay": (None, False),
+        "Lords of the Night": (None, True),
+    }
+    assert listed(troupe.stranger) == {
+        "Barons of the Bay": (None, False),
+        "Lords of the Night": (None, False),
+    }
+    assert listed(troupe.custodian) == {
+        "Barons of the Bay": (None, True),
+        "Lords of the Night": (None, True),
+    }
 
 
 def test_only_the_lead_renames_or_describes_the_troupe(troupe: Troupe) -> None:
