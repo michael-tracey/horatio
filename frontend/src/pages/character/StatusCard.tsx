@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, HeldOut, StatusAbout, StatusIn, StatusOut, SuppressionOut } from "../../api/types";
+import { EmptyState } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { PatronPicker } from "../../components/PatronPicker";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, Button, Card, Empty, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
+import { Badge, Button, Card, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { capText, derivedLines, endingText, NO_RULES_YET, outsiderText, suppressedText, takenText, typeOrder } from "./status";
@@ -404,6 +405,24 @@ function Suppress({ character, onDone }: { character: CharacterOut; onDone: () =
 }
 
 /**
+ * Why the character holds no sect status, and what would give it some. Said
+ * once, here: the Titles card beside it doesn't repeat it.
+ */
+function NoStatus({ character, sect }: { character: CharacterOut; sect: string | null }) {
+  if (sect) return <EmptyState title={`The ${sect} has no status in Horatio yet.`} />;
+  return (
+    <EmptyState title={`${character.name} has no sect, so holds no status.`}>
+      Status, and a sect's titles, come with a sect.{" "}
+      {character.kind === "npc"
+        ? "Choose one on the Sheet."
+        : character.creation_complete
+          ? "A sect is chosen while a character is built: ask the storytellers if this one should have one."
+          : "Choose one on the Sheet, in the Concept step."}
+    </EmptyState>
+  );
+}
+
+/**
  * The character's sect status (MET: VTM pp. 310-317), as a list of what it holds
  * now, a line each: Accepted by its sect, the abiding and innate status its active
  * title, social age and merits give, and the fleeting and negative status it holds
@@ -418,7 +437,12 @@ export function StatusCard({ character }: { character: CharacterOut }) {
   if (!status.data) return status.error ? <ErrorText error={status.error} /> : null;
   const s = status.data;
   const nothing = !s.accepted && !s.outsider_sect && !s.derived.length && !s.held.length && !s.unresolved.length;
-  if (nothing) return <Empty>{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</Empty>;
+  if (nothing)
+    return (
+      <Card dense title="Status">
+        <NoStatus character={character} sect={s.sect} />
+      </Card>
+    );
   const fleeting = s.held.filter((h) => h.type === "Fleeting");
   const held = [...s.held].sort((a, b) => typeOrder(a.type) - typeOrder(b.type));
   const derived = derivedLines(s.derived, s.troupe_name);
@@ -452,7 +476,7 @@ export function StatusCard({ character }: { character: CharacterOut }) {
     >
       <div className="flex flex-col gap-2 text-sm">
         {s.outsider_sect && !s.accepted && <p>{outsiderText(s)}</p>}
-        {!counted && <p className="text-mist">{s.sect ? `The ${s.sect} has no status in Horatio yet.` : "No sect: a character has status only in its sect."}</p>}
+        {!counted && <NoStatus character={character} sect={s.sect} />}
         {s.disgraced && <p className="text-blood-bright">{character.name} holds Disgraced, and gains no status while it does.</p>}
         {s.taken_by && <p className="text-blood-bright">{takenText(character.name, s.taken_by)}</p>}
         {counted && (

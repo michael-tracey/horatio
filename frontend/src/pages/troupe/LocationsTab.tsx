@@ -3,6 +3,8 @@ import { useState, type ReactNode } from "react";
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { LocationCatalogueOut, LocationDetailOut, LocationOut } from "../../api/types";
+import { EmptyState, FilterBar } from "../../components/EmptyState";
+import { InfoButton } from "../../components/InfoButton";
 import { LogList } from "../../components/LogList";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
@@ -54,83 +56,90 @@ function List({ troupeId, locations, catalogue }: Props) {
     <div className="flex flex-col gap-4">
       <Card
         title="Locations"
+        info={
+          <InfoButton label="About locations">
+            Each with its qualities and who controls it ({catalogue.book}, pp. 117–133). Only storytellers and assistant storytellers see this list. A character
+            controls up to five locations, and one more for each dot of Retainers; Havens don't count.
+          </InfoButton>
+        }
         actions={
           <Button variant="secondary" onClick={() => navigate(`/troupes/${troupeId}/locations/new`)}>
             Add a location
           </Button>
         }
       >
-        <p className="mb-3 text-sm text-mist">
-          The places that matter here, with their qualities and who controls them ({catalogue.book}, pp. 117–133). Only storytellers and assistant storytellers see this
-          list. A character controls up to five locations, and one more for each dot of Retainers; Havens don't count.
-        </p>
-        <div className="flex flex-col gap-3">
-          <Input aria-label="Search locations" placeholder={`Search ${locations.length} locations by name or address…`} value={f.query} onChange={(e) => set({ query: e.target.value })} />
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Select aria-label="Controller" value={f.controller} onChange={(e) => set({ controller: e.target.value })}>
-              <option value="">Any controller</option>
-              <option value="none">Uncontrolled</option>
-              <option value="uncontrollable">Uncontrollable</option>
-              {[...controllers].sort((a, b) => a[1].localeCompare(b[1])).map(([key, name]) => (
-                <option key={key} value={key}>
-                  {name}
-                </option>
-              ))}
-            </Select>
-            <Select aria-label="Type" value={f.kind} onChange={(e) => set({ kind: e.target.value })}>
-              <option value="">Any type</option>
-              {catalogue.types.map((t) => (
-                <option key={t.key} value={t.key}>
-                  {t.name}
-                </option>
-              ))}
-            </Select>
-            <Select aria-label="Quality" value={f.quality} onChange={(e) => set({ quality: e.target.value })}>
-              <option value="">Any quality</option>
-              {distinct([...catalogue.qualities.map((q) => q.name), ...locations.flatMap((l) => l.qualities.map((q) => q.name))]).map((q) => (
-                <option key={q} value={q}>
-                  {q}
-                </option>
-              ))}
-            </Select>
-            <Select aria-label="Influence area" value={f.influence} onChange={(e) => set({ influence: e.target.value })}>
-              <option value="">Any influence</option>
-              {distinct(locations.map(influenceText)).map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </Select>
-            <Select aria-label="Feeding block" value={f.block} onChange={(e) => set({ block: e.target.value })}>
-              <option value="">Any feeding block</option>
-              {distinct(locations.map((l) => l.feeding_block)).map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </Select>
-            <Select aria-label="Locked" value={f.locked} onChange={(e) => set({ locked: e.target.value as Filters["locked"] })}>
-              <option value="">Locked or not</option>
-              <option value="locked">Locked</option>
-              <option value="open">Not locked</option>
-            </Select>
-            <Select aria-label="Negative qualities" value={f.negatives} onChange={(e) => set({ negatives: e.target.value as Filters["negatives"] })}>
-              <option value="">Any negatives</option>
-              <option value="any">With negatives</option>
-              <option value="secret">With secret negatives</option>
-              <option value="none">Without negatives</option>
-            </Select>
-            {filtering && (
-              <Button variant="ghost" onClick={() => setF(NO_FILTERS)}>
-                Clear filters
-              </Button>
-            )}
+        {locations.length === 0 ? (
+          <EmptyState title="No locations yet.">The places that matter in the chronicle go here, with who controls each. Start with Add a location, above.</EmptyState>
+        ) : (
+          <p className="mb-3 text-sm text-mist">The places that matter here, and who controls them.</p>
+        )}
+        <FilterBar count={locations.length} filtering={filtering}>
+          <div className="flex flex-col gap-3">
+            <Input aria-label="Search locations" placeholder={`Search ${locations.length} locations by name or address…`} value={f.query} onChange={(e) => set({ query: e.target.value })} />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Select aria-label="Controller" value={f.controller} onChange={(e) => set({ controller: e.target.value })}>
+                <option value="">Any controller</option>
+                <option value="none">Uncontrolled</option>
+                <option value="uncontrollable">Uncontrollable</option>
+                {[...controllers].sort((a, b) => a[1].localeCompare(b[1])).map(([key, name]) => (
+                  <option key={key} value={key}>
+                    {name}
+                  </option>
+                ))}
+              </Select>
+              <Select aria-label="Type" value={f.kind} onChange={(e) => set({ kind: e.target.value })}>
+                <option value="">Any type</option>
+                {catalogue.types.map((t) => (
+                  <option key={t.key} value={t.key}>
+                    {t.name}
+                  </option>
+                ))}
+              </Select>
+              <Select aria-label="Quality" value={f.quality} onChange={(e) => set({ quality: e.target.value })}>
+                <option value="">Any quality</option>
+                {distinct([...catalogue.qualities.map((q) => q.name), ...locations.flatMap((l) => l.qualities.map((q) => q.name))]).map((q) => (
+                  <option key={q} value={q}>
+                    {q}
+                  </option>
+                ))}
+              </Select>
+              <Select aria-label="Influence area" value={f.influence} onChange={(e) => set({ influence: e.target.value })}>
+                <option value="">Any influence</option>
+                {distinct(locations.map(influenceText)).map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </Select>
+              <Select aria-label="Feeding block" value={f.block} onChange={(e) => set({ block: e.target.value })}>
+                <option value="">Any feeding block</option>
+                {distinct(locations.map((l) => l.feeding_block)).map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </Select>
+              <Select aria-label="Locked" value={f.locked} onChange={(e) => set({ locked: e.target.value as Filters["locked"] })}>
+                <option value="">Locked or not</option>
+                <option value="locked">Locked</option>
+                <option value="open">Not locked</option>
+              </Select>
+              <Select aria-label="Negative qualities" value={f.negatives} onChange={(e) => set({ negatives: e.target.value as Filters["negatives"] })}>
+                <option value="">Any negatives</option>
+                <option value="any">With negatives</option>
+                <option value="secret">With secret negatives</option>
+                <option value="none">Without negatives</option>
+              </Select>
+              {filtering && (
+                <Button variant="ghost" onClick={() => setF(NO_FILTERS)}>
+                  Clear filters
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </FilterBar>
       </Card>
-      {locations.length === 0 ? (
-        <Empty>No locations yet.</Empty>
-      ) : shown.length === 0 ? (
+      {locations.length === 0 ? null : shown.length === 0 ? (
         <Empty>No locations match.</Empty>
       ) : (
         <ul className="flex flex-col gap-2" aria-label="Locations">

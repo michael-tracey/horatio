@@ -155,8 +155,8 @@ function Choices({ character, titles, active }: { character: CharacterOut; title
   const groups = titleGroups(titles.sect ? [titles.sect] : [], titles.choices);
   return (
     <section aria-label="Titles to choose" className="flex flex-col gap-2 border-t border-ash pt-3">
-      <h3 className="text-xs tracking-wide text-mist uppercase">
-        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-left uppercase hover:text-gold">
+      <h3 className="font-sans text-sm tracking-normal">
+        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-left text-gold hover:text-parchment">
           <span aria-hidden>{open ? "▾" : "▸"}</span>
           {titles.held.length ? "Choose another title" : "Choose a title"}
           {titles.troupe_name ? ` in ${titles.troupe_name}` : ""}

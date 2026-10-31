@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { AllowanceOut, AllowancesOut } from "../../api/types";
+import { Explainer } from "../../components/Explainer";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { useHouseSplat } from "./HouseSplat";
@@ -34,7 +35,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
   return (
     <div className="flex flex-col gap-6">
       {picker}
-      <Card title="How downtime actions work">
+      <Explainer id="rules-actions" title="How downtime actions work">
         <p className="text-sm">
           Each cycle, a character gets the base number of actions of each kind, and each trait below adds or takes away
           actions while the character holds it. A rule of this troupe's for the same thing replaces the rule set's.
@@ -43,7 +44,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
           A change applies to cycles opened after it. A cycle already open keeps the allowances it opened with; adjust one
           character's actions on the cycle's Participants page.
         </p>
-      </Card>
+      </Explainer>
 
       {editing && (
         <AllowanceEditor key={JSON.stringify(editing)} troupeId={troupeId} splat={splat} data={allowances.data} editing={editing} onClose={() => setEditing(null)} />

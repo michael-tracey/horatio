@@ -90,8 +90,13 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   await form.getByRole("button", { name: "Cancel" }).click();
   await expect(l.getByRole("dialog")).toBeHidden();
 
-  // From Corvin's page: four times over his Elite 3 for December warns, and logs all the same.
+  // Corvin's page has nothing logged yet: it says how actions get there, with no filters.
   await l.goto(`/characters/${corvin}/influence`);
+  await expect(l.getByText("Corvin has no influence actions logged yet.")).toBeVisible();
+  await expect(l.getByText(/shows here once it is logged/)).toBeVisible();
+  await expect(l.getByLabel("Findable now (last 90 days)")).toHaveCount(0);
+
+  // From Corvin's page: four times over his Elite 3 for December warns, and logs all the same.
   await l.getByRole("button", { name: "Log influence for Corvin" }).click();
   form = l.getByRole("dialog").getByRole("form", { name: "Log influence" });
   await expect(form.getByLabel("Who")).toHaveValue("Corvin");

@@ -188,7 +188,8 @@ test("a player reads their character's equipment and what each quality does, on 
   const p = player.page;
   await p.goto(`/characters/${odile}`);
   await p.locator("main").getByRole("link", { name: "Equipment", exact: true }).click();
-  await expect(p.getByText("No equipment yet. Your storytellers give equipment.")).toBeVisible();
+  await expect(p.getByText("No equipment yet.")).toBeVisible();
+  await expect(p.getByText(/^Your storytellers give equipment\./)).toBeVisible();
   await p.goto(`/play/characters/${odile}`);
   await p.getByRole("tab", { name: "Equipment" }).click();
   await expect(p.getByText("No equipment yet. Your storytellers give equipment.")).toBeVisible();

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CostCategoryOut, CostOut, CostsOut } from "../../api/types";
+import { Explainer } from "../../components/Explainer";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { pageText } from "./bookPage";
@@ -59,7 +60,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
   return (
     <div className="flex flex-col gap-6">
       {picker}
-      <Card title="How costs work">
+      <Explainer id="rules-costs" title="How costs work">
         <p className="text-sm">
           Each price below comes from the rule set, with the book page where it names one trait. When several could
           apply, the most specific wins: a price for one trait beats one for its whole category, and a price with more
@@ -69,7 +70,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
           A troupe price applies to characters whose home troupe this is, or who are being built for it, from their next
           purchase. What they have already bought keeps what it cost.
         </p>
-      </Card>
+      </Explainer>
 
       {editing && (
         <PriceEditor key={JSON.stringify(editing)} troupeId={troupeId} splat={splat} data={costs.data} editing={editing} onClose={() => setEditing(null)} />

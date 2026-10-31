@@ -130,9 +130,8 @@ def titles_out(db: DbSession, user: User, character: Character) -> CharacterTitl
         )
         if name not in holding and not titles.out_of_sect(t, sect)
     ]
+    # No sect is said once, on the Status card beside the titles.
     why = None
-    if sect is None:
-        why = f"{character.name} has no sect: only titles of any sect."
     if acting is None and titles.is_player(user, character) and setting == "staff":
         why = f"In {troupe.name}, only staff give titles: ask them for one."
     return CharacterTitlesOut(

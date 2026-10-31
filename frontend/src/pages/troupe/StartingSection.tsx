@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { StartingCategoryOut, StartingRule } from "../../api/types";
+import { Explainer } from "../../components/Explainer";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { ClanRarity } from "./ClanRarity";
@@ -27,7 +28,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
   if (starting.error) return <ErrorText error={starting.error} />;
   return (
     <div className="flex flex-col gap-6">
-      <Card title="How starting points work">
+      <Explainer id="rules-starting" title="How starting points work">
         <p className="text-sm">
           A new character places these in the creation wizard: picks give a trait that many free dots, and a budget of points
           buys merits (or is paid back by flaws) at their value.{" "}
@@ -36,7 +37,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
         <p className="mt-2 text-sm text-mist">
           Changes apply to characters being built for this troupe straight away. Characters already finished are not affected.
         </p>
-      </Card>
+      </Explainer>
       <Card title="Starting points">
         {picker && <div className="mb-2">{picker}</div>}
         <ul className="divide-y divide-ash">

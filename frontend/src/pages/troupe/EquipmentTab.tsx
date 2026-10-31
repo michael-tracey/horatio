@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { EquipmentItemOut, EquipmentOut, EquipmentHolderOut } from "../../api/types";
+import { EmptyState, showFilters } from "../../components/EmptyState";
+import { InfoButton } from "../../components/InfoButton";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -55,11 +57,20 @@ export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troup
   if (list.isPending) return <Loading />;
   if (list.error) return <ErrorText error={list.error} />;
   const { items, characters, givers, not_shown } = list.data;
+  // Nothing ever given here (held, taken back, discarded or a retired character's), and no search set: nothing to find yet.
+  const ever = items.length + givers.length + Object.values(not_shown).reduce((sum, n) => sum + n, 0);
+  const none = !showFilters(ever, writeSearch(search).toString() !== "");
 
   return (
     <div className="flex flex-col gap-4">
       <Card
         title="Equipment"
+        info={
+          <InfoButton label="About equipment">
+            Only a character's home troupe gives it equipment or changes what it holds, and an item goes with its character wherever its home is. Weapons,
+            protective gear and other gear, with the book's qualities (MET: VTM pp. 515–524), and Vampiric Texts.
+          </InfoButton>
+        }
         actions={
           !giving && (
             <Button
@@ -74,10 +85,11 @@ export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troup
           )
         }
       >
-        <p className="mb-3 text-sm text-mist">
-          What {troupeName}'s home characters hold, PCs and NPCs. Only a character's home troupe gives it equipment or changes what it holds, and an item goes with its
-          character wherever its home is. Weapons, protective gear and other gear, with the book's qualities (MET: VTM pp. 515–524), and Vampiric Texts.
-        </p>
+        {none && !giving ? (
+          <EmptyState title="No equipment yet.">What {troupeName}'s home characters hold, PCs and NPCs, shows here. Start with Give equipment, above.</EmptyState>
+        ) : (
+          <p className="mb-3 text-sm text-mist">What {troupeName}'s home characters hold, PCs and NPCs.</p>
+        )}
         {giving && (
           <EquipmentEditor
             troupeId={troupeId}
@@ -91,8 +103,8 @@ export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troup
         )}
         {given && <Notice>Given {given}.</Notice>}
       </Card>
-      <SearchForm search={search} update={update} rules={rules.data} holders={holderChoices(characters, items)} givers={givers} />
-      <Results troupeId={troupeId} troupeName={troupeName} search={search} update={update} items={items} notShown={not_shown} rules={rules.data} holders={characters} />
+      {!none && <SearchForm search={search} update={update} rules={rules.data} holders={holderChoices(characters, items)} givers={givers} />}
+      {!none && <Results troupeId={troupeId} troupeName={troupeName} search={search} update={update} items={items} notShown={not_shown} rules={rules.data} holders={characters} />}
       <TroupeTemplates troupeId={troupeId} troupeName={troupeName} rules={rules.data} />
     </div>
   );

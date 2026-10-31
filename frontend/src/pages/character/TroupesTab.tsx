@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut, XpStandingOut } from "../../api/types";
-import { Button, Card, Empty, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
+import { EmptyState } from "../../components/EmptyState";
+import { InfoButton } from "../../components/InfoButton";
+import { Button, Card, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { describeDifference, settlementLabel } from "../../settlements";
 
@@ -11,6 +13,14 @@ const HOME_MEANS =
   "The one troupe that holds this character's sheet. It accepts the character, awards its XP, approves its discipline purchases, sets what traits cost with its house rules, and runs its downtimes.";
 const VISITING_MEANS =
   "A troupe this character plays in without its home there. Its storytellers can see the sheet, but approve nothing on it and award it no XP. A character can visit several.";
+
+/** What a home troupe is, beside the card's title rather than above what it holds. */
+const homeInfo = (
+  <InfoButton label="What a home troupe is">
+    <span className="block">{HOME_MEANS}</span>
+    <span className="mt-1 block">A character has at most one, and its storytellers must accept the move.</span>
+  </InfoButton>
+);
 
 export function TroupesTab({ character }: { character: CharacterOut }) {
   const path = { params: { path: { character_id: character.id } } };
@@ -40,8 +50,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {pendingHome ? (
-        <Card title="Home troupe">
-          <p className="mb-3 text-sm text-mist">{HOME_MEANS}</p>
+        <Card title="Home troupe" info={homeInfo}>
           <p className="text-sm">
             Waiting for {pendingTroupe?.name ?? "the troupe"}'s storytellers to accept this character.
           </p>
@@ -59,15 +68,13 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             unbanked={sheet.data?.xp.unbanked ?? 0}
           />
         ) : (
-          <Card title="Home troupe">
-            <p className="mb-3 text-sm text-mist">{HOME_MEANS}</p>
+          <Card title="Home troupe" info={homeInfo}>
             <Notice>Finish character creation on the Sheet tab before choosing a home troupe.</Notice>
           </Card>
         )
       )}
 
-      <Card title="Visiting troupes">
-        <p className="mb-3 text-sm text-mist">{VISITING_MEANS}</p>
+      <Card title="Visiting troupes" info={<InfoButton label="What a visiting troupe is">{VISITING_MEANS}</InfoButton>}>
         {visits.length ? (
           <ul className="divide-y divide-ash">
             {visits.map((m) => (
@@ -86,7 +93,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             ))}
           </ul>
         ) : (
-          <Empty>Not visiting any troupe.</Empty>
+          <EmptyState title="Not visiting any troupe.">To play at another troupe's games without making it home, choose it below.</EmptyState>
         )}
         <form
           className="mt-3 flex gap-2"
@@ -167,9 +174,7 @@ function HomeTroupe({
   );
 
   return (
-    <Card title="Home troupe">
-      <p className="mb-3 text-sm text-mist">{HOME_MEANS}</p>
-      <p className="mb-3 text-sm">A character has at most one, and its storytellers must accept the move.</p>
+    <Card title="Home troupe" info={homeInfo}>
       <Field label="Troupe">
         <Select
           value={troupeId}

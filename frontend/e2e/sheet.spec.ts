@@ -230,7 +230,7 @@ test("a player renames their character once in three months, and the custodian a
   // In a troupe, once every three months, and the troupe's storytellers are told.
   await characterTab(p, "Troupes");
   await p.getByLabel("Troupe to join").selectOption({ label: troupeName });
-  await p.getByRole("button", { name: "Visit" }).click();
+  await p.getByRole("button", { name: "Visit", exact: true }).click();
   await expect(p.getByRole("listitem").filter({ hasText: troupeName })).toBeVisible();
   await p.getByRole("button", { name: "More for Agnes Moreau" }).click();
   await p.getByRole("menuitem", { name: "Rename…" }).click();
