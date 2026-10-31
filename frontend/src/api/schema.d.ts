@@ -1523,6 +1523,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/making-room": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Making Room
+         * @description The traits chosen in `category` that `name` could swap in for, where the rules
+         *     refuse it as things stand: what a picker offers to swap out to make room for it.
+         *     All are tried in one request, saving nothing; the swap itself is made as a cart.
+         */
+        get: operations["making_room_api_characters__character_id__making_room_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/move": {
         parameters: {
             query?: never;
@@ -22241,6 +22263,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    making_room_api_characters__character_id__making_room_get: {
+        parameters: {
+            query: {
+                category: string;
+                name: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
                 };
             };
             /** @description Validation Error */

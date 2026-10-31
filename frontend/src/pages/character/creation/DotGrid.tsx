@@ -128,7 +128,8 @@ export function DotGrid({
     };
     return (
       <div key={key} className={copy ? "mt-1.5" : undefined}>
-        <div className="flex items-center justify-between gap-3">
+        {/* Wraps when the dots don't fit beside the name (a touch screen's bigger dots), keeping them to the right. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
             {about ? (
               <button
@@ -144,7 +145,7 @@ export function DotGrid({
             ) : (
               <span className="w-5" aria-hidden />
             )}
-            <span className={rating ? "text-parchment" : barred ? "text-ash" : "text-mist"}>{trait.name}</span>
+            <span className={rating ? "text-parchment" : barred ? "text-line" : "text-mist"}>{trait.name}</span>
             {label && <span className="text-xs text-gold">{label}</span>}
             {fielded && (
               <Input
@@ -157,7 +158,7 @@ export function DotGrid({
               />
             )}
           </span>
-          <span className="flex shrink-0 items-center gap-0.5">
+          <span className="ml-auto flex flex-wrap items-center justify-end gap-0.5 pointer-coarse:gap-1.5">
             {Array.from({ length: maxDots }, (_, i) => i + 1).map((dot) => {
               const pickable = pickableAt(dot);
               const clashes = picks[key] !== dot && bars.some((b) => b.ratings.includes(dot));
@@ -175,10 +176,10 @@ export function DotGrid({
                     onChange(budget ? tapDots(picks, budget.dots, key, dot) : tap(picks, allowed, key, dot));
                   }}
                   className={[
-                    "grid h-8 w-7 place-items-center rounded text-lg leading-none",
+                    "grid h-8 w-7 place-items-center rounded text-lg leading-none pointer-coarse:h-10 pointer-coarse:w-10",
                     pickable ? "hover:bg-ash" : "cursor-default",
-                    filled ? "text-blood-bright" : pickable ? "text-mist" : "text-ash",
-                    !enabled && pickable && !filled ? "opacity-30" : "",
+                    // Greyed, but still seen: line is 3:1 on the card, where ash would all but vanish.
+                    filled ? "text-blood-bright" : !pickable ? "text-ash" : enabled ? "text-mist" : "text-line",
                   ].join(" ")}
                 >
                   {filled ? "●" : pickable ? "○" : "·"}
@@ -191,7 +192,7 @@ export function DotGrid({
               aria-label={`Clear ${key}`}
               disabled={!rating && !copy}
               onClick={remove}
-              className={`ml-1 h-8 rounded px-2 text-xs text-mist hover:bg-ash hover:text-parchment ${rating || copy ? "" : "invisible"}`}
+              className={`ml-1 h-8 rounded px-2 text-xs text-mist hover:bg-ash hover:text-parchment pointer-coarse:ml-3 pointer-coarse:h-10 ${rating || copy ? "" : "invisible"}`}
             >
               Clear
             </button>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut, SheetTraitOut } from "../../api/types";
-import { groupTraits, swapOptions } from "./SheetTab";
+import { groupTraits, limitText, swapOptions } from "./SheetTab";
 
 const trait = (category: string, category_name: string, group: string, name: string): SheetTraitOut => ({
   id: name,
@@ -65,5 +65,15 @@ describe("swapOptions", () => {
   it("offers nothing for categories that cannot be swapped", () => {
     const brawl = trait("skills", "Skills", "Skills", "Brawl");
     expect(swapOptions(brawl, [brawl], catalogue)).toBeNull();
+  });
+});
+
+describe("limitText", () => {
+  it("says what the merit limit counts", () => {
+    expect(limitText({ category: "merits", name: "Merits", used: 3, limit: 7 })).toBe("Merits: 3 of 7 points used");
+  });
+
+  it("counts flaws only up to the XP they can pay out", () => {
+    expect(limitText({ category: "flaws", name: "Flaws", used: 9, limit: 7 })).toBe("Flaws: 7 of 7 XP paid out");
   });
 });

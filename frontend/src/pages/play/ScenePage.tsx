@@ -234,8 +234,8 @@ function Step({ label, onClick, disabled, tone = "plain", children }: { label: s
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        "grid h-10 min-w-10 place-items-center rounded-full border px-2 text-lg font-semibold transition-colors active:scale-95 disabled:opacity-35",
-        tone === "blood" ? "border-blood bg-blood text-parchment hover:bg-blood-bright" : "border-ash bg-night text-parchment hover:border-mist",
+        "grid h-10 min-w-10 place-items-center rounded-full border px-2 text-lg font-semibold transition-colors active:scale-95 tap-off",
+        tone === "blood" ? "border-blood bg-blood text-parchment hover:bg-blood-bright" : "border-line bg-night text-parchment hover:border-mist",
       )}
     >
       {children}
@@ -272,7 +272,7 @@ function Counter({
         </p>
         <div className="mt-1 flex flex-wrap gap-1" aria-hidden="true">
           {Array.from({ length: most }, (_, i) => (
-            <span key={i} className={cx("h-2.5 w-2.5 rounded-sm border", i < value ? fill : "border-ash bg-night")} />
+            <span key={i} className={cx("h-2.5 w-2.5 rounded-sm border", i < value ? fill : "border-line bg-night")} />
           ))}
         </div>
       </div>
@@ -307,7 +307,7 @@ function HealthRow({ view, damage }: { view: Shown; damage: (kind: Damage, amoun
               key={i}
               className={cx(
                 "h-2.5 w-2.5 rounded-sm border",
-                mark === "aggravated" ? "border-blood bg-blood" : mark === "normal" ? "border-mist bg-mist" : "border-ash bg-night",
+                mark === "aggravated" ? "border-blood bg-blood" : mark === "normal" ? "border-mist bg-mist" : "border-line bg-night",
               )}
             />
           );

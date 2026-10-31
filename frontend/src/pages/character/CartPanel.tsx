@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import type { CharacterOut } from "../../api/types";
 import { HouseMark } from "../../components/HouseMark";
+import { StepButton } from "../../components/StepButton";
 import { Badge, Button, Card, ErrorText, Notice } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AskStaff } from "./AskStaff";
@@ -168,16 +169,15 @@ export function CartPanel({
                       <span className="flex shrink-0 items-center gap-2">
                         {exception && <Badge tone="gold">exception</Badge>}
                         {priced?.needs_approval && <Badge tone="gold">needs approval</Badge>}
-                        <button
-                          aria-label={`Take ${describe(line)} out of the cart`}
-                          className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment"
+                        <StepButton
+                          label={`Take ${describe(line)} out of the cart`}
                           onClick={() => {
                             setMessage(null);
                             cart.remove(line);
                           }}
                         >
                           ×
-                        </button>
+                        </StepButton>
                       </span>
                     </span>
                     {priced?.refused && <span className="text-xs text-blood-bright">{priced.refused}</span>}
@@ -266,7 +266,9 @@ export function CartBar({ characterId, cart }: { characterId: string; cart: Cart
   const prices = useCartPrices(characterId, cart.lines);
   if (!cart.lines.length) return null;
   const net = prices.totals?.net;
-  const summary = `${plural(cart.lines.length, "change")}${net != null && net !== 0 ? ` · ${costText(net)}` : ""}`;
+  const left = prices.totals?.left;
+  // What is left to spend after them, as the top of the sheet says it on a phone.
+  const summary = `${plural(cart.lines.length, "change")}${net != null && net !== 0 ? ` · ${costText(net)}` : ""}${left == null ? "" : left < 0 ? ` · ${-left} XP short` : ` · ${left} XP left`}`;
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 border-t border-ash bg-night/95 px-4 py-2 backdrop-blur lg:hidden">
       <button

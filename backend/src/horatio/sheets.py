@@ -890,6 +890,50 @@ def refusals(
     return reasons
 
 
+def making_room(db: Session, character: Character, category_key: str, name: str) -> list[str]:
+    """The traits chosen in a category that `name` could take the place of, where the
+    rules refuse it as things stand (a Caitiff's fourth in-clan discipline, a second
+    from Vestiges of Greatness' list). A swap makes room if the sheet with `name` in
+    place of the other breaks no check, that stops a change, the sheet does not break
+    now: as a cart swapping them is judged at the end. Every swap is tried on the
+    sheet as read, in one go and saving nothing, where a cart for each would make
+    dozens of queries apiece (#386). The swap is judged in full again when made."""
+    rules = rules_for(db, character)
+    if house_refusal(rules, category_key, name, staff=character.kind == "npc") is not None:
+        return []
+    rows = sheet_rows(db, character)
+    sheet = [r.as_rules_trait() for r in rows]
+    if any(t.category == category_key and t.name == name for t in sheet):
+        return []
+    # Those chosen, not those another trait gives (isGiven in the wizard's inClan.ts).
+    chosen = [
+        r.definition.name
+        for r in rows
+        if r.category.key == category_key and r.trait.granted_rating < (r.trait.rating or 0)
+    ]
+    checks = rules.checks()
+    domitor = linked_domitor(db, character)
+    excepted = excepted_checks(db, character)
+
+    def broken(traits: list[SheetTrait]) -> list[Violation]:
+        context = check_context(db, character, traits, domitor=domitor)
+        return [
+            v
+            for v in violations(checks, traits, context)
+            if (v.subject.rating or 0) > excepted.get(v.key, -1)
+        ]
+
+    before = {v.key for v in broken(sheet)}
+    candidate = SheetTrait(category=category_key, name=name, rating=1, free_rating=0)
+    room: list[str] = []
+    for out in dict.fromkeys(chosen):
+        trial = [t for t in sheet if not (t.category == category_key and t.name == out)]
+        new = [v for v in broken([*trial, candidate]) if v.key not in before]
+        if not any(blocking(v, character) for v in new):
+            room.append(out)
+    return room
+
+
 def opened_here(
     db: Session,
     character: Character,

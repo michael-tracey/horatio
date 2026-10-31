@@ -36,7 +36,7 @@ export function VitaeTracker({ view, spend, restore, drink }: { view: PlayView; 
               key={i}
               aria-label={box === "human" ? "Human Blood" : "Spent"}
               title={box === "human" ? "Human Blood: it can't be spent" : "Spent: it comes back as human Blood, 1 a day"}
-              className={cx("h-10 w-10 rounded-md border", box === "human" ? "border-mist/60 bg-mist/30" : "border-ash bg-night")}
+              className={cx("h-10 w-10 rounded-md border", box === "human" ? "border-mist/60 bg-mist/30" : "border-line bg-night")}
             />
           ),
         )}
@@ -57,7 +57,7 @@ export function VitaeTracker({ view, spend, restore, drink }: { view: PlayView; 
           aria-label="Spend Vitae"
           onClick={spend}
           disabled={value <= 0}
-          className="grid h-12 min-w-12 place-items-center rounded-full border border-blood bg-blood px-3 text-lg font-semibold text-parchment transition-colors hover:bg-blood-bright active:scale-95 disabled:opacity-35"
+          className="grid h-12 min-w-12 place-items-center rounded-full border border-blood bg-blood px-3 text-lg font-semibold text-parchment transition-colors hover:bg-blood-bright active:scale-95 tap-off"
         >
           −
         </button>
@@ -67,7 +67,7 @@ export function VitaeTracker({ view, spend, restore, drink }: { view: PlayView; 
           title="A correction; a drink is Drank vitae"
           onClick={restore}
           disabled={value >= view.blood.most}
-          className="grid h-12 min-w-12 place-items-center rounded-full border border-ash bg-night px-3 text-lg font-semibold text-parchment transition-colors hover:border-mist active:scale-95 disabled:opacity-35"
+          className="grid h-12 min-w-12 place-items-center rounded-full border border-line bg-night px-3 text-lg font-semibold text-parchment transition-colors hover:border-mist active:scale-95 tap-off"
         >
           +
         </button>
