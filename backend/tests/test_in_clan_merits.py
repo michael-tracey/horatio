@@ -520,6 +520,16 @@ def swap(player: Person, character_id: str, out: str, to: str, dry_run: bool = F
     )
 
 
+def making_room(player: Person, character_id: str, name: str) -> Any:
+    """What the in-clan picker offers to swap out for `name`."""
+    out = player.client.get(
+        f"/characters/{character_id}/making-room",
+        params={"category": "extra_in_clan_disciplines", "name": name},
+    )
+    assert out.status_code == 200, out.text
+    return out.json()
+
+
 def ready_to_finish(troupe: Troupe, clan: str, in_clan: Sequence[str]) -> str:
     """A character with every pick placed: the usual build, its in-clan choices, and
     starting dots on three of its in-clan disciplines."""
@@ -582,6 +592,8 @@ def test_a_caitiff_merit_that_changes_one_of_the_three_blocks_finishing_until_sw
     for out in COMMON_THREE:
         tried = swap(player, character_id, out, to, dry_run=True)
         assert all(line["refused"] is None for line in tried["lines"]), (out, tried)
+    # The picker is offered the same swaps, asked all at once.
+    assert making_room(player, character_id, to) == COMMON_THREE
 
     assert swap(player, character_id, "Auspex", to)["applied"]
     # The starting dot on Auspex is kept until it moves (the Disciplines step).
@@ -602,6 +614,15 @@ def test_vestiges_refuses_a_second_uncommon_swap(troupe: Troupe) -> None:
     # In place of the first, it is allowed.
     lines = swap(player, character_id, "Dementation", "Protean", dry_run=True)["lines"]
     assert all(line["refused"] is None for line in lines)
+    # The picker offers that one swap alone.
+    assert making_room(player, character_id, "Protean") == ["Dementation"]
+    # Nothing is offered for one already held, nor one the rule set does not have.
+    assert making_room(player, character_id, "Dementation") == []
+    unknown = player.client.get(
+        f"/characters/{character_id}/making-room",
+        params={"category": "extra_in_clan_disciplines", "name": "Juggling"},
+    )
+    assert unknown.status_code == 404
 
 
 @pytest.mark.parametrize(
