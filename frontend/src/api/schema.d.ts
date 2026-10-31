@@ -654,7 +654,8 @@ export interface paths {
         post?: never;
         /**
          * Withdraw Discipline
-         * @description Take back discipline dots still waiting on the home troupe, and get the XP back.
+         * @description Take back discipline dots still waiting on the home troupe, or a merit or flaw
+         *     request, and get the XP back.
          */
         delete: operations["withdraw_discipline_api_characters__character_id__disciplines__approval_id__delete"];
         options?: never;
@@ -6953,6 +6954,21 @@ export interface components {
              */
             troupe_id: string;
         };
+        /**
+         * ApprovalQuestOut
+         * @description The quest a request was answered with.
+         */
+        ApprovalQuestOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+        };
         /** ArchiveIn */
         ArchiveIn: {
             /** Archived */
@@ -8874,6 +8890,11 @@ export interface components {
         };
         /** DisciplineOut */
         DisciplineOut: {
+            /**
+             * Category
+             * @default
+             */
+            category: string;
             /** Cost */
             cost: number;
             /** Detail */
@@ -13282,21 +13303,37 @@ export interface components {
             /** Words */
             words: string;
         };
-        /** PendingDisciplineOut */
+        /**
+         * PendingDisciplineOut
+         * @description Dots waiting on the home troupe, or a merit or flaw asked to be added or removed
+         *     (kind merit_flaw), which is not on the sheet until approved.
+         */
         PendingDisciplineOut: {
             /**
              * Approval Id
              * Format: uuid
              */
             approval_id: string;
+            /**
+             * Category
+             * @default
+             */
+            category: string;
             /** Cost */
             cost: number;
             /** Detail */
             detail: string;
             /** From Rating */
             from_rating: number;
+            /**
+             * Kind
+             * @default discipline
+             */
+            kind: string;
             /** Name */
             name: string;
+            /** Quest */
+            quest?: string | null;
             /** To Rating */
             to_rating: number;
         };
@@ -14502,6 +14539,23 @@ export interface components {
             /** Met By Name */
             met_by_name: string;
         };
+        /**
+         * QuestAnswersOut
+         * @description A merit or flaw request a quest answers.
+         */
+        QuestAnswersOut: {
+            /**
+             * Approval Id
+             * Format: uuid
+             */
+            approval_id: string;
+            /** Change */
+            change: string;
+            /** Cost */
+            cost: number;
+            /** Status */
+            status: string;
+        };
         /** QuestCharacterChoice */
         QuestCharacterChoice: {
             /**
@@ -14591,6 +14645,8 @@ export interface components {
         };
         /** QuestIn */
         QuestIn: {
+            /** Approval Id */
+            approval_id?: string | null;
             /**
              * Category
              * @default simple
@@ -14668,6 +14724,11 @@ export interface components {
          * @description A quest as staff see it.
          */
         QuestOut: {
+            /**
+             * Answers
+             * @default []
+             */
+            answers: components["schemas"]["QuestAnswersOut"][];
             /** Assigned To Any Narrator */
             assigned_to_any_narrator: boolean;
             /** Assigned To Name */
@@ -14885,6 +14946,23 @@ export interface components {
             /** Requests Per Cycle */
             requests_per_cycle: number;
         };
+        /**
+         * QuestSuggestionOut
+         * @description What the quest builder starts from, answering a merit or flaw request.
+         */
+        QuestSuggestionOut: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "simple" | "complex" | "epic";
+            /** Difficulty */
+            difficulty: number;
+            /** Name */
+            name: string;
+            /** Objective */
+            objective: string;
+        };
         /** QuestionIn */
         QuestionIn: {
             /** Action Kind */
@@ -15005,6 +15083,8 @@ export interface components {
             picture: string | null;
             /** Player Note */
             player_note: string;
+            quest?: components["schemas"]["ApprovalQuestOut"] | null;
+            quest_suggestion?: components["schemas"]["QuestSuggestionOut"] | null;
             /** Reconciliation */
             reconciliation: components["schemas"]["ReconciliationOut"][];
             /** Staff Note */
@@ -27470,7 +27550,7 @@ export interface operations {
         parameters: {
             query?: {
                 state?: "pending" | "approved" | "declined" | "withdrawn";
-                kind?: ("home_troupe_change" | "discipline" | "review" | "exception" | "diablerie") | null;
+                kind?: ("home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw") | null;
             };
             header?: never;
             path: {

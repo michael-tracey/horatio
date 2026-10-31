@@ -404,6 +404,9 @@ def test_derangement_traits_stay_through_a_reset(troupe: Troupe, agnes: str) -> 
     marked for a resisted trigger, at most 3, and cleared by a severe response."""
     flaw = buy(troupe.player, agnes, "flaws", "Derangement", 2, detail="Phobia: water")
     assert flaw.status_code == 200, flaw.text
+    # Asked of staff once accepted (horatio.merit_requests), and approved.
+    for request in troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json():
+        troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
     assert view(troupe.player, agnes)["derangements"]["flaws"] == ["Phobia: water"]
 
     send(troupe.player, agnes, tap("derangements", 1, at=1), tap("blood", -2, at=2))

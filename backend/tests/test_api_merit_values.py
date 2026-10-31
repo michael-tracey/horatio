@@ -54,6 +54,9 @@ def test_the_troupe_price_sets_the_merits_rating(troupe: Troupe, session: Sessio
 
     assert bought.status_code == 200, bought.text
     assert bought.json()["cost"] == 2
+    # Asked of staff once accepted (horatio.merit_requests), and approved.
+    for request in troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json():
+        troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
     after = sheet(troupe.player, tremere)
     assert held(after, "Talisman")["rating"] == 2
     assert merit_points(after) == 2
@@ -75,6 +78,9 @@ def test_a_merit_already_held_takes_the_new_value_without_a_refund(
     tremere = new_character(troupe, troupe.player, clan="Tremere")
     make_home_troupe_member(session, troupe, tremere)
     buy(troupe.player, tremere, "merits", "Talisman", 3)
+    # Asked of staff once accepted (horatio.merit_requests), and approved.
+    for request in troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json():
+        troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
     balance = sheet(troupe.player, tremere)["xp"]["balance"]
 
     price = talisman_at_2(troupe)

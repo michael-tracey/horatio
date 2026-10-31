@@ -52,6 +52,7 @@ def test_while_a_cycle_is_open_the_action_comes_off_it(troupe: Troupe) -> None:
     assert general(troupe, agnes) == 3
 
     take(troupe.player, agnes, "merits", "Acute Sense", 1)
+    approve_all(troupe)  # once accepted, a merit is asked of staff
 
     assert general(troupe, agnes) == 2
 
@@ -70,6 +71,7 @@ def test_efficient_learner_needs_no_downtime_to_learn(troupe: Troupe) -> None:
 def test_hunted_characters_spend_two_actions_staying_hidden(troupe: Troupe) -> None:
     agnes = member_character(troupe, troupe.player, "Agnes")
     take(troupe.player, agnes, "flaws", "Hunted", 4)
+    approve_all(troupe)
 
     open_cycle(troupe, new_cycle(troupe))
 
@@ -83,6 +85,7 @@ def test_hunted_says_what_its_actions_are_for_and_when_the_allowance_falls_short
     take(troupe.player, agnes, "flaws", "Hunted", 4)
     take(troupe.player, agnes, "merits", "Acute Sense", 1)  # one action, owed
     take(troupe.player, agnes, "merits", "Efficient Learner", 2)  # and another
+    approve_all(troupe)
 
     open_cycle(troupe, new_cycle(troupe))
 

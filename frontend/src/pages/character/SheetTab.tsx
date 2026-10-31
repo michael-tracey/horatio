@@ -241,7 +241,37 @@ export function SheetTab({
         ]
       : [];
   });
-  const inCart = (t: SheetTraitOut) => t.id.startsWith("cart/");
+  // Merits and flaws asked of the home troupe: not on the sheet until approved.
+  const asking = s.pending_disciplines.filter((d) => d.kind === "merit_flaw");
+  const askedOf = (t: SheetTraitOut) =>
+    asking.find((d) => d.category === t.category && d.name === t.name && d.detail === t.detail);
+  const asked: SheetTraitOut[] = asking
+    .filter((d) => d.to_rating > d.from_rating && !s.traits.some((t) => t.category === d.category && t.name === d.name && t.detail === d.detail))
+    .flatMap((d) => {
+      const c = catalogue.data?.categories.find((c) => c.key === d.category);
+      return c
+        ? [
+            {
+              id: `asked/${d.category}/${d.name}/${d.detail}`,
+              category: d.category,
+              category_name: c.name,
+              group: c.group,
+              name: d.name,
+              detail: d.detail,
+              rating: d.to_rating,
+              free_rating: 0,
+              min_rating: d.to_rating,
+              pending_from: null,
+              granted_rating: 0,
+              granted_by: [],
+              note: "",
+              free_choices: [],
+            },
+          ]
+        : [];
+    });
+  // Not on the saved sheet: in the cart, or asked of the home troupe.
+  const inCart = (t: SheetTraitOut) => t.id.startsWith("cart/") || t.id.startsWith("asked/");
   // The Retainers listed once, under the last Retainer bought; with none bought, under
   // the first merit that gives one (Ardent Companion).
   const lastRetainers =
@@ -254,7 +284,7 @@ export function SheetTab({
     catalogue.data?.categories.filter((c) => c.specializes).map((c) => c.key),
   );
   const groups = groupTraits(
-    [...s.traits, ...adds].filter(
+    [...s.traits, ...asked, ...adds].filter(
       (t) =>
         t.rating !== null &&
         !specCategories.has(t.category) &&
@@ -458,7 +488,8 @@ export function SheetTab({
                               <TraitRow
                                 key={t.id}
                                 trait={t}
-                                locked={locked || derived.has(t.category)}
+                                locked={locked || derived.has(t.category) || !!askedOf(t)}
+                                asked={askedOf(t) ? (askedOf(t)!.to_rating > askedOf(t)!.from_rating ? "adding" : "removing") : undefined}
                                 points={pointsOf(t)}
                                 about={aboutOf(t)}
                                 exception={exceptionOf(t)}
@@ -678,9 +709,12 @@ function TraitRow({
   planned = null,
   swappedTo = null,
   exception,
+  asked,
 }: {
   trait: SheetTraitOut;
   locked: boolean;
+  /** A merit or flaw change asked of the home troupe, not yet decided. */
+  asked?: "adding" | "removing";
   /** The catalogue's entry for the trait: its description and page open under the row. */
   about?: TraitOut;
   /** Held by exception: asked of staff, or given by them. */
@@ -710,11 +744,16 @@ function TraitRow({
     return (
       <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
         <TraitInfo
-          name={<span className={removing ? "line-through" : adding ? "text-gold" : undefined}>{trait.name}</span>}
+          name={<span className={removing ? "line-through" : adding || asked ? "text-gold" : undefined}>{trait.name}</span>}
           after={
             <>
               {trait.detail && <span className="text-mist">: {trait.detail}</span>}
               {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
+              {asked && (
+                <span className="ml-2">
+                  <Badge tone="gold">{asked === "adding" ? "awaiting approval" : "removal awaiting approval"}</Badge>
+                </span>
+              )}
               <GrantedBy trait={trait} points />
               <Opened trait={trait} />
               {exception && <ExceptionMark exception={exception} />}
@@ -965,11 +1004,19 @@ function TroupesCard({
                 className="flex flex-wrap items-center justify-between gap-2"
               >
                 <span>
-                  {d.name}
-                  {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating}{" "}
-                  ({d.cost} XP)
+                  {d.kind === "merit_flaw" ? (
+                    <>
+                      {askedText(d)}
+                      {d.quest && <span className="text-mist"> · answered with the quest {d.quest}</span>}
+                    </>
+                  ) : (
+                    <>
+                      {d.name}
+                      {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating} ({d.cost} XP)
+                    </>
+                  )}
                 </span>
-                {mine && (
+                {mine && !d.quest && (
                   <Button
                     variant="ghost"
                     onClick={() => withdraw.mutate(d.approval_id)}
@@ -986,6 +1033,16 @@ function TroupesCard({
       <ErrorText error={withdraw.error} />
     </Card>
   );
+}
+
+/** A merit or flaw change waiting on the home troupe, as "Buy off Dark Fate (6 XP held)". */
+export function askedText(d: SheetOut["pending_disciplines"][number]): string {
+  const name = d.detail ? `${d.name}: ${d.detail}` : d.name;
+  const flaw = d.category === "flaws";
+  if (d.to_rating > d.from_rating) {
+    return flaw ? `Take on ${name} (gives ${-d.cost} XP once approved)` : `Add ${name} (${d.cost} XP held)`;
+  }
+  return flaw ? `Buy off ${name} (${d.cost} XP held)` : `Remove ${name} (no XP back)`;
 }
 
 type Pool = CreationOut["pools"][number];
