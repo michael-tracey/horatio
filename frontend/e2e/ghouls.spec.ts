@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
 
 /** Ghouls: building, playing and Embracing them. */
 
@@ -289,6 +289,7 @@ test("staff Embrace a ghoul: it becomes a vampire in XP debt, the cart waits, an
     return response.json();
   };
   const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: `Court of the Childe ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupeId);
   await send(lead.page, "PATCH", `/api/troupes/${troupeId}`, { allowed_splats: ["vampire", "ghoul"] });
 
   // The book's Vivian (p. 299): an Assamite Vizier's ghoul with Uncommon Clan and Code of

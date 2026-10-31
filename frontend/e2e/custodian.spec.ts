@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
 
 /** What the custodian does with people's accounts and characters. */
 
@@ -174,7 +174,9 @@ test("the custodian filters People by the troupe a player's active character is 
   };
   await custodian.page.reload();
   const north = await send(custodian.page, "POST", "/api/troupes", { name: northName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, north.id);
   const south = await send(custodian.page, "POST", "/api/troupes", { name: southName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, south.id);
 
   // Alpha's character is accepted by the first troupe, beta's by the second. The
   // visitor only visits the first.
@@ -421,6 +423,7 @@ test("the custodian moves a character to another player, not while its game is u
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   // The character was built on the wrong account, and is at home in the troupe.
   const id = await builtVampire(before.page, "Ottilie Marsh", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });
   const approval = await send(before.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
@@ -518,6 +521,7 @@ test("the custodian merges two accounts of one person: the characters and staff 
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
   // The person signed up twice: the second account has a character at home in the
   // troupe, and is one of its narrators.
   const id = await builtVampire(twice.page, "Hester Vane", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] });

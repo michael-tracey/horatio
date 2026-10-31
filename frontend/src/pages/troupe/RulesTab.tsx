@@ -6,6 +6,7 @@ import type { CheckOut } from "../../api/types";
 import { Badge, Card, ErrorText, Input, Loading, PageTabs, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AllowancesSection } from "./AllowancesSection";
+import { BackstorySettings } from "./BackstorySettings";
 import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
 import { HouseTraitsSection } from "./HouseTraitsSection";
@@ -84,6 +85,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/house-traits`, label: "House merits and flaws" },
           { to: `${base}/locations`, label: "Locations" },
           { to: `${base}/quests`, label: "Quests" },
+          { to: `${base}/backstories`, label: "Backstories" },
         ]}
       />
       <Routes>
@@ -94,6 +96,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="house-traits" element={<HouseTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="locations" element={<LocationRulesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="quests" element={<QuestSettings troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="backstories" element={<BackstorySettings troupeId={troupeId} />} />
       </Routes>
     </>
   );

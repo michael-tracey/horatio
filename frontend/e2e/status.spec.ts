@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
 
 /** Status and titles, on the sheet, on badges and at a game. */
 
@@ -13,6 +13,7 @@ test("a player keeps their own sect status, naming its patron from the home trou
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Standing ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const send = async (page: Page, method: "POST" | "PUT", url: string, data: object) => {
     const response = await page.request.fetch(url, { method, headers, data });
@@ -104,6 +105,7 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Titles ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const send = async (page: Page, method: "POST" | "PUT", url: string, data: object) => {
     const response = await page.request.fetch(url, { method, headers, data });
@@ -316,6 +318,7 @@ test("at a game, a Seneschal elder chooses one source of status, spends Authorit
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Choices ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
     const response = await page.request.fetch(url, { method, headers, data });
@@ -434,6 +437,7 @@ test("at a game, a Camarilla character with Leadership 2 learns about two of a r
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Rivals ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
   const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
     const response = await page.request.fetch(url, { method, headers, data });
