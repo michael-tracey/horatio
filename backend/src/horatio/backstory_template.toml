@@ -1,0 +1,649 @@
+# The starting template a troupe offers for its backstory questions (issue #343),
+# loaded by horatio.backstories.load_template when a troupe chooses it. The
+# questions are a troupe's own, verbatim; "{troupe}" becomes the troupe's name.
+#
+# Each set has a name and its questions in order. Each question has:
+#   text       its words
+#   kind       long, short, year, choice, scale or heading
+#   title      optional: the short title its section's heading uses instead
+#   hint       optional
+#   optional   true for a question that need not be answered (default false)
+#   options    a choice's options, or a scale's two poles
+#   condition  optional: when it is shown, { kind = "social_age", ages = [...] },
+#              { kind = "sect", sects = [...] } or
+#              { kind = "trait", category = "backgrounds", name = "..." }
+
+[[sets]]
+name = "Short Form"
+
+[[sets.questions]]  # 1
+text = "Is your character on a path, other than the path of Humanity? If so, what is it?"
+kind = "short"
+
+[[sets.questions]]  # 2
+text = "What Generation of character is this? Please note that Elder slots are limited, please contact the STs before continuing with any Elder character."
+kind = "short"
+
+[[sets.questions]]  # 3
+text = "What Social Status are you carrying?"
+kind = "short"
+
+[[sets.questions]]  # 4
+text = "Tell us about your mortal life"
+kind = "long"
+
+[[sets.questions]]  # 5
+text = "What year (YYYY) were you Embraced?"
+kind = "year"
+
+[[sets.questions]]  # 6
+text = "Who was your Sire?"
+kind = "short"
+
+[[sets.questions]]  # 7
+text = "How do you feel about your sire?"
+kind = "scale"
+options = ["Loathe", "Love"]
+
+[[sets.questions]]  # 8
+text = "What is the \"Concept\" of your character"
+kind = "short"
+
+[[sets.questions]]  # 9
+text = "What has your life been like since your Embrace?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Neonate"] }
+
+[[sets.questions]]  # 10
+text = "Tell us what it was like being a Neonate, before your blood thickened and the years passed?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Ancilla"] }
+
+[[sets.questions]]  # 11
+text = "Once you gained respect and aged into your current Ancilla status, what was your unlife like?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Ancilla"] }
+
+[[sets.questions]]  # 12
+text = "The Pitch"
+kind = "heading"
+
+[[sets.questions]]  # 13
+text = "Tell us what it was like being a Neonate (Embraced to 50), before your blood thickened and the years passed?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 14
+text = "Tell us what it was like being a Ancilla (50-300), before your blood thickened and the years passed?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 15
+text = "Now that you have began \"Eldering\" after aging past 300, how do you approach unlife?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 16
+text = "What is your publicly accessible background information for mortals?"
+kind = "long"
+
+[[sets.questions]]  # 17
+text = "What is your publicly accessible background information for kindred?"
+kind = "long"
+
+[[sets.questions]]  # 18
+text = "If you have the \"Alternate Identity\" background, what does an (alt-ID) check turn up? If you don't have an alt-ID, what NPC would vouch for your identity?"
+kind = "long"
+
+[[sets.questions]]  # 19
+text = "What is at least one \"knife\" (potentially damaging fact about your character or their history) that could be unearthed with enough research (quests)?  If you have the \"Dark Secret\" flaw please include this here."
+kind = "long"
+
+[[sets.questions]]  # 20
+text = "Have you ever committed diablerie? If so, we have questions..."
+kind = "long"
+
+[[sets.questions]]  # 21
+text = "Action / Intrigue"
+kind = "scale"
+options = ["Action", "Intrigue"]
+
+[[sets.questions]]  # 22
+text = "Knives and Touchstones"
+kind = "long"
+
+[[sets.questions]]  # 23
+text = "Character driven Plot / Storyteller driven Plot"
+kind = "scale"
+options = ["Character driven Plot", "Storyteller driven Plot"]
+
+[[sets.questions]]  # 24
+text = "Is there anything else we should know about your character, before you submit your Short Form background?"
+kind = "long"
+optional = true
+
+[[sets]]
+name = "Long Form"
+
+[[sets.questions]]  # 1
+text = "What kind of story would you like to explore or build with this character"
+kind = "long"
+
+[[sets.questions]]  # 2
+text = "Is your character inherently flawed or vulnerable in some way, whether it's a debt they owe or a principle they will never bend? Is this something they think about every day, or never comes up until it impacts them directly?"
+kind = "long"
+
+[[sets.questions]]  # 3
+text = "What year (YYYY) were you born as a mortal"
+kind = "year"
+
+[[sets.questions]]  # 4
+text = "Where were you born?"
+kind = "short"
+
+[[sets.questions]]  # 5
+text = "Tell us about your mortal life"
+kind = "long"
+
+[[sets.questions]]  # 6
+text = "Are there any elements of your mortal life that you would like for us to consider incorporating into the plot?"
+kind = "long"
+
+[[sets.questions]]  # 7
+text = "As a mortal, were you generally a content person?"
+kind = "short"
+
+[[sets.questions]]  # 8
+text = "As a mortal, were you generally an influential person?"
+kind = "short"
+
+[[sets.questions]]  # 9
+text = "What year (YYYY) were you Embraced?"
+kind = "year"
+
+[[sets.questions]]  # 10
+text = "Tell us about the night of your embrace."
+kind = "long"
+
+[[sets.questions]]  # 11
+text = "We asked you about how you feel (loathe through love) about your sire in the short-form.  Now tell us in detail about that relationship."
+kind = "long"
+
+[[sets.questions]]  # 12
+text = "Tell us about your first decade after your Embrace?"
+kind = "long"
+
+[[sets.questions]]  # 13
+text = "Most Kindred have accidentally killed, usually at least once in their early years. Did you, in your youth, ever drink a mortal dry? Tell us the story, and let us know how you now feel about this."
+kind = "long"
+
+[[sets.questions]]  # 14
+text = "If you are over a decade old as a creature of the night, tell us about your unlife from 10-20."
+kind = "long"
+optional = true
+
+[[sets.questions]]  # 15
+text = "What was the rest of your unlife between those early years and now like?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Neonate"] }
+
+[[sets.questions]]  # 16
+text = "Is there anyone still living that would recognize you from your mortal life?  If so, who?  How do you feel about them, and how do they feel about you? This is a good place to tell us about any living family and loved ones that remain in the mortal coil."
+kind = "long"
+condition = { kind = "social_age", ages = ["Neonate"] }
+
+[[sets.questions]]  # 17
+text = "What law of your sect did you have the most trouble adapting to?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Neonate"] }
+
+[[sets.questions]]  # 18
+text = "What is something you think you would accomplish if the Ancilla and Elders were not getting in your way?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Neonate"] }
+
+[[sets.questions]]  # 19
+text = "Tell us what it was like being a Neonate as the years passed until you were confirmed as an Ancilla?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Ancilla"] }
+
+[[sets.questions]]  # 20
+text = "Once you gained respect and aged into your current Ancilla status, what was your unlife like?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Ancilla"] }
+
+[[sets.questions]]  # 21
+text = "Do you feel yourself starting to feel alienated and isolated from mortal society?  Are there things you are starting to not understand?  Do you have any coping mechanisms to keep up on modernity, or does this not matter at all to you?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Ancilla"] }
+
+[[sets.questions]]  # 22
+text = "What is your usual technique or style in interacting with and/or organizing Neonates to help with your goals?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Ancilla"] }
+
+[[sets.questions]]  # 23
+text = "What is your usual technique or style for sucking up to or otherwise dealing with Elders?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Ancilla"] }
+
+[[sets.questions]]  # 24
+text = "What's something you think you would accomplish if the Elders were not getting in your way?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Ancilla"] }
+
+[[sets.questions]]  # 25
+text = "Tell us what it was like being a Neonate (Embraced to 50), before the years passed and you were confirmed as an Ancilla?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 26
+text = "Tell us what it was like being an Ancilla (50-300), before the years passed and you established yourself as an Elder?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 27
+text = "Now that you have begun \"Eldering\" after aging past 300, how do you approach unlife?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 28
+text = "What kind of techniques do you prefer in order to manipulate and gain advantages via the Neonates and Ancilla?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 29
+text = "You're an Elder--you didn't live this long without doing anything horrible. What's the cruelest thing you ever did? Do you ever have any regrets?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 30
+text = "What's something you've lost over the centuries that you would do anything to regain?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 31
+text = "The centuries are long, and eventually...somewhat repetitive. What keeps your character invested and out of torpor?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 32
+text = "Humanity becomes harder and harder to hold onto with time as memories of being human grow faint. How do you maintain your humanity? If you don't, how do you stave off wassail?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 33
+text = "What is the most obvious \"tell\" that you don't belong to the modern era?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 34
+text = "Many Elders are older than the Camarilla. If you are over 500 years old, what is your relationship with the sect?"
+kind = "long"
+optional = true
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 35
+text = "What is your approach to the Elder game? Your strategy in the eternal struggle?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 36
+text = "The eternal struggle is just that, eternal. That said, what is a covert goal of your Elder game with a goal and time-frame beyond the scope of this chronicle?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 37
+text = "The eternal struggle is also petty. What is a petty goal of your jyhad? With goals so distant, what are the little wins you're working towards that keep you engaged in the Elder game?"
+kind = "long"
+condition = { kind = "social_age", ages = ["Elder"] }
+
+[[sets.questions]]  # 38
+text = "Are there any elements of your undead life that you particularly would like for us to consider incorporating into the plot?"
+kind = "long"
+
+[[sets.questions]]  # 39
+text = "Although every Gather is sure to be exciting, many nights are uneventful for your character. How do they spend those nights when they have no obligations? What hobbies, past times, and/or activities do they fill their nights with?"
+kind = "long"
+
+[[sets.questions]]  # 40
+text = "Has your character ever committed diablerie?"
+kind = "long"
+
+[[sets.questions]]  # 41
+text = "Character Timeline"
+kind = "heading"
+
+[[sets.questions]]  # 42
+text = "Are there any historical events your character was a part of or witnessed?"
+kind = "long"
+
+[[sets.questions]]  # 43
+text = "Are there any canonical events your character was witness or a part of?"
+kind = "long"
+
+[[sets.questions]]  # 44
+text = "How long has your character been in {troupe}?"
+kind = "short"
+
+[[sets.questions]]  # 45
+text = "[Optional] - If your character  were represented by a Tarot major Arcana card, which one would you be?"
+kind = "short"
+title = "Tarot major arcana"
+optional = true
+
+[[sets.questions]]  # 46
+text = "What is your character's Archetype?"
+kind = "short"
+
+[[sets.questions]]  # 47
+text = "Why did you choose this Archetype?"
+kind = "long"
+
+[[sets.questions]]  # 48
+text = "Are there any inspirational references you used for this character?"
+kind = "long"
+
+[[sets.questions]]  # 49
+text = "Does your character have a theme song? What is it?"
+kind = "short"
+
+[[sets.questions]]  # 50
+text = "Are there any aspects of your character you would like to immediately stand out to others?"
+kind = "long"
+
+[[sets.questions]]  # 51
+text = "[Optional] - Personality Grid [A) Aloof / B) Friendly]"
+kind = "choice"
+title = "Personality Grid: Aloof / Friendly"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 52
+text = "[Optional] - Personality Grid [A) Bold / B) Timid]"
+kind = "choice"
+title = "Personality Grid: Bold / Timid"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 53
+text = "[Optional] - Personality Grid [A) Broad-Minded / B) Narrow-Minded]"
+kind = "choice"
+title = "Personality Grid: Broad-Minded / Narrow-Minded"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 54
+text = "[Optional] - Personality Grid [A) Callous / B) Sympathetic]"
+kind = "choice"
+title = "Personality Grid: Callous / Sympathetic"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 55
+text = "[Optional] - Personality Grid [A) Calm / B) Nervous]"
+kind = "choice"
+title = "Personality Grid: Calm / Nervous"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 56
+text = "[Optional] - Personality Grid [A) Honest / B) Dishonest]"
+kind = "choice"
+title = "Personality Grid: Honest / Dishonest"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 57
+text = "[Optional] - Personality Grid [A) Impractical / B) Practical]"
+kind = "choice"
+title = "Personality Grid: Impractical / Practical"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 58
+text = "[Optional] - Personality Grid [A) Independent / B) Conforming]"
+kind = "choice"
+title = "Personality Grid: Independent / Conforming"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 59
+text = "[Optional] - Personality Grid [A) Good-Natured / B) Irritable]"
+kind = "choice"
+title = "Personality Grid: Good-Natured / Irritable"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 60
+text = "[Optional] - Personality Grid [A) Contented / B) Discontented]"
+kind = "choice"
+title = "Personality Grid: Contented / Discontented"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 61
+text = "[Optional] - Personality Grid [A) Cynical / B) Gullible]"
+kind = "choice"
+title = "Personality Grid: Cynical / Gullible"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 62
+text = "[Optional] - Personality Grid [A) Generous / B) Stingy]"
+kind = "choice"
+title = "Personality Grid: Generous / Stingy"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 63
+text = "[Optional] - Personality Grid [A) Hardy / B) Vulnerable]"
+kind = "choice"
+title = "Personality Grid: Hardy / Vulnerable"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 64
+text = "[Optional] - Personality Grid [A) Proud / B) Humble]"
+kind = "choice"
+title = "Personality Grid: Proud / Humble"
+optional = true
+options = ["Very A", "A", "Neither", "B", "Very B"]
+
+[[sets.questions]]  # 65
+text = "Choose one of the above questions and tell a brief story from your character's history to illustrate why you chose that option. (For instance, if you chose \"Very (A)\" for \"Aloof/Friendly,\" tell us about a time where they were aloof.)"
+kind = "long"
+optional = true
+
+[[sets.questions]]  # 66
+text = "Choose a second answer you gave above, and share a story about it."
+kind = "long"
+optional = true
+
+[[sets.questions]]  # 67
+text = "One more time: choose a third answer, and share a story about it."
+kind = "long"
+optional = true
+
+[[sets.questions]]  # 68
+text = "What do you miss most about living?"
+kind = "long"
+
+[[sets.questions]]  # 69
+text = "Describe your character's appearance."
+kind = "long"
+
+[[sets.questions]]  # 70
+text = "How does your character's appearance affect their interactions with others?"
+kind = "long"
+
+[[sets.questions]]  # 71
+text = "What does your character fear; does it have origins in a life event, or is it a completely irrational fear? Are they open about it, or do they try to hide it? Can they overcome it if the circumstances are dire enough?"
+kind = "long"
+
+[[sets.questions]]  # 72
+text = "Is your character prejudiced in any way?  How did you develop the prejudice, and can they overcome it if circumstances require?  Are they ashamed of it?"
+kind = "long"
+
+[[sets.questions]]  # 73
+text = "Does your character actually love or cherish anything?  If so, how do they feel about that attachment.  How far would they go to protect it?"
+kind = "long"
+
+[[sets.questions]]  # 74
+text = "What is the most immoral (or path breaking)  thing your character has ever done, and do you regret it?  Who knows about it?"
+kind = "long"
+
+[[sets.questions]]  # 75
+text = "Are there any foundational principles of the Camarilla that your character disagrees with? If so, how do they navigate the sect they find themselves within, without getting into trouble?"
+kind = "long"
+condition = { kind = "sect", sects = ["Camarilla"] }
+
+[[sets.questions]]  # 76
+text = "What motivates you to get up every night, and what does it cost to keep pursuing it?"
+kind = "long"
+
+[[sets.questions]]  # 77
+text = "Is there someone who has passed away as a mortal that your character regrets not saving?  Why did you not embrace or ghoul them?"
+kind = "long"
+
+[[sets.questions]]  # 78
+text = "What does your character fear the most?"
+kind = "short"
+
+[[sets.questions]]  # 79
+text = "What does your character covet the most?"
+kind = "short"
+
+[[sets.questions]]  # 80
+text = "Which cardinal sin comes to your character most naturally?"
+kind = "choice"
+options = ["Pride", "Greed", "Lust", "Envy", "Gluttony", "Wrath", "Sloth"]
+
+[[sets.questions]]  # 81
+text = "Is your character religious?"
+kind = "short"
+
+[[sets.questions]]  # 82
+text = "If you could go back and decline the Embrace, thus dying as a mortal, would you?"
+kind = "long"
+
+[[sets.questions]]  # 83
+text = "What is your character's relationship with their Beast?"
+kind = "long"
+
+[[sets.questions]]  # 84
+text = "What is your character's relationship with their Humanity?"
+kind = "long"
+
+[[sets.questions]]  # 85
+text = "How has your character changed since their embrace?"
+kind = "long"
+
+[[sets.questions]]  # 86
+text = "How does your character feel about their own clan?"
+kind = "long"
+
+[[sets.questions]]  # 87
+text = "What are your character's relationships with the other clans?"
+kind = "long"
+
+[[sets.questions]]  # 88
+text = "What is your character's relationship with the Camarilla?"
+kind = "long"
+
+[[sets.questions]]  # 89
+text = "What is your character's relationship with the Sabbat?"
+kind = "long"
+
+[[sets.questions]]  # 90
+text = "What is your character's relationship with the Anarchs?"
+kind = "long"
+
+[[sets.questions]]  # 91
+text = "What is your character's relationship or opinion on other creatures of the night?"
+kind = "long"
+
+[[sets.questions]]  # 92
+text = "Did your character have any interactions with the supernatural while they were fully mortal?"
+kind = "long"
+
+[[sets.questions]]  # 93
+text = "Does your character have a supernatural type or clan they fear or despise? If so, why?"
+kind = "long"
+
+[[sets.questions]]  # 94
+text = "Who are the notable, major NPCs with whom your character has or has had relationships?"
+kind = "long"
+
+[[sets.questions]]  # 95
+text = "Who is/was your character's best (NPC) friend?"
+kind = "short"
+
+[[sets.questions]]  # 96
+text = "Who is your character's worst (NPC) rival?"
+kind = "short"
+
+[[sets.questions]]  # 97
+text = "What is a (NPC) relationship that defined your character as a person?"
+kind = "long"
+
+[[sets.questions]]  # 98
+text = "Are there any NPCs with whom your character stays in frequent contact?"
+kind = "long"
+
+[[sets.questions]]  # 99
+text = "Has your character ever held any court positions?"
+kind = "long"
+
+[[sets.questions]]  # 100
+text = "Which Prince approved their accounting? If your character is an Ancilla or Elder, who approved this status? Are there stories around these notable moments in your character's unlife?"
+kind = "long"
+
+[[sets.questions]]  # 101
+text = "Does your character keep ghouls?"
+kind = "long"
+
+[[sets.questions]]  # 102
+text = "Has your character sired?"
+kind = "long"
+
+[[sets.questions]]  # 103
+text = "Are there any notable PC ties you would like to describe?"
+kind = "long"
+
+[[sets.questions]]  # 104
+text = "How does your character usually feed?"
+kind = "long"
+
+[[sets.questions]]  # 105
+text = "What steps does your character take to preserve the Masquerade?"
+kind = "long"
+
+[[sets.questions]]  # 106
+text = "Where does your character live?"
+kind = "short"
+
+[[sets.questions]]  # 107
+text = "How does your character get around town?"
+kind = "short"
+
+[[sets.questions]]  # 108
+text = "Does your character rely on any mortals?"
+kind = "long"
+
+[[sets.questions]]  # 109
+text = "How does your character make a living?"
+kind = "short"
+
+[[sets.questions]]  # 110
+text = "What does your character hope to accomplish in the near future, and why?"
+kind = "long"
+
+[[sets.questions]]  # 111
+text = "What does your character hope to accomplish in the long term, and why?"
+kind = "long"
+
+[[sets.questions]]  # 112
+text = "Are there any other details you would like to add?"
+kind = "long"
+optional = true

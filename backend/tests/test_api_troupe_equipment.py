@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from horatio.models import Character, EquipmentItem, TroupeMembership
-from tests.api_helpers import Person, Troupe, new_character
+from tests.api_helpers import Person, Troupe, backstory_optional, new_character
 from tests.test_api_downtimes import member_character
 from tests.test_api_renames import character_log, other_troupe, summaries, troupe_log, visit
 
@@ -175,6 +175,7 @@ def test_an_item_breaking_the_rules_is_refused_with_the_reason(troupe: Troupe, a
 
 def test_only_home_characters_are_given_equipment(troupe: Troupe, agnes: str) -> None:
     elsewhere = other_troupe(troupe)
+    backstory_optional(troupe.session, elsewhere)
     visitor = new_character(troupe, troupe.player, "Visiting Vera")
     asked = troupe.player.client.post(
         f"/characters/{visitor}/home-troupe", json={"troupe_id": elsewhere}

@@ -23,7 +23,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import ColumnElement, and_, exists, or_, select, true
 from sqlalchemy.orm import Session
 
-from horatio.models import Character, Troupe, TroupeMembership, TroupeStaff, User
+from horatio.models import Approval, Character, Troupe, TroupeMembership, TroupeStaff, User
 
 
 class Role(StrEnum):
@@ -315,3 +315,27 @@ def lines_veils_shown_here(user: User, role: Role | None, player: User) -> bool:
         or allows(role, TroupeAction.VIEW_LINES_VEILS, is_custodian=user.is_custodian)
         or player.share_lines_veils
     )
+
+
+def can_read_backstory(db: Session, user: User, character: Character) -> bool:
+    """A character's backstory: its player, the custodian, and the storytellers and
+    assistant storytellers of its home troupe and of a troupe it asks to make its
+    home; an NPC's, its troupe's. Never narrators, a visiting troupe's staff or other
+    players (horatio.backstories)."""
+    if user.is_custodian or (character.kind == "pc" and character.player_id == user.id):
+        return True
+    if character.kind == "npc":
+        troupe_ids = [character.owner_troupe_id]
+    else:
+        asking = select(Approval.troupe_id).where(
+            Approval.character_id == character.id,
+            Approval.kind == "home_troupe_change",
+            Approval.status == "pending",
+        )
+        troupe_ids = [character.home_troupe_id, *db.scalars(asking)]
+    for troupe in db.scalars(select(Troupe).where(Troupe.id.in_([t for t in troupe_ids if t]))):
+        if troupe.archived_at is None and allows(
+            troupe_role(db, user, troupe), TroupeAction.APPROVE_CHANGES
+        ):
+            return True
+    return False

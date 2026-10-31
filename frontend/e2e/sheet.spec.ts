@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
 
 /** A character's page and sheet, and what a player asks staff for from it. */
 
@@ -351,6 +351,7 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
 
   // Wren is built through the API, with Celerity 2, and joins the troupe.
@@ -465,6 +466,7 @@ test("a player says they committed diablerie, staff approve it, and then record 
   const headers = { "X-Horatio": "1" };
   const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Sorrows ${run}`, lead_handle: lead.handle } });
   expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
   const troupeId = (await made.json()).id;
 
   // Sable is built through the API and accepted at Generation 1.
@@ -617,6 +619,7 @@ test("a player says who each Retainer bought is, and a storyteller links one to 
   };
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Retinue Row ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
 
   // Dorothea, at home in the troupe with Marta as a Retainer at 3, and staff give her Pike at 1.
   const { id } = await send(owner.page, "POST", "/api/characters", { splat: "vampire", name: "Dorothea" });

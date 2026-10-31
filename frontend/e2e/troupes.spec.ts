@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -72,6 +72,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  await backstoryOptional(custodian.page, troupeName);
 
   // The chronicle began before Horatio: the lead sets the floor and ceiling by hand, on About.
   const l = lead.page;
@@ -282,7 +283,9 @@ test("archiving a troupe lets its characters go and ends its cycle, and the cust
   };
   const troupeName = `Court of Last Lamps ${run}`;
   const troupeId = (await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle })).id;
+  await backstoryOptional(custodian.page, troupeId);
   const otherId = (await send(custodian.page, "POST", "/api/troupes", { name: `Court of Far Lamps ${run}`, lead_handle: lead.handle })).id;
+  await backstoryOptional(custodian.page, otherId);
   // A Brujah built through the API and accepted home in `home`.
   const build = async (page: Page, name: string, home: string): Promise<string> => {
     const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
@@ -559,6 +562,7 @@ test("a troupe's Profile tab switches it public at once, About sets its XP range
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  await backstoryOptional(custodian.page, troupeName);
 
   // About, for the lead: nothing is waiting yet.
   const l = lead.page;
