@@ -23,6 +23,7 @@ import {
   Select,
 } from "../../components/ui";
 import { HouseMark } from "../../components/HouseMark";
+import { StepButton, StepButtons } from "../../components/StepButton";
 import { houseLabels } from "../../houseTraits";
 import { TraitInfo } from "../../components/TraitInfo";
 import { HEALTH_RULE, healthRows } from "../../health";
@@ -780,13 +781,9 @@ function TraitRow({
             // One staff applied, only staff take away.
             !trait.house?.applied &&
             (adding || (trait.rating !== null && trait.rating > trait.min_rating)) && (
-              <button
-                aria-label={`Remove ${which}`}
-                className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment"
-                onClick={() => onChange(0)}
-              >
+              <StepButton label={`Remove ${which}`} onClick={() => onChange(0)}>
                 ×
-              </button>
+              </StepButton>
             )}
         </span>
       </div>
@@ -859,29 +856,25 @@ function TraitRow({
         <span className="flex shrink-0 items-center gap-2">
           <Rating value={trait.rating} pendingFrom={trait.pending_from} planned={planned} of={pipsOf(trait.category)} />
           {!locked && (
-            <span className="flex gap-1">
-              <button
-                aria-label={`Lower ${which}`}
-                title={
-                  current <= trait.min_rating && !adding
-                    ? "Accepted by the home troupe; only storytellers can take these dots away."
-                    : undefined
+            <StepButtons>
+              <StepButton
+                label={`Lower ${which}`}
+                reason={
+                  current > trait.min_rating || adding
+                    ? undefined
+                    : current <= trait.free_rating
+                      ? "These dots were free, not bought with XP; only storytellers can take them away."
+                      : "Accepted by the home troupe; only storytellers can take these dots away."
                 }
-                className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment disabled:opacity-30"
                 disabled={pending || current <= trait.min_rating}
                 onClick={() => onChange(current - 1)}
               >
                 −
-              </button>
-              <button
-                aria-label={`Raise ${which}`}
-                className="h-6 w-6 rounded border border-ash text-xs leading-none text-mist hover:border-mist hover:text-parchment disabled:opacity-30"
-                disabled={pending}
-                onClick={() => onChange(current + 1)}
-              >
+              </StepButton>
+              <StepButton label={`Raise ${which}`} disabled={pending} onClick={() => onChange(current + 1)}>
                 +
-              </button>
-            </span>
+              </StepButton>
+            </StepButtons>
           )}
         </span>
       )}

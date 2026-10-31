@@ -496,12 +496,12 @@ function TapButton({
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        "grid h-12 min-w-12 place-items-center rounded-full border px-3 text-lg font-semibold transition-colors active:scale-95 disabled:opacity-35",
+        "grid h-12 min-w-12 place-items-center rounded-full border px-3 text-lg font-semibold transition-colors active:scale-95 tap-off",
         tone === "blood"
           ? "border-blood bg-blood text-parchment hover:bg-blood-bright"
           : tone === "outline"
             ? "border-blood/70 bg-night text-blood-bright hover:bg-blood/15"
-            : "border-ash bg-night text-parchment hover:border-mist",
+            : "border-line bg-night text-parchment hover:border-mist",
       )}
     >
       {children}
@@ -562,7 +562,7 @@ export function BoxTracker({
             className={cx(
               "rounded-md border transition-colors",
               small ? "h-9 w-9" : "h-10 w-10",
-              i < value ? (tracker === "blood" ? "border-blood bg-blood" : "border-gold/70 bg-gold/70") : "border-ash bg-night",
+              i < value ? (tracker === "blood" ? "border-blood bg-blood" : "border-gold/70 bg-gold/70") : "border-line bg-night",
             )}
           />
         ))}
@@ -613,7 +613,7 @@ export function HealthTracker({ view, record }: { view: PlayView; record: Record
                     aria-label={`${b.mark ? `${b.mark} damage` : "unmarked"}${b.from ? ", from the form" : ""}`}
                     className={cx(
                       "grid h-9 w-9 place-items-center rounded-md border text-lg leading-none",
-                      b.mark === "aggravated" ? "border-blood bg-blood text-parchment" : b.mark === "normal" ? "border-mist bg-ash text-parchment" : "border-ash bg-night",
+                      b.mark === "aggravated" ? "border-blood bg-blood text-parchment" : b.mark === "normal" ? "border-mist bg-ash text-parchment" : "border-line bg-night",
                       b.from && "border-dashed outline-2 outline-offset-1 outline-gold/70 outline-dashed",
                     )}
                   >

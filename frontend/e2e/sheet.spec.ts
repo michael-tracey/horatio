@@ -617,6 +617,43 @@ test("a skill's specialisations sit in its own list item, in the sheet's two col
   await p.screenshot(shots("specializations-stay-together"));
 });
 
+test("on a phone the − and + are big enough to tap, apart, and a greyed − says why when tapped (#361)", async ({ browser }) => {
+  const { page: p } = await person(browser, "thumb-steps");
+  const id = await builtVampire(p, "Ysolde", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Generation", 1], ["Herd", 2], ["Fame", 3]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}`);
+  const lower = p.getByRole("button", { name: "Lower Brawl" });
+  const raise = p.getByRole("button", { name: "Raise Brawl" });
+  await expect(raise).toBeVisible();
+
+  // At least 40px on a touch screen, with room between them; the desktop keeps its compact rows.
+  const minus = (await lower.boundingBox())!;
+  const plus = (await raise.boundingBox())!;
+  if (test.info().project.name === "phone") {
+    for (const box of [minus, plus]) {
+      expect(box.width).toBeGreaterThanOrEqual(40);
+      expect(box.height).toBeGreaterThanOrEqual(40);
+    }
+    expect(plus.x - (minus.x + minus.width)).toBeGreaterThanOrEqual(12);
+  } else expect(minus.height).toBeLessThan(40);
+
+  // Brawl 4 is all from creation, so − is greyed. Its reason is no hover title: a tap shows it, and nothing goes in the cart.
+  const why = "These dots were free, not bought with XP; only storytellers can take them away.";
+  await expect(lower).toBeDisabled();
+  await expect(lower).toHaveAccessibleDescription(why);
+  const reason = p.locator(`[id="${await lower.getAttribute("aria-describedby")}"]`);
+  await expect(reason).toBeHidden();
+  // Forced: Playwright won't click what is greyed, but a thumb can.
+  await lower.click({ force: true });
+  await expect(reason).toHaveText(why);
+  await expect(reason).toBeInViewport();
+  await p.screenshot(shots("greyed-minus-why"));
+  await expect(p.getByRole("list", { name: "Changes in the cart" })).toHaveCount(0);
+});
+
 test("an attribute stops rising at the limit Generation gives", async ({ browser }) => {
   const { page: p } = await person(browser, "limit-player");
   // A Neonate may take one attribute to 11 (core p. 102).
