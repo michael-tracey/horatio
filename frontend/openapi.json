@@ -36908,6 +36908,72 @@
         ]
       }
     },
+    "/api/characters/{character_id}/making-room": {
+      "get": {
+        "description": "The traits chosen in `category` that `name` could swap in for, where the rules\nrefuse it as things stand: what a picker offers to swap out to make room for it.\nAll are tried in one request, saving nothing; the swap itself is made as a cart.",
+        "operationId": "making_room_api_characters__character_id__making_room_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Making Room Api Characters  Character Id  Making Room Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Making Room",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
     "/api/characters/{character_id}/move": {
       "get": {
         "description": "What moving the character to whoever has `handle` would do, for the custodian\nto confirm.",
