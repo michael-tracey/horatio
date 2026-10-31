@@ -1,8 +1,12 @@
-"""Equipment qualities (issue #279): the four kinds of item, their grades, every
-quality of each kind, and the book's sample items (MET: VTM 2013, Chapter Thirteen,
+"""Equipment qualities (issue #279): the kinds of item, their grades, every quality
+of each kind, and the book's sample items (MET: VTM 2013, Chapter Thirteen,
 pp. 515-524, with the Ballistic and Hardened errata in the Vol. II Issue 1 update,
 p. 23). The rules are written in `bns_met_vampire_equipment.toml`; see the top of
 that file for its shape.
+
+A Vampiric Text (issue #341), such as the Book of Nod, is equipment too, but of a
+kind of its own: it has no qualities, isn't equipped at a game and changes no pool.
+Its templates are the catalogue's texts, each with a line of description.
 
 A quality is per kind: the same name can mean different things on different kinds
 (a ranged Deadly weapon needs two hands, a melee one does not), so each is keyed by
@@ -39,7 +43,11 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Any, cast
 
-KINDS = ("melee", "ranged", "protective", "miscellaneous")
+KINDS = ("melee", "ranged", "protective", "miscellaneous", "text")
+# A Vampiric Text: a thing a character owns, given by storytellers (issue #341).
+TEXT = "text"
+# The kinds a character equips at a game (issue #306): every kind but a text.
+EQUIPPED_KINDS = ("melee", "ranged", "protective", "miscellaneous")
 GRADES = ("cheap", "standard", "special")
 
 QUALITY_PROPERTIES = (
@@ -203,6 +211,8 @@ class TemplateData:
     page: str | None = None
     # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
     archaic: bool = False
+    # What it is, in a line of our own words: a Vampiric Text's.
+    description: str = ""
 
 
 @dataclass(frozen=True)
@@ -441,10 +451,13 @@ def equipment_from(raw: Mapping[str, Any], *, source: str = "") -> EquipmentRule
             qualities=item_qualities(t["qualities"]),
             page=t.get("page"),
             archaic=t.get("archaic", False),
+            description=t.get("description", ""),
         )
         problems = list(assess(rules, template.kind, template.qualities, template.grade).problems)
         if template.archaic and template.kind != "ranged":
             problems.append("Only a ranged weapon is archaic.")
+        if template.kind == TEXT and template.grade != "standard":
+            problems.append("A text from the books is of the standard grade.")
         if problems:
             raise ValueError(f"{where}template {template.name!r}: {' '.join(problems)}")
         templates.append(template)

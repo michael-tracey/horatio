@@ -24,12 +24,15 @@ class EquipmentItem(Record):
         CheckConstraint(
             "(grade = 'special') = (special_troupe_id is not null)", name="special_troupe"
         ),
+        # Only an item moved from a sheet with no home troupe has no troupe (#341).
+        CheckConstraint("troupe_id is not null or from_sheet", name="troupe_given"),
     )
 
     # Who holds it; once taken back or discarded, who last held it.
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
-    # The troupe that gave it.
-    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    # The troupe that gave it: for one moved from the sheet, the holder's home troupe
+    # then, if it had one.
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
     given_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     given_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     name: Mapped[str]
@@ -52,6 +55,9 @@ class EquipmentItem(Record):
     # The troupe that made it special: null unless it is.
     special_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
     status: Mapped[str] = mapped_column(default="held", server_default="held", index=True)
+    # A Vampiric Text the character held as a trait on its sheet, which migration
+    # 0115 made an item (#341): nobody gave it.
+    from_sheet: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class EquipmentEvent(Record):

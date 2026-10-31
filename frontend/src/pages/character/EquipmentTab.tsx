@@ -10,6 +10,7 @@ import { ItemActions } from "./ItemActions";
 import {
   combatFirst,
   factsText,
+  givenText,
   kindText,
   qualityText,
 } from "../troupe/equipment";
@@ -34,7 +35,8 @@ export function useCharacterEquipment(characterId: string) {
 /**
  * The character page's Equipment tab, for its player and staff who see the sheet:
  * each item with its qualities and what they do, its facts, its special effects,
- * and where it came from. Weapons first, then armour, as on the Play View. Its
+ * and where it came from. Weapons first, then armour, as on the Play View, and
+ * Vampiric Texts last (#341). Its
  * player and its home troupe's staff give each item to another character, or
  * discard it (#282).
  */
@@ -201,8 +203,7 @@ export function EquipmentCard({
         <p className="whitespace-pre-line">{item.description}</p>
       )}
       <p className="text-xs text-mist">
-        Given by {item.given_by_name ?? "someone"} of {item.troupe_name},{" "}
-        {dates.date(item.given_at)}
+        {givenText(item)}, {dates.date(item.given_at)}
       </p>
       {item.staff_note && (
         <p className="whitespace-pre-line text-xs text-mist">
