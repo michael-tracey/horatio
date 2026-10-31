@@ -1,17 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
 import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestChoiceOut, QuestionOut } from "../../api/types";
-import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { chosenAction, offered, reachable, reachNote } from "../../influence";
 import { DISCOVERY_BLOCK, LOOKUP_LEVEL, LOOKUP_NOTE } from "../../influenceLookups";
 import { questChoiceText } from "../quests/quests";
 import { BlockTarget } from "./BlockTarget";
+import { useLeaveWarning } from "./CartPanel";
+import { type Answers, EMPTY_FORM, type Form, formReducer, toAnswers, unsaved } from "./downtimeForm";
 import { FeedingCard } from "./FeedingCard";
-
-type Draft = Record<string, { body: string; structured?: Record<string, unknown> }[]>;
 
 /** Action questions and the Quest action each spend an action of their kind. */
 const spends = (q: QuestionOut) => q.kind === "action" || q.kind === "quest";
@@ -21,31 +21,21 @@ function signed(n: number): string {
   return n < 0 ? `\u2212${-n}` : `+${n}`;
 }
 
-function toDraft(downtime: MyDowntime): Draft {
-  const draft: Draft = {};
-  for (const q of downtime.questions) draft[q.id] = [];
-  for (const a of downtime.answers) {
-    const list = draft[a.question_id] ?? [];
-    list[a.slot - 1] = { body: a.body, structured: a.structured };
-    draft[a.question_id] = list;
-  }
-  for (const q of downtime.questions) {
-    draft[q.id] = (draft[q.id] ?? []).filter(Boolean);
-    if (q.kind === "custom" && draft[q.id]!.length === 0) draft[q.id] = [{ body: "" }];
-  }
-  return draft;
-}
+/** How long typing has to stop for before the answers are saved. */
+const AUTOSAVE_MS = 2000;
 
-function toAnswers(draft: Draft): AnswerIn[] {
-  return Object.entries(draft).flatMap(([question_id, answers]) =>
-    answers.map((a, i) => ({ question_id, slot: i + 1, body: a.body, structured: a.structured ?? null })),
-  );
-}
+/** The answers as sent to the server, and the edit they go up to. */
+type Sent = { version: number; answers: AnswerIn[]; feeding: FeedingIn | null };
+
+/** An action just removed, to put back with Undo. */
+type Removed = { question: string; index: number; answer: Answers[number] };
 
 export function DowntimeTab({ characterId }: { characterId: string }) {
   const path = { params: { path: { character_id: characterId } } };
+  const key = ["downtime", characterId];
+  const client = useQueryClient();
   const downtime = useQuery({
-    queryKey: ["downtime", characterId],
+    queryKey: key,
     queryFn: async () => {
       try {
         return await unwrap(api.GET("/api/characters/{character_id}/downtime", path));
@@ -55,64 +45,156 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
       }
     },
   });
-  const [draft, setDraft] = useState<Draft>({});
-  const [feeding, setFeeding] = useState<FeedingIn | null>(null);
+  const [form, change] = useReducer(formReducer, EMPTY_FORM);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [removed, setRemoved] = useState<Removed | null>(null);
   const dates = useDates();
+  // Whatever the server sends is merged in, never over a part edited since the last save.
   useEffect(() => {
-    if (downtime.data) {
-      setDraft(toDraft(downtime.data));
-      setFeeding(downtime.data.feeding?.answer ?? null);
-    }
+    if (downtime.data) change({ type: "loaded", downtime: downtime.data });
   }, [downtime.data]);
 
-  // The Feeding section goes with the answers once it has been loaded.
-  const body = () => ({ answers: toAnswers(draft), feeding: downtime.data?.feeding && feeding ? feeding : null });
-  const save = useAction(() => unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: body() })));
-  const submit = useAction(async () => {
-    await unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: body() }));
-    return unwrap(api.POST("/api/characters/{character_id}/downtime/submit", path));
+  // Saving waits on its own answer, not a refetch of the page. Saves go one at a time.
+  const save = useMutation({
+    scope: { id: `downtime-${characterId}` },
+    mutationFn: ({ answers, feeding }: Sent) => unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: { answers, feeding } })),
+    onSuccess: (saved, sent) => {
+      change({ type: "saved", version: sent.version });
+      client.setQueryData(key, saved);
+      setSavedAt(new Date());
+    },
   });
+  const submit = useAction(async (sent: Sent) => {
+    await unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: { answers: sent.answers, feeding: sent.feeding } }));
+    change({ type: "saved", version: sent.version });
+    setSavedAt(new Date());
+    const submitted = await unwrap(api.POST("/api/characters/{character_id}/downtime/submit", path));
+    client.setQueryData(key, submitted);
+    return submitted;
+  });
+
+  const dirty = unsaved(form);
+  const failed = save.isError && save.variables?.version === form.version;
+  const saving = save.isPending || submit.isPending;
+  // The Feeding section goes with the answers once it has been loaded.
+  const sent = (f: Form, d: MyDowntime): Sent => ({ version: f.version, answers: toAnswers(f.draft), feeding: d.feeding && f.feeding ? f.feeding : null });
+  // For the timer and for leaving, which run after the render they were set up in.
+  const latest = useRef({ form, data: downtime.data, busy: submit.isPending, inFlight: undefined as number | undefined, mutate: save.mutate });
+  useEffect(() => {
+    latest.current = { form, data: downtime.data, busy: submit.isPending, inFlight: save.isPending ? save.variables?.version : undefined, mutate: save.mutate };
+  });
+  const saveNow = (always = false) => {
+    const { form, data, busy, inFlight, mutate } = latest.current;
+    if (!data || busy || inFlight === form.version || (!always && !unsaved(form))) return;
+    mutate(sent(form, data));
+  };
+
+  // Autosave once typing stops. A save that failed isn't tried again until the next edit.
+  useEffect(() => {
+    if (!dirty || failed || saving) return;
+    const timer = setTimeout(saveNow, AUTOSAVE_MS);
+    return () => clearTimeout(timer);
+  }, [form.version, dirty, failed, saving]);
+  // Save at once when the player switches away (a phone's other app) or leaves the tab.
+  useEffect(() => {
+    const away = () => document.visibilityState === "hidden" && saveNow();
+    document.addEventListener("visibilitychange", away);
+    return () => {
+      document.removeEventListener("visibilitychange", away);
+      saveNow();
+    };
+  }, []);
+  useLeaveWarning(dirty || saving);
 
   if (downtime.isPending) return <Loading />;
   if (downtime.error) return <ErrorText error={downtime.error} />;
   const d = downtime.data;
   if (!d) return <Empty>There is no open downtime for this character. Downtimes come from its home troupe.</Empty>;
 
+  const { draft, feeding } = form;
   // Feeding actions come out of the general actions.
   const fed = d.feeding && feeding ? (feeding.actions ?? 0) : 0;
   const used = (kind: string) =>
     d.questions.filter((q) => q.action_kind === kind).reduce((n, q) => n + (draft[q.id]?.length ?? 0), 0) + (kind === "general" ? fed : 0);
+  const setAnswers = (question: string, answers: Answers) => change({ type: "answers", question, answers });
+  const remove = (question: string, index: number) => {
+    const answers = draft[question] ?? [];
+    setRemoved({ question, index, answer: answers[index]! });
+    setAnswers(question, answers.filter((_, j) => j !== index));
+  };
+  const undo = () => {
+    if (!removed) return;
+    const answers = [...(draft[removed.question] ?? [])];
+    answers.splice(removed.index, 0, removed.answer);
+    setAnswers(removed.question, answers);
+    setRemoved(null);
+  };
+
+  const status = saving ? (
+    "Saving…"
+  ) : failed ? (
+    <span className="text-blood-bright">
+      Couldn't save:{" "}
+      <button type="button" className="underline hover:text-parchment" onClick={() => saveNow(true)}>
+        try again
+      </button>
+    </span>
+  ) : dirty ? (
+    "Not saved yet"
+  ) : submit.isSuccess ? (
+    "Submitted. You can keep editing until the grace period ends."
+  ) : (
+    savedAt && `Saved ${dates.time(savedAt)}`
+  );
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
       <div className="flex flex-col gap-4">
         {d.feeding && feeding && (
-          <FeedingCard feeding={d.feeding} value={feeding} onChange={setFeeding} actionsLeft={(d.allowance.general ?? 0) - used("general")} />
-        )}
-        {d.questions.map((q) => (
-          <QuestionCard
-            key={q.id}
-            characterId={characterId}
-            question={q}
-            answers={draft[q.id] ?? []}
-            remaining={spends(q) ? (d.allowance[q.action_kind!] ?? 0) - used(q.action_kind!) : 0}
-            influence={q.kind === "action" ? d.influence?.find((s) => s.action_kind === q.action_kind) : undefined}
-            quests={d.quests ?? []}
-            onChange={(answers) => setDraft({ ...draft, [q.id]: answers })}
+          <FeedingCard
+            feeding={d.feeding}
+            value={feeding}
+            onChange={(value) => change({ type: "feeding", feeding: value })}
+            actionsLeft={(d.allowance.general ?? 0) - used("general")}
           />
-        ))}
+        )}
+        {d.questions.map((q) => {
+          const remaining = spends(q) ? (d.allowance[q.action_kind!] ?? 0) - used(q.action_kind!) : 0;
+          const answers = draft[q.id] ?? [];
+          // Undo puts it back while there is room for it.
+          const canUndo = removed?.question === q.id && remaining > 0 && (q.max_answers == null || answers.length < q.max_answers);
+          return (
+            <QuestionCard
+              key={q.id}
+              characterId={characterId}
+              question={q}
+              answers={answers}
+              remaining={remaining}
+              influence={q.kind === "action" ? d.influence?.find((s) => s.action_kind === q.action_kind) : undefined}
+              quests={d.quests ?? []}
+              onChange={(next) => setAnswers(q.id, next)}
+              onRemove={(i) => remove(q.id, i)}
+              onUndo={canUndo ? undo : undefined}
+            />
+          );
+        })}
         <ErrorText error={save.error ?? submit.error} />
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => save.mutate(undefined)} disabled={save.isPending}>
+        {/* On a phone, the buttons and what became of them stay at the foot of the screen. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:-mx-4 max-lg:border-t max-lg:border-ash max-lg:bg-night/95 max-lg:px-4 max-lg:py-3 max-lg:backdrop-blur">
+          <Button variant="secondary" onClick={() => saveNow(true)} disabled={saving}>
             Save draft
           </Button>
-          <Button onClick={() => submit.mutate(undefined)} disabled={submit.isPending}>
+          <Button onClick={() => submit.mutate(sent(form, d))} disabled={saving}>
             {d.status === "submitted" ? "Save and resubmit" : "Submit downtime"}
           </Button>
+          <p role="status" aria-live="polite" className="text-sm text-mist">
+            {status}
+          </p>
         </div>
       </div>
-      <aside className="flex flex-col gap-4">
-        <Card title={d.cycle_name}>
+      {/* On a phone, the deadline and status come first, before the questions. */}
+      <aside className="contents lg:flex lg:flex-col lg:gap-4">
+        <Card title={d.cycle_name} className="order-first lg:order-none">
           <p className="text-sm">
             Due <time dateTime={d.closes_at}>{dates.deadline(d.closes_at)}</time>
           </p>
@@ -158,7 +240,6 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             </p>
           ))}
         </Card>
-        {submit.isSuccess && <Notice>Submitted. You can keep editing until the grace period ends.</Notice>}
       </aside>
     </div>
   );
@@ -172,18 +253,23 @@ function QuestionCard({
   influence,
   quests,
   onChange,
+  onRemove,
+  onUndo,
 }: {
   characterId: string;
   question: QuestionOut;
-  answers: Draft[string];
+  answers: Answers;
   remaining: number;
   influence?: InfluenceStandingOut;
   quests: QuestChoiceOut[];
-  onChange: (answers: Draft[string]) => void;
+  onChange: (answers: Answers) => void;
+  onRemove: (index: number) => void;
+  /** Puts back the action just removed from this question. */
+  onUndo?: () => void;
 }) {
   const noQuests = question.kind === "quest" && quests.length === 0;
   const canAdd = spends(question) && !noQuests && remaining > 0 && (question.max_answers == null || answers.length < question.max_answers);
-  const set = (i: number, value: Draft[string][number]) => onChange(answers.map((a, j) => (j === i ? value : a)));
+  const set = (i: number, value: Answers[number]) => onChange(answers.map((a, j) => (j === i ? value : a)));
 
   return (
     <Card
@@ -204,12 +290,20 @@ function QuestionCard({
               <InfluenceFields characterId={characterId} standing={influence} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />
             )}
             {spends(question) && (
-              <Button variant="ghost" className="self-start px-0" onClick={() => onChange(answers.filter((_, j) => j !== i))}>
+              <Button variant="ghost" className="self-start px-0" onClick={() => onRemove(i)}>
                 Remove this action
               </Button>
             )}
           </div>
         ))}
+        {onUndo && (
+          <p className="flex items-center gap-2 text-sm text-mist">
+            Action removed.
+            <Button variant="secondary" onClick={onUndo}>
+              Undo
+            </Button>
+          </p>
+        )}
         {canAdd && (
           <Button variant="secondary" className="self-start" onClick={() => onChange([...answers, { body: "" }])}>
             Add an action ({remaining} left)
